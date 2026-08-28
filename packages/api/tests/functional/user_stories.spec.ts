@@ -83,6 +83,7 @@ type UserStoryAgentRunBody = {
       originalDetailLength?: number
     }[]
     commentId?: string | null
+    completedAt?: string | null
     executionId?: string | null
     finalResponse?: string | null
     id: string
@@ -753,6 +754,30 @@ test.group('user stories', (group) => {
 
     regression.assertStatus(200)
     assert.equal(monotonicRun.data.status, 'completed')
+  })
+
+  test('cancels the active run when a running story is discarded', async ({ assert, client }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    const story = await createStory(client, user, project.id)
+    const runResponse = await client
+      .post(`/api/v1/projects/user-stories/${story.data.id}/agent-runs`)
+      .loginAs(user)
+      .json({ executionId: crypto.randomUUID(), kind: 'initial' })
+    const run = (runResponse.body() as UserStoryAgentRunBody).data
+
+    const discardedResponse = await client
+      .patch(`/api/v1/projects/user-stories/${story.data.id}`)
+      .loginAs(user)
+      .json({ status: 'discarded' })
+    const discarded = discardedResponse.body() as UserStoryBody
+    const cancelled = discarded.data.agentRuns?.find(({ id }) => id === run.id)
+
+    discardedResponse.assertStatus(200)
+    assert.equal(discarded.data.activeAgentRunId, null)
+    assert.equal(discarded.data.agentStatus, null)
+    assert.equal(cancelled?.status, 'cancelled')
+    assert.isNotNull(cancelled?.completedAt)
   })
 
   test('deletes a story while its agent run is active', async ({ client }) => {

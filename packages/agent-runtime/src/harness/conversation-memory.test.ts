@@ -206,6 +206,55 @@ test("the production beforeModel hook detects compaction and releases stale read
   });
 });
 
+test("runtime continuity verifies symbols from inspected current source", async () => {
+  await withMemory(async (root) => {
+    const conversationId = "verified-symbols";
+    const path = "src/pixel-matrix.tsx";
+    const content = Buffer.from(
+      "export function PixelMatrix() { return null }\nfunction helper() {}\n",
+    );
+    await mkdir(join(root, "src"), { recursive: true });
+    await writeFile(join(root, path), content);
+    const memory = new ConversationMemoryStore(root, conversationId);
+    await memory.beginRequest({
+      currentRequest: "Use PixelMatrix.",
+      userGoal: "Goal",
+    });
+    await new ReadWorkingSet(root, conversationId).register({
+      contextEpoch: await memory.currentEpochId(),
+      maximumBytes: content.length,
+      path,
+      range: [0, content.length],
+      sourceBlob: sha256(content),
+      sourceContent: content,
+      view: "raw",
+    });
+    const continuity = await memory.runtimeContinuity();
+    assert.ok(
+      continuity.verifiedSymbols.some((symbol) =>
+        symbol.includes("exported function PixelMatrix"),
+      ),
+    );
+    const changed = Buffer.from(
+      "export function MatrixGrid() { return null }\n",
+    );
+    await writeFile(join(root, path), changed);
+    await new ConversationMemoryStore(root, conversationId).recordChange({
+      receiptId: "changeset://matrix-grid",
+      files: [path],
+      symbols: ["MatrixGrid"],
+      summary: "Renamed the matrix component.",
+      validation: "pending",
+    });
+    assert.equal(
+      (await memory.runtimeContinuity()).verifiedSymbols.some((symbol) =>
+        symbol.includes("PixelMatrix"),
+      ),
+      false,
+    );
+  });
+});
+
 test("a later validated CSS edit cannot hide an unvalidated Prisma edit", async () => {
   await withMemory(async (root) => {
     const memory = new ConversationMemoryStore(root, "validation-history");

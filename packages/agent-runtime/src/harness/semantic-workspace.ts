@@ -1431,6 +1431,13 @@ async function editCodeResponse(
     revision,
     provenance: [provenance("harness", revision)],
     data: result,
+    ...(result.status === "applied" && result.partial
+      ? {
+          reason: "PARTIAL_BATCH_APPLIED",
+          recommendation:
+            "Continue from the returned source revision. failed_operations were not applied; skipped_operations made no mutation and need no retry when their requested end state is already present. Retry only a specific operation whose required result is still absent.",
+        }
+      : {}),
     ...(artifactMetadata.length ? { artifacts: artifactMetadata } : {}),
     ...(diagnostics.length ? { diagnostics } : {}),
   });
@@ -1455,11 +1462,13 @@ function runTaskResponse(
       revision,
       recovery: summary,
     });
+  const semantics = runTaskResponseSemantics(run.status);
   return harnessSuccess({
     startedAt,
     revision,
     provenance: [provenance("harness", revision)],
     data: summary,
+    ...semantics,
     artifacts: [run.logs.complete, run.filesystem_effects.artifact],
     diagnostics: run.diagnostics,
     coverage: {
@@ -1468,6 +1477,29 @@ function runTaskResponse(
       analysis: "observed_subset",
     },
   });
+}
+
+function runTaskResponseSemantics(
+  status: Awaited<ReturnType<RunService["run"]>>["status"],
+) {
+  if (status === "passed")
+    return {
+      outcome: "completed" as const,
+      reason: "TASK_PASSED",
+      recommendation: "Continue with the task using this validation evidence.",
+    };
+  const reason =
+    status === "timed_out"
+      ? "TASK_TIMED_OUT"
+      : status === "cancelled"
+        ? "TASK_CANCELLED"
+        : "TASK_FAILED";
+  return {
+    outcome: "blocked" as const,
+    reason,
+    recommendation:
+      "Use the returned diagnostics and log artifact to fix the reported cause. Do not rerun the identical task until code, dependencies, or environment state changed.",
+  };
 }
 
 function dependencyTaskRequested(input: RunTaskInput) {

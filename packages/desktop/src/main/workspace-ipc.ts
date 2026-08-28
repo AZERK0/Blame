@@ -3720,6 +3720,7 @@ async function stopProjectServiceLogs(streamId: string) {
 export async function readProjectServiceLogs(input: {
   service?: string;
   tailLines?: number;
+  timeoutMs?: number;
   worktree: string;
 }) {
   const worktree = resolveRuntimePath(input.worktree);
@@ -3738,6 +3739,7 @@ export async function readProjectServiceLogs(input: {
     worktree,
     service,
     input.tailLines,
+    input.timeoutMs,
   );
   return { service, services, ...snapshot };
 }
@@ -3746,6 +3748,7 @@ async function projectServiceLogSnapshot(
   worktree: string,
   service: string,
   tailLines?: number,
+  timeoutMs?: number,
 ) {
   const lineCount = serviceLogTailLines(tailLines);
   try {
@@ -3754,7 +3757,7 @@ async function projectServiceLogSnapshot(
       {
         cwd: worktree,
         env: await setupEnvironment(worktree),
-        timeoutMs: containerMetadataTimeoutMs,
+        timeoutMs: timeoutMs ?? containerMetadataTimeoutMs,
       },
     );
     if (stdout || stderr)

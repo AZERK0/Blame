@@ -18,6 +18,7 @@ import {
   failedChangeOperationIndexes,
   type EditGroupResult,
   type FailedEditOperation,
+  type SkippedEditOperation,
 } from "./edit-batch.js";
 import { lineChanges } from "./edit-content.js";
 import { editCssDeclaration } from "./css-declaration-editor.js";
@@ -78,6 +79,7 @@ export type EditCodeOutcome =
       diff_artifact_ref: string;
       diff_artifact_refs: string[];
       failed_operations?: FailedEditOperation[];
+      skipped_operations?: SkippedEditOperation[];
       file_receipts: Array<{
         diff_artifact_ref: string;
         paths: string[];

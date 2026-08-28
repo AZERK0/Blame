@@ -3646,7 +3646,7 @@ function clineSessionToolEvent(event: CoreSessionEvent) {
       : event.payload.hookEventName === "tool_result"
         ? "finished"
         : undefined;
-  return clineToolActivity(event.payload, "hook", phase);
+  return clineToolActivity(asRecord(event.payload), "hook", phase);
 }
 
 function clineToolActivity(
@@ -4070,14 +4070,17 @@ function previewDevtoolsTool(
   return {
     name: "get_preview_devtools",
     description:
-      "Get this agent session's Blame preview Chrome DevTools MCP server configuration and current preview URL.",
+      "Perform one bounded readiness check for this agent session's Blame preview and return its Chrome DevTools MCP configuration when ready. Do not poll: if unavailable, continue with local validation until a new preview-ready event or user-visible state change occurs.",
     inputSchema: {
       type: "object",
       properties: {
         timeoutMs: {
           type: "number",
+          minimum: 250,
+          maximum: 10_000,
+          default: 5_000,
           description:
-            "Maximum time to wait for the Blame preview BrowserView to become ready, in milliseconds.",
+            "Bounded readiness wait in milliseconds. Defaults to 5000 and is capped at 10000.",
         },
       },
       additionalProperties: false,
@@ -4088,12 +4091,16 @@ function previewDevtoolsTool(
       if (!target?.available) {
         return {
           available: false,
+          outcome: "unavailable",
           reason: previewDevtoolsScope
+            ? "PREVIEW_NOT_READY_FOR_SESSION"
+            : "PREVIEW_NOT_READY",
+          message: previewDevtoolsScope
             ? "No Blame preview is currently loaded for this agent session."
             : "No active Blame preview is currently loaded.",
           waitedMs: previewInput.timeoutMs,
           recommendation:
-            "The preview may still be initializing. Call this tool again before concluding that preview access is unavailable.",
+            "Continue with local validation. Do not call this tool again unless a new preview-ready event or preview state change is observed.",
         };
       }
       return {
@@ -4113,7 +4120,9 @@ function previewDevtoolsInput(
   const timeoutMs = Number(record.timeoutMs);
   return {
     ...(scope ? { scope } : {}),
-    ...(Number.isFinite(timeoutMs) ? { timeoutMs } : {}),
+    timeoutMs: Number.isFinite(timeoutMs)
+      ? Math.min(Math.max(timeoutMs, 250), 10_000)
+      : 5_000,
   };
 }
 
@@ -4136,6 +4145,10 @@ function previewContainerLogsTool(
         });
       } catch (error) {
         return {
+          outcome: "failed",
+          reason: "PREVIEW_LOG_READ_FAILED",
+          recommendation:
+            "Continue with local validation. Retry logs only after preview state changes.",
           isError: true,
           output: { error: errorMessage(error) },
         };
@@ -4418,7 +4431,7 @@ function developmentStoryPrompt(
     "Work in the current worktree when code changes are clearly required.",
     "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files.",
     "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it.",
-    "When browser verification is useful, call get_preview_devtools and wait for this session's Blame preview to become ready before deciding preview access is unavailable.",
+    "Use get_preview_devtools once when browser verification is useful and preview readiness is indicated. If unavailable, continue with local validation and do not poll until preview state changes.",
   );
   return prompt.join("\n");
 }

@@ -62,6 +62,7 @@ export function renderRuntimeContinuity(value: RuntimeContinuity) {
     section("Confirmed decisions", value.decisions),
     section("Runtime observations", value.observations),
     section("Inspected files at source revision", value.inspectedFiles),
+    section("Verified symbols from inspected source", value.verifiedSymbols),
     section("Modified files", value.modifiedFiles),
     section("Validation", [value.validation]),
     section("Next action", [value.nextAction]),

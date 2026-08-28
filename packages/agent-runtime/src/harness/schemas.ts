@@ -124,9 +124,9 @@ export const workspaceStateInputSchema = z
       .trim()
       .min(1)
       .max(80)
-      .optional()
+      .nullish()
       .describe(
-        "Short revision-bound next_cursor returned by a previous workspace_state page.",
+        "Exact next_cursor returned by the current workspace_state response. Omit on the first call and never invent, encode, or use sentinel values such as 0 or none.",
       ),
     page_size: z
       .number()

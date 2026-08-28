@@ -484,6 +484,35 @@ test("edit_files applies independent files and reports the failing operation", a
   });
 });
 
+test("edit_files reports independent operations that produced no change", async () => {
+  await withWorkspace(async (root, workspace) => {
+    const result = success(
+      await workspace.editFiles({
+        operations: [
+          { operation: "replace_file", path: "first.txt", content: "first\n" },
+          {
+            operation: "create_file",
+            path: "created.ts",
+            content: "export const created = true;\n",
+          },
+        ],
+      }),
+    );
+    assert.equal(result.reason, "PARTIAL_BATCH_APPLIED");
+    if (result.data.status !== "applied") assert.fail("Expected partial apply");
+    assert.equal(result.data.partial, true);
+    assert.deepEqual(result.data.skipped_operations, [
+      {
+        operation_index: 0,
+        path: "first.txt",
+        reason: "NO_CHANGE",
+        status: "no_change",
+      },
+    ]);
+    assert.equal(await exists(join(root, "created.ts")), true);
+  });
+});
+
 test("edit_files returns every independent validation failure", async () => {
   await withWorkspace(async (root, workspace) => {
     const result = success(
@@ -885,6 +914,28 @@ test("external reads return compact receipts for identical requests", async () =
   governor.newUserRequest();
   await tool.execute({ service: "web", tailLines: 120 }, context);
   assert.equal(executions, 2);
+});
+
+test("unavailable preview reads remain unavailable and suppress polling", async () => {
+  const governor = new ExternalReadGovernor();
+  let executions = 0;
+  const tool = governor.wrap({
+    name: "get_preview_devtools",
+    description: "preview",
+    inputSchema: { type: "object" },
+    execute: async () => {
+      executions += 1;
+      return { available: false, reason: "PREVIEW_NOT_READY" };
+    },
+  });
+  const first = await tool.execute({}, {} as never);
+  const duplicate = await tool.execute({}, {} as never);
+  assert.equal((first as { outcome?: string }).outcome, "unavailable");
+  assert.equal(executions, 1);
+  assert.equal(
+    (duplicate as { alreadyAvailable?: boolean }).alreadyAvailable,
+    true,
+  );
 });
 
 test("large web fetch results retain the Cline result envelope", async () => {

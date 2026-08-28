@@ -1,5 +1,5 @@
-import { mkdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, readFile, stat } from "node:fs/promises";
+import { isAbsolute, join } from "node:path";
 import { lock } from "proper-lockfile";
 import writeFileAtomic from "write-file-atomic";
 import {
@@ -14,7 +14,8 @@ import {
   type StoredMemoryFact,
 } from "./continuity-schema.js";
 import { sha256 } from "./protocol.js";
-import { ReadWorkingSet } from "./read-working-set.js";
+import { parseCode, type ParsedSymbol } from "./code-intelligence.js";
+import { ReadWorkingSet, type ReadReceipt } from "./read-working-set.js";
 
 export type MemoryFact = StoredMemoryFact & {
   value: string;
@@ -83,6 +84,7 @@ export type RuntimeContinuity = {
   decisions: string[];
   observations: string[];
   inspectedFiles: string[];
+  verifiedSymbols: string[];
   modifiedFiles: string[];
   nextAction: string;
   validation: string;
@@ -104,6 +106,11 @@ type ActiveTurn = {
 
 type FallbackCheckpoint = DeterministicFallbackMemory & {
   created_at: string;
+};
+
+type VerifiedSymbolCacheEntry = {
+  fileFingerprint: string;
+  symbols: string[];
 };
 
 export type ConversationMemory = {
@@ -237,10 +244,15 @@ const maximumTechnicalEvidence = 500;
 
 export class ConversationMemoryStore {
   private readonly conversationId: string;
+  private readonly workspaceRoot: string;
   private readonly path: string;
   private readonly lockDirectory: string;
   private readonly workingSet: ReadWorkingSet;
   private readonly tokenCounter: TokenCounter;
+  private readonly verifiedSymbolCache = new Map<
+    string,
+    VerifiedSymbolCacheEntry
+  >();
 
   constructor(
     workspaceRoot: string,
@@ -248,6 +260,7 @@ export class ConversationMemoryStore {
     tokenCounter: TokenCounter = utf8TokenUpperBound,
   ) {
     this.conversationId = conversationId;
+    this.workspaceRoot = workspaceRoot;
     this.tokenCounter = tokenCounter;
     const root = join(workspaceRoot, ".blame", "harness");
     const identity = sha256(conversationId);
@@ -388,7 +401,7 @@ export class ConversationMemoryStore {
   }
 
   async recordChange(input: RecordChangeInput) {
-    return this.exclusive(async () => {
+    const wasCreated = await this.exclusive(async () => {
       const stored = await this.read("");
       const receipt = changeReceipt(input);
       const created = !stored.memory.completedChanges.some(
@@ -415,6 +428,8 @@ export class ConversationMemoryStore {
       await this.write({ ...stored, memory });
       return created;
     });
+    this.invalidateVerifiedSymbols(input.files);
+    return wasCreated;
   }
 
   async recordValidation(input: {
@@ -553,6 +568,11 @@ export class ConversationMemoryStore {
           ({ path, source_blob }) => `${path}@${source_blob.slice(0, 12)}`,
         ),
       ),
+      verifiedSymbols: await verifiedInspectedSymbols(
+        this.workspaceRoot,
+        receipts,
+        this.verifiedSymbolCache,
+      ),
       modifiedFiles: unique(
         memory.completedChanges.flatMap((change) => change.files),
       ),
@@ -572,6 +592,13 @@ export class ConversationMemoryStore {
       const memory = { ...transform(stored.memory), updatedAt: now() };
       await this.write({ ...stored, memory });
     });
+  }
+
+  private invalidateVerifiedSymbols(paths: string[]) {
+    const selected = new Set(paths);
+    for (const key of this.verifiedSymbolCache.keys())
+      if (selected.has(key.split("\0", 1)[0]!))
+        this.verifiedSymbolCache.delete(key);
   }
 
   private async exclusive<T>(operation: () => Promise<T>) {
@@ -610,6 +637,108 @@ export class ConversationMemoryStore {
       mode: 0o600,
     });
   }
+}
+
+async function verifiedInspectedSymbols(
+  workspaceRoot: string,
+  receipts: ReadReceipt[],
+  cache: Map<string, VerifiedSymbolCacheEntry>,
+) {
+  const selected = uniqueCurrentReceipts(receipts).slice(-8);
+  const summaries = await Promise.all(
+    selected.map((receipt) =>
+      verifiedReceiptSymbols(workspaceRoot, receipt, cache),
+    ),
+  );
+  return summaries.flat().slice(0, 12);
+}
+
+function uniqueCurrentReceipts(receipts: ReadReceipt[]) {
+  const selected = new Map<string, ReadReceipt>();
+  for (const receipt of receipts) {
+    const key = `${receipt.path}\0${receipt.source_blob}`;
+    const previous = selected.get(key);
+    selected.set(
+      key,
+      previous
+        ? {
+            ...receipt,
+            covered_ranges: [
+              ...previous.covered_ranges,
+              ...receipt.covered_ranges,
+            ],
+          }
+        : receipt,
+    );
+  }
+  return [...selected.values()];
+}
+
+async function verifiedReceiptSymbols(
+  workspaceRoot: string,
+  receipt: ReadReceipt,
+  cache: Map<string, VerifiedSymbolCacheEntry>,
+) {
+  if (!safeReceiptPath(receipt.path)) return [];
+  const absolutePath = join(workspaceRoot, receipt.path);
+  const cacheKey = verifiedSymbolCacheKey(receipt);
+  try {
+    const before = await stat(absolutePath);
+    const cached = cache.get(cacheKey);
+    if (cached?.fileFingerprint === fileFingerprint(before))
+      return cached.symbols;
+    const content = await readFile(absolutePath);
+    const after = await stat(absolutePath);
+    if (fileFingerprint(before) !== fileFingerprint(after)) return [];
+    if (sha256(content) !== receipt.source_blob) return [];
+    const symbols = verifiedSymbolsFromContent(receipt, content);
+    cache.set(cacheKey, {
+      fileFingerprint: fileFingerprint(after),
+      symbols,
+    });
+    return symbols;
+  } catch {
+    return [];
+  }
+}
+
+function verifiedSymbolCacheKey(receipt: ReadReceipt) {
+  return `${receipt.path}\0${receipt.source_blob}\0${JSON.stringify(
+    receipt.covered_ranges,
+  )}`;
+}
+
+function verifiedSymbolsFromContent(receipt: ReadReceipt, content: Buffer) {
+  const parsed = parseCode(receipt.path, content);
+  if (!parsed.supported) return [];
+  return parsed.symbols
+    .filter((symbol) => symbolCovered(symbol, receipt.covered_ranges))
+    .slice(0, 4)
+    .map((symbol) => `${receipt.path}: ${verifiedSymbolLabel(symbol)}`);
+}
+
+function fileFingerprint(value: {
+  ctimeMs: number;
+  mtimeMs: number;
+  size: number;
+}) {
+  return `${value.size}:${value.mtimeMs}:${value.ctimeMs}`;
+}
+
+function safeReceiptPath(path: string) {
+  return !isAbsolute(path) && path !== ".." && !path.startsWith("../");
+}
+
+function symbolCovered(symbol: ParsedSymbol, ranges: Array<[number, number]>) {
+  const [start, end] = symbol.range_utf8_bytes;
+  return ranges.some(([rangeStart, rangeEnd]) => {
+    return start < rangeEnd && end > rangeStart;
+  });
+}
+
+function verifiedSymbolLabel(symbol: ParsedSymbol) {
+  const visibility = symbol.visibility ? `${symbol.visibility} ` : "";
+  return `${visibility}${symbol.kind} ${symbol.qualified_name}`;
 }
 
 function existingCompletion(

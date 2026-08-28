@@ -23,6 +23,13 @@ export type FailedEditOperation = {
     | "validation_failed";
 };
 
+export type SkippedEditOperation = {
+  operation_index: number;
+  path?: string;
+  reason: "NO_CHANGE";
+  status: "no_change";
+};
+
 export type EditGroup = {
   edits: EditCodeOperation[];
   indexes: number[];
@@ -40,6 +47,10 @@ type FailedOutcome = Exclude<
   { status: "applied" | "no_change" }
 >;
 type FailedGroupResult = { group: EditGroup; result: FailedOutcome };
+type NoChangeGroupResult = {
+  group: EditGroup;
+  result: Extract<EditCodeOutcome, { status: "no_change" }>;
+};
 
 export function createEditGroups(edits: EditCodeOperation[]) {
   const groups: EditGroup[] = [];
@@ -67,10 +78,14 @@ export function combineEditGroupResults(
     result.status === "applied" ? [result] : [],
   );
   const failed = results.filter(isFailedGroupResult);
+  const skipped = results
+    .filter(isNoChangeGroupResult)
+    .flatMap(skippedOperations);
   if (!applied.length) return combinedGroupFailure(results, failed);
   return combineAppliedOutcomes(
     applied,
     failedOperations(failed),
+    skipped,
     failedValidations(failed),
   );
 }
@@ -217,9 +232,31 @@ function isFailedGroupResult(
   );
 }
 
+function isNoChangeGroupResult(
+  value: EditGroupResult,
+): value is NoChangeGroupResult {
+  return value.result.status === "no_change";
+}
+
+function skippedOperations({ group }: NoChangeGroupResult) {
+  return group.edits.map((edit, localIndex) => {
+    const operationIndex = group.indexes[localIndex]!;
+    const paths = operationPaths(edit, operationIndex).filter(
+      (path) => !path.startsWith("operation:"),
+    );
+    return {
+      operation_index: operationIndex,
+      ...(paths[0] ? { path: paths[0] } : {}),
+      reason: "NO_CHANGE" as const,
+      status: "no_change" as const,
+    };
+  });
+}
+
 function combineAppliedOutcomes(
   outcomes: AppliedOutcome[],
   failed: FailedEditOperation[],
+  skipped: SkippedEditOperation[],
   rejectedValidations: ContentValidation[],
 ): AppliedOutcome {
   const last = outcomes.at(-1)!;
@@ -233,7 +270,9 @@ function combineAppliedOutcomes(
   return {
     ...last,
     ...combinedAppliedFields(outcomes),
-    ...(failed.length ? { partial: true, failed_operations: failed } : {}),
+    ...(failed.length ? { failed_operations: failed } : {}),
+    ...(skipped.length ? { skipped_operations: skipped } : {}),
+    ...(failed.length || skipped.length ? { partial: true } : {}),
     validation: combinedValidation(outcomes, validations, status),
   };
 }

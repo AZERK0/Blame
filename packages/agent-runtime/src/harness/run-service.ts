@@ -640,7 +640,8 @@ function missingDependencyDiagnostics(output: string) {
   for (const expression of missingDependencyExpressions) {
     for (const match of output.matchAll(expression)) {
       const dependency = match[1]?.trim();
-      if (dependency) dependencies.add(dependency);
+      if (dependency && plausibleDependency(dependency))
+        dependencies.add(dependency);
     }
   }
   return [...dependencies].slice(0, 20).map((dependency) => ({
@@ -657,8 +658,13 @@ function missingDependencyDiagnostics(output: string) {
 const missingDependencyExpressions = [
   /Cannot find (?:module|package)\s+['"]([^'"]+)['"]/giu,
   /Module not found:\s*(?:Error:\s*)?Can't resolve\s+['"]([^'"]+)['"]/giu,
-  /(?:command not found|not recognized as an internal or external command)[:\s]+([^\s]+)/giu,
+  /^(?:[^:\r\n]+:\s*)?(?:(?:line\s+)?\d+:\s*)?([^:\s]+):\s*(?:command\s+)?not found\s*$/gimu,
+  /['"]?([^'"\r\n]+?)['"]?\s+is not recognized as an internal or external command/giu,
 ];
+
+function plausibleDependency(value: string) {
+  return /^(?:@[^/\s]+\/)?[A-Za-z0-9][A-Za-z0-9._/-]*$/u.test(value);
+}
 
 function cleanOutput(value: string, overlayRoot: string) {
   return stripAnsi(value).replaceAll(overlayRoot, "<workspace>");

@@ -144,7 +144,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "workspace_state",
       description:
-        "Refresh the canonical Blame workspace state, changed paths, tree summary, and capability registry when the initial task_briefing lacks required metadata or the workspace changed. The default receipt includes every package and manifest path, relevant dependencies, important tasks, and short revision-bound cursors for exhaustive pages. Semantic reads and edits resolve the current revision themselves. Read-only; do not use it to inspect file contents or rediscover an unchanged task_briefing.",
+        "Refresh the canonical Blame workspace state, changed paths, tree summary, and capability registry when the initial task_briefing lacks required metadata or the workspace changed. The default receipt includes every package and manifest path, relevant dependencies, important tasks, and short revision-bound cursors for exhaustive pages. Omit cursor for the current state; reuse only an exact next_cursor emitted by the latest response and never fabricate or encode one. Semantic reads and edits resolve the current revision themselves. Read-only; do not use it to inspect file contents or rediscover an unchanged task_briefing.",
       schema: workspaceStateInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -625,9 +625,17 @@ function workspaceStatePage(value: unknown) {
       ? (value as Record<string, unknown>)
       : {};
   return {
-    cursor: typeof input.cursor === "string" ? input.cursor : undefined,
+    cursor: normalizedWorkspaceStateCursor(input.cursor),
     pageSize: typeof input.page_size === "number" ? input.page_size : undefined,
   };
+}
+
+function normalizedWorkspaceStateCursor(value: unknown) {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.trim();
+  return ["0", "none", "null", "undefined"].includes(normalized.toLowerCase())
+    ? undefined
+    : normalized;
 }
 
 function workspaceStateInclude(value: unknown) {

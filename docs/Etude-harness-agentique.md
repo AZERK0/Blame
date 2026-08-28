@@ -2208,6 +2208,22 @@ La compaction par défaut avertit à 65 %, se déclenche à 75 % et autorise jus
 
 Les tests déterministes couvrent l'invalidation inter-tour, la réouverture après changement d'epoch, l'autorisation de mutation d'un package absent, trois lectures larges distinctes en parallèle, la déduplication exacte en vol, la pagination d'un résultat Web tronqué, la précision de la clé spécialiste et les deux fenêtres du watchdog. La suite runtime complète reste à 305 scénarios : 303 réussis, aucun échec et deux tests live ignorés faute de credentials.
 
+### 21.21 Correctifs issus du run US-019
+
+L’US-019 a montré que plusieurs réponses techniquement valides guidaient encore le modèle vers du travail compensatoire. Un `run_task` dont le processus échouait conservait une enveloppe externe `completed`, un curseur `workspace_state` invalide exigeait un second appel, l’indisponibilité de la preview recommandait explicitement de réessayer, et une édition de plusieurs groupes pouvait annoncer `applied` sans signaler les groupes terminés en `no_change`. Après compaction, la continuité conservait les chemins et blobs lus mais pas les propriétés vérifiables des symboles, ce qui a permis une hypothèse fausse sur l’export de `PixelMatrix`. Enfin, le discard de la User Story retirait son pointeur actif sans fermer la ligne de run correspondante en base.
+
+`run_task` publie désormais `blocked` avec `TASK_FAILED`, `TASK_TIMED_OUT` ou `TASK_CANCELLED` pour tout résultat terminal non réussi. Les diagnostics de commande absente reconnaissent les formes POSIX et Windows et filtrent les fragments de shell ; `sh: line 1: prettier: command not found` désigne donc `prettier`, jamais le chevron d’une ligne npm suivante. La recommandation interdit le replay identique tant que le code, les dépendances ou l’environnement n’ont pas changé.
+
+`workspace_state` accepte l’absence ou la valeur nulle du curseur et neutralise les sentinelles textuelles. Un curseur fabriqué ou périmé ne provoque plus un aller-retour : le même appel retourne l’état courant complet avec `completed: CURSOR_RESET` et un reçu `pagination_recovery`. Le contrat visible précise que seul un `next_cursor` exact de la réponse courante peut être réutilisé.
+
+Les accès preview sont maintenant des observations bornées, pas des boucles de polling. DevTools attend cinq secondes par défaut et dix secondes au maximum. Une indisponibilité retourne `unavailable` et demande de poursuivre les validations locales jusqu’à un changement observable de la preview. Les logs appelés par l’agent bornent la commande conteneur à trois secondes. Le gouverneur réutilise pendant soixante secondes un reçu dynamique indisponible équivalent et l’invalide à la demande utilisateur suivante.
+
+Une édition multi-groupe conserve son application indépendante, mais publie maintenant `partial: true`, chaque `failed_operation` et chaque `skipped_operation` avec son index, son chemin et `NO_CHANGE`. Le reçu distingue ainsi une mutation réellement écrite d’une opération sans effet. Il demande de ne retenter qu’une opération dont le résultat requis reste absent et n’impose aucune nouvelle précondition transactionnelle au modèle.
+
+La projection déterministe de continuité ajoute au maximum douze symboles réellement couverts par les lectures et vérifiés contre le hash courant. Le parseur local existant fournit nom, kind et visibilité, notamment `exported`; les résultats sont mis en cache et invalidés uniquement pour les fichiers modifiés. Cette vérification évite une relecture systématique à chaque tour et supprime un symbole obsolète après écriture. Lorsqu’une story active quitte `in-progress`, la transaction backend verrouille la story et son run, passe tout run non terminal à `cancelled` avec `completedAt`, puis efface le pointeur et le statut agent.
+
+La validation locale du 28 août 2026 comprend 309 scénarios runtime, dont 307 réussis et deux tests live ignorés faute de credentials, ainsi que 318 scénarios desktop réussis. Les typechecks agent-runtime, desktop et API et les lints agent-runtime/API passent. Le test fonctionnel API du discard est ajouté ; son exécution locale nécessite la base de test Adonis, indisponible pendant cette passe.
+
 ---
 
 ## Références complémentaires

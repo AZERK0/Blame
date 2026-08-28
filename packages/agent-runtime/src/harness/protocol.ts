@@ -294,6 +294,7 @@ function normalizedSuccessOutcome(
       "conflict",
       "failed",
       "rejected",
+      "task_failure",
       "timed_out",
       "unsupported_operation",
       "validation_failed",

@@ -116,8 +116,12 @@ export default class UserStoriesService {
         ? undefined
         : await this.fileAttachments.resolveInputs(userId, input.fileAttachments)
     await db.transaction(async (transaction) => {
-      const userStory = await this.userStoryQuery(userId, transaction).where('id', id).firstOrFail()
+      const userStory = await this.userStoryQuery(userId, transaction)
+        .where('id', id)
+        .forUpdate()
+        .firstOrFail()
       const update = await this.updateInput(userStory, input)
+      await cancelActiveAgentRun(userStory, input, transaction)
       userStory.useTransaction(transaction)
       userStory.merge({
         ...update,
@@ -535,7 +539,24 @@ function terminalStatus(status: string | undefined) {
 
 function inactiveAgentRunUpdate(input: UpdateUserStoryInput) {
   if (input.status === undefined || input.status === 'in-progress') return {}
-  return { activeAgentRunId: null }
+  return { activeAgentRunId: null, agentStatus: null }
+}
+
+async function cancelActiveAgentRun(
+  story: UserStory,
+  input: UpdateUserStoryInput,
+  transaction: TransactionClientContract
+) {
+  if (!story.activeAgentRunId || input.status === undefined || input.status === 'in-progress')
+    return
+  const run = await UserStoryAgentRun.query({ client: transaction })
+    .where('userStoryId', story.id)
+    .where('id', story.activeAgentRunId)
+    .forUpdate()
+    .first()
+  if (!run || terminalStatus(run.status)) return
+  run.merge({ status: 'cancelled', completedAt: DateTime.now() })
+  await run.save()
 }
 
 function agentRunAttributes(storyId: string, input: CreateUserStoryAgentRunInput) {

@@ -175,8 +175,14 @@ test("US-017 workspace state keeps relevant detail compact and pages every manif
         cursor: "wsm_0000000000_0",
       }),
     );
-    assert.equal(stalePage.outcome, "unavailable");
-    assert.equal(stalePage.reason, "STALE_WORKSPACE_STATE_CURSOR");
+    assert.equal(stalePage.outcome, "completed");
+    assert.equal(stalePage.reason, "CURSOR_RESET");
+    const recoveredData = record(stalePage.data);
+    assert.equal(
+      record(recoveredData.pagination_recovery).reason,
+      "STALE_WORKSPACE_STATE_CURSOR",
+    );
+    assert.ok(record(recoveredData.task_projection));
   });
 });
 

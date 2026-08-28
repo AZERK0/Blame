@@ -38,16 +38,23 @@ export function compactWorkspaceStateResult(
     return boundHarnessResult(
       recalculateHarnessUsage({
         ...result,
-        outcome: "unavailable",
+        outcome: "completed",
         fatal: false,
-        reason: "STALE_WORKSPACE_STATE_CURSOR",
+        reason: "CURSOR_RESET",
         recommendation:
-          "Call workspace_state without a cursor to obtain current pagination receipts.",
+          "Use the returned current state. For another page, pass only an exact next_cursor emitted by this response.",
         data: {
-          source_revision: recordValue(result.data).source_revision,
-          pagination: {
+          ...compactWorkspaceStateData(
+            result.data,
+            include,
+            sourceRevision,
+            undefined,
+            boundedPageSize(pageInput.pageSize),
+          ),
+          pagination_recovery: {
+            status: "cursor_reset",
             requested_cursor: pageInput.cursor,
-            replacement: "workspace_state",
+            reason: "STALE_WORKSPACE_STATE_CURSOR",
           },
         },
       }),

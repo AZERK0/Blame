@@ -561,10 +561,8 @@ function boundedResult(
     };
   if (result && typeof result === "object" && !Array.isArray(result))
     return {
-      outcome: "completed",
+      ...externalResultSemantics(tool, result),
       fatal: false,
-      reason: "EXTERNAL_READ_COMPLETED",
-      recommendation: "Continue with the task.",
       ...result,
       externalReadReceiptId: receiptId,
       tool,
@@ -577,6 +575,21 @@ function boundedResult(
     content: result,
     externalReadReceiptId: receiptId,
     tool,
+  };
+}
+
+function externalResultSemantics(tool: ExternalReadToolName, result: object) {
+  if (dynamicExternalRead(tool) && recordValue(result).available === false)
+    return {
+      outcome: "unavailable",
+      reason: "PREVIEW_NOT_READY",
+      recommendation:
+        "Continue with local validation. Retry only after preview state changes.",
+    };
+  return {
+    outcome: "completed",
+    reason: "EXTERNAL_READ_COMPLETED",
+    recommendation: "Continue with the task.",
   };
 }
 
@@ -617,8 +630,11 @@ function dynamicExternalRead(tool: ExternalReadToolName) {
 }
 
 function externalReadCacheTtl(tool: ExternalReadToolName, result: unknown) {
-  const outcome = stringValue(recordValue(result).outcome);
-  if (["failed", "unavailable"].includes(outcome ?? "")) return 2_000;
+  const record = recordValue(result);
+  const outcome = stringValue(record.outcome);
+  if (record.available === false && dynamicExternalRead(tool)) return 60_000;
+  if (outcome === "unavailable" && dynamicExternalRead(tool)) return 60_000;
+  if (outcome === "failed") return 2_000;
   if (dynamicExternalRead(tool)) return 5_000;
   if (tool === "fetch_web_content") return 5 * 60_000;
   return 30 * 60_000;

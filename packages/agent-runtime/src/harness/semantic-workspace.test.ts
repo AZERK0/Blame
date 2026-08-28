@@ -1724,6 +1724,8 @@ test("run_task diagnoses missing dependencies and exposes a controlled install t
         limits: { timeout_ms: 10_000 },
       }),
     );
+    assert.equal(failed.outcome, "blocked");
+    assert.equal(failed.reason, "TASK_FAILED");
     assert.equal(
       failed.data.diagnostics.some(
         (diagnostic) => diagnostic.code === "DEPENDENCY_MISSING",
@@ -1744,6 +1746,33 @@ test("run_task diagnoses missing dependencies and exposes a controlled install t
     assert.equal(install.data.status, "passed");
     assert.equal(installExecutor.lastInput?.network, "project_allowlist");
     assert.match(installExecutor.lastInput?.args.join(" ") ?? "", /ci|install/);
+  });
+});
+
+test("run_task identifies the missing POSIX executable without capturing shell noise", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root, {
+      taskExecutor: new RecordingTaskExecutor(
+        "failed",
+        "sh: line 1: prettier: command not found\n> fixture@test\n",
+      ),
+    });
+    const state = success(await workspace.workspaceState());
+    const failed = success(
+      await workspace.runTask({
+        source_revision_id: state.data.source_revision.source_revision_id,
+        task: { task_id: "test" },
+        limits: { timeout_ms: 10_000 },
+      }),
+    );
+    const missing = failed.data.diagnostics.filter(
+      (diagnostic) => diagnostic.code === "DEPENDENCY_MISSING",
+    );
+    assert.equal(failed.outcome, "blocked");
+    assert.deepEqual(
+      missing.map((diagnostic) => diagnostic.dependency),
+      ["prettier"],
+    );
   });
 });
 
