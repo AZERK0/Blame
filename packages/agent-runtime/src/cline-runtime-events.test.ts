@@ -1136,6 +1136,10 @@ test("renders the compact native Cline development prompt", async () => {
   assert.match(prompt, /inspect the needed symbol/);
   assert.match(prompt, /Truncated output: narrow/);
   assert.match(prompt, /genuinely bounded range/);
+  assert.match(prompt, /runtime-generated `task_briefing`/);
+  assert.match(prompt, /genuinely new unresolved API question/);
+  assert.match(prompt, /concrete declaration is indispensable/);
+  assert.match(prompt, /Iteration count alone never/);
   assert.doesNotMatch(prompt, /small directory|multiple complete reads/);
   assert.match(prompt, /call `submit_and_exit` exactly once/);
   assert.doesNotMatch(prompt, /complete_turn/);

@@ -9,7 +9,7 @@ export function effectiveCompactionModels(
   models: Record<string, ModelInfo>,
   modelId: string,
   triggerRatio: number,
-  maximumContextTokens = 96_000,
+  maximumContextTokens = 128_000,
 ) {
   const selected = models[modelId];
   if (!selected?.contextWindow) return models;

@@ -117,11 +117,23 @@ test("consult_specialist resolves the private system prompt server-side", async 
   );
   assert.equal(
     (repeatedAfterCompaction as { outcome?: string }).outcome,
+    "completed",
+  );
+
+  const identicalAfterCompaction = await tool.execute(
+    {
+      specialist: "risk_review",
+      task: "Review the next change request.",
+    },
+    { runId: "request-3" } as never,
+  );
+  assert.equal(
+    (identicalAfterCompaction as { outcome?: string }).outcome,
     "skipped",
   );
   assert.equal(
-    (repeatedAfterCompaction as { isError?: boolean }).isError,
+    (identicalAfterCompaction as { isError?: boolean }).isError,
     false,
   );
-  assert.match(JSON.stringify(repeatedAfterCompaction), /previous_receipt/);
+  assert.match(JSON.stringify(identicalAfterCompaction), /previous_receipt/);
 });

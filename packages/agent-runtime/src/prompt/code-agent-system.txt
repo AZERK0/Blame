@@ -47,6 +47,14 @@ workspace_name: {{WORKSPACE_NAME}}
 - Raw reads: use only a small file or a genuinely bounded range.
 - Once the change is clear, edit.
 
+## Execution pace
+
+- Start from the runtime-generated `task_briefing` when present. Inspect only the smallest missing evidence before choosing an implementation; do not rediscover facts already in that map.
+- Consolidate related external documentation questions whenever possible. A genuinely new unresolved API question may justify another focused lookup; a reformulation of the same question does not.
+- Use `workspace_state` for dependency inventory. Inspect an installed package source only when a concrete declaration is indispensable and the package is known to exist; never probe guessed variants or reconstruct APIs from a lockfile.
+- A missing path or unsupported structured view is evidence to change approach, not a reason to retry nearby variants.
+- Let evidence determine when to edit. Iteration count alone never makes a new, targeted read invalid.
+
 ## Completion
 
 - Once the work is complete, call `submit_and_exit` exactly once.

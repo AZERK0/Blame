@@ -349,6 +349,7 @@ function autoNarrowedResult(
   if (!rawPathInput(input)) return undefined;
   const profile = rawReadProfile(source.content, source.inspected.range);
   if (!profile.broad) return undefined;
+  if (profile.estimatedBytes <= maximumOutputBytes(input)) return undefined;
   const capability = languageCapability(source.path, source.content);
   if (!capability.symbolInspection)
     return boundedPreviewResult(
@@ -444,10 +445,10 @@ function boundedPreviewResult(
   reason: NarrowedView["reason"],
 ) {
   const requestedRange = profile.requestedRange ?? source.inspected.range;
-  const previewBytes =
-    capability.level === "unsupported"
-      ? 0
-      : Math.min(profile.estimatedBytes, autoNarrowedPreviewMaximumBytes);
+  const previewBytes = Math.min(
+    profile.estimatedBytes,
+    autoNarrowedPreviewMaximumBytes,
+  );
   const returnedSourceRange = [
     requestedRange[0],
     requestedRange[0] + previewBytes,

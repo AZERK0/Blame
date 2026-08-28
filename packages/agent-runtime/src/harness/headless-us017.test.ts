@@ -246,7 +246,7 @@ test("US-017 workspace state hard-bounds a manifest with five thousand dependenc
   });
 });
 
-test("US-017 unavailable dependencies return only actionable non-fatal data and open the exploration circuit", async () => {
+test("US-017 unavailable dependencies remain non-fatal without closing exploration", async () => {
   await withUs017Workspace(async (root) => {
     const workspace = workspaceWith(
       root,
@@ -295,10 +295,13 @@ test("US-017 unavailable dependencies return only actionable non-fatal data and 
         { query: "npm install package and rebuild the lockfile" },
         toolContext(iteration),
       );
-      assert.equal(record(receipt).outcome, "unavailable");
+      assert.equal(
+        record(receipt).outcome,
+        iteration === 2 ? "completed" : "skipped",
+      );
       assert.equal(record(receipt).isError, false);
     }
-    assert.equal(externalExecutions, 0);
+    assert.equal(externalExecutions, 1);
 
     const costGovernor = new HarnessCostGovernor(80, false);
     costGovernor.after("mutate_dependencies", {}, unavailable, {
@@ -310,8 +313,7 @@ test("US-017 unavailable dependencies return only actionable non-fatal data and 
       { path: "pnpm-lock.yaml", query: { kind: "text", pattern: "react" } },
       2,
     );
-    assert.equal(lockfileSearch?.outcome, "skipped");
-    assert.equal(lockfileSearch?.reason, "LOCKFILE_RECONSTRUCTION_SUPPRESSED");
+    assert.equal(lockfileSearch, undefined);
     costGovernor.newUserRequest();
     assert.equal(
       costGovernor.before(
@@ -319,8 +321,8 @@ test("US-017 unavailable dependencies return only actionable non-fatal data and 
         "next-request",
         { query: { kind: "text", pattern: "pnpm-lock.yaml" } },
         1,
-      )?.reason,
-      "LOCKFILE_RECONSTRUCTION_SUPPRESSED",
+      ),
+      undefined,
     );
     assert.equal(
       costGovernor.before(
@@ -435,11 +437,10 @@ test("US-017 repeated external reads reduce serialized token proxies by at least
   assert.ok((legacyBytes - governedBytes) / legacyBytes >= 0.7);
 });
 
-test("US-017 no-progress thresholds summarize at four and close only broad or external exploration at eight", () => {
+test("US-017 no-progress telemetry never closes novel exploration by iteration count", () => {
   const governor = new HarnessCostGovernor(80, false);
-  let fourth: HarnessToolResult<{ path: string }> | undefined;
   for (let iteration = 1; iteration <= 8; iteration += 1) {
-    fourth = governor.after(
+    const observed = governor.after(
       "search_code",
       { query: `fact-${iteration}` },
       harnessSuccess({
@@ -450,16 +451,16 @@ test("US-017 no-progress thresholds summarize at four and close only broad or ex
       }),
       { contextEpoch: "epoch-0", iteration },
     );
-    if (iteration === 4)
-      assert.equal(
-        fourth.status === "success" &&
-          fourth.diagnostics?.some(
-            (item) => record(item).code === "CONTEXT_GOVERNOR",
-          ),
-        true,
-      );
+    assert.equal(
+      Boolean(
+        observed.status === "success" &&
+        observed.diagnostics?.some(
+          (item) => record(item).code === "CONTEXT_GOVERNOR",
+        ),
+      ),
+      false,
+    );
   }
-  assert.equal(governor.beforeExternal(8)?.outcome, "skipped");
   assert.equal(
     governor.before("inspect_code", "epoch-0", { target: "precise" }, 8),
     undefined,

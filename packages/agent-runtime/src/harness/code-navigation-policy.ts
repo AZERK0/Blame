@@ -7,7 +7,6 @@ export const autoNarrowedOutlineMaximumItems = 40;
 export const autoNarrowedMaximumOutputTokens = 1_800;
 export const outlineMaximumOutputTokens = 2_000;
 export const outlineMaximumItems = 80;
-export const maximumParallelBroadReads = 2;
 
 export type ByteRange = [number, number];
 

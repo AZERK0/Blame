@@ -4,7 +4,6 @@ import type {
   CoreSessionConfig,
 } from "@cline/sdk";
 import { sha256 } from "./protocol.js";
-import type { HarnessCostGovernor } from "./cost-governor.js";
 
 export type ExternalReadToolName =
   | "consult_specialist"
@@ -13,10 +12,12 @@ export type ExternalReadToolName =
   | "get_preview_devtools";
 
 type CachedExternalRead = {
-  input: unknown;
-  normalized: string;
+  cachedAt: number;
+  expiresAt: number;
+  fullResult: unknown;
   receiptId: string;
   result: unknown;
+  tool: ExternalReadToolName;
 };
 
 type ExternalReadMetrics = {
@@ -29,20 +30,19 @@ type ExternalReadMetrics = {
 type ExternalReadDecision =
   | {
       action: "execute";
-      normalized: string;
       receiptId: string;
       resourceReceiptIds: string[];
     }
   | { action: "return"; result: unknown };
 
 const maximumExternalResultBytes = 16_000;
+const externalReceiptChunkBytes = 12_000;
+const externalResultContentBudgetBytes = 14_000;
 type AgentHooks = NonNullable<CoreSessionConfig["hooks"]>;
 type AfterToolContext = Parameters<NonNullable<AgentHooks["afterTool"]>>[0];
 type BeforeToolContext = Parameters<NonNullable<AgentHooks["beforeTool"]>>[0];
 
 export class ExternalReadGovernor {
-  private dependencyMutationUnavailable = false;
-  private readonly progressGovernor?: HarnessCostGovernor;
   private readonly cache = new Map<string, CachedExternalRead>();
   private readonly history: CachedExternalRead[] = [];
   private readonly hookReceipts = new Map<string, unknown>();
@@ -54,26 +54,48 @@ export class ExternalReadGovernor {
     suppressed: 0,
   };
 
-  constructor(progressGovernor?: HarnessCostGovernor) {
-    this.progressGovernor = progressGovernor;
+  newUserRequest() {
+    this.hookReceipts.clear();
+    for (const [key, entry] of this.cache)
+      if (dynamicExternalRead(entry.tool)) this.cache.delete(key);
   }
 
+  receiptTool(): AgentTool {
+    return {
+      name: "inspect_external_read",
+      description:
+        "Read a precise UTF-8 chunk from a truncated external-read receipt. Use the receipt_id and next_offset_bytes returned by the original tool; this never repeats the network request.",
+      inputSchema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          receipt_id: { type: "string", minLength: 1 },
+          offset_bytes: { type: "integer", minimum: 0 },
+          max_bytes: {
+            type: "integer",
+            minimum: 256,
+            maximum: maximumExternalResultBytes,
+          },
+        },
+        required: ["receipt_id"],
+      },
+      retryable: false,
+      maxRetries: 0,
+      execute: async (input: unknown) => this.inspectReceipt(input),
+    } as AgentTool;
+  }
   wrap(tool: AgentTool): AgentTool {
     const toolName = tool.name;
-    if (!isExternalReadTool(toolName)) return this.observeCapabilityTool(tool);
+    if (!isExternalReadTool(toolName)) return tool;
     return {
       ...tool,
       execute: async (input: unknown, context: AgentToolContext) => {
-        const progressReceipt = this.progressGovernor?.beforeExternal(
-          context.iteration,
-        );
-        if (progressReceipt) return progressReceipt;
         const decision = this.before(toolName, input, context);
         if (decision.action === "return") return decision.result;
         const pending = this.inFlight.get(decision.receiptId);
         if (pending) return this.afterInFlight(pending, decision.receiptId);
         const execution = Promise.resolve(tool.execute(input, context)).then(
-          (result: unknown) => this.after(toolName, input, decision, result),
+          (result: unknown) => this.after(toolName, decision, result),
         );
         this.inFlight.set(decision.receiptId, execution);
         try {
@@ -88,12 +110,8 @@ export class ExternalReadGovernor {
   fetchHooks(): NonNullable<CoreSessionConfig["hooks"]> {
     return {
       beforeTool: (context: BeforeToolContext) => {
-        const { tool, input, snapshot } = context;
+        const { tool, input } = context;
         if (tool.name !== "fetch_web_content") return undefined;
-        const progressReceipt = this.progressGovernor?.beforeExternal(
-          numberValue(snapshot.iteration),
-        );
-        if (progressReceipt) return this.skipHook(context, progressReceipt);
         const decision = this.before("fetch_web_content", input);
         if (decision.action === "execute") return undefined;
         return this.skipHook(context, decision.result);
@@ -119,7 +137,6 @@ export class ExternalReadGovernor {
         return {
           result: this.after(
             "fetch_web_content",
-            input,
             decision,
             result,
           ) as typeof result,
@@ -147,64 +164,20 @@ export class ExternalReadGovernor {
     const resources = normalizedExternalResources(tool, input, context);
     const normalized = resources.join("|");
     const receiptId = `external-read://${sha256(`${tool}\0${normalized}`)}`;
-    if (
-      this.dependencyMutationUnavailable &&
-      dependencyMutationExploration(tool, normalized)
-    )
-      return this.dependencyUnavailableReceipt(receiptId);
     const resourceReceiptIds = resources.map(
       (resource) => `external-read://${sha256(`${tool}\0${resource}`)}`,
     );
-    const cached = this.cache.get(receiptId);
+    const cached = this.cachedEntry(receiptId);
     if (cached) return this.cachedReceipt(cached);
     const cachedResources = resourceReceiptIds
-      .map((resourceReceiptId) => this.cache.get(resourceReceiptId))
+      .map((resourceReceiptId) => this.cachedEntry(resourceReceiptId))
       .filter((entry): entry is CachedExternalRead => Boolean(entry));
     if (
       resourceReceiptIds.length > 0 &&
       cachedResources.length === resourceReceiptIds.length
     )
       return this.cachedReceipt(cachedResources.at(-1)!);
-    return { action: "execute", normalized, receiptId, resourceReceiptIds };
-  }
-
-  private observeCapabilityTool(tool: AgentTool): AgentTool {
-    if (!capabilityReportingTool(tool.name)) return tool;
-    return {
-      ...tool,
-      execute: async (input: unknown, context: AgentToolContext) => {
-        const result = await tool.execute(input, context);
-        if (containsUnavailableDependencyMutation(result))
-          this.dependencyMutationUnavailable = true;
-        return result;
-      },
-    };
-  }
-
-  private dependencyUnavailableReceipt(
-    receiptId: string,
-  ): Extract<ExternalReadDecision, { action: "return" }> {
-    this.metrics.suppressed += 1;
-    return {
-      action: "return",
-      result: {
-        outcome: "unavailable",
-        fatal: false,
-        isError: false,
-        status: "unavailable",
-        applied: false,
-        reason: "DEPENDENCY_MUTATION_UNAVAILABLE",
-        retryable: false,
-        receiptId,
-        alternatives: [
-          "reuse_existing_dependency",
-          "implement_without_dependency",
-          "report_blocked",
-        ],
-        recommendation:
-          "Reuse an installed dependency, implement without it, or report the blocker.",
-      },
-    };
+    return { action: "execute", receiptId, resourceReceiptIds };
   }
 
   private pendingDecision(
@@ -214,7 +187,6 @@ export class ExternalReadGovernor {
     const normalized = resources.join("|");
     return {
       action: "execute",
-      normalized,
       receiptId: `external-read://${sha256(`fetch_web_content\0${normalized}`)}`,
       resourceReceiptIds: resources.map(
         (resource) =>
@@ -225,16 +197,17 @@ export class ExternalReadGovernor {
 
   private after(
     tool: ExternalReadToolName,
-    input: unknown,
     decision: Extract<ExternalReadDecision, { action: "execute" }>,
     result: unknown,
   ) {
     const governed = this.governedResult(tool, decision.receiptId, result);
     const entry = {
-      input,
-      normalized: decision.normalized,
+      cachedAt: Date.now(),
+      expiresAt: Date.now() + externalReadCacheTtl(tool, result),
+      fullResult: result,
       receiptId: decision.receiptId,
       result: governed,
+      tool,
     };
     this.cache.set(entry.receiptId, entry);
     for (const resourceReceiptId of decision.resourceReceiptIds)
@@ -258,14 +231,11 @@ export class ExternalReadGovernor {
     receiptId: string,
     result: unknown,
   ) {
-    if (!isAgentToolResult(result))
-      return boundedResult(
-        boundedExternalResult(result, tool),
-        receiptId,
-        tool,
-      );
     const enriched = boundedResult(result, receiptId, tool);
-    return boundedExternalResult(enriched, tool);
+    const governed = boundedExternalResult(enriched, tool);
+    return serializedBytes(enriched) > maximumExternalResultBytes
+      ? withExternalContinuation(governed, receiptId, result)
+      : governed;
   }
 
   private cachedReceipt(
@@ -285,15 +255,18 @@ export class ExternalReadGovernor {
         previous_receipt: entry.receiptId,
         reason: "REPEATED_EXTERNAL_READ",
         cached_summary: cachedSummary(entry.result),
-        recommendation: "Continue with the next useful action.",
-        sourceUnchanged: true,
+        continuation_tool: "inspect_external_read",
+        cache_age_ms: Date.now() - entry.cachedAt,
+        recommendation:
+          "Continue with the next useful action, or inspect this receipt when an omitted section is required.",
+        sourceUnchanged: false,
       },
     };
   }
 
   private async afterInFlight(pending: Promise<unknown>, receiptId: string) {
     await pending;
-    const cached = this.cache.get(receiptId);
+    const cached = this.cachedEntry(receiptId);
     if (!cached)
       return {
         outcome: "failed",
@@ -303,6 +276,52 @@ export class ExternalReadGovernor {
         recommendation: "Continue without the missing cached receipt.",
       };
     return this.cachedReceipt(cached).result;
+  }
+
+  private cachedEntry(receiptId: string) {
+    const entry = this.cache.get(receiptId);
+    if (!entry || entry.expiresAt > Date.now()) return entry;
+    this.cache.delete(receiptId);
+    return undefined;
+  }
+
+  private inspectReceipt(input: unknown) {
+    const value = recordValue(input);
+    const receiptId = stringValue(value.receipt_id);
+    if (!receiptId)
+      return externalReceiptFailure("INVALID_EXTERNAL_READ_RECEIPT");
+    const entry = this.cachedEntry(receiptId);
+    if (!entry) return externalReceiptFailure("EXTERNAL_READ_RECEIPT_EXPIRED");
+    const serialized =
+      JSON.stringify(entry.fullResult) ?? String(entry.fullResult);
+    const totalBytes = Buffer.byteLength(serialized, "utf8");
+    const offset = boundedInteger(value.offset_bytes, 0, totalBytes, 0);
+    const maximumBytes = boundedInteger(
+      value.max_bytes,
+      256,
+      maximumExternalResultBytes,
+      externalReceiptChunkBytes,
+    );
+    const excerpt = utf8Slice(serialized, offset, maximumBytes);
+    const returnedBytes = Buffer.byteLength(excerpt, "utf8");
+    const nextOffset = offset + returnedBytes;
+    return {
+      outcome: "completed",
+      fatal: false,
+      isError: false,
+      reason: "EXTERNAL_READ_RECEIPT_INSPECTED",
+      recommendation:
+        nextOffset < totalBytes
+          ? "Continue from next_offset_bytes only if the missing section is required."
+          : "Continue with the task.",
+      receipt_id: receiptId,
+      offset_bytes: offset,
+      returned_bytes: returnedBytes,
+      next_offset_bytes: nextOffset,
+      total_bytes: totalBytes,
+      has_more: nextOffset < totalBytes,
+      excerpt,
+    };
   }
 }
 
@@ -387,7 +406,34 @@ function boundedExternalResult(result: unknown, tool: ExternalReadToolName) {
   return {
     status: "bounded",
     truncated: true,
-    excerpt: boundedUtf8(serialized, maximumExternalResultBytes - 256),
+    excerpt: boundedUtf8(serialized, externalResultContentBudgetBytes),
+  };
+}
+
+function withExternalContinuation(
+  result: unknown,
+  receiptId: string,
+  fullResult: unknown,
+) {
+  const continuation = {
+    receipt_id: receiptId,
+    next_offset_bytes: 0,
+    total_bytes: serializedBytes(fullResult),
+    tool: "inspect_external_read",
+  };
+  if (isAgentToolResult(result))
+    return {
+      ...result,
+      metadata: {
+        ...result.metadata,
+        externalReadContinuation: continuation,
+        externalReadTruncated: true,
+      },
+    };
+  return {
+    ...recordValue(result),
+    continuation,
+    truncated: true,
   };
 }
 
@@ -455,7 +501,7 @@ function boundedAgentToolResult(result: AgentToolResultEnvelope) {
 
 function outputWithinBudget(result: AgentToolResultEnvelope) {
   let lowerBound = 0;
-  let upperBound = maximumExternalResultBytes;
+  let upperBound = externalResultContentBudgetBytes;
   let bounded = withBoundedOutput(result, 0);
   while (lowerBound <= upperBound) {
     const candidateLimit = Math.floor((lowerBound + upperBound) / 2);
@@ -557,55 +603,56 @@ function isExternalReadTool(name: string): name is ExternalReadToolName {
   ].includes(name);
 }
 
-function capabilityReportingTool(name: string) {
-  return ["mutate_dependencies", "run_task", "workspace_state"].includes(name);
-}
-
 function cachedSummary(value: unknown) {
   const serialized = JSON.stringify(value) ?? String(value);
   return boundedUtf8(serialized, 320);
 }
 
-function containsUnavailableDependencyMutation(
-  value: unknown,
-  depth = 0,
-): boolean {
-  if (depth > 8) return false;
-  if (Array.isArray(value))
-    return value.some((item) =>
-      containsUnavailableDependencyMutation(item, depth + 1),
-    );
-  const record = recordValue(value);
-  if (!Object.keys(record).length) return false;
-  if (
-    record.capability === "dependency_mutation" &&
-    record.status === "unavailable"
-  )
-    return true;
-  if (
-    record.outcome === "unavailable" &&
-    /^DEPENDENCY_(?:EXECUTOR|MUTATION)_UNAVAILABLE/iu.test(
-      String(record.reason ?? ""),
-    )
-  )
-    return true;
-  return Object.values(record).some((item) =>
-    containsUnavailableDependencyMutation(item, depth + 1),
-  );
-}
-
-function dependencyMutationExploration(
-  tool: ExternalReadToolName,
-  normalized: string,
-) {
-  if (!["consult_specialist", "fetch_web_content"].includes(tool)) return false;
-  return /\b(?:add (?:a )?dependency|ajouter (?:une )?d[ée]pendance|corepack|install(?:ation|ing)?|installer|lockfile update|mutat(?:e|ing) dependenc(?:y|ies)|(?:bun|npm|pnpm|yarn) add)\b/iu.test(
-    normalized,
-  );
-}
-
 function serializedBytes(value: unknown) {
   return Buffer.byteLength(JSON.stringify(value) ?? String(value), "utf8");
+}
+
+function dynamicExternalRead(tool: ExternalReadToolName) {
+  return ["get_preview_container_logs", "get_preview_devtools"].includes(tool);
+}
+
+function externalReadCacheTtl(tool: ExternalReadToolName, result: unknown) {
+  const outcome = stringValue(recordValue(result).outcome);
+  if (["failed", "unavailable"].includes(outcome ?? "")) return 2_000;
+  if (dynamicExternalRead(tool)) return 5_000;
+  if (tool === "fetch_web_content") return 5 * 60_000;
+  return 30 * 60_000;
+}
+
+function externalReceiptFailure(reason: string) {
+  return {
+    outcome: "failed",
+    fatal: false,
+    isError: false,
+    reason,
+    recommendation:
+      "Repeat the original external read only if it is still required.",
+  };
+}
+
+function boundedInteger(
+  value: unknown,
+  minimum: number,
+  maximum: number,
+  fallback: number,
+) {
+  if (typeof value !== "number" || !Number.isInteger(value)) return fallback;
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
+function utf8Slice(value: string, offset: number, maximumBytes: number) {
+  return boundedUtf8(
+    Buffer.from(value, "utf8")
+      .subarray(offset, offset + maximumBytes)
+      .toString("utf8")
+      .replace(/^\uFFFD/u, ""),
+    maximumBytes,
+  );
 }
 
 function recordValue(value: unknown): Record<string, unknown> {
@@ -614,6 +661,6 @@ function recordValue(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function numberValue(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+function stringValue(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }

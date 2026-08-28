@@ -284,7 +284,7 @@ test("US-016 narrows whole-file ranges and skips semantic parsing above two MiB"
   });
 });
 
-test("US-016 single-flight suppresses identical relation reads and shares the iteration budget", async () => {
+test("US-016 single-flight suppresses only identical reads", async () => {
   await withUs016Workspace(async (root) => {
     const calls: string[] = [];
     let release: () => void = () => undefined;
@@ -317,10 +317,14 @@ test("US-016 single-flight suppresses identical relation reads and shares the it
     );
     assert.equal(
       resultData(budgetSuppressed).shared_iteration_budget_suppressed,
-      true,
+      undefined,
     );
     assert.equal(recordValue(budgetSuppressed).isError, undefined);
-    assert.deepEqual(calls, ["get_relation_context", "outline_code"]);
+    assert.deepEqual(calls, [
+      "get_relation_context",
+      "outline_code",
+      "search_code",
+    ]);
   });
 });
 
@@ -407,7 +411,7 @@ test("US-016 permits the same read after an applied edit", () => {
   assert.equal(governor.before("search_code", "epoch-1", input, 4), undefined);
 });
 
-test("US-016 suppresses installation research after the capability circuit opens", async () => {
+test("US-016 keeps distinct installation research available", async () => {
   const governor = new ExternalReadGovernor();
   const context = {} as never;
   const workspaceState = governor.wrap({
@@ -427,21 +431,17 @@ test("US-016 suppresses installation research after the capability circuit opens
     input: { query: "how to install a dependency with pnpm" },
     toolCall,
   } as never);
-  assert.equal(hookSuppressed?.skip, true);
-  assert.equal(hookSuppressed?.reason, "DEPENDENCY_MUTATION_UNAVAILABLE");
+  assert.equal(hookSuppressed, undefined);
   const hookReceipt = await afterFetch({
     input: { query: "how to install a dependency with pnpm" },
     result: {
-      isError: true,
-      output: [{ error: hookSuppressed?.reason, success: false }],
+      isError: false,
+      output: [{ result: "installation documentation", success: true }],
     },
     tool: { name: "fetch_web_content" },
     toolCall,
   } as never);
-  assert.equal(
-    recordValue(hookReceipt?.result.output).reason,
-    "DEPENDENCY_MUTATION_UNAVAILABLE",
-  );
+  assert.equal(Array.isArray(hookReceipt?.result.output), true);
   assert.equal(hookReceipt?.result.isError, false);
   let executions = 0;
   const fetch = governor.wrap({
@@ -459,11 +459,7 @@ test("US-016 suppresses installation research after the capability circuit opens
     context,
   );
   assert.equal(executions, 1);
-  assert.equal(recordValue(suppressed).status, "unavailable");
-  assert.equal(
-    recordValue(suppressed).reason,
-    "DEPENDENCY_MUTATION_UNAVAILABLE",
-  );
+  assert.equal(recordValue(suppressed).outcome, "skipped");
 });
 
 async function runLiveHeadlessUs016(
@@ -511,6 +507,32 @@ async function runLiveHeadlessUs016(
     } finally {
       await runtime.sessions.releaseWorkspace(root).catch(() => undefined);
     }
+  });
+
+  test("US-016 missing-package evidence never blocks dependency mutation or a new request", () => {
+    const governor = governorWithMissingPackage("missing-package");
+    assert.equal(
+      governor.before(
+        "mutate_dependencies",
+        "epoch-1",
+        { operations: [{ name: "missing-package", operation: "add" }] },
+        2,
+      ),
+      undefined,
+    );
+    governor.newUserRequest();
+    assert.equal(
+      governor.before(
+        "inspect_code",
+        "epoch-2",
+        {
+          target: { path: "node_modules/missing-package/index.js" },
+          view: "raw",
+        },
+        1,
+      ),
+      undefined,
+    );
   });
 }
 

@@ -882,6 +882,9 @@ test("external reads return compact receipts for identical requests", async () =
     (duplicate as { alreadyAvailable?: boolean }).alreadyAvailable,
     true,
   );
+  governor.newUserRequest();
+  await tool.execute({ service: "web", tailLines: 120 }, context);
+  assert.equal(executions, 2);
 });
 
 test("large web fetch results retain the Cline result envelope", async () => {
@@ -921,9 +924,27 @@ test("large web fetch results retain the Cline result envelope", async () => {
   assert.equal(governed.metadata.externalReadTruncated, true);
   assert.ok((governed.output[0]?.result.length ?? 0) < 28_000);
   assert.ok(Buffer.byteLength(JSON.stringify(governed), "utf8") <= 16_000);
+  const continuation = governed.metadata.externalReadContinuation as {
+    receipt_id: string;
+  };
+  assert.match(continuation.receipt_id, /^external-read:\/\//u);
+  const inspected = await governor
+    .receiptTool()
+    .execute(
+      { receipt_id: continuation.receipt_id, max_bytes: 1_024 },
+      {} as never,
+    );
+  assert.equal(
+    (inspected as { reason?: string }).reason,
+    "EXTERNAL_READ_RECEIPT_INSPECTED",
+  );
+  assert.equal(
+    (inspected as { returned_bytes?: number }).returned_bytes,
+    1_024,
+  );
 });
 
-test("a Cline hook skip is restored as the original non-fatal receipt", async () => {
+test("an unavailable mutation capability does not suppress distinct research", async () => {
   const governor = new ExternalReadGovernor();
   const context = {} as never;
   const tool = governor.wrap({
@@ -957,13 +978,13 @@ test("a Cline hook skip is restored as the original non-fatal receipt", async ()
     tool: { name: "fetch_web_content" },
     toolCall,
   } as never);
-  assert.equal(skipped?.skip, true);
+  assert.equal(skipped, undefined);
 
   const restored = await hooks.afterTool({
     input,
     result: {
-      isError: true,
-      output: [{ error: `"${skipped?.reason}"`, success: false }],
+      isError: false,
+      output: [{ result: "documentation", success: true }],
     },
     snapshot: {},
     tool: { name: "fetch_web_content" },
@@ -971,15 +992,7 @@ test("a Cline hook skip is restored as the original non-fatal receipt", async ()
   } as never);
   const result = restored?.result;
   assert.equal(result?.isError, false);
-  assert.equal(
-    (result?.output as Record<string, unknown>).outcome,
-    "unavailable",
-  );
-  assert.equal(
-    (result?.output as Record<string, unknown>).reason,
-    "DEPENDENCY_MUTATION_UNAVAILABLE",
-  );
-  assert.equal(Array.isArray(result?.output), false);
+  assert.equal(Array.isArray(result?.output), true);
 });
 
 test("parallel identical external reads share one execution", async () => {

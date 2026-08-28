@@ -164,7 +164,9 @@ function consultationKey(
   return simpleDigest(
     [
       input.specialist,
-      normalizedText(objective ?? input.task),
+      normalizedText(objective ?? ""),
+      normalizedText(input.task),
+      normalizedText(input.context ?? ""),
       normalizedText(String(revision)),
     ].join("\0"),
   );

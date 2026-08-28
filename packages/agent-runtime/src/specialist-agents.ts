@@ -37,7 +37,7 @@ const specialistAgents = [
     name: "Frontend Design Specialist",
     promptName: "agents/frontend-design-specialist-system",
     routing:
-      "landing pages, onboarding, login screens, empty states, dashboards, visual redesigns, or UI polish",
+      "visual surface implementation such as landing pages, onboarding, login screens, empty states, dashboards, redesigns, or UI polish; never backend, API, schema, or data work merely because the feature has a visual name",
   },
   {
     id: "test_verification",

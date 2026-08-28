@@ -144,7 +144,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "workspace_state",
       description:
-        "Read the canonical Blame workspace state, changed paths, tree summary, and capability registry. The default receipt includes every package and manifest path, complete dependencies for relevant manifests when they fit the hard output budget, important tasks, and short revision-bound cursors for exhaustive manifest, dependency, or task pages. Semantic reads and edits resolve the current revision themselves; use this tool when repository or task metadata is needed. Read-only; do not use it to inspect file contents.",
+        "Refresh the canonical Blame workspace state, changed paths, tree summary, and capability registry when the initial task_briefing lacks required metadata or the workspace changed. The default receipt includes every package and manifest path, relevant dependencies, important tasks, and short revision-bound cursors for exhaustive pages. Semantic reads and edits resolve the current revision themselves. Read-only; do not use it to inspect file contents or rediscover an unchanged task_briefing.",
       schema: workspaceStateInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -155,7 +155,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "search_code",
       description:
-        "Use when the relevant file or symbol location is unknown. Search the current workspace with a narrow path or language scope using text, syntax symbols, or an ast-grep pattern. Results return relocatable references for targeted inspection; do not use repeated broad searches after the target is known.",
+        "Use when the relevant file or symbol location is unknown or absent from the initial task_briefing. Search the current workspace with a narrow path or language scope using text, syntax symbols, or an ast-grep pattern. Results return relocatable references for targeted inspection; do not use repeated broad searches after the target is known or reconstruct dependency APIs from lockfiles.",
       schema: searchCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -175,7 +175,7 @@ export function semanticWorkspaceTools(
     }),
     createHarnessTool({
       name: "inspect_code",
-      description: `Inspect one symbol_ref, AST node, or lexical match with automatic rebase. A path with raw view is an exceptional fallback for a small file, an unsupported format, or one precise range; large whole-file raw requests are automatically narrowed. Supported semantic extensions: ${semanticExtensions}. Returns language capabilities and the recommended edit tool.\n\n${supportedOperations}`,
+      description: `Inspect one symbol_ref, AST node, or lexical match with automatic rebase. A path with raw view reads the requested content directly when it fits max_output_tokens; otherwise the runtime returns a semantic outline or bounded preview without a failed call. Inspect installed dependency source only for a concrete declaration that workspace_state confirms exists. Supported semantic extensions: ${semanticExtensions}. Returns language capabilities and the recommended edit tool.\n\n${supportedOperations}`,
       schema: inspectCodeInputSchema,
       execute: (input, context) =>
         visibleResult(

@@ -184,8 +184,11 @@ async function relevantTargets(
   terms: string[],
 ) {
   const changed = new Set(snapshot.changes.map((change) => change.path));
-  const contentMatches = await relevantContentMatches(files, snapshot, terms);
-  const ranked = snapshot.files
+  const candidates = snapshot.files.filter((path) =>
+    taskTargetCandidate(path, terms),
+  );
+  const contentMatches = await relevantContentMatches(files, candidates, terms);
+  const ranked = candidates
     .map((path) => ({
       path,
       score: pathScore(
@@ -208,14 +211,14 @@ async function relevantTargets(
 
 async function relevantContentMatches(
   files: WorkspaceFiles,
-  snapshot: WorkspaceSnapshot,
+  candidates: string[],
   terms: string[],
 ) {
   const counts = new Map<string, number>();
   if (!terms.length) return counts;
   try {
     const result = await searchWithRipgrep({
-      candidates: snapshot.files,
+      candidates,
       maximum: 100,
       query: {
         kind: "text",
@@ -280,14 +283,37 @@ function termScore(value: string, terms: string[]) {
 }
 
 function objectiveTerms(objective?: string) {
-  return unique(
+  const terms =
     (objective ?? "")
       .normalize("NFKC")
       .toLowerCase()
-      .match(/[\p{L}\p{N}_-]{3,}/gu) ?? [],
+      .match(/[\p{L}\p{N}_]{2,}/gu) ?? [];
+  return unique(
+    terms
+      .filter(
+        (term) =>
+          !ignoredTerms.has(term) && (term.length >= 3 || /\p{N}/u.test(term)),
+      )
+      .flatMap((term) => [term, ...(objectiveTermAliases[term] ?? [])]),
+  ).slice(0, 40);
+}
+
+function taskTargetCandidate(path: string, terms: string[]) {
+  const normalized = path.replaceAll("\\", "/").toLowerCase();
+  if (basename(path) === "package.json" || lockfileNames.has(basename(path)))
+    return false;
+  if (
+    /(?:^|\/)(?:\.git|\.next|build|coverage|dist|node_modules|vendor)(?:\/|$)/u.test(
+      normalized,
+    )
   )
-    .filter((term) => !ignoredTerms.has(term))
-    .slice(0, 40);
+    return false;
+  if (
+    /(?:^|\/)migrations?(?:\/|$)/u.test(normalized) &&
+    !terms.some((term) => /migrat/iu.test(term))
+  )
+    return false;
+  return true;
 }
 
 function relevanceOrder(left: string, right: string, terms: string[]) {
@@ -349,23 +375,27 @@ const lockfileNames = new Set([
 
 const ignoredTerms = new Set([
   "add",
-  "api",
-  "app",
-  "backend",
-  "database",
+  "build",
+  "create",
   "avec",
   "dans",
   "driven",
   "from",
   "pour",
-  "project",
-  "projet",
   "that",
   "this",
   "une",
   "user",
   "utilisateur",
 ]);
+
+const objectiveTermAliases: Record<string, string[]> = {
+  "3d": ["three", "dimensional"],
+  api: ["endpoint", "route", "server"],
+  backend: ["api", "route", "server", "schema"],
+  carousel: ["slider"],
+  database: ["data", "prisma", "schema"],
+};
 
 const frameworkSignals = [
   { framework: "AdonisJS", packages: ["@adonisjs/core"] },

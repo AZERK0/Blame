@@ -91,6 +91,10 @@ import { continuityProjectionHooks } from "./harness/continuity-projection.js";
 import { composeHarnessHooks } from "./harness/hook-composition.js";
 import { HarnessCostGovernor } from "./harness/cost-governor.js";
 import {
+  appendInitialTaskBriefing,
+  createInitialTaskBriefing,
+} from "./harness/initial-task-briefing.js";
+import {
   contextPressureHooks,
   effectiveCompactionModels,
 } from "./harness/context-pressure.js";
@@ -390,6 +394,7 @@ type RuntimeOptions = {
   createCore?(backend?: AgentBackendConfig): Promise<ClineCore>;
   openExternalUrl?(url: string): void;
   git?(cwd: string, args: string[]): Promise<string>;
+  modelInactivityTimeoutMs?: number;
   previewDevtools?(
     input?: PreviewDevtoolsTargetInput,
   ):
@@ -434,6 +439,16 @@ type SessionTerminationAttempt =
   | { status: "stopped" }
   | { error?: unknown; status: "pending" };
 
+type SessionInactivityWatchdog = {
+  cline: ClineCore;
+  executionId: string;
+  idleWindows: number;
+  timeoutMs: number;
+  timer?: ReturnType<typeof setTimeout>;
+};
+
+const defaultModelInactivityTimeoutMs = 180_000;
+
 let customGitRunner:
   | ((cwd: string, args: string[]) => Promise<string>)
   | undefined;
@@ -469,10 +484,20 @@ export class BlameAgentRuntime {
     { executionId: string; promise: Promise<boolean> }
   >();
   private sessionTerminationWatchdogs = new Map<string, Promise<void>>();
+  private sessionInactivityWatchdogs = new Map<
+    string,
+    SessionInactivityWatchdog
+  >();
+  private sessionActiveTools = new Map<string, Set<string>>();
+  private sessionInactivityTimeouts = new Map<string, number>();
   private sessionIterations = new Map<string, number>();
   private sessionSpawnAgentActiveCounts = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
   private sessionGovernors = new Map<string, HarnessCostGovernor>();
+  private sessionExternalReadGovernors = new Map<
+    string,
+    ExternalReadGovernor
+  >();
   private readonly runLifecycles = new RunLifecycleRegistry();
   private readonly userInstructionServices = new BlameUserInstructionServices();
   private structuredEventSessions = new Set<string>();
@@ -788,13 +813,11 @@ export class BlameAgentRuntime {
         ...(input.storyId ? { story_id: input.storyId } : {}),
         objective: input.taskObjective ?? input.prompt,
       };
-      const semanticExecutor = managedSemanticWorkspaceExecutor(
-        this.options.semanticWorkspace,
-        {
+      const semanticExecutor =
+        managedSemanticWorkspaceExecutor(this.options.semanticWorkspace, {
           backendMode: input.backend?.mode,
           workspaceMode: input.workspaceMode,
-        },
-      );
+        }) ?? localSemanticWorkspaceExecutor(input.workspaceRoot, taskContract);
       const costGovernor = new HarnessCostGovernor(
         input.governorBudget ?? input.maxIterations,
         harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS"),
@@ -802,9 +825,28 @@ export class BlameAgentRuntime {
       const externalReadGovernor = harnessFeatureEnabled(
         "BLAME_COST_GOVERNOR_V2",
       )
-        ? new ExternalReadGovernor(costGovernor)
+        ? new ExternalReadGovernor()
         : undefined;
       this.sessionGovernors.set(sessionId, costGovernor);
+      if (externalReadGovernor)
+        this.sessionExternalReadGovernors.set(sessionId, externalReadGovernor);
+      this.sessionInactivityTimeouts.set(
+        sessionId,
+        adaptiveModelInactivityTimeoutMs(
+          input.reasoningEffort,
+          this.options.modelInactivityTimeoutMs,
+        ),
+      );
+      const initialTaskBriefing =
+        autoSendPrompt &&
+        input.nativeCompletion &&
+        harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS")
+          ? await createInitialTaskBriefing({
+              executor: semanticExecutor,
+              taskContract,
+              workspaceRoot: input.workspaceRoot,
+            })
+          : undefined;
       const compactionModelState = input.nativeCompletion
         ? await earlyCompactionModelState(
             input.providerId,
@@ -858,7 +900,7 @@ export class BlameAgentRuntime {
         externalReadGovernor?.fetchHooks() ?? {},
         contextPressureHooks({
           contextWindow: compactionModelState?.contextWindow,
-          warningRatio: this.productionConfig.compactionWarningRatio ?? 0.55,
+          warningRatio: this.productionConfig.compactionWarningRatio ?? 0.65,
           onWarning: (contextUtilizationRatio) =>
             productionLogger.log("Blame context pressure warning", {
               contextUtilizationRatio,
@@ -870,7 +912,14 @@ export class BlameAgentRuntime {
           : []),
       );
       const startInput = {
-        ...(autoSendPrompt ? { prompt: input.prompt } : {}),
+        ...(autoSendPrompt
+          ? {
+              prompt: appendInitialTaskBriefing(
+                input.prompt,
+                initialTaskBriefing,
+              ),
+            }
+          : {}),
         ...(input.initialMessages?.length
           ? { initialMessages: input.initialMessages }
           : {}),
@@ -928,6 +977,7 @@ export class BlameAgentRuntime {
       this.sessionStartInputs.set(sessionId, startInput);
       await this.captureSessionQualityBaseline(sessionId);
       if (autoSendPrompt) {
+        this.armSessionInactivityWatchdog(sessionId, executionId, cline);
         this.agentTelemetry.startModelRequest(sessionId);
         void this.agentTelemetry
           .withinSession<RuntimeClineResult>(
@@ -1043,6 +1093,7 @@ export class BlameAgentRuntime {
     sessionId: string,
     error: unknown,
   ) {
+    this.clearSessionInactivityWatchdog(sessionId);
     const activeContext = this.agentTelemetry.context(sessionId);
     const message = errorMessage(error);
     await appendLog(
@@ -1080,6 +1131,7 @@ export class BlameAgentRuntime {
         "The previous execution is still stopping; no new model call was made.",
       );
     this.sessionGovernors.get(input.sessionId)?.newUserRequest();
+    this.sessionExternalReadGovernors.get(input.sessionId)?.newUserRequest();
     this.sessionSubmittedSummaries.delete(input.sessionId);
     this.sessionExecutionIds.set(input.sessionId, executionId);
     this.agentTelemetry.beginTurn(
@@ -1169,7 +1221,143 @@ export class BlameAgentRuntime {
     });
   }
 
+  private armSessionInactivityWatchdog(
+    sessionId: string,
+    executionId: string,
+    cline: ClineCore,
+  ) {
+    this.clearSessionInactivityWatchdog(sessionId);
+    const watchdog: SessionInactivityWatchdog = {
+      cline,
+      executionId,
+      idleWindows: 0,
+      timeoutMs:
+        this.sessionInactivityTimeouts.get(sessionId) ??
+        this.options.modelInactivityTimeoutMs ??
+        defaultModelInactivityTimeoutMs,
+    };
+    this.sessionInactivityWatchdogs.set(sessionId, watchdog);
+    watchdog.timer = this.inactivityTimer(
+      sessionId,
+      executionId,
+      watchdog.timeoutMs,
+    );
+  }
+
+  private touchSessionInactivityWatchdog(
+    sessionId: string,
+    executionId: string,
+  ) {
+    const watchdog = this.sessionInactivityWatchdogs.get(sessionId);
+    if (!watchdog || watchdog.executionId !== executionId) return;
+    if (this.sessionActiveTools.get(sessionId)?.size) return;
+    if (watchdog.timer) clearTimeout(watchdog.timer);
+    watchdog.idleWindows = 0;
+    watchdog.timer = this.inactivityTimer(
+      sessionId,
+      executionId,
+      watchdog.timeoutMs,
+    );
+  }
+
+  private observeSessionActivity(
+    sessionId: string,
+    executionId: string,
+    toolPhase?: "started" | "finished",
+    toolCallId = "anonymous-tool",
+  ) {
+    const watchdog = this.sessionInactivityWatchdogs.get(sessionId);
+    if (!watchdog || watchdog.executionId !== executionId) return;
+    if (!toolPhase)
+      return this.touchSessionInactivityWatchdog(sessionId, executionId);
+    const activeTools =
+      this.sessionActiveTools.get(sessionId) ?? new Set<string>();
+    if (toolPhase === "started") activeTools.add(toolCallId);
+    else activeTools.delete(toolCallId);
+    if (activeTools.size) {
+      this.sessionActiveTools.set(sessionId, activeTools);
+      return this.pauseSessionInactivityWatchdog(sessionId, executionId);
+    }
+    this.sessionActiveTools.delete(sessionId);
+    this.touchSessionInactivityWatchdog(sessionId, executionId);
+  }
+
+  private pauseSessionInactivityWatchdog(
+    sessionId: string,
+    executionId: string,
+  ) {
+    const watchdog = this.sessionInactivityWatchdogs.get(sessionId);
+    if (!watchdog || watchdog.executionId !== executionId || !watchdog.timer)
+      return;
+    clearTimeout(watchdog.timer);
+    watchdog.timer = undefined;
+  }
+
+  private inactivityTimer(
+    sessionId: string,
+    executionId: string,
+    timeoutMs: number,
+  ) {
+    const timeout = setTimeout(
+      () => void this.failInactiveSession(sessionId, executionId),
+      timeoutMs,
+    );
+    timeout.unref?.();
+    return timeout;
+  }
+
+  private clearSessionInactivityWatchdog(
+    sessionId: string,
+    executionId?: string,
+  ) {
+    const watchdog = this.sessionInactivityWatchdogs.get(sessionId);
+    if (!watchdog || (executionId && watchdog.executionId !== executionId))
+      return;
+    if (watchdog.timer) clearTimeout(watchdog.timer);
+    this.sessionInactivityWatchdogs.delete(sessionId);
+    this.sessionActiveTools.delete(sessionId);
+  }
+
+  private async failInactiveSession(sessionId: string, executionId: string) {
+    const watchdog = this.sessionInactivityWatchdogs.get(sessionId);
+    if (!watchdog || watchdog.executionId !== executionId) return;
+    if (!this.runLifecycles.canInvoke(sessionId, executionId)) return;
+    const timeoutMs = watchdog.timeoutMs;
+    if (watchdog.idleWindows === 0) {
+      watchdog.idleWindows = 1;
+      watchdog.timer = this.inactivityTimer(sessionId, executionId, timeoutMs);
+      await this.logSession(sessionId, "model inactivity warning", {
+        executionId,
+        timeoutMs,
+      });
+      return;
+    }
+    const message = `Agent model produced no activity for ${Math.ceil(timeoutMs / 1_000)} seconds.`;
+    await this.logSession(sessionId, "model inactivity timeout", {
+      executionId,
+      timeoutMs,
+    });
+    await this.terminateSessionExecution({
+      cline: watchdog.cline,
+      display: true,
+      event: this.withExecutionId(
+        sessionId,
+        {
+          type: "error",
+          sessionId,
+          payload: { code: "model_inactivity_timeout", message },
+        },
+        executionId,
+      ),
+      executionId,
+      reason: "Model inactivity timeout",
+      sessionId,
+      terminalState: "failed",
+    });
+  }
+
   private async terminateSessionExecution(input: SessionTermination) {
+    this.clearSessionInactivityWatchdog(input.sessionId, input.executionId);
     const existing = this.sessionTerminations.get(input.sessionId);
     if (existing?.executionId === input.executionId) return existing.promise;
     const lifecycle =
@@ -1482,6 +1670,10 @@ export class BlameAgentRuntime {
       });
     }
     this.sessionStartInputs.set(restoredSessionId, start);
+    const inactivityTimeout =
+      this.sessionInactivityTimeouts.get(sourceSessionId);
+    if (inactivityTimeout)
+      this.sessionInactivityTimeouts.set(restoredSessionId, inactivityTimeout);
     const apiConnection = this.sessionApiConnections.get(sourceSessionId);
     if (apiConnection) {
       this.sessionApiConnections.set(restoredSessionId, apiConnection);
@@ -2376,6 +2568,13 @@ export class BlameAgentRuntime {
         const executionId =
           this.sessionExecutionIds.get(sessionId) ??
           `${sessionId}:initial-execution`;
+        const toolActivity = clineSessionToolEvent(payload);
+        this.observeSessionActivity(
+          sessionId,
+          executionId,
+          toolActivity?.phase,
+          toolActivity?.toolCallId,
+        );
         const eventTokens = eventTokenCount(payload);
         const lifecycleBeforeEvent = this.runLifecycles.state(sessionId);
         if (
@@ -2745,6 +2944,7 @@ export class BlameAgentRuntime {
   }
 
   private clearSessionState(sessionId: string, preserveTelemetry: boolean) {
+    this.clearSessionInactivityWatchdog(sessionId);
     const lifecycle = this.runLifecycles.state(sessionId);
     const terminationActive =
       lifecycle?.state === "stopping" ||
@@ -2765,6 +2965,8 @@ export class BlameAgentRuntime {
     }
     this.sessionUsageSignatures.delete(sessionId);
     this.sessionGovernors.delete(sessionId);
+    this.sessionExternalReadGovernors.delete(sessionId);
+    this.sessionInactivityTimeouts.delete(sessionId);
     this.sessionTerminalDrains.delete(sessionId);
     if (!terminationActive) {
       this.runLifecycles.remove(sessionId);
@@ -3111,6 +3313,7 @@ export class BlameAgentRuntime {
     this.sessionBackendKeys.clear();
     this.sessionQualityBaselines.clear();
     this.sessionStartInputs.clear();
+    this.sessionInactivityTimeouts.clear();
     await Promise.allSettled(
       clines.map(async (cline) => (await cline).dispose("Shutting down")),
     );
@@ -3223,6 +3426,7 @@ export class BlameAgentRuntime {
         ),
       );
     this.agentTelemetry.startModelRequest(sessionId);
+    this.armSessionInactivityWatchdog(sessionId, activeExecutionId, cline);
     const activeContext = this.agentTelemetry.context(sessionId);
     const result = this.agentTelemetry
       .withinSession(sessionId, () =>
@@ -3426,27 +3630,38 @@ function clineSessionToolEvent(event: CoreSessionEvent) {
   if (event.type === "agent_event") {
     const payload = asRecord(event.payload.event);
     if (stringValue(payload.contentType) !== "tool") return undefined;
-    const toolName = stringValue(payload.toolName);
-    if (!toolName) return undefined;
     const type = stringValue(payload.type);
-    if (type === "content_start") {
-      return { phase: "started" as const, toolName };
-    }
-    if (type === "content_end") {
-      return { phase: "finished" as const, toolName };
-    }
-    return undefined;
+    const phase =
+      type === "content_start"
+        ? "started"
+        : type === "content_end"
+          ? "finished"
+          : undefined;
+    return clineToolActivity(payload, "agent_event", phase);
   }
   if (event.type !== "hook") return undefined;
-  const toolName = stringValue(event.payload.toolName);
+  const phase =
+    event.payload.hookEventName === "tool_call"
+      ? "started"
+      : event.payload.hookEventName === "tool_result"
+        ? "finished"
+        : undefined;
+  return clineToolActivity(event.payload, "hook", phase);
+}
+
+function clineToolActivity(
+  payload: Record<string, unknown>,
+  source: "agent_event" | "hook",
+  phase: "started" | "finished" | undefined,
+) {
+  if (!phase) return undefined;
+  const toolName = stringValue(payload.toolName);
   if (!toolName) return undefined;
-  if (event.payload.hookEventName === "tool_call") {
-    return { phase: "started" as const, toolName };
-  }
-  if (event.payload.hookEventName === "tool_result") {
-    return { phase: "finished" as const, toolName };
-  }
-  return undefined;
+  const toolCallId =
+    stringValue(payload.toolCallId) ??
+    stringValue(asRecord(payload.toolCall).id) ??
+    `${source}:${toolName}`;
+  return { phase, toolCallId, toolName };
 }
 
 export function nextSpawnAgentActiveCount(
@@ -3747,6 +3962,7 @@ function runtimeTools(
       : []),
     previewDevtoolsTool(options, previewDevtoolsScope),
     previewContainerLogsTool(options, worktree),
+    ...(externalReadGovernor ? [externalReadGovernor.receiptTool()] : []),
   ]
     .filter((tool): tool is AgentTool => Boolean(tool))
     .map((tool) => externalReadGovernor?.wrap(tool) ?? tool);
@@ -3798,6 +4014,7 @@ function runtimeConsultSpecialistTool(options: {
     objective: options.objective,
     spawnTool: specialistSpawnTool(options),
     storyId: options.input.storyId,
+    timeoutMs: adaptiveSpecialistTimeoutMs(options.input.reasoningEffort),
   });
   return options.externalReadGovernor?.wrap(tool) ?? tool;
 }
@@ -5413,7 +5630,7 @@ async function earlyCompactionModelState(
       models: effectiveCompactionModels(
         models,
         modelId,
-        config.compactionTriggerRatio ?? 0.675,
+        config.compactionTriggerRatio ?? 0.75,
         config.compactionMaxContextTokens,
       ),
     };
@@ -5438,6 +5655,28 @@ function developmentMaxIterations(input?: StartDevelopmentSessionInput) {
     (input.codeSelectionAttachments?.length ?? 0) +
     (input.fileAttachments?.length ?? 0);
   return description.length < 800 && attachments <= 1 ? 40 : 80;
+}
+
+function adaptiveModelInactivityTimeoutMs(
+  reasoningEffort: unknown,
+  configured?: number,
+) {
+  if (configured !== undefined) return configured;
+  const effort = String(reasoningEffort ?? "").toLowerCase();
+  if (["xhigh", "max", "ultra"].includes(effort)) return 300_000;
+  if (effort === "high") return 240_000;
+  if (effort === "medium") return 210_000;
+  return defaultModelInactivityTimeoutMs;
+}
+
+function adaptiveSpecialistTimeoutMs(reasoningEffort: unknown) {
+  const effort = String(reasoningEffort ?? "").toLowerCase();
+  if (effort === "ultra") return 360_000;
+  if (effort === "max") return 300_000;
+  if (effort === "xhigh") return 240_000;
+  if (effort === "high") return 180_000;
+  if (effort === "medium") return 120_000;
+  return 90_000;
 }
 
 function startLogPath(cwd: string) {

@@ -35,7 +35,7 @@ export class SemanticLoopDetector {
     result: HarnessToolResult<T>,
   ) {
     if (realProgress(tool, result)) this.resetAfterProgress();
-    if (!isExploration(tool)) return;
+    if (!isExploration(tool) || result.status === "error") return;
     const signature = semanticCallSignature(tool, input);
     this.cache.set(signature, result as HarnessToolResult<unknown>);
     const fingerprint = sha256(stableValue(result));

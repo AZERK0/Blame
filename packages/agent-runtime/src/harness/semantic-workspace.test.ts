@@ -2024,7 +2024,7 @@ test("Cline adapter reuses reads across epochs and stops semantic cycles", async
   });
 });
 
-test("cost governor resets only after an applied edit", () => {
+test("cost governor keeps low-novelty observations advisory around edits", () => {
   const governor = new HarnessCostGovernor(8);
   const epoch = { contextEpoch: "epoch-a", iteration: 1 };
   const duplicateRead = {
@@ -2044,10 +2044,7 @@ test("cost governor resets only after an applied edit", () => {
     { status: "success", data: { status: "conflict" } } as never,
     epoch,
   );
-  assert.equal(
-    governor.before("search_code", epoch.contextEpoch)?.status,
-    "success",
-  );
+  assert.equal(governor.before("search_code", epoch.contextEpoch), undefined);
   governor.after(
     "edit_code",
     {},
@@ -2058,7 +2055,7 @@ test("cost governor resets only after an applied edit", () => {
   assert.equal(governor.before("search_code", "epoch-b"), undefined);
 });
 
-test("cost governor keeps anti-loop counters across execution epochs", () => {
+test("cost governor keeps low-novelty counters advisory across execution epochs", () => {
   const governor = new HarnessCostGovernor(20);
   const duplicateRead = {
     status: "success",
@@ -2074,26 +2071,22 @@ test("cost governor keeps anti-loop counters across execution epochs", () => {
       contextEpoch,
       iteration: 1,
     });
-  assert.equal(governor.before("search_code", "epoch-c")?.status, "success");
+  assert.equal(governor.before("search_code", "epoch-c"), undefined);
 });
 
-test("cost governor reserves the terminal iteration", () => {
-  const governor = new HarnessCostGovernor(20);
-  assert.equal(
-    governor.before("create_file", "epoch", {}, 15)?.status,
-    "error",
-  );
-  assert.equal(governor.before("search_code", "epoch", {}, 12), undefined);
-  assert.equal(
-    governor.before("search_code", "epoch", {}, 19)?.status,
-    "error",
-  );
-  assert.equal(governor.before("edit_code", "epoch", {}, 12), undefined);
-  assert.equal(governor.before("run_task", "epoch", {}, 19), undefined);
-  assert.equal(governor.before("run_task", "epoch", {}, 20)?.status, "error");
+test("cost governor enforces only the terminal iteration", () => {
+  const structural = new HarnessCostGovernor(20);
+  assert.equal(structural.before("create_file", "epoch", {}, 15), undefined);
+  const exploration = new HarnessCostGovernor(20);
+  assert.equal(exploration.before("search_code", "epoch", {}, 7), undefined);
+  assert.equal(exploration.before("search_code", "epoch", {}, 19), undefined);
+  const execution = new HarnessCostGovernor(20);
+  assert.equal(execution.before("edit_code", "epoch", {}, 12), undefined);
+  assert.equal(execution.before("run_task", "epoch", {}, 19), undefined);
+  assert.equal(execution.before("run_task", "epoch", {}, 20)?.status, "error");
 });
 
-test("cost governor inspects nested structural mutations", () => {
+test("cost governor leaves late structural mutations available", () => {
   const governor = new HarnessCostGovernor(20);
   assert.equal(
     governor.before(
@@ -2105,12 +2098,12 @@ test("cost governor inspects nested structural mutations", () => {
         ],
       },
       15,
-    )?.status,
-    "error",
+    ),
+    undefined,
   );
   assert.equal(
-    governor.before("mutate_dependencies", "epoch", {}, 15)?.status,
-    "error",
+    governor.before("mutate_dependencies", "epoch", {}, 15),
+    undefined,
   );
   assert.equal(
     governor.before(
@@ -2144,6 +2137,12 @@ test("cost governor stops an identical request after three failures", () => {
     governor.before("inspect_code", "epoch", input, 4)?.status,
     "error",
   );
+  assert.equal(
+    governor.before("inspect_code", "new-epoch", input, 4),
+    undefined,
+  );
+  governor.newUserRequest();
+  assert.equal(governor.before("inspect_code", "epoch", input, 1), undefined);
 });
 
 test("Cline adapter can delegate semantic execution without changing its tool contract", async () => {

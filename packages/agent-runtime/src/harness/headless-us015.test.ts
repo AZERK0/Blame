@@ -23,7 +23,7 @@ test("tool descriptions steer semantic navigation with generated extensions", ()
     /narrow path or language scope/iu,
   );
   assert.match(descriptions.outline_code ?? "", /narrow directory/iu);
-  assert.match(descriptions.inspect_code ?? "", /exceptional fallback/iu);
+  assert.match(descriptions.inspect_code ?? "", /fits max_output_tokens/iu);
   for (const extension of semanticExtensions()) {
     assert.match(descriptions.outline_code ?? "", new RegExp(extension));
     assert.match(descriptions.inspect_code ?? "", new RegExp(extension));
@@ -99,6 +99,7 @@ test("large explicit ranges are narrowed while genuinely targeted ranges remain 
         target: { path: "src/large.tsx" },
         view: "raw",
         range_utf8_bytes: [0, size],
+        budget: { max_output_tokens: 500 },
       }),
     );
     assert.equal(broad.data.status, "auto_narrowed");
@@ -119,6 +120,7 @@ test("large explicit ranges are narrowed while genuinely targeted ranges remain 
         target: { path: "coverage.txt" },
         view: "raw",
         range_utf8_bytes: [1_000, 9_500],
+        budget: { max_output_tokens: 500 },
       }),
     );
     assert.equal(majority.data.status, "auto_narrowed");
@@ -246,7 +248,7 @@ test("identical broad reads in flight execute only once", async () => {
   });
 });
 
-test("one quota covers broad search, outline, and raw inspection", async () => {
+test("distinct broad reads remain available in parallel", async () => {
   await withNavigationWorkspace(async (root) => {
     const executions: string[] = [];
     let releaseExecution: () => void = () => undefined;
@@ -277,19 +279,22 @@ test("one quota covers broad search, outline, and raw inspection", async () => {
         toolContext("broad-outline"),
       );
       await waitFor(() => executions.length === 2);
-      const suppressed = await withTimeout(
-        inspect.execute(
-          { target: { path: "src/large.tsx" }, view: "raw" },
-          toolContext("broad-inspect"),
-        ),
+      const inspecting = inspect.execute(
+        { target: { path: "src/large.tsx" }, view: "raw" },
+        toolContext("broad-inspect"),
       );
-      assert.equal(resultData(suppressed).parallel_broad_read_suppressed, true);
-      assert.equal(isToolError(suppressed), false);
+      await waitFor(() => executions.length === 3);
+      releaseExecution();
+      const results = await Promise.all([searching, outlining, inspecting]);
+      assert.equal(results.some(isToolError), false);
     } finally {
       releaseExecution();
     }
-    await Promise.all([searching, outlining]);
-    assert.deepEqual(executions.sort(), ["outline_code", "search_code"]);
+    assert.deepEqual(executions.sort(), [
+      "inspect_code",
+      "outline_code",
+      "search_code",
+    ]);
   });
 });
 
@@ -470,19 +475,4 @@ async function waitFor(predicate: () => boolean) {
     await new Promise<void>((resolve) => setTimeout(resolve, 5));
   }
   assert.fail("Timed out while waiting for broad read reservations.");
-}
-
-async function withTimeout<T>(promise: Promise<T>) {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error("Timed out waiting for suppression.")),
-      500,
-    );
-  });
-  try {
-    return await Promise.race([promise, timeout]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
 }

@@ -5,10 +5,7 @@ import {
 } from "./protocol.js";
 import type { SemanticWorkspaceToolName } from "./semantic-executor.js";
 import { SemanticLoopDetector } from "./semantic-loop-detector.js";
-import {
-  maximumParallelBroadReads,
-  type RawReadProfile,
-} from "./code-navigation-policy.js";
+import type { RawReadProfile } from "./code-navigation-policy.js";
 
 type ToolContext = {
   conversationId?: string;
@@ -18,9 +15,7 @@ type ToolContext = {
 
 type BroadReadSuppressionReason =
   | "BROAD_READ_ALREADY_AVAILABLE"
-  | "BROAD_READ_IN_FLIGHT"
-  | "ITERATION_READ_BUDGET"
-  | "PARALLEL_BROAD_READ_LIMIT";
+  | "BROAD_READ_IN_FLIGHT";
 
 export type BroadReadAdmission = RawReadProfile & {
   reservationId: string;
@@ -34,8 +29,6 @@ type EpochState = {
   lastMaterialProgressIteration: number;
   lowNoveltyReads: number;
   midpointAdvised: boolean;
-  reads: number;
-  readsWithoutEdit: number;
   recentReadSignatures: string[];
   target: string;
 };
@@ -47,13 +40,12 @@ export class HarnessCostGovernor {
   private readonly loops?: SemanticLoopDetector;
   private readonly broadReadReservations = new Map<string, string>();
   private readonly broadReadSignatures = new Set<string>();
-  private readonly broadReadsByIteration = new Map<number, number>();
   private readonly absentPackages = new Set<string>();
   private readonly states = new Map<string, EpochState>();
   private readonly taskState = initialState();
   private identicalOrCoveredReads = 0;
   private unavailableCapabilities = new Set<string>();
-  private dependencyExplorationClosed = false;
+  private latestIteration = 0;
 
   constructor(iterationBudget = 80, semanticLoops = true) {
     this.iterationBudget = Math.max(1, iterationBudget);
@@ -69,25 +61,17 @@ export class HarnessCostGovernor {
     admission?: BroadReadAdmission,
   ) {
     this.state(contextEpoch);
-    const noProgress = this.noProgressIterations(iteration);
+    this.latestIteration = Math.max(this.latestIteration, iteration);
+    const reserveBlock = this.reserveBlock(this.latestIteration);
+    if (reserveBlock) return reserveBlock;
     const absentPackage = absentPackageTarget(tool, input, this.absentPackages);
     if (absentPackage) return absentPackageReceipt(absentPackage);
-    if (
-      this.dependencyExplorationClosed &&
-      lockfileReconstructionTarget(tool, input)
-    )
-      return lockfileReconstructionReceipt();
     const loopDecision = this.loops?.before(tool, input);
     if (loopDecision) return loopDecision;
-    const reserveBlock = this.reserveBlock(tool, input, iteration);
-    if (reserveBlock) return reserveBlock;
-    if (noProgress >= 8 && admission?.broad)
-      return broadReadReceipt("BROAD_READ_ALREADY_AVAILABLE", admission, {
-        reason: "NO_PROGRESS_EXTERNAL_EXPLORATION_CLOSED",
-        recommendation:
-          "Use a targeted read, edit, validation, or return the definitive blocker.",
-      });
-    if ((this.failureCounts.get(failureSignature(tool, input)) ?? 0) >= 3)
+    if (
+      (this.failureCounts.get(failureSignature(tool, input, contextEpoch)) ??
+        0) >= 3
+    )
       return harnessError({
         code: "PRECONDITION_FAILED",
         message:
@@ -97,11 +81,11 @@ export class HarnessCostGovernor {
     const signature = readSignature(tool, input);
     if (
       (admission?.broad || isBroadRead(tool)) &&
-      ((state.readsWithoutEdit >= 4 && state.lowNoveltyReads >= 2) ||
-        (signature && state.recentReadSignatures.includes(signature)))
+      signature &&
+      state.recentReadSignatures.includes(signature)
     )
       return broadReadReceipt("BROAD_READ_ALREADY_AVAILABLE", admission);
-    return this.reserveBroadRead(admission, iteration);
+    return this.reserveBroadRead(admission);
   }
 
   after<T>(
@@ -110,18 +94,20 @@ export class HarnessCostGovernor {
     result: HarnessToolResult<T>,
     context: ToolContext,
   ) {
+    this.latestIteration = Math.max(this.latestIteration, context.iteration);
     const state = this.state(context.contextEpoch);
     this.loops?.after(tool, input, result);
     this.observe(state, tool, input, result);
     this.observe(this.taskState, tool, input, result);
-    this.observeMaterialProgress(state, tool, result, context.iteration);
+    this.observeMaterialProgress(state, tool, input, result, context.iteration);
     this.observeMaterialProgress(
       this.taskState,
       tool,
+      input,
       result,
       context.iteration,
     );
-    this.observeFailure(tool, input, result);
+    this.observeFailure(tool, input, result, context.contextEpoch);
     this.observeAbsentPackages(result);
     const enriched = annotateProgressMetrics(
       annotateEpoch(result, context.contextEpoch, context.conversationId),
@@ -143,23 +129,16 @@ export class HarnessCostGovernor {
     Object.assign(this.taskState, initialState());
     this.identicalOrCoveredReads = 0;
     this.unavailableCapabilities = new Set<string>();
-  }
-
-  beforeExternal(iteration = 0) {
-    if (this.noProgressIterations(iteration) < 8) return undefined;
-    return {
-      outcome: "skipped" as const,
-      fatal: false,
-      isError: false,
-      status: "retry_suppressed",
-      reason: "NO_PROGRESS_EXTERNAL_EXPLORATION_CLOSED",
-      recommendation:
-        "Continue with targeted workspace reads, edits, validation, or a blocker response.",
-    };
+    this.failureCounts.clear();
+    this.absentPackages.clear();
+    this.broadReadReservations.clear();
+    this.broadReadSignatures.clear();
+    this.latestIteration = 0;
   }
 
   metrics(iteration = 0) {
-    const noProgressIterations = this.noProgressIterations(iteration);
+    const effectiveIteration = Math.max(this.latestIteration, iteration);
+    const noProgressIterations = this.noProgressIterations(effectiveIteration);
     return {
       first_edit_iteration: this.taskState.firstEditIteration,
       no_progress_iterations: noProgressIterations,
@@ -180,30 +159,17 @@ export class HarnessCostGovernor {
     if (signature) this.broadReadSignatures.delete(signature);
   }
 
-  private reserveBroadRead(
-    admission: BroadReadAdmission | undefined,
-    iteration: number,
-  ) {
+  private reserveBroadRead(admission: BroadReadAdmission | undefined) {
     if (!admission?.broad) return undefined;
     if (this.broadReadReservations.has(admission.reservationId))
       return undefined;
     if (this.broadReadSignatures.has(admission.signature))
       return broadReadReceipt("BROAD_READ_IN_FLIGHT", admission);
-    if (this.broadReadReservations.size >= maximumParallelBroadReads)
-      return broadReadReceipt("PARALLEL_BROAD_READ_LIMIT", admission);
-    const iterationReads = this.broadReadsByIteration.get(iteration) ?? 0;
-    if (iterationReads >= maximumParallelBroadReads)
-      return broadReadReceipt("ITERATION_READ_BUDGET", admission);
     this.broadReadReservations.set(
       admission.reservationId,
       admission.signature,
     );
     this.broadReadSignatures.add(admission.signature);
-    this.broadReadsByIteration.set(iteration, iterationReads + 1);
-    while (this.broadReadsByIteration.size > 20)
-      this.broadReadsByIteration.delete(
-        this.broadReadsByIteration.keys().next().value!,
-      );
     return undefined;
   }
 
@@ -222,15 +188,17 @@ export class HarnessCostGovernor {
   private observeMaterialProgress<T>(
     state: EpochState,
     tool: SemanticWorkspaceToolName,
+    input: unknown,
     result: HarnessToolResult<T>,
     iteration: number,
   ) {
     if (result.outcome === "unavailable") {
       this.unavailableCapabilities.add(result.reason);
-      if (unavailableDependencyCapability(result))
-        this.dependencyExplorationClosed = true;
     }
+    if (tool === "mutate_dependencies" && result.outcome === "applied")
+      removeMutatedPackages(this.absentPackages, input);
     if (!materialProgress(tool, result, state)) return;
+    this.failureCounts.clear();
     state.lastMaterialProgressIteration = iteration;
     if (isEdit(tool) && result.outcome === "applied") {
       state.firstEditIteration ??= iteration;
@@ -238,36 +206,12 @@ export class HarnessCostGovernor {
     }
   }
 
-  private reserveBlock(
-    tool: SemanticWorkspaceToolName,
-    input: unknown,
-    iteration: number,
-  ) {
+  private reserveBlock(iteration: number) {
     if (iteration >= this.iterationBudget)
       return harnessError({
         code: "PRECONDITION_FAILED",
         message:
           "The tool iteration budget is exhausted. Produce the terminal answer now without another tool call.",
-      });
-    const remaining = this.iterationBudget - iteration;
-    const finalReserve = Math.min(
-      8,
-      Math.max(1, Math.floor(this.iterationBudget * 0.08)),
-    );
-    if (remaining <= finalReserve && isExplorationOrStructural(tool, input))
-      return harnessError({
-        code: "PRECONDITION_FAILED",
-        message:
-          "The final iteration reserve is active. Only targeted edits, validation, cleanup, or finalization may continue.",
-      });
-    if (
-      iteration >= Math.ceil(this.iterationBudget * 0.75) &&
-      isStructural(tool, input)
-    )
-      return harnessError({
-        code: "PRECONDITION_FAILED",
-        message:
-          "The structural strategy window is closed. Finish the current approach, validate it, and prepare the final response.",
       });
     return undefined;
   }
@@ -276,8 +220,9 @@ export class HarnessCostGovernor {
     tool: SemanticWorkspaceToolName,
     input: unknown,
     result: HarnessToolResult<T>,
+    contextEpoch?: string,
   ) {
-    const signature = failureSignature(tool, input);
+    const signature = failureSignature(tool, input, contextEpoch);
     if (result.status === "error") {
       this.failureCounts.set(
         signature,
@@ -297,8 +242,6 @@ export class HarnessCostGovernor {
     if (isEdit(tool)) return observeEdit(state, result);
     if (!isRead(tool) || result.status !== "success") return;
     observeReadSignature(state, tool, input);
-    state.reads += 1;
-    state.readsWithoutEdit += 1;
     state.target = targetLabel(input) ?? state.target;
     state.facts = compactFacts(state.facts, tool, input, result);
     if (result.outcome === "skipped") this.identicalOrCoveredReads += 1;
@@ -311,14 +254,10 @@ export class HarnessCostGovernor {
   }
 
   private advice(state: EpochState, context: ToolContext) {
-    const noProgress = Math.max(
-      0,
-      context.iteration - state.lastMaterialProgressIteration,
-    );
-    if (noProgress === 4)
-      return `Four iterations completed without material progress. Known facts: ${
+    if (state.lowNoveltyReads === 2)
+      return `Recent inspections added little new evidence. Known facts: ${
         state.facts.join("; ") || "the current target is identified"
-      }. Edit ${state.target}, validate, or state the definitive blocker.`;
+      }. Prefer the smallest unresolved symbol or edit ${state.target} when the change is supported.`;
     if (!state.midpointAdvised && context.iteration >= this.midpoint) {
       state.midpointAdvised = true;
       return "Half of the adaptive turn budget is used. A compact continuity capsule should replace inactive technical context.";
@@ -383,7 +322,6 @@ function observeEdit<T>(state: EpochState, result: HarnessToolResult<T>) {
     return;
   }
   state.editApplied = true;
-  state.readsWithoutEdit = 0;
   state.lowNoveltyReads = 0;
   state.recentReadSignatures = [];
 }
@@ -410,22 +348,13 @@ function broadReadReceipt(
   admission?: BroadReadAdmission,
   override?: { reason: string; recommendation: string },
 ) {
-  const parallel = reason === "PARALLEL_BROAD_READ_LIMIT";
   const duplicate = reason === "BROAD_READ_IN_FLIGHT";
-  const iterationBudget = reason === "ITERATION_READ_BUDGET";
   return harnessSuccess({
     startedAt: Date.now(),
     revision: {},
     provenance: [],
-    data: broadReadReceiptData(
-      reason,
-      admission,
-      parallel,
-      duplicate,
-      iterationBudget,
-      override,
-    ),
-    diagnostics: [broadReadDiagnostic(parallel, duplicate, iterationBudget)],
+    data: broadReadReceiptData(reason, admission, duplicate, override),
+    diagnostics: [broadReadDiagnostic(duplicate)],
     coverage: {
       scope: "unknown",
       truncated: true,
@@ -437,23 +366,17 @@ function broadReadReceipt(
 function broadReadReceiptData(
   reason: BroadReadSuppressionReason,
   admission: BroadReadAdmission | undefined,
-  parallel: boolean,
   duplicate: boolean,
-  iterationBudget: boolean,
   override?: { reason: string; recommendation: string },
 ) {
   const requestedBytes = admission?.estimatedBytes ?? 0;
   return {
-    status: duplicate
-      ? "in_flight_reused"
-      : parallel || iterationBudget
-        ? "retry_suppressed"
-        : "already_available",
+    status: duplicate ? "in_flight_reused" : "already_available",
     reason: override?.reason ?? reason,
     content_coverage: "none",
     duplicate_broad_read_suppressed: duplicate,
-    parallel_broad_read_suppressed: parallel,
-    shared_iteration_budget_suppressed: iterationBudget,
+    parallel_broad_read_suppressed: false,
+    shared_iteration_budget_suppressed: false,
     read_requested_bytes: requestedBytes,
     read_returned_bytes: 0,
     omitted_bytes: requestedBytes,
@@ -476,18 +399,10 @@ function broadReadRequestedSelection(admission?: BroadReadAdmission) {
   };
 }
 
-function broadReadDiagnostic(
-  parallel: boolean,
-  duplicate: boolean,
-  iterationBudget: boolean,
-) {
-  const code = parallel
-    ? "PARALLEL_BROAD_READ_SUPPRESSED"
-    : duplicate
-      ? "IN_FLIGHT_RESULT_ALREADY_AVAILABLE"
-      : iterationBudget
-        ? "ITERATION_READ_BUDGET_REUSED"
-        : "RESULT_ALREADY_AVAILABLE";
+function broadReadDiagnostic(duplicate: boolean) {
+  const code = duplicate
+    ? "IN_FLIGHT_RESULT_ALREADY_AVAILABLE"
+    : "RESULT_ALREADY_AVAILABLE";
   return {
     code,
     message: "The broad read was suppressed without a failed tool call.",
@@ -501,8 +416,6 @@ function initialState(): EpochState {
     lastMaterialProgressIteration: 0,
     lowNoveltyReads: 0,
     midpointAdvised: false,
-    reads: 0,
-    readsWithoutEdit: 0,
     recentReadSignatures: [],
     target: "the identified target",
   };
@@ -563,6 +476,7 @@ function isRead(tool: SemanticWorkspaceToolName) {
 
 function isEdit(tool: SemanticWorkspaceToolName) {
   return [
+    "apply_change",
     "create_file",
     "delete_file",
     "edit_code",
@@ -570,6 +484,7 @@ function isEdit(tool: SemanticWorkspaceToolName) {
     "edit_json",
     "edit_symbol",
     "move_file",
+    "mutate_dependencies",
     "patch_file",
     "replace_file",
   ].includes(tool);
@@ -577,70 +492,6 @@ function isEdit(tool: SemanticWorkspaceToolName) {
 
 function isBroadRead(tool: SemanticWorkspaceToolName) {
   return ["get_relation_context", "outline_code", "search_code"].includes(tool);
-}
-
-function unavailableDependencyCapability<T>(result: HarnessToolResult<T>) {
-  if (result.status !== "success") return false;
-  if (
-    result.outcome === "unavailable" &&
-    /DEPENDENC|PACKAGE_MANAGER|REGISTRY|NETWORK|CACHE/iu.test(result.reason)
-  )
-    return true;
-  const data = recordValue(result.data);
-  const capabilities = recordValue(data.capabilities);
-  const execution = recordValue(capabilities.execution);
-  const projection = recordValue(data.task_projection);
-  const inventory = recordValue(projection.dependency_inventory);
-  const candidates = [
-    recordValue(execution.dependency_mutation),
-    recordValue(inventory.mutation),
-  ];
-  return candidates.some(
-    (candidate) =>
-      candidate.available === false || candidate.status === "unavailable",
-  );
-}
-
-function lockfileReconstructionTarget(
-  tool: SemanticWorkspaceToolName,
-  input: unknown,
-) {
-  if (
-    ![
-      "get_relation_context",
-      "inspect_code",
-      "outline_code",
-      "search_code",
-    ].includes(tool)
-  )
-    return false;
-  return /(?:^|[\\/"'\s])(?:bun\.lockb?|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)(?:$|[\\/"'\s])/iu.test(
-    JSON.stringify(input) ?? "",
-  );
-}
-
-function lockfileReconstructionReceipt() {
-  return harnessSuccess({
-    startedAt: Date.now(),
-    revision: {},
-    provenance: [],
-    outcome: "skipped",
-    reason: "LOCKFILE_RECONSTRUCTION_SUPPRESSED",
-    recommendation:
-      "Use workspace_state dependency inventory, reuse installed packages, implement without the dependency, or report the blocker.",
-    data: {
-      status: "retry_suppressed",
-      applied: false,
-      reason: "LOCKFILE_RECONSTRUCTION_SUPPRESSED",
-      retryable: false,
-      content_coverage: "none",
-    },
-    coverage: {
-      scope: "unknown",
-      truncated: true,
-      analysis: "observed_subset",
-    },
-  });
 }
 
 function absentPackageReceipt(dependency: string) {
@@ -676,7 +527,6 @@ function absentPackageTarget(
   for (const dependency of dependencies) {
     if (packageLookupTool(tool) && explicitNodeModulesAccess(input, dependency))
       return dependency;
-    if (dependencyOperation(tool, input, dependency)) return dependency;
   }
   return undefined;
 }
@@ -711,58 +561,21 @@ function explicitNodeModulesAccess(
   );
 }
 
-function dependencyOperation(
-  tool: SemanticWorkspaceToolName,
-  input: unknown,
-  dependency: string,
-) {
-  if (tool !== "mutate_dependencies") return false;
+function removeMutatedPackages(dependencies: Set<string>, input: unknown) {
   const operations = recordValue(input).operations;
-  if (!Array.isArray(operations)) return false;
-  return operations.some(
-    (operation) => recordValue(operation).name === dependency,
-  );
+  if (!Array.isArray(operations)) return;
+  for (const operation of operations) {
+    const dependency = stringValue(recordValue(operation).name);
+    if (dependency) dependencies.delete(dependency);
+  }
 }
 
-function isStructural(tool: SemanticWorkspaceToolName, input: unknown) {
-  if (
-    ["create_file", "delete_file", "move_file", "mutate_dependencies"].includes(
-      tool,
-    )
-  )
-    return true;
-  if (!["apply_change", "edit_code", "edit_files"].includes(tool)) return false;
-  return containedOperations(input).some((operation) =>
-    ["create_file", "delete_file", "move_file"].includes(operation),
-  );
-}
-
-function containedOperations(input: unknown) {
-  const value = recordValue(input);
-  const operations = Array.isArray(value.edits)
-    ? value.edits
-    : Array.isArray(value.operations)
-      ? value.operations
-      : [];
-  return operations.flatMap((operation) => {
-    const record = recordValue(operation);
-    const value = record.operation ?? record.kind;
-    return typeof value === "string" ? [value] : [];
-  });
-}
-
-function isExplorationOrStructural(
+function failureSignature(
   tool: SemanticWorkspaceToolName,
   input: unknown,
+  contextEpoch?: string,
 ) {
-  return (
-    isStructural(tool, input) ||
-    ["get_relation_context", "outline_code", "search_code"].includes(tool)
-  );
-}
-
-function failureSignature(tool: SemanticWorkspaceToolName, input: unknown) {
-  return `${tool}:${JSON.stringify(input) ?? ""}`;
+  return `${contextEpoch ?? "epoch-0"}:${tool}:${JSON.stringify(input) ?? ""}`;
 }
 
 function targetLabel(input: unknown) {
