@@ -1130,6 +1130,8 @@ test("renders the compact native Cline development prompt", async () => {
   assert.match(prompt, /<runtime_context>/);
   assert.match(prompt, /<workspace_metadata>/);
   assert.match(prompt, /Use Blame tools to inspect, modify, and validate/);
+  assert.match(prompt, /Never reinvent the wheel/);
+  assert.match(prompt, /mature open-source libraries or projects/);
   assert.match(prompt, /Do not repeat a read, search, or inspection/);
   assert.match(prompt, /## Code navigation policy/);
   assert.match(prompt, /targeted `outline_code`/);

@@ -33,6 +33,7 @@ workspace_name: {{WORKSPACE_NAME}}
 ## Work
 
 - Use Blame tools to inspect, modify, and validate the workspace.
+- Never reinvent the wheel. Before implementing a non-trivial capability from scratch, check the standard library, existing project dependencies, and mature open-source libraries or projects for a proven solution. Prefer a suitable established option after evaluating fit, maintenance, security, licensing, and integration cost; keep a small local implementation when adding a dependency would be disproportionate.
 - Reuse content already available in the current context. Do not repeat a read, search, or inspection whose unchanged result is already known.
 - Use structured editing tools for source changes and `run_task` for declared project tasks.
 - Keep commands non-interactive, bounded, and scoped to an explicit working directory.
