@@ -167,10 +167,12 @@ export class ExternalReadGovernor {
     const resourceReceiptIds = resources.map(
       (resource) => `external-read://${sha256(`${tool}\0${resource}`)}`,
     );
-    const cached = this.cachedEntry(receiptId);
+    const cached = this.reusableCachedEntry(tool, receiptId);
     if (cached) return this.cachedReceipt(cached);
     const cachedResources = resourceReceiptIds
-      .map((resourceReceiptId) => this.cachedEntry(resourceReceiptId))
+      .map((resourceReceiptId) =>
+        this.reusableCachedEntry(tool, resourceReceiptId),
+      )
       .filter((entry): entry is CachedExternalRead => Boolean(entry));
     if (
       resourceReceiptIds.length > 0 &&
@@ -265,17 +267,14 @@ export class ExternalReadGovernor {
   }
 
   private async afterInFlight(pending: Promise<unknown>, receiptId: string) {
-    await pending;
+    const result = await pending;
     const cached = this.cachedEntry(receiptId);
-    if (!cached)
-      return {
-        outcome: "failed",
-        fatal: false,
-        isError: false,
-        reason: "EXTERNAL_READ_RECEIPT_UNAVAILABLE",
-        recommendation: "Continue without the missing cached receipt.",
-      };
+    if (!cached || dynamicExternalRead(cached.tool)) return result;
     return this.cachedReceipt(cached).result;
+  }
+
+  private reusableCachedEntry(tool: ExternalReadToolName, receiptId: string) {
+    return dynamicExternalRead(tool) ? undefined : this.cachedEntry(receiptId);
   }
 
   private cachedEntry(receiptId: string) {
@@ -632,10 +631,8 @@ function dynamicExternalRead(tool: ExternalReadToolName) {
 function externalReadCacheTtl(tool: ExternalReadToolName, result: unknown) {
   const record = recordValue(result);
   const outcome = stringValue(record.outcome);
-  if (record.available === false && dynamicExternalRead(tool)) return 60_000;
-  if (outcome === "unavailable" && dynamicExternalRead(tool)) return 60_000;
+  if (dynamicExternalRead(tool)) return 5 * 60_000;
   if (outcome === "failed") return 2_000;
-  if (dynamicExternalRead(tool)) return 5_000;
   if (tool === "fetch_web_content") return 5 * 60_000;
   return 30 * 60_000;
 }

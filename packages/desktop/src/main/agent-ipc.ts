@@ -20,16 +20,18 @@ import {
   AgentRuntimeProcessClient,
   type AgentRuntimeProcessCallbacks,
 } from "./agent-runtime-process-client"
-import { handleAgentHostRequest } from "./agent-runtime-main-host"
+import { createAgentHostRequestHandler } from "./agent-runtime-main-host"
 import { getRuntimeStatus } from "./runtime-manager"
 import { runtimeAgentClient } from "./runtime-agent"
 import { registerSecurityAuditIpcHandlers } from "./security-audit-ipc"
 import { WorkspaceWriterRegistry } from "./workspaces/workspace-writer-registry"
+import type { PreviewService } from "./preview-runtime/preview-service"
 
 type AgentRuntimeRegistration = {
   modulePath: string
   packaged: boolean
   serviceVersion: string
+  previewService: PreviewService
   beforeDelivery?(worktree: string): Promise<void>
   beforeWorkspaceWrite?(worktree: string): Promise<void>
 }
@@ -438,7 +440,7 @@ function createAgentRuntimePool(input: AgentRuntimeRegistration) {
   return new AgentRuntimePool({
     createProcess: (callbacks) =>
       createAgentRuntimeProcess(input.modulePath, environment, callbacks),
-    handleHostRequest: handleAgentHostRequest,
+    handleHostRequest: createAgentHostRequestHandler(input.previewService),
     onEvent: emitAgentEvent,
   })
 }

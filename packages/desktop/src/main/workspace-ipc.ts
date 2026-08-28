@@ -3099,6 +3099,24 @@ export async function projectPreviewRuntimeState(
   };
 }
 
+export async function projectPreviewLifecycleState(worktreeInput: string) {
+  const worktree = resolveRuntimePath(worktreeInput);
+  const persisted = await readPreviewRuntimeFileState(worktree);
+  if (persisted.desiredStatus === "stopped") {
+    if (
+      persisted.lifecycle?.status === "error" ||
+      persisted.lifecycle?.phase === "stopping"
+    ) {
+      return persisted.lifecycle;
+    }
+    return idleLocalPreviewLifecycle(persisted.lifecycle?.since);
+  }
+  if (persisted.lifecycle?.status === "error") {
+    return persisted.lifecycle;
+  }
+  return (await projectPreviewRuntimeState(worktree)).lifecycle;
+}
+
 async function cloudMirrorPreviewRuntimeState(
   worktree: string,
 ): Promise<ProjectPreviewRuntimeState> {

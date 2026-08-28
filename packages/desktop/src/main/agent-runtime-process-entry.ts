@@ -22,8 +22,13 @@ type PreviewDevtoolsTarget = {
   available: boolean;
   browserUrl: string;
   currentUrl?: string;
+  error?: string;
   id?: string;
+  loading: boolean;
+  message: string;
+  reason: string;
   scope?: string;
+  status: "failed" | "ready" | "starting" | "stopped" | "unavailable";
   mcpServer: {
     args: string[];
     command: string;
@@ -70,10 +75,15 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
       previewContainerLogs: (input) =>
         hostRequest(hostClient, "previewContainerLogs", input),
       previewDevtools: (input) =>
-        hostClient.request<PreviewDevtoolsTarget | undefined>(
+        hostRequest<PreviewDevtoolsTarget | undefined>(
+          hostClient,
           "previewDevtools",
-          input,
+          input ?? {},
         ),
+      previewDevtoolsCall: (input) =>
+        hostRequest(hostClient, "previewDevtoolsCall", input),
+      previewDevtoolsTools: (input) =>
+        hostRequest(hostClient, "previewDevtoolsTools", input),
       ...(process.platform === "darwin" || process.platform === "win32"
         ? {
             semanticWorkspace: (

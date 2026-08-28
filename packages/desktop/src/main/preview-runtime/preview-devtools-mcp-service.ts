@@ -1,0 +1,598 @@
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { ListRootsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import {
+  dirname,
+  isAbsolute,
+  join,
+  posix,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
+import { pathToFileURL } from "node:url";
+import {
+  previewDevtoolsMcpVersion,
+  previewDevtoolsServerArgs,
+} from "../preview-browser/preview-devtools-config.ts";
+import { setupPath } from "../host-tool-path.ts";
+import {
+  run as runInWorkspace,
+  runtimeHostPath,
+  runtimeManagedPath,
+} from "../workspace-runtime.ts";
+import toolCatalog from "./preview-devtools-tool-catalog.json" with { type: "json" };
+
+export type PreviewDevtoolsMcpContext = {
+  browserUrl: string;
+  scope: string;
+  signal?: AbortSignal;
+  worktree: string;
+};
+
+export type PreviewDevtoolsMcpTool = {
+  description?: string;
+  inputSchema: Record<string, unknown>;
+  name: string;
+};
+
+export type PreviewDevtoolsMcpCall = PreviewDevtoolsMcpContext & {
+  arguments?: Record<string, unknown>;
+  currentUrl: string;
+  toolName: string;
+};
+
+type McpConnection = {
+  artifacts: string;
+  client: Client;
+  close(): Promise<void>;
+  tools: PreviewDevtoolsMcpTool[];
+  workspace?: string;
+};
+
+type PendingConnection = {
+  abortController: AbortController;
+  connection: Promise<McpConnection>;
+  worktree: string;
+};
+
+const hiddenPageTools = new Set([
+  "close_page",
+  "list_pages",
+  "new_page",
+  "select_page",
+]);
+const artifactInputPathArguments = new Map<string, readonly string[]>([
+  ["close_heapsnapshot", ["filePath"]],
+  ["compare_heapsnapshots", ["baseFilePath", "currentFilePath"]],
+  ["get_heapsnapshot_class_nodes", ["filePath"]],
+  ["get_heapsnapshot_details", ["filePath"]],
+  ["get_heapsnapshot_dominators", ["filePath"]],
+  ["get_heapsnapshot_duplicate_strings", ["filePath"]],
+  ["get_heapsnapshot_edges", ["filePath"]],
+  ["get_heapsnapshot_object_details", ["filePath"]],
+  ["get_heapsnapshot_retainers", ["filePath"]],
+  ["get_heapsnapshot_retaining_paths", ["filePath"]],
+  ["get_heapsnapshot_summary", ["filePath"]],
+  ["query_heapsnapshot_objects", ["filePath"]],
+]);
+const artifactOutputPathArguments = new Map<string, readonly string[]>([
+  ["evaluate_script", ["filePath"]],
+  ["get_network_request", ["requestFilePath", "responseFilePath"]],
+  ["lighthouse_audit", ["outputDirPath"]],
+  ["performance_start_trace", ["filePath"]],
+  ["performance_stop_trace", ["filePath"]],
+  ["take_heapsnapshot", ["filePath"]],
+  ["take_screenshot", ["filePath"]],
+  ["take_snapshot", ["filePath"]],
+]);
+const catalogTools = toolCatalog.tools as PreviewDevtoolsMcpTool[];
+const catalogToolNames = new Set(catalogTools.map(({ name }) => name));
+const maximumStagedUploadBytes = 20 * 1024 * 1024;
+const require = createRequire(import.meta.url);
+
+export class PreviewDevtoolsMcpService {
+  private readonly connections = new Map<string, PendingConnection>();
+
+  listTools() {
+    return Promise.resolve(catalogTools);
+  }
+
+  async call(input: PreviewDevtoolsMcpCall) {
+    if (!catalogToolNames.has(input.toolName)) {
+      throw unavailableToolError(input.toolName);
+    }
+    const connection = await this.connection(input);
+    const tool = connection.tools.find(({ name }) => name === input.toolName);
+    if (!tool || hiddenPageTools.has(tool.name)) {
+      throw unavailableToolError(input.toolName);
+    }
+    try {
+      return await callPreviewTool(connection, tool, input);
+    } catch (error) {
+      this.disposeScope(input.scope);
+      throw error;
+    }
+  }
+
+  async dispose() {
+    const pending = Array.from(this.connections.values());
+    this.connections.clear();
+    pending.forEach(({ abortController }) => abortController.abort());
+    await Promise.allSettled(
+      pending.map(async ({ connection }) => (await connection).close()),
+    );
+  }
+
+  disposeScope(scope: string) {
+    const normalized = scope.trim();
+    const pending = this.connections.get(normalized);
+    if (!pending) return;
+    this.connections.delete(normalized);
+    pending.abortController.abort();
+    void pending.connection.then(({ close }) => close()).catch(() => undefined);
+  }
+
+  private connection(input: PreviewDevtoolsMcpContext) {
+    const scope = requiredValue(input.scope, "scope");
+    const worktree = requiredValue(input.worktree, "worktree");
+    const current = this.connections.get(scope);
+    if (current?.worktree === worktree) return current.connection;
+    if (current) {
+      current.abortController.abort();
+      void current.connection
+        .then(({ close }) => close())
+        .catch(() => undefined);
+    }
+    const abortController = new AbortController();
+    const signal = combinedSignal(input.signal, abortController.signal);
+    const connection = createMcpConnection({
+      ...input,
+      scope,
+      signal,
+      worktree,
+    });
+    const pending = { abortController, connection, worktree };
+    this.connections.set(scope, pending);
+    void connection.catch(() => {
+      if (this.connections.get(scope) === pending)
+        this.connections.delete(scope);
+    });
+    return connection;
+  }
+}
+
+async function callPreviewTool(
+  connection: McpConnection,
+  tool: PreviewDevtoolsMcpTool,
+  input: PreviewDevtoolsMcpCall,
+) {
+  const argumentsValue = await previewToolArguments(connection, tool, input);
+  if (pageScoped(tool)) {
+    argumentsValue.pageId = await previewPageId(
+      connection.client,
+      input.currentUrl,
+      input.signal,
+    );
+  }
+  return connection.client.callTool(
+    { arguments: argumentsValue, name: tool.name },
+    undefined,
+    { signal: input.signal, timeout: 300_000 },
+  );
+}
+
+async function previewToolArguments(
+  connection: McpConnection,
+  tool: PreviewDevtoolsMcpTool,
+  input: PreviewDevtoolsMcpCall,
+) {
+  const argumentsValue = { ...(input.arguments ?? {}) };
+  await scopeArtifactPaths(connection.artifacts, tool.name, argumentsValue);
+  if (tool.name !== "upload_file" || !Array.isArray(argumentsValue.filePaths)) {
+    return argumentsValue;
+  }
+  argumentsValue.filePaths = await uploadFilePaths(
+    connection,
+    input,
+    argumentsValue.filePaths,
+  );
+  return argumentsValue;
+}
+
+async function scopeArtifactPaths(
+  artifacts: string,
+  toolName: string,
+  argumentsValue: Record<string, unknown>,
+) {
+  for (const name of artifactOutputPathArguments.get(toolName) ?? []) {
+    if (argumentsValue[name] !== undefined) {
+      argumentsValue[name] = scopedArtifactOutputPath(
+        artifacts,
+        argumentsValue[name],
+      );
+    }
+  }
+  for (const name of artifactInputPathArguments.get(toolName) ?? []) {
+    argumentsValue[name] = await scopedArtifactInputPath(
+      artifacts,
+      argumentsValue[name],
+    );
+  }
+}
+
+export function scopedArtifactOutputPath(root: string, value: unknown) {
+  const contained = containedPath(root, requiredMcpFilePath(value));
+  if (!contained) throw artifactOutsideScopeError();
+  return contained;
+}
+
+async function scopedArtifactInputPath(root: string, value: unknown) {
+  const contained = await resolvedContainedPath(
+    root,
+    requiredMcpFilePath(value),
+  );
+  if (!contained) throw artifactOutsideScopeError();
+  return contained;
+}
+
+async function uploadFilePaths(
+  connection: McpConnection,
+  input: PreviewDevtoolsMcpCall,
+  values: unknown[],
+) {
+  const paths: string[] = [];
+  for (const value of values) {
+    const candidate = requiredUploadPath(value);
+    const artifact = await absoluteContainedPath(
+      connection.artifacts,
+      candidate,
+    );
+    if (artifact) paths.push(artifact);
+    else if (connection.workspace) {
+      paths.push(
+        await accessibleUploadPath(connection.workspace, input, candidate),
+      );
+    } else {
+      paths.push(
+        await stageRuntimeUpload(connection.artifacts, input, candidate),
+      );
+    }
+  }
+  return paths;
+}
+
+async function accessibleUploadPath(
+  workspace: string,
+  input: PreviewDevtoolsMcpCall,
+  candidate: string,
+) {
+  const contained = await resolvedContainedPath(workspace, candidate);
+  if (contained) return contained;
+  if (!runtimeManagedPath(input.worktree)) throw uploadOutsideWorkspaceError();
+  const relativePath = workspaceUploadRelativePath(input.worktree, candidate);
+  const bridgedPath = join(workspace, ...relativePath.split("/"));
+  const bridged = await resolvedContainedPath(workspace, bridgedPath);
+  if (!bridged) throw uploadOutsideWorkspaceError();
+  return bridged;
+}
+
+async function stageRuntimeUpload(
+  artifacts: string,
+  input: PreviewDevtoolsMcpCall,
+  candidate: string,
+) {
+  if (!runtimeManagedPath(input.worktree)) {
+    throw new Error("The preview workspace is not accessible from the host.");
+  }
+  input.signal?.throwIfAborted();
+  const source = await runtimeUploadSource(input.worktree, candidate);
+  await assertStagedUploadSize(source, input.worktree);
+  const { stdout } = await runInWorkspace(
+    "base64",
+    ["--wrap=0", "--", source],
+    { cwd: input.worktree, maxBuffer: maximumStagedUploadBytes * 2 },
+  );
+  input.signal?.throwIfAborted();
+  const destination = join(artifacts, stagedUploadName(source));
+  await writeFile(destination, Buffer.from(stdout.trim(), "base64"));
+  return destination;
+}
+
+async function runtimeUploadSource(worktree: string, candidate: string) {
+  const relativePath = workspaceUploadRelativePath(worktree, candidate);
+  const source = posix.join(posix.resolve(worktree), relativePath);
+  const { stdout } = await runInWorkspace("realpath", ["--", source], {
+    cwd: worktree,
+  });
+  const canonical = stdout.trim();
+  workspaceUploadRelativePath(worktree, canonical);
+  return canonical;
+}
+
+async function assertStagedUploadSize(source: string, worktree: string) {
+  const { stdout } = await runInWorkspace("stat", ["-c", "%s", "--", source], {
+    cwd: worktree,
+  });
+  const size = Number(stdout.trim());
+  if (!Number.isSafeInteger(size) || size < 0) {
+    throw new Error("Unable to determine the preview upload size.");
+  }
+  if (size > maximumStagedUploadBytes) {
+    throw new Error("Preview uploads from the runtime are limited to 20 MiB.");
+  }
+}
+
+export function workspaceUploadRelativePath(
+  worktree: string,
+  candidate: string,
+) {
+  const root = posix.resolve(worktree.replaceAll("\\", "/"));
+  const normalized = candidate.replaceAll("\\", "/");
+  const file = posix.isAbsolute(normalized)
+    ? posix.normalize(normalized)
+    : posix.resolve(root, normalized);
+  const relativePath = posix.relative(root, file);
+  if (!relativePath || escapesRoot(relativePath, posix.sep)) {
+    throw uploadOutsideWorkspaceError();
+  }
+  return relativePath;
+}
+
+function stagedUploadName(source: string) {
+  const name = posix.basename(source).replace(/[^a-zA-Z0-9._-]/gu, "_");
+  return `${randomUUID()}-${name.slice(0, 120) || "upload"}`;
+}
+
+function requiredUploadPath(value: unknown) {
+  if (typeof value !== "string" || !value.trim() || value.length > 8_192) {
+    throw new Error("Preview upload path is invalid.");
+  }
+  return value.trim();
+}
+
+function requiredMcpFilePath(value: unknown) {
+  if (typeof value !== "string" || !value.trim() || value.length > 8_192) {
+    throw new Error("Preview DevTools file path is invalid.");
+  }
+  return value.trim();
+}
+
+async function absoluteContainedPath(root: string, candidate: string) {
+  return isAbsolute(candidate)
+    ? resolvedContainedPath(root, candidate)
+    : undefined;
+}
+
+async function resolvedContainedPath(root: string, candidate: string) {
+  const contained = containedPath(root, candidate);
+  if (!contained) return undefined;
+  const canonical = await realpath(contained);
+  return containedPath(root, canonical);
+}
+
+function containedPath(root: string, candidate: string) {
+  const file = isAbsolute(candidate)
+    ? resolve(candidate)
+    : resolve(root, candidate);
+  const relativePath = relative(root, file);
+  return !relativePath || escapesRoot(relativePath, sep) ? undefined : file;
+}
+
+function escapesRoot(relativePath: string, separator: string) {
+  return (
+    relativePath === ".." ||
+    relativePath.startsWith(`..${separator}`) ||
+    isAbsolute(relativePath)
+  );
+}
+
+function uploadOutsideWorkspaceError() {
+  return new Error("Preview uploads must stay inside the workspace.");
+}
+
+function artifactOutsideScopeError() {
+  return new Error("Preview DevTools artifacts must stay inside their scope.");
+}
+
+function unavailableToolError(toolName: string) {
+  return new Error(`Preview DevTools tool is unavailable: ${toolName}`);
+}
+
+async function createMcpConnection(input: PreviewDevtoolsMcpContext) {
+  const artifacts = await mkdtemp(join(tmpdir(), "blame-preview-devtools-"));
+  const workspace = await accessibleWorkspace(input.worktree);
+  const client = previewMcpClient(workspace, artifacts);
+  const transport = previewMcpTransport(input.browserUrl, artifacts);
+  try {
+    await client.connect(transport, { signal: input.signal, timeout: 120_000 });
+    const tools = (await client.listTools({}, { signal: input.signal })).tools;
+    return {
+      artifacts,
+      client,
+      close: () => closeMcpConnection(client, artifacts),
+      tools: tools.filter(exposedTool),
+      ...(workspace ? { workspace } : {}),
+    } satisfies McpConnection;
+  } catch (error) {
+    await closeMcpConnection(client, artifacts);
+    throw error;
+  }
+}
+
+function previewMcpTransport(browserUrl: string, artifacts: string) {
+  return new StdioClientTransport({
+    args: [
+      previewDevtoolsExecutable(),
+      ...previewDevtoolsServerArgs(browserUrl),
+    ],
+    command: process.execPath,
+    cwd: artifacts,
+    env: previewMcpEnvironment(),
+    stderr: "ignore",
+  });
+}
+
+function previewMcpClient(workspace: string | undefined, artifacts: string) {
+  const client = new Client(
+    { name: "blame-preview", version: previewDevtoolsMcpVersion },
+    { capabilities: { roots: { listChanged: false } } },
+  );
+  client.setRequestHandler(ListRootsRequestSchema, () => ({
+    roots: [
+      ...(workspace
+        ? [{ name: "workspace", uri: pathToFileURL(workspace).href }]
+        : []),
+      { name: "preview-artifacts", uri: pathToFileURL(artifacts).href },
+    ],
+  }));
+  return client;
+}
+
+async function accessibleWorkspace(worktree: string) {
+  const workspace = runtimeHostPath(worktree);
+  return existsSync(workspace) ? realpath(workspace) : undefined;
+}
+
+async function closeMcpConnection(client: Client, artifacts: string) {
+  await Promise.allSettled([
+    Promise.resolve().then(() => client.close()),
+    rm(artifacts, { force: true, recursive: true }),
+  ]);
+}
+
+function combinedSignal(
+  external: AbortSignal | undefined,
+  internal: AbortSignal,
+) {
+  return external ? AbortSignal.any([external, internal]) : internal;
+}
+
+function previewMcpEnvironment() {
+  return Object.fromEntries(
+    Object.entries({
+      ...process.env,
+      CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS: "1",
+      CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS: "1",
+      ELECTRON_RUN_AS_NODE: "1",
+      PATH: setupPath(),
+    }).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
+  );
+}
+
+function previewDevtoolsExecutable() {
+  const packagePath = require.resolve("chrome-devtools-mcp/package.json");
+  return join(
+    dirname(packagePath),
+    "build",
+    "src",
+    "bin",
+    "chrome-devtools-mcp.js",
+  );
+}
+
+function exposedTool(tool: PreviewDevtoolsMcpTool) {
+  return !hiddenPageTools.has(tool.name);
+}
+
+function pageScoped(tool: PreviewDevtoolsMcpTool) {
+  return "pageId" in schemaProperties(tool.inputSchema);
+}
+
+function schemaProperties(schema: Record<string, unknown>) {
+  const value = schema.properties;
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+async function previewPageId(
+  client: Client,
+  currentUrl: string,
+  signal?: AbortSignal,
+) {
+  const result = await client.callTool(
+    { arguments: {}, name: "list_pages" },
+    undefined,
+    { signal, timeout: 30_000 },
+  );
+  return scopedPreviewPageId(structuredPages(result), currentUrl);
+}
+
+export function scopedPreviewPageId(
+  pages: Array<{ id: number; url: string }>,
+  currentUrl: string,
+) {
+  const matches = matchingPreviewPages(pages, currentUrl);
+  if (matches.length === 0) {
+    throw new Error(
+      "The scoped preview page is no longer available in DevTools.",
+    );
+  }
+  if (matches.length > 1) {
+    throw new Error("Multiple DevTools pages match the scoped preview URL.");
+  }
+  return matches[0].id;
+}
+
+function matchingPreviewPages(
+  pages: Array<{ id: number; url: string }>,
+  currentUrl: string,
+) {
+  const exact = pages.filter(({ url }) =>
+    samePreviewUrl(url, currentUrl, false),
+  );
+  return exact.length
+    ? exact
+    : pages.filter(({ url }) => samePreviewUrl(url, currentUrl, true));
+}
+
+function structuredPages(result: unknown) {
+  if (!result || typeof result !== "object") return [];
+  const content = (result as { structuredContent?: unknown }).structuredContent;
+  if (!content || typeof content !== "object") return [];
+  const pages = (content as { pages?: unknown }).pages;
+  if (!Array.isArray(pages)) return [];
+  return pages.filter(validStructuredPage);
+}
+
+function validStructuredPage(
+  value: unknown,
+): value is { id: number; url: string } {
+  if (!value || typeof value !== "object") return false;
+  const page = value as { id?: unknown; url?: unknown };
+  return typeof page.id === "number" && typeof page.url === "string";
+}
+
+function samePreviewUrl(left: string, right: string, ignoreHash: boolean) {
+  try {
+    const leftUrl = new URL(left);
+    const rightUrl = new URL(right);
+    if (ignoreHash) {
+      leftUrl.hash = "";
+      rightUrl.hash = "";
+    }
+    return leftUrl.href === rightUrl.href;
+  } catch {
+    return left === right;
+  }
+}
+
+function requiredValue(value: string, label: string) {
+  const normalized = value?.trim();
+  if (!normalized) throw new Error(`Preview DevTools ${label} is required.`);
+  return normalized;
+}
+
+export const previewDevtoolsMcpService = new PreviewDevtoolsMcpService();
+
+export function shutdownPreviewDevtoolsMcp() {
+  return previewDevtoolsMcpService.dispose();
+}

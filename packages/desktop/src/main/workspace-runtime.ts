@@ -58,6 +58,7 @@ type RuntimeOptions = {
   cwd?: string;
   env?: NodeJS.ProcessEnv;
   execution?: WorkspaceExecution;
+  maxBuffer?: number;
   platform?: NodeJS.Platform;
   user?: "blame" | "root";
 };
@@ -236,6 +237,7 @@ export async function run(
   const result = await execFileAsync(commandSpec.command, commandSpec.args, {
     cwd: spec.cwd,
     env,
+    maxBuffer: input.maxBuffer,
     shell: false,
   });
   return {

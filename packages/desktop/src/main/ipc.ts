@@ -49,6 +49,7 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerAgentIpcHandlers({
     ...options.agentRuntime,
     packaged: options.packaged,
+    previewService: previews,
     beforeDelivery: (worktree) => previews.syncBarrier(worktree),
     beforeWorkspaceWrite: (worktree) => previews.syncBarrier(worktree),
   })

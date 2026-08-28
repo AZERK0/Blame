@@ -14,6 +14,12 @@ import type {
 } from "./preview-bridge-grant";
 import { attachPreviewRequestTelemetry } from "./preview-request-telemetry";
 import { keepsManagedPreviewBridge } from "./preview-navigation-policy";
+import { previewDevtoolsMcpArgs } from "./preview-devtools-config";
+import {
+  type PreviewBrowserState,
+  type PreviewBrowserStateUpdate,
+  updatedPreviewBrowserState,
+} from "./preview-browser-state";
 
 type PreviewBrowserRecord = {
   devtoolsScope?: string;
@@ -34,17 +40,9 @@ type PreviewBrowserBounds = {
   y: number;
 };
 
-type PreviewBrowserState = {
-  error?: string;
-  id: string;
-  loading: boolean;
-  url?: string;
-};
-
 type PreviewBrowserCaptureSize = "full" | "thumbnail";
 type PreviewDevtoolsTargetInput = {
   scope?: string;
-  timeoutMs?: number;
 };
 
 const previews = new Map<string, PreviewBrowserRecord>();
@@ -54,8 +52,6 @@ const visiblePreviewFrameRate = 30;
 const previewDevtoolsPort =
   Number(process.env.BLAME_PREVIEW_DEVTOOLS_PORT) || 9222;
 const previewDevtoolsBrowserUrl = `http://127.0.0.1:${previewDevtoolsPort}`;
-const previewDevtoolsPollIntervalMs = 1_000;
-const previewDevtoolsWaitTimeoutMs = 180_000;
 let activePreviewDevtoolsTarget: PreviewBrowserState | undefined;
 const previewDevtoolsTargets = new Map<string, PreviewBrowserState>();
 
@@ -63,7 +59,9 @@ export type PreviewDevtoolsTarget = {
   available: boolean;
   browserUrl: string;
   currentUrl?: string;
+  error?: string;
   id?: string;
+  loading: boolean;
   scope?: string;
   mcpServer: {
     args: string[];
@@ -79,21 +77,14 @@ export function enablePreviewDevtools() {
   );
 }
 
-export async function getPreviewDevtoolsTarget(
+export function getPreviewDevtoolsTarget(
   input: PreviewDevtoolsTargetInput = {},
-): Promise<PreviewDevtoolsTarget> {
-  const timeoutMs = normalizedPreviewDevtoolsTimeout(input.timeoutMs);
+): PreviewDevtoolsTarget {
   const scope = normalizedPreviewDevtoolsScope(input.scope);
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const target = previewDevtoolsTargetForScope(scope);
-    if (previewDevtoolsTargetReady(target))
-      return previewDevtoolsTarget(true, target, scope);
-    await delay(previewDevtoolsPollIntervalMs);
-  }
+  const target = previewDevtoolsTargetForScope(scope);
   return previewDevtoolsTarget(
-    false,
-    previewDevtoolsTargetForScope(scope),
+    previewDevtoolsTargetReady(target),
+    target,
     scope,
   );
 }
@@ -107,14 +98,11 @@ function previewDevtoolsTarget(
     available,
     browserUrl: previewDevtoolsBrowserUrl,
     currentUrl: target?.url,
+    error: target?.error,
     id: target?.id,
+    loading: target?.loading ?? false,
     mcpServer: {
-      args: [
-        "-y",
-        "chrome-devtools-mcp@latest",
-        `--browser-url=${previewDevtoolsBrowserUrl}`,
-        "--no-usage-statistics",
-      ],
+      args: previewDevtoolsMcpArgs(previewDevtoolsBrowserUrl),
       command: "npx",
       name: "chrome-devtools",
     },
@@ -135,11 +123,6 @@ function previewDevtoolsTargetReady(target: PreviewBrowserState | undefined) {
 function normalizedPreviewDevtoolsScope(scope: string | undefined) {
   const normalized = scope?.trim();
   return normalized || undefined;
-}
-
-function normalizedPreviewDevtoolsTimeout(value: number | undefined) {
-  if (!Number.isFinite(value) || !value) return previewDevtoolsWaitTimeoutMs;
-  return Math.max(1_000, Math.min(value, 300_000));
 }
 
 export async function createPreviewBrowser(
@@ -357,7 +340,7 @@ function attachPreviewBrowserEvents(record: PreviewBrowserRecord) {
   });
   record.view.webContents.on("did-start-loading", () => {
     startPreviewLoadTimeout(record, record.view.webContents.getURL());
-    sendPreviewBrowserState(record, { loading: true });
+    sendPreviewBrowserState(record, { error: null, loading: true });
   });
   record.view.webContents.on("did-stop-loading", () => {
     clearPreviewLoadTimeout(record);
@@ -365,13 +348,13 @@ function attachPreviewBrowserEvents(record: PreviewBrowserRecord) {
   });
   record.view.webContents.on("did-finish-load", () => {
     clearPreviewLoadTimeout(record);
-    sendPreviewBrowserState(record, { loading: false });
+    sendPreviewBrowserState(record, { error: null, loading: false });
   });
   record.view.webContents.on("did-navigate", (_event, url) =>
-    sendPreviewBrowserState(record, { loading: false, url }),
+    sendPreviewBrowserState(record, { error: null, loading: false, url }),
   );
   record.view.webContents.on("did-navigate-in-page", (_event, url) =>
-    sendPreviewBrowserState(record, { url }),
+    sendPreviewBrowserState(record, { error: null, url }),
   );
   record.view.webContents.on(
     "did-fail-load",
@@ -419,14 +402,17 @@ function clearPreviewLoadTimeout(record: PreviewBrowserRecord) {
 
 function sendPreviewBrowserState(
   record: PreviewBrowserRecord,
-  state: Partial<Omit<PreviewBrowserState, "id">>,
+  state: PreviewBrowserStateUpdate,
 ) {
-  const nextState = {
-    id: record.id,
-    loading: state.loading ?? record.view.webContents.isLoading(),
-    url: state.url ?? record.view.webContents.getURL(),
-    ...(state.error ? { error: state.error } : {}),
-  } satisfies PreviewBrowserState;
+  const nextState = updatedPreviewBrowserState(
+    record.state,
+    {
+      id: record.id,
+      loading: record.view.webContents.isLoading(),
+      url: record.view.webContents.getURL(),
+    },
+    state,
+  );
   record.state = nextState;
   syncPreviewDevtoolsTargets(record, nextState);
   if (record.owner.isDestroyed()) return;
@@ -473,10 +459,6 @@ function clearPreviewDevtoolsTargets(record: PreviewBrowserRecord) {
 function clearActivePreviewDevtoolsTarget(id: string) {
   if (activePreviewDevtoolsTarget?.id === id)
     activePreviewDevtoolsTarget = undefined;
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function safeExternalUrl(value: string) {

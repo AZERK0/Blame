@@ -42,6 +42,8 @@ export const agentHostMethods = [
   "git",
   "openExternalUrl",
   "previewDevtools",
+  "previewDevtoolsCall",
+  "previewDevtoolsTools",
   "previewContainerLogs",
   "semanticWorkspace",
 ] as const;

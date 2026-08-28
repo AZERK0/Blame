@@ -888,7 +888,7 @@ test(
   },
 );
 
-test("external reads return compact receipts for identical requests", async () => {
+test("preview log reads always observe the current runtime state", async () => {
   const governor = new ExternalReadGovernor();
   let executions = 0;
   const tool = governor.wrap({
@@ -906,17 +906,17 @@ test("external reads return compact receipts for identical requests", async () =
     { service: "web", tailLines: 120 },
     context,
   );
-  assert.equal(executions, 1);
+  assert.equal(executions, 2);
   assert.equal(
     (duplicate as { alreadyAvailable?: boolean }).alreadyAvailable,
-    true,
+    undefined,
   );
   governor.newUserRequest();
   await tool.execute({ service: "web", tailLines: 120 }, context);
-  assert.equal(executions, 2);
+  assert.equal(executions, 3);
 });
 
-test("unavailable preview reads remain unavailable and suppress polling", async () => {
+test("unavailable preview reads can observe a lifecycle transition", async () => {
   const governor = new ExternalReadGovernor();
   let executions = 0;
   const tool = governor.wrap({
@@ -931,10 +931,10 @@ test("unavailable preview reads remain unavailable and suppress polling", async 
   const first = await tool.execute({}, {} as never);
   const duplicate = await tool.execute({}, {} as never);
   assert.equal((first as { outcome?: string }).outcome, "unavailable");
-  assert.equal(executions, 1);
+  assert.equal(executions, 2);
   assert.equal(
     (duplicate as { alreadyAvailable?: boolean }).alreadyAvailable,
-    true,
+    undefined,
   );
 });
 
@@ -1046,7 +1046,7 @@ test("an unavailable mutation capability does not suppress distinct research", a
   assert.equal(Array.isArray(result?.output), true);
 });
 
-test("parallel identical external reads share one execution", async () => {
+test("parallel identical reactive reads share one execution", async () => {
   let executions = 0;
   const governor = new ExternalReadGovernor();
   const tool = governor.wrap({
@@ -1064,8 +1064,35 @@ test("parallel identical external reads share one execution", async () => {
     tool.execute({ service: "app" }, {} as never),
   ]);
   assert.equal(executions, 1);
-  assert.equal((second as { status?: string }).status, "already_available");
   assert.equal((first as { output?: string }).output, "logs");
+  assert.equal((second as { output?: string }).output, "logs");
+});
+
+test("reactive read continuations remain inspectable without caching state", async () => {
+  let executions = 0;
+  const governor = new ExternalReadGovernor();
+  const tool = governor.wrap({
+    name: "get_preview_container_logs",
+    description: "logs",
+    inputSchema: { type: "object" },
+    execute: async () => {
+      executions += 1;
+      return { available: true, logs: "preview log ".repeat(2_000) };
+    },
+  });
+  const first = (await tool.execute({}, {} as never)) as {
+    continuation: { receipt_id: string };
+  };
+  const inspected = await governor
+    .receiptTool()
+    .execute(
+      { receipt_id: first.continuation.receipt_id, max_bytes: 1_024 },
+      {} as never,
+    );
+  await tool.execute({}, {} as never);
+
+  assert.equal(executions, 2);
+  assert.equal((inspected as { outcome?: string }).outcome, "completed");
 });
 
 test("semantically similar external resources remain independently accessible", async () => {

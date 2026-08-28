@@ -1,9 +1,6 @@
-import { readProjectServiceLogs } from "../workspace-ipc";
+import { readProjectServiceLogs } from "../workspace-ipc.ts";
+import { PreviewLogService } from "./preview-log-reader.ts";
 
-export class PreviewLogService {
-  read(input: { service?: string; tailLines?: number; worktree: string }) {
-    return readProjectServiceLogs({ ...input, timeoutMs: 3_000 });
-  }
-}
+export { PreviewLogService } from "./preview-log-reader.ts";
 
-export const previewLogService = new PreviewLogService();
+export const previewLogService = new PreviewLogService(readProjectServiceLogs);

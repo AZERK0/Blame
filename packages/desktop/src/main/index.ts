@@ -40,6 +40,7 @@ import {
   destroyAllPreviewBrowsers,
   enablePreviewDevtools,
 } from "./preview-browser-ipc"
+import { shutdownPreviewDevtoolsMcp } from "./preview-runtime/preview-devtools-mcp-service"
 import { shutdownTerminalSessions } from "./terminal-ipc"
 import { shutdownWorkspaceProcesses } from "./workspace-ipc"
 import { runtimeHostPath, runtimeVmInternalPath } from "./workspace-runtime"
@@ -599,6 +600,7 @@ async function cleanupApplication() {
     shutdownTerminalSessions(),
     shutdownWorkspaceProcesses(),
     shutdownAgentRuntime(),
+    shutdownPreviewDevtoolsMcp(),
   ]).then(() => undefined)
   await settleWithin(runtimeShutdown, runtimeShutdownTimeoutMs)
   await settleWithin(shutdownBlameTelemetry(), telemetryShutdownTimeoutMs)

@@ -4,8 +4,13 @@ import { shell } from "electron";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { AgentHostMethod } from "./agent-runtime-process-protocol.ts";
-import { getPreviewDevtoolsTarget } from "./preview-browser-ipc.ts";
+import {
+  previewDevtoolsMcpService,
+  type PreviewDevtoolsMcpService,
+} from "./preview-runtime/preview-devtools-mcp-service.ts";
+import { PreviewHarnessService } from "./preview-runtime/preview-harness-service.ts";
 import { previewLogService } from "./preview-runtime/preview-log-service.ts";
+import type { PreviewService } from "./preview-runtime/preview-service.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 import { semanticWorkspaceExecutionTarget } from "./semantic-workspace-routing.ts";
 import {
@@ -17,23 +22,102 @@ import {
 
 const execFileAsync = promisify(execFile);
 
-export async function handleAgentHostRequest(
+export function createAgentHostRequestHandler(previews: PreviewService) {
+  const harness = new PreviewHarnessService(previews);
+  return (method: AgentHostMethod, input: unknown, signal: AbortSignal) =>
+    handleAgentHostRequest(
+      method,
+      input,
+      signal,
+      harness,
+      previewDevtoolsMcpService,
+    );
+}
+
+async function handleAgentHostRequest(
   method: AgentHostMethod,
   input: unknown,
   signal: AbortSignal,
+  harness: PreviewHarnessService,
+  devtools: PreviewDevtoolsMcpService,
 ) {
   if (method === "git") return agentGit(input);
   if (method === "openExternalUrl") return openAgentExternalUrl(input);
   if (method === "previewDevtools") {
-    return getPreviewDevtoolsTarget(input as never);
+    return previewDevtoolsTarget(input, signal, harness, devtools);
+  }
+  if (method === "previewDevtoolsTools") {
+    return devtools.listTools();
+  }
+  if (method === "previewDevtoolsCall") {
+    return previewDevtoolsCall(input, signal, harness, devtools);
   }
   if (method === "previewContainerLogs") {
-    return previewLogService.read(input as never);
+    return previewContainerLogs(input, signal, harness);
   }
   if (method === "semanticWorkspace") {
     return agentSemanticWorkspace(input, signal);
   }
   throw new Error(`Unsupported agent host method: ${method}`);
+}
+
+async function previewDevtoolsTarget(
+  input: unknown,
+  signal: AbortSignal,
+  harness: PreviewHarnessService,
+  devtools: PreviewDevtoolsMcpService,
+) {
+  const request = recordInput(input);
+  const target = await harness.target({ ...request, signal } as never);
+  if (!target.available) {
+    devtools.disposeScope(String(request.scope ?? ""));
+  }
+  return target;
+}
+
+async function previewContainerLogs(
+  input: unknown,
+  signal: AbortSignal,
+  harness: PreviewHarnessService,
+) {
+  const request = { ...recordInput(input), signal } as never;
+  const preview = await harness.inspect(request);
+  return previewLogService.read(request, preview);
+}
+
+async function previewDevtoolsCall(
+  input: unknown,
+  signal: AbortSignal,
+  harness: PreviewHarnessService,
+  devtools: PreviewDevtoolsMcpService,
+) {
+  const request = recordInput(input);
+  const preview = await harness.inspect({ ...request, signal } as never);
+  if (!preview.available || !preview.currentUrl) {
+    devtools.disposeScope(String(request.scope ?? ""));
+    return unavailablePreviewDevtoolsResult(preview);
+  }
+  return devtools.call({
+    arguments: recordInput(request.arguments),
+    browserUrl: preview.browserUrl,
+    currentUrl: preview.currentUrl,
+    scope: String(request.scope ?? ""),
+    signal,
+    toolName: String(request.toolName ?? ""),
+    worktree: String(request.worktree ?? ""),
+  });
+}
+
+function unavailablePreviewDevtoolsResult(preview: {
+  message: string;
+  reason: string;
+  status: string;
+}) {
+  return {
+    content: [{ type: "text", text: `${preview.message} (${preview.reason})` }],
+    isError: true,
+    structuredContent: { preview },
+  };
 }
 
 async function agentSemanticWorkspace(input: unknown, signal: AbortSignal) {
@@ -113,7 +197,7 @@ function openAgentExternalUrl(input: unknown) {
   return true;
 }
 
-function recordInput(input: unknown) {
+function recordInput(input: unknown): Record<string, unknown> {
   if (!input || typeof input !== "object") return {};
   return input as Record<string, unknown>;
 }

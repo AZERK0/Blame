@@ -224,6 +224,8 @@ test("starts development sessions with native skills and private specialist cons
   );
   const originalFetch = globalThis.fetch;
   let capturedStart: ClineCoreStartInput | undefined;
+  let previewCall: Record<string, unknown> | undefined;
+  let previewTargetInput: Record<string, unknown> | undefined;
   let tokenCounterInput: { modelId: string; providerId: string } | undefined;
   const core = {
     async dispose() {},
@@ -254,6 +256,29 @@ test("starts development sessions with native skills and private specialist cons
     );
   const runtime = new BlameAgentRuntime(undefined, {
     createCore: async () => core as never,
+    previewDevtools: async (input) => {
+      previewTargetInput = input;
+      return {
+        available: false,
+        browserUrl: "http://127.0.0.1:9222",
+        loading: true,
+        mcpServer: { args: [], command: "node", name: "chrome-devtools" },
+        message: "The preview is currently starting.",
+        reason: "PREVIEW_STARTING",
+        status: "starting",
+      };
+    },
+    previewDevtoolsCall: async (input) => {
+      previewCall = input;
+      return { content: [{ type: "text", text: "snapshot" }] };
+    },
+    previewDevtoolsTools: async () => [
+      {
+        name: "take_snapshot",
+        description: "Take a snapshot",
+        inputSchema: { type: "object", properties: {} },
+      },
+    ],
     tokenCounter: (input) => {
       tokenCounterInput = input;
       return {
@@ -269,6 +294,7 @@ test("starts development sessions with native skills and private specialist cons
       autoSendPrompt: false,
       cwd: workspace,
       modelId: "model",
+      previewDevtoolsScope: "preview-scope",
       providerId: "provider",
       summary: "Improve the settings experience",
       title: "Settings polish",
@@ -298,6 +324,8 @@ test("starts development sessions with native skills and private specialist cons
       (tool: { name: string }) => tool.name,
     );
     assert.ok(toolNames?.includes("consult_specialist"));
+    assert.ok(toolNames?.includes("get_preview_devtools"));
+    assert.ok(toolNames?.includes("preview_devtools__take_snapshot"));
     assert.ok(toolNames?.includes("submit_and_exit"));
     assert.equal(
       capturedStart.config.extraTools?.find(
@@ -316,6 +344,24 @@ test("starts development sessions with native skills and private specialist cons
     assert.deepEqual(capturedStart.toolPolicies?.consult_specialist, {
       autoApprove: true,
     });
+    assert.deepEqual(
+      capturedStart.toolPolicies?.preview_devtools__take_snapshot,
+      { autoApprove: true },
+    );
+    const previewContext = { signal: new AbortController().signal } as never;
+    await capturedStart.config.extraTools
+      ?.find((tool: { name: string }) => tool.name === "get_preview_devtools")
+      ?.execute({ waitFor: "ready" }, previewContext);
+    await capturedStart.config.extraTools
+      ?.find(
+        (tool: { name: string }) =>
+          tool.name === "preview_devtools__take_snapshot",
+      )
+      ?.execute({}, previewContext);
+    assert.equal(previewTargetInput?.waitFor, "ready");
+    assert.equal(previewTargetInput?.scope, "preview-scope");
+    assert.equal(previewCall?.toolName, "take_snapshot");
+    assert.equal(previewCall?.scope, "preview-scope");
   } finally {
     globalThis.fetch = originalFetch;
     await runtime.shutdown();

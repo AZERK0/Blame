@@ -169,6 +169,14 @@ import { AgentTelemetry } from "./agent-telemetry.js";
 import { BlameUserInstructionServices } from "./user-instruction-services.js";
 import { taskComplexityBucket } from "./telemetry-cohorts.js";
 import {
+  previewContainerLogsTool,
+  previewDevtoolsMcpTools,
+  previewDevtoolsTool,
+  previewRuntimeContext,
+  type PreviewRuntimeContext,
+  type PreviewToolRuntimeOptions,
+} from "./preview-harness-tools.js";
+import {
   applyProductionEnvironment,
   appendProductionConfig,
   assertRepositoryPath,
@@ -281,7 +289,6 @@ type RuntimeCredentialInput = {
 
 type ClineSdk = typeof import("@cline/sdk");
 type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
-type ToolContext = Parameters<AgentTool["execute"]>[1];
 
 type PendingApproval = {
   request: AgentApprovalRequest;
@@ -360,19 +367,6 @@ type StoryMergePreparation = {
   upstream?: GitUpstream;
 };
 
-type PreviewDevtoolsTarget = {
-  available: boolean;
-  browserUrl: string;
-  currentUrl?: string;
-  id?: string;
-  scope?: string;
-  mcpServer: {
-    args: string[];
-    command: string;
-    name: string;
-  };
-};
-
 type DevelopmentUserInput = {
   prompt: string;
   userFiles: string[];
@@ -396,40 +390,17 @@ type DevelopmentPromptInput = Pick<
   Partial<Pick<StartDevelopmentSessionInput, "apiConnection">> &
   Pick<SendDevelopmentSessionInput, "feedbackOnly">;
 
-type RuntimeOptions = {
+type RuntimeOptions = PreviewToolRuntimeOptions & {
   createCore?(backend?: AgentBackendConfig): Promise<ClineCore>;
   openExternalUrl?(url: string): void;
   git?(cwd: string, args: string[]): Promise<string>;
   modelInactivityTimeoutMs?: number;
-  previewDevtools?(
-    input?: PreviewDevtoolsTargetInput,
-  ):
-    | Promise<PreviewDevtoolsTarget | undefined>
-    | PreviewDevtoolsTarget
-    | undefined;
-  previewContainerLogs?: PreviewContainerLogsProvider;
   semanticWorkspace?: SemanticWorkspaceExecutor;
   tokenCounter?(input: {
     modelId: string;
     providerId: string;
   }): TokenCounter | undefined;
 };
-
-type PreviewDevtoolsTargetInput = {
-  scope?: string;
-  timeoutMs?: number;
-};
-
-type PreviewContainerLogsInput = {
-  service?: string;
-  signal?: AbortSignal;
-  tailLines?: number;
-  worktree: string;
-};
-
-type PreviewContainerLogsProvider = (
-  input: PreviewContainerLogsInput,
-) => Promise<unknown> | unknown;
 
 type SessionTermination = {
   cline: ClineCore;
@@ -860,10 +831,16 @@ export class BlameAgentRuntime {
             this.productionConfig,
           )
         : undefined;
+      const previewContext = previewRuntimeContext(input);
+      const previewMcpTools = await previewDevtoolsMcpTools(
+        this.options,
+        previewContext,
+        productionLogger,
+      );
       const standardTools = runtimeTools(
         this.options,
         input.workspaceRoot,
-        input.previewDevtoolsScope,
+        previewContext,
         taskContract,
         semanticExecutor,
         input.governorBudget ?? input.maxIterations,
@@ -878,6 +855,7 @@ export class BlameAgentRuntime {
                 this.publishNativeValidationActivity(sessionId, activity),
             }
           : undefined,
+        previewMcpTools,
       );
       const specialistTool = input.enableSpecialistConsult
         ? runtimeConsultSpecialistTool({
@@ -887,7 +865,7 @@ export class BlameAgentRuntime {
             readOnlyTools: readOnlyRuntimeTools(
               this.options,
               input.workspaceRoot,
-              input.previewDevtoolsScope,
+              previewContext,
               taskContract,
               semanticExecutor,
               externalReadGovernor,
@@ -978,7 +956,10 @@ export class BlameAgentRuntime {
         },
         interactive: !autoSendPrompt,
         source: "blame-desktop",
-        toolPolicies: toolPolicies(!!input.autoApproveWriteTools),
+        toolPolicies: toolPolicies(
+          !!input.autoApproveWriteTools,
+          previewMcpTools.map(({ name }) => name),
+        ),
       } as const;
       this.sessionStartInputs.set(sessionId, startInput);
       await this.captureSessionQualityBaseline(sessionId);
@@ -3705,13 +3686,17 @@ export function nextSpawnAgentActiveCount(
   return Math.max(0, current - 1);
 }
 
-function toolPolicies(autoApproveWriteTools: boolean) {
+function toolPolicies(
+  autoApproveWriteTools: boolean,
+  additionalAutoApprovedTools: string[] = [],
+) {
   return Object.fromEntries([
     ...legacyDirectWorkspaceTools.map((name) => [
       name,
       { enabled: false, autoApprove: false },
     ]),
     ...readTools.map((name) => [name, { autoApprove: true }]),
+    ...additionalAutoApprovedTools.map((name) => [name, { autoApprove: true }]),
     ...writeTools.map((name) => [name, { autoApprove: autoApproveWriteTools }]),
   ]);
 }
@@ -3951,7 +3936,7 @@ function initializationCorrection(
 function runtimeTools(
   options: RuntimeOptions,
   worktree?: string,
-  previewDevtoolsScope?: string,
+  previewContext?: PreviewRuntimeContext,
   taskContract?: {
     session_id?: string;
     story_id?: string;
@@ -3966,6 +3951,7 @@ function runtimeTools(
     onComplete(notification: NativeCompletionNotification): void;
     onValidationActivity(activity: NativeValidationActivity): Promise<void>;
   },
+  previewMcpTools: AgentTool[] = [],
 ) {
   const tools = [
     ...semanticWorkspaceTools(worktree, {
@@ -3993,8 +3979,9 @@ function runtimeTools(
           }),
         ]
       : []),
-    previewDevtoolsTool(options, previewDevtoolsScope),
-    previewContainerLogsTool(options, worktree),
+    previewDevtoolsTool(options, previewContext),
+    previewContainerLogsTool(options, previewContext),
+    ...previewMcpTools,
     ...(externalReadGovernor ? [externalReadGovernor.receiptTool()] : []),
   ]
     .filter((tool): tool is AgentTool => Boolean(tool))
@@ -4005,7 +3992,7 @@ function runtimeTools(
 function readOnlyRuntimeTools(
   options: RuntimeOptions,
   worktree: string,
-  previewDevtoolsScope: string | undefined,
+  previewContext: PreviewRuntimeContext,
   taskContract: {
     session_id?: string;
     story_id?: string;
@@ -4023,7 +4010,7 @@ function readOnlyRuntimeTools(
     runtimeTools(
       options,
       worktree,
-      previewDevtoolsScope,
+      previewContext,
       taskContract,
       semanticWorkspaceExecutor,
       undefined,
@@ -4093,131 +4080,6 @@ function specialistCapsuleProvider(options: {
       storyTitle: options.input.storyId ?? "Active change request",
       workspaceRoot: options.input.cwd,
     });
-}
-
-function previewDevtoolsTool(
-  options: RuntimeOptions,
-  previewDevtoolsScope?: string,
-): AgentTool | undefined {
-  if (!options.previewDevtools) return undefined;
-  return {
-    name: "get_preview_devtools",
-    description:
-      "Perform one bounded readiness check for this agent session's Blame preview and return its Chrome DevTools MCP configuration when ready. Do not poll: if unavailable, continue with local validation until a new preview-ready event or user-visible state change occurs.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        timeoutMs: {
-          type: "number",
-          minimum: 250,
-          maximum: 10_000,
-          default: 5_000,
-          description:
-            "Bounded readiness wait in milliseconds. Defaults to 5000 and is capped at 10000.",
-        },
-      },
-      additionalProperties: false,
-    },
-    async execute(input: unknown) {
-      const previewInput = previewDevtoolsInput(input, previewDevtoolsScope);
-      const target = await options.previewDevtools?.(previewInput);
-      if (!target?.available) {
-        return {
-          available: false,
-          outcome: "unavailable",
-          reason: previewDevtoolsScope
-            ? "PREVIEW_NOT_READY_FOR_SESSION"
-            : "PREVIEW_NOT_READY",
-          message: previewDevtoolsScope
-            ? "No Blame preview is currently loaded for this agent session."
-            : "No active Blame preview is currently loaded.",
-          waitedMs: previewInput.timeoutMs,
-          recommendation:
-            "Continue with local validation. Do not call this tool again unless a new preview-ready event or preview state change is observed.",
-        };
-      }
-      return {
-        ...target,
-        usage:
-          "Use the returned mcpServer command and args to connect chrome-devtools-mcp to this preview target.",
-      };
-    },
-  };
-}
-
-function previewDevtoolsInput(
-  input: unknown,
-  scope: string | undefined,
-): PreviewDevtoolsTargetInput {
-  const record = asRecord(input);
-  const timeoutMs = Number(record.timeoutMs);
-  return {
-    ...(scope ? { scope } : {}),
-    timeoutMs: Number.isFinite(timeoutMs)
-      ? Math.min(Math.max(timeoutMs, 250), 10_000)
-      : 5_000,
-  };
-}
-
-function previewContainerLogsTool(
-  options: RuntimeOptions,
-  worktree?: string,
-): AgentTool | undefined {
-  if (!options.previewContainerLogs || !worktree) return undefined;
-  return {
-    name: "get_preview_container_logs",
-    description:
-      "Get the Blame preview container logs for the current worktree. Returns available compose services, the selected service, recent stdout and stderr, and whether the logs came from live containers or the archived setup log. Use this read-only tool when debugging preview runtime, server, build, API, or database failures. Defaults to the first preview service and 120 tail lines.",
-    inputSchema: previewContainerLogsInputSchema(),
-    async execute(input: unknown, context: ToolContext) {
-      try {
-        return await options.previewContainerLogs?.({
-          ...previewContainerLogsInput(input),
-          signal: context.signal,
-          worktree,
-        });
-      } catch (error) {
-        return {
-          outcome: "failed",
-          reason: "PREVIEW_LOG_READ_FAILED",
-          recommendation:
-            "Continue with local validation. Retry logs only after preview state changes.",
-          isError: true,
-          output: { error: errorMessage(error) },
-        };
-      }
-    },
-  };
-}
-
-function previewContainerLogsInputSchema() {
-  return {
-    type: "object",
-    properties: {
-      service: {
-        type: "string",
-        description:
-          "Optional compose service name to read logs for. When omitted, Blame selects the first preview service, matching the preview drawer.",
-      },
-      tailLines: {
-        type: "number",
-        description:
-          "Maximum number of recent log lines to return from live containers. Defaults to 120 and is capped at 1000.",
-      },
-    },
-    additionalProperties: false,
-  };
-}
-
-function previewContainerLogsInput(
-  input: unknown,
-): Omit<PreviewContainerLogsInput, "signal" | "worktree"> {
-  const record = asRecord(input);
-  const service = stringValue(record.service);
-  return {
-    ...(service ? { service } : {}),
-    tailLines: boundedNumber(record.tailLines, 1, 1000) ?? 120,
-  };
 }
 
 async function projectInitializationInputFromMessages(
@@ -4464,7 +4326,7 @@ function developmentStoryPrompt(
     "Work in the current worktree when code changes are clearly required.",
     "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files.",
     "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it.",
-    "Use get_preview_devtools once when browser verification is useful and preview readiness is indicated. If unavailable, continue with local validation and do not poll until preview state changes.",
+    "Use get_preview_devtools with waitFor=none to inspect preview state before browser verification. If it is starting, choose whether to continue other work or call with waitFor=ready. Stopped, failed, and unopened browser states return immediately; do not poll them until the preview state changes. When ready, use the scoped preview_devtools__* tools directly.",
   );
   return prompt.join("\n");
 }
@@ -6581,12 +6443,6 @@ function stringValue(value: unknown) {
 
 function numberValue(value: unknown) {
   return typeof value === "number" ? value : undefined;
-}
-
-function boundedNumber(value: unknown, min: number, max: number) {
-  const number = numberValue(value);
-  if (number === undefined || !Number.isFinite(number)) return undefined;
-  return Math.min(Math.max(number, min), max);
 }
 
 function booleanValue(value: unknown) {
