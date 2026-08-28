@@ -13,9 +13,15 @@ type AgentMessagePart = AgentMessage["content"][number];
 export function continuityProjectionHooks(
   memory: ConversationMemoryStore,
 ): AgentHooks {
+  let previousFootprint: TranscriptFootprint | undefined;
   return {
     async beforeModel(context: BeforeModelContext) {
+      const footprint = transcriptFootprint(context.request.messages);
       await memory.checkpoint();
+      if (transcriptCompacted(previousFootprint, footprint)) {
+        await memory.rotate("model_compaction");
+      }
+      previousFootprint = footprint;
       const continuity = await memory.runtimeContinuity();
       return {
         messages: projectContinuity(
@@ -26,6 +32,26 @@ export function continuityProjectionHooks(
       };
     },
   };
+}
+
+type TranscriptFootprint = { bytes: number; messages: number };
+
+function transcriptFootprint(messages: AgentMessages): TranscriptFootprint {
+  return {
+    bytes: Buffer.byteLength(JSON.stringify(messages), "utf8"),
+    messages: messages.length,
+  };
+}
+
+function transcriptCompacted(
+  previous: TranscriptFootprint | undefined,
+  current: TranscriptFootprint,
+) {
+  if (!previous) return false;
+  return (
+    current.messages < previous.messages ||
+    (previous.bytes >= 4_096 && current.bytes < previous.bytes * 0.7)
+  );
 }
 
 export function renderRuntimeContinuity(value: RuntimeContinuity) {

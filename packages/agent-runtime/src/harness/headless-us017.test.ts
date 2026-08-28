@@ -77,6 +77,7 @@ test("US-017 available dependencies are applied by pnpm with its generated lockf
       "install",
       "--lockfile-only",
       "--prefer-offline",
+      "--ignore-scripts",
     ]);
     assert.equal(executor.lastInput?.packageManager, "pnpm");
     assert.equal(
@@ -90,7 +91,7 @@ test("US-017 available dependencies are applied by pnpm with its generated lockf
   });
 });
 
-test("US-017 workspace state keeps every manifest, direct dependency, script, framework and runtime capability", async () => {
+test("US-017 workspace state keeps relevant detail compact and pages every manifest dependency", async () => {
   await withUs017Workspace(async (root) => {
     await mkdir(join(root, "apps", "api"), { recursive: true });
     const generatedDependencies = Object.fromEntries(
@@ -123,7 +124,28 @@ test("US-017 workspace state keeps every manifest, direct dependency, script, fr
     const projection = record(compactData.task_projection);
     const inventory = record(projection.dependency_inventory);
     const manifests = inventory.manifests as Array<Record<string, unknown>>;
-    const api = manifests.find(
+    const compactApi = manifests.find(
+      (manifest) => manifest.path === "apps/api/package.json",
+    );
+    assert.ok(compactApi);
+    assert.equal(compactApi.detail, "paginated");
+    assert.equal(compactApi.dependencies, undefined);
+    const pagination = record(projection.pagination);
+    const manifestPageReceipt = record(pagination.manifests);
+    const manifestCursor = String(manifestPageReceipt.next_cursor);
+    assert.match(manifestCursor, /^wsm_[a-f0-9]{10}_0$/u);
+    const page = success(
+      compactWorkspaceStateResult(state, undefined, {
+        cursor: manifestCursor,
+        pageSize: 10,
+      }),
+    );
+    const pageProjection = record(record(page.data).task_projection);
+    const pageInventory = record(pageProjection.dependency_inventory);
+    const pageManifests = pageInventory.manifests as Array<
+      Record<string, unknown>
+    >;
+    const api = pageManifests.find(
       (manifest) => manifest.path === "apps/api/package.json",
     );
     assert.ok(api);
@@ -147,6 +169,14 @@ test("US-017 workspace state keeps every manifest, direct dependency, script, fr
     assert.equal(typeof mutation.cache_available, "boolean");
     assert.ok(record(capabilities.run_task));
     assert.ok(record(capabilities.network));
+    assert.ok(Buffer.byteLength(JSON.stringify(compact), "utf8") < 32_000);
+    const stalePage = success(
+      compactWorkspaceStateResult(state, undefined, {
+        cursor: "wsm_0000000000_0",
+      }),
+    );
+    assert.equal(stalePage.outcome, "unavailable");
+    assert.equal(stalePage.reason, "STALE_WORKSPACE_STATE_CURSOR");
   });
 });
 
@@ -203,6 +233,38 @@ test("US-017 unavailable dependencies return only actionable non-fatal data and 
       assert.equal(record(receipt).isError, false);
     }
     assert.equal(externalExecutions, 0);
+
+    const costGovernor = new HarnessCostGovernor(80, false);
+    costGovernor.after("mutate_dependencies", {}, unavailable, {
+      iteration: 1,
+    });
+    const lockfileSearch = costGovernor.before(
+      "search_code",
+      "dependency-epoch",
+      { path: "pnpm-lock.yaml", query: { kind: "text", pattern: "react" } },
+      2,
+    );
+    assert.equal(lockfileSearch?.outcome, "skipped");
+    assert.equal(lockfileSearch?.reason, "LOCKFILE_RECONSTRUCTION_SUPPRESSED");
+    costGovernor.newUserRequest();
+    assert.equal(
+      costGovernor.before(
+        "search_code",
+        "next-request",
+        { query: { kind: "text", pattern: "pnpm-lock.yaml" } },
+        1,
+      )?.reason,
+      "LOCKFILE_RECONSTRUCTION_SUPPRESSED",
+    );
+    assert.equal(
+      costGovernor.before(
+        "search_code",
+        "next-request",
+        { query: { kind: "text", pattern: "dependency service" } },
+        2,
+      ),
+      undefined,
+    );
   });
 });
 
@@ -479,12 +541,16 @@ test("US-017 specialist deduplication keys objective and revision and propagates
   assert.equal(executions, 2);
 
   let cancelled = false;
+  let timedExecutions = 0;
   const timed = createConsultSpecialistTool({
     objective: "Review a timeout",
     timeoutMs: 10,
     spawnTool: {
-      execute: async (_input: unknown, context: AgentToolContext) =>
-        new Promise((resolve) => {
+      execute: async (_input: unknown, context: AgentToolContext) => {
+        timedExecutions += 1;
+        if (timedExecutions > 1)
+          return { output: "retry advice", isError: false };
+        return new Promise((resolve) => {
           context.signal?.addEventListener(
             "abort",
             () => {
@@ -493,13 +559,22 @@ test("US-017 specialist deduplication keys objective and revision and propagates
             },
             { once: true },
           );
-        }),
+        });
+      },
     },
   });
   const receipt = await timed.execute(input, specialistContext("src_timeout"));
   assert.equal(record(receipt).outcome, "blocked");
   assert.equal(record(receipt).reason, "SPECIALIST_TIMEOUT");
   assert.equal(cancelled, true);
+  const retried = await timed.execute(input, specialistContext("src_timeout"));
+  const cachedRetry = await timed.execute(
+    input,
+    specialistContext("src_timeout"),
+  );
+  assert.equal(record(retried).outcome, "completed");
+  assert.equal(record(cachedRetry).outcome, "skipped");
+  assert.equal(timedExecutions, 2);
 });
 
 test("US-017 lifecycle uses execution CAS and rejects every event and token after terminal state", () => {
@@ -511,7 +586,7 @@ test("US-017 lifecycle uses execution CAS and rejects every event and token afte
   );
   const startedAt = performance.now();
   assert.equal(lifecycle.stopping("session", "execution-one"), true);
-  assert.equal(lifecycle.accepts("session", "execution-one", 11), true);
+  assert.equal(lifecycle.accepts("session", "execution-one", 11), false);
   assert.equal(lifecycle.finish("session", "execution-one", "cancelled"), true);
   assert.ok(performance.now() - startedAt < 2_000);
   assert.equal(lifecycle.canInvoke("session", "execution-one"), false);
@@ -533,11 +608,16 @@ test("US-017 lifecycle uses execution CAS and rejects every event and token afte
 
 test("US-017 runtime abort closes the core execution and persists terminal state in under two seconds", async () => {
   let abortCalls = 0;
+  let stopCalls = 0;
   const core = {
-    abort: async () => {
+    abort: () => {
       abortCalls += 1;
+      return new Promise<void>(() => undefined);
     },
     getAccumulatedUsage: async () => undefined,
+    stop: async () => {
+      stopCalls += 1;
+    },
   };
   const runtime = new BlameAgentRuntime();
   const internals = runtime as unknown as {
@@ -555,9 +635,102 @@ test("US-017 runtime abort closes the core execution and persists terminal state
   await internals.abortSession("runtime-abort", false);
   const elapsedMs = performance.now() - startedAt;
   assert.equal(abortCalls, 1);
+  assert.equal(stopCalls, 1);
   assert.ok(elapsedMs < 2_000);
   assert.equal(
     internals.runLifecycles.state("runtime-abort")?.state,
+    "cancelled",
+  );
+});
+
+test("US-017 terminal events stop Cline before persistence and terminal publication", async () => {
+  const order: string[] = [];
+  let releaseStop: (() => void) | undefined;
+  const core = {
+    abort: async () => {
+      order.push("abort");
+    },
+    stop: async () => {
+      order.push("stop");
+      await new Promise<void>((resolve) => {
+        releaseStop = resolve;
+      });
+    },
+  };
+  const runtime = new BlameAgentRuntime({
+    emit: () => order.push("emit"),
+  } as never);
+  const internals = runtime as unknown as {
+    finalizeStreamTerminal(
+      cline: unknown,
+      sessionId: string,
+      executionId: string,
+      terminalState: "succeeded",
+      event: unknown,
+      display: boolean,
+    ): Promise<void>;
+    handleSessionEvent(sessionId: string, event: unknown): Promise<void>;
+    readUsage(sessionId: string): Promise<undefined>;
+    runLifecycles: RunLifecycleRegistry;
+  };
+  internals.handleSessionEvent = async () => {
+    order.push("persist");
+  };
+  internals.readUsage = async () => undefined;
+  internals.runLifecycles.begin("terminal-stream", "execution-terminal");
+  const draining = internals.finalizeStreamTerminal(
+    core,
+    "terminal-stream",
+    "execution-terminal",
+    "succeeded",
+    { type: "done", sessionId: "terminal-stream", payload: {} },
+    true,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(
+    internals.runLifecycles.state("terminal-stream")?.state,
+    "stopping",
+  );
+  assert.deepEqual([...order].sort(), ["abort", "stop"]);
+  releaseStop?.();
+  await draining;
+  assert.equal(
+    internals.runLifecycles.state("terminal-stream")?.state,
+    "succeeded",
+  );
+  assert.equal(order.indexOf("persist") > order.indexOf("stop"), true);
+  assert.equal(order.indexOf("emit") > order.indexOf("persist"), true);
+});
+
+test("US-017 termination watchdog retries stop before persisting a terminal state", async () => {
+  let stopCalls = 0;
+  const core = {
+    abort: async () => undefined,
+    getAccumulatedUsage: async () => undefined,
+    stop: async () => {
+      stopCalls += 1;
+      if (stopCalls === 1) throw new Error("transient stop failure");
+    },
+  };
+  const runtime = new BlameAgentRuntime();
+  const internals = runtime as unknown as {
+    abortSession(sessionId: string, humanInitiated: boolean): Promise<void>;
+    clines: Map<string, Promise<unknown>>;
+    runLifecycles: RunLifecycleRegistry;
+    sessionBackendKeys: Map<string, string>;
+    sessionExecutionIds: Map<string, string>;
+  };
+  internals.clines.set("local", Promise.resolve(core));
+  internals.sessionBackendKeys.set("watchdog-abort", "local");
+  internals.sessionExecutionIds.set("watchdog-abort", "execution-watchdog");
+  internals.runLifecycles.begin("watchdog-abort", "execution-watchdog");
+
+  await internals.abortSession("watchdog-abort", false);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.equal(stopCalls, 2);
+  assert.equal(
+    internals.runLifecycles.state("watchdog-abort")?.state,
     "cancelled",
   );
 });

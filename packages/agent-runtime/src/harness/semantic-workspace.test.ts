@@ -1910,6 +1910,7 @@ test("native dependency mutation updates the manifest and generated lockfile ato
       "install",
       "--lockfile-only",
       "--prefer-offline",
+      "--ignore-scripts",
     ]);
   });
 });

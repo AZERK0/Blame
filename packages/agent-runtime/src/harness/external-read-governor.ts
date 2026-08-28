@@ -45,6 +45,7 @@ export class ExternalReadGovernor {
   private readonly progressGovernor?: HarnessCostGovernor;
   private readonly cache = new Map<string, CachedExternalRead>();
   private readonly history: CachedExternalRead[] = [];
+  private readonly hookReceipts = new Map<string, unknown>();
   private readonly inFlight = new Map<string, Promise<unknown>>();
   private readonly metrics: ExternalReadMetrics = {
     cacheHits: 0,
@@ -86,19 +87,34 @@ export class ExternalReadGovernor {
 
   fetchHooks(): NonNullable<CoreSessionConfig["hooks"]> {
     return {
-      beforeTool: ({ tool, input, snapshot }: BeforeToolContext) => {
+      beforeTool: (context: BeforeToolContext) => {
+        const { tool, input, snapshot } = context;
         if (tool.name !== "fetch_web_content") return undefined;
         const progressReceipt = this.progressGovernor?.beforeExternal(
           numberValue(snapshot.iteration),
         );
-        if (progressReceipt)
-          return { skip: true, reason: JSON.stringify(progressReceipt) };
+        if (progressReceipt) return this.skipHook(context, progressReceipt);
         const decision = this.before("fetch_web_content", input);
         if (decision.action === "execute") return undefined;
-        return { skip: true, reason: JSON.stringify(decision.result) };
+        return this.skipHook(context, decision.result);
       },
-      afterTool: ({ tool, input, result }: AfterToolContext) => {
+      afterTool: (context: AfterToolContext) => {
+        const { tool, input, result } = context;
         if (tool.name !== "fetch_web_content") return undefined;
+        const skipped = this.hookReceipts.get(hookReceiptKey(context));
+        if (skipped !== undefined) {
+          this.hookReceipts.delete(hookReceiptKey(context));
+          return {
+            result: {
+              output: skipped,
+              isError: false,
+              metadata: {
+                ...result.metadata,
+                governedExternalReadReceipt: true,
+              },
+            },
+          };
+        }
         const decision = this.pendingDecision(input);
         return {
           result: this.after(
@@ -109,6 +125,16 @@ export class ExternalReadGovernor {
           ) as typeof result,
         };
       },
+    };
+  }
+
+  private skipHook(context: BeforeToolContext, receipt: unknown) {
+    this.hookReceipts.set(hookReceiptKey(context), receipt);
+    while (this.hookReceipts.size > 100)
+      this.hookReceipts.delete(this.hookReceipts.keys().next().value!);
+    return {
+      skip: true,
+      reason: receiptReason(receipt),
     };
   }
 
@@ -280,6 +306,20 @@ export class ExternalReadGovernor {
   }
 }
 
+function hookReceiptKey(context: BeforeToolContext | AfterToolContext) {
+  return (
+    context.toolCall?.toolCallId ||
+    `fetch_web_content:${JSON.stringify(context.input) ?? "unknown"}`
+  );
+}
+
+function receiptReason(value: unknown) {
+  const reason = recordValue(value).reason;
+  return typeof reason === "string" && reason
+    ? reason
+    : "EXTERNAL_READ_SKIPPED";
+}
+
 function normalizedExternalResources(
   tool: ExternalReadToolName,
   input: unknown,
@@ -355,22 +395,48 @@ function normalizedAgentToolResult(
   result: AgentToolResultEnvelope,
   tool: ExternalReadToolName,
 ): AgentToolResultEnvelope {
+  const outcome =
+    normalizedOutcome(result.outcome) ??
+    (result.isError ? "failed" : "completed");
+  const fatal = result.fatal === true;
   const output =
     tool === "fetch_web_content"
       ? normalizedFetchOutput(result.output)
       : result.output;
   return {
     ...result,
-    outcome: result.isError ? "failed" : "completed",
-    fatal: result.fatal === true,
-    reason: result.isError ? "EXTERNAL_READ_FAILED" : "EXTERNAL_READ_COMPLETED",
-    recommendation: result.isError
-      ? "Use the returned limitation and continue when possible."
-      : "Continue with the task.",
+    outcome,
+    fatal,
+    reason:
+      typeof result.reason === "string"
+        ? result.reason
+        : outcome === "failed"
+          ? "EXTERNAL_READ_FAILED"
+          : "EXTERNAL_READ_COMPLETED",
+    recommendation:
+      typeof result.recommendation === "string"
+        ? result.recommendation
+        : outcome === "failed"
+          ? "Use the returned limitation and continue when possible."
+          : "Continue with the task.",
     output,
-    isError: result.fatal === true,
+    isError: fatal,
     metadata: { ...result.metadata },
   };
+}
+
+function normalizedOutcome(value: unknown) {
+  return typeof value === "string" &&
+    [
+      "applied",
+      "blocked",
+      "completed",
+      "failed",
+      "skipped",
+      "unavailable",
+    ].includes(value)
+    ? value
+    : undefined;
 }
 
 function normalizedFetchOutput(output: unknown) {

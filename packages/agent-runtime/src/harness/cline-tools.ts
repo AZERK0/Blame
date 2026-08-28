@@ -121,13 +121,20 @@ export function semanticWorkspaceTools(
         ),
         context.signal,
       );
-      return governed
+      const observed = governed
         ? governor.after(tool, input, result, {
             ...context,
             contextEpoch,
             conversationId: options.taskContract?.session_id,
           })
         : result;
+      await recordReadKnowledge(
+        workspaceRoot,
+        options.taskContract?.session_id,
+        tool,
+        observed,
+      );
+      return observed;
     } finally {
       governor.releaseBroadRead(admission?.reservationId);
     }
@@ -136,7 +143,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "workspace_state",
       description:
-        "Read the canonical Blame workspace state, task catalog, changed paths, tree summary, and capability registry. Semantic reads and edits resolve the current revision themselves; use this tool when repository or task metadata is needed. Read-only; do not use it to inspect file contents.",
+        "Read the canonical Blame workspace state, changed paths, tree summary, and capability registry. The default receipt includes every package and manifest path, complete dependencies for relevant manifests, important tasks, and short revision-bound cursors for exhaustive manifest or task pages. Semantic reads and edits resolve the current revision themselves; use this tool when repository or task metadata is needed. Read-only; do not use it to inspect file contents.",
       schema: workspaceStateInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -342,6 +349,77 @@ export function semanticWorkspaceTools(
   ];
 }
 
+async function recordReadKnowledge(
+  workspaceRoot: string,
+  conversationId: string | undefined,
+  tool: SemanticWorkspaceToolName,
+  result: HarnessToolResult<unknown>,
+) {
+  if (
+    !conversationId ||
+    result.status !== "success" ||
+    !knowledgeReadTools.includes(tool)
+  )
+    return;
+  const data = recordValue(result.data);
+  const paths = discoveredPaths(data).slice(0, 6);
+  const symbols = discoveredSymbols(data).slice(0, 6);
+  const facts = [
+    ...(paths.length ? [`${tool} located: ${paths.join(", ")}.`] : []),
+    ...(symbols.length
+      ? [`${tool} identified symbols: ${symbols.join(", ")}.`]
+      : []),
+  ];
+  await new ConversationMemoryStore(workspaceRoot, conversationId)
+    .recordKnowledge(facts, paths[0])
+    .catch(() => undefined);
+}
+
+const knowledgeReadTools: readonly SemanticWorkspaceToolName[] = [
+  "get_relation_context",
+  "inspect_code",
+  "outline_code",
+  "search_code",
+];
+
+function discoveredPaths(value: unknown, depth = 0): string[] {
+  if (depth > 4) return [];
+  if (Array.isArray(value))
+    return value.flatMap((entry) => discoveredPaths(entry, depth + 1));
+  const record = recordValue(value);
+  return uniqueStrings([
+    ...(typeof record.path === "string" ? [record.path] : []),
+    ...Object.values(record).flatMap((entry) =>
+      discoveredPaths(entry, depth + 1),
+    ),
+  ]).filter((path) => /(?:^|\/)\.?[\w@-]+(?:\/[\w@.-]+)+$/u.test(path));
+}
+
+function discoveredSymbols(value: unknown, depth = 0): string[] {
+  if (depth > 4) return [];
+  if (Array.isArray(value))
+    return value.flatMap((entry) => discoveredSymbols(entry, depth + 1));
+  const record = recordValue(value);
+  return uniqueStrings([
+    ...[record.qualified_name, record.symbol, record.name].filter(
+      (entry): entry is string => typeof entry === "string",
+    ),
+    ...Object.values(record).flatMap((entry) =>
+      discoveredSymbols(entry, depth + 1),
+    ),
+  ]).filter((symbol) => symbol.length <= 160);
+}
+
+function uniqueStrings(values: string[]) {
+  return [...new Set(values)];
+}
+
+function recordValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
 function executionRequest(
   workspaceRoot: string,
   taskContract: SemanticWorkspaceOptions["taskContract"],
@@ -485,6 +563,7 @@ function createHarnessTool<TSchema extends z.ZodTypeAny>(input: {
           ? compactWorkspaceStateResult(
               executed,
               workspaceStateInclude(parsed.data),
+              workspaceStatePage(parsed.data),
             )
           : executed;
       const result = boundHarnessResult(
@@ -498,6 +577,17 @@ function createHarnessTool<TSchema extends z.ZodTypeAny>(input: {
         : result;
     },
   });
+}
+
+function workspaceStatePage(value: unknown) {
+  const input =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  return {
+    cursor: typeof input.cursor === "string" ? input.cursor : undefined,
+    pageSize: typeof input.page_size === "number" ? input.page_size : undefined,
+  };
 }
 
 function workspaceStateInclude(value: unknown) {

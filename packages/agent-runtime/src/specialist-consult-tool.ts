@@ -34,12 +34,18 @@ type ConsultSpecialistToolOptions = {
   timeoutMs?: number;
 };
 
-type ConsultationState = Map<string, number>;
+type ConsultationState = {
+  completed: Map<string, number>;
+  inFlight: Map<string, Promise<unknown>>;
+};
 
 export function createConsultSpecialistTool(
   options: ConsultSpecialistToolOptions,
 ): AgentTool {
-  const state: ConsultationState = new Map();
+  const state: ConsultationState = {
+    completed: new Map(),
+    inFlight: new Map(),
+  };
   return createTool<unknown, unknown>({
     name: "consult_specialist",
     description: [
@@ -77,23 +83,43 @@ async function executeConsultation(
       "Unknown Blame specialist.",
     );
   const key = consultationKey(parsed.data, context, options.objective);
-  const previous = state.get(key);
+  const previous = state.completed.get(key);
   if (previous !== undefined) return repeatedConsultationReceipt(key);
-  state.set(key, Date.now());
-  const capsule = await options.capsule?.(parsed.data);
-  return executeWithDeadline(
-    (signal) =>
-      Promise.resolve(
-        options.spawnTool.execute(
-          {
-            systemPrompt: specialist.systemPrompt,
-            task: specialistTask(parsed.data, options, capsule),
-          },
-          { ...context, signal },
+  const pending = state.inFlight.get(key);
+  if (pending) return pending;
+  const execution = (async () => {
+    const capsule = await options.capsule?.(parsed.data);
+    const result = await executeWithDeadline(
+      (signal) =>
+        Promise.resolve(
+          options.spawnTool.execute(
+            {
+              systemPrompt: specialist.systemPrompt,
+              task: specialistTask(parsed.data, options, capsule),
+            },
+            { ...context, signal },
+          ),
         ),
-      ),
-    context.signal,
-    options.timeoutMs ?? 90_000,
+      context.signal,
+      options.timeoutMs ?? 90_000,
+    );
+    if (completedConsultation(result)) state.completed.set(key, Date.now());
+    return result;
+  })();
+  state.inFlight.set(key, execution);
+  try {
+    return await execution;
+  } finally {
+    if (state.inFlight.get(key) === execution) state.inFlight.delete(key);
+  }
+}
+
+function completedConsultation(value: unknown) {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    (value as Record<string, unknown>).outcome === "completed"
   );
 }
 
@@ -193,6 +219,13 @@ async function executeWithDeadline(
         : recoverableSpecialistExecutionFailure(error),
     );
     const result = await Promise.race([execution, stopped]);
+    if (stopReason)
+      return recoverableConsultationFailure(
+        stopReason,
+        stopReason === "SPECIALIST_TIMEOUT"
+          ? `The specialist exceeded its ${timeoutMs} ms timeout.`
+          : "The specialist consultation was cancelled.",
+      );
     return completedConsultationResult(result);
   } finally {
     if (timeout) clearTimeout(timeout);

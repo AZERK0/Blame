@@ -14,6 +14,7 @@ import {
 } from "./conversation-memory.js";
 import { harnessFeatureEnabled } from "./harness-feature-flags.js";
 import { sha256 } from "./protocol.js";
+import { ReadWorkingSet } from "./read-working-set.js";
 
 test("native completion preserves the summary without model-owned memory", async () => {
   await withMemory(async (root) => {
@@ -112,6 +113,82 @@ test("continuity projection replaces the active request exactly once", async () 
     assert.doesNotMatch(serialized, /changeset:\/\/|src_opaque/);
     const restarted = new ConversationMemoryStore(root, "projection");
     assert.equal((await restarted.runtimeContinuity()).activeRequest, request);
+  });
+});
+
+test("the production beforeModel hook detects compaction and releases stale read coverage", async () => {
+  await withMemory(async (root) => {
+    const conversationId = "real-compaction-hook";
+    const request = "Preserve the objective while compacting.";
+    const memory = new ConversationMemoryStore(root, conversationId);
+    await memory.beginRequest({ currentRequest: request, userGoal: request });
+    const workingSet = new ReadWorkingSet(root, conversationId);
+    await workingSet.register({
+      contextEpoch: await memory.currentEpochId(),
+      maximumBytes: 32,
+      path: "src/known.ts",
+      range: [0, 16],
+      sourceBlob: "blob-known",
+      sourceContent: Buffer.from("export const x=1"),
+      view: "raw",
+    });
+    await memory.recordKnowledge(
+      ["inspect_code identified symbols: importantHandler."],
+      "src/known.ts",
+    );
+    const hook = continuityProjectionHooks(memory).beforeModel;
+    assert.ok(hook);
+    const longTranscript = [
+      {
+        id: "user",
+        role: "user",
+        content: [{ type: "text", text: request }],
+        createdAt: 1,
+      },
+      ...Array.from({ length: 12 }, (_, index) => ({
+        id: `assistant-${index}`,
+        role: "assistant",
+        content: [{ type: "text", text: "learned context ".repeat(200) }],
+        createdAt: index + 2,
+      })),
+    ];
+    await hook({ request: { messages: longTranscript, tools: [] } } as never);
+    const projected = await hook({
+      request: {
+        messages: [
+          {
+            id: "user-compacted",
+            role: "user",
+            content: [{ type: "text", text: request }],
+            createdAt: 20,
+          },
+          {
+            id: "summary",
+            role: "assistant",
+            content: [{ type: "text", text: "Compacted summary." }],
+            createdAt: 21,
+          },
+        ],
+        tools: [],
+      },
+    } as never);
+
+    const snapshot = await memory.snapshot();
+    assert.equal(
+      snapshot.evidence.some(
+        (event) =>
+          event.type === "runtime_event" && event.event === "compaction",
+      ),
+      true,
+    );
+    assert.equal(
+      (await workingSet.list())[0]?.content_in_active_context,
+      false,
+    );
+    assert.match(
+      JSON.stringify(projected?.messages),
+      /importantHandler|src\/known\.ts/u,
+    );
   });
 });
 

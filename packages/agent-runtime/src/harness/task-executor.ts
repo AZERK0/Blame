@@ -9,6 +9,7 @@ import {
   type PackageManagerName,
   type ResolvedPackageManager,
 } from "./package-manager-runtime.js";
+import { startRegistryAllowlistProxy } from "./registry-allowlist-proxy.js";
 
 export type TaskExecutionInput = {
   executable: string;
@@ -85,14 +86,12 @@ export class SandboxedTaskExecutor implements TaskExecutor {
   async dependencyCapability(): Promise<DependencyExecutorCapability> {
     return {
       available: true,
-      network: projectAllowlistProxy() ? "managed_allowlist" : "cache_only",
+      network: "managed_allowlist",
     };
   }
 
   async execute(input: TaskExecutionInput): Promise<TaskExecutionResult> {
     const isolation = await this.capability();
-    if (input.network === "project_allowlist" && !projectAllowlistProxy())
-      return unsupportedAllowlist(isolation);
     const prepared = await prepareTaskExecution(input).catch((error) => ({
       error: error instanceof Error ? error.message : String(error),
     }));
@@ -119,11 +118,30 @@ export class SandboxedTaskExecutor implements TaskExecutor {
       readRoots,
       deniedReadRoots,
     );
+    const externalProxy = projectAllowlistProxy();
+    const localProxy =
+      prepared.network === "project_allowlist" && !externalProxy
+        ? await startRegistryAllowlistProxy({
+            cwd: prepared.cwd,
+            overlayRoot: prepared.overlayRoot,
+            signal: input.signal,
+          }).catch(() => undefined)
+        : undefined;
+    if (
+      prepared.network === "project_allowlist" &&
+      !externalProxy &&
+      !localProxy
+    )
+      return infrastructureFailure(
+        isolation,
+        "REGISTRY_PROXY_UNAVAILABLE:The configured-registry proxy could not start.",
+      );
     const environment = taskEnvironment(
       executionInput.overlayRoot,
       prepared.network ?? "deny",
       prepared.dependencyCacheRoot,
       prepared.runtimeBinRoots,
+      externalProxy ?? localProxy?.url,
     );
     try {
       const result = await execa(command.executable, command.args, {
@@ -178,16 +196,13 @@ export class SandboxedTaskExecutor implements TaskExecutor {
           ? { packageManagerResolution: prepared.packageManagerResolution }
           : {}),
       };
+    } finally {
+      await localProxy?.close();
     }
   }
 
   async healthCheck(input: TaskExecutionInput) {
     const isolation = await this.capability();
-    if (input.network === "project_allowlist" && !projectAllowlistProxy())
-      return unavailableHealth(
-        isolation,
-        unsupportedAllowlist(isolation).stderr,
-      );
     const prepared = await prepareTaskExecution(input).catch((error) => ({
       error: error instanceof Error ? error.message : String(error),
     }));
@@ -252,6 +267,7 @@ async function probeExecutor(
         probeInput.network ?? "deny",
         probeInput.dependencyCacheRoot,
         probeInput.runtimeBinRoots,
+        projectAllowlistProxy(),
       ),
       extendEnv: false,
       reject: false,
@@ -367,10 +383,10 @@ function taskEnvironment(
   network: "deny" | "project_allowlist",
   dependencyCacheRoot?: string,
   runtimeBinRoots: string[] = [],
+  projectProxy?: string,
 ): Record<string, string> {
   const inheritedPath = process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin";
-  const proxy =
-    network === "project_allowlist" ? projectAllowlistProxy() : undefined;
+  const proxy = network === "project_allowlist" ? projectProxy : undefined;
   return {
     PATH: [
       join(overlayRoot, "node_modules", ".bin"),
@@ -473,20 +489,7 @@ function projectAllowlistProxy() {
 }
 
 export function automaticDependencyNetworkPolicy() {
-  return projectAllowlistProxy() ? "project_allowlist" : "deny";
-}
-
-function unsupportedAllowlist(isolation: TaskIsolation): TaskExecutionResult {
-  return {
-    status: "execution_error",
-    exitCode: null,
-    signal: null,
-    stdout: "",
-    stderr:
-      "Project dependency installation requires BLAME_PROJECT_ALLOWLIST_PROXY or a managed Cloud Preview executor. No lockfile was modified.",
-    outputTruncated: false,
-    isolation,
-  };
+  return "project_allowlist" as const;
 }
 
 async function executionReadRoots(input: TaskExecutionInput) {

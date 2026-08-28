@@ -358,6 +358,7 @@ export class RunService {
     const declared = await this.executor.dependencyCapability?.();
     if (declared?.network === "managed_allowlist")
       return "project_allowlist" as const;
+    if (declared?.network === "cache_only") return "deny" as const;
     return automaticDependencyNetworkPolicy();
   }
 

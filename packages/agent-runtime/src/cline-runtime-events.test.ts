@@ -155,6 +155,9 @@ test("prewarms and removes the reserved remote runtime session", async () => {
       calls.push(`delete:${sessionId}`);
       return true;
     },
+    stop: async (sessionId: string) => {
+      calls.push(`stop:${sessionId}`);
+    },
     start: async (input: { config: { sessionId?: string } }) => {
       calls.push(`start:${input.config.sessionId}`);
       return { sessionId: input.config.sessionId! };
@@ -175,6 +178,7 @@ test("prewarms and removes the reserved remote runtime session", async () => {
 
   assert.deepEqual(calls, [
     "start:blame-runtime-prewarm",
+    "stop:blame-runtime-prewarm",
     "abort:blame-runtime-prewarm",
     "delete:blame-runtime-prewarm",
   ]);

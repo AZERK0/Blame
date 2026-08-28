@@ -119,6 +119,24 @@ export const workspaceStateInputSchema = z
         ]),
       )
       .optional(),
+    cursor: z
+      .string()
+      .trim()
+      .min(1)
+      .max(80)
+      .optional()
+      .describe(
+        "Short revision-bound next_cursor returned by a previous workspace_state page.",
+      ),
+    page_size: z
+      .number()
+      .int()
+      .min(1)
+      .max(25)
+      .optional()
+      .describe(
+        "Number of complete manifests or tasks returned for a cursor; default 5.",
+      ),
     budget: outputBudget(500, 20_000, 8_000),
   })
   .strict();

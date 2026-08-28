@@ -518,7 +518,12 @@ function sortRecord(value: Record<string, string>) {
 
 function lockfileArguments(task: TaskCatalogItem) {
   if (task.package_manager === "pnpm")
-    return ["install", "--lockfile-only", "--prefer-offline"];
+    return [
+      "install",
+      "--lockfile-only",
+      "--prefer-offline",
+      "--ignore-scripts",
+    ];
   if (task.package_manager === "yarn")
     return task.package_manager_version?.startsWith("1.")
       ? [
@@ -528,7 +533,8 @@ function lockfileArguments(task: TaskCatalogItem) {
           ".blame/harness/yarn-modules",
         ]
       : ["install", "--mode=update-lockfile"];
-  if (task.package_manager === "bun") return ["install", "--lockfile-only"];
+  if (task.package_manager === "bun")
+    return ["install", "--lockfile-only", "--ignore-scripts"];
   return [
     "install",
     "--package-lock-only",
@@ -601,6 +607,7 @@ function selectedNetworkPolicy(
 ) {
   if (declared?.network === "managed_allowlist")
     return "project_allowlist" as const;
+  if (declared?.network === "cache_only") return "deny" as const;
   return automaticDependencyNetworkPolicy();
 }
 

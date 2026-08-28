@@ -419,6 +419,21 @@ type PreviewContainerLogsInput = {
 type PreviewContainerLogsProvider = (
   input: PreviewContainerLogsInput,
 ) => Promise<unknown> | unknown;
+
+type SessionTermination = {
+  cline: ClineCore;
+  display?: boolean;
+  event?: AgentEvent;
+  executionId: string;
+  reason: string;
+  sessionId: string;
+  terminalState: RunTerminalState;
+};
+
+type SessionTerminationAttempt =
+  | { status: "stopped" }
+  | { error?: unknown; status: "pending" };
+
 let customGitRunner:
   | ((cwd: string, args: string[]) => Promise<string>)
   | undefined;
@@ -449,6 +464,11 @@ export class BlameAgentRuntime {
   private sessionToolSequences = new Map<string, number>();
   private sessionSubmittedSummaries = new Map<string, string>();
   private sessionTerminalDrains = new Map<string, Promise<void>>();
+  private sessionTerminations = new Map<
+    string,
+    { executionId: string; promise: Promise<boolean> }
+  >();
+  private sessionTerminationWatchdogs = new Map<string, Promise<void>>();
   private sessionIterations = new Map<string, number>();
   private sessionSpawnAgentActiveCounts = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
@@ -564,6 +584,8 @@ export class BlameAgentRuntime {
     this.sessionLogWrites.clear();
     this.sessionReleases.clear();
     this.sessionTerminalDrains.clear();
+    this.sessionTerminations.clear();
+    this.sessionTerminationWatchdogs.clear();
     this.sessionContexts.clear();
     this.sessionEventSignatures.clear();
     this.sessionApiConnections.clear();
@@ -624,9 +646,10 @@ export class BlameAgentRuntime {
         toolPolicies: toolPolicies(true),
       });
     } finally {
-      await cline
-        .abort(runtimePrewarmSessionId, "Blame runtime prewarm complete")
-        .catch(() => undefined);
+      await Promise.allSettled([
+        cline.stop(runtimePrewarmSessionId),
+        cline.abort(runtimePrewarmSessionId, "Blame runtime prewarm complete"),
+      ]);
       await cline.delete(runtimePrewarmSessionId).catch(() => undefined);
     }
   }
@@ -1133,53 +1156,167 @@ export class BlameAgentRuntime {
       )
     )
       return;
-    this.runLifecycles.stopping(sessionId, executionId);
     if (humanInitiated)
       this.agentTelemetry.humanIntervention(sessionId, "abort");
-    const aborting = cline.abort(sessionId, "User aborted from Blame");
-    const timedOut = Symbol("termination-timeout");
+    await this.terminateSessionExecution({
+      cline,
+      executionId,
+      reason: humanInitiated
+        ? "User aborted from Blame"
+        : "Blame runtime requested termination",
+      sessionId,
+      terminalState: "cancelled",
+    });
+  }
+
+  private async terminateSessionExecution(input: SessionTermination) {
+    const existing = this.sessionTerminations.get(input.sessionId);
+    if (existing?.executionId === input.executionId) return existing.promise;
+    const lifecycle =
+      this.runLifecycles.state(input.sessionId) ??
+      this.runLifecycles.begin(input.sessionId, input.executionId);
+    if (
+      lifecycle?.execution_id !== input.executionId ||
+      ["cancelled", "failed", "max_iterations", "succeeded"].includes(
+        lifecycle.state,
+      )
+    )
+      return true;
+    if (lifecycle.state === "running")
+      this.runLifecycles.stopping(input.sessionId, input.executionId);
+    const promise = this.performSessionTermination(input);
+    this.sessionTerminations.set(input.sessionId, {
+      executionId: input.executionId,
+      promise,
+    });
+    return promise;
+  }
+
+  private async performSessionTermination(input: SessionTermination) {
+    const result = await this.stopCoreSession(input, 1_800);
+    if (result.status === "stopped") {
+      await this.finalizeSessionTermination(input);
+      return true;
+    }
+    this.runLifecycles.terminationPending(input.sessionId, input.executionId);
+    await this.logSession(input.sessionId, "run termination pending", {
+      ...(result.error === undefined
+        ? { reason: "TERMINATION_TIMEOUT" }
+        : { error: errorMessage(result.error) }),
+      ...this.runLifecycles.state(input.sessionId),
+    });
+    this.startTerminationWatchdog(input);
+    return false;
+  }
+
+  private async stopCoreSession(
+    input: SessionTermination,
+    timeoutMs: number,
+  ): Promise<SessionTerminationAttempt> {
+    const stopping = Promise.resolve().then(() =>
+      input.cline.stop(input.sessionId),
+    );
+    const aborting = Promise.resolve().then(() =>
+      input.cline.abort(input.sessionId, input.reason),
+    );
+    void aborting.catch((error: unknown) =>
+      this.logSession(input.sessionId, "tool cancellation failed", {
+        error: errorMessage(error),
+      }),
+    );
     let timeout: ReturnType<typeof setTimeout> | undefined;
+    const timedOut = Symbol("termination-timeout");
     const result = await Promise.race([
-      aborting.then(
+      stopping.then(
         () => ({ status: "stopped" as const }),
-        (error: unknown) => ({ status: "pending" as const, error }),
+        (error: unknown) => ({ error, status: "pending" as const }),
       ),
       new Promise<typeof timedOut>(
-        (resolve) => (timeout = setTimeout(() => resolve(timedOut), 1_800)),
+        (resolve) => (timeout = setTimeout(() => resolve(timedOut), timeoutMs)),
       ),
     ]);
     if (timeout) clearTimeout(timeout);
-    if (result === timedOut || result.status === "pending") {
-      this.runLifecycles.terminationPending(sessionId, executionId);
-      if (result !== timedOut)
-        await this.logSession(sessionId, "run termination pending", {
-          error:
-            result.error instanceof Error
-              ? result.error.message
-              : String(result.error),
-          ...this.runLifecycles.state(sessionId),
-        });
-      void aborting.then(
-        () => this.finalizeAbort(sessionId, executionId),
-        (error: unknown) =>
-          this.logSession(sessionId, "run termination watchdog required", {
-            error: error instanceof Error ? error.message : String(error),
-            ...this.runLifecycles.state(sessionId),
-          }),
-      );
-      return;
-    }
-    await this.finalizeAbort(sessionId, executionId);
+    return result === timedOut ? { status: "pending" } : result;
   }
 
-  private async finalizeAbort(sessionId: string, executionId: string) {
-    await this.recordInterruptedMemory(sessionId);
-    await this.readUsage(sessionId).catch(() => undefined);
-    this.runLifecycles.finish(sessionId, executionId, "cancelled");
-    this.agentTelemetry.cancel(sessionId);
-    await this.logSession(sessionId, "run lifecycle terminal", {
-      ...this.runLifecycles.state(sessionId),
+  private startTerminationWatchdog(input: SessionTermination) {
+    const existing = this.sessionTerminationWatchdogs.get(input.sessionId);
+    if (existing) return;
+    const watchdog = this.runTerminationWatchdog(input);
+    this.sessionTerminationWatchdogs.set(input.sessionId, watchdog);
+    const clear = () => {
+      if (this.sessionTerminationWatchdogs.get(input.sessionId) === watchdog)
+        this.sessionTerminationWatchdogs.delete(input.sessionId);
+    };
+    void watchdog.then(clear, clear);
+  }
+
+  private async runTerminationWatchdog(input: SessionTermination) {
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const lifecycle = this.runLifecycles.state(input.sessionId);
+      if (
+        lifecycle?.execution_id !== input.executionId ||
+        ["cancelled", "failed", "max_iterations", "succeeded"].includes(
+          lifecycle.state,
+        )
+      )
+        return;
+      const result = await this.stopCoreSession(input, 750);
+      if (result.status === "stopped") {
+        await this.finalizeSessionTermination(input);
+        return;
+      }
+      await this.logSession(input.sessionId, "run termination watchdog retry", {
+        attempt,
+        ...(result.error === undefined
+          ? { reason: "TERMINATION_TIMEOUT" }
+          : { error: errorMessage(result.error) }),
+        ...lifecycle,
+      });
+    }
+    await this.logSession(input.sessionId, "run termination watchdog pending", {
+      attempts: 3,
+      ...this.runLifecycles.state(input.sessionId),
     });
+  }
+
+  private async finalizeSessionTermination(input: SessionTermination) {
+    const lifecycle = this.runLifecycles.state(input.sessionId);
+    if (
+      lifecycle?.execution_id !== input.executionId ||
+      ["cancelled", "failed", "max_iterations", "succeeded"].includes(
+        lifecycle.state,
+      )
+    )
+      return;
+    if (input.event)
+      await this.handleSessionEvent(input.sessionId, input.event);
+    if (input.terminalState !== "succeeded")
+      await this.recordInterruptedMemory(input.sessionId);
+    const usage = await this.readUsage(input.sessionId).catch(() => undefined);
+    if (usage) this.agentTelemetry.recordUsageSummary(input.sessionId, usage);
+    if (input.event && input.display) this.events?.emit(input.event);
+    if (
+      !this.runLifecycles.finish(
+        input.sessionId,
+        input.executionId,
+        input.terminalState,
+      )
+    )
+      return;
+    if (input.terminalState === "cancelled")
+      this.agentTelemetry.cancel(input.sessionId);
+    else if (input.terminalState !== "succeeded")
+      this.agentTelemetry.fail(
+        input.sessionId,
+        new Error(terminalProductMessage(input.terminalState)),
+      );
+    await this.logSession(input.sessionId, "run lifecycle terminal", {
+      ...this.runLifecycles.state(input.sessionId),
+    });
+    const termination = this.sessionTerminations.get(input.sessionId);
+    if (termination?.executionId === input.executionId)
+      this.sessionTerminations.delete(input.sessionId);
   }
 
   private async recordInterruptedMemory(sessionId: string) {
@@ -1395,7 +1532,10 @@ export class BlameAgentRuntime {
       },
       started: (sessionId: string, cline: ClineCore) => {
         if (this.cancelledSecurityAudits.has(auditId)) {
-          void cline.abort(sessionId, "Security audit cancelled");
+          void Promise.allSettled([
+            cline.stop(sessionId),
+            cline.abort(sessionId, "Security audit cancelled"),
+          ]);
           throw new Error("Security audit cancelled");
         }
         const sessions =
@@ -1418,7 +1558,10 @@ export class BlameAgentRuntime {
     if (!sessions?.size) return false;
     await Promise.allSettled(
       [...sessions].map(([sessionId, cline]) =>
-        cline.abort(sessionId, "Security audit cancelled by user"),
+        Promise.allSettled([
+          cline.stop(sessionId),
+          cline.abort(sessionId, "Security audit cancelled by user"),
+        ]),
       ),
     );
     return true;
@@ -2220,6 +2363,7 @@ export class BlameAgentRuntime {
         const terminalState = terminalLifecycleState(event);
         if (terminalState) {
           const drain = this.finalizeStreamTerminal(
+            cline,
             sessionId,
             executionId,
             terminalState,
@@ -2247,22 +2391,22 @@ export class BlameAgentRuntime {
   }
 
   private async finalizeStreamTerminal(
+    cline: ClineCore,
     sessionId: string,
     executionId: string,
     terminalState: RunTerminalState,
     event: AgentEvent,
     display: boolean,
   ) {
-    await this.handleSessionEvent(sessionId, event);
-    const lifecycle = this.runLifecycles.state(sessionId);
-    if (
-      lifecycle?.execution_id !== executionId ||
-      lifecycle.state !== "running"
-    )
-      return;
-    if (!this.runLifecycles.finish(sessionId, executionId, terminalState))
-      return;
-    if (display) this.events?.emit(event);
+    await this.terminateSessionExecution({
+      cline,
+      display,
+      event,
+      executionId,
+      reason: `Cline emitted terminal event: ${terminalState}`,
+      sessionId,
+      terminalState,
+    });
   }
 
   private withSubmittedSummary(sessionId: string, event: AgentEvent) {
@@ -2507,6 +2651,9 @@ export class BlameAgentRuntime {
       activeContext,
     );
     if (!shouldAbortForUsage(usage, this.productionConfig)) return;
+    const executionId = this.sessionExecutionIds.get(sessionId);
+    if (executionId && !this.runLifecycles.canInvoke(sessionId, executionId))
+      return;
     const message = usageLimitMessage(usage, this.productionConfig);
     this.emitSessionError(sessionId, message);
     await this.abortSession(sessionId, false);
@@ -2547,10 +2694,14 @@ export class BlameAgentRuntime {
   }
 
   private clearSessionState(sessionId: string, preserveTelemetry: boolean) {
+    const lifecycle = this.runLifecycles.state(sessionId);
+    const terminationActive =
+      lifecycle?.state === "stopping" ||
+      lifecycle?.state === "termination_pending";
     this.autoApprovedWriteToolSessions.delete(sessionId);
     this.sessionContexts.delete(sessionId);
     this.sessionEventSignatures.delete(sessionId);
-    this.sessionExecutionIds.delete(sessionId);
+    if (!terminationActive) this.sessionExecutionIds.delete(sessionId);
     this.sessionIterations.delete(sessionId);
     this.sessionSubmittedSummaries.delete(sessionId);
     this.sessionSpawnAgentActiveCounts.delete(sessionId);
@@ -2564,7 +2715,11 @@ export class BlameAgentRuntime {
     this.sessionUsageSignatures.delete(sessionId);
     this.sessionGovernors.delete(sessionId);
     this.sessionTerminalDrains.delete(sessionId);
-    this.runLifecycles.remove(sessionId);
+    if (!terminationActive) {
+      this.runLifecycles.remove(sessionId);
+      this.sessionTerminations.delete(sessionId);
+      this.sessionTerminationWatchdogs.delete(sessionId);
+    }
     this.sessionBackendKeys.delete(sessionId);
     this.sessionApiConnections.delete(sessionId);
     this.sessionQualityBaselines.delete(sessionId);
@@ -3049,34 +3204,30 @@ export class BlameAgentRuntime {
         const failure = resultFailureMessage(result);
         if (failure) {
           const terminalState = terminalStateFromResult(result);
-          await this.recordInterruptedMemory(sessionId);
-          await this.readUsage(sessionId).catch(() => undefined);
-          this.agentTelemetry.fail(sessionId, new Error(failure));
-          if (
-            this.runLifecycles.finish(
+          await this.terminateSessionExecution({
+            cline,
+            display: true,
+            event: this.withExecutionId(
               sessionId,
+              {
+                type: "error",
+                sessionId,
+                payload: { message: failure, ...clineErrorMetadata(failure) },
+              },
               activeExecutionId,
-              terminalState,
-            )
-          )
-            this.emitSessionError(
-              sessionId,
-              failure,
-              failure,
-              activeExecutionId,
-            );
+            ),
+            executionId: activeExecutionId,
+            reason: `Cline send returned ${terminalState}`,
+            sessionId,
+            terminalState,
+          });
           return result;
         }
         if (!terminalDrain) {
-          await this.recordConversationResponse(sessionId, result);
-          const usage = await this.readUsage(sessionId).catch(() => undefined);
-          if (usage) this.agentTelemetry.recordUsageSummary(sessionId, usage);
-        }
-        if (
-          this.runLifecycles.finish(sessionId, activeExecutionId, "succeeded")
-        )
-          this.events?.emit(
-            this.withSubmittedSummary(
+          await this.terminateSessionExecution({
+            cline,
+            display: true,
+            event: this.withSubmittedSummary(
               sessionId,
               this.withExecutionId(
                 sessionId,
@@ -3088,7 +3239,12 @@ export class BlameAgentRuntime {
                 activeExecutionId,
               ),
             ),
-          );
+            executionId: activeExecutionId,
+            reason: "Cline send resolved",
+            sessionId,
+            terminalState: "succeeded",
+          });
+        }
         return result;
       })
       .catch(async (error: unknown) => {
@@ -3097,7 +3253,9 @@ export class BlameAgentRuntime {
           lifecycle?.execution_id === activeExecutionId &&
           lifecycle.state !== "running"
         )
-          throw error;
+          return lifecycle.state === "succeeded"
+            ? undefined
+            : Promise.reject(error);
         const message = errorMessage(error);
         void this.logSession(
           sessionId,
@@ -3110,10 +3268,23 @@ export class BlameAgentRuntime {
           },
           activeContext,
         );
-        await this.recordInterruptedMemory(sessionId);
-        await this.readUsage(sessionId).catch(() => undefined);
-        if (this.runLifecycles.finish(sessionId, activeExecutionId, "failed"))
-          this.emitSessionError(sessionId, message, error, activeExecutionId);
+        await this.terminateSessionExecution({
+          cline,
+          display: true,
+          event: this.withExecutionId(
+            sessionId,
+            {
+              type: "error",
+              sessionId,
+              payload: { message, ...clineErrorMetadata(error) },
+            },
+            activeExecutionId,
+          ),
+          executionId: activeExecutionId,
+          reason: "Cline send failed",
+          sessionId,
+          terminalState: "failed",
+        });
         throw error;
       });
     void this.logSession(

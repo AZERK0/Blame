@@ -508,6 +508,18 @@ export class ConversationMemoryStore {
     });
   }
 
+  async recordKnowledge(facts: string[], nextFocus?: string) {
+    const selected = unique(
+      facts.map((fact) => fact.trim()).filter(Boolean),
+    ).slice(0, 8);
+    if (!selected.length && !nextFocus) return;
+    await this.recordOperationalState({
+      architecture: selected,
+      nextFocus,
+      unavailableCapabilities: [],
+    });
+  }
+
   async recall(input: RecallContextInput) {
     const { memory } = await this.read("");
     return recallMemory(memory, input, this.tokenCounter);

@@ -53,6 +53,7 @@ export class HarnessCostGovernor {
   private readonly taskState = initialState();
   private identicalOrCoveredReads = 0;
   private unavailableCapabilities = new Set<string>();
+  private dependencyExplorationClosed = false;
 
   constructor(iterationBudget = 80, semanticLoops = true) {
     this.iterationBudget = Math.max(1, iterationBudget);
@@ -71,6 +72,11 @@ export class HarnessCostGovernor {
     const noProgress = this.noProgressIterations(iteration);
     const absentPackage = absentPackageTarget(tool, input, this.absentPackages);
     if (absentPackage) return absentPackageReceipt(absentPackage);
+    if (
+      this.dependencyExplorationClosed &&
+      lockfileReconstructionTarget(tool, input)
+    )
+      return lockfileReconstructionReceipt();
     const loopDecision = this.loops?.before(tool, input);
     if (loopDecision) return loopDecision;
     const reserveBlock = this.reserveBlock(tool, input, iteration);
@@ -219,8 +225,11 @@ export class HarnessCostGovernor {
     result: HarnessToolResult<T>,
     iteration: number,
   ) {
-    if (result.outcome === "unavailable")
+    if (result.outcome === "unavailable") {
       this.unavailableCapabilities.add(result.reason);
+      if (unavailableDependencyCapability(result))
+        this.dependencyExplorationClosed = true;
+    }
     if (!materialProgress(tool, result, state)) return;
     state.lastMaterialProgressIteration = iteration;
     if (isEdit(tool) && result.outcome === "applied") {
@@ -568,6 +577,70 @@ function isEdit(tool: SemanticWorkspaceToolName) {
 
 function isBroadRead(tool: SemanticWorkspaceToolName) {
   return ["get_relation_context", "outline_code", "search_code"].includes(tool);
+}
+
+function unavailableDependencyCapability<T>(result: HarnessToolResult<T>) {
+  if (result.status !== "success") return false;
+  if (
+    result.outcome === "unavailable" &&
+    /DEPENDENC|PACKAGE_MANAGER|REGISTRY|NETWORK|CACHE/iu.test(result.reason)
+  )
+    return true;
+  const data = recordValue(result.data);
+  const capabilities = recordValue(data.capabilities);
+  const execution = recordValue(capabilities.execution);
+  const projection = recordValue(data.task_projection);
+  const inventory = recordValue(projection.dependency_inventory);
+  const candidates = [
+    recordValue(execution.dependency_mutation),
+    recordValue(inventory.mutation),
+  ];
+  return candidates.some(
+    (candidate) =>
+      candidate.available === false || candidate.status === "unavailable",
+  );
+}
+
+function lockfileReconstructionTarget(
+  tool: SemanticWorkspaceToolName,
+  input: unknown,
+) {
+  if (
+    ![
+      "get_relation_context",
+      "inspect_code",
+      "outline_code",
+      "search_code",
+    ].includes(tool)
+  )
+    return false;
+  return /(?:^|[\\/"'\s])(?:bun\.lockb?|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)(?:$|[\\/"'\s])/iu.test(
+    JSON.stringify(input) ?? "",
+  );
+}
+
+function lockfileReconstructionReceipt() {
+  return harnessSuccess({
+    startedAt: Date.now(),
+    revision: {},
+    provenance: [],
+    outcome: "skipped",
+    reason: "LOCKFILE_RECONSTRUCTION_SUPPRESSED",
+    recommendation:
+      "Use workspace_state dependency inventory, reuse installed packages, implement without the dependency, or report the blocker.",
+    data: {
+      status: "retry_suppressed",
+      applied: false,
+      reason: "LOCKFILE_RECONSTRUCTION_SUPPRESSED",
+      retryable: false,
+      content_coverage: "none",
+    },
+    coverage: {
+      scope: "unknown",
+      truncated: true,
+      analysis: "observed_subset",
+    },
+  });
 }
 
 function absentPackageReceipt(dependency: string) {

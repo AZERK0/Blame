@@ -71,7 +71,7 @@ export class RunLifecycleRegistry {
       run.post_stop_events += 1;
       run.post_stop_tokens += Math.max(0, tokens);
     }
-    return !terminalState(run.state);
+    return run.state === "running";
   }
 
   canInvoke(sessionId: string, executionId: string) {

@@ -10,6 +10,7 @@ import {
 } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
+import { request as httpRequest } from "node:http";
 import test from "node:test";
 import { execa } from "execa";
 import { validateContent } from "./content-validation.js";
@@ -47,10 +48,15 @@ import {
 } from "./semantic-loop-detector.js";
 import { readTaskCatalog, taskInvocation } from "./task-catalog.js";
 import {
+  automaticDependencyNetworkPolicy,
   SandboxedTaskExecutor,
   type TaskExecutionInput,
   type TaskExecutor,
 } from "./task-executor.js";
+import {
+  configuredRegistryHosts,
+  startRegistryAllowlistProxy,
+} from "./registry-allowlist-proxy.js";
 
 test("the capability prompt is generated from the central registry", () => {
   const description = supportedOperationsDescription();
@@ -584,6 +590,64 @@ test("task definitions preserve the exact declared package manager version", asy
   });
 });
 
+test("dependency execution exposes a built-in configured-registry allowlist", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-registry-policy-"));
+  try {
+    await mkdir(join(root, "packages", "api"), { recursive: true });
+    await writeFile(
+      join(root, ".npmrc"),
+      "registry=https://registry.corp.example/npm/\n@scope:registry=https://scope.example/npm/\n",
+    );
+    await writeFile(
+      join(root, "packages", "api", ".yarnrc.yml"),
+      'npmRegistryServer: "https://yarn.example/packages"\n',
+    );
+    const hosts = await configuredRegistryHosts(
+      root,
+      join(root, "packages", "api"),
+    );
+    assert.deepEqual([...hosts].sort(), [
+      "registry.corp.example",
+      "registry.npmjs.org",
+      "scope.example",
+      "yarn.example",
+    ]);
+    assert.equal(automaticDependencyNetworkPolicy(), "project_allowlist");
+    assert.deepEqual(await new SandboxedTaskExecutor().dependencyCapability(), {
+      available: true,
+      network: "managed_allowlist",
+    });
+    const proxy = await startRegistryAllowlistProxy({
+      cwd: join(root, "packages", "api"),
+      overlayRoot: root,
+    });
+    try {
+      const address = new URL(proxy.url);
+      const status = await new Promise<number | undefined>((resolveStatus) => {
+        const request = httpRequest(
+          {
+            host: address.hostname,
+            method: "GET",
+            path: "http://not-configured.invalid/package",
+            port: Number(address.port),
+          },
+          (response) => {
+            response.resume();
+            resolveStatus(response.statusCode);
+          },
+        );
+        request.end();
+      });
+      assert.equal(status, 403);
+      assert.deepEqual(proxy.allowedHosts, [...hosts].sort());
+    } finally {
+      await proxy.close();
+    }
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+});
+
 test("all managed package managers resolve without Corepack", async () => {
   const versions: Array<[PackageManagerName, string]> = [
     ["npm", "11.6.4"],
@@ -857,6 +921,65 @@ test("large web fetch results retain the Cline result envelope", async () => {
   assert.equal(governed.metadata.externalReadTruncated, true);
   assert.ok((governed.output[0]?.result.length ?? 0) < 28_000);
   assert.ok(Buffer.byteLength(JSON.stringify(governed), "utf8") <= 16_000);
+});
+
+test("a Cline hook skip is restored as the original non-fatal receipt", async () => {
+  const governor = new ExternalReadGovernor();
+  const context = {} as never;
+  const tool = governor.wrap({
+    name: "workspace_state",
+    description: "state",
+    inputSchema: { type: "object" },
+    execute: async () => ({
+      outcome: "unavailable",
+      data: {
+        capabilities: {
+          execution: {
+            dependency_mutation: {
+              available: false,
+              capability: "dependency_mutation",
+              status: "unavailable",
+            },
+          },
+        },
+      },
+    }),
+  } as never);
+  await tool.execute({}, context);
+  const hooks = governor.fetchHooks();
+  assert.ok(hooks.beforeTool);
+  assert.ok(hooks.afterTool);
+  const toolCall = { toolCallId: "cline-skipped-fetch" };
+  const input = { query: "pnpm add package" };
+  const skipped = await hooks.beforeTool({
+    input,
+    snapshot: {},
+    tool: { name: "fetch_web_content" },
+    toolCall,
+  } as never);
+  assert.equal(skipped?.skip, true);
+
+  const restored = await hooks.afterTool({
+    input,
+    result: {
+      isError: true,
+      output: [{ error: `"${skipped?.reason}"`, success: false }],
+    },
+    snapshot: {},
+    tool: { name: "fetch_web_content" },
+    toolCall,
+  } as never);
+  const result = restored?.result;
+  assert.equal(result?.isError, false);
+  assert.equal(
+    (result?.output as Record<string, unknown>).outcome,
+    "unavailable",
+  );
+  assert.equal(
+    (result?.output as Record<string, unknown>).reason,
+    "DEPENDENCY_MUTATION_UNAVAILABLE",
+  );
+  assert.equal(Array.isArray(result?.output), false);
 });
 
 test("parallel identical external reads share one execution", async () => {

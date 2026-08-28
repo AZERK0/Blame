@@ -418,16 +418,31 @@ test("US-016 suppresses installation research after the capability circuit opens
   } as never);
   await workspaceState.execute({}, context);
   const beforeFetch = governor.fetchHooks().beforeTool;
+  const afterFetch = governor.fetchHooks().afterTool;
   assert.ok(beforeFetch);
+  assert.ok(afterFetch);
+  const toolCall = { toolCallId: "suppressed-install-research" };
   const hookSuppressed = await beforeFetch({
     tool: { name: "fetch_web_content" },
     input: { query: "how to install a dependency with pnpm" },
+    toolCall,
   } as never);
   assert.equal(hookSuppressed?.skip, true);
+  assert.equal(hookSuppressed?.reason, "DEPENDENCY_MUTATION_UNAVAILABLE");
+  const hookReceipt = await afterFetch({
+    input: { query: "how to install a dependency with pnpm" },
+    result: {
+      isError: true,
+      output: [{ error: hookSuppressed?.reason, success: false }],
+    },
+    tool: { name: "fetch_web_content" },
+    toolCall,
+  } as never);
   assert.equal(
-    recordValue(JSON.parse(hookSuppressed?.reason ?? "{}")).reason,
+    recordValue(hookReceipt?.result.output).reason,
     "DEPENDENCY_MUTATION_UNAVAILABLE",
   );
+  assert.equal(hookReceipt?.result.isError, false);
   let executions = 0;
   const fetch = governor.wrap({
     name: "fetch_web_content",

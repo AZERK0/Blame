@@ -1830,7 +1830,7 @@ Le registre distingue les tentatives actives dans le processus des tentatives or
 
 Le catalogue respecte le champ `packageManager`, puis les lockfiles comme fallback, et expose une tâche `dependencies` pour npm, pnpm, Yarn ou Bun. Chaque tâche déclare `supportsFileSelection`, `requiresNetwork` et `dependencyPolicy`. Les fichiers sélectionnés ne sont transmis qu’aux tâches qui le permettent ; un build reste donc `pnpm run build` sans arguments parasites. Le runtime appelle directement le gestionnaire provisionné, sans Corepack. Il conserve les lockfiles comme autorité, préfère le cache hors ligne (`--prefer-offline` ou équivalent) et n’encourage jamais une édition manuelle du lockfile. Une dépendance manquante produit un diagnostic explicite et la tentative garde un état terminal durable. Une panne de gestionnaire, de Corepack ou de proxy est classée `infrastructure_error`, pas comme un échec du code.
 
-Le réseau reste refusé par défaut. L’allowlist projet n’est acceptée que pour la tâche de dépendances et uniquement lorsqu’un proxy contrôlé est fourni par `BLAME_PROJECT_ALLOWLIST_PROXY`; sans ce proxy, le runtime retourne `runtime_error` plutôt que d’ouvrir le réseau. Le même contrat s’exécute dans le worktree Linux natif, Lima ou WSL. En Cloud Preview, l’accès au cache et au réseau reste délégué au micro-runtime distant, qui doit fournir le proxy compatible.
+Le réseau reste refusé par défaut pour les tâches ordinaires. La tâche de dépendances démarre un proxy loopback éphémère dont l’allowlist est dérivée du registry npm public par défaut et des seules directives `registry`, `@scope:registry`, `npmRegistryServer` et `publishConfig.registry` du projet. Les tunnels vers une autre origine, une adresse locale, privée ou link-local sont refusés. `BLAME_PROJECT_ALLOWLIST_PROXY` reste un override pour le proxy managé du control plane. Le même contrat s’exécute dans le worktree Linux natif, dans le runtime Lima ou WSL, et n’exécute aucun lifecycle package pendant la génération du lockfile. En Cloud Preview, la mutation reste native au worktree utilisateur ; la micro-VM Preview n’est pas utilisée comme exécuteur de dépendances.
 
 ### 21.8 Local Runtime, Cloud Preview et récupération Preview
 
@@ -2111,13 +2111,17 @@ Tous les tools du harness produisent maintenant l'enveloppe commune `outcome`, `
 
 Le constructeur d'enveloppe corrige une incohérence `outcome: applied` avec `applied: false` en `blocked`, et une fausse completion sans application en `skipped`. L'adaptateur Cline garde les erreurs récupérables à `isError: false`. Le frontend lit l'outcome de l'enveloppe, y compris lorsqu'elle est imbriquée dans le reçu Cline ; seuls les `failed` fatals passent l'activité en échec et une sortie non appliquée ne reprend jamais les chemins d'édition de l'entrée.
 
-`mutate_dependencies` vérifie désormais le workspace et le `package_path` existant avant toute interrogation de l'exécuteur. Il vérifie ensuite la cohérence du chemin, le gestionnaire, le réseau ou cache, puis exécute. L'installation utilise le gestionnaire détecté ; pour pnpm, le lockfile commité est exactement celui généré par `pnpm install --lockfile-only --prefer-offline`. Les écritures génériques de lockfiles restent interdites. La capacité annonce `registry_policy: configured_only`. Le routage conserve Linux dans le worktree natif, macOS dans Lima et Windows dans WSL pour le Local Runtime ; le worktree Cloud Preview reste natif et sa micro-VM n'est utilisée que pour la preview.
+`mutate_dependencies` vérifie désormais le workspace et le `package_path` existant avant toute interrogation de l'exécuteur. Il vérifie ensuite la cohérence du chemin, le gestionnaire, le réseau ou cache, puis exécute. L'installation utilise le gestionnaire détecté ; pour pnpm, le lockfile commité est exactement celui généré par `pnpm install --lockfile-only --prefer-offline --ignore-scripts`. Les écritures génériques de lockfiles restent interdites. La capacité annonce `registry_policy: configured_only`. Le routage conserve Linux dans le worktree natif, macOS dans Lima et Windows dans WSL pour le Local Runtime ; le worktree Cloud Preview reste natif et sa micro-VM n'est utilisée que pour la preview.
 
-Une indisponibilité ouvre immédiatement le circuit de capacité et ne retourne dans `data` que la raison, les dépendances directes déjà utilisables et les trois stratégies réalistes. Les recherches explicitement destinées à réassembler des métadonnées npm ou un lockfile sont alors supprimées sans appel externe.
+Une indisponibilité ouvre immédiatement le circuit de capacité et ne retourne dans `data` que la raison, les dépendances directes déjà utilisables et les trois stratégies réalistes. Les recherches explicitement destinées à réassembler des métadonnées npm ou un lockfile sont alors supprimées sans appel externe. Ce circuit couvre également `search_code`, `outline_code`, `inspect_code` et `get_relation_context` lorsqu’ils ciblent `pnpm-lock.yaml`, `package-lock.json`, `yarn.lock` ou un lockfile Bun ; une nouvelle demande utilisateur ne le rouvre pas tant que la capacité runtime n’a pas changé.
+
+Le runtime fournit désormais lui-même le proxy de registry manquant. Il écoute uniquement sur loopback pendant l’exécution, autorise les registries configurés dans le worktree, refuse les destinations privées et se ferme avec l’`AbortSignal`. `SandboxedTaskExecutor` annonce donc `network: managed_allowlist` même sans variable d’environnement. Linux l’exécute dans le worktree natif, macOS dans Lima, Windows dans WSL et Cloud dans le worktree utilisateur. pnpm reste l’autorité du lockfile et reçoit `--lockfile-only --prefer-offline --ignore-scripts`.
+
+`workspace_state` conserve l’exhaustivité sans injecter tout le catalogue. Le reçu par défaut expose tous les workspaces, packages et chemins de manifests, les frameworks, capacités et tâches importantes, mais n’expanse les dépendances et scripts que pour au plus quatre manifests pertinents. Les autres manifests et les tâches possèdent des références stables et des curseurs courts liés à la source revision ; les pages bornées à 25 rendent ensuite le détail complet. Un curseur périmé retourne `unavailable: STALE_WORKSPACE_STATE_CURSOR` avec l’action de remplacement, jamais une exception.
 
 #### Lectures, références et non-progression
 
-Le cache externe est indexé par ressource canonique, et séparément pour chaque URL d'un batch. Il retire fragments, suffixe terminal `.md` et paramètres de tracking, trie les paramètres utiles et conserve la casse des chemins. Les 404 sont donc mis en cache comme les autres reçus. Une répétition retourne `outcome: skipped`, `reason: REPEATED_EXTERNAL_READ`, le reçu précédent et un résumé borné. Deux URL différentes restent accessibles, même si leur contenu attendu est proche.
+Le cache externe est indexé par ressource canonique, et séparément pour chaque URL d'un batch. Il retire fragments, suffixe terminal `.md` et paramètres de tracking, trie les paramètres utiles et conserve la casse des chemins. Les 404 sont donc mis en cache comme les autres reçus. Une répétition retourne `outcome: skipped`, `reason: REPEATED_EXTERNAL_READ`, le reçu précédent et un résumé borné. Deux URL différentes restent accessibles, même si leur contenu attendu est proche. Pour le hook Cline, `beforeTool` ne sérialise plus le reçu dans `reason` : il conserve le reçu par `toolCallId`, demande le skip avec un code court, puis `afterTool` remplace le faux tableau d’erreur produit par Cline par le reçu original avec `isError: false`.
 
 Le runtime calcule lui-même les itérations sans progrès matériel. À quatre, il injecte un résumé compact des faits acquis. À six, les lectures équivalentes et les recherches externes déjà couvertes sont déjà servies depuis leurs reçus. À huit, les lectures larges et externes sont fermées, tandis que les lectures ciblées, éditions et validations restent disponibles. Une édition appliquée, une dépendance appliquée, une validation postérieure à une édition, un blocker définitif ou la réponse finale réinitialisent le compteur pertinent ; une simple recherche ne le fait pas.
 
@@ -2125,7 +2129,7 @@ Les plages raw sont bornées à EOF après résolution : une lecture sans plage 
 
 #### Mémoire déterministe et lifecycle unique
 
-Avant chaque appel modèle, le runtime écrit un checkpoint déterministe, indépendamment de toute sortie finale du modèle. La mémoire opérationnelle conserve la demande utilisateur exacte, les décisions et l'architecture, les capacités indisponibles, les lectures avec leur blob source, toutes les modifications, les validations et la prochaine cible. Un compactage tourne l'epoch puis réinjecte directement cette continuité. Les fichiers déjà inspectés restent nommés sous la forme `path@blob`, ce qui évite de relancer les lectures initiales tant que leur révision reste valide.
+Avant chaque appel modèle, le runtime écrit un checkpoint déterministe, indépendamment de toute sortie finale du modèle. La mémoire opérationnelle conserve la demande utilisateur exacte, les décisions et l'architecture, les capacités indisponibles, les lectures avec leur blob source, toutes les modifications, les validations, les chemins et symboles découverts, et la prochaine cible. Le hook `beforeModel` compare maintenant le nombre de messages et leur empreinte en octets à l’appel précédent : une contraction réelle du transcript déclenche `rotate("model_compaction")`, réinjecte directement la continuité et rend inactives les anciennes couvertures du working set. Une relecture ciblée peut ainsi restituer un contenu disparu du contexte compacté au lieu de recevoir un faux `already_available`.
 
 Le lifecycle est maintenant une machine d'état unique :
 
@@ -2134,9 +2138,11 @@ running → stopping → succeeded | failed | cancelled | max_iterations
                     ↘ termination_pending → watchdog → état terminal
 ```
 
-L'arrêt passe d'abord à `stopping`, appelle l'abort du SDK — qui propage son signal aux tools, spécialistes et sous-processus —, attend au plus 1,8 s, vide la dernière mesure d'usage puis seulement persiste `cancelled`. Un dépassement ou un rejet reste `termination_pending` et produit un événement watchdog ; il n'est pas maquillé en `failed`. Après un terminal, la barrière rejette tout nouvel événement, tool ou appel modèle. Le `execution_id` est comparé par CAS et une nouvelle exécution ne remplace jamais une exécution encore `running`, `stopping` ou `termination_pending`.
+Toute terminaison, y compris un événement `done` ou `error` du stream, passe atomiquement à `stopping`, appelle `ClineCore.stop()` pour fermer la session et `abort()` en parallèle pour propager l’annulation aux tools, spécialistes et groupes de processus, puis attend au plus 1,8 s. Ce n’est qu’après confirmation de `stop()` que le runtime traite le dernier événement, vide l’usage, publie le terminal et persiste l’état final. `abort()` seul n’est plus considéré comme une preuve d’arrêt, car le SDK documente qu’il conserve la session active.
 
-Les spécialistes utilisent un timeout explicite, reçoivent un `AbortSignal` lié, et sont dédupliqués par spécialiste, objectif normalisé et révision source. Un timeout annule effectivement le spécialiste et retourne un blocker non fatal ; une consultation répétée renvoie son précédent reçu.
+Un rejet ou dépassement passe à `termination_pending`. Un watchdog réel effectue jusqu’à trois nouvelles paires `stop + abort`, chacune bornée à 750 ms, et finalise seulement lorsqu’un `stop()` réussit. Après épuisement, l’état reste pending et n’est jamais maquillé en `failed`. La barrière rejette les événements dès `stopping`, pas seulement après le terminal. Les sessions de préchauffage et d’audit de sécurité utilisent également `stop()`. Le `execution_id` est comparé par CAS et une nouvelle exécution ne remplace jamais une exécution encore `running`, `stopping` ou `termination_pending`.
+
+Les spécialistes utilisent un timeout explicite, reçoivent un `AbortSignal` lié, et sont dédupliqués par spécialiste, objectif normalisé et révision source. La clé reste seulement `inFlight` pendant l’exécution et n’entre dans le cache durable qu’après `outcome: completed`. Un timeout, une annulation ou un échec peut donc être retenté ; seule une consultation réellement terminée renvoie ensuite son précédent reçu.
 
 #### Observabilité et replay headless
 
@@ -2144,19 +2150,24 @@ La télémétrie ajoute l'itération et les tokens avant première édition, les
 
 Le replay déterministe `headless-us017.test.ts` a été exécuté localement le 28 août 2026 :
 
-| Vérification                                      |                                                                              Résultat |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------: |
-| Scénarios US-017                                  |                                                           15 réussis, 0 échec, 0 skip |
-| Manifest absent avec exécuteur indisponible       |            `TARGET_NOT_FOUND`, 0 interrogation d'exécuteur après la révision initiale |
-| Branche pnpm disponible                           |   application au premier appel de mutation, lockfile généré par le faux pnpm contrôlé |
-| Branche indisponible                              |                                 `unavailable`, 0 exécution et 0 recherche npm externe |
-| Déduplication web                                 |                                     URL répétée `skipped`, ressource voisine exécutée |
-| Compaction forcée                                 | objectif, décisions, fichier, changement et validation restaurés ; 0 erreur de recall |
-| Spécialiste bloqué                                |                                         timeout de 10 ms, signal d'annulation observé |
-| Arrêt runtime simulé                              |                                                     0,7 ms, état `cancelled` persisté |
-| Appels ou tokens post-terminaux du chemin nominal |                                                                                 0 / 0 |
-| Baseline de dix payloads externes identiques      |                                                             122 650 octets sérialisés |
-| Après reçus canoniques                            |                                                          19 087 octets, soit −84,44 % |
+| Vérification                                      |                                                                                Résultat |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------: |
+| Scénarios US-017                                  |                                                             17 réussis, 0 échec, 0 skip |
+| Manifest absent avec exécuteur indisponible       |              `TARGET_NOT_FOUND`, 0 interrogation d'exécuteur après la révision initiale |
+| Branche pnpm disponible                           |     application au premier appel de mutation, lockfile généré par le faux pnpm contrôlé |
+| Branche indisponible                              |                                   `unavailable`, 0 exécution et 0 recherche npm externe |
+| Déduplication web                                 |                                       URL répétée `skipped`, ressource voisine exécutée |
+| `workspace_state` Blame avant                     |                                            65 Ko, environ 16 307 tokens estimés (revue) |
+| `workspace_state` Blame après                     | 18 282 octets, environ 4 571 tokens ; 14 manifests/103 tâches paginables, 2/12 injectés |
+| Compaction réelle `beforeModel`                   |   rotation détectée, objectif et connaissances restaurés, ancienne couverture réouverte |
+| Spécialiste bloqué                                |               timeout de 10 ms annulé, retry exécuté puis seul le succès est dédupliqué |
+| Arrêt runtime simulé                              |                `stop + abort`, persistance après stop, état `cancelled` en moins de 2 s |
+| Watchdog                                          |            rejet initial de `stop`, second appel réussi, état terminal persisté ensuite |
+| Appels ou tokens post-terminaux du chemin nominal |                                                                                   0 / 0 |
+| Baseline de dix payloads externes identiques      |                                                               122 650 octets sérialisés |
+| Après reçus canoniques                            |                                                            19 087 octets, soit −84,44 % |
+
+La suite runtime complète contient 295 scénarios : 292 passent sur ce poste et trois sont ignorés (les deux tests live sans credentials et le test bubblewrap indisponible sur macOS). La suite frontend complète passe à 228/228. Le run US-017 de production n’a volontairement pas été relancé : le prochain jalon reste un test live borné, puis seulement une US complète si ses compteurs post-terminal restent à zéro.
 
 La comparaison de coût est un proxy déterministe d'octets sérialisés, donc une borne reproductible du contexte tool, pas une mesure de facturation provider. La trace brute et les credentials du run US-017 d'origine ne sont pas présents dans ce worktree ; aucun chiffre live n'est inventé. Le test dépasse néanmoins le critère de réduction de 70 % sur le replay dérivé, et la barrière d'observabilité est testée séparément par injection d'un événement post-terminal, sans le laisser atteindre la timeline.
 
