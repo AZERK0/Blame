@@ -160,6 +160,14 @@ function selectedAttachments(event: React.ChangeEvent<HTMLInputElement>) {
   )
 }
 
+function draggedAttachments(event: React.DragEvent<HTMLDivElement>) {
+  return fileAttachments(Array.from(event.dataTransfer.files))
+}
+
+function isFileDrag(dataTransfer: DataTransfer) {
+  return Array.from(dataTransfer.types).includes("Files")
+}
+
 function aiContextAttachmentSupported(file: File) {
   return supportedAiContextAttachmentExtensions().some((extension) =>
     file.name.toLowerCase().endsWith(extension)
@@ -489,7 +497,7 @@ const MarkdownOptimizeButton = React.memo(function MarkdownOptimizeButton({
           <Button
             type="button"
             aria-label="Enhance with AI"
-            className="h-8 gap-1.5 rounded-xl border-transparent bg-transparent px-2.5 text-[11px] font-semibold text-foreground shadow-[0_0_0_1px_oklch(0.7_0.17_250_/_0.12),0_0_8px_oklch(0.65_0.2_250_/_0.12)] ring-1 ring-foreground/20 transition-[filter] duration-150 hover:brightness-105 active:translate-y-0 focus-visible:ring-2 focus-visible:ring-sky-300/80"
+            className="h-8 gap-1.5 rounded-xl border-transparent bg-transparent px-2.5 text-[11px] font-semibold text-foreground shadow-[0_0_0_1px_oklch(0.7_0.17_250_/_0.12),0_0_8px_oklch(0.65_0.2_250_/_0.12)] ring-1 ring-foreground/20 transition-[filter] duration-150 hover:brightness-105 focus-visible:ring-2 focus-visible:ring-sky-300/80 active:translate-y-0"
             disabled={disabled}
             onClick={onOptimize}
             style={{
@@ -1842,6 +1850,7 @@ export const MarkdownEditor = React.forwardRef<
   >([])
   const [activeMentionIndex, setActiveMentionIndex] = React.useState(0)
   const attachmentsRef = React.useRef<PastedAttachment[]>([])
+  const fileDragDepthRef = React.useRef(0)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const handledCodeSelectionIdsRef = React.useRef(new Set<string>())
   const handledFileAttachmentIdsRef = React.useRef(new Set<string>())
@@ -1871,6 +1880,7 @@ export const MarkdownEditor = React.forwardRef<
   const [optimizing, setOptimizing] = React.useState(false)
   const [optimizingAttachments, setOptimizingAttachments] =
     React.useState(false)
+  const [fileDropActive, setFileDropActive] = React.useState(false)
   const [optimizeAttachmentsForAiContext, setOptimizeAttachmentsForAiContext] =
     React.useState(true)
   const setEditorElement = React.useCallback(
@@ -2179,6 +2189,40 @@ export const MarkdownEditor = React.forwardRef<
     void addFileAttachments(nextAttachments)
   }
 
+  function handleFileDragEnter(event: React.DragEvent<HTMLDivElement>) {
+    if (readOnly || !isFileDrag(event.dataTransfer)) return
+    event.preventDefault()
+    event.stopPropagation()
+    fileDragDepthRef.current += 1
+    setFileDropActive(true)
+  }
+
+  function handleFileDragOver(event: React.DragEvent<HTMLDivElement>) {
+    if (readOnly || !isFileDrag(event.dataTransfer)) return
+    event.preventDefault()
+    event.stopPropagation()
+    event.dataTransfer.dropEffect = "copy"
+  }
+
+  function handleFileDragLeave(event: React.DragEvent<HTMLDivElement>) {
+    if (readOnly || !isFileDrag(event.dataTransfer)) return
+    event.preventDefault()
+    event.stopPropagation()
+    fileDragDepthRef.current = Math.max(0, fileDragDepthRef.current - 1)
+    if (fileDragDepthRef.current === 0) setFileDropActive(false)
+  }
+
+  function handleFileDrop(event: React.DragEvent<HTMLDivElement>) {
+    if (readOnly || !isFileDrag(event.dataTransfer)) return
+    event.preventDefault()
+    event.stopPropagation()
+    fileDragDepthRef.current = 0
+    setFileDropActive(false)
+    const nextAttachments = draggedAttachments(event)
+    if (nextAttachments.length === 0) return
+    void addFileAttachments(nextAttachments)
+  }
+
   async function addFileAttachments(nextAttachments: PastedAttachment[]) {
     addAttachments(nextAttachments)
     if (!onFileAttachmentsAdd) {
@@ -2474,11 +2518,30 @@ export const MarkdownEditor = React.forwardRef<
             if (typeof ref === "function") ref(element)
             else if (ref) ref.current = element
           }}
-          className="max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/50 p-1 shadow-xl ring-1 shadow-black/10 ring-foreground/20 transition-colors dark:bg-muted/50"
+          className={cn(
+            "relative max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/50 p-1 shadow-xl ring-1 shadow-black/10 ring-foreground/20 transition-colors dark:bg-muted/50",
+            fileDropActive && "ring-2 ring-primary"
+          )}
           onBlur={() => requestAnimationFrame(() => updateMention())}
+          onDragEnter={handleFileDragEnter}
+          onDragLeave={handleFileDragLeave}
+          onDragOver={handleFileDragOver}
+          onDrop={handleFileDrop}
           onKeyDownCapture={handleKeyDown}
           onPaste={handlePaste}
         >
+          {fileDropActive && (
+            <div
+              aria-live="polite"
+              className="pointer-events-none absolute inset-1 z-30 flex items-center justify-center rounded-[calc(1.5rem-0.25rem)] border-2 border-dashed border-primary bg-background/90 text-primary backdrop-blur-sm"
+              role="status"
+            >
+              <div className="flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium">
+                <PaperclipIcon className="size-4" />
+                Drop files to attach
+              </div>
+            </div>
+          )}
           {readOnly ? (
             <MarkdownPreview
               animateAppend={animateAppend}
