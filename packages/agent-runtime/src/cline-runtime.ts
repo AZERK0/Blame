@@ -159,6 +159,12 @@ import { generateTitle } from "./title-generation.js";
 import { loadPrompt } from "./prompt-loader.js";
 import { createProviderCompatibleFetch } from "./provider-schema-compatibility.js";
 import { fallbackCommitSubject } from "./commit-message.js";
+import {
+  assertTargetChangesRestorable,
+  restoreTargetChanges as restoreStashedTargetChanges,
+  stashTargetChanges,
+  type TargetChangesStash,
+} from "./approve-merge-git.js";
 import { AgentTelemetry } from "./agent-telemetry.js";
 import { BlameUserInstructionServices } from "./user-instruction-services.js";
 import { taskComplexityBucket } from "./telemetry-cohorts.js";
@@ -2321,14 +2327,31 @@ export class BlameAgentRuntime {
   ) {
     const { baseCommit, integration, targetBranch, targetClean, upstream } =
       preparation;
+    let targetChanges: TargetChangesStash | undefined;
     try {
+      if (!targetClean) {
+        targetChanges = await stashTargetChanges(input.repositoryRoot, git);
+        if (targetChanges) {
+          await appendLog(logFile, "local target changes stashed", {
+            commit: targetChanges.commit,
+          });
+        }
+      }
       await git(integration, ["merge", "--ff-only", input.storyBranch]);
       const mergeCommit = await git(integration, ["rev-parse", "HEAD"]);
       if (!targetClean) {
+        await assertTargetChangesRestorable(integration, targetChanges, git);
         await advanceTargetBranch(
           input.repositoryRoot,
           targetBranch,
           input.storyBranch,
+        );
+        const changesToRestore = targetChanges;
+        targetChanges = undefined;
+        await restoreTargetChanges(
+          input.repositoryRoot,
+          changesToRestore,
+          logFile,
         );
       }
       await pushIntegrationWorktree(integration, upstream, logFile);
@@ -2339,8 +2362,18 @@ export class BlameAgentRuntime {
       });
       return { baseCommit, mergeCommit, targetBranch };
     } finally {
-      if (!targetClean) {
-        await removeIntegrationWorktree(input.repositoryRoot, integration);
+      try {
+        if (targetChanges) {
+          await restoreTargetChanges(
+            input.repositoryRoot,
+            targetChanges,
+            logFile,
+          );
+        }
+      } finally {
+        if (!targetClean) {
+          await removeIntegrationWorktree(input.repositoryRoot, integration);
+        }
       }
     }
   }
@@ -4943,6 +4976,24 @@ async function advanceTargetBranch(
     );
   }
   await git(cwd, ["merge", "--ff-only", storyBranch]);
+}
+
+async function restoreTargetChanges(
+  cwd: string,
+  stash: TargetChangesStash | undefined,
+  logFile: string,
+) {
+  if (!stash) return;
+  const result = await restoreStashedTargetChanges(cwd, stash, git);
+  if (result.cleanupError) {
+    await appendLog(logFile, "local target changes stash cleanup failed", {
+      commit: stash.commit,
+      errorType: errorType(result.cleanupError),
+    });
+  }
+  await appendLog(logFile, "local target changes restored", {
+    commit: stash.commit,
+  });
 }
 
 async function pullIntegrationWorktree(cwd: string, upstream?: GitUpstream) {
