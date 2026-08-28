@@ -60,6 +60,7 @@ export function renderRuntimeContinuity(value: RuntimeContinuity) {
     section("Active request", [value.activeRequest]),
     section("Active constraints", value.constraints),
     section("Confirmed decisions", value.decisions),
+    section("Runtime observations", value.observations),
     section("Inspected files at source revision", value.inspectedFiles),
     section("Modified files", value.modifiedFiles),
     section("Validation", [value.validation]),

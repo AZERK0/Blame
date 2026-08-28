@@ -110,7 +110,7 @@ export function semanticWorkspaceTools(
       : undefined;
     if (blocked) return blocked;
     try {
-      const result = await executor(
+      const delegated = await executor(
         executionRequest(
           workspaceRoot,
           options.taskContract,
@@ -121,6 +121,7 @@ export function semanticWorkspaceTools(
         ),
         context.signal,
       );
+      const result = normalizeHarnessToolResult(delegated, tool);
       const observed = governed
         ? governor.after(tool, input, result, {
             ...context,
@@ -143,7 +144,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "workspace_state",
       description:
-        "Read the canonical Blame workspace state, changed paths, tree summary, and capability registry. The default receipt includes every package and manifest path, complete dependencies for relevant manifests, important tasks, and short revision-bound cursors for exhaustive manifest or task pages. Semantic reads and edits resolve the current revision themselves; use this tool when repository or task metadata is needed. Read-only; do not use it to inspect file contents.",
+        "Read the canonical Blame workspace state, changed paths, tree summary, and capability registry. The default receipt includes every package and manifest path, complete dependencies for relevant manifests when they fit the hard output budget, important tasks, and short revision-bound cursors for exhaustive manifest, dependency, or task pages. Semantic reads and edits resolve the current revision themselves; use this tool when repository or task metadata is needed. Read-only; do not use it to inspect file contents.",
       schema: workspaceStateInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -371,7 +372,7 @@ async function recordReadKnowledge(
       : []),
   ];
   await new ConversationMemoryStore(workspaceRoot, conversationId)
-    .recordKnowledge(facts, paths[0])
+    .recordKnowledge(facts)
     .catch(() => undefined);
 }
 
@@ -558,25 +559,64 @@ function createHarnessTool<TSchema extends z.ZodTypeAny>(input: {
           isError: false,
         };
       const executed = await input.execute(parsed.data, context);
+      const maximumTokens = requestedOutputTokens(input.name, parsed.data);
       const prepared =
         input.name === "workspace_state"
           ? compactWorkspaceStateResult(
               executed,
               workspaceStateInclude(parsed.data),
               workspaceStatePage(parsed.data),
+              maximumTokens,
             )
           : executed;
-      const result = boundHarnessResult(
-        prepared,
-        input.name === "workspace_state"
-          ? undefined
-          : requestedOutputTokens(input.name, parsed.data),
-      );
+      const result = boundHarnessResult(prepared, maximumTokens);
       return result.status === "error"
         ? { output: result, isError: result.fatal }
         : result;
     },
   });
+}
+
+function normalizeHarnessToolResult(
+  value: unknown,
+  tool: SemanticWorkspaceToolName,
+): HarnessToolResult<unknown> {
+  const envelope = recordValue(value);
+  const status = envelope.status;
+  const commonValid =
+    typeof envelope.protocol_version === "string" &&
+    typeof envelope.tool_schema_version === "string" &&
+    typeof envelope.reason === "string" &&
+    typeof envelope.recommendation === "string";
+  const successValid =
+    status === "success" &&
+    commonValid &&
+    envelope.fatal === false &&
+    ["applied", "blocked", "completed", "skipped", "unavailable"].includes(
+      String(envelope.outcome),
+    ) &&
+    Object.hasOwn(envelope, "data") &&
+    isRecord(envelope.subject_revision) &&
+    Array.isArray(envelope.provenance) &&
+    isRecord(envelope.coverage) &&
+    isRecord(envelope.usage);
+  const errorValid =
+    status === "error" &&
+    commonValid &&
+    envelope.outcome === "failed" &&
+    typeof envelope.fatal === "boolean" &&
+    isRecord(envelope.error);
+  if (successValid || errorValid) return value as HarnessToolResult<unknown>;
+  return harnessError({
+    code: "EXECUTION_ERROR",
+    message: `The delegated ${tool} executor returned an invalid harness envelope.`,
+    recommendation:
+      "Retry only after the executor IPC contract is healthy; other tools may continue.",
+  });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 function workspaceStatePage(value: unknown) {

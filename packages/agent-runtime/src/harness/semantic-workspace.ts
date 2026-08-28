@@ -260,7 +260,6 @@ export class SemanticWorkspace {
             ? []
             : [`Task execution unavailable: ${executionIsolation.reason}`]),
         ],
-        nextFocus: taskProjection.relevant_targets[0]?.path,
       });
       const tokenBudget = bounded(
         parsedInput.budget?.max_output_tokens,

@@ -1,4 +1,5 @@
 import {
+  boundHarnessResult,
   recalculateHarnessUsage,
   sha256,
   type HarnessToolResult,
@@ -9,45 +10,62 @@ export type WorkspaceStatePageInput = {
   pageSize?: number;
 };
 
-type WorkspacePage = {
-  collection: "manifests" | "tasks";
-  offset: number;
-};
+type WorkspacePage =
+  | {
+      collection: "manifests" | "tasks";
+      offset: number;
+    }
+  | {
+      collection: "dependencies";
+      manifestIndex: number;
+      offset: number;
+    };
+
+const defaultWorkspaceStateMaximumTokens = 8_000;
+const maximumInlineManifestDependencyBytes = 6_000;
 
 export function compactWorkspaceStateResult(
   result: HarnessToolResult<unknown>,
   include?: string[],
   pageInput: WorkspaceStatePageInput = {},
+  maximumTokens = defaultWorkspaceStateMaximumTokens,
 ): HarnessToolResult<unknown> {
-  if (result.status !== "success") return result;
+  if (result.status !== "success")
+    return boundHarnessResult(result, boundedMaximumTokens(maximumTokens));
   const sourceRevision = workspaceSourceRevision(result);
   const page = decodeCursor(pageInput.cursor, sourceRevision);
   if (pageInput.cursor && !page)
-    return recalculateHarnessUsage({
-      ...result,
-      outcome: "unavailable",
-      fatal: false,
-      reason: "STALE_WORKSPACE_STATE_CURSOR",
-      recommendation:
-        "Call workspace_state without a cursor to obtain current pagination receipts.",
-      data: {
-        source_revision: recordValue(result.data).source_revision,
-        pagination: {
-          requested_cursor: pageInput.cursor,
-          replacement: "workspace_state",
+    return boundHarnessResult(
+      recalculateHarnessUsage({
+        ...result,
+        outcome: "unavailable",
+        fatal: false,
+        reason: "STALE_WORKSPACE_STATE_CURSOR",
+        recommendation:
+          "Call workspace_state without a cursor to obtain current pagination receipts.",
+        data: {
+          source_revision: recordValue(result.data).source_revision,
+          pagination: {
+            requested_cursor: pageInput.cursor,
+            replacement: "workspace_state",
+          },
         },
-      },
-    });
-  return recalculateHarnessUsage({
-    ...result,
-    data: compactWorkspaceStateData(
-      result.data,
-      include,
-      sourceRevision,
-      page,
-      boundedPageSize(pageInput.pageSize),
-    ),
-  });
+      }),
+      boundedMaximumTokens(maximumTokens),
+    );
+  return boundHarnessResult(
+    recalculateHarnessUsage({
+      ...result,
+      data: compactWorkspaceStateData(
+        result.data,
+        include,
+        sourceRevision,
+        page,
+        boundedPageSize(pageInput.pageSize),
+      ),
+    }),
+    boundedMaximumTokens(maximumTokens),
+  );
 }
 
 function compactWorkspaceStateData(
@@ -157,11 +175,26 @@ function compactTaskProjection(
     ? page.collection === "manifests"
       ? manifests
           .slice(page.offset, page.offset + pageSize)
-          .map((manifest) => compactManifest(manifest, true))
-      : []
-    : manifests.map((manifest) =>
+          .map((manifest, index) =>
+            compactManifest(
+              manifest,
+              true,
+              sourceRevision,
+              page.offset + index,
+            ),
+          )
+      : page.collection === "dependencies"
+        ? dependencyPageManifest(
+            manifests[page.manifestIndex],
+            page.manifestIndex,
+            page.offset,
+            pageSize,
+            sourceRevision,
+          )
+        : []
+    : manifests.map((manifest, index) =>
         relevantManifestPaths.has(stringValue(recordValue(manifest).path) ?? "")
-          ? compactManifest(manifest)
+          ? compactManifest(manifest, false, sourceRevision, index)
           : manifestSummary(manifest, sourceRevision),
       );
   const selectedTasks = page
@@ -210,8 +243,20 @@ function compactTaskProjection(
         sourceRevision,
         page?.collection === "tasks",
       ),
+      ...(page?.collection === "dependencies"
+        ? {
+            dependencies: dependencyPageReceipt(
+              manifests[page.manifestIndex],
+              page.manifestIndex,
+              page.offset,
+              selectedManifests,
+              pageSize,
+              sourceRevision,
+            ),
+          }
+        : {}),
       recommendation:
-        "Use the short next_cursor to retrieve exhaustive manifest dependencies or task definitions only when needed.",
+        "Use the short next_cursor to retrieve exhaustive manifests, dependencies, or task definitions only when needed.",
     },
   };
 }
@@ -234,17 +279,103 @@ function compactDependencyInventory(
   };
 }
 
-function compactManifest(value: unknown, allScripts = false) {
+function compactManifest(
+  value: unknown,
+  allScripts = false,
+  sourceRevision?: string,
+  manifestIndex?: number,
+) {
   const manifest = recordValue(value);
   const scripts = arrayValue(manifest.scripts).map(recordValue);
+  const dependencies = arrayValue(manifest.dependencies);
+  const paginated =
+    sourceRevision !== undefined &&
+    manifestIndex !== undefined &&
+    serializedBytes(dependencies) > maximumInlineManifestDependencyBytes;
   return {
     path: manifest.path,
     name: manifest.name,
     dependency_count: manifest.dependency_count,
-    dependencies: arrayValue(manifest.dependencies),
+    ...(paginated
+      ? {
+          dependency_pagination: {
+            total: dependencies.length,
+            returned: 0,
+            next_cursor: encodeDependencyCursor(
+              sourceRevision,
+              manifestIndex,
+              0,
+            ),
+          },
+        }
+      : { dependencies }),
     scripts: allScripts
       ? scripts
       : scripts.filter((script) => importantTaskKind(stringValue(script.name))),
+  };
+}
+
+function dependencyPageManifest(
+  value: unknown,
+  manifestIndex: number,
+  offset: number,
+  pageSize: number,
+  sourceRevision: string,
+) {
+  if (value === undefined) return [];
+  const manifest = recordValue(value);
+  const dependencies = arrayValue(manifest.dependencies);
+  const selected = dependencies.slice(offset, offset + pageSize);
+  return [
+    {
+      path: manifest.path,
+      name: manifest.name,
+      dependency_count: manifest.dependency_count,
+      dependencies: selected,
+      scripts: arrayValue(manifest.scripts),
+      dependency_pagination: {
+        total: dependencies.length,
+        returned: selected.length,
+        offset,
+        next_cursor:
+          offset + selected.length < dependencies.length
+            ? encodeDependencyCursor(
+                sourceRevision,
+                manifestIndex,
+                offset + selected.length,
+              )
+            : undefined,
+      },
+    },
+  ];
+}
+
+function dependencyPageReceipt(
+  value: unknown,
+  manifestIndex: number,
+  offset: number,
+  selectedManifests: unknown[],
+  pageSize: number,
+  sourceRevision: string,
+) {
+  const manifest = recordValue(value);
+  const dependencies = arrayValue(manifest.dependencies);
+  const selected = recordValue(selectedManifests[0]);
+  const returned = arrayValue(selected.dependencies).length;
+  return {
+    manifest_path: manifest.path,
+    total: dependencies.length,
+    returned,
+    offset,
+    next_cursor:
+      offset + returned < dependencies.length
+        ? encodeDependencyCursor(
+            sourceRevision,
+            manifestIndex,
+            offset + returned,
+          )
+        : undefined,
+    page_size: pageSize,
   };
 }
 
@@ -350,7 +481,7 @@ function relevantTasks(tasks: unknown[], manifestPaths: Set<string>) {
 }
 
 function pageReceipt(
-  collection: WorkspacePage["collection"],
+  collection: "manifests" | "tasks",
   total: number,
   offset: number,
   returned: number,
@@ -372,7 +503,7 @@ function pageReceipt(
 }
 
 function encodeCursor(
-  collection: WorkspacePage["collection"],
+  collection: "manifests" | "tasks",
   sourceRevision: string,
   offset: number,
 ) {
@@ -380,17 +511,35 @@ function encodeCursor(
   return `ws${kind}_${sha256(sourceRevision).slice(0, 10)}_${offset}`;
 }
 
+function encodeDependencyCursor(
+  sourceRevision: string,
+  manifestIndex: number,
+  offset: number,
+) {
+  return `wsd_${sha256(sourceRevision).slice(0, 10)}_${manifestIndex}_${offset}`;
+}
+
 function decodeCursor(
   cursor: string | undefined,
   sourceRevision: string,
 ): WorkspacePage | undefined {
   if (!cursor) return undefined;
-  const match = /^ws([mt])_([a-f0-9]{10})_(\d+)$/u.exec(cursor);
-  if (!match || match[2] !== sha256(sourceRevision).slice(0, 10))
+  const revisionDigest = sha256(sourceRevision).slice(0, 10);
+  const collectionMatch = /^ws([mt])_([a-f0-9]{10})_(\d+)$/u.exec(cursor);
+  if (collectionMatch)
+    return collectionMatch[2] === revisionDigest
+      ? {
+          collection: collectionMatch[1] === "m" ? "manifests" : "tasks",
+          offset: Number(collectionMatch[3]),
+        }
+      : undefined;
+  const dependencyMatch = /^wsd_([a-f0-9]{10})_(\d+)_(\d+)$/u.exec(cursor);
+  if (!dependencyMatch || dependencyMatch[1] !== revisionDigest)
     return undefined;
   return {
-    collection: match[1] === "m" ? "manifests" : "tasks",
-    offset: Number(match[3]),
+    collection: "dependencies",
+    manifestIndex: Number(dependencyMatch[2]),
+    offset: Number(dependencyMatch[3]),
   };
 }
 
@@ -407,10 +556,15 @@ function workspaceSourceRevision(result: HarnessToolResult<unknown>) {
   return (
     stringValue(recordValue(data.source_revision).source_revision_id) ??
     (result.status === "success"
-      ? stringValue(result.subject_revision.source_revision_id)
+      ? stringValue(recordValue(result.subject_revision).source_revision_id)
       : undefined) ??
     "unversioned"
   );
+}
+
+function boundedMaximumTokens(value: number) {
+  if (!Number.isFinite(value)) return defaultWorkspaceStateMaximumTokens;
+  return Math.max(1, Math.min(20_000, Math.floor(value)));
 }
 
 function boundedPageSize(value: number | undefined) {
@@ -469,6 +623,10 @@ function arrayValue(value: unknown): unknown[] {
 
 function stringValue(value: unknown) {
   return typeof value === "string" ? value : undefined;
+}
+
+function serializedBytes(value: unknown) {
+  return Buffer.byteLength(JSON.stringify(value), "utf8");
 }
 
 const defaultWorkspaceStateKeys = [

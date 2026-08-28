@@ -132,10 +132,9 @@ test("the production beforeModel hook detects compaction and releases stale read
       sourceContent: Buffer.from("export const x=1"),
       view: "raw",
     });
-    await memory.recordKnowledge(
-      ["inspect_code identified symbols: importantHandler."],
-      "src/known.ts",
-    );
+    await memory.recordKnowledge([
+      "inspect_code identified symbols: importantHandler.",
+    ]);
     const hook = continuityProjectionHooks(memory).beforeModel;
     assert.ok(hook);
     const longTranscript = [
@@ -174,6 +173,21 @@ test("the production beforeModel hook detects compaction and releases stale read
     } as never);
 
     const snapshot = await memory.snapshot();
+    assert.equal(snapshot.nextFocus, undefined);
+    assert.equal(
+      snapshot.facts.some(
+        (fact) =>
+          fact.kind === "observation" && fact.text.includes("importantHandler"),
+      ),
+      true,
+    );
+    assert.equal(
+      snapshot.facts.some(
+        (fact) =>
+          fact.kind === "decision" && fact.text.includes("importantHandler"),
+      ),
+      false,
+    );
     assert.equal(
       snapshot.evidence.some(
         (event) =>

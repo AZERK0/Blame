@@ -20,6 +20,7 @@ export const proposedMemoryFactSchema = z
     kind: z.enum([
       "constraint",
       "decision",
+      "observation",
       "rejection",
       "open_item",
       "preference",

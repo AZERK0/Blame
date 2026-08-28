@@ -1252,32 +1252,80 @@ export class BlameAgentRuntime {
   }
 
   private async runTerminationWatchdog(input: SessionTermination) {
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
-      const lifecycle = this.runLifecycles.state(input.sessionId);
-      if (
-        lifecycle?.execution_id !== input.executionId ||
-        ["cancelled", "failed", "max_iterations", "succeeded"].includes(
-          lifecycle.state,
+    let cycle = 0;
+    while (true) {
+      cycle += 1;
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        const lifecycle = this.runLifecycles.state(input.sessionId);
+        if (
+          lifecycle?.execution_id !== input.executionId ||
+          ["cancelled", "failed", "max_iterations", "succeeded"].includes(
+            lifecycle.state,
+          )
         )
-      )
-        return;
-      const result = await this.stopCoreSession(input, 750);
-      if (result.status === "stopped") {
+          return;
+        const result = await this.stopCoreSession(input, 750);
+        if (result.status === "stopped") {
+          await this.finalizeSessionTermination(input);
+          return;
+        }
+        await this.logSession(
+          input.sessionId,
+          "run termination watchdog retry",
+          {
+            attempt,
+            cycle,
+            ...(result.error === undefined
+              ? { reason: "TERMINATION_TIMEOUT" }
+              : { error: errorMessage(result.error) }),
+            ...lifecycle,
+          },
+        );
+      }
+      if (await this.disposeUnresponsiveCore(input, cycle)) {
         await this.finalizeSessionTermination(input);
         return;
       }
-      await this.logSession(input.sessionId, "run termination watchdog retry", {
-        attempt,
-        ...(result.error === undefined
-          ? { reason: "TERMINATION_TIMEOUT" }
-          : { error: errorMessage(result.error) }),
-        ...lifecycle,
-      });
+      await this.logSession(
+        input.sessionId,
+        "run termination watchdog pending",
+        {
+          attempts: cycle * 3,
+          escalation: "CORE_DISPOSE_RETRY_SCHEDULED",
+          ...this.runLifecycles.state(input.sessionId),
+        },
+      );
+      await terminationWatchdogPause(1_000);
     }
-    await this.logSession(input.sessionId, "run termination watchdog pending", {
-      attempts: 3,
+  }
+
+  private async disposeUnresponsiveCore(
+    input: SessionTermination,
+    cycle: number,
+  ) {
+    const backendKey = this.sessionBackendKeys.get(input.sessionId);
+    if (backendKey) {
+      const registered = this.clines.get(backendKey);
+      if (registered) {
+        const core = await registered.catch(() => undefined);
+        if (core === input.cline) this.clines.delete(backendKey);
+      }
+    }
+    const disposing = Promise.resolve().then(() =>
+      input.cline.dispose(
+        `Termination watchdog escalation for ${input.sessionId}`,
+      ),
+    );
+    const result = await settleWithTimeout(disposing, 1_500);
+    await this.logSession(input.sessionId, "run termination core disposal", {
+      cycle,
+      status: result.status,
+      ...(result.status === "failed"
+        ? { error: errorMessage(result.error) }
+        : {}),
       ...this.runLifecycles.state(input.sessionId),
     });
+    return result.status === "completed";
   }
 
   private async finalizeSessionTermination(input: SessionTermination) {
@@ -1293,7 +1341,10 @@ export class BlameAgentRuntime {
       await this.handleSessionEvent(input.sessionId, input.event);
     if (input.terminalState !== "succeeded")
       await this.recordInterruptedMemory(input.sessionId);
-    const usage = await this.readUsage(input.sessionId).catch(() => undefined);
+    const usage = await Promise.resolve()
+      .then(() => input.cline.getAccumulatedUsage(input.sessionId))
+      .then(normalizeAgentUsageSummary)
+      .catch(() => undefined);
     if (usage) this.agentTelemetry.recordUsageSummary(input.sessionId, usage);
     if (input.event && input.display) this.events?.emit(input.event);
     if (
@@ -5138,6 +5189,35 @@ function approveMergeContext(input: ApproveAndMergeInput) {
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
+}
+
+async function settleWithTimeout(
+  promise: Promise<unknown>,
+  timeoutMs: number,
+): Promise<
+  | { status: "completed" }
+  | { error: unknown; status: "failed" }
+  | { status: "timeout" }
+> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const result = await Promise.race([
+    promise.then(
+      () => ({ status: "completed" as const }),
+      (error: unknown) => ({ error, status: "failed" as const }),
+    ),
+    new Promise<{ status: "timeout" }>((resolve) => {
+      timeout = setTimeout(() => resolve({ status: "timeout" }), timeoutMs);
+    }),
+  ]);
+  if (timeout) clearTimeout(timeout);
+  return result;
+}
+
+function terminationWatchdogPause(timeoutMs: number) {
+  return new Promise<void>((resolve) => {
+    const timeout = setTimeout(resolve, timeoutMs);
+    timeout.unref?.();
+  });
 }
 
 export function clineErrorMetadata(error: unknown) {

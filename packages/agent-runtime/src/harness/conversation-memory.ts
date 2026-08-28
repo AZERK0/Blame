@@ -81,6 +81,7 @@ export type RuntimeContinuity = {
   activeRequest: string;
   constraints: string[];
   decisions: string[];
+  observations: string[];
   inspectedFiles: string[];
   modifiedFiles: string[];
   nextAction: string;
@@ -475,7 +476,7 @@ export class ConversationMemoryStore {
         ...input.architecture.map((text) =>
           storedFact(
             {
-              kind: "decision",
+              kind: "observation",
               text,
               scope: { type: "global" },
               durability: "story",
@@ -508,14 +509,13 @@ export class ConversationMemoryStore {
     });
   }
 
-  async recordKnowledge(facts: string[], nextFocus?: string) {
+  async recordKnowledge(facts: string[]) {
     const selected = unique(
       facts.map((fact) => fact.trim()).filter(Boolean),
     ).slice(0, 8);
-    if (!selected.length && !nextFocus) return;
+    if (!selected.length) return;
     await this.recordOperationalState({
       architecture: selected,
-      nextFocus,
       unavailableCapabilities: [],
     });
   }
@@ -547,6 +547,7 @@ export class ConversationMemoryStore {
       activeRequest: memory.currentIntent,
       constraints: factTexts(activeFacts, "constraint"),
       decisions: factTexts(activeFacts, "decision"),
+      observations: factTexts(activeFacts, "observation"),
       inspectedFiles: unique(
         receipts.map(
           ({ path, source_blob }) => `${path}@${source_blob.slice(0, 12)}`,

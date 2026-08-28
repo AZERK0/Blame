@@ -2154,7 +2154,14 @@ test("Cline adapter can delegate semantic execution without changing its tool co
       taskContract: { session_id: "session-1", story_id: "US-1" },
       executor: async (request) => {
         requests.push(request);
-        return { status: "success" } as never;
+        return harnessSuccess({
+          data: {},
+          revision: {
+            source_revision_id: "src_delegated_contract",
+          },
+          startedAt: Date.now(),
+          provenance: [],
+        });
       },
     },
   );
@@ -2171,6 +2178,20 @@ test("Cline adapter can delegate semantic execution without changing its tool co
         "/home/blame/.local/share/blame/runtime/worktrees/project/story-US-1-test",
     },
   ]);
+});
+
+test("Cline adapter converts malformed delegated envelopes into recoverable IPC failures", async () => {
+  const tools = semanticWorkspaceTools("/workspace", {
+    executor: async () => ({ status: "success" }) as never,
+  });
+  const stateTool = tools.find((tool) => tool.name === "workspace_state");
+  assert.ok(stateTool);
+  const result = await stateTool.execute({}, { agentId: "test", iteration: 1 });
+  assert.equal((result as { isError?: boolean }).isError, false);
+  const output = (result as { output?: Record<string, unknown> }).output;
+  assert.equal(output?.outcome, "failed");
+  assert.equal(output?.fatal, false);
+  assert.equal(output?.reason, "EXECUTION_ERROR");
 });
 
 test("Cline adapter applies output budgets after the complete harness envelope", async () => {

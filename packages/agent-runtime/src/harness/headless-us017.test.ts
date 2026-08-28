@@ -180,6 +180,72 @@ test("US-017 workspace state keeps relevant detail compact and pages every manif
   });
 });
 
+test("US-017 workspace state hard-bounds a manifest with five thousand dependencies", async () => {
+  await withUs017Workspace(async (root) => {
+    const dependencies = Object.fromEntries(
+      Array.from({ length: 5_000 }, (_, index) => [
+        `synthetic-dependency-${String(index).padStart(4, "0")}`,
+        `^${index + 1}.0.0`,
+      ]),
+    );
+    await writeFile(
+      join(root, "package.json"),
+      JSON.stringify({
+        dependencies,
+        name: "oversized-manifest",
+        packageManager: "pnpm@10.32.1",
+        scripts: { test: "node --test" },
+      }),
+    );
+    const state = success(
+      await workspaceWith(
+        root,
+        "state-hard-budget",
+        new UnavailableExecutor(),
+      ).workspaceState(),
+    );
+    const memory = await new ConversationMemoryStore(
+      root,
+      "state-hard-budget",
+    ).snapshot();
+    assert.equal(memory.nextFocus, undefined);
+    assert.equal(
+      memory.facts.some((fact) => fact.kind === "decision"),
+      false,
+    );
+    const compact = success(compactWorkspaceStateResult(state));
+    assert.ok(serializedBytes(compact) <= 32_000);
+    assert.ok(compact.usage.output_tokens <= 8_000);
+    const projection = record(record(compact.data).task_projection);
+    const inventory = record(projection.dependency_inventory);
+    const manifest = (inventory.manifests as Array<Record<string, unknown>>)[0];
+    assert.ok(manifest);
+    assert.equal(manifest.dependencies, undefined);
+    const dependencyPagination = record(manifest.dependency_pagination);
+    assert.equal(dependencyPagination.total, 5_000);
+    const cursor = String(dependencyPagination.next_cursor);
+    assert.match(cursor, /^wsd_[a-f0-9]{10}_0_0$/u);
+
+    const page = success(
+      compactWorkspaceStateResult(state, undefined, {
+        cursor,
+        pageSize: 25,
+      }),
+    );
+    assert.ok(serializedBytes(page) <= 32_000);
+    const pageProjection = record(record(page.data).task_projection);
+    const pageInventory = record(pageProjection.dependency_inventory);
+    const pageManifest = (
+      pageInventory.manifests as Array<Record<string, unknown>>
+    )[0];
+    assert.equal((pageManifest.dependencies as unknown[]).length, 25);
+    assert.match(
+      String(record(pageManifest.dependency_pagination).next_cursor),
+      /^wsd_[a-f0-9]{10}_0_25$/u,
+    );
+  });
+});
+
 test("US-017 unavailable dependencies return only actionable non-fatal data and open the exploration circuit", async () => {
   await withUs017Workspace(async (root) => {
     const workspace = workspaceWith(
@@ -464,7 +530,11 @@ test("US-017 forced compaction restores the intact objective, architecture, file
       continuity.activeRequest,
       "Préserver intégralement cet objectif utilisateur après compactage.",
     );
-    assert.ok(continuity.decisions.some((item) => item.includes("NestJS")));
+    assert.ok(continuity.observations.some((item) => item.includes("NestJS")));
+    assert.equal(
+      continuity.decisions.some((item) => item.includes("NestJS")),
+      false,
+    );
     assert.ok(continuity.inspectedFiles.includes("src/app.ts@blob-us017"));
     assert.deepEqual(continuity.modifiedFiles, ["src/app.ts"]);
     assert.match(continuity.validation, /covered/iu);
@@ -731,6 +801,53 @@ test("US-017 termination watchdog retries stop before persisting a terminal stat
   assert.equal(stopCalls, 2);
   assert.equal(
     internals.runLifecycles.state("watchdog-abort")?.state,
+    "cancelled",
+  );
+});
+
+test("US-017 termination watchdog disposes a poisoned core instead of abandoning the run", async () => {
+  let abortCalls = 0;
+  let disposeCalls = 0;
+  let stopCalls = 0;
+  const core = {
+    abort: async () => {
+      abortCalls += 1;
+    },
+    dispose: async () => {
+      disposeCalls += 1;
+    },
+    getAccumulatedUsage: async () => undefined,
+    stop: async () => {
+      stopCalls += 1;
+      throw new Error("poisoned core");
+    },
+  };
+  const runtime = new BlameAgentRuntime();
+  const internals = runtime as unknown as {
+    abortSession(sessionId: string, humanInitiated: boolean): Promise<void>;
+    clines: Map<string, Promise<unknown>>;
+    runLifecycles: RunLifecycleRegistry;
+    sessionBackendKeys: Map<string, string>;
+    sessionExecutionIds: Map<string, string>;
+  };
+  internals.clines.set("local", Promise.resolve(core));
+  internals.sessionBackendKeys.set("poisoned-core", "local");
+  internals.sessionExecutionIds.set("poisoned-core", "execution-poisoned");
+  internals.runLifecycles.begin("poisoned-core", "execution-poisoned");
+
+  await internals.abortSession("poisoned-core", false);
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (internals.runLifecycles.state("poisoned-core")?.state === "cancelled")
+      break;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+
+  assert.equal(stopCalls, 4);
+  assert.equal(abortCalls, 4);
+  assert.equal(disposeCalls, 1);
+  assert.equal(internals.clines.has("local"), false);
+  assert.equal(
+    internals.runLifecycles.state("poisoned-core")?.state,
     "cancelled",
   );
 });

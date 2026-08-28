@@ -135,7 +135,7 @@ export const workspaceStateInputSchema = z
       .max(25)
       .optional()
       .describe(
-        "Number of complete manifests or tasks returned for a cursor; default 5.",
+        "Number of manifests, dependency entries, or tasks returned for a cursor; default 5.",
       ),
     budget: outputBudget(500, 20_000, 8_000),
   })
