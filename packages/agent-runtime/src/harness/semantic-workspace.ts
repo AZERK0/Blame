@@ -52,7 +52,10 @@ import {
   type InspectCodeData,
 } from "./inspect-code-service.js";
 import { RelationService } from "./relation-service.js";
-import { ReferenceRegistry } from "./reference-registry.js";
+import {
+  ReferenceRegistry,
+  UnavailableReferences,
+} from "./reference-registry.js";
 import { ChangeReviewService } from "./change-review-service.js";
 import { readTaskCatalog } from "./task-catalog.js";
 import type { TaskExecutor } from "./task-executor.js";
@@ -229,11 +232,41 @@ export class SemanticWorkspace {
           available: false as const,
           reason: error instanceof Error ? error.message : String(error),
         }));
+      await this.memory.recordOperationalState({
+        architecture: [
+          `Workspace manifests: ${
+            taskProjection.packages.map(({ path }) => path).join(", ") || "none"
+          }.`,
+          `Detected frameworks: ${
+            taskProjection.detected_frameworks.join(", ") || "none"
+          }.`,
+          `Package manager: ${dependencyMutation.package_manager}${
+            dependencyMutation.package_manager_version
+              ? `@${dependencyMutation.package_manager_version}`
+              : ""
+          }; network policy: ${dependencyMutation.network_policy}; cache: ${
+            dependencyMutation.cache_available ? "available" : "empty"
+          }.`,
+        ],
+        unavailableCapabilities: [
+          ...(dependencyMutation.available
+            ? []
+            : [
+                `Dependency mutation unavailable: ${
+                  dependencyMutation.reason ?? "unknown reason"
+                }`,
+              ]),
+          ...(executionIsolation.available
+            ? []
+            : [`Task execution unavailable: ${executionIsolation.reason}`]),
+        ],
+        nextFocus: taskProjection.relevant_targets[0]?.path,
+      });
       const tokenBudget = bounded(
         parsedInput.budget?.max_output_tokens,
-        200,
-        4_000,
-        1_200,
+        500,
+        20_000,
+        8_000,
       );
       const maximumChanges = Math.max(10, Math.floor(tokenBudget / 20));
       const maximumTasks = Math.max(5, Math.floor(tokenBudget / 30));
@@ -780,6 +813,23 @@ export class SemanticWorkspace {
       });
       return this.references.shorten(response);
     } catch (error) {
+      if (error instanceof UnavailableReferences) {
+        const snapshot = await this.files.snapshot();
+        const revision = revisionVector(snapshot);
+        return harnessSuccess({
+          startedAt,
+          revision,
+          provenance: [provenance("harness", revision)],
+          outcome: "unavailable",
+          reason: "STALE_REFERENCE",
+          recommendation:
+            "Use the current compact references already present in the continuity checkpoint.",
+          data: {
+            stale_references: error.references,
+            replacements: {},
+          },
+        });
+      }
       return toolError(error);
     }
   }
@@ -1097,7 +1147,7 @@ export class SemanticWorkspace {
         signal,
       );
       const data = await this.dependencies.mutate(input, snapshot, signal);
-      if (data.status === "applied")
+      if ("status" in data && data.status === "applied")
         await this.memory.recordChange({
           receiptId: data.change_set_ref,
           sourceRevisionId: data.source_revision_id,
@@ -1106,12 +1156,35 @@ export class SemanticWorkspace {
           summary: `Updated dependencies in ${data.package_path}`,
           validation: "not_run",
         });
-      const revision = { source_revision_id: data.source_revision_id };
+      const unavailable =
+        !("status" in data) && "dependencies_already_available" in data;
+      if (unavailable)
+        await this.memory.recordOperationalState({
+          architecture: [],
+          nextFocus: input.package_path,
+          unavailableCapabilities: [
+            `Dependency mutation unavailable: ${data.reason}`,
+          ],
+        });
+      const revision = {
+        source_revision_id:
+          "source_revision_id" in data
+            ? data.source_revision_id
+            : snapshot.revision.source_revision_id,
+      };
       return harnessSuccess({
         startedAt,
         revision,
         provenance: [provenance("harness", revision)],
         data,
+        ...(unavailable
+          ? {
+              outcome: "unavailable" as const,
+              reason: data.reason,
+              recommendation:
+                "Reuse an existing dependency, implement without it, or report the blocker.",
+            }
+          : {}),
       });
     } catch (error) {
       return toolError(error);

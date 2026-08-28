@@ -4,6 +4,14 @@ import { deflateRawSync, inflateRawSync } from "node:zlib";
 export const harnessProtocolVersion = "2.0";
 export const harnessToolSchemaVersion = "2.0";
 
+export type HarnessOutcome =
+  | "applied"
+  | "blocked"
+  | "completed"
+  | "failed"
+  | "skipped"
+  | "unavailable";
+
 export type HarnessErrorCode =
   | "AMBIGUOUS_TARGET"
   | "EXECUTION_ERROR"
@@ -12,6 +20,7 @@ export type HarnessErrorCode =
   | "POLICY_DENIED"
   | "PRECONDITION_FAILED"
   | "STALE_REVISION"
+  | "TARGET_NOT_FOUND"
   | "TARGET_GONE"
   | "UNSUPPORTED_CAPABILITY"
   | "UNSUPPORTED_STRUCTURE";
@@ -93,6 +102,10 @@ export type HarnessToolSuccess<T> = {
   protocol_version: string;
   tool_schema_version: string;
   status: "success";
+  outcome: Exclude<HarnessOutcome, "failed">;
+  fatal: false;
+  reason: string;
+  recommendation: string;
   subject_revision: RevisionVector;
   data: T;
   provenance: Provenance[];
@@ -106,6 +119,10 @@ export type HarnessToolError = {
   protocol_version: string;
   tool_schema_version: string;
   status: "error";
+  outcome: "failed";
+  fatal: boolean;
+  reason: HarnessErrorCode;
+  recommendation: string;
   subject_revision?: RevisionVector;
   error: {
     code: HarnessErrorCode;
@@ -141,14 +158,22 @@ export function harnessSuccess<T>(input: {
   revision: RevisionVector;
   startedAt: number;
   provenance: Provenance[];
+  outcome?: Exclude<HarnessOutcome, "failed">;
+  reason?: string;
+  recommendation?: string;
   coverage?: Partial<Coverage>;
   artifacts?: ArtifactRef[];
   diagnostics?: unknown[];
 }): HarnessToolSuccess<T> {
+  const semantics = successSemantics(input.data, input);
   const result = {
     protocol_version: harnessProtocolVersion,
     tool_schema_version: harnessToolSchemaVersion,
     status: "success" as const,
+    outcome: semantics.outcome,
+    fatal: false as const,
+    reason: semantics.reason,
+    recommendation: semantics.recommendation,
     subject_revision: input.revision,
     data: input.data,
     provenance: input.provenance,
@@ -188,11 +213,19 @@ export function harnessError(input: {
   message: string;
   revision?: RevisionVector;
   recovery?: unknown;
+  fatal?: boolean;
+  recommendation?: string;
 }): HarnessToolError {
+  const recommendation =
+    input.recommendation ?? recoveryRecommendation(input.recovery);
   return {
     protocol_version: harnessProtocolVersion,
     tool_schema_version: harnessToolSchemaVersion,
     status: "error",
+    outcome: "failed",
+    fatal: input.fatal ?? false,
+    reason: input.code,
+    recommendation,
     ...(input.revision ? { subject_revision: input.revision } : {}),
     error: {
       code: input.code,
@@ -200,6 +233,110 @@ export function harnessError(input: {
       ...(input.recovery === undefined ? {} : { recovery: input.recovery }),
     },
   };
+}
+
+function successSemantics<T>(
+  data: T,
+  explicit: {
+    outcome?: Exclude<HarnessOutcome, "failed">;
+    reason?: string;
+    recommendation?: string;
+  },
+) {
+  const value = recordValue(data);
+  const sourceOutcome = stringValue(value.outcome) ?? stringValue(value.status);
+  const declaredOutcome =
+    explicit.outcome ?? normalizedSuccessOutcome(sourceOutcome);
+  const outcome =
+    value.applied === false && declaredOutcome === "applied"
+      ? "blocked"
+      : value.applied === false && declaredOutcome === "completed"
+        ? "skipped"
+        : declaredOutcome;
+  return {
+    outcome,
+    reason:
+      explicit.reason ??
+      stringValue(value.reason) ??
+      defaultOutcomeReason(outcome),
+    recommendation:
+      explicit.recommendation ??
+      stringValue(value.recommendation) ??
+      defaultOutcomeRecommendation(outcome),
+  };
+}
+
+function normalizedSuccessOutcome(
+  value: string | undefined,
+): Exclude<HarnessOutcome, "failed"> {
+  if (["applied", "committed"].includes(value ?? "")) return "applied";
+  if (
+    [
+      "already_available",
+      "auto_narrowed",
+      "in_flight_reused",
+      "no_change",
+      "retry_suppressed",
+      "skipped",
+    ].includes(value ?? "")
+  )
+    return "skipped";
+  if (
+    value === "unavailable" ||
+    value === "infrastructure_error" ||
+    value === "execution_error"
+  )
+    return "unavailable";
+  if (
+    [
+      "blocked",
+      "cancelled",
+      "conflict",
+      "failed",
+      "rejected",
+      "timed_out",
+      "unsupported_operation",
+      "validation_failed",
+    ].includes(value ?? "")
+  )
+    return "blocked";
+  return "completed";
+}
+
+function defaultOutcomeReason(outcome: Exclude<HarnessOutcome, "failed">) {
+  return {
+    applied: "APPLIED",
+    blocked: "BLOCKED",
+    completed: "COMPLETED",
+    skipped: "SKIPPED",
+    unavailable: "UNAVAILABLE",
+  }[outcome];
+}
+
+function defaultOutcomeRecommendation(
+  outcome: Exclude<HarnessOutcome, "failed">,
+) {
+  if (outcome === "blocked")
+    return "Resolve the reported blocker or finish with it.";
+  if (outcome === "unavailable")
+    return "Use an available capability or report the limitation.";
+  if (outcome === "skipped") return "Continue with the next useful action.";
+  return "Continue with the task.";
+}
+
+function recoveryRecommendation(value: unknown) {
+  const action = stringValue(recordValue(value).action);
+  return action ?? "Use the recovery information and continue if possible.";
+}
+
+function recordValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
 export function boundHarnessResult<T>(

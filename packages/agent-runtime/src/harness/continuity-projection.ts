@@ -15,6 +15,7 @@ export function continuityProjectionHooks(
 ): AgentHooks {
   return {
     async beforeModel(context: BeforeModelContext) {
+      await memory.checkpoint();
       const continuity = await memory.runtimeContinuity();
       return {
         messages: projectContinuity(
@@ -33,6 +34,7 @@ export function renderRuntimeContinuity(value: RuntimeContinuity) {
     section("Active request", [value.activeRequest]),
     section("Active constraints", value.constraints),
     section("Confirmed decisions", value.decisions),
+    section("Inspected files at source revision", value.inspectedFiles),
     section("Modified files", value.modifiedFiles),
     section("Validation", [value.validation]),
     section("Next action", [value.nextAction]),

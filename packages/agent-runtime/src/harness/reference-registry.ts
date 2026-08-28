@@ -82,14 +82,16 @@ export class ReferenceRegistry {
     return this.exclusive(async () => {
       const registry = await this.read();
       const replacements = new Map<string, string>();
+      const missing: string[] = [];
       for (const handle of new Set(references)) {
         const entry = registry.entries[handle];
-        if (!entry)
-          throw new Error(
-            `INVALID_INPUT:Reference ${handle} is unavailable in this session. Repeat the narrow semantic read to obtain a current reference.`,
-          );
+        if (!entry) {
+          missing.push(handle);
+          continue;
+        }
         replacements.set(handle, entry.reference);
       }
+      if (missing.length) throw new UnavailableReferences(missing);
       return replacements;
     });
   }
@@ -128,6 +130,17 @@ export class ReferenceRegistry {
       fsync: true,
       mode: 0o600,
     });
+  }
+}
+
+export class UnavailableReferences extends Error {
+  readonly references: string[];
+
+  constructor(references: string[]) {
+    super(
+      `References are unavailable in this session: ${references.join(", ")}`,
+    );
+    this.references = references;
   }
 }
 

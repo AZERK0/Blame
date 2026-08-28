@@ -341,11 +341,12 @@ export function validRange(
     !Number.isSafeInteger(value[0]) ||
     !Number.isSafeInteger(value[1]) ||
     value[0] < 0 ||
-    value[1] < value[0] ||
-    value[1] > maximum
+    value[1] < value[0]
   )
     throw new Error("range_utf8_bytes is outside the file.");
-  return value;
+  const start = Math.min(value[0], maximum);
+  const end = Math.min(Math.max(value[1], start), maximum);
+  return [start, end];
 }
 
 export function revisionVector(snapshot: WorkspaceSnapshot) {
@@ -387,6 +388,15 @@ export function toolError<T = never>(error: unknown): HarnessToolResult<T> {
       message: message.slice("UNSUPPORTED_CAPABILITY:".length),
       recovery: {
         action: "Use a capability reported as available by workspace_state.",
+      },
+    });
+  if (message.startsWith("TARGET_NOT_FOUND:"))
+    return harnessError({
+      code: "TARGET_NOT_FOUND",
+      message: message.slice("TARGET_NOT_FOUND:".length),
+      recovery: {
+        action:
+          "Use a package_path that exists in workspace_state; do not retry this missing target.",
       },
     });
   for (const code of [

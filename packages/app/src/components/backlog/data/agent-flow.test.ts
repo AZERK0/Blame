@@ -24,6 +24,54 @@ test("completes a running tool when a fallback result has no tool call id", () =
   assert.equal(completed.agentActivities?.[0]?.status, "completed")
 })
 
+test("shows real harness outcomes without failing recoverable receipts or ghost applications", () => {
+  const started = updateStory(
+    story(),
+    toolEvent("tool_call", "mutate_dependencies", 1, "call-outcome")
+  )
+  const unavailable = updateStory(started, {
+    type: "tool",
+    payload: {
+      output: {
+        isError: false,
+        output: {
+          data: { applied: false },
+          fatal: false,
+          outcome: "unavailable",
+        },
+      },
+      phase: "finished",
+      toolCall: { id: "call-outcome", name: "mutate_dependencies" },
+    },
+  })
+  const activity = unavailable.agentActivities?.[0]
+
+  assert.equal(activity?.status, "completed")
+  assert.match(activity?.title ?? "", /unavailable$/u)
+})
+
+test("marks only fatal failed outcomes as failed activities", () => {
+  const recoverable = updateStory(story(), {
+    type: "tool",
+    payload: {
+      output: { fatal: false, outcome: "failed" },
+      phase: "finished",
+      toolCall: { id: "recoverable", name: "inspect_code" },
+    },
+  })
+  const fatal = updateStory(story(), {
+    type: "tool",
+    payload: {
+      output: { fatal: true, outcome: "failed" },
+      phase: "finished",
+      toolCall: { id: "fatal", name: "inspect_code" },
+    },
+  })
+
+  assert.equal(recoverable.agentActivities?.[0]?.status, "completed")
+  assert.equal(fatal.agentActivities?.[0]?.status, "failed")
+})
+
 test("preserves tool input when the completion event only contains output", () => {
   const patch =
     "*** Begin Patch\n*** Update File: example.ts\n+changed\n*** End Patch"

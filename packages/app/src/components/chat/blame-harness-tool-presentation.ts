@@ -171,9 +171,15 @@ function isEntireFileRead(input: {
 
 function editPresentation(details: ToolPresentation): ToolPresentation {
   const files = changedFiles(details.input, details.output)
+  const outcome = stringValue(
+    recordValue(harnessResultEnvelope(details.output)).outcome
+  )
   return {
     ...details,
-    input: files.length > 0 ? { files } : details.input,
+    input:
+      files.length > 0 || (outcome && outcome !== "applied")
+        ? { files }
+        : details.input,
     toolName: "apply_patch",
   }
 }
@@ -209,10 +215,19 @@ function inspectedPath(input: unknown, output: unknown) {
 }
 
 function changedFiles(input: unknown, output: unknown) {
-  const resultFiles = changedFilesFromResult(output)
+  const envelope = harnessResultEnvelope(output)
+  const resultFiles = changedFilesFromResult(envelope)
+  const outcome = stringValue(recordValue(envelope).outcome)
+  if (outcome && outcome !== "applied") return resultFiles
   return deduplicateFiles(
     resultFiles.length > 0 ? resultFiles : changedFilesFromInput(input)
   )
+}
+
+function harnessResultEnvelope(output: unknown) {
+  const current = recordValue(output)
+  const nested = recordValue(current.output)
+  return stringValue(nested.outcome) ? nested : output
 }
 
 function changedFilesFromResult(output: unknown): PresentedFile[] {

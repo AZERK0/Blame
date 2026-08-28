@@ -119,7 +119,7 @@ export const workspaceStateInputSchema = z
         ]),
       )
       .optional(),
-    budget: outputBudget(200, 4_000, 1_200),
+    budget: outputBudget(500, 20_000, 8_000),
   })
   .strict();
 

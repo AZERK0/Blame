@@ -81,6 +81,7 @@ export type RuntimeContinuity = {
   activeRequest: string;
   constraints: string[];
   decisions: string[];
+  inspectedFiles: string[];
   modifiedFiles: string[];
   nextAction: string;
   validation: string;
@@ -300,6 +301,16 @@ export class ConversationMemoryStore {
     return result;
   }
 
+  async checkpoint() {
+    return this.exclusive(async () => {
+      const stored = await this.read("");
+      const checkpoint = deterministicFallback(stored.memory, false);
+      const memory = appendFallbackCheckpoint(stored.memory, checkpoint);
+      await this.write({ ...stored, memory });
+      return checkpoint;
+    });
+  }
+
   async currentEpochId() {
     return (await this.read("")).epoch.id;
   }
@@ -454,6 +465,49 @@ export class ConversationMemoryStore {
     );
   }
 
+  async recordOperationalState(input: {
+    architecture: string[];
+    nextFocus?: string;
+    unavailableCapabilities: string[];
+  }) {
+    await this.update((memory) => {
+      const facts = [
+        ...input.architecture.map((text) =>
+          storedFact(
+            {
+              kind: "decision",
+              text,
+              scope: { type: "global" },
+              durability: "story",
+            },
+            "runtime",
+            [],
+          ),
+        ),
+        ...input.unavailableCapabilities.map((text) =>
+          storedFact(
+            {
+              kind: "open_item",
+              text,
+              scope: { type: "global" },
+              durability: "story",
+            },
+            "runtime",
+            [],
+          ),
+        ),
+      ].reduce(
+        (current, fact) => mergeAuthoritativeFact(current, fact),
+        memory.facts,
+      );
+      return {
+        ...memory,
+        facts: facts.slice(-300),
+        ...(input.nextFocus ? { nextFocus: input.nextFocus } : {}),
+      };
+    });
+  }
+
   async recall(input: RecallContextInput) {
     const { memory } = await this.read("");
     return recallMemory(memory, input, this.tokenCounter);
@@ -470,6 +524,7 @@ export class ConversationMemoryStore {
 
   async runtimeContinuity(): Promise<RuntimeContinuity> {
     const memory = (await this.read("")).memory;
+    const receipts = await this.workingSet.list();
     const state = completionStateFromMemory(memory);
     const activeFacts = memory.facts.filter(
       (fact) =>
@@ -480,10 +535,18 @@ export class ConversationMemoryStore {
       activeRequest: memory.currentIntent,
       constraints: factTexts(activeFacts, "constraint"),
       decisions: factTexts(activeFacts, "decision"),
-      modifiedFiles: unique(
-        state.dirtyChanges.flatMap((change) => change.files),
+      inspectedFiles: unique(
+        receipts.map(
+          ({ path, source_blob }) => `${path}@${source_blob.slice(0, 12)}`,
+        ),
       ),
-      nextAction: nextRuntimeAction(state),
+      modifiedFiles: unique(
+        memory.completedChanges.flatMap((change) => change.files),
+      ),
+      nextAction: [
+        nextRuntimeAction(state),
+        ...(memory.nextFocus ? [`Next focus: ${memory.nextFocus}.`] : []),
+      ].join(" "),
       validation: runtimeValidationSummary(state),
     };
   }
@@ -881,15 +944,32 @@ function appendFallbackCheckpoint(
   memory: ConversationMemory,
   checkpoint: FallbackCheckpoint,
 ) {
-  const exists = memory.fallbackCheckpoints.some(
+  const existing = memory.fallbackCheckpoints.find(
     (item) =>
       item.current_user_request_ref === checkpoint.current_user_request_ref,
   );
-  if (exists) return memory;
+  if (
+    existing &&
+    JSON.stringify(withoutCheckpointTimestamp(existing)) ===
+      JSON.stringify(withoutCheckpointTimestamp(checkpoint))
+  )
+    return memory;
   return {
     ...memory,
-    fallbackCheckpoints: [...memory.fallbackCheckpoints, checkpoint].slice(-50),
+    fallbackCheckpoints: [
+      ...memory.fallbackCheckpoints.filter(
+        (item) =>
+          item.current_user_request_ref !== checkpoint.current_user_request_ref,
+      ),
+      checkpoint,
+    ].slice(-50),
   };
+}
+
+function withoutCheckpointTimestamp(value: FallbackCheckpoint) {
+  const { created_at, ...checkpoint } = value;
+  void created_at;
+  return checkpoint;
 }
 
 function deterministicFallback(

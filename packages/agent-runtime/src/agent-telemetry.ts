@@ -291,6 +291,50 @@ export class AgentTelemetry {
     this.recordAggregateUsage(state, summary);
   }
 
+  recordPostStopEvent(sessionId: string, tokens: number) {
+    const state = this.sessions.get(sessionId);
+    if (!state) return;
+    const attributes = metricDimensions(state);
+    telemetry.count(
+      "blame.harness.post_stop_events" as never,
+      1,
+      attributes,
+      state.component?.span.context,
+    );
+    if (tokens > 0)
+      telemetry.record(
+        "blame.harness.post_stop_tokens" as never,
+        tokens,
+        attributes,
+        state.component?.span.context,
+      );
+  }
+
+  recordPostTerminalEvent(sessionId: string, tokens: number) {
+    const state = this.sessions.get(sessionId);
+    if (!state) return;
+    const attributes = metricDimensions(state);
+    telemetry.count(
+      "blame.harness.post_terminal_events" as never,
+      1,
+      attributes,
+      state.component?.span.context,
+    );
+    if (tokens > 0)
+      telemetry.record(
+        "blame.harness.post_terminal_tokens" as never,
+        tokens,
+        attributes,
+        state.component?.span.context,
+      );
+    telemetry.log(
+      "error",
+      "blame.harness.post_terminal_event",
+      { ...attributes, tokens },
+      state.component?.span.context,
+    );
+  }
+
   completeModelRequest(sessionId: string, payload?: unknown) {
     const state = this.sessions.get(sessionId);
     if (!state?.component) return undefined;
@@ -424,6 +468,12 @@ export class AgentTelemetry {
     const state = this.sessions.get(sessionId);
     if (!state?.component) return;
     const attributes = metricDimensions(state);
+    telemetry.count(
+      "blame.harness.compactions" as never,
+      1,
+      attributes,
+      state.component.span.context,
+    );
     telemetry.record(
       "blame.harness.context_size_before_compaction" as never,
       inputTokens,
@@ -538,6 +588,13 @@ export class AgentTelemetry {
         current.component.span,
         operation,
       );
+      if (state.component)
+        telemetry.count(
+          "blame.harness.checkpoint_restorations" as never,
+          1,
+          metricDimensions(state),
+          state.component.span.context,
+        );
       finishBusinessOperation(current, "succeeded");
       return result;
     } catch (error) {
@@ -1650,8 +1707,16 @@ function recordHarnessToolMetrics(
 ) {
   const attributes = toolMetricAttributes(state, current);
   const output = asRecord(event.output ?? payload.output);
-  const data = asRecord(output.data ?? output.output ?? output);
+  const body = asRecord(output.data ?? output.output ?? output);
+  const data: Record<string, unknown> = {
+    ...body,
+    ...(body.outcome === undefined ? { outcome: output.outcome } : {}),
+    ...(body.reason === undefined ? { reason: output.reason } : {}),
+    ...(body.fatal === undefined ? { fatal: output.fatal } : {}),
+  };
   const metricContext = { attributes, current, data, state };
+  if (stringValue(output.outcome) === "unavailable")
+    recordHarnessCount(metricContext, "blame.harness.unavailable_capabilities");
   current.span.setAttributes(harnessTraceAttributes(data));
   if (navigationReadTool(current.name)) recordReadMetrics(metricContext);
   if (
@@ -1678,6 +1743,16 @@ function recordHarnessToolMetrics(
       "blame.harness.specialist_duration",
       current.span.durationSeconds(),
     );
+  if (
+    current.name === "consult_specialist" &&
+    stringValue(data.reason) === "SPECIALIST_TIMEOUT"
+  ) {
+    recordHarnessCount(metricContext, "blame.harness.specialist_timeouts");
+    current.span.addEvent("blame.harness.alert", {
+      alert: "SPECIALIST_TIMEOUT",
+    });
+  }
+  recordProgressGovernorMetrics(metricContext);
   if (current.name === "run_task") recordRunMetrics(metricContext);
   if (data.circuit_opened === true)
     recordHarnessCount(metricContext, "blame.harness.capability_circuits_open");
@@ -1688,6 +1763,42 @@ function recordHarnessToolMetrics(
       metricContext,
       "blame.harness.absent_package_calls_suppressed",
     );
+}
+
+function recordProgressGovernorMetrics(context: HarnessMetricContext) {
+  const governor = asRecord(context.data.progress_governor);
+  const firstEditIteration = numericValue(governor.first_edit_iteration);
+  if (firstEditIteration !== undefined)
+    recordHarnessValue(
+      context,
+      "blame.harness.first_edit_iteration",
+      firstEditIteration,
+    );
+  recordHarnessValue(
+    context,
+    "blame.harness.no_progress_iterations",
+    numericValue(governor.no_progress_iterations) ?? 0,
+  );
+  recordHarnessValue(
+    context,
+    "blame.harness.identical_or_covered_reads",
+    numericValue(governor.identical_or_covered_reads) ?? 0,
+  );
+  const unavailable = Array.isArray(governor.unavailable_capabilities)
+    ? governor.unavailable_capabilities.length
+    : 0;
+  recordHarnessValue(
+    context,
+    "blame.harness.unavailable_capabilities",
+    unavailable,
+  );
+  if (
+    Array.isArray(governor.alerts) &&
+    governor.alerts.includes("NO_MUTATION_AFTER_8_ITERATIONS")
+  )
+    context.current.span.addEvent("blame.harness.alert", {
+      alert: "NO_MUTATION_AFTER_8_ITERATIONS",
+    });
 }
 
 function recordExternalReadMetrics(context: HarnessMetricContext) {
@@ -1708,6 +1819,8 @@ function recordExternalReadMetrics(context: HarnessMetricContext) {
 }
 
 function recordRecallMetrics(context: HarnessMetricContext) {
+  if (stringValue(context.data.reason) === "STALE_REFERENCE")
+    recordHarnessCount(context, "blame.harness.recall_context_errors");
   const strategy = stringValue(context.data.retrieval_strategy) ?? "lexical";
   telemetry.record(
     "blame.harness.recall_strategy",
@@ -1803,7 +1916,7 @@ function recordReadMetrics(context: HarnessMetricContext) {
 function recordEditMetrics(context: HarnessMetricContext) {
   const status = stringValue(context.data.status);
   if (status === "applied") {
-    recordFirstEdit(context.state);
+    recordFirstEdit(context);
     recordHarnessCount(context, "blame.harness.direct_edits");
   }
   if (
@@ -1859,6 +1972,7 @@ function semanticEditTool(name: string) {
     "move_file",
     "patch_file",
     "replace_file",
+    "mutate_dependencies",
   ].includes(name);
 }
 
@@ -1886,7 +2000,8 @@ function compactAttributes(value: Record<string, unknown>) {
   );
 }
 
-function recordFirstEdit(state: AgentSessionTelemetry) {
+function recordFirstEdit(context: HarnessMetricContext) {
+  const state = context.state;
   if (state.firstEditRecorded || !state.component) return;
   state.firstEditRecorded = true;
   telemetry.record(
@@ -1895,6 +2010,21 @@ function recordFirstEdit(state: AgentSessionTelemetry) {
     metricDimensions(state),
     state.component.span.context,
   );
+  recordHarnessValue(
+    context,
+    "blame.harness.first_edit_iteration",
+    context.current.iteration,
+  );
+  recordHarnessValue(
+    context,
+    "blame.harness.tokens_before_first_edit",
+    state.usage.input + state.usage.output,
+  );
+  if (state.usage.input + state.usage.output > 250_000)
+    context.current.span.addEvent("blame.harness.alert", {
+      alert: "TOKENS_BEFORE_FIRST_MUTATION_EXCEEDED",
+      tokens: state.usage.input + state.usage.output,
+    });
 }
 
 function recordRunMetrics(context: HarnessMetricContext) {

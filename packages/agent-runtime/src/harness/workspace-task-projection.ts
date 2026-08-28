@@ -11,7 +11,7 @@ type ManifestInventory = {
   dependencies: Array<{ name: string; type: string; version: string }>;
   name?: string;
   path: string;
-  truncated: boolean;
+  scripts: Array<{ command: string; name: string }>;
 };
 
 export async function workspaceTaskProjection(input: {
@@ -30,6 +30,7 @@ export async function workspaceTaskProjection(input: {
   const relevant = await relevantTargets(input.files, input.snapshot, terms);
   return {
     packages: manifests.map(packageProjection),
+    detected_frameworks: detectedFrameworks(manifests),
     dependency_inventory: {
       manifests,
       lockfile: await lockfileInventory(
@@ -39,13 +40,12 @@ export async function workspaceTaskProjection(input: {
       ),
       mutation: input.dependencyCapability,
     },
-    executable_tasks: input.tasks
-      .slice(0, 12)
-      .map(({ task_id, kind, cwd }) => ({
-        task_id,
-        kind,
-        cwd,
-      })),
+    executable_tasks: input.tasks.map(({ task_id, kind, cwd, command }) => ({
+      task_id,
+      kind,
+      cwd,
+      command,
+    })),
     relevant_targets: relevant,
   };
 }
@@ -61,7 +61,6 @@ async function manifestInventory(
   const manifests = await Promise.all(
     paths
       .sort((left, right) => manifestPathOrder(left, right, terms))
-      .slice(0, 20)
       .map((path) => readManifest(root, path, terms)),
   );
   return manifests.filter((value): value is ManifestInventory =>
@@ -81,8 +80,11 @@ async function readManifest(root: string, path: string, terms: string[]) {
       path,
       ...(typeof manifest.name === "string" ? { name: manifest.name } : {}),
       dependency_count: dependencies.length,
-      dependencies: dependencies.slice(0, 12),
-      truncated: dependencies.length > 12,
+      dependencies,
+      scripts: Object.entries(recordValue(manifest.scripts)).flatMap(
+        ([name, command]) =>
+          typeof command === "string" ? [{ name, command }] : [],
+      ),
     } satisfies ManifestInventory;
   } catch {
     return undefined;
@@ -111,7 +113,19 @@ function packageProjection(manifest: ManifestInventory) {
     path: manifest.path,
     ...(manifest.name ? { name: manifest.name } : {}),
     collection,
+    scripts: manifest.scripts,
   };
+}
+
+function detectedFrameworks(manifests: ManifestInventory[]) {
+  const declared = new Set(
+    manifests.flatMap((manifest) =>
+      manifest.dependencies.map(({ name }) => name),
+    ),
+  );
+  return frameworkSignals.flatMap(({ framework, packages }) =>
+    packages.some((dependency) => declared.has(dependency)) ? [framework] : [],
+  );
 }
 
 async function lockfileInventory(
@@ -352,3 +366,17 @@ const ignoredTerms = new Set([
   "user",
   "utilisateur",
 ]);
+
+const frameworkSignals = [
+  { framework: "AdonisJS", packages: ["@adonisjs/core"] },
+  { framework: "Angular", packages: ["@angular/core"] },
+  { framework: "Astro", packages: ["astro"] },
+  { framework: "Express", packages: ["express"] },
+  { framework: "NestJS", packages: ["@nestjs/core"] },
+  { framework: "Next.js", packages: ["next"] },
+  { framework: "Prisma", packages: ["@prisma/client", "prisma"] },
+  { framework: "React", packages: ["react"] },
+  { framework: "Svelte", packages: ["svelte", "@sveltejs/kit"] },
+  { framework: "Three.js", packages: ["three"] },
+  { framework: "Vue", packages: ["vue"] },
+] as const;

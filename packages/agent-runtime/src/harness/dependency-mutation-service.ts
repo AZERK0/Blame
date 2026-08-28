@@ -39,6 +39,7 @@ export type DependencyMutationCapability = {
   >;
   applied: false;
   available: boolean;
+  cache_available: boolean;
   capability: "dependency_mutation";
   circuit_open: boolean;
   circuit_opened?: boolean;
@@ -47,6 +48,7 @@ export type DependencyMutationCapability = {
   network_policy: "deny" | "project_allowlist";
   package_manager: string;
   package_manager_version?: string;
+  registry_policy: "configured_only";
   reason?: string;
   retryable: false;
   status: "available" | "unavailable";
@@ -92,6 +94,7 @@ export class DependencyMutationService {
         sha256("no-package-manifest"),
         "DEPENDENCY_EXECUTOR_UNAVAILABLE:No package.json was found.",
         false,
+        false,
       );
     const context = await this.capabilityContext(snapshot, task);
     const open = await this.circuit.status(context.environmentFingerprint);
@@ -101,6 +104,7 @@ export class DependencyMutationService {
         context.environmentFingerprint,
         open.reason,
         true,
+        context.cacheAvailable,
       );
     return this.freshCapability(context);
   }
@@ -139,6 +143,7 @@ export class DependencyMutationService {
         context.environmentFingerprint,
         unavailableReason,
         false,
+        context.cacheAvailable,
       );
     const healthy = await this.executorHealth(
       context.task,
@@ -151,6 +156,7 @@ export class DependencyMutationService {
         context.environmentFingerprint,
         healthy.reason,
         false,
+        context.cacheAvailable,
       );
     return accessibleCapability(context);
   }
@@ -164,14 +170,24 @@ export class DependencyMutationService {
     const packagePath = this.files.normalizePath(input.package_path);
     if (basename(packagePath) !== "package.json")
       throw new Error("INVALID_INPUT:package_path must identify package.json.");
+    if (!snapshot.files.includes(packagePath))
+      throw new Error(
+        `TARGET_NOT_FOUND:${packagePath} does not exist in the current workspace revision.`,
+      );
+    await this.files.read(packagePath);
+    const dependencies = await availableDependencies(
+      this.files.root,
+      packagePath,
+    );
     const capability = await this.capability(snapshot);
     if (!capability.available)
-      return this.unavailableMutation(input, snapshot, packagePath, capability);
+      return this.unavailableMutation(capability, dependencies);
     return this.availableMutation(
       input,
       snapshot,
       packagePath,
       capability,
+      dependencies,
       signal,
     );
   }
@@ -181,6 +197,7 @@ export class DependencyMutationService {
     snapshot: WorkspaceSnapshot,
     packagePath: string,
     capability: DependencyMutationCapability,
+    dependencies: AvailableDependency[],
     signal?: AbortSignal,
   ) {
     const task = await dependencyTask(this.files.root, snapshot.files);
@@ -197,6 +214,7 @@ export class DependencyMutationService {
         overlay,
         task,
         capability.network_policy,
+        dependencies,
         signal,
       );
     } finally {
@@ -211,6 +229,7 @@ export class DependencyMutationService {
     overlay: WorkspaceOverlay,
     task: TaskCatalogItem,
     networkPolicy: "deny" | "project_allowlist",
+    dependencies: AvailableDependency[],
     signal?: AbortSignal,
   ) {
     try {
@@ -225,44 +244,31 @@ export class DependencyMutationService {
       );
     } catch (error) {
       if (!dependencyCapabilityFailure(error)) throw error;
-      return this.capabilityFailureReceipt(input, snapshot, packagePath, error);
+      return this.capabilityFailureReceipt(snapshot, error, dependencies);
     }
   }
 
   private async capabilityFailureReceipt(
-    input: DependencyMutationInput,
     snapshot: WorkspaceSnapshot,
-    packagePath: string,
     error: unknown,
+    dependencies: AvailableDependency[],
   ) {
     const unavailable = await this.openUnavailable(
       snapshot,
       errorMessage(error),
     );
-    return unavailableReceipt(
-      snapshot,
-      unavailable,
-      packagePath,
-      input.operations.length,
-    );
+    return unavailableReceipt(unavailable, dependencies);
   }
 
   private async unavailableMutation(
-    input: DependencyMutationInput,
-    snapshot: WorkspaceSnapshot,
-    packagePath: string,
     capability: DependencyMutationCapability,
+    dependencies: AvailableDependency[],
   ) {
     const unavailable = await this.openCapability(
       capability,
       capability.reason ?? "DEPENDENCY_EXECUTOR_UNAVAILABLE",
     );
-    return unavailableReceipt(
-      snapshot,
-      unavailable,
-      packagePath,
-      input.operations.length,
-    );
+    return unavailableReceipt(unavailable, dependencies);
   }
 
   async openUnavailable(snapshot: WorkspaceSnapshot, reason: string) {
@@ -287,6 +293,7 @@ export class DependencyMutationService {
         capability.environment_fingerprint,
         reason,
         true,
+        capability.cache_available,
       ),
       circuit_opened: !capability.circuit_open,
     };
@@ -576,6 +583,7 @@ function mutationReceipt(
     changed_files: receipt.changed_files,
     source_revision_id: receipt.source_revision.source_revision_id,
     package_manager: task.package_manager,
+    registry_policy: "configured_only",
     package_manager_version:
       execution.packageManagerResolution?.resolvedVersion,
     network: {
@@ -628,12 +636,14 @@ function accessibleCapability(context: DependencyCapabilityContext) {
       context.task,
       context.environmentFingerprint,
       context.networkPolicy,
+      context.cacheAvailable,
     );
   return unavailableCapability(
     context.task,
     context.environmentFingerprint,
     "DEPENDENCY_EXECUTOR_UNAVAILABLE:No managed dependency network or prepared lockfile cache is available.",
     false,
+    context.cacheAvailable,
   );
 }
 
@@ -641,17 +651,20 @@ function availableCapability(
   task: Pick<TaskCatalogItem, "package_manager" | "package_manager_version">,
   environmentFingerprint: string,
   networkPolicy: "deny" | "project_allowlist",
+  cacheAvailable: boolean,
 ): DependencyMutationCapability {
   return {
     alternatives: [...dependencyAlternatives],
     applied: false,
     available: true,
+    cache_available: cacheAvailable,
     capability: "dependency_mutation",
     circuit_open: false,
     environment_fingerprint: environmentFingerprint,
     install_available: true,
     network_policy: networkPolicy,
     package_manager: task.package_manager,
+    registry_policy: "configured_only",
     ...(task.package_manager_version
       ? { package_manager_version: task.package_manager_version }
       : {}),
@@ -665,17 +678,20 @@ function unavailableCapability(
   environmentFingerprint: string,
   reason: string,
   circuitOpen: boolean,
+  cacheAvailable: boolean,
 ): DependencyMutationCapability {
   return {
     alternatives: [...dependencyAlternatives],
     applied: false,
     available: false,
+    cache_available: cacheAvailable,
     capability: "dependency_mutation",
     circuit_open: circuitOpen,
     environment_fingerprint: environmentFingerprint,
     install_available: false,
     network_policy: "deny",
     package_manager: task.package_manager,
+    registry_policy: "configured_only",
     ...(task.package_manager_version
       ? { package_manager_version: task.package_manager_version }
       : {}),
@@ -686,19 +702,43 @@ function unavailableCapability(
 }
 
 function unavailableReceipt(
-  snapshot: WorkspaceSnapshot,
   capability: DependencyMutationCapability,
-  packagePath: string,
-  operationCount: number,
+  dependencies: AvailableDependency[],
 ) {
   return {
-    ...capability,
-    changed_files: [],
-    operation_count: operationCount,
-    package_path: packagePath,
-    source_revision_id: snapshot.revision.source_revision_id,
-    recovery_depth: 0,
+    reason:
+      capability.reason ??
+      "DEPENDENCY_EXECUTOR_UNAVAILABLE:Dependency mutation is unavailable.",
+    dependencies_already_available: dependencies,
+    strategies: [...dependencyAlternatives],
   };
+}
+
+type AvailableDependency = {
+  name: string;
+  type: string;
+  version: string;
+};
+
+async function availableDependencies(root: string, packagePath: string) {
+  const manifest = JSON.parse(
+    await readFile(join(root, packagePath), "utf8"),
+  ) as Record<string, unknown>;
+  return [
+    "dependencies",
+    "devDependencies",
+    "optionalDependencies",
+    "peerDependencies",
+  ].flatMap((type) => {
+    const current = manifest[type];
+    if (!current || typeof current !== "object" || Array.isArray(current))
+      return [];
+    return Object.entries(current as Record<string, unknown>)
+      .filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      )
+      .map(([name, version]) => ({ name, type, version }));
+  });
 }
 
 function normalizeCapabilityReason(value: string) {

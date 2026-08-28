@@ -97,6 +97,10 @@ import {
 import { harnessFeatureEnabled } from "./harness/harness-feature-flags.js";
 import { sha256 } from "./harness/protocol.js";
 import {
+  RunLifecycleRegistry,
+  type RunTerminalState,
+} from "./harness/run-lifecycle.js";
+import {
   blockedCommandParts,
   initializationFallbackReadTools,
   legacyDirectWorkspaceTools,
@@ -444,10 +448,12 @@ export class BlameAgentRuntime {
   private sessionToolInputs = new Map<string, unknown>();
   private sessionToolSequences = new Map<string, number>();
   private sessionSubmittedSummaries = new Map<string, string>();
+  private sessionTerminalDrains = new Map<string, Promise<void>>();
   private sessionIterations = new Map<string, number>();
   private sessionSpawnAgentActiveCounts = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
   private sessionGovernors = new Map<string, HarnessCostGovernor>();
+  private readonly runLifecycles = new RunLifecycleRegistry();
   private readonly userInstructionServices = new BlameUserInstructionServices();
   private structuredEventSessions = new Set<string>();
   private readonly productionConfig = loadProductionConfig();
@@ -557,6 +563,7 @@ export class BlameAgentRuntime {
     this.sessionLogFiles.clear();
     this.sessionLogWrites.clear();
     this.sessionReleases.clear();
+    this.sessionTerminalDrains.clear();
     this.sessionContexts.clear();
     this.sessionEventSignatures.clear();
     this.sessionApiConnections.clear();
@@ -642,6 +649,8 @@ export class BlameAgentRuntime {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     const requestedSessionId = input.sessionId?.trim();
     const sessionId = requestedSessionId || createBlameSessionId();
+    const executionId =
+      input.executionId?.trim() || `${sessionId}:initial-execution`;
     this.agentTelemetry.start(sessionId, {
       ...input,
       taskComplexityBucket: sessionTaskComplexity(input),
@@ -720,6 +729,8 @@ export class BlameAgentRuntime {
       );
       const sessionLogFile = sessionLogPath(input.cwd, sessionId);
       await this.subscribeSession(sessionId, input.backend);
+      this.sessionExecutionIds.set(sessionId, executionId);
+      this.runLifecycles.begin(sessionId, executionId);
       this.sessionBackendKeys.set(sessionId, backendKey(input.backend));
       this.sessionLogFiles.set(sessionId, sessionLogFile);
       this.sessionContexts.set(sessionId, sessionContext(input, sessionId));
@@ -761,15 +772,15 @@ export class BlameAgentRuntime {
           workspaceMode: input.workspaceMode,
         },
       );
-      const externalReadGovernor = harnessFeatureEnabled(
-        "BLAME_COST_GOVERNOR_V2",
-      )
-        ? new ExternalReadGovernor()
-        : undefined;
       const costGovernor = new HarnessCostGovernor(
         input.governorBudget ?? input.maxIterations,
         harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS"),
       );
+      const externalReadGovernor = harnessFeatureEnabled(
+        "BLAME_COST_GOVERNOR_V2",
+      )
+        ? new ExternalReadGovernor(costGovernor)
+        : undefined;
       this.sessionGovernors.set(sessionId, costGovernor);
       const compactionModelState = input.nativeCompletion
         ? await earlyCompactionModelState(
@@ -1023,7 +1034,12 @@ export class BlameAgentRuntime {
       activeContext,
     );
     await this.recordInterruptedMemory(sessionId);
-    this.emitSessionError(sessionId, message, error);
+    const executionId = this.sessionExecutionIds.get(sessionId);
+    if (
+      !executionId ||
+      this.runLifecycles.finish(sessionId, executionId, "failed")
+    )
+      this.emitSessionError(sessionId, message, error, executionId);
     this.agentTelemetry.fail(sessionId, error);
     this.userInstructionServices.stop(sessionId);
   }
@@ -1032,11 +1048,17 @@ export class BlameAgentRuntime {
     input: SendSessionInput & { continuityMetrics?: ContinuityMetrics },
     interventionType?: string,
   ) {
+    const executionId =
+      input.executionId?.trim() ??
+      `${input.sessionId}:execution:${randomUUID()}`;
+    const lifecycle = this.runLifecycles.begin(input.sessionId, executionId);
+    if (lifecycle.execution_id !== executionId || lifecycle.state !== "running")
+      throw new Error(
+        "The previous execution is still stopping; no new model call was made.",
+      );
     this.sessionGovernors.get(input.sessionId)?.newUserRequest();
     this.sessionSubmittedSummaries.delete(input.sessionId);
-    if (input.executionId) {
-      this.sessionExecutionIds.set(input.sessionId, input.executionId);
-    }
+    this.sessionExecutionIds.set(input.sessionId, executionId);
     this.agentTelemetry.beginTurn(
       input.sessionId,
       input.executionId,
@@ -1062,7 +1084,7 @@ export class BlameAgentRuntime {
           userFiles: input.userFiles,
           userImages: input.userImages,
         },
-        input.executionId,
+        executionId,
       );
     } catch (error) {
       this.agentTelemetry.fail(input.sessionId, error);
@@ -1101,14 +1123,63 @@ export class BlameAgentRuntime {
 
   private async abortSession(sessionId: string, humanInitiated = true) {
     const cline = await this.sessionCore(sessionId);
+    const executionId =
+      this.sessionExecutionIds.get(sessionId) ?? `${sessionId}:execution`;
+    const lifecycle = this.runLifecycles.state(sessionId);
+    if (
+      lifecycle &&
+      ["cancelled", "failed", "max_iterations", "succeeded"].includes(
+        lifecycle.state,
+      )
+    )
+      return;
+    this.runLifecycles.stopping(sessionId, executionId);
     if (humanInitiated)
       this.agentTelemetry.humanIntervention(sessionId, "abort");
-    try {
-      await cline.abort(sessionId, "User aborted from Blame");
-    } finally {
-      await this.recordInterruptedMemory(sessionId);
-      this.agentTelemetry.cancel(sessionId);
+    const aborting = cline.abort(sessionId, "User aborted from Blame");
+    const timedOut = Symbol("termination-timeout");
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const result = await Promise.race([
+      aborting.then(
+        () => ({ status: "stopped" as const }),
+        (error: unknown) => ({ status: "pending" as const, error }),
+      ),
+      new Promise<typeof timedOut>(
+        (resolve) => (timeout = setTimeout(() => resolve(timedOut), 1_800)),
+      ),
+    ]);
+    if (timeout) clearTimeout(timeout);
+    if (result === timedOut || result.status === "pending") {
+      this.runLifecycles.terminationPending(sessionId, executionId);
+      if (result !== timedOut)
+        await this.logSession(sessionId, "run termination pending", {
+          error:
+            result.error instanceof Error
+              ? result.error.message
+              : String(result.error),
+          ...this.runLifecycles.state(sessionId),
+        });
+      void aborting.then(
+        () => this.finalizeAbort(sessionId, executionId),
+        (error: unknown) =>
+          this.logSession(sessionId, "run termination watchdog required", {
+            error: error instanceof Error ? error.message : String(error),
+            ...this.runLifecycles.state(sessionId),
+          }),
+      );
+      return;
     }
+    await this.finalizeAbort(sessionId, executionId);
+  }
+
+  private async finalizeAbort(sessionId: string, executionId: string) {
+    await this.recordInterruptedMemory(sessionId);
+    await this.readUsage(sessionId).catch(() => undefined);
+    this.runLifecycles.finish(sessionId, executionId, "cancelled");
+    this.agentTelemetry.cancel(sessionId);
+    await this.logSession(sessionId, "run lifecycle terminal", {
+      ...this.runLifecycles.state(sessionId),
+    });
   }
 
   private async recordInterruptedMemory(sessionId: string) {
@@ -2108,6 +2179,24 @@ export class BlameAgentRuntime {
     this.sessionReleases.delete(sessionId);
     const unsubscribe = await cline.subscribe(
       (payload: CoreSessionEvent) => {
+        const executionId =
+          this.sessionExecutionIds.get(sessionId) ??
+          `${sessionId}:initial-execution`;
+        const eventTokens = eventTokenCount(payload);
+        const lifecycleBeforeEvent = this.runLifecycles.state(sessionId);
+        if (
+          lifecycleBeforeEvent?.execution_id === executionId &&
+          lifecycleBeforeEvent.state !== "running"
+        )
+          this.agentTelemetry.recordPostStopEvent(sessionId, eventTokens);
+        if (!this.runLifecycles.accepts(sessionId, executionId, eventTokens)) {
+          this.agentTelemetry.recordPostTerminalEvent(sessionId, eventTokens);
+          void this.logSession(sessionId, "post-terminal event dropped", {
+            event_type: payload.type,
+            ...this.runLifecycles.state(sessionId),
+          });
+          return;
+        }
         this.agentTelemetry.observeCoreEvent(sessionId, payload);
         if (this.shouldSkipFallbackChunk(sessionId, payload)) return;
         const spawnAgentPhase = clineSessionSpawnAgentPhase(payload);
@@ -2116,7 +2205,7 @@ export class BlameAgentRuntime {
           normalizeEvent(sessionId, payload),
         );
         if (terminalToolEvent(normalized)) return;
-        if (this.shouldSkipSessionDisplayEvent(sessionId, payload)) return;
+        const display = !this.shouldSkipSessionDisplayEvent(sessionId, payload);
         const event = this.withSubmittedSummary(
           sessionId,
           this.withExecutionId(
@@ -2128,6 +2217,24 @@ export class BlameAgentRuntime {
           ),
         );
         if (this.shouldSkipDuplicateSessionEvent(sessionId, event)) return;
+        const terminalState = terminalLifecycleState(event);
+        if (terminalState) {
+          const drain = this.finalizeStreamTerminal(
+            sessionId,
+            executionId,
+            terminalState,
+            event,
+            display,
+          );
+          this.sessionTerminalDrains.set(sessionId, drain);
+          const clearTerminalDrain = () => {
+            if (this.sessionTerminalDrains.get(sessionId) === drain)
+              this.sessionTerminalDrains.delete(sessionId);
+          };
+          void drain.then(clearTerminalDrain, clearTerminalDrain);
+          return;
+        }
+        if (!display) return;
         if (spawnAgentPhase) {
           this.updateSessionSpawnAgentState(sessionId, spawnAgentPhase);
         }
@@ -2137,6 +2244,25 @@ export class BlameAgentRuntime {
       { sessionId },
     );
     this.unsubscribers.set(sessionId, unsubscribe);
+  }
+
+  private async finalizeStreamTerminal(
+    sessionId: string,
+    executionId: string,
+    terminalState: RunTerminalState,
+    event: AgentEvent,
+    display: boolean,
+  ) {
+    await this.handleSessionEvent(sessionId, event);
+    const lifecycle = this.runLifecycles.state(sessionId);
+    if (
+      lifecycle?.execution_id !== executionId ||
+      lifecycle.state !== "running"
+    )
+      return;
+    if (!this.runLifecycles.finish(sessionId, executionId, terminalState))
+      return;
+    if (display) this.events?.emit(event);
   }
 
   private withSubmittedSummary(sessionId: string, event: AgentEvent) {
@@ -2437,6 +2563,8 @@ export class BlameAgentRuntime {
     }
     this.sessionUsageSignatures.delete(sessionId);
     this.sessionGovernors.delete(sessionId);
+    this.sessionTerminalDrains.delete(sessionId);
+    this.runLifecycles.remove(sessionId);
     this.sessionBackendKeys.delete(sessionId);
     this.sessionApiConnections.delete(sessionId);
     this.sessionQualityBaselines.delete(sessionId);
@@ -2880,6 +3008,14 @@ export class BlameAgentRuntime {
     executionId?: string,
   ) {
     const startedAt = Date.now();
+    const activeExecutionId =
+      executionId ?? this.sessionExecutionIds.get(sessionId) ?? sessionId;
+    if (!this.runLifecycles.canInvoke(sessionId, activeExecutionId))
+      return Promise.reject(
+        new Error(
+          "The execution is no longer running; no model call was made.",
+        ),
+      );
     this.agentTelemetry.startModelRequest(sessionId);
     const activeContext = this.agentTelemetry.context(sessionId);
     const result = this.agentTelemetry
@@ -2895,7 +3031,15 @@ export class BlameAgentRuntime {
             : {}),
         }),
       )
-      .then((result: unknown) => {
+      .then(async (result: unknown) => {
+        const terminalDrain = this.sessionTerminalDrains.get(sessionId);
+        await terminalDrain;
+        const lifecycle = this.runLifecycles.state(sessionId);
+        if (
+          lifecycle?.execution_id === activeExecutionId &&
+          lifecycle.state !== "running"
+        )
+          return result;
         void this.logSession(
           sessionId,
           "send resolved",
@@ -2904,28 +3048,56 @@ export class BlameAgentRuntime {
         );
         const failure = resultFailureMessage(result);
         if (failure) {
+          const terminalState = terminalStateFromResult(result);
+          await this.recordInterruptedMemory(sessionId);
+          await this.readUsage(sessionId).catch(() => undefined);
           this.agentTelemetry.fail(sessionId, new Error(failure));
-          this.emitSessionError(sessionId, failure, failure, executionId);
-          void this.recordInterruptedMemory(sessionId);
+          if (
+            this.runLifecycles.finish(
+              sessionId,
+              activeExecutionId,
+              terminalState,
+            )
+          )
+            this.emitSessionError(
+              sessionId,
+              failure,
+              failure,
+              activeExecutionId,
+            );
           return result;
         }
-        this.events?.emit(
-          this.withSubmittedSummary(
-            sessionId,
-            this.withExecutionId(
+        if (!terminalDrain) {
+          await this.recordConversationResponse(sessionId, result);
+          const usage = await this.readUsage(sessionId).catch(() => undefined);
+          if (usage) this.agentTelemetry.recordUsageSummary(sessionId, usage);
+        }
+        if (
+          this.runLifecycles.finish(sessionId, activeExecutionId, "succeeded")
+        )
+          this.events?.emit(
+            this.withSubmittedSummary(
               sessionId,
-              {
-                type: "done",
+              this.withExecutionId(
                 sessionId,
-                payload: doneResultPayload(result),
-              },
-              executionId,
+                {
+                  type: "done",
+                  sessionId,
+                  payload: doneResultPayload(result),
+                },
+                activeExecutionId,
+              ),
             ),
-          ),
-        );
+          );
         return result;
       })
-      .catch((error: unknown) => {
+      .catch(async (error: unknown) => {
+        const lifecycle = this.runLifecycles.state(sessionId);
+        if (
+          lifecycle?.execution_id === activeExecutionId &&
+          lifecycle.state !== "running"
+        )
+          throw error;
         const message = errorMessage(error);
         void this.logSession(
           sessionId,
@@ -2938,8 +3110,10 @@ export class BlameAgentRuntime {
           },
           activeContext,
         );
-        this.emitSessionError(sessionId, message, error, executionId);
-        void this.recordInterruptedMemory(sessionId);
+        await this.recordInterruptedMemory(sessionId);
+        await this.readUsage(sessionId).catch(() => undefined);
+        if (this.runLifecycles.finish(sessionId, activeExecutionId, "failed"))
+          this.emitSessionError(sessionId, message, error, activeExecutionId);
         throw error;
       });
     void this.logSession(
@@ -5408,6 +5582,86 @@ function terminalProductMessage(status: string) {
   if (normalized === "aborted" || normalized === "cancelled")
     return "Agent work was interrupted before a final response was submitted.";
   return "Agent stopped before submitting a final response.";
+}
+
+function terminalLifecycleState(
+  event: AgentEvent,
+): RunTerminalState | undefined {
+  if (event.type === "done") {
+    const payload = asRecord(event.payload);
+    return terminalStateFromStatus(
+      stringValue(payload.status) ??
+        stringValue(payload.reason) ??
+        stringValue(payload.finishReason),
+      "succeeded",
+    );
+  }
+  if (event.type !== "error") return undefined;
+  const payload = asRecord(event.payload);
+  if (payload.recoverable === true) return undefined;
+  return terminalStateFromStatus(
+    stringValue(payload.terminalStatus) ?? stringValue(payload.status),
+    "failed",
+  );
+}
+
+function terminalStateFromResult(result: unknown): RunTerminalState {
+  const payload = asRecord(result);
+  return terminalStateFromStatus(incompleteResultStatus(payload), "failed");
+}
+
+function terminalStateFromStatus(
+  status: string | undefined,
+  fallback: RunTerminalState,
+): RunTerminalState {
+  const normalized = status?.replaceAll("-", "_").toLowerCase();
+  if (normalized === "max_iterations" || normalized === "mistake_limit")
+    return "max_iterations";
+  if (
+    normalized === "aborted" ||
+    normalized === "cancelled" ||
+    normalized === "canceled"
+  )
+    return "cancelled";
+  if (normalized === "failed" || normalized === "error") return "failed";
+  return fallback;
+}
+
+function eventTokenCount(event: CoreSessionEvent) {
+  const usage = findUsageRecord(event);
+  const totals =
+    (numberValue(usage.totalInputTokens) ?? 0) +
+    (numberValue(usage.totalOutputTokens) ?? 0) +
+    (numberValue(usage.totalCacheWriteTokens) ?? 0);
+  if (totals > 0) return totals;
+  return (
+    (numberValue(usage.inputTokens) ?? 0) +
+    (numberValue(usage.outputTokens) ?? 0) +
+    (numberValue(usage.cacheWriteTokens) ?? 0)
+  );
+}
+
+function findUsageRecord(value: unknown, depth = 0): Record<string, unknown> {
+  if (depth > 6 || !value || typeof value !== "object") return {};
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findUsageRecord(item, depth + 1);
+      if (Object.keys(found).length) return found;
+    }
+    return {};
+  }
+  const record = value as Record<string, unknown>;
+  if (
+    Object.keys(record).some((key) =>
+      /^(?:total)?(?:input|output|cacheWrite)Tokens$/u.test(key),
+    )
+  )
+    return record;
+  for (const item of Object.values(record)) {
+    const found = findUsageRecord(item, depth + 1);
+    if (Object.keys(found).length) return found;
+  }
+  return {};
 }
 
 function incompleteTerminalStatus(status: unknown) {

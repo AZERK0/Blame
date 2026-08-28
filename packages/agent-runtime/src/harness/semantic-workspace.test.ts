@@ -574,7 +574,15 @@ test("tool schemas reject contradictory and unknown input before execution", asy
       },
       { agentId: "test", iteration: 1 },
     );
-    assert.equal((invalid as { isError?: boolean }).isError, true);
+    assert.equal((invalid as { isError?: boolean }).isError, false);
+    assert.equal(
+      (invalid as { output?: { outcome?: string } }).output?.outcome,
+      "failed",
+    );
+    assert.equal(
+      (invalid as { output?: { fatal?: boolean } }).output?.fatal,
+      false,
+    );
     assert.match(JSON.stringify(invalid), /unrecognized|raw view/i);
   });
 });
@@ -1885,13 +1893,13 @@ test("native dependency mutation updates the manifest and generated lockfile ato
       await readFile(join(root, "pnpm-lock.yaml"), "utf8"),
       "generated-lock\n",
     );
+    if (!("status" in result.data) || result.data.status !== "applied")
+      throw new Error("Expected applied mutation.");
     assert.deepEqual(result.data.changed_files.sort(), [
       "package.json",
       "pnpm-lock.yaml",
     ]);
     assert.equal(result.data.status, "applied");
-    if (result.data.status !== "applied")
-      throw new Error("Expected applied mutation.");
     assert.equal(result.data.package_manager, "pnpm");
     assert.deepEqual(result.data.network, {
       selected: "project_allowlist",
@@ -1968,7 +1976,11 @@ test("Cline adapter registers a small read/write harness with strict schemas", a
       },
       { agentId: "test", iteration: 1 },
     );
-    assert.equal((error as { isError?: boolean }).isError, true);
+    assert.equal((error as { isError?: boolean }).isError, false);
+    assert.equal(
+      (error as { output?: { outcome?: string } }).output?.outcome,
+      "failed",
+    );
   });
 });
 

@@ -75,7 +75,14 @@ test("consult_specialist resolves the private system prompt server-side", async 
     { runId: "request-1" } as never,
   );
 
-  assert.deepEqual(result, { text: "advice" });
+  assert.deepEqual(result, {
+    outcome: "completed",
+    fatal: false,
+    reason: "SPECIALIST_CONSULTATION_COMPLETED",
+    recommendation: "Apply the useful advice and continue as the lead agent.",
+    text: "advice",
+    isError: false,
+  });
   const delegated = delegatedInput as {
     systemPrompt: string;
     task: string;
@@ -92,22 +99,29 @@ test("consult_specialist resolves the private system prompt server-side", async 
   assert.doesNotMatch(publicSchema, /Frontend Design Specialist, an internal/);
   assert.doesNotMatch(publicSchema, /visual_system_protocol/);
 
-  const repeated = await tool.execute(
+  const otherSpecialist = await tool.execute(
     {
       specialist: "risk_review",
       task: "Review the remaining risk.",
     },
     { runId: "request-1" } as never,
   );
-  assert.equal((repeated as { isError?: boolean }).isError, true);
-  assert.match(JSON.stringify(repeated), /already been consulted/);
+  assert.equal((otherSpecialist as { outcome?: string }).outcome, "completed");
 
-  const nextRequest = await tool.execute(
+  const repeatedAfterCompaction = await tool.execute(
     {
       specialist: "risk_review",
       task: "Review the next change request.",
     },
     { runId: "request-2" } as never,
   );
-  assert.deepEqual(nextRequest, { text: "advice" });
+  assert.equal(
+    (repeatedAfterCompaction as { outcome?: string }).outcome,
+    "skipped",
+  );
+  assert.equal(
+    (repeatedAfterCompaction as { isError?: boolean }).isError,
+    false,
+  );
+  assert.match(JSON.stringify(repeatedAfterCompaction), /previous_receipt/);
 });

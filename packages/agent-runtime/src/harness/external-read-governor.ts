@@ -4,6 +4,7 @@ import type {
   CoreSessionConfig,
 } from "@cline/sdk";
 import { sha256 } from "./protocol.js";
+import type { HarnessCostGovernor } from "./cost-governor.js";
 
 export type ExternalReadToolName =
   | "consult_specialist"
@@ -26,7 +27,12 @@ type ExternalReadMetrics = {
 };
 
 type ExternalReadDecision =
-  | { action: "execute"; normalized: string; receiptId: string }
+  | {
+      action: "execute";
+      normalized: string;
+      receiptId: string;
+      resourceReceiptIds: string[];
+    }
   | { action: "return"; result: unknown };
 
 const maximumExternalResultBytes = 16_000;
@@ -36,6 +42,7 @@ type BeforeToolContext = Parameters<NonNullable<AgentHooks["beforeTool"]>>[0];
 
 export class ExternalReadGovernor {
   private dependencyMutationUnavailable = false;
+  private readonly progressGovernor?: HarnessCostGovernor;
   private readonly cache = new Map<string, CachedExternalRead>();
   private readonly history: CachedExternalRead[] = [];
   private readonly inFlight = new Map<string, Promise<unknown>>();
@@ -46,13 +53,21 @@ export class ExternalReadGovernor {
     suppressed: 0,
   };
 
+  constructor(progressGovernor?: HarnessCostGovernor) {
+    this.progressGovernor = progressGovernor;
+  }
+
   wrap(tool: AgentTool): AgentTool {
     const toolName = tool.name;
     if (!isExternalReadTool(toolName)) return this.observeCapabilityTool(tool);
     return {
       ...tool,
       execute: async (input: unknown, context: AgentToolContext) => {
-        const decision = this.before(toolName, input);
+        const progressReceipt = this.progressGovernor?.beforeExternal(
+          context.iteration,
+        );
+        if (progressReceipt) return progressReceipt;
+        const decision = this.before(toolName, input, context);
         if (decision.action === "return") return decision.result;
         const pending = this.inFlight.get(decision.receiptId);
         if (pending) return this.afterInFlight(pending, decision.receiptId);
@@ -71,8 +86,13 @@ export class ExternalReadGovernor {
 
   fetchHooks(): NonNullable<CoreSessionConfig["hooks"]> {
     return {
-      beforeTool: ({ tool, input }: BeforeToolContext) => {
+      beforeTool: ({ tool, input, snapshot }: BeforeToolContext) => {
         if (tool.name !== "fetch_web_content") return undefined;
+        const progressReceipt = this.progressGovernor?.beforeExternal(
+          numberValue(snapshot.iteration),
+        );
+        if (progressReceipt)
+          return { skip: true, reason: JSON.stringify(progressReceipt) };
         const decision = this.before("fetch_web_content", input);
         if (decision.action === "execute") return undefined;
         return { skip: true, reason: JSON.stringify(decision.result) };
@@ -95,23 +115,31 @@ export class ExternalReadGovernor {
   private before(
     tool: ExternalReadToolName,
     input: unknown,
+    context?: AgentToolContext,
   ): ExternalReadDecision {
     this.metrics.calls += 1;
-    const normalized = normalizedExternalRead(tool, input);
+    const resources = normalizedExternalResources(tool, input, context);
+    const normalized = resources.join("|");
     const receiptId = `external-read://${sha256(`${tool}\0${normalized}`)}`;
     if (
       this.dependencyMutationUnavailable &&
       dependencyMutationExploration(tool, normalized)
     )
       return this.dependencyUnavailableReceipt(receiptId);
+    const resourceReceiptIds = resources.map(
+      (resource) => `external-read://${sha256(`${tool}\0${resource}`)}`,
+    );
     const cached = this.cache.get(receiptId);
     if (cached) return this.cachedReceipt(cached);
-    const similar = this.history.filter((entry) =>
-      stronglyOverlaps(entry, normalized),
-    );
-    if (similar.length >= 2)
-      return this.suppressedReceipt(receiptId, similar.at(-1));
-    return { action: "execute", normalized, receiptId };
+    const cachedResources = resourceReceiptIds
+      .map((resourceReceiptId) => this.cache.get(resourceReceiptId))
+      .filter((entry): entry is CachedExternalRead => Boolean(entry));
+    if (
+      resourceReceiptIds.length > 0 &&
+      cachedResources.length === resourceReceiptIds.length
+    )
+      return this.cachedReceipt(cachedResources.at(-1)!);
+    return { action: "execute", normalized, receiptId, resourceReceiptIds };
   }
 
   private observeCapabilityTool(tool: AgentTool): AgentTool {
@@ -134,6 +162,9 @@ export class ExternalReadGovernor {
     return {
       action: "return",
       result: {
+        outcome: "unavailable",
+        fatal: false,
+        isError: false,
         status: "unavailable",
         applied: false,
         reason: "DEPENDENCY_MUTATION_UNAVAILABLE",
@@ -144,6 +175,8 @@ export class ExternalReadGovernor {
           "implement_without_dependency",
           "report_blocked",
         ],
+        recommendation:
+          "Reuse an installed dependency, implement without it, or report the blocker.",
       },
     };
   }
@@ -151,11 +184,16 @@ export class ExternalReadGovernor {
   private pendingDecision(
     input: unknown,
   ): Extract<ExternalReadDecision, { action: "execute" }> {
-    const normalized = normalizedExternalRead("fetch_web_content", input);
+    const resources = normalizedExternalResources("fetch_web_content", input);
+    const normalized = resources.join("|");
     return {
       action: "execute",
       normalized,
       receiptId: `external-read://${sha256(`fetch_web_content\0${normalized}`)}`,
+      resourceReceiptIds: resources.map(
+        (resource) =>
+          `external-read://${sha256(`fetch_web_content\0${resource}`)}`,
+      ),
     };
   }
 
@@ -173,11 +211,18 @@ export class ExternalReadGovernor {
       result: governed,
     };
     this.cache.set(entry.receiptId, entry);
+    for (const resourceReceiptId of decision.resourceReceiptIds)
+      this.cache.set(resourceReceiptId, {
+        ...entry,
+        receiptId: resourceReceiptId,
+      });
     this.history.push(entry);
     if (this.history.length > 100) {
       const evicted = this.history.shift();
       if (evicted) this.cache.delete(evicted.receiptId);
     }
+    while (this.cache.size > 300)
+      this.cache.delete(this.cache.keys().next().value!);
     this.metrics.returnedBytes += serializedBytes(governed);
     return governed;
   }
@@ -205,9 +250,16 @@ export class ExternalReadGovernor {
     return {
       action: "return",
       result: {
+        outcome: "skipped",
+        fatal: false,
+        isError: false,
         status: "already_available",
         alreadyAvailable: true,
         receiptId: entry.receiptId,
+        previous_receipt: entry.receiptId,
+        reason: "REPEATED_EXTERNAL_READ",
+        cached_summary: cachedSummary(entry.result),
+        recommendation: "Continue with the next useful action.",
         sourceUnchanged: true,
       },
     };
@@ -217,35 +269,26 @@ export class ExternalReadGovernor {
     await pending;
     const cached = this.cache.get(receiptId);
     if (!cached)
-      throw new Error("External read completed without a cache receipt.");
+      return {
+        outcome: "failed",
+        fatal: false,
+        isError: false,
+        reason: "EXTERNAL_READ_RECEIPT_UNAVAILABLE",
+        recommendation: "Continue without the missing cached receipt.",
+      };
     return this.cachedReceipt(cached).result;
-  }
-
-  private suppressedReceipt(
-    receiptId: string,
-    previous?: CachedExternalRead,
-  ): Extract<ExternalReadDecision, { action: "return" }> {
-    this.metrics.suppressed += 1;
-    return {
-      action: "return",
-      result: {
-        status: "retry_suppressed",
-        retrySuppressed: true,
-        receiptId,
-        previousReceiptId: previous?.receiptId,
-        reason: "REPEATED_EXTERNAL_READ",
-        recommendation:
-          "Use the existing receipts or continue with a targeted workspace action.",
-      },
-    };
   }
 }
 
-function normalizedExternalRead(tool: ExternalReadToolName, input: unknown) {
+function normalizedExternalResources(
+  tool: ExternalReadToolName,
+  input: unknown,
+  context?: AgentToolContext,
+) {
   const value = recordValue(input);
   const requests = Array.isArray(value.requests)
-    ? value.requests.map(normalizedFetchRequest).sort().join("|")
-    : "";
+    ? value.requests.map(normalizedFetchRequest)
+    : [];
   const url = normalizedUrl(value.url);
   const query = normalizedText(
     String(value.prompt ?? value.query ?? value.task ?? value.context ?? ""),
@@ -254,7 +297,18 @@ function normalizedExternalRead(tool: ExternalReadToolName, input: unknown) {
     .filter((item) => item !== undefined)
     .map((item) => normalizedText(String(item)))
     .join(":");
-  return `${tool}:${requests || url}:${scope}:${query}`;
+  const revision = normalizedText(
+    String(
+      context?.metadata?.sourceRevisionId ??
+        context?.metadata?.source_revision_id ??
+        "",
+    ),
+  );
+  if (requests.length)
+    return requests.map(
+      (request) => `${tool}:${request}:${scope}:${query}:${revision}`,
+    );
+  return [`${tool}:${url}:${scope}:${query}:${revision}`];
 }
 
 function normalizedFetchRequest(value: unknown) {
@@ -267,25 +321,22 @@ function normalizedUrl(value: unknown) {
   try {
     const url = new URL(value);
     url.hash = "";
+    url.pathname = url.pathname.replace(/\.md\/?$/iu, "");
+    for (const key of [...url.searchParams.keys()])
+      if (trackingParameter(key)) url.searchParams.delete(key);
     url.searchParams.sort();
-    return url.toString().toLowerCase();
+    return url.toString();
   } catch {
     return normalizedText(value);
   }
 }
 
-function normalizedText(value: string) {
-  return value.normalize("NFKC").toLowerCase().replace(/\s+/gu, " ").trim();
+function trackingParameter(value: string) {
+  return /^(?:fbclid|gclid|mc_cid|mc_eid|ref|source|utm_.+)$/iu.test(value);
 }
 
-function stronglyOverlaps(entry: CachedExternalRead, normalized: string) {
-  const left = new Set(
-    entry.normalized.split(/[^\p{L}\p{N}]+/u).filter(Boolean),
-  );
-  const right = new Set(normalized.split(/[^\p{L}\p{N}]+/u).filter(Boolean));
-  if (!left.size || !right.size) return entry.normalized === normalized;
-  const shared = [...left].filter((token) => right.has(token)).length;
-  return shared / Math.min(left.size, right.size) >= 0.75;
+function normalizedText(value: string) {
+  return value.normalize("NFKC").toLowerCase().replace(/\s+/gu, " ").trim();
 }
 
 function boundedExternalResult(result: unknown, tool: ExternalReadToolName) {
@@ -310,8 +361,14 @@ function normalizedAgentToolResult(
       : result.output;
   return {
     ...result,
+    outcome: result.isError ? "failed" : "completed",
+    fatal: result.fatal === true,
+    reason: result.isError ? "EXTERNAL_READ_FAILED" : "EXTERNAL_READ_COMPLETED",
+    recommendation: result.isError
+      ? "Use the returned limitation and continue when possible."
+      : "Continue with the task.",
     output,
-    isError: result.isError ?? false,
+    isError: result.fatal === true,
     metadata: { ...result.metadata },
   };
 }
@@ -391,13 +448,33 @@ function boundedResult(
       },
     };
   if (result && typeof result === "object" && !Array.isArray(result))
-    return { ...result, externalReadReceiptId: receiptId, tool };
-  return { content: result, externalReadReceiptId: receiptId, tool };
+    return {
+      outcome: "completed",
+      fatal: false,
+      reason: "EXTERNAL_READ_COMPLETED",
+      recommendation: "Continue with the task.",
+      ...result,
+      externalReadReceiptId: receiptId,
+      tool,
+    };
+  return {
+    outcome: "completed",
+    fatal: false,
+    reason: "EXTERNAL_READ_COMPLETED",
+    recommendation: "Continue with the task.",
+    content: result,
+    externalReadReceiptId: receiptId,
+    tool,
+  };
 }
 
 type AgentToolResultEnvelope = {
+  fatal?: boolean;
   isError?: boolean;
   metadata?: Record<string, unknown>;
+  outcome?: string;
+  reason?: string;
+  recommendation?: string;
   output: unknown;
 };
 
@@ -418,6 +495,11 @@ function capabilityReportingTool(name: string) {
   return ["mutate_dependencies", "run_task", "workspace_state"].includes(name);
 }
 
+function cachedSummary(value: unknown) {
+  const serialized = JSON.stringify(value) ?? String(value);
+  return boundedUtf8(serialized, 320);
+}
+
 function containsUnavailableDependencyMutation(
   value: unknown,
   depth = 0,
@@ -432,6 +514,13 @@ function containsUnavailableDependencyMutation(
   if (
     record.capability === "dependency_mutation" &&
     record.status === "unavailable"
+  )
+    return true;
+  if (
+    record.outcome === "unavailable" &&
+    /^DEPENDENCY_(?:EXECUTOR|MUTATION)_UNAVAILABLE/iu.test(
+      String(record.reason ?? ""),
+    )
   )
     return true;
   return Object.values(record).some((item) =>
@@ -457,4 +546,8 @@ function recordValue(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+}
+
+function numberValue(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }

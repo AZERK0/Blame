@@ -881,7 +881,7 @@ test("parallel identical external reads share one execution", async () => {
   assert.equal((first as { output?: string }).output, "logs");
 });
 
-test("external reads suppress a third strongly overlapping request", async () => {
+test("semantically similar external resources remain independently accessible", async () => {
   const governor = new ExternalReadGovernor();
   let executions = 0;
   const tool = governor.wrap({
@@ -896,15 +896,9 @@ test("external reads suppress a third strongly overlapping request", async () =>
   const context = {} as never;
   await tool.execute({ service: "web", tailLines: 100 }, context);
   await tool.execute({ service: "web", tailLines: 120 }, context);
-  const suppressed = await tool.execute(
-    { service: "web", tailLines: 140 },
-    context,
-  );
-  assert.equal(executions, 2);
-  assert.equal(
-    (suppressed as { retrySuppressed?: boolean }).retrySuppressed,
-    true,
-  );
+  const third = await tool.execute({ service: "web", tailLines: 140 }, context);
+  assert.equal(executions, 3);
+  assert.equal((third as { outcome?: string }).outcome, "completed");
 });
 
 test("an edit invalidates only read receipts for the changed file", async () => {

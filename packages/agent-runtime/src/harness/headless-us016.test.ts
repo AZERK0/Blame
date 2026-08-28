@@ -87,8 +87,17 @@ test("US-016 exposes an unavailable dependency executor before any mutation", as
         timeout_ms: 30_000,
       }),
     );
-    assertUnavailableReceipt(mutationResult.data);
-    assert.equal(recordValue(mutationResult.data).circuit_opened, true);
+    assert.equal(mutationResult.outcome, "unavailable");
+    assert.deepEqual(Object.keys(recordValue(mutationResult.data)).sort(), [
+      "dependencies_already_available",
+      "reason",
+      "strategies",
+    ]);
+    assert.deepEqual(recordValue(mutationResult.data).strategies, [
+      "reuse_existing_dependency",
+      "implement_without_dependency",
+      "report_blocked",
+    ]);
     const dependencyRun = await workspace.runTask({
       source_revision_id: revision,
       task: { kind: "dependencies" },
@@ -103,7 +112,7 @@ test("US-016 exposes an unavailable dependency executor before any mutation", as
   });
 });
 
-test("US-016 workspace state is bounded and honors explicit sections", async () => {
+test("US-016 workspace state is exhaustive for architecture and honors explicit sections", async () => {
   await withUs016Workspace(async (root) => {
     const tools = semanticWorkspaceTools(root, {
       taskContract: {
@@ -113,9 +122,9 @@ test("US-016 workspace state is bounded and honors explicit sections", async () 
     });
     const workspaceState = requiredTool(tools, "workspace_state");
     const complete = await workspaceState.execute({}, toolContext("state"));
-    assert.ok(Buffer.byteLength(JSON.stringify(complete)) <= 4_800);
+    assert.ok(Buffer.byteLength(JSON.stringify(complete)) <= 32_000);
     assert.ok(
-      Number(recordValue(recordValue(complete).usage).output_tokens) <= 1_200,
+      Number(recordValue(recordValue(complete).usage).output_tokens) <= 8_000,
     );
     assert.ok(resultData(complete).task_projection);
     const selected = await workspaceState.execute(
@@ -123,7 +132,7 @@ test("US-016 workspace state is bounded and honors explicit sections", async () 
       toolContext("state-source"),
     );
     assert.deepEqual(Object.keys(resultData(selected)), ["source_revision"]);
-    assert.ok(Buffer.byteLength(JSON.stringify(selected)) <= 4_800);
+    assert.ok(Buffer.byteLength(JSON.stringify(selected)) <= 32_000);
   });
 });
 

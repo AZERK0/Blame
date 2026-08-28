@@ -900,6 +900,11 @@ function toolTitle(
   if (phase === "cancelled") return `${label} cancelled`
   const outcome = payload ? toolOutcome(payload) : undefined
   if (outcome === "applied") return `${label} applied`
+  if (outcome === "completed") return `${label} completed`
+  if (outcome === "skipped") return `${label} skipped`
+  if (outcome === "unavailable") return `${label} unavailable`
+  if (outcome === "blocked") return `${label} blocked`
+  if (outcome === "failed") return `${label} failed`
   if (outcome === "conflict") return `${label} conflict`
   if (outcome === "validation_failed") return `${label} validation failed`
   if (outcome === "infrastructure_error")
@@ -911,7 +916,8 @@ function toolStatus(
   phase: string | undefined,
   payload?: Record<string, unknown>
 ): ActivityStatus {
-  if (payload && failedToolOutcome(toolOutcome(payload))) return "failed"
+  if (payload && failedToolOutcome(toolOutcome(payload), toolFatal(payload)))
+    return "failed"
   if (phase === "finished" || phase === "tool_result") return "completed"
   if (phase === "agent_error" || phase === "failed" || phase === "cancelled")
     return "failed"
@@ -919,15 +925,27 @@ function toolStatus(
 }
 
 function toolOutcome(payload: Record<string, unknown>) {
-  const output = recordValue(payload.output)
+  const output = toolResultEnvelope(payload)
   const data = recordValue(output.data)
-  return stringValue(data.outcome) ?? stringValue(output.outcome)
+  const declared = stringValue(output.outcome) ?? stringValue(data.outcome)
+  if (declared === "applied" && data.applied === false) return "blocked"
+  return declared
 }
 
-function failedToolOutcome(outcome: string | undefined) {
-  return ["conflict", "infrastructure_error", "validation_failed"].includes(
-    outcome ?? ""
-  )
+function toolFatal(payload: Record<string, unknown>) {
+  const output = toolResultEnvelope(payload)
+  return output.fatal === true
+}
+
+function toolResultEnvelope(payload: Record<string, unknown>) {
+  const output = recordValue(payload.output)
+  const nested = recordValue(output.output)
+  return stringValue(nested.outcome) ? nested : output
+}
+
+function failedToolOutcome(outcome: string | undefined, fatal = false) {
+  if (outcome === "failed") return fatal
+  return false
 }
 
 function toolDetail(

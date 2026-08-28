@@ -72,31 +72,38 @@ async function executeConsultation(
   if (!parsed.success) return invalidConsultation(parsed.error.issues);
   const specialist = blameSpecialistAgent(parsed.data.specialist);
   if (!specialist)
-    return { isError: true, output: { error: "Unknown Blame specialist." } };
-  const scope = consultationScope(context);
-  const count = state.get(scope) ?? 0;
-  if (count > 0 && !parsed.data.additional_consultation_justification)
-    return repeatedConsultationDenied();
-  state.set(scope, count + 1);
+    return recoverableConsultationFailure(
+      "UNKNOWN_SPECIALIST",
+      "Unknown Blame specialist.",
+    );
+  const key = consultationKey(parsed.data, context, options.objective);
+  const previous = state.get(key);
+  if (previous !== undefined) return repeatedConsultationReceipt(key);
+  state.set(key, Date.now());
   const capsule = await options.capsule?.(parsed.data);
-  return options.spawnTool.execute(
-    {
-      systemPrompt: specialist.systemPrompt,
-      task: specialistTask(parsed.data, options, capsule),
-    },
-    context,
+  return executeWithDeadline(
+    (signal) =>
+      Promise.resolve(
+        options.spawnTool.execute(
+          {
+            systemPrompt: specialist.systemPrompt,
+            task: specialistTask(parsed.data, options, capsule),
+          },
+          { ...context, signal },
+        ),
+      ),
+    context.signal,
+    options.timeoutMs ?? 90_000,
   );
-}
-
-function consultationScope(context: AgentToolContext) {
-  const explicit = context.metadata?.changeRequestId;
-  if (typeof explicit === "string" && explicit.trim()) return explicit;
-  return context.runId ?? context.conversationId ?? "active-change-request";
 }
 
 function invalidConsultation(issues: Array<{ message: string }>) {
   return {
-    isError: true,
+    outcome: "failed",
+    fatal: false,
+    reason: "INVALID_SPECIALIST_REQUEST",
+    recommendation: "Correct the specialist request and continue.",
+    isError: false,
     output: {
       error: "Invalid consult_specialist input.",
       issues: issues.map(({ message }) => message),
@@ -104,14 +111,148 @@ function invalidConsultation(issues: Array<{ message: string }>) {
   };
 }
 
-function repeatedConsultationDenied() {
+function repeatedConsultationReceipt(key: string) {
   return {
-    isError: true,
+    outcome: "skipped",
+    fatal: false,
+    reason: "REPEATED_SPECIALIST_CONSULTATION",
+    recommendation: "Use the previous consultation receipt.",
+    isError: false,
     output: {
-      error:
-        "One specialist has already been consulted for this change request. Provide a structured additional_consultation_justification only when another specialist is materially necessary.",
+      previous_receipt: `specialist-consultation://${key}`,
+      cached_summary:
+        "This specialist already handled the same objective and source revision.",
     },
   };
+}
+
+function consultationKey(
+  input: ConsultSpecialistInput,
+  context: AgentToolContext,
+  objective?: string,
+) {
+  const revision =
+    context.metadata?.sourceRevisionId ??
+    context.metadata?.source_revision_id ??
+    "unversioned";
+  return simpleDigest(
+    [
+      input.specialist,
+      normalizedText(objective ?? input.task),
+      normalizedText(String(revision)),
+    ].join("\0"),
+  );
+}
+
+async function executeWithDeadline(
+  execute: (signal: AbortSignal) => Promise<unknown>,
+  signal: AbortSignal | undefined,
+  timeoutMs: number,
+) {
+  if (signal?.aborted)
+    return recoverableConsultationFailure(
+      "SPECIALIST_CANCELLED",
+      "The specialist consultation was cancelled.",
+    );
+  const controller = new AbortController();
+  let stopReason: "SPECIALIST_CANCELLED" | "SPECIALIST_TIMEOUT" | undefined;
+  let timeout: NodeJS.Timeout | undefined;
+  let abortListener: (() => void) | undefined;
+  const stopped = new Promise<unknown>((resolve) => {
+    timeout = setTimeout(() => {
+      stopReason = "SPECIALIST_TIMEOUT";
+      controller.abort(stopReason);
+      resolve(
+        recoverableConsultationFailure(
+          "SPECIALIST_TIMEOUT",
+          `The specialist exceeded its ${timeoutMs} ms timeout.`,
+        ),
+      );
+    }, timeoutMs);
+    abortListener = () => {
+      stopReason = "SPECIALIST_CANCELLED";
+      controller.abort(signal?.reason);
+      resolve(
+        recoverableConsultationFailure(
+          "SPECIALIST_CANCELLED",
+          "The specialist consultation was cancelled.",
+        ),
+      );
+    };
+    signal?.addEventListener("abort", abortListener, { once: true });
+  });
+  try {
+    const execution = execute(controller.signal).catch((error: unknown) =>
+      stopReason
+        ? recoverableConsultationFailure(
+            stopReason,
+            stopReason === "SPECIALIST_TIMEOUT"
+              ? `The specialist exceeded its ${timeoutMs} ms timeout.`
+              : "The specialist consultation was cancelled.",
+          )
+        : recoverableSpecialistExecutionFailure(error),
+    );
+    const result = await Promise.race([execution, stopped]);
+    return completedConsultationResult(result);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+    if (abortListener) signal?.removeEventListener("abort", abortListener);
+  }
+}
+
+function recoverableSpecialistExecutionFailure(error: unknown) {
+  return {
+    outcome: "failed",
+    fatal: false,
+    reason: "SPECIALIST_FAILED",
+    recommendation: "Continue without the specialist or report the limitation.",
+    isError: false,
+    output: {
+      message: error instanceof Error ? error.message : String(error),
+    },
+  };
+}
+
+function completedConsultationResult(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const result = value as Record<string, unknown>;
+  if (result.outcome) return result;
+  return {
+    outcome: result.isError === true ? "failed" : "completed",
+    fatal: false,
+    reason:
+      result.isError === true
+        ? "SPECIALIST_FAILED"
+        : "SPECIALIST_CONSULTATION_COMPLETED",
+    recommendation: "Apply the useful advice and continue as the lead agent.",
+    ...result,
+    isError: false,
+  };
+}
+
+function recoverableConsultationFailure(reason: string, message: string) {
+  return {
+    outcome: "blocked",
+    fatal: false,
+    reason,
+    recommendation:
+      "Continue without the specialist or finish with the identified limitation.",
+    isError: false,
+    output: { message },
+  };
+}
+
+function normalizedText(value: string) {
+  return value.normalize("NFKC").toLowerCase().replace(/\s+/gu, " ").trim();
+}
+
+function simpleDigest(value: string) {
+  let hash = 2166136261;
+  for (const character of value) {
+    hash ^= character.codePointAt(0)!;
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
 }
 
 function specialistTask(

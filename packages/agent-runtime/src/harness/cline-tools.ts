@@ -477,7 +477,7 @@ function createHarnessTool<TSchema extends z.ZodTypeAny>(input: {
             code: "INVALID_INPUT",
             message: formatSchemaError(parsed.error),
           }),
-          isError: true,
+          isError: false,
         };
       const executed = await input.execute(parsed.data, context);
       const prepared =
@@ -489,10 +489,12 @@ function createHarnessTool<TSchema extends z.ZodTypeAny>(input: {
           : executed;
       const result = boundHarnessResult(
         prepared,
-        requestedOutputTokens(input.name, parsed.data),
+        input.name === "workspace_state"
+          ? undefined
+          : requestedOutputTokens(input.name, parsed.data),
       );
       return result.status === "error"
-        ? { output: result, isError: true }
+        ? { output: result, isError: result.fatal }
         : result;
     },
   });
@@ -510,7 +512,7 @@ function workspaceStateInclude(value: unknown) {
 
 function requestedOutputTokens(tool: string, value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value))
-    return tool === "workspace_state" ? 1_200 : undefined;
+    return tool === "workspace_state" ? 8_000 : undefined;
   const input = value as Record<string, unknown>;
   const budget = input.budget;
   if (budget && typeof budget === "object" && !Array.isArray(budget)) {
@@ -518,5 +520,5 @@ function requestedOutputTokens(tool: string, value: unknown) {
     if (typeof requested === "number") return requested;
   }
   if (typeof input.maximum_tokens === "number") return input.maximum_tokens;
-  return tool === "workspace_state" ? 1_200 : undefined;
+  return tool === "workspace_state" ? 8_000 : undefined;
 }

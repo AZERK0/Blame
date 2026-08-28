@@ -80,10 +80,11 @@ function compactTaskProjection(value: unknown) {
   const projection = recordValue(value);
   const inventory = recordValue(projection.dependency_inventory);
   return {
-    relevant_targets: arrayValue(projection.relevant_targets).slice(0, 6),
-    packages: arrayValue(projection.packages).slice(0, 6),
+    relevant_targets: arrayValue(projection.relevant_targets).slice(0, 8),
+    packages: arrayValue(projection.packages),
+    detected_frameworks: projection.detected_frameworks,
     dependency_inventory: compactDependencyInventory(inventory),
-    executable_tasks: arrayValue(projection.executable_tasks).slice(0, 5),
+    executable_tasks: arrayValue(projection.executable_tasks),
   };
 }
 
@@ -91,7 +92,7 @@ function compactDependencyInventory(value: Record<string, unknown>) {
   const lockfile = recordValue(value.lockfile);
   return {
     mutation: compactMutation(value.mutation),
-    manifests: arrayValue(value.manifests).slice(0, 2).map(compactManifest),
+    manifests: arrayValue(value.manifests).map(compactManifest),
     lockfile: {
       present: lockfile.present,
       path: lockfile.path,
@@ -108,7 +109,8 @@ function compactManifest(value: unknown) {
     path: manifest.path,
     name: manifest.name,
     dependency_count: manifest.dependency_count,
-    dependencies: arrayValue(manifest.dependencies).slice(0, 2),
+    dependencies: arrayValue(manifest.dependencies),
+    scripts: manifest.scripts,
   };
 }
 
@@ -117,6 +119,11 @@ function compactMutation(value: unknown) {
   return {
     status: mutation.status,
     available: mutation.available,
+    package_manager: mutation.package_manager,
+    package_manager_version: mutation.package_manager_version,
+    cache_available: mutation.cache_available,
+    network_policy: mutation.network_policy,
+    registry_policy: mutation.registry_policy,
     reason: reasonCode(mutation.reason),
     alternatives: mutation.alternatives,
   };

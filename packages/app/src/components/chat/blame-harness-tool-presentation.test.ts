@@ -234,6 +234,27 @@ test("uses operation paths before an apply result is available", () => {
   })
 })
 
+test("never presents unavailable or blocked mutations as edited files", () => {
+  const presentation = presentBlameHarnessTool({
+    input: {
+      action: "apply",
+      operations: [{ kind: "text_replace", path: "src/not-edited.ts" }],
+    },
+    output: {
+      isError: false,
+      output: {
+        data: { applied: false },
+        fatal: false,
+        outcome: "unavailable",
+      },
+    },
+    toolName: "apply_change",
+  })
+
+  assert.equal(presentation.toolName, "apply_patch")
+  assert.deepEqual(presentation.input, { files: [] })
+})
+
 test("reuses search result cards for semantic search", () => {
   const presentation = presentBlameHarnessTool({
     input: { query: { kind: "symbol", name: "OrderService" } },

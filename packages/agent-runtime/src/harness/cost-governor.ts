@@ -29,6 +29,9 @@ export type BroadReadAdmission = RawReadProfile & {
 
 type EpochState = {
   editApplied: boolean;
+  facts: string[];
+  firstEditIteration?: number;
+  lastMaterialProgressIteration: number;
   lowNoveltyReads: number;
   midpointAdvised: boolean;
   reads: number;
@@ -48,6 +51,8 @@ export class HarnessCostGovernor {
   private readonly absentPackages = new Set<string>();
   private readonly states = new Map<string, EpochState>();
   private readonly taskState = initialState();
+  private identicalOrCoveredReads = 0;
+  private unavailableCapabilities = new Set<string>();
 
   constructor(iterationBudget = 80, semanticLoops = true) {
     this.iterationBudget = Math.max(1, iterationBudget);
@@ -63,12 +68,19 @@ export class HarnessCostGovernor {
     admission?: BroadReadAdmission,
   ) {
     this.state(contextEpoch);
+    const noProgress = this.noProgressIterations(iteration);
     const absentPackage = absentPackageTarget(tool, input, this.absentPackages);
     if (absentPackage) return absentPackageReceipt(absentPackage);
     const loopDecision = this.loops?.before(tool, input);
     if (loopDecision) return loopDecision;
     const reserveBlock = this.reserveBlock(tool, input, iteration);
     if (reserveBlock) return reserveBlock;
+    if (noProgress >= 8 && admission?.broad)
+      return broadReadReceipt("BROAD_READ_ALREADY_AVAILABLE", admission, {
+        reason: "NO_PROGRESS_EXTERNAL_EXPLORATION_CLOSED",
+        recommendation:
+          "Use a targeted read, edit, validation, or return the definitive blocker.",
+      });
     if ((this.failureCounts.get(failureSignature(tool, input)) ?? 0) >= 3)
       return harnessError({
         code: "PRECONDITION_FAILED",
@@ -96,14 +108,20 @@ export class HarnessCostGovernor {
     this.loops?.after(tool, input, result);
     this.observe(state, tool, input, result);
     this.observe(this.taskState, tool, input, result);
+    this.observeMaterialProgress(state, tool, result, context.iteration);
+    this.observeMaterialProgress(
+      this.taskState,
+      tool,
+      result,
+      context.iteration,
+    );
     this.observeFailure(tool, input, result);
     this.observeAbsentPackages(result);
-    const enriched = annotateEpoch(
-      result,
-      context.contextEpoch,
-      context.conversationId,
+    const enriched = annotateProgressMetrics(
+      annotateEpoch(result, context.contextEpoch, context.conversationId),
+      this.metrics(context.iteration),
     );
-    const advice = this.advice(state, context);
+    const advice = this.advice(this.taskState, context);
     if (!advice || enriched.status !== "success") return enriched;
     return {
       ...enriched,
@@ -116,6 +134,37 @@ export class HarnessCostGovernor {
 
   newUserRequest() {
     this.loops?.newUserRequest();
+    Object.assign(this.taskState, initialState());
+    this.identicalOrCoveredReads = 0;
+    this.unavailableCapabilities = new Set<string>();
+  }
+
+  beforeExternal(iteration = 0) {
+    if (this.noProgressIterations(iteration) < 8) return undefined;
+    return {
+      outcome: "skipped" as const,
+      fatal: false,
+      isError: false,
+      status: "retry_suppressed",
+      reason: "NO_PROGRESS_EXTERNAL_EXPLORATION_CLOSED",
+      recommendation:
+        "Continue with targeted workspace reads, edits, validation, or a blocker response.",
+    };
+  }
+
+  metrics(iteration = 0) {
+    const noProgressIterations = this.noProgressIterations(iteration);
+    return {
+      first_edit_iteration: this.taskState.firstEditIteration,
+      no_progress_iterations: noProgressIterations,
+      identical_or_covered_reads: this.identicalOrCoveredReads,
+      unavailable_capabilities: [...this.unavailableCapabilities],
+      alerts: [
+        ...(noProgressIterations >= 8 && !this.taskState.editApplied
+          ? ["NO_MUTATION_AFTER_8_ITERATIONS"]
+          : []),
+      ],
+    };
   }
 
   releaseBroadRead(reservationId?: string) {
@@ -161,6 +210,22 @@ export class HarnessCostGovernor {
       if (value.code !== "DEPENDENCY_MISSING") continue;
       const dependency = stringValue(value.dependency);
       if (dependency) this.absentPackages.add(dependency);
+    }
+  }
+
+  private observeMaterialProgress<T>(
+    state: EpochState,
+    tool: SemanticWorkspaceToolName,
+    result: HarnessToolResult<T>,
+    iteration: number,
+  ) {
+    if (result.outcome === "unavailable")
+      this.unavailableCapabilities.add(result.reason);
+    if (!materialProgress(tool, result, state)) return;
+    state.lastMaterialProgressIteration = iteration;
+    if (isEdit(tool) && result.outcome === "applied") {
+      state.firstEditIteration ??= iteration;
+      state.editApplied = true;
     }
   }
 
@@ -226,6 +291,8 @@ export class HarnessCostGovernor {
     state.reads += 1;
     state.readsWithoutEdit += 1;
     state.target = targetLabel(input) ?? state.target;
+    state.facts = compactFacts(state.facts, tool, input, result);
+    if (result.outcome === "skipped") this.identicalOrCoveredReads += 1;
     if (tool !== "inspect_code") return;
     const data = recordValue(result.data);
     const overlap = numberValue(data.overlap_rate) ?? 0;
@@ -235,8 +302,14 @@ export class HarnessCostGovernor {
   }
 
   private advice(state: EpochState, context: ToolContext) {
-    if (!state.editApplied && state.readsWithoutEdit === 4)
-      return `Four reads completed without an applied edit. If the change is clear, edit ${state.target}.`;
+    const noProgress = Math.max(
+      0,
+      context.iteration - state.lastMaterialProgressIteration,
+    );
+    if (noProgress === 4)
+      return `Four iterations completed without material progress. Known facts: ${
+        state.facts.join("; ") || "the current target is identified"
+      }. Edit ${state.target}, validate, or state the definitive blocker.`;
     if (!state.midpointAdvised && context.iteration >= this.midpoint) {
       state.midpointAdvised = true;
       return "Half of the adaptive turn budget is used. A compact continuity capsule should replace inactive technical context.";
@@ -253,6 +326,32 @@ export class HarnessCostGovernor {
       this.states.delete(this.states.keys().next().value!);
     return created;
   }
+
+  private noProgressIterations(iteration: number) {
+    return Math.max(
+      0,
+      Math.max(0, iteration) - this.taskState.lastMaterialProgressIteration,
+    );
+  }
+}
+
+function annotateProgressMetrics<T>(
+  result: HarnessToolResult<T>,
+  metrics: ReturnType<HarnessCostGovernor["metrics"]>,
+): HarnessToolResult<T> {
+  if (
+    result.status !== "success" ||
+    result.outcome === "unavailable" ||
+    !isRecord(result.data)
+  )
+    return result;
+  return {
+    ...result,
+    data: {
+      ...result.data,
+      progress_governor: metrics,
+    },
+  } as HarnessToolResult<T>;
 }
 
 function observeReadSignature(
@@ -300,6 +399,7 @@ function annotateEpoch<T>(
 function broadReadReceipt(
   reason: BroadReadSuppressionReason,
   admission?: BroadReadAdmission,
+  override?: { reason: string; recommendation: string },
 ) {
   const parallel = reason === "PARALLEL_BROAD_READ_LIMIT";
   const duplicate = reason === "BROAD_READ_IN_FLIGHT";
@@ -314,6 +414,7 @@ function broadReadReceipt(
       parallel,
       duplicate,
       iterationBudget,
+      override,
     ),
     diagnostics: [broadReadDiagnostic(parallel, duplicate, iterationBudget)],
     coverage: {
@@ -330,6 +431,7 @@ function broadReadReceiptData(
   parallel: boolean,
   duplicate: boolean,
   iterationBudget: boolean,
+  override?: { reason: string; recommendation: string },
 ) {
   const requestedBytes = admission?.estimatedBytes ?? 0;
   return {
@@ -338,7 +440,7 @@ function broadReadReceiptData(
       : parallel || iterationBudget
         ? "retry_suppressed"
         : "already_available",
-    reason,
+    reason: override?.reason ?? reason,
     content_coverage: "none",
     duplicate_broad_read_suppressed: duplicate,
     parallel_broad_read_suppressed: parallel,
@@ -349,6 +451,7 @@ function broadReadReceiptData(
     ...broadReadRequestedSelection(admission),
     estimated_tokens_saved: Math.ceil(requestedBytes / 4),
     recommendation:
+      override?.recommendation ??
       "Use a symbol_ref, a narrow search, or one precise byte range.",
   };
 }
@@ -385,6 +488,8 @@ function broadReadDiagnostic(
 function initialState(): EpochState {
   return {
     editApplied: false,
+    facts: [],
+    lastMaterialProgressIteration: 0,
     lowNoveltyReads: 0,
     midpointAdvised: false,
     reads: 0,
@@ -392,6 +497,39 @@ function initialState(): EpochState {
     recentReadSignatures: [],
     target: "the identified target",
   };
+}
+
+function materialProgress<T>(
+  tool: SemanticWorkspaceToolName,
+  result: HarnessToolResult<T>,
+  state: EpochState,
+) {
+  if (result.outcome === "applied") return true;
+  if (result.outcome === "blocked") return true;
+  if (
+    result.outcome === "unavailable" &&
+    result.recommendation.toLowerCase().includes("report")
+  )
+    return true;
+  if (tool === "run_task" && state.editApplied)
+    return result.status === "success" || !result.fatal;
+  return false;
+}
+
+function compactFacts<T>(
+  current: string[],
+  tool: SemanticWorkspaceToolName,
+  input: unknown,
+  result: HarnessToolResult<T>,
+) {
+  const data = result.status === "success" ? recordValue(result.data) : {};
+  const target =
+    stringValue(data.path) ??
+    targetLabel(input) ??
+    stringValue(data.reason) ??
+    tool;
+  const fact = `${tool}: ${target} (${result.outcome})`;
+  return [...current.filter((value) => value !== fact), fact].slice(-6);
 }
 
 function readSignature(tool: SemanticWorkspaceToolName, input: unknown) {
