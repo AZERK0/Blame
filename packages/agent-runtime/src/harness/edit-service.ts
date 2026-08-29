@@ -2,6 +2,7 @@ import {
   materializeSymbol,
   parseCode,
   symbolEditRange,
+  syntaxBoundaryRange,
 } from "./code-intelligence.js";
 import { ChangeService, NoChangesProposed } from "./change-service.js";
 import { stableJson } from "./change-store.js";
@@ -498,6 +499,7 @@ export class EditService {
       };
     if (edit.operation === "replace_file")
       return this.replaceFileOperation(edit.path, edit.content);
+    if (edit.operation === "insert_text") return this.insertTextOperation(edit);
     if (edit.operation === "delete_file")
       return {
         kind: "delete_file" as const,
@@ -518,6 +520,22 @@ export class EditService {
       range_utf8_bytes: [0, file.content.byteLength] as [number, number],
       expected_old_text: file.content.toString("utf8"),
       replacement,
+    };
+  }
+
+  private async insertTextOperation(
+    edit: Extract<FileEditOperation, { operation: "insert_text" }>,
+  ) {
+    const file = await this.files.read(edit.path);
+    assertTextFile(edit.path, file.content);
+    const offset = edit.position === "start" ? 0 : file.content.byteLength;
+    return {
+      kind: "text_replace" as const,
+      path: edit.path,
+      expected_blob_hash: sha256(file.content),
+      range_utf8_bytes: [offset, offset] as [number, number],
+      expected_old_text: "",
+      replacement: edit.content,
     };
   }
 
@@ -572,21 +590,49 @@ export class EditService {
         replacement: edit.content,
       };
     if (edit.operation === "insert_before" || edit.operation === "insert_after")
-      return {
-        kind: edit.operation,
-        target: resolved.target,
-        source: edit.content,
-      };
+      return this.semanticBoundaryOperation(edit, resolved);
     if (
       edit.operation === "replace_body" ||
       edit.operation === "replace_signature"
     )
       return this.symbolPartOperation(edit, resolved);
     if (edit.operation === "delete" || edit.operation === "delete_symbol")
-      return { kind: "replace_node", target: resolved.target, replacement: "" };
+      return this.semanticBoundaryOperation(edit, resolved);
     if (!isCssEdit(edit))
       throw new Error(`Unsupported semantic edit operation: ${edit.operation}`);
     return this.cssDeclarationOperation(edit, resolved);
+  }
+
+  private async semanticBoundaryOperation(
+    edit: Extract<
+      EditCodeOperation,
+      {
+        operation:
+          | "delete"
+          | "delete_symbol"
+          | "insert_after"
+          | "insert_before";
+      }
+    >,
+    resolved: ResolvedTarget,
+  ) {
+    const file = await this.files.read(resolved.path);
+    const range = syntaxBoundaryRange(resolved.path, file.content, [
+      resolved.handle.start,
+      resolved.handle.end,
+    ]);
+    const insertion =
+      edit.operation === "insert_before" || edit.operation === "insert_after";
+    const offset = edit.operation === "insert_after" ? range[1] : range[0];
+    const selected = insertion ? ([offset, offset] as [number, number]) : range;
+    return {
+      kind: "text_replace" as const,
+      path: resolved.path,
+      expected_blob_hash: sha256(file.content),
+      range_utf8_bytes: selected,
+      expected_old_text: file.content.subarray(...selected).toString("utf8"),
+      replacement: insertion ? edit.content : "",
+    };
   }
 
   private async symbolPartOperation(
@@ -916,7 +962,11 @@ function conflictFailure(error: unknown): EditCodeOutcome | undefined {
 
 function unsupportedFailure(error: unknown): EditCodeOutcome | undefined {
   if (error instanceof UnsupportedPatchOperation)
-    return unsupportedResult(error.message, error.reason, "edit_files");
+    return unsupportedResult(
+      error.message,
+      error.reason,
+      error.recommendedTool,
+    );
   if (error instanceof UnsupportedEditOperation)
     return unsupportedResult(
       error.message,

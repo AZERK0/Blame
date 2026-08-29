@@ -1461,6 +1461,8 @@ function runTaskResponse(
         "The task executor failed before producing a valid task result.",
       revision,
       recovery: summary,
+      recommendation:
+        "The task runtime is unavailable. Do not edit project files, manifests, scripts, or lockfiles to repair it, and do not rerun the same task until the runtime environment changes.",
     });
   const semantics = runTaskResponseSemantics(run.status);
   return harnessSuccess({

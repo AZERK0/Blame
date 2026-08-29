@@ -1,5 +1,12 @@
 import { constants } from "node:fs";
-import { access, realpath } from "node:fs/promises";
+import {
+  access,
+  chmod,
+  mkdtemp,
+  realpath,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, dirname, isAbsolute, join } from "node:path";
 import { execa } from "execa";
@@ -97,107 +104,22 @@ export class SandboxedTaskExecutor implements TaskExecutor {
     }));
     if ("error" in prepared)
       return infrastructureFailure(isolation, prepared.error);
-    const readRoots = await executionReadRoots(prepared);
-    const deniedReadRoots =
-      isolation === "sandbox_exec"
-        ? await canonicalExistingPaths([
-            homedir(),
-            tmpdir(),
-            ...(prepared.canonicalWorkspaceRoot
-              ? [prepared.canonicalWorkspaceRoot]
-              : []),
-          ])
-        : [];
-    const executionInput =
-      isolation === "sandbox_exec"
-        ? { ...prepared, overlayRoot: await realpath(prepared.overlayRoot) }
-        : prepared;
-    const command = executionCommand(
-      executionInput,
-      isolation,
-      readRoots,
-      deniedReadRoots,
-    );
-    const externalProxy = projectAllowlistProxy();
-    const localProxy =
-      prepared.network === "project_allowlist" && !externalProxy
-        ? await startRegistryAllowlistProxy({
-            cwd: prepared.cwd,
-            overlayRoot: prepared.overlayRoot,
-            signal: input.signal,
-          }).catch(() => undefined)
-        : undefined;
-    if (
-      prepared.network === "project_allowlist" &&
-      !externalProxy &&
-      !localProxy
-    )
-      return infrastructureFailure(
-        isolation,
-        "REGISTRY_PROXY_UNAVAILABLE:The configured-registry proxy could not start.",
-      );
-    const environment = taskEnvironment(
-      executionInput.overlayRoot,
-      prepared.network ?? "deny",
-      prepared.dependencyCacheRoot,
-      prepared.runtimeBinRoots,
-      externalProxy ?? localProxy?.url,
-    );
+    const runtime = await packageManagerRuntime(prepared).catch((error) => ({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+    if ("error" in runtime)
+      return infrastructureFailure(isolation, runtime.error);
     try {
-      const result = await execa(command.executable, command.args, {
-        cancelSignal: input.signal,
-        cwd: input.cwd,
-        env: environment,
-        extendEnv: false,
-        maxBuffer: input.outputBytes,
-        reject: false,
-        stdin: "ignore",
-        stripFinalNewline: false,
-        timeout: input.timeoutMs,
-      });
-      const stdout = String(result.stdout ?? "");
-      const stderr = String(result.stderr ?? "");
-      return {
-        status: result.isCanceled
-          ? "cancelled"
-          : result.timedOut
-            ? "timed_out"
-            : result.failed
-              ? "failed"
-              : "passed",
-        exitCode: result.exitCode ?? null,
-        signal: result.signal ?? null,
-        stdout,
-        stderr,
-        outputTruncated:
-          Buffer.byteLength(stdout) + Buffer.byteLength(stderr) >=
-          input.outputBytes,
+      return await executePreparedTask(
+        input,
+        {
+          ...prepared,
+          runtimeBinRoots: [...runtime.binRoots, ...prepared.runtimeBinRoots],
+        },
         isolation,
-        ...(prepared.packageManagerResolution
-          ? { packageManagerResolution: prepared.packageManagerResolution }
-          : {}),
-      };
-    } catch (error) {
-      const failure = executionFailure(error);
-      return {
-        status:
-          input.signal?.aborted || failure.isCanceled
-            ? "cancelled"
-            : failure.timedOut
-              ? "timed_out"
-              : "execution_error",
-        exitCode: failure.exitCode,
-        signal: failure.signal,
-        stdout: failure.stdout,
-        stderr: failure.stderr || failure.message,
-        outputTruncated: failure.maxBufferExceeded,
-        isolation,
-        ...(prepared.packageManagerResolution
-          ? { packageManagerResolution: prepared.packageManagerResolution }
-          : {}),
-      };
+      );
     } finally {
-      await localProxy?.close();
+      await runtime.cleanup();
     }
   }
 
@@ -217,6 +139,187 @@ export class SandboxedTaskExecutor implements TaskExecutor {
     this.healthChecks.set(key, checking);
     return checking;
   }
+}
+
+async function executePreparedTask(
+  input: TaskExecutionInput,
+  prepared: PreparedTaskExecutionInput,
+  isolation: TaskIsolation,
+): Promise<TaskExecutionResult> {
+  const context = await commandExecutionContext(input, prepared, isolation);
+  if ("error" in context)
+    return infrastructureFailure(isolation, context.error);
+  try {
+    return await runPreparedCommand(
+      input,
+      prepared,
+      context.command,
+      context.environment,
+      isolation,
+    );
+  } finally {
+    await context.cleanup();
+  }
+}
+
+async function commandExecutionContext(
+  input: TaskExecutionInput,
+  prepared: PreparedTaskExecutionInput,
+  isolation: TaskIsolation,
+): Promise<CommandExecutionContext | { error: string }> {
+  const readRoots = await executionReadRoots(prepared);
+  const deniedReadRoots = await executionDeniedRoots(prepared, isolation);
+  const executionInput =
+    isolation === "sandbox_exec"
+      ? { ...prepared, overlayRoot: await realpath(prepared.overlayRoot) }
+      : prepared;
+  const command = executionCommand(
+    executionInput,
+    isolation,
+    readRoots,
+    deniedReadRoots,
+  );
+  const registry = await registryExecutionContext(input, prepared);
+  if ("error" in registry) return registry;
+  return {
+    command,
+    environment: taskEnvironment(
+      executionInput.overlayRoot,
+      prepared.network ?? "deny",
+      prepared.dependencyCacheRoot,
+      prepared.runtimeBinRoots,
+      registry.url,
+    ),
+    cleanup: registry.cleanup,
+  };
+}
+
+function executionDeniedRoots(
+  input: PreparedTaskExecutionInput,
+  isolation: TaskIsolation,
+) {
+  if (isolation !== "sandbox_exec") return Promise.resolve([]);
+  return canonicalExistingPaths([
+    homedir(),
+    tmpdir(),
+    ...(input.canonicalWorkspaceRoot ? [input.canonicalWorkspaceRoot] : []),
+  ]);
+}
+
+async function localRegistryProxy(
+  prepared: PreparedTaskExecutionInput,
+  externalProxy: string | undefined,
+  input: TaskExecutionInput,
+) {
+  if (prepared.network !== "project_allowlist" || externalProxy)
+    return undefined;
+  return startRegistryAllowlistProxy({
+    cwd: prepared.cwd,
+    overlayRoot: prepared.overlayRoot,
+    signal: input.signal,
+  }).catch(() => undefined);
+}
+
+async function registryExecutionContext(
+  input: TaskExecutionInput,
+  prepared: PreparedTaskExecutionInput,
+): Promise<RegistryExecutionContext | { error: string }> {
+  const externalProxy = projectAllowlistProxy();
+  const localProxy = await localRegistryProxy(prepared, externalProxy, input);
+  if (prepared.network === "project_allowlist" && !externalProxy && !localProxy)
+    return {
+      error:
+        "REGISTRY_PROXY_UNAVAILABLE:The configured-registry proxy could not start.",
+    };
+  return {
+    url: externalProxy ?? localProxy?.url,
+    cleanup: async () => {
+      await localProxy?.close();
+    },
+  };
+}
+
+async function runPreparedCommand(
+  input: TaskExecutionInput,
+  prepared: PreparedTaskExecutionInput,
+  command: { executable: string; args: string[] },
+  environment: Record<string, string>,
+  isolation: TaskIsolation,
+): Promise<TaskExecutionResult> {
+  try {
+    const result = await execa(command.executable, command.args, {
+      cancelSignal: input.signal,
+      cwd: input.cwd,
+      env: environment,
+      extendEnv: false,
+      maxBuffer: input.outputBytes,
+      reject: false,
+      stdin: "ignore",
+      stripFinalNewline: false,
+      timeout: input.timeoutMs,
+    });
+    return completedExecution(result, input, prepared, isolation);
+  } catch (error) {
+    return failedExecution(error, input, prepared, isolation);
+  }
+}
+
+function completedExecution(
+  result: Awaited<ReturnType<typeof execa>>,
+  input: TaskExecutionInput,
+  prepared: PreparedTaskExecutionInput,
+  isolation: TaskIsolation,
+): TaskExecutionResult {
+  const stdout = String(result.stdout ?? "");
+  const stderr = String(result.stderr ?? "");
+  return {
+    status: result.isCanceled
+      ? "cancelled"
+      : result.timedOut
+        ? "timed_out"
+        : result.failed
+          ? "failed"
+          : "passed",
+    exitCode: result.exitCode ?? null,
+    signal: result.signal ?? null,
+    stdout,
+    stderr,
+    outputTruncated:
+      Buffer.byteLength(stdout) + Buffer.byteLength(stderr) >=
+      input.outputBytes,
+    isolation,
+    ...packageManagerExecution(prepared),
+  };
+}
+
+function failedExecution(
+  error: unknown,
+  input: TaskExecutionInput,
+  prepared: PreparedTaskExecutionInput,
+  isolation: TaskIsolation,
+): TaskExecutionResult {
+  const failure = executionFailure(error);
+  return {
+    status:
+      input.signal?.aborted || failure.isCanceled
+        ? "cancelled"
+        : failure.timedOut
+          ? "timed_out"
+          : "execution_error",
+    exitCode: failure.exitCode,
+    signal: failure.signal,
+    stdout: failure.stdout,
+    stderr: failure.stderr || failure.message,
+    outputTruncated: failure.maxBufferExceeded,
+    isolation,
+    ...packageManagerExecution(prepared),
+  };
+}
+
+function packageManagerExecution(input: PreparedTaskExecutionInput) {
+  return input.packageManagerResolution
+    ? { packageManagerResolution: input.packageManagerResolution }
+    : {};
 }
 
 function unavailableHealth(isolation: TaskIsolation, stderr: string) {
@@ -389,8 +492,8 @@ function taskEnvironment(
   const proxy = network === "project_allowlist" ? projectProxy : undefined;
   return {
     PATH: [
-      join(overlayRoot, "node_modules", ".bin"),
       ...runtimeBinRoots,
+      join(overlayRoot, "node_modules", ".bin"),
       inheritedPath,
     ].join(delimiter),
     HOME: join(overlayRoot, ".home"),
@@ -399,6 +502,7 @@ function taskEnvironment(
     COREPACK_HOME: join(overlayRoot, ".home", ".cache", "corepack"),
     COREPACK_ENABLE_DOWNLOAD_PROMPT: "0",
     COREPACK_ENABLE_PROJECT_SPEC: "0",
+    COREPACK_ENABLE_STRICT: "0",
     npm_config_manage_package_manager_versions: "false",
     pnpm_config_manage_package_manager_versions: "false",
     CI: "1",
@@ -423,9 +527,75 @@ function taskEnvironment(
 }
 
 type PreparedTaskExecutionInput = TaskExecutionInput & {
+  managerArgsPrefix: string[];
   packageManagerResolution?: PackageManagerResolution;
   runtimeBinRoots: string[];
 };
+
+type CommandExecutionContext = {
+  cleanup: () => Promise<void>;
+  command: { executable: string; args: string[] };
+  environment: Record<string, string>;
+};
+
+type RegistryExecutionContext = {
+  cleanup: () => Promise<void>;
+  url?: string;
+};
+
+type PackageManagerRuntime = {
+  binRoots: string[];
+  cleanup: () => Promise<void>;
+};
+
+async function packageManagerRuntime(
+  input: PreparedTaskExecutionInput,
+): Promise<PackageManagerRuntime> {
+  if (!input.packageManager || !input.packageManagerResolution)
+    return { binRoots: [], cleanup: async () => undefined };
+  const directory = await mkdtemp(
+    join(input.overlayRoot, ".blame-package-manager-"),
+  );
+  try {
+    await writePackageManagerLaunchers(directory, input);
+    return {
+      binRoots: [directory],
+      cleanup: () => rm(directory, { force: true, recursive: true }),
+    };
+  } catch (error) {
+    await rm(directory, { force: true, recursive: true });
+    throw error;
+  }
+}
+
+async function writePackageManagerLaunchers(
+  directory: string,
+  input: PreparedTaskExecutionInput,
+) {
+  const command = [input.executable, ...resolvedManagerPrefix(input)];
+  const shellPath = join(directory, input.packageManager!);
+  const windowsPath = `${shellPath}.cmd`;
+  await Promise.all([
+    writeFile(
+      shellPath,
+      `#!/bin/sh\nexec ${command.map(shellQuote).join(" ")} "$@"\n`,
+    ),
+    writeFile(windowsPath, `@${command.map(windowsQuote).join(" ")} %*\r\n`),
+  ]);
+  if (process.platform !== "win32") await chmod(shellPath, 0o755);
+}
+
+function resolvedManagerPrefix(input: PreparedTaskExecutionInput) {
+  return input.managerArgsPrefix;
+}
+
+function shellQuote(value: string) {
+  return `'${value.replaceAll("'", `'"'"'`)}'`;
+}
+
+function windowsQuote(value: string) {
+  return `"${value.replaceAll('"', '""')}"`;
+}
 
 async function prepareTaskExecution(input: TaskExecutionInput) {
   const prepared = await preparePackageManager(input);
@@ -444,16 +614,22 @@ async function prepareTaskExecution(input: TaskExecutionInput) {
 async function preparePackageManager(
   input: TaskExecutionInput,
 ): Promise<PreparedTaskExecutionInput> {
-  if (!input.packageManager) return { ...input, runtimeBinRoots: [] };
+  if (!input.packageManager)
+    return { ...input, managerArgsPrefix: [], runtimeBinRoots: [] };
   const manager = await resolvePackageManager({
     compatibility: input.packageManagerCompatibility,
     name: input.packageManager,
     version: input.packageManagerVersion,
   });
+  const managerArgsPrefix = [
+    ...manager.argsPrefix,
+    ...packageManagerRuntimeOptions(input.packageManager),
+  ];
   return {
     ...input,
     executable: manager.executable,
-    args: [...manager.argsPrefix, ...input.args],
+    args: [...managerArgsPrefix, ...input.args],
+    managerArgsPrefix,
     readonlyRoots: [...(input.readonlyRoots ?? []), ...manager.readonlyRoots],
     packageManagerResolution: {
       name: input.packageManager,
@@ -467,6 +643,12 @@ async function preparePackageManager(
       ? []
       : [dirname(manager.executable)],
   };
+}
+
+function packageManagerRuntimeOptions(packageManager: PackageManagerName) {
+  return packageManager === "pnpm"
+    ? ["--config.manage-package-manager-versions=false"]
+    : [];
 }
 
 function infrastructureFailure(

@@ -110,6 +110,68 @@ export function parseCode(path: string, content: Buffer): ParseResult {
   return parsed;
 }
 
+export function syntaxBoundaryRange(
+  path: string,
+  content: Buffer,
+  target: [number, number],
+): [number, number] {
+  const parsed = parseCode(path, content);
+  const candidate = parsed.trees
+    .map((tree) => boundaryCandidate(tree, target))
+    .filter((value): value is ParsedNode => Boolean(value))
+    .sort((left, right) => nodeSize(left) - nodeSize(right))[0];
+  if (!candidate) return target;
+  const node = outerInsertionNode(candidate.node);
+  return byteRange(node, candidate.byteOffset);
+}
+
+function boundaryCandidate(
+  tree: ParsedTree,
+  target: [number, number],
+): ParsedNode | undefined {
+  let selected: SgNode | undefined;
+  walk(tree.root, (node) => {
+    const range = byteRange(node, tree.byteOffset);
+    if (range[0] > target[0] || range[1] < target[1]) return;
+    if (!selected || node.text().length < selected.text().length)
+      selected = node;
+  });
+  return selected ? { ...tree, node: selected } : undefined;
+}
+
+function outerInsertionNode(initial: SgNode) {
+  let node = initial;
+  for (let parent = node.parent(); parent; parent = node.parent()) {
+    if (isSyntaxContainer(String(parent.kind()))) break;
+    node = parent;
+  }
+  return node;
+}
+
+function isSyntaxContainer(kind: string) {
+  return (
+    syntaxContainerKinds.has(kind) || /(?:^|_)(?:body|block|list)$/u.test(kind)
+  );
+}
+
+function nodeSize(node: ParsedNode) {
+  const range = byteRange(node.node, node.byteOffset);
+  return range[1] - range[0];
+}
+
+const syntaxContainerKinds = new Set([
+  "arguments",
+  "array",
+  "document",
+  "formal_parameters",
+  "jsx_element",
+  "module",
+  "object",
+  "program",
+  "source_file",
+  "stylesheet",
+]);
+
 export function materializeSymbol(input: {
   symbol: ParsedSymbol;
   path: string;

@@ -8,6 +8,21 @@ import { harnessFeatureEnabled } from "./harness-feature-flags.js";
 
 const execFileAsync = promisify(execFile);
 type Hunk = ReturnType<typeof parsePatch>[number]["hunks"][number];
+type PatchHunk = Pick<Hunk, "lines"> & {
+  endOfFile?: boolean;
+  newStart?: number;
+  oldStart?: number;
+};
+type PatchFile = {
+  hunks: PatchHunk[];
+  mode: "add" | "delete" | "update";
+  newFileName?: string;
+  oldFileName?: string;
+};
+type PatchDocument = {
+  files: PatchFile[];
+  format: "apply_patch" | "unified";
+};
 
 export type PatchRecoveryResult = {
   content: string;
@@ -39,15 +54,28 @@ export class PatchRecoveryConflict extends Error {
 }
 
 export class UnsupportedPatchOperation extends Error {
-  readonly reason: "MULTI_FILE_PATCH" | "PATCH_PATH_MISMATCH";
+  readonly reason:
+    | "INVALID_PATCH_FORMAT"
+    | "MULTI_FILE_PATCH"
+    | "PATCH_FILE_MODE_UNSUPPORTED"
+    | "PATCH_PATH_MISMATCH";
+  readonly recommendedTool: "edit_files" | "patch_file";
 
-  constructor(reason: "MULTI_FILE_PATCH" | "PATCH_PATH_MISMATCH") {
+  constructor(reason: UnsupportedPatchOperation["reason"]) {
     super(
       reason === "MULTI_FILE_PATCH"
         ? "A patch_file request may target only one file."
-        : "The patch headers do not target the requested path.",
+        : reason === "PATCH_PATH_MISMATCH"
+          ? "The patch headers do not target the requested path."
+          : reason === "PATCH_FILE_MODE_UNSUPPORTED"
+            ? "patch_file updates an existing file; use a file operation for creation or deletion."
+            : "The patch contains no valid update hunk.",
     );
     this.reason = reason;
+    this.recommendedTool =
+      reason === "INVALID_PATCH_FORMAT" || reason === "PATCH_PATH_MISMATCH"
+        ? "patch_file"
+        : "edit_files";
   }
 }
 
@@ -57,67 +85,94 @@ export async function recoverPatch(input: {
   source: string;
   workspaceRoot: string;
 }): Promise<PatchRecoveryResult> {
-  assertSinglePatchTarget(input.patch, input.path);
-  const exact = exactPatch(input.source, input.patch);
-  if (exact !== false) return { content: exact, strategy: "exact" };
-  if (patchAlreadyApplied(input.source, input.patch))
+  const document = parsePatchDocument(input.patch);
+  assertSinglePatchTargetDocument(document, input.path);
+  const exact = exactPatch(input.source, input.patch, document);
+  if (exact !== false && exact !== input.source)
+    return { content: exact, strategy: "exact" };
+  if (patchAlreadyApplied(input.source, document))
     return { content: input.source, strategy: "already_applied" };
   if (!harnessFeatureEnabled("BLAME_PATCH_RECOVERY_V2"))
-    throw patchConflict(input, "Exact patch context does not match.");
-  const anchored = applyUniqueAnchors(input.source, input.patch);
-  if (anchored) return { content: anchored, strategy: "anchors" };
-  if (hasAmbiguousAnchors(input.source, input.patch))
+    throw patchConflict(input, document, "Exact patch context does not match.");
+  const anchored = applyUniqueAnchors(input.source, document);
+  if (anchored && anchored !== input.source)
+    return { content: anchored, strategy: "anchors" };
+  if (hasAmbiguousAnchors(input.source, document))
     throw patchConflict(
       input,
+      document,
       "Patch anchors match more than one current location.",
     );
-  const fuzzy = applyPatch(input.source, input.patch, { fuzzFactor: 2 });
-  if (fuzzy !== false) return { content: fuzzy, strategy: "fuzzy" };
-  const merged = await threeWayPatch(input);
-  if (merged) return { content: merged, strategy: "three_way" };
+  const fuzzy = fuzzyPatch(input.source, input.patch, document);
+  if (fuzzy !== false && fuzzy !== input.source)
+    return { content: fuzzy, strategy: "fuzzy" };
+  const merged = await threeWayPatch(input, document);
+  if (merged && merged !== input.source)
+    return { content: merged, strategy: "three_way" };
   throw patchConflict(
     input,
+    document,
     "No unique exact, anchor, fuzzy, or three-way resolution exists.",
   );
 }
 
 export function assertSinglePatchTarget(patch: string, path: string) {
-  const files = parsedFiles(patch);
-  if (files.length > 1) throw new UnsupportedPatchOperation("MULTI_FILE_PATCH");
-  const targets = files.flatMap(patchFileTargets);
+  assertSinglePatchTargetDocument(parsePatchDocument(patch), path);
+}
+
+function assertSinglePatchTargetDocument(
+  document: PatchDocument,
+  path: string,
+) {
+  if (document.files.length > 1)
+    throw new UnsupportedPatchOperation("MULTI_FILE_PATCH");
+  const file = document.files[0];
+  if (!file?.hunks.length)
+    throw new UnsupportedPatchOperation("INVALID_PATCH_FORMAT");
+  if (file.mode !== "update")
+    throw new UnsupportedPatchOperation("PATCH_FILE_MODE_UNSUPPORTED");
+  const targets = patchFileTargets(file);
   if (targets.length && targets.some((target) => target !== path))
     throw new UnsupportedPatchOperation("PATCH_PATH_MISMATCH");
 }
 
-function exactPatch(source: string, patch: string) {
+function exactPatch(source: string, patch: string, document: PatchDocument) {
+  if (document.format !== "unified") return false;
   const lines = source.split("\n");
-  const hunks = parsedHunks(patch);
+  const hunks = parsedHunks(document);
   if (!hunks.length) return false;
   const exact = hunks.every((hunk) => {
+    if (hunk.oldStart === undefined) return false;
     const expected = patchLines(hunk, new Set([" ", "-"]));
     return expected.every(
-      (line, offset) => lines[hunk.oldStart - 1 + offset] === line,
+      (line, offset) => lines[hunk.oldStart! - 1 + offset] === line,
     );
   });
   return exact ? applyPatch(source, patch, { fuzzFactor: 0 }) : false;
 }
 
-function patchAlreadyApplied(source: string, patch: string) {
+function patchAlreadyApplied(source: string, document: PatchDocument) {
   const lines = source.split("\n");
-  const hunks = parsedHunks(patch);
+  const hunks = parsedHunks(document);
   if (!hunks.length) return false;
   return hunks.every((hunk) => {
     const expected = patchLines(hunk, new Set([" ", "+"]));
     if (!expected.length) return false;
-    const atExpectedLine = expected.every(
-      (line, offset) => lines[hunk.newStart - 1 + offset] === line,
-    );
-    return atExpectedLine || sequenceMatches(lines, expected).length === 1;
+    const atExpectedLine =
+      hunk.newStart !== undefined &&
+      expected.every(
+        (line, offset) => lines[hunk.newStart! - 1 + offset] === line,
+      ) &&
+      (!hunk.endOfFile || sequenceAtEnd(lines, expected) !== undefined);
+    const applied = hunk.endOfFile
+      ? sequenceAtEnd(lines, expected) !== undefined
+      : sequenceMatches(lines, expected).length === 1;
+    return atExpectedLine || applied;
   });
 }
 
-function applyUniqueAnchors(source: string, patch: string) {
-  const hunks = parsedHunks(patch);
+function applyUniqueAnchors(source: string, document: PatchDocument) {
+  const hunks = parsedHunks(document);
   if (!hunks.length) return undefined;
   const lines = source.split("\n");
   const replacements = hunks.map((hunk) => anchoredReplacement(lines, hunk));
@@ -134,24 +189,30 @@ function applyUniqueAnchors(source: string, patch: string) {
   return lines.join("\n");
 }
 
-function hasAmbiguousAnchors(source: string, patch: string) {
+function hasAmbiguousAnchors(source: string, document: PatchDocument) {
   const lines = source.split("\n");
-  return parsedHunks(patch).some((hunk) => {
+  return parsedHunks(document).some((hunk) => {
     const expected = patchLines(hunk, new Set([" ", "-"]));
     return expected.length > 0 && sequenceMatches(lines, expected).length > 1;
   });
 }
 
-function anchoredReplacement(sourceLines: string[], hunk: Hunk) {
+function anchoredReplacement(sourceLines: string[], hunk: PatchHunk) {
   const oldLines = patchLines(hunk, new Set([" ", "-"]));
   const newLines = patchLines(hunk, new Set([" ", "+"]));
   if (!oldLines.length) return undefined;
+  if (hunk.endOfFile) {
+    const start = sequenceAtEnd(sourceLines, oldLines);
+    return start === undefined
+      ? undefined
+      : { start, deleteCount: oldLines.length, lines: newLines };
+  }
   const matches = sequenceMatches(sourceLines, oldLines);
   if (matches.length !== 1) return undefined;
   return { start: matches[0]!, deleteCount: oldLines.length, lines: newLines };
 }
 
-function patchLines(hunk: Hunk, prefixes: Set<string>) {
+function patchLines(hunk: PatchHunk, prefixes: Set<string>) {
   return hunk.lines
     .filter((line) => prefixes.has(line[0] ?? ""))
     .map((line) => line.slice(1));
@@ -167,12 +228,26 @@ function sequenceMatches(source: string[], expected: string[]) {
   return matches;
 }
 
-async function threeWayPatch(input: {
-  patch: string;
-  path: string;
-  source: string;
-  workspaceRoot: string;
-}) {
+function sequenceAtEnd(source: string[], expected: string[]) {
+  const logicalLength =
+    source.at(-1) === "" ? source.length - 1 : source.length;
+  const start = logicalLength - expected.length;
+  if (start < 0) return undefined;
+  return expected.every((line, offset) => source[start + offset] === line)
+    ? start
+    : undefined;
+}
+
+async function threeWayPatch(
+  input: {
+    patch: string;
+    path: string;
+    source: string;
+    workspaceRoot: string;
+  },
+  document: PatchDocument,
+) {
+  if (document.format !== "unified") return undefined;
   const base = await gitBase(input.workspaceRoot, input.path);
   if (base === undefined) return undefined;
   const patchedBase = applyPatch(base, input.patch, { fuzzFactor: 2 });
@@ -221,9 +296,10 @@ async function mergeFiles(current: string, base: string, patched: string) {
 
 function patchConflict(
   input: { patch: string; source: string },
+  document: PatchDocument,
   reason: string,
 ) {
-  const hunk = parsedHunks(input.patch)[0];
+  const hunk = parsedHunks(document)[0];
   const candidates = hunk ? hunkCandidates(input.source, hunk) : [];
   const probableLine = candidates[0]?.line ?? hunk?.oldStart ?? 1;
   return new PatchRecoveryConflict("The patch could not be applied safely.", {
@@ -238,7 +314,7 @@ function patchConflict(
   });
 }
 
-function hunkCandidates(source: string, hunk: Hunk) {
+function hunkCandidates(source: string, hunk: PatchHunk) {
   const lines = source.split("\n");
   const anchors = patchLines(hunk, new Set([" ", "-"]))
     .filter(Boolean)
@@ -267,19 +343,91 @@ function contextAt(source: string, line: number) {
     .slice(0, 1_000);
 }
 
-function parsedHunks(patch: string) {
-  return parsedFiles(patch).flatMap((file) => file.hunks);
+function fuzzyPatch(source: string, patch: string, document: PatchDocument) {
+  if (document.format !== "unified") return false;
+  return applyPatch(source, patch, { fuzzFactor: 2 });
 }
 
-function parsedFiles(patch: string) {
+function parsedHunks(document: PatchDocument) {
+  return document.files.flatMap((file) => file.hunks);
+}
+
+function parsePatchDocument(patch: string): PatchDocument {
+  if (patch.trimStart().startsWith("*** Begin Patch"))
+    return parseApplyPatch(patch);
   try {
-    return parsePatch(patch);
+    const files = parsePatch(patch).map((file) => ({
+      hunks: file.hunks.map((hunk) => ({
+        lines: hunk.lines,
+        newStart: hunk.newStart,
+        oldStart: hunk.oldStart,
+      })),
+      mode: "update" as const,
+      ...(file.newFileName ? { newFileName: file.newFileName } : {}),
+      ...(file.oldFileName ? { oldFileName: file.oldFileName } : {}),
+    }));
+    return { files, format: "unified" };
   } catch {
-    return [];
+    throw new UnsupportedPatchOperation("INVALID_PATCH_FORMAT");
   }
 }
 
-function patchFileTargets(file: ReturnType<typeof parsePatch>[number]) {
+function parseApplyPatch(patch: string): PatchDocument {
+  const lines = patch.trim().split(/\r?\n/u);
+  if (lines[0] !== "*** Begin Patch" || lines.at(-1) !== "*** End Patch")
+    throw new UnsupportedPatchOperation("INVALID_PATCH_FORMAT");
+  const files: PatchFile[] = [];
+  let file: PatchFile | undefined;
+  let hunk: PatchHunk | undefined;
+  for (const line of lines.slice(1, -1)) {
+    const header = line.match(/^\*\*\* (Update|Add|Delete) File: (.+)$/u);
+    if (header) {
+      file = applyPatchFile(header[1]!, header[2]!);
+      files.push(file);
+      hunk = undefined;
+      continue;
+    }
+    if (line.startsWith("@@")) {
+      if (!file) throw new UnsupportedPatchOperation("INVALID_PATCH_FORMAT");
+      hunk = applyPatchHunk(line);
+      file.hunks.push(hunk);
+      continue;
+    }
+    if (line === "*** End of File") {
+      if (!hunk) throw new UnsupportedPatchOperation("INVALID_PATCH_FORMAT");
+      hunk.endOfFile = true;
+      continue;
+    }
+    if (line.startsWith("*** Move to:"))
+      throw new UnsupportedPatchOperation("PATCH_FILE_MODE_UNSUPPORTED");
+    if (!hunk || !/^[ +\\-]/u.test(line))
+      throw new UnsupportedPatchOperation("INVALID_PATCH_FORMAT");
+    if (!line.startsWith("\\")) hunk.lines.push(line);
+  }
+  return { files, format: "apply_patch" };
+}
+
+function applyPatchFile(mode: string, path: string): PatchFile {
+  const normalizedMode = mode.toLowerCase() as PatchFile["mode"];
+  return {
+    hunks: [],
+    mode: normalizedMode,
+    ...(normalizedMode === "add" ? {} : { oldFileName: path }),
+    ...(normalizedMode === "delete" ? {} : { newFileName: path }),
+  };
+}
+
+function applyPatchHunk(header: string): PatchHunk {
+  const positions = header.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/u);
+  return {
+    lines: [],
+    ...(positions
+      ? { oldStart: Number(positions[1]), newStart: Number(positions[2]) }
+      : {}),
+  };
+}
+
+function patchFileTargets(file: PatchFile) {
   return [file.oldFileName, file.newFileName]
     .filter((value): value is string => Boolean(value && value !== "/dev/null"))
     .map(normalizePatchPath);
@@ -292,9 +440,11 @@ function normalizePatchPath(path: string) {
     : normalized;
 }
 
-function renderHunk(hunk: Hunk) {
+function renderHunk(hunk: PatchHunk) {
   return [
-    `@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@`,
+    hunk.oldStart === undefined || hunk.newStart === undefined
+      ? "@@"
+      : `@@ -${hunk.oldStart} +${hunk.newStart} @@`,
     ...hunk.lines,
   ]
     .join("\n")

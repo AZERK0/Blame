@@ -760,6 +760,72 @@ test("edit_code automatically relocates a moved symbol", async () => {
   });
 });
 
+test("semantic insertion uses the complete exported declaration boundary", async () => {
+  await withWorkspace(async (root) => {
+    const path = join(root, "src", "page.tsx");
+    await writeFile(
+      path,
+      "export default async function Home() {\n  return <main />;\n}\n",
+    );
+    const workspace = new SemanticWorkspace(root);
+    const outline = success(
+      await workspace.outlineCode({ target: { path: "src/page.tsx" } }),
+    );
+    const home = outline.data.items.find(
+      (item) => item.qualified_name === "Home",
+    );
+    assert.ok(home);
+    const result = success(
+      await workspace.editCode({
+        edits: [
+          {
+            operation: "insert_before",
+            target: { symbol_ref: home.symbol_ref },
+            content: 'import "./projects.css";\n\n',
+          },
+        ],
+      }),
+    );
+    assert.equal(result.data.outcome, "applied");
+    assert.equal(
+      await readFile(path, "utf8"),
+      'import "./projects.css";\n\nexport default async function Home() {\n  return <main />;\n}\n',
+    );
+  });
+});
+
+test("semantic insertion uses the complete CSS import boundary", async () => {
+  await withWorkspace(async (root) => {
+    const path = join(root, "src", "globals.css");
+    await writeFile(path, '@import "tailwindcss";\n\nbody { color: black; }\n');
+    const workspace = new SemanticWorkspace(root);
+    const search = success(
+      await workspace.searchCode({
+        query: { kind: "text", pattern: "tailwindcss" },
+        scope: { paths: ["src/globals.css"] },
+      }),
+    );
+    const nodeRef = search.data.items[0]?.node_ref;
+    assert.ok(nodeRef);
+    const result = success(
+      await workspace.editCode({
+        edits: [
+          {
+            operation: "insert_after",
+            target: { node_ref: nodeRef },
+            content: '\n@import "./theme.css";',
+          },
+        ],
+      }),
+    );
+    assert.equal(result.data.outcome, "applied");
+    assert.equal(
+      await readFile(path, "utf8"),
+      '@import "tailwindcss";\n@import "./theme.css";\n\nbody { color: black; }\n',
+    );
+  });
+});
+
 test("edit_code replaces only a symbol body after a cross-file move", async () => {
   await withWorkspace(async (root) => {
     const workspace = new SemanticWorkspace(root);

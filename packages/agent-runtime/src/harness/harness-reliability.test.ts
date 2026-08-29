@@ -8,7 +8,7 @@ import {
   stat,
   writeFile,
 } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { request as httpRequest } from "node:http";
 import test from "node:test";
@@ -382,6 +382,84 @@ test("patch_file rejects patches targeting multiple files", async () => {
       assert.fail("Expected unsupported operation");
     assert.equal(result.data.reasonCode, "MULTI_FILE_PATCH");
     assert.equal(result.data.recommendedTool, "edit_files");
+  });
+});
+
+test("patch_file applies the native Apply Patch envelope", async () => {
+  await withWorkspace(async (root, workspace) => {
+    await writeFile(
+      join(root, "styles.css"),
+      '@import "tailwindcss";\n\nbody { color: black; }\n',
+    );
+    const result = success(
+      await workspace.patchFile({
+        path: "styles.css",
+        patch: [
+          "*** Begin Patch",
+          "*** Update File: styles.css",
+          "@@",
+          " body { color: black; }",
+          "+.projects { display: block; }",
+          "*** End of File",
+          "*** End Patch",
+        ].join("\n"),
+      }),
+    );
+    assert.equal(result.data.outcome, "applied");
+    assert.match(
+      await readFile(join(root, "styles.css"), "utf8"),
+      /\.projects/u,
+    );
+  });
+});
+
+test("patch_file reports ambiguous Apply Patch anchors without writing", async () => {
+  await withWorkspace(async (root, workspace) => {
+    await writeFile(join(root, "styles.css"), ".first {\n}\n.second {\n}\n");
+    const result = success(
+      await workspace.patchFile({
+        path: "styles.css",
+        patch: [
+          "*** Begin Patch",
+          "*** Update File: styles.css",
+          "@@",
+          " }",
+          "+.projects { display: block; }",
+          "*** End Patch",
+        ].join("\n"),
+      }),
+    );
+    assert.equal(result.data.outcome, "conflict");
+    if (result.data.status !== "conflict") assert.fail("Expected conflict");
+    assert.match(result.data.reason, /more than one|ambiguous/iu);
+    assert.ok(result.data.candidates.length > 1);
+    assert.equal(
+      await readFile(join(root, "styles.css"), "utf8"),
+      ".first {\n}\n.second {\n}\n",
+    );
+  });
+});
+
+test("edit_files inserts text at a file boundary without an anchor", async () => {
+  await withWorkspace(async (root, workspace) => {
+    await writeFile(join(root, "styles.css"), "body { color: black; }\n");
+    const result = success(
+      await workspace.editFiles({
+        operations: [
+          {
+            operation: "insert_text",
+            path: "styles.css",
+            position: "end",
+            content: "\n.projects { display: block; }\n",
+          },
+        ],
+      }),
+    );
+    assert.equal(result.data.outcome, "applied");
+    assert.equal(
+      await readFile(join(root, "styles.css"), "utf8"),
+      "body { color: black; }\n\n.projects { display: block; }\n",
+    );
   });
 });
 
@@ -838,52 +916,60 @@ test("package manager compatibility never crosses pnpm majors or ecosystems", ()
 });
 
 test(
-  "Portfolio V4 pnpm build runs without Corepack in a network-denied sandbox",
+  "nested package scripts reuse the resolved manager without Corepack",
   { skip: process.platform === "win32" },
   async () => {
     await withWorkspace(async (root, workspace) => {
+      const fakeBin = join(root, "fake-bin");
+      const previousPath = process.env.PATH;
+      await mkdir(join(root, "apps", "web"), { recursive: true });
+      await mkdir(fakeBin, { recursive: true });
+      await writeFile(
+        join(fakeBin, "pnpm"),
+        '#!/bin/sh\nif [ "$1" = "--version" ]; then echo 0.0.1; exit 0; fi\necho inherited-pnpm-was-used >&2\nexit 41\n',
+      );
+      await chmod(join(fakeBin, "pnpm"), 0o755);
       await writeFile(
         join(root, "package.json"),
         JSON.stringify({
           packageManager: "pnpm@10.32.1",
+          scripts: { build: "pnpm --filter web build" },
+        }),
+      );
+      await writeFile(
+        join(root, "apps", "web", "package.json"),
+        JSON.stringify({
+          name: "web",
           scripts: { build: "node -e \"process.stdout.write('build-ok')\"" },
         }),
       );
-      const revision = success(await workspace.workspaceState()).data
-        .source_revision.source_revision_id;
-      const run = success(
-        await workspace.runTask({
-          source_revision_id: revision,
-          task: { task_id: "build" },
-          limits: { timeout_ms: 30_000 },
-        }),
+      await writeFile(
+        join(root, "pnpm-workspace.yaml"),
+        "packages:\n  - apps/*\n",
       );
-      const stderr =
-        run.data.status === "passed"
-          ? ""
-          : String(
-              (
-                success(
-                  await workspace.inspectRun({
-                    run_ref: run.data.run_ref,
-                    view: "stderr_tail",
-                  }),
-                ).data as { content: string }
-              ).content,
-            );
-      assert.equal(
-        run.data.status,
-        "passed",
-        `${JSON.stringify(run.data)}\n${stderr}`,
-      );
-      assert.equal(run.data.outcome, "passed");
-      assert.doesNotMatch(run.data.execution.argv.join(" "), /corepack/iu);
-      assert.deepEqual(run.data.execution.package_manager_resolution, {
-        name: "pnpm",
-        requested_version: "10.32.1",
-        resolved_version: "10.33.2",
-        strategy: "compatible_same_major",
-      });
+      process.env.PATH = `${fakeBin}${delimiter}${previousPath ?? ""}`;
+      try {
+        const revision = success(await workspace.workspaceState()).data
+          .source_revision.source_revision_id;
+        const run = success(
+          await workspace.runTask({
+            source_revision_id: revision,
+            task: { task_id: "build" },
+            limits: { timeout_ms: 30_000 },
+          }),
+        );
+        assert.equal(run.data.status, "passed", JSON.stringify(run.data));
+        assert.equal(run.data.outcome, "passed");
+        assert.doesNotMatch(run.data.execution.argv.join(" "), /corepack/iu);
+        assert.deepEqual(run.data.execution.package_manager_resolution, {
+          name: "pnpm",
+          requested_version: "10.32.1",
+          resolved_version: "10.33.2",
+          strategy: "compatible_same_major",
+        });
+      } finally {
+        process.env.PATH = previousPath;
+      }
     });
   },
 );
@@ -1177,10 +1263,47 @@ test("Corepack failures are classified as infrastructure errors", async () => {
     assert.equal(summary.status, "execution_error");
     assert.equal(summary.outcome, "infrastructure_error");
     assert.match(summary.stderr_summary, /Corepack failed/);
+    assert.match(run.recommendation, /Do not edit project files/iu);
   });
 });
 
-test("run_task health failures open a durable session circuit", async () => {
+test("package registry bootstrap failures are infrastructure errors", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root, {
+      taskExecutor: {
+        async capability() {
+          return "worktree";
+        },
+        async execute() {
+          return {
+            status: "failed",
+            exitCode: 1,
+            signal: null,
+            stdout: "",
+            stderr: "[ERROR] GET https://registry.npmjs.org/pnpm: fetch failed",
+            outputTruncated: false,
+            isolation: "worktree",
+          };
+        },
+      },
+    });
+    const revision = success(await workspace.workspaceState()).data
+      .source_revision;
+    const run = await workspace.runTask({
+      source_revision_id: revision.source_revision_id,
+      task: { task_id: "build" },
+      limits: { timeout_ms: 10_000 },
+    });
+    assert.equal(run.status, "error");
+    if (run.status !== "error") return;
+    const summary = run.error.recovery as { outcome: string; status: string };
+    assert.equal(summary.status, "execution_error");
+    assert.equal(summary.outcome, "infrastructure_error");
+    assert.match(run.recommendation, /Do not edit project files/iu);
+  });
+});
+
+test("run_task reports executor health failures without executing commands", async () => {
   await withWorkspace(async (root) => {
     let executions = 0;
     let healthChecks = 0;
@@ -1205,27 +1328,21 @@ test("run_task health failures open a durable session circuit", async () => {
     const workspace = new SemanticWorkspace(root, { taskExecutor: executor });
     const revision = success(await workspace.workspaceState()).data
       .source_revision.source_revision_id;
-    const results = [];
-    for (let index = 0; index < 4; index += 1) {
-      results.push(
-        await workspace.runTask(
-          {
-            source_revision_id: revision,
-            task: { task_id: "build" },
-            limits: { timeout_ms: 10_000 },
-          },
-          undefined,
-          { sessionId: "circuit-session", toolCallId: `call-${index}` },
-        ),
-      );
-    }
-    assert.equal(healthChecks, 4);
+    const terminal = await workspace.runTask(
+      {
+        source_revision_id: revision,
+        task: { task_id: "build" },
+        limits: { timeout_ms: 10_000 },
+      },
+      undefined,
+      { sessionId: "health-session", toolCallId: "health-call" },
+    );
+    assert.ok(healthChecks >= 1);
     assert.equal(executions, 0);
-    const terminal = results.at(-1);
-    assert.equal(terminal?.status, "error");
-    if (!terminal || terminal.status !== "error") return;
+    assert.equal(terminal.status, "error");
+    if (terminal.status !== "error") return;
     const summary = terminal.error.recovery as { stderr_summary: string };
-    assert.match(summary.stderr_summary, /EXECUTOR_CIRCUIT_OPEN/);
+    assert.match(summary.stderr_summary, /bwrap: execvp/);
   });
 });
 

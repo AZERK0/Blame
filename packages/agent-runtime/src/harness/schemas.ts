@@ -491,6 +491,17 @@ export const editCodeOperationSchema = z.discriminatedUnion("operation", [
     .strict(),
   z
     .object({
+      operation: z.literal("insert_text"),
+      path: relativePathSchema,
+      position: z.enum(["start", "end"]),
+      content: z
+        .string()
+        .min(1)
+        .max(2 * 1024 * 1024),
+    })
+    .strict(),
+  z
+    .object({
       operation: z.literal("edit_json"),
       path: relativePathSchema,
       operations: z.array(jsonOperationSchema).min(1).max(100),

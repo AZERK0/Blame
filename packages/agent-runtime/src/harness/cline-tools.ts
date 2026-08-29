@@ -228,7 +228,7 @@ export function semanticWorkspaceTools(
     }),
     createHarnessTool({
       name: "edit_files",
-      description: `Apply and syntax-validate file operations. The runtime automatically groups operations that touch the same paths and commits unrelated files independently.\n\n${supportedOperations}`,
+      description: `Apply and syntax-validate file operations. Use insert_text at start or end for file-level imports, headers, or append-only sections that do not need an anchor. The runtime automatically groups operations that touch the same paths and commits unrelated files independently.\n\n${supportedOperations}`,
       schema: editFilesInputSchema,
       execute: (input, context) => execute("edit_files", input, context),
       retryable: false,
@@ -298,7 +298,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "run_task",
       description:
-        "Run one known root or package workspace task against an exact source revision in an ephemeral filesystem overlay. Use a task_id from workspace_state, or an unambiguous test/lint/build/typecheck kind and package target. The runtime reports whether network denial is enforced by bubblewrap/sandbox-exec or only isolated by the story worktree. CPU and memory requests are accepted as hints and explicitly reported as ignored until a container adapter enforces them. Returns a revision-bound RunRef, diagnostics, logs, and filesystem effects without writing the canonical worktree.",
+        "Run one known root or package workspace task against an exact source revision in an ephemeral filesystem overlay. Prefer an exact task_id from the latest workspace_state; never invent a validation task that is absent from its catalog. An infrastructure_error is a runtime limitation: never edit project manifests, scripts, lockfiles, or source to repair it, and never replay the same task until the runtime changes. The runtime reports whether network denial is enforced by bubblewrap/sandbox-exec or only isolated by the story worktree. CPU and memory requests are accepted as hints and explicitly reported as ignored until a container adapter enforces them. Returns a revision-bound RunRef, diagnostics, logs, and filesystem effects without writing the canonical worktree.",
       schema: runTaskInputSchema,
       execute: (input, context) => execute("run_task", input, context),
       retryable: false,

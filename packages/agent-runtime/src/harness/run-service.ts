@@ -8,7 +8,6 @@ import { stableJson } from "./change-store.js";
 import { environmentSpec } from "./environment-service.js";
 import { sha256 } from "./protocol.js";
 import { RunStore } from "./run-store.js";
-import { TaskFailureCircuit } from "./task-failure-circuit.js";
 import {
   RunAttemptStore,
   type RunAttempt,
@@ -69,16 +68,7 @@ export class RunService {
     try {
       const run = await this.store.exclusiveIdempotency(
         prepared.idempotencyKey,
-        () =>
-          this.runUnlocked(
-            prepared.effectiveInput,
-            snapshot,
-            signal,
-            new TaskFailureCircuit(
-              this.files.root,
-              context.sessionId ?? "unscoped-session",
-            ),
-          ),
+        () => this.runUnlocked(prepared.effectiveInput, snapshot, signal),
       );
       await this.finishRunAttempt(prepared.attempt, run);
       return {
@@ -127,10 +117,6 @@ export class RunService {
     input: RunTaskInput,
     snapshot: WorkspaceSnapshot,
     signal?: AbortSignal,
-    failureCircuit = new TaskFailureCircuit(
-      this.files.root,
-      "unscoped-session",
-    ),
   ) {
     const catalog = await readTaskCatalog(this.files.root, snapshot.files);
     const task = resolveTask(catalog, input.task);
@@ -184,10 +170,7 @@ export class RunService {
         signal,
         network,
       };
-      const openCircuit = await failureCircuit.blocked();
-      const result = openCircuit
-        ? circuitOpenResult(isolation, openCircuit.message)
-        : await this.executeTask(executionInput, isolation);
+      const result = await this.executeTask(executionInput, isolation);
       const effects = await overlay.effects(signal);
       const canonicalUnchanged = await this.canonicalRevisionMatches(snapshot);
       const revision = {
@@ -239,8 +222,6 @@ export class RunService {
       ]);
       const normalized = stripAnsi(`${redactedStderr}\n${redactedStdout}`);
       const runStatus = normalizedRunStatus(result.status, normalized);
-      if (!openCircuit)
-        await updateFailureCircuit(failureCircuit, runStatus, normalized);
       const completedAt = new Date();
       return this.store.write({
         schema_version: "1.0",
@@ -261,6 +242,7 @@ export class RunService {
             "COREPACK_HOME",
             "COREPACK_ENABLE_DOWNLOAD_PROMPT",
             "COREPACK_ENABLE_PROJECT_SPEC",
+            "COREPACK_ENABLE_STRICT",
             "npm_config_manage_package_manager_versions",
             "pnpm_config_manage_package_manager_versions",
             "npm_config_cache",
@@ -502,30 +484,8 @@ function normalizedRunStatus(
 }
 
 function infrastructureRunFailure(output: string) {
-  return /\b(?:corepack|econnrefused|enotfound|package manager unavailable|executor unavailable|executable unavailable)\b|BLAME_PROJECT_ALLOWLIST_PROXY|bwrap:\s+execvp/iu.test(
+  return /\b(?:corepack|econnrefused|enotfound|enetunreach|package manager unavailable|executor unavailable|executable unavailable)\b|BLAME_PROJECT_ALLOWLIST_PROXY|bwrap:\s+execvp|(?:registry|packages?)\.[^\s/]+\/[^\s:]+:\s+fetch failed/iu.test(
     output,
-  );
-}
-
-async function updateFailureCircuit(
-  circuit: TaskFailureCircuit,
-  status: StoredRun["status"],
-  output: string,
-) {
-  if (status === "execution_error") {
-    await circuit.recordFailure(output || "Unknown executor failure.");
-    return;
-  }
-  await circuit.reset();
-}
-
-function circuitOpenResult(
-  isolation: TaskExecutionResult["isolation"],
-  previousFailure: string,
-) {
-  return executionErrorResult(
-    isolation,
-    `EXECUTOR_CIRCUIT_OPEN:Three identical infrastructure failures were observed. The task was not started. Last failure: ${previousFailure}`,
   );
 }
 
