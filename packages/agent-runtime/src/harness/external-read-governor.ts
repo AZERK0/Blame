@@ -44,6 +44,7 @@ type BeforeToolContext = Parameters<NonNullable<AgentHooks["beforeTool"]>>[0];
 
 export class ExternalReadGovernor {
   private readonly cache = new Map<string, CachedExternalRead>();
+  private readonly failedFetches = new Map<string, CachedExternalRead>();
   private readonly history: CachedExternalRead[] = [];
   private readonly hookReceipts = new Map<string, unknown>();
   private readonly inFlight = new Map<string, Promise<unknown>>();
@@ -169,6 +170,8 @@ export class ExternalReadGovernor {
     );
     const cached = this.reusableCachedEntry(tool, receiptId);
     if (cached) return this.cachedReceipt(cached);
+    const failedFetch = this.reusableFailedFetch(tool, input);
+    if (failedFetch) return this.cachedReceipt(failedFetch);
     const cachedResources = resourceReceiptIds
       .map((resourceReceiptId) =>
         this.reusableCachedEntry(tool, resourceReceiptId),
@@ -205,7 +208,7 @@ export class ExternalReadGovernor {
     const governed = this.governedResult(tool, decision.receiptId, result);
     const entry = {
       cachedAt: Date.now(),
-      expiresAt: Date.now() + externalReadCacheTtl(tool, result),
+      expiresAt: Date.now() + externalReadCacheTtl(tool, governed),
       fullResult: result,
       receiptId: decision.receiptId,
       result: governed,
@@ -217,6 +220,7 @@ export class ExternalReadGovernor {
         ...entry,
         receiptId: resourceReceiptId,
       });
+    if (tool === "fetch_web_content") this.rememberFailedFetches(result, entry);
     this.history.push(entry);
     if (this.history.length > 100) {
       const evicted = this.history.shift();
@@ -224,6 +228,8 @@ export class ExternalReadGovernor {
     }
     while (this.cache.size > 300)
       this.cache.delete(this.cache.keys().next().value!);
+    while (this.failedFetches.size > 100)
+      this.failedFetches.delete(this.failedFetches.keys().next().value!);
     this.metrics.returnedBytes += serializedBytes(governed);
     return governed;
   }
@@ -275,6 +281,28 @@ export class ExternalReadGovernor {
 
   private reusableCachedEntry(tool: ExternalReadToolName, receiptId: string) {
     return dynamicExternalRead(tool) ? undefined : this.cachedEntry(receiptId);
+  }
+
+  private reusableFailedFetch(tool: ExternalReadToolName, input: unknown) {
+    if (tool !== "fetch_web_content") return undefined;
+    const urls = fetchRequestUrls(input);
+    if (!urls.length) return undefined;
+    const entries = urls
+      .map((url) => this.failedFetchEntry(url))
+      .filter((entry): entry is CachedExternalRead => Boolean(entry));
+    return entries.length === urls.length ? entries.at(-1) : undefined;
+  }
+
+  private failedFetchEntry(url: string) {
+    const entry = this.failedFetches.get(url);
+    if (!entry || entry.expiresAt > Date.now()) return entry;
+    this.failedFetches.delete(url);
+    return undefined;
+  }
+
+  private rememberFailedFetches(result: unknown, entry: CachedExternalRead) {
+    for (const url of failedFetchUrls(result))
+      this.failedFetches.set(url, entry);
   }
 
   private cachedEntry(receiptId: string) {
@@ -374,6 +402,27 @@ function normalizedFetchRequest(value: unknown) {
   return `${normalizedUrl(request.url)}:${normalizedText(String(request.prompt ?? ""))}`;
 }
 
+function fetchRequestUrls(value: unknown) {
+  const input = recordValue(value);
+  const requests = Array.isArray(input.requests) ? input.requests : [];
+  const urls = requests
+    .map((request) => normalizedUrl(recordValue(request).url))
+    .filter(Boolean);
+  const direct = normalizedUrl(input.url);
+  return urls.length ? urls : direct ? [direct] : [];
+}
+
+function failedFetchUrls(value: unknown) {
+  if (!isAgentToolResult(value)) return [];
+  return normalizedFetchOutput(value.output)
+    .filter(fetchItemFailed)
+    .map((item) => {
+      const output = recordValue(item);
+      return normalizedUrl(output.query ?? output.url);
+    })
+    .filter(Boolean);
+}
+
 function normalizedUrl(value: unknown) {
   if (typeof value !== "string") return "";
   try {
@@ -440,14 +489,19 @@ function normalizedAgentToolResult(
   result: AgentToolResultEnvelope,
   tool: ExternalReadToolName,
 ): AgentToolResultEnvelope {
-  const outcome =
-    normalizedOutcome(result.outcome) ??
-    (result.isError ? "failed" : "completed");
-  const fatal = result.fatal === true;
   const output =
     tool === "fetch_web_content"
       ? normalizedFetchOutput(result.output)
       : result.output;
+  const fetchSemantics =
+    tool === "fetch_web_content" ? normalizedFetchSemantics(output) : undefined;
+  const explicitOutcome = normalizedOutcome(result.outcome);
+  const outcome = normalizedExternalOutcome(
+    explicitOutcome,
+    fetchSemantics,
+    result.isError,
+  );
+  const fatal = result.fatal === true;
   return {
     ...result,
     outcome,
@@ -455,19 +509,89 @@ function normalizedAgentToolResult(
     reason:
       typeof result.reason === "string"
         ? result.reason
-        : outcome === "failed"
-          ? "EXTERNAL_READ_FAILED"
-          : "EXTERNAL_READ_COMPLETED",
+        : (fetchSemantics?.reason ?? externalOutcomeReason(outcome)),
     recommendation:
       typeof result.recommendation === "string"
         ? result.recommendation
-        : outcome === "failed"
-          ? "Use the returned limitation and continue when possible."
-          : "Continue with the task.",
+        : (fetchSemantics?.recommendation ??
+          externalOutcomeRecommendation(outcome)),
     output,
     isError: fatal,
-    metadata: { ...result.metadata },
+    metadata: { ...result.metadata, ...fetchSemantics?.metadata },
   };
+}
+
+function normalizedExternalOutcome(
+  explicit: string | undefined,
+  fetchSemantics: ReturnType<typeof normalizedFetchSemantics>,
+  isError: boolean | undefined,
+) {
+  if (explicit && explicit !== "completed") return explicit;
+  if (fetchSemantics?.outcome && fetchSemantics.outcome !== "completed") {
+    return fetchSemantics.outcome;
+  }
+  return (
+    (isError ? "failed" : undefined) ??
+    fetchSemantics?.outcome ??
+    explicit ??
+    "completed"
+  );
+}
+
+function externalOutcomeReason(outcome: string) {
+  return outcome === "failed"
+    ? "EXTERNAL_READ_FAILED"
+    : "EXTERNAL_READ_COMPLETED";
+}
+
+function externalOutcomeRecommendation(outcome: string) {
+  return outcome === "failed"
+    ? "Use the returned limitation and continue when possible."
+    : "Continue with the task.";
+}
+
+function normalizedFetchSemantics(output: unknown) {
+  const items = Array.isArray(output) ? output : [];
+  const failed = items.filter(fetchItemFailed);
+  if (!failed.length) return undefined;
+  const succeeded = items.length - failed.length;
+  const notFound = failed.every(fetchItemNotFound);
+  return {
+    outcome: succeeded ? "completed" : notFound ? "blocked" : "unavailable",
+    reason: fetchReason(succeeded, notFound),
+    recommendation: fetchRecommendation(succeeded, notFound),
+    metadata: {
+      externalReadFailedRequests: failed.length,
+      externalReadSucceededRequests: succeeded,
+    },
+  };
+}
+
+function fetchReason(succeeded: number, notFound: boolean) {
+  if (succeeded) return "EXTERNAL_READ_PARTIAL";
+  return notFound ? "WEB_CONTENT_NOT_FOUND" : "EXTERNAL_READ_UNAVAILABLE";
+}
+
+function fetchRecommendation(succeeded: number, notFound: boolean) {
+  if (succeeded)
+    return "Use the successful results. Do not retry failed URLs in this turn.";
+  if (notFound)
+    return "The requested URLs do not exist. Do not guess nearby URLs; use one known index page only if documentation remains indispensable.";
+  return "Continue from repository evidence. Retry only after the external service changes.";
+}
+
+function fetchItemFailed(value: unknown) {
+  const item = recordValue(value);
+  if (item.success === false || item.error) return true;
+  return typeof item.status === "number" && item.status >= 400;
+}
+
+function fetchItemNotFound(value: unknown) {
+  const item = recordValue(value);
+  if (item.status === 404) return true;
+  return /(?:\b404\b|not found)/iu.test(
+    String(item.error ?? item.result ?? item.message ?? ""),
+  );
 }
 
 function normalizedOutcome(value: unknown) {

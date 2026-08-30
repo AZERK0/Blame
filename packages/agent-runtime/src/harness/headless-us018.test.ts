@@ -145,6 +145,55 @@ test("US-018 caches equivalent documentation requests without blocking new quest
   assert.equal(executions, 3);
 });
 
+test("US-022 exposes missing documentation and caches its URL", async () => {
+  const external = new ExternalReadGovernor();
+  let executions = 0;
+  const fetch = external.wrap({
+    name: "fetch_web_content",
+    description: "fetch",
+    inputSchema: { type: "object" },
+    execute: async () => {
+      executions += 1;
+      return {
+        output: [
+          {
+            query: "https://docs.example.test/missing",
+            result: "HTTP 404 Not Found",
+            success: false,
+          },
+        ],
+        isError: false,
+      };
+    },
+  });
+  const first = record(
+    await fetch.execute(
+      {
+        requests: [
+          { url: "https://docs.example.test/missing", prompt: "generator" },
+        ],
+      },
+      toolContext(1),
+    ),
+  );
+  const repeated = record(
+    await fetch.execute(
+      {
+        requests: [
+          { url: "https://docs.example.test/missing", prompt: "adapter" },
+        ],
+      },
+      toolContext(2),
+    ),
+  );
+
+  assert.equal(first.outcome, "blocked");
+  assert.equal(first.reason, "WEB_CONTENT_NOT_FOUND");
+  assert.equal(first.isError, false);
+  assert.equal(repeated.reason, "REPEATED_EXTERNAL_READ");
+  assert.equal(executions, 1);
+});
+
 test("US-018 injects a compact backend-oriented task briefing before reasoning", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-us018-briefing-"));
   try {
@@ -160,6 +209,10 @@ test("US-018 injects a compact backend-oriented task briefing before reasoning",
     });
     assert.ok(briefing);
     assert.ok(Buffer.byteLength(briefing) <= 4_800);
+    const state = record(JSON.parse(briefing));
+    assert.ok(record(state.repository));
+    assert.ok(record(state.capabilities));
+    assert.equal(record(state.task_contract).objective, taskContract.objective);
     const paths = briefingPaths(briefing);
     assert.ok(paths.includes("app/api/projects/route.ts"));
     assert.ok(paths.includes("prisma/schema.prisma"));

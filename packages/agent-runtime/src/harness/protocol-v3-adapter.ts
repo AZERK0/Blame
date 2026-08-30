@@ -202,6 +202,7 @@ function canonicalEffect<T>(
   tool: string,
 ) {
   const data = recordValue(legacy.data);
+  if (legacy.outcome === "skipped") return "none" as const;
   if (mutationTools.has(tool) && mutationApplied(data))
     return "changed" as const;
   if (observationTools.has(tool) || taskObserved(data))
@@ -251,7 +252,12 @@ function effectProven(
   const value = recordValue(data);
   return (
     value.postcondition_satisfied === true ||
-    value.status === "already_satisfied"
+    [
+      "already_available",
+      "already_satisfied",
+      "in_flight_reused",
+      "retry_suppressed",
+    ].includes(String(value.status ?? ""))
   );
 }
 

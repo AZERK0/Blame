@@ -29,6 +29,7 @@ import {
   nextSpawnAgentActiveCount,
   newProjectGenerationToolPolicies,
   normalizeClineAgentPayload,
+  retryableModelTransportFailure,
   resultFailureMessage,
   shouldDisplayClineSessionEvent,
   terminalToolEvent,
@@ -921,6 +922,83 @@ test("formats failed agent results without a provider label", () => {
     "Agent stopped after repeated unsuccessful actions before submitting a final response.",
   );
   assert.doesNotMatch(`${detailed} ${generic}`, /cline/i);
+});
+
+test("recognizes only retryable provider transport interruptions", () => {
+  assert.equal(
+    retryableModelTransportFailure(
+      "Failed to process successful response: TypeError: terminated: SocketError: other side closed (UND_ERR_SOCKET)",
+    ),
+    true,
+  );
+  assert.equal(
+    retryableModelTransportFailure(new Error("ECONNRESET while streaming")),
+    true,
+  );
+  assert.equal(
+    retryableModelTransportFailure(new Error("HTTP 429 rate limited")),
+    false,
+  );
+});
+
+test("resumes a failed provider stream once from persisted state", async () => {
+  const emitted: AgentEvent[] = [];
+  const runtime = new BlameAgentRuntime({
+    emit: (event) => emitted.push(event),
+  });
+  const internals = runtime as unknown as {
+    runLifecycles: {
+      begin(sessionId: string, executionId: string): unknown;
+      state(sessionId: string): { state: string } | undefined;
+    };
+    sendPrompt(
+      cline: unknown,
+      sessionId: string,
+      prompt: string,
+      attachments: object,
+      executionId: string,
+    ): Promise<unknown>;
+    sessionExecutionIds: Map<string, string>;
+  };
+  const prompts: string[] = [];
+  const core = {
+    abort: async () => undefined,
+    getAccumulatedUsage: async () => undefined,
+    send: async ({ prompt }: { prompt: string }) => {
+      prompts.push(prompt);
+      if (prompts.length === 1)
+        return {
+          error: {
+            message:
+              "Failed to process successful response: terminated (UND_ERR_SOCKET)",
+          },
+          finishReason: "error",
+        };
+      return { finishReason: "completed", outputText: "Recovered" };
+    },
+    stop: async () => undefined,
+  };
+  internals.sessionExecutionIds.set("transport-session", "execution");
+  internals.runLifecycles.begin("transport-session", "execution");
+
+  await internals.sendPrompt(
+    core,
+    "transport-session",
+    "Implement the feature",
+    {},
+    "execution",
+  );
+
+  assert.equal(prompts.length, 2);
+  assert.match(prompts[1] ?? "", /runtime_recovery/u);
+  assert.equal(
+    internals.runLifecycles.state("transport-session")?.state,
+    "succeeded",
+  );
+  assert.equal(
+    emitted.some((event) => event.type === "error"),
+    false,
+  );
 });
 
 test("never projects an internal payload as the final assistant response", () => {

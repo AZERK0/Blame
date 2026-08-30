@@ -426,7 +426,16 @@ type SessionInactivityWatchdog = {
   timer?: ReturnType<typeof setTimeout>;
 };
 
+type SessionTransportRecovery = {
+  attempts: number;
+  executionId: string;
+  message: string;
+};
+
 const defaultModelInactivityTimeoutMs = 180_000;
+const maximumTransportRecoveryAttempts = 1;
+const transportRecoveryPrompt =
+  "<runtime_recovery>The provider stream closed before the response completed. Continue from the persisted session state without repeating completed reads or mutations, then resume the interrupted next action.</runtime_recovery>";
 
 let customGitRunner:
   | ((cwd: string, args: string[]) => Promise<string>)
@@ -473,6 +482,10 @@ export class BlameAgentRuntime {
   >();
   private sessionActiveTools = new Map<string, Set<string>>();
   private sessionInactivityTimeouts = new Map<string, number>();
+  private sessionTransportRecoveries = new Map<
+    string,
+    SessionTransportRecovery
+  >();
   private sessionIterations = new Map<string, number>();
   private sessionSpawnAgentActiveCounts = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
@@ -1031,8 +1044,10 @@ export class BlameAgentRuntime {
               startLogFile,
               startedAt,
               input,
-              session.sessionId,
+              session,
               sessionLogFile,
+              cline,
+              executionId,
             ),
           )
           .catch((error: unknown) =>
@@ -1103,9 +1118,12 @@ export class BlameAgentRuntime {
     startLogFile: string,
     startedAt: number,
     input: StartSessionInput,
-    sessionId: string,
+    session: RuntimeClineResult,
     sessionLogFile: string,
+    cline: ClineCore,
+    executionId: string,
   ) {
+    const sessionId = session.sessionId;
     const activeContext = this.agentTelemetry.context(sessionId);
     await appendLog(
       startLogFile,
@@ -1127,6 +1145,15 @@ export class BlameAgentRuntime {
         "Development session write tools auto-approved.",
       );
     }
+    const failure = resultFailureMessage(session.result);
+    if (
+      failure &&
+      this.shouldRecoverTransportFailure(sessionId, executionId, failure)
+    ) {
+      await this.resumeTransportInterruption(cline, sessionId, executionId);
+      return;
+    }
+    this.sessionTransportRecoveries.delete(sessionId);
   }
 
   private async failSessionStart(
@@ -1136,6 +1163,7 @@ export class BlameAgentRuntime {
     error: unknown,
   ) {
     this.clearSessionInactivityWatchdog(sessionId);
+    this.sessionTransportRecoveries.delete(sessionId);
     const activeContext = this.agentTelemetry.context(sessionId);
     const message = errorMessage(error);
     await appendLog(
@@ -1408,6 +1436,7 @@ export class BlameAgentRuntime {
 
   private async terminateSessionExecution(input: SessionTermination) {
     this.clearSessionInactivityWatchdog(input.sessionId, input.executionId);
+    this.sessionTransportRecoveries.delete(input.sessionId);
     const existing = this.sessionTerminations.get(input.sessionId);
     if (existing?.executionId === input.executionId) return existing.promise;
     const lifecycle =
@@ -2713,6 +2742,9 @@ export class BlameAgentRuntime {
             ),
           ),
         );
+        if (this.deferTransportFailureEvent(sessionId, executionId, event)) {
+          return;
+        }
         if (this.shouldSkipDuplicateSessionEvent(sessionId, event)) return;
         this.enqueueContinuityToolActivity(sessionId, event);
         const terminalState = terminalLifecycleState(event);
@@ -2762,6 +2794,89 @@ export class BlameAgentRuntime {
       sessionId,
       terminalState,
     });
+  }
+
+  private deferTransportFailureEvent(
+    sessionId: string,
+    executionId: string,
+    event: AgentEvent,
+  ) {
+    const current = this.sessionTransportRecoveries.get(sessionId);
+    if (
+      current?.executionId === executionId &&
+      current.attempts < maximumTransportRecoveryAttempts &&
+      terminalLifecycleState(event) === "failed"
+    )
+      return true;
+    const message = transportFailureEventMessage(event);
+    if (!message) return false;
+    if (!this.shouldRecoverTransportFailure(sessionId, executionId, message))
+      return false;
+    this.rememberTransportFailure(sessionId, executionId, message, current);
+    return true;
+  }
+
+  private rememberTransportFailure(
+    sessionId: string,
+    executionId: string,
+    message: string,
+    current: SessionTransportRecovery | undefined,
+  ) {
+    this.sessionTransportRecoveries.set(sessionId, {
+      attempts: current?.attempts ?? 0,
+      executionId,
+      message,
+    });
+    void this.logSession(sessionId, "provider transport recovery pending", {
+      message,
+      status: "recovering",
+    });
+    this.emitSessionNotice(
+      sessionId,
+      "Provider connection interrupted. Blame is resuming from the persisted session state.",
+    );
+  }
+
+  private shouldRecoverTransportFailure(
+    sessionId: string,
+    executionId: string,
+    error: unknown,
+  ) {
+    if (!retryableModelTransportFailure(error)) return false;
+    if (!this.runLifecycles.canInvoke(sessionId, executionId)) return false;
+    if (this.sessionSubmittedSummaries.has(sessionId)) return false;
+    if ((this.sessionActiveTools.get(sessionId)?.size ?? 0) > 0) return false;
+    const recovery = this.sessionTransportRecoveries.get(sessionId);
+    return (
+      recovery?.executionId !== executionId ||
+      recovery.attempts < maximumTransportRecoveryAttempts
+    );
+  }
+
+  private resumeTransportInterruption(
+    cline: ClineCore,
+    sessionId: string,
+    executionId: string,
+  ): Promise<unknown> {
+    const current = this.sessionTransportRecoveries.get(sessionId);
+    const attempts =
+      current?.executionId === executionId ? current.attempts + 1 : 1;
+    this.sessionTransportRecoveries.set(sessionId, {
+      attempts,
+      executionId,
+      message: current?.message ?? "Provider stream interrupted",
+    });
+    void this.logSession(sessionId, "provider transport recovery started", {
+      attempt: attempts,
+      status: "recovering",
+    });
+    return this.sendPrompt(
+      cline,
+      sessionId,
+      transportRecoveryPrompt,
+      {},
+      executionId,
+    );
   }
 
   private withSubmittedSummary(sessionId: string, event: AgentEvent) {
@@ -3122,6 +3237,7 @@ export class BlameAgentRuntime {
     this.sessionGovernors.delete(sessionId);
     this.sessionExternalReadGovernors.delete(sessionId);
     this.sessionInactivityTimeouts.delete(sessionId);
+    this.sessionTransportRecoveries.delete(sessionId);
     this.sessionTerminalDrains.delete(sessionId);
     if (!terminationActive) {
       this.runLifecycles.remove(sessionId);
@@ -3571,7 +3687,7 @@ export class BlameAgentRuntime {
     prompt: string,
     attachments: Pick<SendSessionInput, "userFiles" | "userImages"> = {},
     executionId?: string,
-  ) {
+  ): Promise<unknown> {
     const startedAt = Date.now();
     const activeExecutionId =
       executionId ?? this.sessionExecutionIds.get(sessionId) ?? sessionId;
@@ -3584,7 +3700,7 @@ export class BlameAgentRuntime {
     this.agentTelemetry.startModelRequest(sessionId);
     this.armSessionInactivityWatchdog(sessionId, activeExecutionId, cline);
     const activeContext = this.agentTelemetry.context(sessionId);
-    const result = this.agentTelemetry
+    const result: Promise<unknown> = this.agentTelemetry
       .withinSession(sessionId, () =>
         cline.send({
           sessionId,
@@ -3597,7 +3713,7 @@ export class BlameAgentRuntime {
             : {}),
         }),
       )
-      .then(async (result: unknown) => {
+      .then(async (result: unknown): Promise<unknown> => {
         const terminalDrain = this.sessionTerminalDrains.get(sessionId);
         await terminalDrain;
         const lifecycle = this.runLifecycles.state(sessionId);
@@ -3614,6 +3730,19 @@ export class BlameAgentRuntime {
         );
         const failure = resultFailureMessage(result);
         if (failure) {
+          if (
+            this.shouldRecoverTransportFailure(
+              sessionId,
+              activeExecutionId,
+              failure,
+            )
+          )
+            return this.resumeTransportInterruption(
+              cline,
+              sessionId,
+              activeExecutionId,
+            );
+          this.sessionTransportRecoveries.delete(sessionId);
           const terminalState = terminalStateFromResult(result);
           await this.terminateSessionExecution({
             cline,
@@ -3634,6 +3763,7 @@ export class BlameAgentRuntime {
           });
           return result;
         }
+        this.sessionTransportRecoveries.delete(sessionId);
         if (!terminalDrain) {
           await this.terminateSessionExecution({
             cline,
@@ -3658,7 +3788,7 @@ export class BlameAgentRuntime {
         }
         return result;
       })
-      .catch(async (error: unknown) => {
+      .catch(async (error: unknown): Promise<unknown> => {
         const lifecycle = this.runLifecycles.state(sessionId);
         if (
           lifecycle?.execution_id === activeExecutionId &&
@@ -3668,6 +3798,19 @@ export class BlameAgentRuntime {
             ? undefined
             : Promise.reject(error);
         const message = errorMessage(error);
+        if (
+          this.shouldRecoverTransportFailure(
+            sessionId,
+            activeExecutionId,
+            error,
+          )
+        )
+          return this.resumeTransportInterruption(
+            cline,
+            sessionId,
+            activeExecutionId,
+          );
+        this.sessionTransportRecoveries.delete(sessionId);
         void this.logSession(
           sessionId,
           "send failed",
@@ -6256,6 +6399,35 @@ function terminalLifecycleState(
   return terminalStateFromStatus(
     stringValue(payload.terminalStatus) ?? stringValue(payload.status),
     "failed",
+  );
+}
+
+function transportFailureEventMessage(event: AgentEvent) {
+  if (event.type !== "error") return undefined;
+  const payload = asRecord(event.payload);
+  const error = asRecord(payload.error);
+  const message =
+    stringValue(payload.message) ??
+    stringValue(error.message) ??
+    stringValue(payload.error);
+  return message && retryableModelTransportFailure(message)
+    ? message
+    : undefined;
+}
+
+export function retryableModelTransportFailure(error: unknown) {
+  const value = asRecord(error);
+  const cause = asRecord(value.cause);
+  const message = [
+    errorMessage(error),
+    stringValue(value.code),
+    stringValue(cause.code),
+    stringValue(cause.message),
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return /(?:UND_ERR_(?:SOCKET|BODY_TIMEOUT|CONNECT_TIMEOUT|HEADERS_TIMEOUT)|ECONNRESET|EPIPE|ERR_STREAM_PREMATURE_CLOSE|terminated[^\n]*socket|socket[^\n]*other side closed)/iu.test(
+    message,
   );
 }
 

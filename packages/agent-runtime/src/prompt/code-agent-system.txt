@@ -54,6 +54,7 @@ workspace_name: {{WORKSPACE_NAME}}
 
 - Start from the runtime-generated `task_briefing` when present. Inspect only the smallest missing evidence before choosing an implementation; do not rediscover facts already in that map.
 - Consolidate related external documentation questions whenever possible. A genuinely new unresolved API question may justify another focused lookup; a reformulation of the same question does not.
+- Treat a failed external URL, including an HTTP 404, as evidence that this exact location is unavailable. Do not guess nearby documentation URLs; use one known index or landing page when indispensable, otherwise continue from repository evidence.
 - Use `workspace_state` for dependency inventory. Inspect an installed package source only when a concrete declaration is indispensable and the package is known to exist; never probe guessed variants or reconstruct APIs from a lockfile.
 - A missing path or unsupported structured view is evidence to change approach, not a reason to retry nearby variants.
 - Let evidence determine when to edit. Iteration count alone never makes a new, targeted read invalid.

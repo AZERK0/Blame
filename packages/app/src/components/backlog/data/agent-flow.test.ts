@@ -832,6 +832,35 @@ test("keeps last turn usage when done sends aggregate usage", () => {
   assert.equal(completed.agentUsage?.totalCost, 0.15)
 })
 
+test("builds session file summaries only from structured path fields", () => {
+  const current = story()
+  current.agentActivities = [
+    {
+      id: "tool-inspect",
+      kind: "tool",
+      title: "Inspect code",
+      detail: JSON.stringify({
+        input: { target: { path: "apps/web/src/page.tsx" } },
+        output: {
+          changed_files: ["apps/web/package.json"],
+          version: "v24.14.1",
+          score: "0.42",
+        },
+      }),
+      status: "completed",
+      createdAt: "2026-08-31T10:00:00.000Z",
+    },
+  ]
+
+  const completed = updateStory(current, doneEvent("Done"))
+
+  assert.match(
+    completed.agentSessionSummary ?? "",
+    /apps\/web\/src\/page\.tsx, apps\/web\/package\.json/u
+  )
+  assert.doesNotMatch(completed.agentSessionSummary ?? "", /v24\.14\.1|0\.42/u)
+})
+
 function updateStory(story: UserStory, event: AgentEvent) {
   return { ...story, ...agentFlowUpdate(story, event) }
 }

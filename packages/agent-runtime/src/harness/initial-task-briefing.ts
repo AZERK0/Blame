@@ -11,6 +11,13 @@ type InitialTaskBriefingInput = {
 };
 
 const initialTaskBriefingMaximumTokens = 1_200;
+const initialTaskBriefingSections = [
+  "source_revision",
+  "task_contract",
+  "repository",
+  "capabilities",
+  "task_projection",
+] as const;
 
 export async function createInitialTaskBriefing(
   input: InitialTaskBriefingInput,
@@ -18,7 +25,7 @@ export async function createInitialTaskBriefing(
   try {
     const state = await input.executor({
       input: {
-        include: ["source_revision", "task_projection"],
+        include: [...initialTaskBriefingSections],
       },
       taskContract: input.taskContract,
       tool: "workspace_state",
@@ -26,7 +33,7 @@ export async function createInitialTaskBriefing(
     });
     const compact = compactWorkspaceStateResult(
       state,
-      ["source_revision", "task_projection"],
+      [...initialTaskBriefingSections],
       {},
       initialTaskBriefingMaximumTokens,
     );

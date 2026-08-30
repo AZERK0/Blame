@@ -1321,7 +1321,11 @@ function usageWithDefaults(
 }
 
 function fileMentions(activities: UserStoryAgentActivity[]) {
-  return uniqueMatches(activities, /(?:^|["\s])([\w./-]+\.\w{1,8})(?:["\s]|$)/g)
+  const values = new Set<string>()
+  activities
+    .filter((activity) => activity.kind === "tool")
+    .forEach((activity) => collectActivityPaths(activity, values))
+  return Array.from(values).slice(0, 12)
 }
 
 function toolNames(activities: UserStoryAgentActivity[]) {
@@ -1334,15 +1338,82 @@ function toolNames(activities: UserStoryAgentActivity[]) {
   ).slice(0, 8)
 }
 
-function uniqueMatches(activities: UserStoryAgentActivity[], pattern: RegExp) {
-  const values = new Set<string>()
-  activities.forEach((activity) => {
-    for (const match of activity.detail.matchAll(pattern)) {
-      if (match[1]) values.add(match[1])
+function collectActivityPaths(
+  activity: UserStoryAgentActivity,
+  values: Set<string>
+) {
+  const detail = parseDetailRecord(activity.detail)
+  collectPathFields(detail.input, inputPathKeys, values)
+  collectPathFields(detail.output, outputPathKeys, values)
+}
+
+function collectPathFields(
+  value: unknown,
+  keys: Set<string>,
+  paths: Set<string>,
+  depth = 0
+) {
+  if (depth > 5 || !value || typeof value !== "object") return
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectPathFields(item, keys, paths, depth + 1))
+    return
+  }
+  Object.entries(value).forEach(([key, item]) => {
+    if (keys.has(key)) collectPathValues(item, paths)
+    if (item && typeof item === "object") {
+      collectPathFields(item, keys, paths, depth + 1)
     }
   })
-  return Array.from(values).slice(0, 12)
 }
+
+function collectPathValues(value: unknown, paths: Set<string>) {
+  const candidates = Array.isArray(value) ? value : [value]
+  candidates.forEach((candidate) => {
+    const path = canonicalWorkspacePath(candidate)
+    if (path) paths.add(path)
+  })
+}
+
+function canonicalWorkspacePath(value: unknown) {
+  if (typeof value !== "string") return undefined
+  const path = value.trim().replaceAll("\\", "/").replace(/^\.\//u, "")
+  if (!path || path.startsWith("/") || /^[A-Za-z]:\//u.test(path)) {
+    return undefined
+  }
+  if (path.split("/").includes("..") || !workspaceFileName(path)) {
+    return undefined
+  }
+  return /^[\w@+.,/-]+$/u.test(path) ? path : undefined
+}
+
+function workspaceFileName(path: string) {
+  const name = path.split("/").at(-1) ?? ""
+  return (
+    /\.[a-z][a-z0-9_-]{0,15}$/iu.test(name) ||
+    /^(?:Dockerfile|Makefile|Procfile|CMakeLists\.txt)$/u.test(name)
+  )
+}
+
+const inputPathKeys = new Set([
+  "file_path",
+  "from_path",
+  "package_path",
+  "path",
+  "source_path",
+  "target_path",
+  "to_path",
+])
+
+const outputPathKeys = new Set([
+  "applied_files",
+  "changed_files",
+  "created_files",
+  "deleted_files",
+  "file_path",
+  "files",
+  "modified_files",
+  "path",
+])
 
 function compactArray(value: unknown[]) {
   const items = value.slice(0, 12).map(compactValue)

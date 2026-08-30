@@ -65,6 +65,27 @@ test("canonical result mapper accepts demonstrated idempotence", () => {
   assert.equal(result.effect, "none");
 });
 
+test("canonical result mapper preserves already available reads as receipts", () => {
+  const mapper = new CanonicalResultMapper();
+  const revision = {
+    source_revision_id: "src_0123456789abcdef0123456789abcdef",
+  };
+  const result = mapper.map(
+    harnessSuccess({
+      data: { status: "already_available", receipt_ref: "read://known" },
+      outcome: "skipped",
+      provenance: [],
+      reason: "BROAD_READ_ALREADY_AVAILABLE",
+      revision,
+      startedAt: Date.now(),
+    }),
+    resultContext("inspect_code"),
+  );
+  assert.equal(result.outcome, "completed");
+  assert.equal(result.effect, "none");
+  assert.equal(result.satisfaction, "satisfied");
+});
+
 test("Cline adapter publishes domain blocks as transport successes", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-v3-cline-"));
   try {
