@@ -10,6 +10,17 @@ export type HarnessFeatureFlagDefinition = {
 };
 
 export const harnessFeatureFlagRegistry = {
+  BLAME_CLINE_MESSAGE_BUILDER_COMPACTION: definition(
+    "cline-adapter",
+    "Deterministic provider-bound compaction projection",
+    true,
+    "US-021 replay and the runtime compatibility matrix pass",
+    [
+      "compactions",
+      "context_size_before_compaction",
+      "context_size_after_compaction",
+    ],
+  ),
   BLAME_CONTEXT_EPOCHS: definition(
     "projection-engine",
     "Revision-bound context epochs",

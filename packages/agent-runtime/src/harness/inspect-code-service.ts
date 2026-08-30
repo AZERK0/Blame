@@ -229,8 +229,7 @@ export class InspectCodeService {
       input,
       signal,
     );
-    if (context?.contextEpoch)
-      await this.workingSet.activateEpoch(context.contextEpoch);
+    if (context?.contextEpoch) await this.workingSet.activateEpoch();
     const narrowed = autoNarrowedResult(source, input, startedAt);
     if (narrowed) {
       await ensureUnchanged(this.files, source.snapshot, signal);

@@ -126,6 +126,7 @@ export type MemoryEvidence =
         | "epoch_changed"
         | "interruption"
         | "rollback"
+        | "tool_failure"
         | "validation";
       status?: string;
       created_at: string;

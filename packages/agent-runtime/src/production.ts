@@ -20,12 +20,10 @@ import type {
 export type ProductionConfig = {
   checkpointEnabled?: boolean
   compactionEnabled?: boolean
-  compactionMarginalTokenThreshold?: number
-  compactionMaxContextTokens?: number
-  compactionMaxOldToolResultTokens?: number
-  compactionMinNoveltyRatio?: number
   compactionPreserveRecentTokens?: number
   compactionStrategy?: "agentic" | "basic"
+  compactionTargetRatio?: number
+  compactionOverflowTargetRatio?: number
   compactionTriggerRatio?: number
   compactionWarningRatio?: number
   configExtensions?: AgentRuntimeConfigExtension[]
@@ -73,9 +71,11 @@ const secretKeys = [
 const allowedLogKeys = new Set([
   "cacheReadTokens",
   "cacheWriteTokens",
+  "capsuleHash",
   "ccrHashCount",
   "checkpointEnabled",
   "compressed",
+  "compactedEventHash",
   "compressionRatio",
   "contextUtilizationRatio",
   "configExtensions",
@@ -105,6 +105,7 @@ const allowedLogKeys = new Set([
   "status",
   "storyId",
   "success",
+  "tailMessages",
   "targetTokens",
   "toolName",
   "toolResultTokens",
@@ -121,6 +122,8 @@ const allowedLogKeys = new Set([
 ])
 
 const stableStringLogKeys = new Set([
+  "capsuleHash",
+  "compactedEventHash",
   "errorType",
   "mode",
   "modelId",
@@ -137,14 +140,12 @@ export function loadProductionConfig(env: NodeJS.ProcessEnv = process.env): Prod
   return {
     checkpointEnabled: booleanValue(env.BLAME_AGENT_CHECKPOINTS_ENABLED, true),
     compactionEnabled: booleanValue(env.BLAME_AGENT_COMPACTION_ENABLED, true),
-    compactionMarginalTokenThreshold: positiveNumber(env.BLAME_AGENT_COMPACTION_MARGINAL_TOKEN_THRESHOLD, 12_000),
-    compactionMaxContextTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_MAX_CONTEXT_TOKENS, 128_000),
-    compactionMaxOldToolResultTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_MAX_OLD_TOOL_RESULT_TOKENS, 32_000),
-    compactionMinNoveltyRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_MIN_NOVELTY_RATIO, 0.25),
     compactionPreserveRecentTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_PRESERVE_RECENT_TOKENS),
     compactionStrategy: compactionStrategy(env.BLAME_AGENT_COMPACTION_STRATEGY),
-    compactionTriggerRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_TRIGGER_RATIO, 0.75),
-    compactionWarningRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_WARNING_RATIO, 0.65),
+    compactionTargetRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_TARGET_RATIO, 0.4),
+    compactionOverflowTargetRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_OVERFLOW_TARGET_RATIO, 0.35),
+    compactionTriggerRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_TRIGGER_RATIO, 0.7),
+    compactionWarningRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_WARNING_RATIO, 0.55),
     configExtensions: configExtensions(env.BLAME_AGENT_CONFIG_EXTENSIONS),
     disableMcpSettingsTools: !booleanValue(env.BLAME_AGENT_MCP_SETTINGS_TOOLS_ENABLED, true),
     maxInputTokens: positiveNumber(env.BLAME_AGENT_MAX_INPUT_TOKENS),

@@ -83,6 +83,7 @@ function compactWorkspaceStateData(
   pageSize: number,
 ) {
   const data = recordValue(value);
+  if (data.status === "already_available") return data;
   const keys = page
     ? [
         ...new Set([
@@ -639,6 +640,7 @@ function serializedBytes(value: unknown) {
 
 const defaultWorkspaceStateKeys = [
   "source_revision",
+  "workspace_state_ref",
   "task_contract",
   "capabilities",
   "task_projection",

@@ -95,6 +95,7 @@ export type CreatePreviewSessionInput = {
 };
 
 export type RuntimeProtocolHandshake = {
+  clineSdkVersion?: string;
   protocolVersion: number;
   runnerVersion: string;
   imageDigest: string;

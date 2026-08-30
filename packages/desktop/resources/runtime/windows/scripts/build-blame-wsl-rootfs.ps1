@@ -94,7 +94,7 @@ function Resolve-ClineSdkVersion {
       return [string]$manifest.clineSdkVersion
     }
   }
-  "0.0.68"
+  "0.0.81"
 }
 
 function Join-Arguments {

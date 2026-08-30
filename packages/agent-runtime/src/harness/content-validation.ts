@@ -8,12 +8,7 @@ import { parseCode } from "./code-intelligence.js";
 import { jsoncErrors } from "./json-editor.js";
 import { languageCapability } from "./language-capabilities.js";
 
-export type ValidationStatus =
-  | "passed"
-  | "failed"
-  | "validator_unavailable"
-  | "not_supported"
-  | "not_run";
+export type ValidationStatus = "passed" | "failed" | "unsupported";
 
 export type ContentValidation = {
   path: string;
@@ -24,12 +19,10 @@ export type ContentValidation = {
 
 export function aggregateValidationStatus(validations: ContentValidation[]) {
   if (validations.some(({ status }) => status === "failed")) return "failed";
-  if (validations.some(({ status }) => status === "validator_unavailable"))
-    return "validator_unavailable";
-  if (validations.some(({ status }) => status === "not_supported"))
-    return "not_supported";
+  if (validations.some(({ status }) => status === "unsupported"))
+    return "unsupported";
   if (validations.some(({ status }) => status === "passed")) return "passed";
-  return "not_run";
+  return "unsupported";
 }
 
 export function aggregateValidator(validations: ContentValidation[]) {
@@ -47,7 +40,7 @@ export async function validateContent(input: {
   workspaceRoot: string;
 }): Promise<ContentValidation> {
   const content = input.content;
-  if (!content) return validation(input.path, "not_run", null, []);
+  if (!content) return validation(input.path, "unsupported", null, []);
   const validationInput = { ...input, content };
   const capability = languageCapability(input.path, content);
   if (capability.validatorId === "jsonc") return validateJson(validationInput);
@@ -57,7 +50,7 @@ export async function validateContent(input: {
     return validateTypeScript(validationInput);
   if (capability.validatorId === "semantic_parser")
     return validateSemantic(validationInput);
-  return validation(input.path, "not_supported", null, []);
+  return validation(input.path, "unsupported", null, []);
 }
 
 function validateJson(input: { content: Buffer; path: string }) {
@@ -74,8 +67,7 @@ function validateJson(input: { content: Buffer; path: string }) {
 
 function validateSemantic(input: { content: Buffer; path: string }) {
   const parsed = parseCode(input.path, input.content);
-  if (!parsed.supported)
-    return validation(input.path, "not_supported", null, []);
+  if (!parsed.supported) return validation(input.path, "unsupported", null, []);
   const status = parsed.errorCount ? "failed" : "passed";
   const diagnostics = parsed.errorCount
     ? [`Parser reported ${parsed.errorCount} syntax error(s).`]
@@ -130,7 +122,7 @@ async function validatePrisma(input: {
     input.path,
   );
   if (!executable)
-    return validation(input.path, "validator_unavailable", "prisma", [
+    return validation(input.path, "unsupported", "prisma", [
       "The project-local Prisma validator is unavailable.",
     ]);
   return runPrismaValidation(input, executable);

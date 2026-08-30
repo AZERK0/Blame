@@ -16,6 +16,7 @@ import {
 import { sha256 } from "./protocol.js";
 import { parseCode, type ParsedSymbol } from "./code-intelligence.js";
 import { ReadWorkingSet, type ReadReceipt } from "./read-working-set.js";
+import { WorkspaceFiles } from "./workspace-files.js";
 
 export type MemoryFact = StoredMemoryFact & {
   value: string;
@@ -81,14 +82,23 @@ export type CompletionState = {
 
 export type RuntimeContinuity = {
   activeRequest: string;
+  changedFiles: string[];
+  completedWork: string[];
   constraints: string[];
+  currentRepositoryState: string;
   decisions: string[];
+  failedAttempts: string[];
   observations: string[];
   inspectedFiles: string[];
+  knownInfrastructureFailures: string[];
+  openProblems: string[];
+  skills: string[];
+  specialists: string[];
   verifiedSymbols: string[];
   modifiedFiles: string[];
   nextAction: string;
   validation: string;
+  validationEvidence: string[];
 };
 
 export type DialogueTurn = {
@@ -288,31 +298,7 @@ export class ConversationMemoryStore {
         truncated: capsuleWasTruncated(memory, capsule),
       };
     });
-    await this.workingSet.activateEpoch(result.capsule.executionEpochId);
-    return result;
-  }
-
-  async rotate(reason: string, maximumTokens = 2_400) {
-    const result = await this.exclusive(async () => {
-      const stored = await this.read("");
-      const epoch = nextEpoch(stored.epoch, reason);
-      const event = runtimeEvidence(
-        reason === "model_compaction" ? "compaction" : "epoch_changed",
-        `${epoch.id}:${reason}`,
-      );
-      const memory = appendEvidence(stored.memory, event);
-      await this.write({ ...stored, memory, epoch });
-      return createCapsule(
-        memory,
-        epoch,
-        {
-          ...defaultCapsuleBudget,
-          maximum_tokens: maximumTokens,
-        },
-        this.tokenCounter,
-      );
-    });
-    await this.workingSet.activateEpoch(result.executionEpochId);
+    await this.workingSet.activateEpoch();
     return result;
   }
 
@@ -554,6 +540,10 @@ export class ConversationMemoryStore {
     const memory = (await this.read("")).memory;
     const receipts = await this.workingSet.list();
     const state = completionStateFromMemory(memory);
+    const repositoryState = await currentRepositoryState(
+      this.workspaceRoot,
+      memory,
+    );
     const activeFacts = memory.facts.filter(
       (fact) =>
         fact.status === "active" &&
@@ -561,9 +551,18 @@ export class ConversationMemoryStore {
     );
     return {
       activeRequest: memory.currentIntent,
+      changedFiles: await changedFileHashes(
+        this.workspaceRoot,
+        memory.completedChanges,
+      ),
+      completedWork: completedWork(memory.completedChanges),
       constraints: factTexts(activeFacts, "constraint"),
+      currentRepositoryState: repositoryState.description,
       decisions: factTexts(activeFacts, "decision"),
-      observations: factTexts(activeFacts, "observation"),
+      failedAttempts: failedAttempts(memory),
+      observations: factTexts(activeFacts, "observation").filter(
+        (text) => !specializedContinuityFact(text),
+      ),
       inspectedFiles: unique(
         receipts.map(
           ({ path, source_blob }) => `${path}@${source_blob.slice(0, 12)}`,
@@ -577,11 +576,25 @@ export class ConversationMemoryStore {
       modifiedFiles: unique(
         memory.completedChanges.flatMap((change) => change.files),
       ),
+      knownInfrastructureFailures: selectedOperationalFacts(
+        activeFacts,
+        infrastructureFailure,
+      ),
+      openProblems: selectedOperationalFacts(
+        activeFacts,
+        (fact) => fact.kind === "open_item" && !infrastructureFailure(fact),
+      ),
+      skills: selectedPrefixedFacts(activeFacts, "Loaded skill:"),
+      specialists: selectedSpecialistFacts(activeFacts),
       nextAction: [
         nextRuntimeAction(state),
         ...(memory.nextFocus ? [`Next focus: ${memory.nextFocus}.`] : []),
       ].join(" "),
       validation: runtimeValidationSummary(state),
+      validationEvidence: validationEvidence(
+        memory.validationState,
+        repositoryState.sourceRevisionId,
+      ),
     };
   }
 
@@ -638,6 +651,148 @@ export class ConversationMemoryStore {
       mode: 0o600,
     });
   }
+}
+
+async function changedFileHashes(
+  workspaceRoot: string,
+  changes: ChangeReceipt[],
+) {
+  const paths = unique(changes.flatMap(({ files }) => files)).slice(-40);
+  return Promise.all(
+    paths.map(async (path) => {
+      if (!safeReceiptPath(path)) return `${path}@invalid_path`;
+      try {
+        return `${path}@${sha256(await readFile(join(workspaceRoot, path)))}`;
+      } catch (error) {
+        return `${path}@${errorCode(error) === "ENOENT" ? "deleted" : "unavailable"}`;
+      }
+    }),
+  );
+}
+
+function completedWork(changes: ChangeReceipt[]) {
+  return changes
+    .slice(-20)
+    .map((change) =>
+      [
+        change.summary,
+        `receipt=${change.id}`,
+        change.sourceRevisionId ? `revision=${change.sourceRevisionId}` : "",
+      ]
+        .filter(Boolean)
+        .join("; "),
+    );
+}
+
+async function currentRepositoryState(
+  workspaceRoot: string,
+  memory: ConversationMemory,
+) {
+  try {
+    const snapshot = await new WorkspaceFiles(workspaceRoot).snapshot();
+    return {
+      description: [
+        `source_revision=${snapshot.revision.source_revision_id}`,
+        `overlay_merkle_root=${snapshot.revision.overlay_merkle_root}`,
+        `changed_paths=${snapshot.changes.length}`,
+        `change_receipts=${memory.completedChanges.length}`,
+      ].join("; "),
+      sourceRevisionId: snapshot.revision.source_revision_id,
+    };
+  } catch {
+    const sourceRevisionId = [...memory.completedChanges]
+      .reverse()
+      .find(({ sourceRevisionId }) => sourceRevisionId)?.sourceRevisionId;
+    return {
+      description: `source_revision=${sourceRevisionId ?? "unavailable"}; change_receipts=${memory.completedChanges.length}`,
+      sourceRevisionId,
+    };
+  }
+}
+
+function failedAttempts(memory: ConversationMemory) {
+  return memory.evidence
+    .filter(
+      (
+        evidence,
+      ): evidence is Extract<MemoryEvidence, { type: "runtime_event" }> =>
+        evidence.type === "runtime_event" &&
+        ["edit_conflict", "interruption", "rollback", "tool_failure"].includes(
+          evidence.event,
+        ),
+    )
+    .slice(-20)
+    .map(
+      (evidence) =>
+        `${evidence.event}: ${evidence.status ?? "recovery required"}; ref=${evidence.ref}`,
+    );
+}
+
+function selectedOperationalFacts(
+  facts: StoredMemoryFact[],
+  predicate: (fact: StoredMemoryFact) => boolean,
+) {
+  return facts
+    .filter(predicate)
+    .map(({ text }) => text)
+    .slice(-20);
+}
+
+function infrastructureFailure(fact: StoredMemoryFact) {
+  return (
+    fact.kind === "open_item" &&
+    /\b(?:infrastructure|runtime|unavailable|enoent|devtools|network|sandbox)\b/iu.test(
+      fact.text,
+    )
+  );
+}
+
+function selectedPrefixedFacts(facts: StoredMemoryFact[], prefix: string) {
+  return unique(
+    facts
+      .filter(({ text }) => text.startsWith(prefix))
+      .map(({ text }) => text.slice(prefix.length).trim())
+      .filter(Boolean),
+  ).slice(-20);
+}
+
+function selectedSpecialistFacts(facts: StoredMemoryFact[]) {
+  const prefix = "Specialist consultation:";
+  const selected = new Map<string, string>();
+  for (const fact of facts) {
+    if (!fact.text.startsWith(prefix)) continue;
+    const value = fact.text.slice(prefix.length).trim();
+    const specialist = value.split(";", 1)[0]?.trim();
+    if (!specialist) continue;
+    selected.delete(specialist);
+    selected.set(specialist, value);
+  }
+  return [...selected.values()].slice(-20);
+}
+
+function specializedContinuityFact(text: string) {
+  return ["Loaded skill:", "Specialist consultation:"].some((prefix) =>
+    text.startsWith(prefix),
+  );
+}
+
+function validationEvidence(
+  validation: ValidationSummary,
+  sourceRevisionId: string | undefined,
+) {
+  if (!sourceRevisionId) return [];
+  return validation.checks
+    .filter((check) => check.sourceRevisionId === sourceRevisionId)
+    .slice(-20)
+    .map((check) =>
+      [
+        `${check.taskId ?? check.id}=${check.status}`,
+        check.sourceRevisionId ? `revision=${check.sourceRevisionId}` : "",
+        check.command ? `command=${check.command}` : "",
+      ]
+        .filter(Boolean)
+        .join("; "),
+    );
 }
 
 async function verifiedInspectedSymbols(

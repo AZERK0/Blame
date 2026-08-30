@@ -43,7 +43,7 @@ export type EditGroupReceipt = {
 };
 
 export type EditBatchPayload = {
-  atomicity: "path_dependency_groups";
+  atomicity: "all" | "independent_groups";
   preparation_source_revision: SourceRevisionId;
   groups: EditGroupReceipt[];
   committed_revisions: SourceRevisionId[];
@@ -55,6 +55,7 @@ export type TransactionIssue = {
 };
 
 export type TransactionEngineInput = {
+  atomicity?: EditBatchPayload["atomicity"];
   operations: TransactionalEditOperation[];
   execution: { provenance: Provenance; signal?: AbortSignal };
 };
@@ -76,11 +77,19 @@ export class TransactionEngine {
     input: TransactionEngineInput,
   ): Promise<HarnessResult<EditBatchPayload, TransactionIssue>> {
     const snapshot = await this.workspace.observeRevision();
-    const groups = buildPathDependencyGroups(input.operations);
+    const groups =
+      input.atomicity === "independent_groups"
+        ? buildPathDependencyGroups(input.operations)
+        : [buildAtomicGroup(input.operations)];
     const prepared = await Promise.all(
       groups.map((group) => this.prepare(group, snapshot)),
     );
-    return this.commit(prepared, snapshot, input.execution);
+    return this.commit(
+      prepared,
+      snapshot,
+      input.execution,
+      input.atomicity ?? "all",
+    );
   }
 
   private async prepare(
@@ -104,6 +113,7 @@ export class TransactionEngine {
     prepared: PreparedGroup[],
     snapshot: SourceRevisionSnapshot,
     execution: TransactionEngineInput["execution"],
+    atomicity: EditBatchPayload["atomicity"],
   ) {
     const receipts: EditGroupReceipt[] = [];
     let currentRevision = snapshot.source_revision_id;
@@ -122,6 +132,7 @@ export class TransactionEngine {
       prepared,
       snapshot.source_revision_id,
       execution,
+      atomicity,
     );
   }
 
@@ -172,6 +183,7 @@ export function buildPathDependencyGroups(
 }
 
 export function aggregateEditGroupReceipts(input: {
+  atomicity?: EditBatchPayload["atomicity"];
   groups: EditGroupReceipt[];
   preparation_source_revision: SourceRevisionId;
   provenance: Provenance;
@@ -185,7 +197,14 @@ export function aggregateEditGroupReceipts(input: {
       provenance: input.provenance,
       ...(input.cancelled ? { signal: abortedSignal() } : {}),
     },
+    input.atomicity ?? "all",
   );
+}
+
+function buildAtomicGroup(
+  operations: TransactionalEditOperation[],
+): EditDependencyGroup {
+  return materializeGroup(operations);
 }
 
 function aggregateEditReceipts(
@@ -193,6 +212,7 @@ function aggregateEditReceipts(
   expected: PreparedGroup[],
   preparationRevision: SourceRevisionId,
   execution: TransactionEngineInput["execution"],
+  atomicity: EditBatchPayload["atomicity"] = "all",
 ): HarnessResult<EditBatchPayload, TransactionIssue> {
   const completeReceipts = appendUnprocessedReceipts(
     receipts,
@@ -200,7 +220,7 @@ function aggregateEditReceipts(
     preparationRevision,
     execution.signal,
   );
-  const data = batchPayload(completeReceipts, preparationRevision);
+  const data = batchPayload(completeReceipts, preparationRevision, atomicity);
   const evidence = completeReceipts.flatMap(groupEvidence);
   if (execution.signal?.aborted)
     return cancelledBatch(data, evidence, execution.provenance);
@@ -236,7 +256,7 @@ function blockedBatch(
       : "none",
     satisfaction: satisfied ? "partially_satisfied" : "unsatisfied",
     issue: {
-      kind: "conflict",
+      kind: "stale_target",
       code: "EDIT_GROUP_BLOCKED",
       message: "One or more path dependency groups were not committed.",
       details: {
@@ -456,9 +476,10 @@ function appendUnprocessedReceipts(
 function batchPayload(
   groups: EditGroupReceipt[],
   revision: SourceRevisionId,
+  atomicity: EditBatchPayload["atomicity"],
 ): EditBatchPayload {
   return {
-    atomicity: "path_dependency_groups",
+    atomicity,
     preparation_source_revision: revision,
     groups,
     committed_revisions: groups

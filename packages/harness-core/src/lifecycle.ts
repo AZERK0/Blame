@@ -10,11 +10,8 @@ import type { ExecutionId } from "./result.js";
 export type ExecutionTerminalState = "succeeded" | "failed" | "cancelled";
 
 export type ExecutionLifecycleState =
-  | "created"
-  | "starting"
   | "running"
-  | "stopping"
-  | "termination_pending"
+  | "cancelling"
   | ExecutionTerminalState;
 
 export type ExecutionTerminalReason =
@@ -53,7 +50,7 @@ export class ExecutionLifecycle {
   readonly executionId: ExecutionId;
   private lastBusinessEventSequence = -1;
   private sequence = 0;
-  private stateValue: ExecutionLifecycleState = "created";
+  private stateValue: ExecutionLifecycleState = "running";
   private stopRequestedAt?: string;
   private terminalAt?: string;
   private terminalReason?: ExecutionTerminalReason;
@@ -65,24 +62,22 @@ export class ExecutionLifecycle {
   }
 
   start() {
-    this.transition("starting", ["created"]);
     return this.snapshot();
   }
 
   running() {
-    this.transition("running", ["starting"]);
     return this.snapshot();
   }
 
   requestStop() {
     if (this.stateValue !== "running") return false;
     this.stopRequestedAt = this.clock.now().toISOString();
-    this.transition("stopping", ["running"]);
+    this.transition("cancelling", ["running"]);
     return true;
   }
 
   terminationPending() {
-    return this.tryTransition("termination_pending", ["stopping"]);
+    return this.stateValue === "cancelling";
   }
 
   finish(
@@ -92,7 +87,7 @@ export class ExecutionLifecycle {
   ) {
     if (terminalState(this.stateValue)) return false;
     if (this.stateValue === "running") this.requestStop();
-    if (!stoppableState(this.stateValue)) return false;
+    if (this.stateValue !== "cancelling") return false;
     this.stateValue = state;
     this.sequence += 1;
     this.terminalReason = reason;
@@ -219,7 +214,7 @@ export class ExecutionTerminator {
     reason: ExecutionTerminalReason;
     completion?: CompletionDecision;
   }) {
-    if (input.lifecycle.snapshot().state !== "termination_pending")
+    if (input.lifecycle.snapshot().state !== "cancelling")
       return input.lifecycle.snapshot();
     input.lifecycle.orphanActiveChildren();
     input.lifecycle.finish(input.state, input.reason, input.completion);
@@ -244,8 +239,4 @@ function terminalState(
   state: ExecutionLifecycleState,
 ): state is ExecutionTerminalState {
   return ["succeeded", "failed", "cancelled"].includes(state);
-}
-
-function stoppableState(state: ExecutionLifecycleState) {
-  return state === "stopping" || state === "termination_pending";
 }

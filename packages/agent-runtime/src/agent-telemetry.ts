@@ -464,6 +464,10 @@ export class AgentTelemetry {
     sessionId: string,
     inputTokens: number,
     outputTokens: number,
+    capsuleHash: string,
+    compactedEventHashes: string[],
+    tailMessages: number,
+    mode: "normal" | "overflow",
   ) {
     const state = this.sessions.get(sessionId);
     if (!state?.component) return;
@@ -486,6 +490,12 @@ export class AgentTelemetry {
       attributes,
       state.component.span.context,
     );
+    state.component.span.addEvent("blame.harness.context_compaction", {
+      capsule_hash: capsuleHash,
+      compacted_event_hashes: compactedEventHashes.join(","),
+      mode,
+      tail_messages: tailMessages,
+    });
   }
 
   recordRevertedChange(sessionId: string) {

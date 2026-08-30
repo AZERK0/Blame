@@ -76,7 +76,7 @@
     "@blame/preview-contract": "workspace:*",
     "@blame/preview-runtime": "workspace:*",
     "@blame/telemetry": "workspace:*",
-    "@cline/llms": "0.0.68",
+    "@cline/llms": "0.0.81",
     "@japa/api-client": "^3.2.1",
     "@tuyau/core": "^1.2.2",
     "@vercel/sandbox": "2.9.2",

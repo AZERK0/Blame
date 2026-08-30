@@ -129,6 +129,7 @@ test("edit group aggregation follows the normative table", () => {
   assert.equal(partial.outcome, "blocked");
   assert.equal(partial.effect, "partial");
   assert.equal(partial.satisfaction, "partially_satisfied");
+  assert.equal(partial.issue.kind, "stale_target");
 });
 
 test("semantic write rebase refuses weak and ambiguous candidates", () => {
@@ -269,15 +270,15 @@ test("termination pending stays visible until confirmation", async () => {
     state: "cancelled",
     reason: "user",
   });
-  assert.equal(pending.state, "termination_pending");
+  assert.equal(pending.state, "cancelling");
   const terminal = await terminator.confirm({
     lifecycle,
     state: "cancelled",
     reason: "user",
   });
   assert.equal(terminal.state, "cancelled");
-  assert.deepEqual(persisted, ["termination_pending", "cancelled"]);
-  assert.deepEqual(published, ["termination_pending", "cancelled"]);
+  assert.deepEqual(persisted, ["cancelling", "cancelled"]);
+  assert.deepEqual(published, ["cancelling", "cancelled"]);
 });
 
 test("lifecycle business sequencing is independent from state transitions", () => {
@@ -287,7 +288,7 @@ test("lifecycle business sequencing is independent from state transitions", () =
   assert.equal(lifecycle.acceptsBusinessEvent(0), true);
   assert.equal(lifecycle.acceptsBusinessEvent(0), false);
   assert.equal(lifecycle.acceptsBusinessEvent(1), true);
-  assert.equal(lifecycle.snapshot().sequence, 2);
+  assert.equal(lifecycle.snapshot().sequence, 0);
 });
 
 test("execution authority refuses a concurrent execution", () => {

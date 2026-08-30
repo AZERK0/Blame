@@ -51,8 +51,6 @@ export class RunLifecycleRegistry {
     if (current && !terminalState(current.lifecycle.snapshot().state))
       return snapshot(current);
     const lifecycle = new ExecutionLifecycle(executionId);
-    lifecycle.start();
-    lifecycle.running();
     const run = { lifecycle, postStopEvents: 0, postStopTokens: 0, sessionId };
     this.runs.set(sessionId, run);
     return snapshot(run);

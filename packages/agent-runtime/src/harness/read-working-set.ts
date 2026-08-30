@@ -1,5 +1,5 @@
 import { mkdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { lock } from "proper-lockfile";
 import writeFileAtomic from "write-file-atomic";
 import { sha256 } from "./protocol.js";
@@ -11,6 +11,7 @@ export type ReadReceipt = {
   context_epoch: string;
   covered_ranges: ByteRange[];
   path: string;
+  repository_identity?: string;
   read_receipt_ref: string;
   normalized_selection?: string;
   source_blob: string;
@@ -38,30 +39,22 @@ type RegisterReadInput = {
 export class ReadWorkingSet {
   private readonly path: string;
   private readonly lockDirectory: string;
+  private readonly repositoryIdentity: string;
 
   constructor(workspaceRoot: string, sessionId = "unscoped-session") {
     const root = join(workspaceRoot, ".blame", "harness");
     const sessionHash = sha256(sessionId);
     this.path = join(root, "working-sets", `${sessionHash}.json`);
     this.lockDirectory = join(root, "working-set-locks", sessionHash);
+    this.repositoryIdentity = sha256(resolve(workspaceRoot));
   }
 
   register(input: RegisterReadInput) {
     return this.exclusive(() => this.registerExclusive(input));
   }
 
-  activateEpoch(contextEpoch: string) {
-    return this.exclusive(async () => {
-      const stored = await this.read();
-      let changed = false;
-      stored.receipts = stored.receipts.map((receipt) => {
-        const active = receipt.context_epoch === contextEpoch;
-        if (active === receipt.content_in_active_context) return receipt;
-        changed = true;
-        return { ...receipt, content_in_active_context: active };
-      });
-      if (changed) await this.write(stored);
-    });
+  activateEpoch() {
+    return Promise.resolve();
   }
 
   list() {
@@ -84,7 +77,11 @@ export class ReadWorkingSet {
   private async registerExclusive(input: RegisterReadInput) {
     const stored = await this.read();
     const contextEpoch = input.contextEpoch ?? "epoch-0";
-    const matching = matchingReceipts(stored.receipts, input, contextEpoch);
+    const matching = matchingReceipts(
+      stored.receipts,
+      input,
+      this.repositoryIdentity,
+    );
     const covered = mergeRanges(
       matching.flatMap((receipt) => receipt.covered_ranges),
     );
@@ -96,6 +93,7 @@ export class ReadWorkingSet {
       contextEpoch,
       coveredRanges: mergeRanges([...covered, ...uncovered]),
       path: input.path,
+      repositoryIdentity: this.repositoryIdentity,
       sourceBlob: input.sourceBlob,
       targetRef: input.targetRef,
       view: input.view,
@@ -154,11 +152,12 @@ export class ReadWorkingSet {
 function matchingReceipts(
   receipts: ReadReceipt[],
   input: RegisterReadInput,
-  contextEpoch: string,
+  repositoryIdentity: string,
 ) {
   return receipts.filter(
     (receipt) =>
-      receipt.context_epoch === contextEpoch &&
+      (!receipt.repository_identity ||
+        receipt.repository_identity === repositoryIdentity) &&
       receipt.source_blob === input.sourceBlob &&
       receipt.path === input.path &&
       receipt.view === input.view &&
@@ -243,6 +242,7 @@ function createReceipt(input: {
   contextEpoch: string;
   coveredRanges: ByteRange[];
   path: string;
+  repositoryIdentity: string;
   sourceBlob: string;
   targetRef?: string;
   view: string;
@@ -253,6 +253,7 @@ function createReceipt(input: {
     context_epoch: input.contextEpoch,
     source_blob: input.sourceBlob,
     path: input.path,
+    repository_identity: input.repositoryIdentity,
     ...(input.targetRef ? { target_ref: input.targetRef } : {}),
     view: input.view,
     normalized_selection: input.normalizedSelection,

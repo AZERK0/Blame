@@ -269,10 +269,17 @@ test("US-017 unavailable dependencies remain non-fatal without closing explorati
     assert.deepEqual(Object.keys(unavailable.data).sort(), [
       "dependencies_already_available",
       "reason",
+      "retryable",
       "strategies",
+      "unavailable_code",
     ]);
     if (!("dependencies_already_available" in unavailable.data))
       assert.fail("Expected an unavailable dependency receipt.");
+    assert.equal(
+      unavailable.data.unavailable_code,
+      "DEPENDENCY_NETWORK_UNAVAILABLE",
+    );
+    assert.equal(unavailable.data.retryable, false);
     assert.deepEqual(
       unavailable.data.dependencies_already_available.map(({ name }) => name),
       ["react"],
@@ -531,7 +538,6 @@ test("US-017 forced compaction restores the intact objective, architecture, file
       terminal: "passed",
     });
     await memory.checkpoint();
-    await memory.rotate("model_compaction");
     const continuity = await memory.runtimeContinuity();
     assert.equal(
       continuity.activeRequest,
@@ -672,7 +678,7 @@ test("US-017 lifecycle uses execution CAS and rejects every event and token afte
     execution_id: "execution-one",
     post_stop_events: 2,
     post_stop_tokens: 48,
-    sequence: 4,
+    sequence: 2,
     session_id: "session",
     state: "cancelled",
     stop_requested_at: lifecycle.state("session")?.stop_requested_at,
@@ -768,7 +774,7 @@ test("US-017 terminal events stop Cline before persistence and terminal publicat
   await new Promise((resolve) => setTimeout(resolve, 5));
   assert.equal(
     internals.runLifecycles.state("terminal-stream")?.state,
-    "stopping",
+    "cancelling",
   );
   assert.deepEqual([...order].sort(), ["abort", "stop"]);
   releaseStop?.();
@@ -935,7 +941,7 @@ class UnavailableExecutor implements TaskExecutor {
     return Promise.resolve({
       available: false,
       network: "cache_only",
-      reason: "DEPENDENCY_EXECUTOR_UNAVAILABLE:no configured registry route",
+      reason: "DEPENDENCY_NETWORK_UNAVAILABLE:no configured registry route",
     });
   }
 

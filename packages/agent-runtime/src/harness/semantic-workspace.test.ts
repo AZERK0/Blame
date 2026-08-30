@@ -1116,23 +1116,19 @@ test("patch_file recovers shifted hunks and isolates ambiguous anchors", async (
         ],
       }),
     );
-    assert.equal(ambiguous.data.status, "applied");
-    if (ambiguous.data.status !== "applied") return;
-    assert.equal(ambiguous.data.partial, true);
+    assert.equal(ambiguous.data.status, "conflict");
+    if (ambiguous.data.status !== "conflict") return;
     assert.equal(ambiguous.data.failed_operations?.[0]?.status, "conflict");
     assert.match(
       ambiguous.data.failed_operations?.[0]?.reason ?? "",
       /more than one/i,
     );
     assert.equal(await readFile(path, "utf8"), "same\nmiddle\nsame\n");
-    assert.equal(
-      await readFile(join(root, "src", "partial.txt"), "utf8"),
-      "must not exist\n",
-    );
+    await assert.rejects(readFile(join(root, "src", "partial.txt"), "utf8"));
   });
 });
 
-test("edit_code isolates an unrelated parse validation failure", async () => {
+test("edit_code rolls back the full batch after a parse validation failure", async () => {
   await withWorkspace(async (root) => {
     const workspace = new SemanticWorkspace(root);
     const state = success(await workspace.workspaceState());
@@ -1165,9 +1161,8 @@ test("edit_code isolates an unrelated parse validation failure", async () => {
         { toolCallId: "invalid-batch" },
       ),
     );
-    assert.equal(result.data.status, "applied");
-    if (result.data.status !== "applied") return;
-    assert.equal(result.data.partial, true);
+    assert.equal(result.data.status, "validation_failed");
+    if (result.data.status !== "validation_failed") return;
     assert.deepEqual(
       result.data.failed_operations?.map(
         ({ operation_index }) => operation_index,
@@ -1178,14 +1173,13 @@ test("edit_code isolates an unrelated parse validation failure", async () => {
       await readFile(join(root, "src", "service.ts"), "utf8"),
       source,
     );
-    assert.equal(
-      await readFile(join(root, "src", "should-not-exist.ts"), "utf8"),
-      "export const created = true;\n",
+    await assert.rejects(
+      readFile(join(root, "src", "should-not-exist.ts"), "utf8"),
     );
   });
 });
 
-test("inspect_code deduplicates covered ranges and resets by context epoch", async () => {
+test("inspect_code preserves content-addressed coverage across context epochs", async () => {
   await withWorkspace(async (root) => {
     const largeSource = Array.from(
       { length: 80 },
@@ -1274,8 +1268,8 @@ test("inspect_code deduplicates covered ranges and resets by context epoch", asy
         { contextEpoch: "epoch-2" },
       ),
     );
-    assert.equal(compacted.data.status, "content");
-    assert.equal(compacted.data.new_bytes, 40);
+    assert.equal(compacted.data.status, "already_available");
+    assert.equal(compacted.data.new_bytes, 0);
   });
 });
 
@@ -1326,8 +1320,6 @@ test("conversation constraints and recall survive multiple execution epochs", as
       summary: "Changed the mobile title from black to blue.",
       validation: "passed",
     });
-    await memory.rotate("model_compaction");
-    await memory.rotate("model_compaction");
     const latest = await memory.beginRequest({
       currentRequest: "Return to the previous title color.",
       userGoal: "Improve the portfolio.",

@@ -250,8 +250,10 @@ test("starts development sessions with native skills and private specialist cons
   const originalFetch = globalThis.fetch;
   let capturedStart: ClineCoreStartInput | undefined;
   let previewCall: Record<string, unknown> | undefined;
+  let previewCallCount = 0;
   let previewTargetInput: Record<string, unknown> | undefined;
   let tokenCounterInput: { modelId: string; providerId: string } | undefined;
+  let sessionSubscriber: ((event: CoreSessionEvent) => void) | undefined;
   const core = {
     async dispose() {},
     async list() {
@@ -261,7 +263,8 @@ test("starts development sessions with native skills and private specialist cons
       capturedStart = input;
       return { sessionId: input.config.sessionId! };
     },
-    async subscribe() {
+    async subscribe(subscriber: (event: CoreSessionEvent) => void) {
+      sessionSubscriber = subscriber;
       return () => undefined;
     },
   };
@@ -282,19 +285,21 @@ test("starts development sessions with native skills and private specialist cons
   const runtime = new BlameAgentRuntime(undefined, {
     createCore: async () => core as never,
     previewDevtools: async (input) => {
-      previewTargetInput = input;
+      if (input.waitFor === "ready") previewTargetInput = input;
       return {
-        available: false,
+        available: true,
         browserUrl: "http://127.0.0.1:9222",
-        loading: true,
+        loading: false,
         mcpServer: { args: [], command: "node", name: "chrome-devtools" },
-        message: "The preview is currently starting.",
-        reason: "PREVIEW_STARTING",
-        status: "starting",
+        message: "The preview is ready.",
+        reason: "PREVIEW_READY",
+        status: "ready",
       };
     },
     previewDevtoolsCall: async (input) => {
+      previewCallCount += 1;
       previewCall = input;
+      if (previewCallCount === 1) throw new Error("ECONNRESET");
       return { content: [{ type: "text", text: "snapshot" }] };
     },
     previewDevtoolsTools: async () => [
@@ -374,10 +379,10 @@ test("starts development sessions with native skills and private specialist cons
       { autoApprove: true },
     );
     const previewContext = { signal: new AbortController().signal } as never;
-    await capturedStart.config.extraTools
+    const previewState = await capturedStart.config.extraTools
       ?.find((tool: { name: string }) => tool.name === "get_preview_devtools")
       ?.execute({ waitFor: "ready" }, previewContext);
-    await capturedStart.config.extraTools
+    const previewSnapshot = await capturedStart.config.extraTools
       ?.find(
         (tool: { name: string }) =>
           tool.name === "preview_devtools__take_snapshot",
@@ -387,6 +392,44 @@ test("starts development sessions with native skills and private specialist cons
     assert.equal(previewTargetInput?.scope, "preview-scope");
     assert.equal(previewCall?.toolName, "take_snapshot");
     assert.equal(previewCall?.scope, "preview-scope");
+    assert.equal(previewCallCount, 2);
+    const previewStateRecord = previewState as Record<string, unknown>;
+    const previewSnapshotRecord = previewSnapshot as Record<string, unknown>;
+    const previewSnapshotMetadata = previewSnapshotRecord._meta as Record<
+      string,
+      unknown
+    >;
+    assert.equal(previewStateRecord.preview_ready_evidence !== undefined, true);
+    assert.equal(
+      previewSnapshotMetadata.previewReadyEvidence !== undefined,
+      true,
+    );
+    const sessionId = capturedStart.config.sessionId!;
+    sessionSubscriber?.(
+      runtimeToolEvent(sessionId, "skills", {
+        name: "workspace-skill",
+      }),
+    );
+    sessionSubscriber?.(
+      runtimeToolEvent(
+        sessionId,
+        "consult_specialist",
+        { specialist: "reliability-reviewer" },
+        { output: "Keep the Prisma move atomic." },
+      ),
+    );
+    const internals = runtime as unknown as {
+      flushContinuityToolActivity(sessionId: string): Promise<void>;
+    };
+    await internals.flushContinuityToolActivity(sessionId);
+    const continuity = await new ConversationMemoryStore(
+      workspace,
+      sessionId,
+    ).runtimeContinuity();
+    assert.deepEqual(continuity.skills, ["workspace-skill"]);
+    assert.deepEqual(continuity.specialists, [
+      "reliability-reviewer; conclusion=Keep the Prisma move atomic.",
+    ]);
   } finally {
     globalThis.fetch = originalFetch;
     await runtime.shutdown();
@@ -473,8 +516,8 @@ test("compaction preserves an unfinished multi-file edit", async () => {
       autoSendPrompt: false,
       cwd: workspace,
       maxIterations: 80,
-      modelId: "model",
-      providerId: "provider",
+      modelId: "claude-sonnet-4-5",
+      providerId: "anthropic",
       sessionId,
       summary: "Create both unfinished files and validate them later.",
       title: "Unfinished edit",
@@ -494,7 +537,7 @@ test("compaction preserves an unfinished multi-file edit", async () => {
   }
 });
 
-test("disabled compaction keeps only the non-persistent continuity projection", async () => {
+test("disabled compaction does not install a projection extension", async () => {
   const workspace = await mkdtemp(join(tmpdir(), "blame-no-compaction-"));
   const fixture = developmentCompactionFixture("false");
   try {
@@ -503,20 +546,15 @@ test("disabled compaction keeps only the non-persistent continuity projection", 
       autoSendPrompt: false,
       cwd: workspace,
       maxIterations: 80,
-      modelId: "model",
-      providerId: "provider",
+      modelId: "claude-sonnet-4-5",
+      providerId: "anthropic",
       summary: "Keep the complete context.",
       title: "No compaction",
       workspaceRoot: workspace,
     });
     assert.equal(fixture.start()?.config.compaction?.enabled, false);
     assert.equal(fixture.start()?.config.compaction?.compact, undefined);
-    const projection = await compactAtCheckpoint(fixture.start());
-    assert.match(JSON.stringify(projection?.messages), /blame_continuity/);
-    assert.doesNotMatch(
-      JSON.stringify(projection?.messages),
-      /compaction_reason|execution_epoch_id/,
-    );
+    assert.equal(fixture.start()?.config.extensions, undefined);
   } finally {
     await fixture.restore();
     await rm(workspace, { force: true, recursive: true });
@@ -588,7 +626,7 @@ function newProjectGenerationFixture() {
   };
 }
 
-function providerCredentialResponse() {
+function providerCredentialResponse(providerId = "provider") {
   return new Response(
     JSON.stringify({
       data: {
@@ -597,7 +635,7 @@ function providerCredentialResponse() {
         baseUrl: null,
         id: "credential",
         label: "default",
-        providerId: "provider",
+        providerId,
       },
     }),
     { headers: { "content-type": "application/json" }, status: 200 },
@@ -622,7 +660,7 @@ function developmentCompactionFixture(enabled: "false" | "true") {
     },
   };
   process.env.BLAME_AGENT_COMPACTION_ENABLED = enabled;
-  globalThis.fetch = async () => providerCredentialResponse();
+  globalThis.fetch = async () => providerCredentialResponse("anthropic");
   const runtime = new BlameAgentRuntime(undefined, {
     createCore: async () => core as never,
   });
@@ -675,16 +713,13 @@ async function applyUnfinishedEdit(root: string, sessionId: string) {
 }
 
 function compactAtCheckpoint(start: ClineCoreStartInput | undefined) {
-  assert.ok(start?.config.hooks?.beforeModel);
-  return start.config.hooks.beforeModel({
-    request: {
-      messages: [
-        { role: "user", content: [{ type: "text", text: "request" }] },
-        { role: "assistant", content: [{ type: "text", text: "working" }] },
-      ],
-      tools: [],
-    },
-    snapshot: { iteration: 70 },
+  assert.ok(start?.config.compaction?.compact);
+  return start.config.compaction.compact({
+    mode: "overflow_recovery",
+    messages: [
+      { role: "user", content: [{ type: "text", text: "request" }] },
+      { role: "assistant", content: [{ type: "text", text: "working" }] },
+    ],
   } as never);
 }
 
@@ -1247,6 +1282,25 @@ function agentEvent(
       event,
       sessionId: "session",
       ...(teamRole ? { teamRole } : {}),
+    },
+    type: "agent_event",
+  } as CoreSessionEvent;
+}
+
+function runtimeToolEvent(
+  sessionId: string,
+  toolName: string,
+  input: Record<string, unknown>,
+  output?: unknown,
+): CoreSessionEvent {
+  return {
+    payload: {
+      event: {
+        toolCall: { id: `call-${toolName}`, input, name: toolName },
+        ...(output === undefined ? {} : { output }),
+        type: "tool-finished",
+      },
+      sessionId,
     },
     type: "agent_event",
   } as CoreSessionEvent;

@@ -52,7 +52,14 @@ export type DependencyMutationCapability = {
   reason?: string;
   retryable: false;
   status: "available" | "unavailable";
+  unavailable_code?: DependencyUnavailableCode;
 };
+
+type DependencyUnavailableCode =
+  | "DEPENDENCY_EXECUTOR_UNAVAILABLE"
+  | "DEPENDENCY_NETWORK_UNAVAILABLE"
+  | "DEPENDENCY_STORE_UNAVAILABLE"
+  | "PACKAGE_MANAGER_UNAVAILABLE";
 
 type DependencyCapabilityContext = {
   cacheAvailable: boolean;
@@ -705,6 +712,7 @@ function unavailableCapability(
     reason: normalizeCapabilityReason(reason),
     retryable: false,
     status: "unavailable",
+    unavailable_code: dependencyUnavailableCode(reason),
   };
 }
 
@@ -716,7 +724,10 @@ function unavailableReceipt(
     reason:
       capability.reason ??
       "DEPENDENCY_EXECUTOR_UNAVAILABLE:Dependency mutation is unavailable.",
+    unavailable_code:
+      capability.unavailable_code ?? "DEPENDENCY_EXECUTOR_UNAVAILABLE",
     dependencies_already_available: dependencies,
+    retryable: false,
     strategies: [...dependencyAlternatives],
   };
 }
@@ -749,8 +760,19 @@ async function availableDependencies(root: string, packagePath: string) {
 }
 
 function normalizeCapabilityReason(value: string) {
-  if (/^DEPENDENCY_EXECUTOR_UNAVAILABLE:/u.test(value)) return value;
-  return `DEPENDENCY_EXECUTOR_UNAVAILABLE:${value}`;
+  const code = dependencyUnavailableCode(value);
+  const detail = value.replace(/^[A-Z_]+:/u, "");
+  return `${code}:${detail}`;
+}
+
+function dependencyUnavailableCode(value: string): DependencyUnavailableCode {
+  if (/allowlist|econnrefused|enotfound|network|registry route/iu.test(value))
+    return "DEPENDENCY_NETWORK_UNAVAILABLE";
+  if (/cache|store|node_modules|\.pnpm/iu.test(value))
+    return "DEPENDENCY_STORE_UNAVAILABLE";
+  if (/corepack|package.manager|executable/iu.test(value))
+    return "PACKAGE_MANAGER_UNAVAILABLE";
+  return "DEPENDENCY_EXECUTOR_UNAVAILABLE";
 }
 
 function dependencyCapabilityFailure(value: unknown) {

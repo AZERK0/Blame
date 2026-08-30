@@ -2523,10 +2523,11 @@ async function dependencyCacheReady(worktree: string, service: ComposeService) {
           "--pull=never",
           "-v",
           `${volume}:/node_modules`,
+          ...(cache.pnpmStore ? ["-v", `${cache.pnpmStore}:/pnpm/store`] : []),
           dependencyCacheImage(service),
           "sh",
           "-lc",
-          `test -e /node_modules/${dependencyCacheMarker(cache.key)}`,
+          dependencyCacheReadyCommand(cache),
         ],
         { cwd: worktree, env },
       );
@@ -2553,10 +2554,11 @@ async function markDependencyCacheReady(
           "--pull=never",
           "-v",
           `${volume}:/node_modules`,
+          ...(cache.pnpmStore ? ["-v", `${cache.pnpmStore}:/pnpm/store`] : []),
           dependencyCacheImage(service),
           "sh",
           "-lc",
-          `touch /node_modules/${dependencyCacheMarker(cache.key)}`,
+          dependencyCacheMarkCommand(cache),
         ],
         { cwd: worktree, env },
       );
@@ -2575,7 +2577,40 @@ function dependencyCache(service: ComposeService) {
   const key = labels["blame.dependencies.cache.key"];
   const volumes = nodeModulesVolumeSources(service);
   if (!key || volumes.length === 0) return undefined;
-  return { key, volumes };
+  return {
+    key,
+    volumes,
+    pnpmStore: pnpmStoreVolumeSource(service),
+  };
+}
+
+function dependencyCacheReadyCommand(
+  cache: NonNullable<ReturnType<typeof dependencyCache>>,
+) {
+  const checks = [`test -e /node_modules/${dependencyCacheMarker(cache.key)}`];
+  if (cache.pnpmStore) {
+    checks.push("test -d /node_modules/.pnpm", "test -d /pnpm/store");
+  }
+  return checks.join(" && ");
+}
+
+function dependencyCacheMarkCommand(
+  cache: NonNullable<ReturnType<typeof dependencyCache>>,
+) {
+  const checks = cache.pnpmStore
+    ? ["test -d /node_modules/.pnpm", "test -d /pnpm/store"]
+    : [];
+  checks.push(`touch /node_modules/${dependencyCacheMarker(cache.key)}`);
+  return checks.join(" && ");
+}
+
+function pnpmStoreVolumeSource(service: ComposeService) {
+  return (service.volumes ?? []).flatMap((volume) => {
+    const parsed = composeVolume(volume);
+    return parsed?.target.replace(/\/$/u, "") === "/pnpm/store"
+      ? [parsed.source]
+      : [];
+  })[0];
 }
 
 function dependencyCacheImage(service: ComposeService) {

@@ -521,6 +521,7 @@ export const editCodeOperationSchema = z.discriminatedUnion("operation", [
 
 export const editCodeInputSchema = z
   .object({
+    atomicity: z.enum(["all", "independent_groups"]).default("all").optional(),
     edits: z.array(editCodeOperationSchema).min(1).max(50),
     formatting: z.enum(["none", "touched_files"]).default("none").optional(),
     validation: z
@@ -557,6 +558,7 @@ export const patchFileInputSchema = z
 
 export const editFilesInputSchema = z
   .object({
+    atomicity: z.enum(["all", "independent_groups"]).default("all").optional(),
     operations: z.array(editCodeOperationSchema).min(1).max(50),
   })
   .strict();

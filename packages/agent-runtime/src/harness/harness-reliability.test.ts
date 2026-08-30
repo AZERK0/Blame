@@ -13,11 +13,8 @@ import { tmpdir } from "node:os";
 import { request as httpRequest } from "node:http";
 import test from "node:test";
 import { execa } from "execa";
+import { createBlameCompaction, projectMessages } from "./blame-compaction.js";
 import { validateContent } from "./content-validation.js";
-import {
-  contextPressureHooks,
-  effectiveCompactionModels,
-} from "./context-pressure.js";
 import { ExternalReadGovernor } from "./external-read-governor.js";
 import { createEditGroups } from "./edit-batch.js";
 import { jsoncErrors } from "./json-editor.js";
@@ -68,56 +65,45 @@ test("the capability prompt is generated from the central registry", () => {
   assert.equal(new Set(extensions).size, extensions.length);
 });
 
-test("the effective model window triggers Cline compaction at 67.5 percent", () => {
-  const models = effectiveCompactionModels(
-    { model: { contextWindow: 200_000 } as never },
-    "model",
-    0.675,
-    200_000,
-  );
-  assert.equal(models.model?.contextWindow, 150_000);
-  assert.equal(Math.floor(models.model!.contextWindow! * 0.9), 135_000);
-});
-
-test("the effective model window also respects the absolute context threshold", () => {
-  const models = effectiveCompactionModels(
-    { model: { contextWindow: 1_000_000 } as never },
-    "model",
-    0.8,
-    96_000,
-  );
-  assert.ok(models.model?.contextWindow);
-  assert.ok(models.model!.contextWindow! * 0.9 <= 96_000);
-});
-
-test("context pressure leaves transcript compaction to Cline", async () => {
-  const hooks = contextPressureHooks({
-    warningRatio: 0.5,
+test("Cline registers the deterministic projection as a message builder", async () => {
+  let registeredName = "";
+  const controller = createBlameCompaction({
+    memory: compactionMemory(),
+    model: { id: "model", contextWindow: 48_000 },
+    systemPrompt: "system",
+    tools: [],
   });
-  const result = await hooks.beforeModel?.({
-    request: {
-      messages: [
-        { role: "user", content: [{ type: "text", text: "request" }] },
-        { role: "assistant", content: [{ type: "text", text: "response" }] },
-      ],
+  await controller.extension.setup?.({
+    registerMessageBuilder(builder: { name: string }) {
+      registeredName = builder.name;
     },
-    snapshot: { iteration: 70 },
   } as never);
-  assert.equal(result, undefined);
+  assert.deepEqual(controller.extension.manifest.capabilities, [
+    "messageBuilders",
+  ]);
+  assert.equal(registeredName, "blame-canonical-journal-projection");
 });
 
-test("context pressure leaves completion policy and tool availability to Cline", async () => {
-  const hooks = contextPressureHooks({
-    warningRatio: 0.5,
-  });
-  const result = await hooks.beforeModel?.({
-    request: {
-      messages: [{ role: "user", content: [{ type: "text", text: "finish" }] }],
-      tools: [{ name: "search_code" }, { name: "submit_and_exit" }],
+test("context pressure uses the actual model window and configured ratios", async () => {
+  let warnings = 0;
+  const messages = compactionMessages("x".repeat(92_000));
+  const options = {
+    memory: compactionMemory(),
+    model: { id: "model", contextWindow: 48_000, maxTokens: 8_000 },
+    onWarning: () => {
+      warnings += 1;
     },
-    snapshot: { iteration: 120 },
-  } as never);
-  assert.equal(result, undefined);
+    systemPrompt: "system",
+    tools: [],
+  };
+  const state = { overflowAttempts: 0, warned: false };
+  assert.equal(await projectMessages(messages, options, state), messages);
+  assert.equal(warnings, 1);
+  const largeMessages = compactionMessages("x".repeat(132_000));
+  const projected = await projectMessages(largeMessages, options, state);
+  assert.notEqual(projected, largeMessages);
+  assert.match(JSON.stringify(projected), /blame_deterministic_capsule/u);
+  assert.equal(warnings, 1);
 });
 
 test("semantic loop detection replays A-B-A-B without repeated I/O", () => {
@@ -282,19 +268,19 @@ test("unsupported validation is never reported as passed", async () => {
       path: "notes.unknown",
       workspaceRoot: root,
     });
-    assert.equal(validation.status, "not_supported");
+    assert.equal(validation.status, "unsupported");
     assert.equal(validation.validator, null);
   });
 });
 
-test("an unavailable Prisma validator leaves the applied edit pending", async () => {
+test("an unavailable Prisma validator is unsupported and never blocks", async () => {
   await withWorkspace(async (root, workspace) => {
     const validation = await validateContent({
       content: Buffer.from("model User { id Int @id }\n"),
       path: "schema.prisma",
       workspaceRoot: root,
     });
-    assert.equal(validation.status, "validator_unavailable");
+    assert.equal(validation.status, "unsupported");
     const result = success(
       await workspace.createFile({
         path: "schema.prisma",
@@ -303,8 +289,8 @@ test("an unavailable Prisma validator leaves the applied edit pending", async ()
     );
     assert.equal(result.data.status, "applied");
     if (result.data.status !== "applied") return;
-    assert.equal(result.data.validation.status, "validator_unavailable");
-    assert.equal(result.data.validation.parse, "pending");
+    assert.equal(result.data.validation.status, "unsupported");
+    assert.equal(result.data.validation.parse, "unsupported");
     assert.equal(await exists(join(root, "schema.prisma")), true);
   });
 });
@@ -463,7 +449,7 @@ test("edit_files inserts text at a file boundary without an anchor", async () =>
   });
 });
 
-test("edit_files partitions unrelated files by inferred path coupling", async () => {
+test("edit_files is atomic by default when any operation fails", async () => {
   await withWorkspace(async (root, workspace) => {
     const result = success(
       await workspace.editFiles({
@@ -477,14 +463,13 @@ test("edit_files partitions unrelated files by inferred path coupling", async ()
         ],
       }),
     );
-    assert.equal(result.data.outcome, "applied");
-    if (result.data.status !== "applied") return;
-    assert.equal(result.data.partial, true);
+    assert.equal(result.data.outcome, "validation_failed");
+    if (result.data.status !== "validation_failed") return;
     assert.deepEqual(
       result.data.failed_operations?.map(({ path }) => path),
       ["invalid.json"],
     );
-    assert.equal(await exists(join(root, "valid.ts")), true);
+    assert.equal(await exists(join(root, "valid.ts")), false);
     assert.equal(await exists(join(root, "invalid.json")), false);
   });
 });
@@ -501,18 +486,22 @@ test("edit_files rejects the removed atomicity compatibility hint", () => {
 });
 
 test("edit partitioning keeps operations on the same path coupled", () => {
-  const groups = createEditGroups([
-    {
-      operation: "replace_file",
-      path: "coupled.ts",
-      content: "export const value = 1;\n",
-    },
-    {
-      operation: "replace_file",
-      path: "coupled.ts",
-      content: invalidImport,
-    },
-  ]);
+  const groups = createEditGroups(
+    [
+      {
+        operation: "replace_file",
+        path: "coupled.ts",
+        content: "export const value = 1;\n",
+      },
+      {
+        operation: "replace_file",
+        path: "coupled.ts",
+        content: invalidImport,
+      },
+    ],
+    undefined,
+    "independent_groups",
+  );
   assert.equal(groups.length, 1);
   assert.deepEqual(groups[0]?.indexes, [0, 1]);
 });
@@ -521,6 +510,7 @@ test("edit_files applies independent files and reports the failing operation", a
   await withWorkspace(async (root, workspace) => {
     const result = success(
       await workspace.editFiles({
+        atomicity: "independent_groups",
         operations: [
           {
             operation: "create_file",
@@ -566,6 +556,7 @@ test("edit_files reports independent operations that produced no change", async 
   await withWorkspace(async (root, workspace) => {
     const result = success(
       await workspace.editFiles({
+        atomicity: "independent_groups",
         operations: [
           {
             operation: "create_file",
@@ -607,6 +598,7 @@ test("edit_files returns every independent validation failure", async () => {
   await withWorkspace(async (root, workspace) => {
     const result = success(
       await workspace.editFiles({
+        atomicity: "independent_groups",
         operations: [
           {
             operation: "create_file",
@@ -1072,7 +1064,7 @@ test("large web fetch results retain the Cline result envelope", async () => {
   assert.equal(governed.metadata.requestId, "fetch-request");
   assert.equal(governed.metadata.externalReadTruncated, true);
   assert.ok((governed.output[0]?.result.length ?? 0) < 28_000);
-  assert.ok(Buffer.byteLength(JSON.stringify(governed), "utf8") <= 16_000);
+  assert.ok(Buffer.byteLength(JSON.stringify(governed), "utf8") <= 8_000);
   const continuation = governed.metadata.externalReadContinuation as {
     receipt_id: string;
   };
@@ -1401,6 +1393,52 @@ async function exists(path: string) {
 
 function escape(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+}
+
+function compactionMemory() {
+  return {
+    async runtimeContinuity() {
+      return {
+        activeRequest: "Keep the current request exact.",
+        changedFiles: [],
+        completedWork: [],
+        constraints: [],
+        currentRepositoryState: "unchanged",
+        decisions: [],
+        failedAttempts: [],
+        inspectedFiles: [],
+        knownInfrastructureFailures: [],
+        modifiedFiles: [],
+        nextAction: "Continue.",
+        observations: [],
+        openProblems: [],
+        skills: [],
+        specialists: [],
+        validation: "unknown",
+        validationEvidence: [],
+        verifiedSymbols: [],
+      };
+    },
+  } as never;
+}
+
+function compactionMessages(response: string) {
+  return [
+    {
+      id: "request",
+      role: "user" as const,
+      content: [
+        { type: "text" as const, text: "Keep the current request exact." },
+      ],
+      createdAt: 1,
+    },
+    {
+      id: "response",
+      role: "assistant" as const,
+      content: [{ type: "text" as const, text: response }],
+      createdAt: 2,
+    },
+  ];
 }
 
 const invalidImport =

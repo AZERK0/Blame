@@ -11,6 +11,7 @@ ARG NPM_TAR_SHA512=5dd86d0af94ccb0c31a425bc604ab794e5c126950f4d1d8e1c77302cf3b71
 ARG BLAME_NPM_VERSION=11.19.0
 ARG BLAME_PNPM_VERSION=10.34.4
 ARG BLAME_YARN_VERSION=1.22.22
+ARG BLAME_CLINE_SDK_VERSION=0.0.81
 ARG DOCKER_VERSION=29.7.1
 ARG DOCKER_SHA256=0fcea2a8b4d1b54ccc9010e3451b78504a369d414f37eb3bb79300e1b5c22ce6
 ARG COMPOSE_VERSION=5.3.1
@@ -38,6 +39,11 @@ RUN dnf upgrade -y \
       npm install --prefix "${destination}" --omit=dev --ignore-scripts "${name}@${version}"; \
       ln -s "../node_modules/.bin/${name}" "${destination}/bin/${name}"; \
     done \
+    && cline_destination="/opt/blame/cline/${BLAME_CLINE_SDK_VERSION}" \
+    && npm install --prefix "${cline_destination}" --omit=optional --ignore-scripts \
+      "@cline/sdk@${BLAME_CLINE_SDK_VERSION}" "@cline/core@${BLAME_CLINE_SDK_VERSION}" \
+    && node -e 'const fs=require("fs");const path=require("path");const root=process.argv[1];const expected=process.argv[2];for(const name of ["sdk","core"]){const value=JSON.parse(fs.readFileSync(path.join(root,"node_modules","@cline",name,"package.json"),"utf8"));if(value.version!==expected)process.exit(1)}' \
+      "${cline_destination}" "${BLAME_CLINE_SDK_VERSION}" \
     && curl --fail --silent --show-error --location \
       "https://registry.npmjs.org/tar/-/tar-${NPM_TAR_VERSION}.tgz" \
       --output /tmp/npm-tar.tgz \
@@ -87,6 +93,7 @@ RUN mkdir -p /opt/blame/bin \
 
 ENV BLAME_RUNNER_VERSION=${BLAME_RUNNER_VERSION}
 ENV BLAME_RUNNER_IMAGE_DIGEST=${BLAME_RUNNER_IMAGE_DIGEST}
+ENV BLAME_CLINE_SDK_VERSION=${BLAME_CLINE_SDK_VERSION}
 ENV BLAME_PACKAGE_MANAGER_ROOT=/opt/blame/package-managers
 ENV PATH="/opt/blame/bin:${PATH}"
 

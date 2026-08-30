@@ -38,6 +38,7 @@ import type {
 import type { ExecutionTerminalReason } from "@blame/harness-core";
 import {
   buildWorkspaceMetadata,
+  createBuiltinTools,
   createDelegatedAgentConfigProvider,
   createSpawnAgentTool,
   getClineDefaultSystemPrompt,
@@ -90,17 +91,12 @@ import {
 } from "./harness/native-completion.js";
 import { continuityFallbackMetrics } from "./harness/continuity-schema.js";
 import { ExternalReadGovernor } from "./harness/external-read-governor.js";
-import { continuityProjectionHooks } from "./harness/continuity-projection.js";
-import { composeHarnessHooks } from "./harness/hook-composition.js";
 import { HarnessCostGovernor } from "./harness/cost-governor.js";
 import {
   appendInitialTaskBriefing,
   createInitialTaskBriefing,
 } from "./harness/initial-task-briefing.js";
-import {
-  contextPressureHooks,
-  effectiveCompactionModels,
-} from "./harness/context-pressure.js";
+import { createBlameCompaction } from "./harness/blame-compaction.js";
 import { harnessFeatureEnabled } from "./harness/harness-feature-flags.js";
 import { sha256 } from "./harness/protocol.js";
 import {
@@ -309,6 +305,7 @@ type RuntimeStartSessionInput = StartSessionInput & {
   governorBudget?: number;
   nativeCompletion?: boolean;
   taskObjective?: string;
+  tokenCounter?: TokenCounter;
 };
 
 type ContinuityMetrics = {
@@ -459,6 +456,7 @@ export class BlameAgentRuntime {
   private sessionExecutionIds = new Map<string, string>();
   private sessionToolInputs = new Map<string, unknown>();
   private sessionToolSequences = new Map<string, number>();
+  private sessionContinuityWrites = new Map<string, Promise<void>>();
   private sessionSubmittedSummaries = new Map<
     string,
     NativeCompletionNotification
@@ -891,21 +889,66 @@ export class BlameAgentRuntime {
       const continuity = input.nativeCompletion
         ? new ConversationMemoryStore(input.cwd, sessionId)
         : undefined;
-      const hooks = composeHarnessHooks(
-        externalReadGovernor?.fetchHooks() ?? {},
-        contextPressureHooks({
-          contextWindow: compactionModelState?.contextWindow,
-          warningRatio: this.productionConfig.compactionWarningRatio ?? 0.65,
-          onWarning: (contextUtilizationRatio) =>
-            productionLogger.log("Blame context pressure warning", {
-              contextUtilizationRatio,
-              status: "warning",
-            }),
-        }),
-        ...(continuity && harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS")
-          ? [continuityProjectionHooks(continuity)]
-          : []),
-      );
+      const systemPrompt =
+        input.systemPrompt ?? loadPrompt("default-agent-system");
+      const compactionController =
+        continuity &&
+        compactionModelState &&
+        harnessFeatureEnabled("BLAME_CLINE_MESSAGE_BUILDER_COMPACTION")
+          ? createBlameCompaction({
+              memory: continuity,
+              model: compactionModelState.model,
+              systemPrompt,
+              tools: compactionToolDefinitions(input.workspaceRoot, extraTools),
+              warningRatio:
+                this.productionConfig.compactionWarningRatio ?? 0.55,
+              triggerRatio: this.productionConfig.compactionTriggerRatio ?? 0.7,
+              targetRatio: this.productionConfig.compactionTargetRatio ?? 0.4,
+              tokenCounter: input.tokenCounter,
+              beforeProjection: () =>
+                this.flushContinuityToolActivity(sessionId),
+              overflowTargetRatio:
+                this.productionConfig.compactionOverflowTargetRatio ?? 0.35,
+              onCompaction: (metrics) => {
+                this.agentTelemetry.recordContextCompaction(
+                  sessionId,
+                  metrics.tokensBefore,
+                  metrics.tokensAfter,
+                  metrics.capsuleHash,
+                  metrics.compactedEventHashes,
+                  metrics.tailMessages,
+                  metrics.mode,
+                );
+                productionLogger.log("Blame deterministic compaction", {
+                  capsuleHash: metrics.capsuleHash,
+                  messageCountAfter: metrics.tailMessages + 1,
+                  status: metrics.mode,
+                  tailMessages: metrics.tailMessages,
+                  tokensAfter: metrics.tokensAfter,
+                  tokensBefore: metrics.tokensBefore,
+                });
+                for (const compactedEventHash of metrics.compactedEventHashes)
+                  productionLogger.log("Blame compacted event", {
+                    compactedEventHash,
+                    status: metrics.mode,
+                  });
+              },
+              onWarning: (contextUtilizationRatio) =>
+                productionLogger.log("Blame context pressure warning", {
+                  contextUtilizationRatio,
+                  status: "warning",
+                }),
+            })
+          : undefined;
+      const hooks = externalReadGovernor?.fetchHooks();
+      const compactionConfig = compactionController
+        ? {
+            ...(input.compaction ??
+              blameCompactionConfig(this.productionConfig)),
+            enabled: true,
+            compact: compactionController.overflowRecovery,
+          }
+        : (input.compaction ?? blameCompactionConfig(this.productionConfig));
       const startInput = {
         ...(autoSendPrompt
           ? {
@@ -935,8 +978,7 @@ export class BlameAgentRuntime {
             ...(compactionModelState
               ? { knownModels: compactionModelState.models }
               : {}),
-            systemPrompt:
-              input.systemPrompt ?? loadPrompt("default-agent-system"),
+            systemPrompt,
             cwd: input.cwd,
             workspaceRoot: input.workspaceRoot,
             checkpoint: {
@@ -950,13 +992,15 @@ export class BlameAgentRuntime {
               input.disableMcpSettingsTools ??
               this.productionConfig.disableMcpSettingsTools,
             ...(pluginPaths ? { pluginPaths } : {}),
-            compaction:
-              input.compaction ?? blameCompactionConfig(this.productionConfig),
+            compaction: compactionConfig,
             enableTools: true,
             enableSpawnAgent: input.enableSpawnAgent ?? false,
             enableAgentTeams: input.enableAgentTeams ?? false,
             extensionContext: extensionContext(input),
-            hooks,
+            ...(hooks ? { hooks } : {}),
+            ...(compactionController
+              ? { extensions: [compactionController.extension] }
+              : {}),
             ...(extraTools.length ? { extraTools } : {}),
           }),
         },
@@ -1531,6 +1575,7 @@ export class BlameAgentRuntime {
       )
     )
       return;
+    await this.flushContinuityToolActivity(input.sessionId);
     const completion = this.sessionSubmittedSummaries.get(
       input.sessionId,
     )?.completion;
@@ -2624,17 +2669,29 @@ export class BlameAgentRuntime {
         );
         const eventTokens = eventTokenCount(payload);
         const lifecycleBeforeEvent = this.runLifecycles.state(sessionId);
+        const terminalBeforeEvent = [
+          "succeeded",
+          "failed",
+          "cancelled",
+        ].includes(lifecycleBeforeEvent?.state ?? "");
         if (
           lifecycleBeforeEvent?.execution_id === executionId &&
           lifecycleBeforeEvent.state !== "running"
         )
           this.agentTelemetry.recordPostStopEvent(sessionId, eventTokens);
         if (!this.runLifecycles.accepts(sessionId, executionId, eventTokens)) {
-          this.agentTelemetry.recordPostTerminalEvent(sessionId, eventTokens);
-          void this.logSession(sessionId, "post-terminal event dropped", {
-            event_type: payload.type,
-            ...this.runLifecycles.state(sessionId),
-          });
+          if (terminalBeforeEvent)
+            this.agentTelemetry.recordPostTerminalEvent(sessionId, eventTokens);
+          void this.logSession(
+            sessionId,
+            terminalBeforeEvent
+              ? "post-terminal event dropped"
+              : "cancelling event dropped",
+            {
+              event_type: payload.type,
+              ...this.runLifecycles.state(sessionId),
+            },
+          );
           return;
         }
         this.agentTelemetry.observeCoreEvent(sessionId, payload);
@@ -2657,6 +2714,7 @@ export class BlameAgentRuntime {
           ),
         );
         if (this.shouldSkipDuplicateSessionEvent(sessionId, event)) return;
+        this.enqueueContinuityToolActivity(sessionId, event);
         const terminalState = terminalLifecycleState(event);
         if (terminalState) {
           const drain = this.finalizeStreamTerminal(
@@ -2718,6 +2776,52 @@ export class BlameAgentRuntime {
         verified: notification.verified,
       },
     };
+  }
+
+  private async recordContinuityToolActivity(
+    sessionId: string,
+    event: AgentEvent,
+  ) {
+    if (event.type !== "tool") return;
+    const workspaceRoot = this.sessionStartInputs.get(sessionId)?.config.cwd;
+    if (!workspaceRoot) return;
+    const payload = asRecord(event.payload);
+    const phase = stringValue(payload.phase);
+    const toolCall = asRecord(payload.toolCall);
+    const toolName =
+      stringValue(toolCall.name) ?? stringValue(payload.toolName);
+    const input = asRecord(toolCall.input);
+    const memory = new ConversationMemoryStore(workspaceRoot, sessionId);
+    if (phase === "failed")
+      await memory.recordRuntimeEvent(
+        "tool_failure",
+        stringValue(payload.toolCallId) ?? toolName ?? "tool",
+        toolName,
+      );
+    if (phase !== "finished" || !toolName) return;
+    const fact = continuityToolFact(toolName, input, payload);
+    if (fact) await memory.recordKnowledge([fact]);
+  }
+
+  private enqueueContinuityToolActivity(sessionId: string, event: AgentEvent) {
+    const previous = this.sessionContinuityWrites.get(sessionId);
+    const write = Promise.resolve(previous)
+      .catch(() => undefined)
+      .then(() => this.recordContinuityToolActivity(sessionId, event))
+      .catch((error: unknown) =>
+        this.logSession(sessionId, "continuity tool activity failed", {
+          error: errorMessage(error),
+        }),
+      );
+    this.sessionContinuityWrites.set(sessionId, write);
+    void write.finally(() => {
+      if (this.sessionContinuityWrites.get(sessionId) === write)
+        this.sessionContinuityWrites.delete(sessionId);
+    });
+  }
+
+  private async flushContinuityToolActivity(sessionId: string) {
+    await this.sessionContinuityWrites.get(sessionId);
   }
 
   private withSessionIteration(sessionId: string, event: AgentEvent) {
@@ -2986,6 +3090,7 @@ export class BlameAgentRuntime {
     } catch {
       // Session cleanup must continue even when a provider unsubscribe fails.
     }
+    await this.flushContinuityToolActivity(sessionId);
     this.clearSessionState(sessionId, preserveTelemetry);
     const logFile = this.sessionLogFiles.get(sessionId);
     this.sessionLogFiles.delete(sessionId);
@@ -2998,9 +3103,7 @@ export class BlameAgentRuntime {
   private clearSessionState(sessionId: string, preserveTelemetry: boolean) {
     this.clearSessionInactivityWatchdog(sessionId);
     const lifecycle = this.runLifecycles.state(sessionId);
-    const terminationActive =
-      lifecycle?.state === "stopping" ||
-      lifecycle?.state === "termination_pending";
+    const terminationActive = lifecycle?.state === "cancelling";
     this.autoApprovedWriteToolSessions.delete(sessionId);
     this.sessionContexts.delete(sessionId);
     this.sessionEventSignatures.delete(sessionId);
@@ -3428,6 +3531,7 @@ export class BlameAgentRuntime {
       prompt: preparedRequest.prompt,
       continuityMetrics: preparedRequest.metrics,
       taskObjective: developmentInput.prompt,
+      tokenCounter,
       userFiles: developmentInput.userFiles,
       userImages: developmentInput.userImages,
       pluginPaths: input.pluginPaths,
@@ -3714,6 +3818,70 @@ function clineToolActivity(
     stringValue(asRecord(payload.toolCall).id) ??
     `${source}:${toolName}`;
   return { phase, toolCallId, toolName };
+}
+
+function continuityToolFact(
+  toolName: string,
+  input: Record<string, unknown>,
+  payload: Record<string, unknown>,
+) {
+  if (["skill", "skills"].includes(toolName)) {
+    const skill = firstStableIdentifier(input, ["skill", "name", "id"]);
+    return skill ? `Loaded skill: ${skill}` : undefined;
+  }
+  if (toolName === "consult_specialist") {
+    const specialist = firstStableIdentifier(input, ["specialist"]);
+    if (!specialist) return undefined;
+    const conclusion = continuityToolOutput(payload);
+    return `Specialist consultation: ${specialist}${
+      conclusion ? `; conclusion=${conclusion}` : ""
+    }`;
+  }
+  return undefined;
+}
+
+function continuityToolOutput(payload: Record<string, unknown>) {
+  const toolCall = asRecord(payload.toolCall);
+  const raw = asRecord(payload.raw);
+  const rawToolCall = asRecord(raw.toolCall);
+  return boundedContinuityText(
+    payload.output ??
+      payload.result ??
+      payload.update ??
+      toolCall.output ??
+      raw.output ??
+      raw.result ??
+      raw.update ??
+      rawToolCall.output,
+  );
+}
+
+function boundedContinuityText(value: unknown, depth = 0): string | undefined {
+  if (depth > 3 || value === undefined || value === null) return undefined;
+  if (typeof value === "string")
+    return value.replace(/\s+/gu, " ").trim().slice(0, 2_000) || undefined;
+  if (Array.isArray(value))
+    return value
+      .map((entry) => boundedContinuityText(entry, depth + 1))
+      .filter((entry): entry is string => Boolean(entry))
+      .join(" ")
+      .slice(0, 2_000);
+  if (typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  for (const key of ["output", "summary", "text", "message", "content"]) {
+    const selected = boundedContinuityText(record[key], depth + 1);
+    if (selected) return selected;
+  }
+  return undefined;
+}
+
+function firstStableIdentifier(input: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = stringValue(input[key]);
+    if (value && /^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,127}$/u.test(value))
+      return value;
+  }
+  return undefined;
 }
 
 export function nextSpawnAgentActiveCount(
@@ -4063,6 +4231,22 @@ function readOnlyRuntimeTools(
       externalReadGovernor,
     ) ?? []
   ).filter((tool) => allowedTools.has(tool.name));
+}
+
+function compactionToolDefinition(tool: AgentTool) {
+  return {
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+  };
+}
+
+function compactionToolDefinitions(
+  workspaceRoot: string,
+  extraTools: AgentTool[],
+) {
+  const tools = [...createBuiltinTools({ cwd: workspaceRoot }), ...extraTools];
+  return tools.map(compactionToolDefinition);
 }
 
 function runtimeConsultSpecialistTool(options: {
@@ -5588,23 +5772,14 @@ async function earlyCompactionModelState(
   modelId: string,
   config: ProductionConfig,
 ) {
-  if (
-    config.compactionEnabled === false ||
-    !harnessFeatureEnabled("BLAME_CONTEXT_EPOCHS")
-  )
-    return undefined;
+  if (config.compactionEnabled === false) return undefined;
   try {
     const models = await clineModels(providerId);
-    const contextWindow = models[modelId]?.contextWindow;
-    if (!contextWindow) return undefined;
+    const model = models[modelId];
+    if (!model?.contextWindow && !model?.maxInputTokens) return undefined;
     return {
-      contextWindow,
-      models: effectiveCompactionModels(
-        models,
-        modelId,
-        config.compactionTriggerRatio ?? 0.75,
-        config.compactionMaxContextTokens,
-      ),
+      model,
+      models,
     };
   } catch {
     return undefined;

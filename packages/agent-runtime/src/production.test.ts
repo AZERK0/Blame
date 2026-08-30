@@ -40,12 +40,10 @@ test("normalizes the production compaction strategy", () => {
 
 test("uses continuity-preserving bounded compaction ratios", () => {
   const defaults = loadProductionConfig({});
-  assert.equal(defaults.compactionMaxContextTokens, 128_000);
-  assert.equal(defaults.compactionMaxOldToolResultTokens, 32_000);
-  assert.equal(defaults.compactionMarginalTokenThreshold, 12_000);
-  assert.equal(defaults.compactionMinNoveltyRatio, 0.25);
-  assert.equal(defaults.compactionWarningRatio, 0.65);
-  assert.equal(defaults.compactionTriggerRatio, 0.75);
+  assert.equal(defaults.compactionWarningRatio, 0.55);
+  assert.equal(defaults.compactionTriggerRatio, 0.7);
+  assert.equal(defaults.compactionTargetRatio, 0.4);
+  assert.equal(defaults.compactionOverflowTargetRatio, 0.35);
   const configured = loadProductionConfig({
     BLAME_AGENT_COMPACTION_WARNING_RATIO: "0.6",
     BLAME_AGENT_COMPACTION_TRIGGER_RATIO: "0.7",
@@ -55,6 +53,6 @@ test("uses continuity-preserving bounded compaction ratios", () => {
   assert.equal(
     loadProductionConfig({ BLAME_AGENT_COMPACTION_TRIGGER_RATIO: "0.95" })
       .compactionTriggerRatio,
-    0.75,
+    0.7,
   );
 });

@@ -3,8 +3,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { projectMessages } from "./blame-compaction.js";
 import { prepareChangeRequest } from "./change-request-capsule.js";
-import { continuityProjectionHooks } from "./continuity-projection.js";
 import type { ContinuityUpdate } from "./continuity-schema.js";
 import {
   ConversationMemoryStore,
@@ -65,7 +65,7 @@ test("completion state is derived from runtime change and validation receipts", 
   });
 });
 
-test("continuity projection replaces the active request exactly once", async () => {
+test("deterministic compaction preserves the exact active request", async () => {
   await withMemory(async (root) => {
     const memory = new ConversationMemoryStore(root, "projection");
     const request = "Keep the API stable and update src/example.ts.";
@@ -78,45 +78,47 @@ test("continuity projection replaces the active request exactly once", async () 
       summary: "Updated example",
       validation: "passed",
     });
-    const hook = continuityProjectionHooks(memory).beforeModel;
-    assert.ok(hook);
-    const projected = await hook({
-      request: {
-        messages: [
-          {
-            id: "user",
-            role: "user",
-            content: [{ type: "text", text: request }],
-            createdAt: 1,
-          },
-          {
-            id: "assistant",
-            role: "assistant",
-            content: [{ type: "text", text: "Working" }],
-            createdAt: 2,
-          },
-          {
-            id: "native-completion-policy",
-            role: "user",
-            content: [{ type: "text", text: "[SYSTEM] Use submit_and_exit." }],
-            createdAt: 3,
-          },
-        ],
+    const projected = await projectMessages(
+      [
+        {
+          id: "user",
+          role: "user",
+          content: [{ type: "text", text: request }],
+          createdAt: 1,
+        },
+        {
+          id: "assistant",
+          role: "assistant",
+          content: [{ type: "text", text: "Working" }],
+          createdAt: 2,
+        },
+        {
+          id: "native-completion-policy",
+          role: "user",
+          content: [{ type: "text", text: "[SYSTEM] Use submit_and_exit." }],
+          createdAt: 3,
+        },
+      ],
+      {
+        memory,
+        model: { id: "test", contextWindow: 16_000 },
+        systemPrompt: "system",
         tools: [],
       },
-      snapshot: { iteration: 3 },
-    } as never);
-    const serialized = JSON.stringify(projected?.messages);
+      undefined,
+      "overflow",
+    );
+    const serialized = JSON.stringify(projected);
     assert.equal(serialized.split(request).length - 1, 1);
-    assert.match(serialized, /<blame_continuity>/);
+    assert.match(serialized, /<blame_deterministic_capsule>/);
     assert.match(serialized, /\[SYSTEM\] Use submit_and_exit\./);
-    assert.doesNotMatch(serialized, /changeset:\/\/|src_opaque/);
+    assert.match(serialized, /changeset:\/\/|src_opaque/);
     const restarted = new ConversationMemoryStore(root, "projection");
     assert.equal((await restarted.runtimeContinuity()).activeRequest, request);
   });
 });
 
-test("the production beforeModel hook detects compaction and releases stale read coverage", async () => {
+test("compaction preserves deterministic memory and unchanged read coverage", async () => {
   await withMemory(async (root) => {
     const conversationId = "real-compaction-hook";
     const request = "Preserve the objective while compacting.";
@@ -135,8 +137,6 @@ test("the production beforeModel hook detects compaction and releases stale read
     await memory.recordKnowledge([
       "inspect_code identified symbols: importantHandler.",
     ]);
-    const hook = continuityProjectionHooks(memory).beforeModel;
-    assert.ok(hook);
     const longTranscript = [
       {
         id: "user",
@@ -151,26 +151,17 @@ test("the production beforeModel hook detects compaction and releases stale read
         createdAt: index + 2,
       })),
     ];
-    await hook({ request: { messages: longTranscript, tools: [] } } as never);
-    const projected = await hook({
-      request: {
-        messages: [
-          {
-            id: "user-compacted",
-            role: "user",
-            content: [{ type: "text", text: request }],
-            createdAt: 20,
-          },
-          {
-            id: "summary",
-            role: "assistant",
-            content: [{ type: "text", text: "Compacted summary." }],
-            createdAt: 21,
-          },
-        ],
+    const projected = await projectMessages(
+      longTranscript as never,
+      {
+        memory,
+        model: { id: "test", contextWindow: 16_000 },
+        systemPrompt: "system",
         tools: [],
       },
-    } as never);
+      undefined,
+      "overflow",
+    );
 
     const snapshot = await memory.snapshot();
     assert.equal(snapshot.nextFocus, undefined);
@@ -193,16 +184,10 @@ test("the production beforeModel hook detects compaction and releases stale read
         (event) =>
           event.type === "runtime_event" && event.event === "compaction",
       ),
-      true,
-    );
-    assert.equal(
-      (await workingSet.list())[0]?.content_in_active_context,
       false,
     );
-    assert.match(
-      JSON.stringify(projected?.messages),
-      /importantHandler|src\/known\.ts/u,
-    );
+    assert.equal((await workingSet.list())[0]?.content_in_active_context, true);
+    assert.match(JSON.stringify(projected), /importantHandler|src\/known\.ts/u);
   });
 });
 
@@ -252,6 +237,30 @@ test("runtime continuity verifies symbols from inspected current source", async 
       ),
       false,
     );
+  });
+});
+
+test("runtime continuity exposes only validation for the live revision", async () => {
+  await withMemory(async (root) => {
+    await writeFile(join(root, "current.ts"), "export const value = 1;\n");
+    const memory = new ConversationMemoryStore(root, "live-validation");
+    await memory.beginRequest({ currentRequest: "Validate it.", userGoal: "Goal" });
+    const initial = await memory.runtimeContinuity();
+    const revision = initial.currentRepositoryState.match(
+      /source_revision=(src_[a-f0-9]+)/u,
+    )?.[1];
+    assert.ok(revision);
+    await memory.recordValidation({
+      id: "run://current",
+      sourceRevisionId: revision,
+      status: "passed",
+      taskId: "typecheck",
+      taskKind: "typecheck",
+      terminal: "passed",
+    });
+    assert.equal((await memory.runtimeContinuity()).validationEvidence.length, 1);
+    await writeFile(join(root, "later.ts"), "export const later = true;\n");
+    assert.deepEqual((await memory.runtimeContinuity()).validationEvidence, []);
   });
 });
 
@@ -401,7 +410,6 @@ test("a user constraint survives twenty turns and compactions", async () => {
       userGoal: "Improve the portfolio.",
     });
     for (let index = 0; index < 20; index += 1) {
-      await memory.rotate("model_compaction", 500);
       await memory.beginRequest({
         currentRequest: `Iteration ${index}`,
         userGoal: "Improve the portfolio.",
@@ -770,7 +778,7 @@ test("version 1 memory migrates without destructive rewrite", async () => {
       (await memory.snapshot()).facts[0]?.text,
       "Keep legacy behavior.",
     );
-    await memory.rotate("model_compaction");
+    await memory.checkpoint();
     const persisted = JSON.parse(await readFile(path, "utf8")) as {
       schema_version: string;
     };

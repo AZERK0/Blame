@@ -21,7 +21,9 @@ import {
   harnessError,
   harnessSuccess,
   provenance,
+  sha256,
   type HarnessToolResult,
+  type SourceRevisionRef,
 } from "./protocol.js";
 import {
   approximateTokens,
@@ -110,6 +112,7 @@ import {
   type MoveFileInput,
   type PatchFileInput,
   type ReplaceFileInput,
+  type TaskCatalogItem,
 } from "./schemas.js";
 import { ValidationService } from "./validation-service.js";
 import { ConversationMemoryStore } from "./conversation-memory.js";
@@ -137,6 +140,21 @@ export type SemanticWorkspaceOptions = {
   };
 };
 
+type WorkspaceStateData = {
+  capabilities: {
+    execution: {
+      run_task: { available: boolean; [key: string]: unknown };
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+  source_revision: SourceRevisionRef;
+  status?: "already_available";
+  task_catalog: TaskCatalogItem[];
+  workspace_state_ref?: string;
+  [key: string]: unknown;
+};
+
 export type AppliedChange = {
   proposal: PublicChangeProposal;
   receipt: CommitReceipt;
@@ -155,6 +173,7 @@ export class SemanticWorkspace {
   private readonly review: ChangeReviewService;
   private readonly runs: RunService;
   private readonly taskContract?: SemanticWorkspaceOptions["taskContract"];
+  private readonly workspaceStateReceipts = new Map<string, string>();
 
   constructor(workspaceRoot: string, options: SemanticWorkspaceOptions = {}) {
     this.files = new WorkspaceFiles(workspaceRoot);
@@ -202,12 +221,35 @@ export class SemanticWorkspace {
 
   async workspaceState(
     input: WorkspaceStateInput & { signal?: AbortSignal } = {},
-  ) {
+  ): Promise<HarnessToolResult<WorkspaceStateData>> {
     const startedAt = Date.now();
     try {
       const { signal, ...publicInput } = input;
       const parsedInput = workspaceStateInputSchema.parse(publicInput);
       const snapshot = await this.files.snapshot(signal);
+      const requestKey = workspaceStateRequestKey(snapshot, parsedInput);
+      const workspaceStateRef = `workspace-state://${sha256(requestKey)}`;
+      const previousReceipt = this.workspaceStateReceipts.get(requestKey);
+      if (previousReceipt)
+        return harnessSuccess({
+          startedAt,
+          revision: revisionVector(snapshot),
+          provenance: [
+            provenance(
+              snapshot.git ? "git" : "filesystem",
+              revisionVector(snapshot),
+            ),
+          ],
+          outcome: "skipped",
+          reason: "WORKSPACE_STATE_ALREADY_AVAILABLE",
+          recommendation:
+            "Use the previously returned workspace state receipt.",
+          data: {
+            status: "already_available",
+            source_revision: snapshot.revision,
+            workspace_state_ref: previousReceipt,
+          } as WorkspaceStateData,
+        });
       const environment = await environmentSpec(this.files, snapshot);
       const languages = Object.entries(
         countBy(
@@ -303,7 +345,9 @@ export class SemanticWorkspace {
               ? {
                   ...this.taskContract,
                   ...(this.taskContract.objective
-                    ? { objective: this.taskContract.objective.slice(0, 1_000) }
+                    ? {
+                        objective: this.taskContract.objective.slice(0, 1_000),
+                      }
                     : {}),
                 }
               : null,
@@ -419,10 +463,20 @@ export class SemanticWorkspace {
           analysis: "exact",
         },
       });
+      Object.assign(response.data, { workspace_state_ref: workspaceStateRef });
+      this.rememberWorkspaceStateReceipt(requestKey, workspaceStateRef);
       return this.references.shorten(response);
     } catch (error) {
       return toolError(error);
     }
+  }
+
+  private rememberWorkspaceStateReceipt(key: string, receipt: string) {
+    this.workspaceStateReceipts.set(key, receipt);
+    while (this.workspaceStateReceipts.size > 100)
+      this.workspaceStateReceipts.delete(
+        this.workspaceStateReceipts.keys().next().value!,
+      );
   }
 
   async searchCode(
@@ -874,7 +928,10 @@ export class SemanticWorkspace {
     context?: { sessionId?: string; toolCallId?: string },
   ) {
     editFilesInputSchema.parse(input);
-    return this.editCode({ edits: input.operations }, context);
+    return this.editCode(
+      { atomicity: input.atomicity, edits: input.operations },
+      context,
+    );
   }
 
   createFile(
@@ -1371,9 +1428,7 @@ function changedSymbolNames(
 function memoryValidation(status: ValidationStatus) {
   if (status === "passed") return "passed" as const;
   if (status === "failed") return "failed" as const;
-  if (status === "validator_unavailable") return "pending" as const;
-  if (status === "not_supported") return "not_supported" as const;
-  return "not_run" as const;
+  return "not_supported" as const;
 }
 
 function editArtifactRefs(result: EditCodeOutcome) {
@@ -1593,4 +1648,15 @@ function selectWorkspaceStateData<T extends Record<string, unknown>>(
   return Object.fromEntries(
     include.flatMap((key) => (key in data ? [[key, data[key]]] : [])),
   ) as T;
+}
+
+function workspaceStateRequestKey(
+  snapshot: WorkspaceSnapshot,
+  input: WorkspaceStateInput,
+) {
+  return JSON.stringify({
+    source_revision: snapshot.revision,
+    include: [...(input.include ?? [])].sort(),
+    budget: input.budget ?? null,
+  });
 }

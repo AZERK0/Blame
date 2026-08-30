@@ -300,19 +300,23 @@ function collectPathValues(value: unknown, depth: number): string[] {
 }
 
 function causeKind(code: string, message: string): CauseKind {
-  if (/INVALID_INPUT/u.test(code)) return "invalid_input";
+  if (/CANCEL|ABORT/u.test(code) || /cancel|abort/iu.test(message))
+    return "cancelled";
+  if (/INVALID_INPUT/u.test(code)) return "invalid_direct_input";
   if (/STALE|CONFLICT|AMBIGUOUS|PRECONDITION|TARGET/u.test(code))
-    return "conflict";
-  if (/UNSUPPORTED|UNAVAILABLE/u.test(code)) return "capability_unavailable";
-  if (/POLICY|DENIED/u.test(code)) return "policy";
+    return "stale_target";
+  if (/UNSUPPORTED/u.test(code)) return "unsupported_capability";
+  if (/POLICY|DENIED/u.test(code)) return "invalid_direct_input";
   if (
-    /EXECUTION|INFRASTRUCTURE|IO/u.test(code) ||
+    /EXECUTION|INFRASTRUCTURE|IO|NETWORK|STORE|PACKAGE_MANAGER_UNAVAILABLE/u.test(
+      code,
+    ) ||
     /runtime|executor|network/iu.test(message)
   )
-    return "infrastructure";
-  if (/FAILED|VALIDATION|PARSE|TYPECHECK|TEST/u.test(code))
-    return "code_failure";
-  return "internal";
+    return "infrastructure_failure";
+  if (/UNAVAILABLE/u.test(code)) return "unsupported_capability";
+  if (/FAILED|VALIDATION|PARSE|TYPECHECK|TEST/u.test(code)) return "code_error";
+  return "infrastructure_failure";
 }
 
 function recoveryCondition(

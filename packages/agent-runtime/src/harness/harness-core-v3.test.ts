@@ -82,6 +82,10 @@ test("Cline adapter publishes domain blocks as transport successes", async () =>
       "3",
     );
     assert.equal((result as { outcome?: string }).outcome, "blocked");
+    assert.equal(
+      (result as { issue?: { kind?: string } }).issue?.kind,
+      "invalid_direct_input",
+    );
     assert.equal(Object.hasOwn(result as object, "isError"), false);
   } finally {
     await rm(root, { recursive: true, force: true });

@@ -113,7 +113,7 @@ type EditCodeOutcomePayload =
         status: ValidationStatus;
         validator: string | null;
         files: ContentValidation[];
-        parse: "passed" | "pending" | "skipped" | "not_supported";
+        parse: "passed" | "failed" | "unsupported";
         diagnostics: StoredChangeProposal["diagnostics"];
       };
       partial?: boolean;
@@ -252,7 +252,12 @@ export class EditService {
     const snapshot = await this.files.snapshot();
     const preparationSourceRevision = snapshot.revision.source_revision_id;
     const translated = await this.translate(input.edits, snapshot);
-    const groups = createEditGroups(input.edits, translated.operations);
+    const atomicity = input.atomicity ?? "all";
+    const groups = createEditGroups(
+      input.edits,
+      translated.operations,
+      atomicity,
+    );
     const prepared: PreparedEditGroup[] = [];
     for (const [index, group] of groups.entries())
       prepared.push(
@@ -272,7 +277,7 @@ export class EditService {
       });
     return {
       ...combineEditGroupResults(results),
-      ...editBatchContract(results, preparationSourceRevision),
+      ...editBatchContract(results, preparationSourceRevision, atomicity),
     };
   }
 
@@ -813,16 +818,8 @@ function failedValidationIndexes(
   return failedChangeOperationIndexes(operations, rejectedPaths);
 }
 
-function rejectedValidation({ path, status }: ContentValidation) {
-  return (
-    status === "failed" ||
-    (status === "not_supported" && requiresValidatedEdit(path))
-  );
-}
-
-function requiresValidatedEdit(path: string) {
-  const capability = languageCapability(path);
-  return capability.semanticEditing || capability.structuredEditing;
+function rejectedValidation({ status }: ContentValidation) {
+  return status === "failed";
 }
 
 function appliedResult(input: {
@@ -866,11 +863,9 @@ function appliedResult(input: {
       parse:
         status === "passed"
           ? "passed"
-          : status === "validator_unavailable"
-            ? "pending"
-            : status === "not_supported"
-              ? "not_supported"
-              : "skipped",
+          : status === "unsupported"
+            ? "unsupported"
+            : "failed",
       diagnostics: input.proposal.diagnostics,
     },
     diff_artifact_ref: input.proposal.diff_artifact.ref,

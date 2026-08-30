@@ -45,7 +45,7 @@ export type EditGroupResult = {
 };
 
 export type EditBatchContract = {
-  atomicity: "path_dependency_groups";
+  atomicity: "all" | "independent_groups";
   preparation_source_revision: string;
   groups: CoreEditGroupReceipt[];
   committed_revisions: string[];
@@ -65,7 +65,10 @@ type NoChangeGroupResult = {
 export function createEditGroups(
   edits: EditCodeOperation[],
   resolvedOperations?: Array<ChangeOperation | undefined>,
+  atomicity: EditBatchContract["atomicity"] = "all",
 ) {
+  if (atomicity === "all")
+    return [createAtomicEditGroup(edits, resolvedOperations)];
   const groups: EditGroup[] = [];
   for (const [index, edit] of edits.entries()) {
     const resolved = resolvedOperations?.[index];
@@ -109,6 +112,7 @@ export function combineEditGroupResults(
 export function editBatchContract(
   results: EditGroupResult[],
   preparationSourceRevision: string,
+  atomicity: EditBatchContract["atomicity"],
 ): EditBatchContract {
   let currentRevision = preparationSourceRevision;
   const groups = results.map(({ group, result }) => {
@@ -117,12 +121,29 @@ export function editBatchContract(
     return receipt;
   });
   return {
-    atomicity: "path_dependency_groups",
+    atomicity,
     preparation_source_revision: preparationSourceRevision,
     groups,
     committed_revisions: groups
       .filter((group) => group.outcome === "applied")
       .map((group) => group.source_revision_after),
+  };
+}
+
+function createAtomicEditGroup(
+  edits: EditCodeOperation[],
+  resolvedOperations?: Array<ChangeOperation | undefined>,
+): EditGroup {
+  const paths = edits.flatMap((edit, index) => {
+    const resolved = resolvedOperations?.[index];
+    return resolved
+      ? changeOperationPaths(resolved)
+      : operationPaths(edit, index);
+  });
+  return {
+    edits: [...edits],
+    indexes: edits.map((_, index) => index),
+    paths: new Set(paths),
   };
 }
 
@@ -425,9 +446,8 @@ function combinedValidation(
 
 function validationParseStatus(status: ValidationStatus) {
   if (status === "passed") return "passed" as const;
-  if (status === "validator_unavailable") return "pending" as const;
-  if (status === "not_supported") return "not_supported" as const;
-  return "skipped" as const;
+  if (status === "unsupported") return "unsupported" as const;
+  return "failed" as const;
 }
 
 function uniqueStrings(values: string[]) {

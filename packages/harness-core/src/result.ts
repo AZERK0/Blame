@@ -29,13 +29,12 @@ export type SatisfactionStatus =
   | "not_applicable";
 
 export type CauseKind =
-  | "invalid_input"
-  | "conflict"
-  | "code_failure"
-  | "capability_unavailable"
-  | "infrastructure"
-  | "policy"
-  | "internal";
+  | "code_error"
+  | "unsupported_capability"
+  | "invalid_direct_input"
+  | "stale_target"
+  | "infrastructure_failure"
+  | "cancelled";
 
 export type RecoveryCondition =
   | { condition: "never" }

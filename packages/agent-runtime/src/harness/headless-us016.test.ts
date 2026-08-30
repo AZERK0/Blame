@@ -59,7 +59,7 @@ test("US-016 exposes an unavailable dependency executor before any mutation", as
     assert.equal(mutation.available, false);
     assert.equal(
       mutation.reason,
-      "DEPENDENCY_EXECUTOR_UNAVAILABLE:allowlist proxy unavailable",
+      "DEPENDENCY_NETWORK_UNAVAILABLE:allowlist proxy unavailable",
     );
     assert.equal(
       state.data.task_catalog.some(({ kind }) => kind === "dependencies"),
@@ -91,8 +91,15 @@ test("US-016 exposes an unavailable dependency executor before any mutation", as
     assert.deepEqual(Object.keys(recordValue(mutationResult.data)).sort(), [
       "dependencies_already_available",
       "reason",
+      "retryable",
       "strategies",
+      "unavailable_code",
     ]);
+    assert.equal(
+      recordValue(mutationResult.data).unavailable_code,
+      "DEPENDENCY_NETWORK_UNAVAILABLE",
+    );
+    assert.equal(recordValue(mutationResult.data).retryable, false);
     assert.deepEqual(recordValue(mutationResult.data).strategies, [
       "reuse_existing_dependency",
       "implement_without_dependency",

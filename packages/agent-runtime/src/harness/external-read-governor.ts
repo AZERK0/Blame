@@ -35,9 +35,9 @@ type ExternalReadDecision =
     }
   | { action: "return"; result: unknown };
 
-const maximumExternalResultBytes = 16_000;
-const externalReceiptChunkBytes = 12_000;
-const externalResultContentBudgetBytes = 14_000;
+const maximumExternalResultBytes = 8_000;
+const externalReceiptChunkBytes = 6_000;
+const externalResultContentBudgetBytes = 7_000;
 type AgentHooks = NonNullable<CoreSessionConfig["hooks"]>;
 type AfterToolContext = Parameters<NonNullable<AgentHooks["afterTool"]>>[0];
 type BeforeToolContext = Parameters<NonNullable<AgentHooks["beforeTool"]>>[0];

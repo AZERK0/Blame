@@ -49,6 +49,7 @@ const managedManifestPaths = [
   manifestPath,
 ];
 const agentRuntimePackagePath = path.resolve("../agent-runtime/package.json");
+const cloudRunnerDockerfilePath = path.resolve("../sandbox-runner/Dockerfile");
 
 test("accepts Windows runtime rootfs specs with optional prebaked metadata", async () => {
   const manifest = JSON.parse(
@@ -87,6 +88,28 @@ test("keeps managed runtime Cline SDK versions aligned with agent runtime", asyn
     ) as WindowsRuntimeManifest;
     assert.equal(manifest.clineSdkVersion, expectedVersion);
   }
+});
+
+test("keeps the cloud runner Cline SDK version aligned with agent runtime", async () => {
+  const packageJson = JSON.parse(
+    await readFile(agentRuntimePackagePath, "utf8"),
+  );
+  const expectedVersion = normalizePackageVersion(
+    packageJson.dependencies?.["@cline/sdk"],
+  );
+  const dockerfile = await readFile(cloudRunnerDockerfilePath, "utf8");
+
+  assert.ok(expectedVersion);
+  assert.match(
+    dockerfile,
+    new RegExp(`ARG BLAME_CLINE_SDK_VERSION=${expectedVersion}`),
+  );
+  assert.match(dockerfile, /"@cline\/sdk@\$\{BLAME_CLINE_SDK_VERSION\}"/);
+  assert.match(dockerfile, /"@cline\/core@\$\{BLAME_CLINE_SDK_VERSION\}"/);
+  assert.match(
+    dockerfile,
+    /BLAME_CLINE_SDK_VERSION=\$\{BLAME_CLINE_SDK_VERSION\}/,
+  );
 });
 
 test("keeps managed runtime agent revisions aligned", async () => {

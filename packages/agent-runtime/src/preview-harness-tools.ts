@@ -1,5 +1,7 @@
 import type { CoreSessionConfig } from "@cline/sdk";
 import { createMcpTools } from "@cline/sdk";
+import { sha256 } from "./harness/protocol.js";
+import { WorkspaceFiles } from "./harness/workspace-files.js";
 
 type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
 type ToolContext = Parameters<AgentTool["execute"]>[1];
@@ -125,7 +127,11 @@ export async function previewDevtoolsMcpTools(
 }
 
 function mcpAvailable(options: PreviewToolRuntimeOptions) {
-  return Boolean(options.previewDevtoolsCall && options.previewDevtoolsTools);
+  return Boolean(
+    options.previewDevtools &&
+    options.previewDevtoolsCall &&
+    options.previewDevtoolsTools,
+  );
 }
 
 function previewMcpProvider(
@@ -141,13 +147,86 @@ function previewMcpProvider(
       context?: ToolContext;
       toolName: string;
     }) {
-      return options.previewDevtoolsCall!({
+      const signal = request.context?.signal;
+      const target = await options.previewDevtools?.({
         ...preview,
-        arguments: request.arguments,
-        signal: request.context?.signal,
-        toolName: request.toolName,
+        signal,
+        waitFor: "none",
       });
+      if (!target || target.status !== "ready" || !target.available)
+        return previewNotReadyResult(target);
+      const evidence = await currentPreviewEvidence(preview, target);
+      if (evidence.status !== "passed")
+        return previewEvidenceUnavailableResult();
+      const result = await callPreviewTool(options, preview, request, signal);
+      return attachPreviewEvidence(result, evidence);
     },
+  };
+}
+
+async function callPreviewTool(
+  options: PreviewToolRuntimeOptions,
+  preview: PreviewRuntimeContext,
+  request: { arguments?: Record<string, unknown>; toolName: string },
+  signal?: AbortSignal,
+) {
+  const input = {
+    ...preview,
+    arguments: request.arguments,
+    signal,
+    toolName: request.toolName,
+  };
+  try {
+    return await options.previewDevtoolsCall!(input);
+  } catch (error) {
+    if (!transientDevtoolsFailure(error) || signal?.aborted) throw error;
+    return options.previewDevtoolsCall!(input);
+  }
+}
+
+function previewNotReadyResult(target: PreviewDevtoolsTarget | undefined) {
+  return {
+    content: [
+      {
+        type: "text",
+        text: target?.message ?? "Preview readiness evidence is unavailable.",
+      },
+    ],
+    isError: false,
+    outcome: "unavailable",
+    reason: target?.reason ?? "PREVIEW_NOT_READY",
+    retryable: target?.status === "starting",
+  };
+}
+
+function previewEvidenceUnavailableResult() {
+  return {
+    content: [
+      {
+        type: "text",
+        text: "The current workspace revision could not be bound to preview readiness.",
+      },
+    ],
+    isError: false,
+    outcome: "unavailable",
+    reason: "PREVIEW_REVISION_EVIDENCE_UNAVAILABLE",
+    retryable: false,
+  };
+}
+
+function transientDevtoolsFailure(error: unknown) {
+  return /econnreset|navigation|session closed|target closed|timeout|temporar/iu.test(
+    errorMessage(error),
+  );
+}
+
+function attachPreviewEvidence(result: unknown, evidence: unknown) {
+  if (!result || typeof result !== "object" || Array.isArray(result))
+    return result;
+  const value = result as Record<string, unknown>;
+  return {
+    ...value,
+    _meta: { ...recordValue(value._meta), previewReadyEvidence: evidence },
   };
 }
 
@@ -192,13 +271,37 @@ async function executePreviewDevtoolsTool(
     previewDevtoolsInput(input, preview, signal),
   );
   if (!target) throw new Error("Preview state is unavailable.");
+  const previewReadyEvidence = await currentPreviewEvidence(preview, target);
   return {
     ...target,
+    preview_ready_evidence: previewReadyEvidence,
     recommendation: previewDevtoolsRecommendation(target.status),
     usage: target.available
       ? "Use the preview_devtools__* tools directly; Blame scopes every call to this preview page."
       : undefined,
   };
+}
+
+async function currentPreviewEvidence(
+  preview: PreviewRuntimeContext,
+  target: PreviewDevtoolsTarget,
+) {
+  try {
+    const revision = (await new WorkspaceFiles(preview.worktree).snapshot())
+      .revision.source_revision_id;
+    const passed = target.status === "ready" && target.available;
+    return {
+      status: passed ? ("passed" as const) : ("unavailable" as const),
+      source_revision_id: revision,
+      evidence_ref: `preview-ready://${sha256(`${revision}\0${target.status}`)}`,
+    };
+  } catch {
+    return {
+      status: "unavailable" as const,
+      source_revision_id: undefined,
+      evidence_ref: `preview-ready://${sha256(`${preview.worktree}\0unavailable`)}`,
+    };
+  }
 }
 
 function previewDevtoolsInput(
