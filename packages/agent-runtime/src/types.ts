@@ -701,6 +701,13 @@ export type ExecutionTelemetryCohorts = {
   taskComplexityBucket: "small" | "medium" | "large";
 };
 
+export type AgentDonePayload = {
+  completion?: import("@blame/harness-core").CompletionDecision;
+  text?: string;
+  verified?: boolean;
+  [key: string]: unknown;
+};
+
 export type AgentEvent = {
   type:
     | "text"

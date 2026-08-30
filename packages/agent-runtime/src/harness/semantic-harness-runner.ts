@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { stdin, stdout } from "node:process";
 import {
-  executeSemanticWorkspaceRequest,
+  executeCanonicalSemanticWorkspaceRequest,
   type SemanticWorkspaceExecutionRequest,
 } from "./semantic-executor.js";
 
@@ -12,7 +12,7 @@ try {
   const request = JSON.parse(
     Buffer.concat(chunks).toString("utf8"),
   ) as SemanticWorkspaceExecutionRequest;
-  const result = await executeSemanticWorkspaceRequest(request);
+  const result = await executeCanonicalSemanticWorkspaceRequest(request);
   stdout.write(`${JSON.stringify(result)}\n`);
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);

@@ -1,4 +1,11 @@
 import {
+  resolveSemanticCandidate,
+  semanticRebasePolicyVersion,
+  type SemanticEvidenceClass,
+  type SemanticResolutionInput,
+  type SemanticResolutionReceipt,
+} from "@blame/harness-core";
+import {
   currentNodeCandidates,
   materializeSymbol,
   normalizedSignature,
@@ -22,7 +29,7 @@ export type ConflictCandidate = {
   symbolKind: string;
   qualifiedName?: string;
   line: number;
-  confidence: number;
+  score: number;
   excerpt: string;
   target_ref: string;
   kind: string;
@@ -35,7 +42,8 @@ export type ResolvedSemanticReference = {
   reference: string;
   rebased: boolean;
   strategy: string;
-  confidence: number;
+  receipt: SemanticResolutionReceipt;
+  score: number;
 };
 
 type DecodedTarget = {
@@ -65,7 +73,7 @@ export class SemanticReferenceResolver {
       | { node_ref: string }
       | { match_ref: string },
     snapshot: WorkspaceSnapshot,
-    options: { allowRebase?: boolean } = {},
+    options: ResolveOptions = {},
   ): Promise<ResolvedSemanticReference> {
     const decoded = decodeTarget(target);
     const allowRebase =
@@ -86,7 +94,7 @@ export class SemanticReferenceResolver {
         [],
       );
     const candidates = await this.rebaseCandidates(decoded, snapshot);
-    return selectCandidate(candidates);
+    return selectCandidate(candidates, decoded, snapshot, options);
   }
 
   private rebaseCandidates(
@@ -124,7 +132,19 @@ export class SemanticReferenceResolver {
       reference: encodeHandle(decoded.scheme, current),
       rebased: !unchangedBlob,
       strategy: unchangedBlob ? "unchanged_blob" : "original_position",
-      confidence: 1,
+      receipt: {
+        policy: semanticRebasePolicyVersion,
+        resolution: unchangedBlob ? "exact" : "automatically_rebased",
+        evidence_classes: [
+          unchangedBlob ? "exact_digest" : "exact_original_position",
+        ],
+        score: 1,
+        original_path: handle.path,
+        resolved_path: handle.path,
+        requested_source_revision_id: handle.revision,
+        current_source_revision_id: snapshot.revision.source_revision_id,
+      },
+      score: 1,
     } satisfies ResolvedSemanticReference;
   }
 
@@ -304,17 +324,33 @@ function scoreSymbol(
 
 function selectCandidate(
   candidates: ScoredCandidate[],
+  decoded: DecodedTarget,
+  snapshot: WorkspaceSnapshot,
+  options: ResolveOptions,
 ): ResolvedSemanticReference {
-  const selected = candidates[0];
-  const runnerUp = candidates[1];
-  if (!selected || selected.score < 0.58)
+  const decision = resolveSemanticCandidate({
+    mode: options.mode ?? "read",
+    operation: options.operation ?? "inspect",
+    requested_source_revision_id: decoded.handle.revision,
+    current_source_revision_id: snapshot.revision.source_revision_id,
+    original_path: decoded.handle.path,
+    language_id:
+      decoded.handle.language ?? semanticLanguageName(decoded.handle.path),
+    syntax_kind: decoded.handle.kind ?? "unknown",
+    candidates: candidates.map(coreCandidate),
+    cas_generated: options.casGenerated ?? false,
+    post_validation_available: options.postValidationAvailable ?? false,
+  });
+  const selected = decision.candidate
+    ? candidates.find(
+        (candidate) => candidate.reference === decision.candidate!.candidate_id,
+      )
+    : undefined;
+  if (!selected)
     throw new SemanticResolutionConflict(
-      "The semantic target is gone.",
-      candidates.map(publicCandidate),
-    );
-  if (runnerUp && selected.score - runnerUp.score < 0.1)
-    throw new SemanticResolutionConflict(
-      "Several semantic targets remain plausible.",
+      decision.reason_code === "AMBIGUOUS_TARGET"
+        ? "Several semantic targets remain plausible."
+        : "The semantic target could not be safely resolved.",
       candidates.map(publicCandidate),
     );
   return {
@@ -323,8 +359,41 @@ function selectCandidate(
     reference: selected.reference,
     rebased: true,
     strategy: selected.strategy,
-    confidence: selected.score,
+    receipt: decision.receipt,
+    score: selected.score,
   };
+}
+
+type ResolveOptions = {
+  allowRebase?: boolean;
+  mode?: SemanticResolutionInput["mode"];
+  operation?: SemanticResolutionInput["operation"];
+  casGenerated?: boolean;
+  postValidationAvailable?: boolean;
+};
+
+function coreCandidate(candidate: ScoredCandidate) {
+  return {
+    candidate_id: candidate.reference,
+    path: candidate.path,
+    language_id:
+      candidate.handle.language ?? semanticLanguageName(candidate.path),
+    syntax_kind: candidate.handle.kind ?? "unknown",
+    score: candidate.score,
+    evidence_classes: evidenceClasses(candidate.strategy),
+  };
+}
+
+function evidenceClasses(strategy: string): SemanticEvidenceClass[] {
+  if (/symbol_fingerprint/u.test(strategy))
+    return ["unique_symbol_fingerprint"];
+  if (/qualified_name_signature/u.test(strategy))
+    return ["unique_qualified_name_and_signature"];
+  if (/node_fingerprint/u.test(strategy))
+    return ["unique_body_and_ancestry_fingerprint"];
+  if (/text_match/u.test(strategy)) return ["unique_lexical_match"];
+  if (strategy === "neighbor_ordinal") return ["neighbor_and_ordinal_only"];
+  return ["bounded_similarity_only"];
 }
 
 function candidatePaths(handle: HandlePayload, snapshot: WorkspaceSnapshot) {
@@ -359,7 +428,7 @@ function conflictCandidate(input: {
     symbolKind: input.kind,
     ...(input.qualifiedName ? { qualifiedName: input.qualifiedName } : {}),
     line: input.lineRange[0],
-    confidence: Number(input.score.toFixed(3)),
+    score: Number(input.score.toFixed(3)),
     excerpt,
     target_ref: input.reference,
     kind: input.kind,

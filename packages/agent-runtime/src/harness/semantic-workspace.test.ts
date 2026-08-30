@@ -23,7 +23,7 @@ import { semanticWorkspaceTools } from "./cline-tools.js";
 import { HarnessCostGovernor } from "./cost-governor.js";
 import {
   managedSemanticWorkspaceExecutor,
-  type SemanticWorkspaceExecutor,
+  type CanonicalSemanticWorkspaceExecutor,
 } from "./semantic-executor.js";
 import { SemanticWorkspace } from "./semantic-workspace.js";
 import {
@@ -919,7 +919,7 @@ test("edit_code returns candidates without writing an ambiguous target", async (
         true,
       );
       assert.equal(
-        result.data.candidates.every((candidate) => "confidence" in candidate),
+        result.data.candidates.every((candidate) => "score" in candidate),
         true,
       );
     }
@@ -2314,7 +2314,7 @@ test("Cline adapter applies output budgets after the complete harness envelope",
 
 test("managed semantic execution is limited to remote local-container sessions", async () => {
   const requests: unknown[] = [];
-  const executor: SemanticWorkspaceExecutor = async (request) => {
+  const executor: CanonicalSemanticWorkspaceExecutor = async (request) => {
     requests.push(request);
     return { status: "success" } as never;
   };

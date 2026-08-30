@@ -76,6 +76,7 @@ export type CompletionState = {
   coveredChanges: ChangeReceipt[];
   requiredValidation?: DeclaredTask;
   latestValidation?: RunReceipt;
+  validations: RunReceipt[];
 };
 
 export type RuntimeContinuity = {
@@ -1866,7 +1867,12 @@ function completionStateFromMemory(
 ): CompletionState {
   const startedAt = memory.activeTurn?.startedAt;
   const dirtyChanges = startedAt ? turnChanges(memory, startedAt) : [];
-  if (!dirtyChanges.length) return { dirtyChanges, coveredChanges: [] };
+  const validations = memory.validationState.checks.map((check) => ({
+    ...check,
+    terminal: validationTerminalForCheck(check),
+  }));
+  if (!dirtyChanges.length)
+    return { dirtyChanges, coveredChanges: [], validations };
   const coveredChanges = coveredTurnChanges(
     dirtyChanges,
     memory.validationState,
@@ -1889,7 +1895,16 @@ function completionStateFromMemory(
           },
         }
       : {}),
+    validations,
   };
+}
+
+function validationTerminalForCheck(
+  check: ValidationSummary["checks"][number],
+): RunReceipt["terminal"] {
+  if (check.status === "passed") return "passed";
+  if (check.status === "failed") return "failed";
+  return "unknown";
 }
 
 function coveredTurnChanges(

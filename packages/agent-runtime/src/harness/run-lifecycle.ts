@@ -1,14 +1,25 @@
-export type RunTerminalState =
-  | "cancelled"
-  | "failed"
-  | "max_iterations"
-  | "succeeded";
+import {
+  ExecutionLifecycle,
+  completionLifecycleTerminal,
+  type CompletionDecision,
+  type ExecutionLifecycleState,
+  type ExecutionTerminalReason,
+  type ExecutionTerminalState,
+} from "@blame/harness-core";
 
-export type RunLifecycleState =
-  | "running"
-  | "stopping"
-  | "termination_pending"
-  | RunTerminalState;
+export type RunTerminalState =
+  | ExecutionTerminalState
+  | "max_iterations"
+  | "mistake_limit";
+export type RunLifecycleState = ExecutionLifecycleState;
+
+export function completionAwareTerminalState(
+  requested: RunTerminalState,
+  completion: CompletionDecision | undefined,
+): RunTerminalState {
+  if (requested !== "succeeded" || !completion) return requested;
+  return completionLifecycleTerminal(completion);
+}
 
 export type RunLifecycleSnapshot = {
   execution_id: string;
@@ -18,64 +29,78 @@ export type RunLifecycleSnapshot = {
   state: RunLifecycleState;
   stop_requested_at?: string;
   terminal_at?: string;
+  terminal_reason?: ExecutionTerminalReason;
+  completion?: CompletionDecision;
+  sequence: number;
 };
 
-type MutableRunLifecycle = RunLifecycleSnapshot;
+type RunRecord = {
+  lifecycle: ExecutionLifecycle;
+  postStopEvents: number;
+  postStopTokens: number;
+  sessionId: string;
+};
 
 export class RunLifecycleRegistry {
-  private readonly runs = new Map<string, MutableRunLifecycle>();
+  private readonly runs = new Map<string, RunRecord>();
 
   begin(sessionId: string, executionId: string) {
     const current = this.runs.get(sessionId);
-    if (current?.execution_id === executionId) return snapshot(current);
-    if (current && !terminalState(current.state)) return snapshot(current);
-    const run: MutableRunLifecycle = {
-      execution_id: executionId,
-      post_stop_events: 0,
-      post_stop_tokens: 0,
-      session_id: sessionId,
-      state: "running",
-    };
+    if (current?.lifecycle.executionId === executionId)
+      return snapshot(current);
+    if (current && !terminalState(current.lifecycle.snapshot().state))
+      return snapshot(current);
+    const lifecycle = new ExecutionLifecycle(executionId);
+    lifecycle.start();
+    lifecycle.running();
+    const run = { lifecycle, postStopEvents: 0, postStopTokens: 0, sessionId };
     this.runs.set(sessionId, run);
     return snapshot(run);
   }
 
   stopping(sessionId: string, executionId: string) {
-    const run = this.current(sessionId, executionId);
-    if (!run || run.state !== "running") return false;
-    run.state = "stopping";
-    run.stop_requested_at = new Date().toISOString();
-    return true;
+    return (
+      this.current(sessionId, executionId)?.lifecycle.requestStop() ?? false
+    );
   }
 
   terminationPending(sessionId: string, executionId: string) {
-    const run = this.current(sessionId, executionId);
-    if (!run || run.state !== "stopping") return false;
-    run.state = "termination_pending";
-    return true;
+    return (
+      this.current(sessionId, executionId)?.lifecycle.terminationPending() ??
+      false
+    );
   }
 
-  finish(sessionId: string, executionId: string, state: RunTerminalState) {
+  finish(
+    sessionId: string,
+    executionId: string,
+    state: RunTerminalState,
+    completion?: CompletionDecision,
+    reason: ExecutionTerminalReason = terminalReason(state),
+  ) {
     const run = this.current(sessionId, executionId);
-    if (!run || terminalState(run.state)) return false;
-    if (run.state === "running") this.stopping(sessionId, executionId);
-    run.state = state;
-    run.terminal_at = new Date().toISOString();
-    return true;
+    if (!run) return false;
+    const terminal: ExecutionTerminalState =
+      state === "max_iterations" || state === "mistake_limit"
+        ? "failed"
+        : state;
+    return run.lifecycle.finish(terminal, reason, completion);
   }
 
   accepts(sessionId: string, executionId: string, tokens = 0) {
     const run = this.current(sessionId, executionId);
     if (!run) return false;
-    if (run.state !== "running") {
-      run.post_stop_events += 1;
-      run.post_stop_tokens += Math.max(0, tokens);
-    }
-    return run.state === "running";
+    if (run.lifecycle.snapshot().state === "running") return true;
+    run.postStopEvents += 1;
+    run.postStopTokens += Math.max(0, tokens);
+    return false;
   }
 
   canInvoke(sessionId: string, executionId: string) {
-    return this.current(sessionId, executionId)?.state === "running";
+    return (
+      this.current(sessionId, executionId)?.lifecycle.snapshot().state ===
+      "running"
+    );
   }
 
   state(sessionId: string) {
@@ -89,14 +114,38 @@ export class RunLifecycleRegistry {
 
   private current(sessionId: string, executionId: string) {
     const run = this.runs.get(sessionId);
-    return run?.execution_id === executionId ? run : undefined;
+    return run?.lifecycle.executionId === executionId ? run : undefined;
   }
 }
 
-function terminalState(value: RunLifecycleState) {
-  return ["cancelled", "failed", "max_iterations", "succeeded"].includes(value);
+function terminalReason(state: RunTerminalState): ExecutionTerminalReason {
+  if (state === "max_iterations") return "max_iterations";
+  if (state === "mistake_limit") return "mistake_limit";
+  if (state === "cancelled") return "user";
+  if (state === "failed") return "code_failure";
+  return "completed";
 }
 
-function snapshot(value: MutableRunLifecycle): RunLifecycleSnapshot {
-  return { ...value };
+function terminalState(value: RunLifecycleState) {
+  return ["cancelled", "failed", "succeeded"].includes(value);
+}
+
+function snapshot(run: RunRecord): RunLifecycleSnapshot {
+  const value = run.lifecycle.snapshot();
+  return {
+    execution_id: value.execution_id,
+    post_stop_events: run.postStopEvents,
+    post_stop_tokens: run.postStopTokens,
+    session_id: run.sessionId,
+    state: value.state,
+    sequence: value.sequence,
+    ...(value.stop_requested_at
+      ? { stop_requested_at: value.stop_requested_at }
+      : {}),
+    ...(value.terminal_at ? { terminal_at: value.terminal_at } : {}),
+    ...(value.terminal_reason
+      ? { terminal_reason: value.terminal_reason }
+      : {}),
+    ...(value.completion ? { completion: value.completion } : {}),
+  };
 }

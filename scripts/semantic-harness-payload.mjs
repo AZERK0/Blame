@@ -18,6 +18,8 @@ const execFileAsync = promisify(execFile);
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const agentRuntimeDir = join(rootDir, "packages/agent-runtime");
 const agentRuntimeDist = join(agentRuntimeDir, "dist");
+const harnessCoreDir = join(rootDir, "packages/harness-core");
+const harnessCoreDist = join(harnessCoreDir, "dist");
 const payloadName = "blame-semantic-harness.tgz";
 const dependencyNames = [
   "@ast-grep/lang-bash",
@@ -33,6 +35,7 @@ const dependencyNames = [
   "execa",
   "fast-glob",
   "isbinaryfile",
+  "jsonc-parser",
   "npm",
   "p-limit",
   "pnpm",
@@ -50,6 +53,7 @@ export async function buildSemanticHarnessPayload({
   runtimeVersion,
 }) {
   await access(join(agentRuntimeDist, "harness/semantic-harness-runner.js"));
+  await access(join(harnessCoreDist, "index.js"));
   const agentPackage = JSON.parse(
     await readFile(join(agentRuntimeDir, "package.json"), "utf8"),
   );
@@ -65,6 +69,7 @@ export async function buildSemanticHarnessPayload({
         !source.endsWith("/cline-tools.js") &&
         !source.endsWith("/cline-tools.js.map"),
     });
+    await stageHarnessCore(staging);
     await writeFile(
       join(staging, "package.json"),
       `${JSON.stringify(
@@ -79,11 +84,14 @@ export async function buildSemanticHarnessPayload({
           engines: { node: ">=22" },
           files: ["harness"],
           dependencies: Object.fromEntries(
-            dependencyNames.map((name) => [
+            ["@blame/harness-core", ...dependencyNames].map((name) => [
               name,
-              agentPackage.dependencies[name],
+              name === "@blame/harness-core"
+                ? "0.0.0"
+                : agentPackage.dependencies[name],
             ]),
           ),
+          bundledDependencies: ["@blame/harness-core"],
         },
         null,
         2,
@@ -118,10 +126,37 @@ export async function buildSemanticHarnessPayload({
 export async function prepareSemanticHarnessPayload(options) {
   await execFileAsync(
     process.platform === "win32" ? "pnpm.cmd" : "pnpm",
+    ["--filter", "@blame/harness-core", "build"],
+    { cwd: rootDir },
+  );
+  await execFileAsync(
+    process.platform === "win32" ? "pnpm.cmd" : "pnpm",
     ["--filter", "@blame/agent-runtime", "build"],
     { cwd: rootDir },
   );
   await buildSemanticHarnessPayload(options);
+}
+
+async function stageHarnessCore(staging) {
+  const destination = join(staging, "node_modules/@blame/harness-core");
+  await mkdir(destination, { recursive: true });
+  await cp(harnessCoreDist, join(destination, "dist"), {
+    recursive: true,
+    filter: (source) =>
+      !source.endsWith(".test.js") &&
+      !source.endsWith(".d.ts") &&
+      !source.endsWith(".map"),
+  });
+  await writeFile(
+    join(destination, "package.json"),
+    `${JSON.stringify({
+      name: "@blame/harness-core",
+      version: "0.0.0",
+      type: "module",
+      exports: { ".": "./dist/index.js" },
+    })}\n`,
+    "utf8",
+  );
 }
 
 export function semanticHarnessPayloadPath(runtimeRoot, platform) {

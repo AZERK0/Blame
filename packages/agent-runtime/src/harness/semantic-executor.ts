@@ -1,3 +1,8 @@
+import { isHarnessResult, type HarnessResult } from "@blame/harness-core";
+import {
+  CanonicalResultMapper,
+  projectCanonicalResultV2,
+} from "./protocol-v3-adapter.js";
 import type { HarnessToolResult } from "./protocol.js";
 import { SemanticWorkspace } from "./semantic-workspace.js";
 
@@ -40,12 +45,15 @@ export type SemanticWorkspaceExecutionRequest = {
   };
   input: unknown;
   taskContract?: {
+    acceptance_criteria?: string[];
+    effect_requirement?: "none" | "source_change";
     session_id?: string;
     story_id?: string;
     objective?: string;
   };
   toolContext?: {
     contextEpoch?: string;
+    executionId?: string;
     sessionId?: string;
     toolCallId?: string;
   };
@@ -58,8 +66,17 @@ export type SemanticWorkspaceExecutor = (
   signal?: AbortSignal,
 ) => Promise<HarnessToolResult<unknown>>;
 
+export type CanonicalSemanticWorkspaceExecutor = (
+  request: SemanticWorkspaceExecutionRequest,
+  signal?: AbortSignal,
+) => Promise<HarnessResult<unknown, unknown>>;
+
+export type SemanticWorkspaceBridgeExecutor =
+  | SemanticWorkspaceExecutor
+  | CanonicalSemanticWorkspaceExecutor;
+
 export function managedSemanticWorkspaceExecutor(
-  executor: SemanticWorkspaceExecutor | undefined,
+  executor: CanonicalSemanticWorkspaceExecutor | undefined,
   execution: SemanticWorkspaceExecutionRequest["execution"],
 ) {
   if (
@@ -71,6 +88,15 @@ export function managedSemanticWorkspaceExecutor(
   }
   return (request: SemanticWorkspaceExecutionRequest, signal?: AbortSignal) =>
     executor({ ...request, execution }, signal);
+}
+
+export function legacySemanticWorkspaceExecutor(
+  executor: SemanticWorkspaceBridgeExecutor,
+): SemanticWorkspaceExecutor {
+  return async (request, signal) => {
+    const result = await executor(request, signal);
+    return isHarnessResult(result) ? projectCanonicalResultV2(result) : result;
+  };
 }
 
 export function localSemanticWorkspaceExecutor(
@@ -88,6 +114,26 @@ export function localSemanticWorkspaceExecutor(
     );
 }
 
+export function canonicalSemanticWorkspaceExecutor(
+  executor: SemanticWorkspaceExecutor,
+  mapper = new CanonicalResultMapper(),
+): CanonicalSemanticWorkspaceExecutor {
+  return async (request, signal) =>
+    mapper.map(
+      await executor(request, signal),
+      canonicalResultContext(request),
+    );
+}
+
+export function localCanonicalSemanticWorkspaceExecutor(
+  workspaceRoot: string,
+  taskContract?: SemanticWorkspaceExecutionRequest["taskContract"],
+) {
+  return canonicalSemanticWorkspaceExecutor(
+    localSemanticWorkspaceExecutor(workspaceRoot, taskContract),
+  );
+}
+
 export async function executeSemanticWorkspaceRequest(
   request: SemanticWorkspaceExecutionRequest,
   signal?: AbortSignal,
@@ -101,6 +147,17 @@ export async function executeSemanticWorkspaceRequest(
     request.input,
     signal,
     request.toolContext,
+  );
+}
+
+export async function executeCanonicalSemanticWorkspaceRequest(
+  request: SemanticWorkspaceExecutionRequest,
+  signal?: AbortSignal,
+) {
+  const mapper = new CanonicalResultMapper();
+  return mapper.map(
+    await executeSemanticWorkspaceRequest(request, signal),
+    canonicalResultContext(request),
   );
 }
 
@@ -168,4 +225,18 @@ function recordInput(input: unknown): Record<string, unknown> {
   return input && typeof input === "object"
     ? (input as Record<string, unknown>)
     : {};
+}
+
+function canonicalResultContext(request: SemanticWorkspaceExecutionRequest) {
+  return {
+    executionId:
+      request.toolContext?.executionId ??
+      request.toolContext?.sessionId ??
+      request.taskContract?.session_id ??
+      "headless-execution",
+    ...(request.toolContext?.toolCallId
+      ? { toolCallId: request.toolContext.toolCallId }
+      : {}),
+    tool: request.tool,
+  };
 }

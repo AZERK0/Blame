@@ -1,10 +1,18 @@
 import {
+  type SemanticResolutionInput,
+  type SemanticResolutionReceipt,
+} from "@blame/harness-core";
+import {
   materializeSymbol,
   parseCode,
   symbolEditRange,
   syntaxBoundaryRange,
 } from "./code-intelligence.js";
-import { ChangeService, NoChangesProposed } from "./change-service.js";
+import {
+  ChangeService,
+  IncompleteRollbackError,
+  NoChangesProposed,
+} from "./change-service.js";
 import { stableJson } from "./change-store.js";
 import {
   aggregateValidationStatus,
@@ -16,8 +24,11 @@ import {
 import {
   combineEditGroupResults,
   createEditGroups,
+  editBatchContract,
   failedChangeOperationIndexes,
   type EditGroupResult,
+  type EditBatchContract,
+  type EditGroup,
   type FailedEditOperation,
   type SkippedEditOperation,
 } from "./edit-batch.js";
@@ -58,11 +69,12 @@ type ResolvedTarget = {
   handle: HandlePayload;
   path: string;
   resolution: "exact" | "automatically_rebased";
+  receipt: SemanticResolutionReceipt;
   strategy: string;
   target: string;
 };
 
-export type EditCodeOutcome =
+type EditCodeOutcomePayload =
   | {
       changed_files: Array<{
         additions: number;
@@ -93,6 +105,7 @@ export type EditCodeOutcome =
       receipt_refs: string[];
       resolution: "exact" | "automatically_rebased";
       semantic_rebase_strategy?: string;
+      semantic_resolution_receipts: SemanticResolutionReceipt[];
       source_revision: string;
       status: "applied";
       new_symbol_refs: string[];
@@ -144,8 +157,19 @@ export type EditCodeOutcome =
       failed_operations?: FailedEditOperation[];
     }
   | {
+      outcome: "conflict";
+      reason: string;
+      recovery_artifact_ref: string;
+      source_revision: string;
+      status: "recovery_required";
+      failed_operation_indexes?: number[];
+      failed_operations?: FailedEditOperation[];
+    }
+  | {
       changed: false;
       outcome: "no_change";
+      postcondition_evidence_ref: string;
+      postcondition_satisfied: true;
       source_revision: string;
       status: "no_change";
     }
@@ -157,12 +181,33 @@ export type EditCodeOutcome =
       failed_operations?: FailedEditOperation[];
     };
 
+export type EditCodeOutcome = EditCodeOutcomePayload &
+  Partial<EditBatchContract>;
+
 type AppliedOutcome = Extract<EditCodeOutcome, { status: "applied" }>;
 type ChangedDetail = {
   file: AppliedOutcome["changed_files"][number];
   symbols: AppliedOutcome["changed_symbols"][number];
 };
 type FileEditOperation = Exclude<EditCodeOperation, { target: unknown }>;
+
+type TranslatedBatch = {
+  errors: Map<number, unknown>;
+  operations: Array<ChangeOperation | undefined>;
+  resolvedTargets: Array<ResolvedTarget | undefined>;
+};
+
+type PreparedEditGroup = {
+  group: EditGroup;
+  input: EditCodeInput;
+  inputDigest: string;
+  receiptKey: string;
+  operations: ChangeOperation[];
+  resolvedTargets: ResolvedTarget[];
+  proposal?: StoredChangeProposal;
+  validations?: ContentValidation[];
+  result?: EditCodeOutcome;
+};
 
 export class EditService {
   private readonly changes: ChangeService;
@@ -198,123 +243,153 @@ export class EditService {
         inputDigest,
       );
       if (existing) return existing;
-      const result = await this.execute(input, receiptKey, inputDigest);
+      const result = await this.execute(input, receiptKey);
       return this.receipts.write(receiptKey, inputDigest, result);
     });
   }
 
-  private async execute(
-    input: EditCodeInput,
-    receiptKey: string,
-    inputDigest: string,
-  ) {
-    const groups = createEditGroups(input.edits);
-    if (groups.length === 1)
-      return this.executeGroup(input, receiptKey, inputDigest);
-    const results: EditGroupResult[] = [];
-    for (const [index, group] of groups.entries()) {
-      const groupInput = { ...input, edits: group.edits };
-      const groupDigest = sha256(stableJson(groupInput));
-      const result = await this.executeGroup(
-        groupInput,
-        `${receiptKey}\0group-${index}`,
-        groupDigest,
+  private async execute(input: EditCodeInput, receiptKey: string) {
+    const snapshot = await this.files.snapshot();
+    const preparationSourceRevision = snapshot.revision.source_revision_id;
+    const translated = await this.translate(input.edits, snapshot);
+    const groups = createEditGroups(input.edits, translated.operations);
+    const prepared: PreparedEditGroup[] = [];
+    for (const [index, group] of groups.entries())
+      prepared.push(
+        await this.prepareGroup(
+          input,
+          group,
+          translated,
+          snapshot,
+          `${receiptKey}\0group-${index}`,
+        ),
       );
-      results.push({ group, result });
-    }
-    return combineEditGroupResults(results);
+    const results: EditGroupResult[] = [];
+    for (const group of prepared)
+      results.push({
+        group: group.group,
+        result: await this.commitPreparedGroup(group),
+      });
+    return {
+      ...combineEditGroupResults(results),
+      ...editBatchContract(results, preparationSourceRevision),
+    };
   }
 
-  private async executeGroup(
-    input: EditCodeInput,
+  private async prepareGroup(
+    batchInput: EditCodeInput,
+    group: EditGroup,
+    translated: TranslatedBatch,
+    snapshot: WorkspaceSnapshot,
     receiptKey: string,
-    inputDigest: string,
-  ) {
-    const blocked = await this.conflicts.blocked(input.edits);
-    const result = blocked
-      ? repeatedConflictResult()
-      : await this.attempt(input, receiptKey, inputDigest);
+  ): Promise<PreparedEditGroup> {
+    const input = { ...batchInput, edits: group.edits };
+    const inputDigest = sha256(stableJson(input));
+    const operations = group.indexes.flatMap((index) => {
+      const operation = translated.operations[index];
+      return operation ? [operation] : [];
+    });
+    const resolvedTargets = group.indexes.flatMap((index) => {
+      const target = translated.resolvedTargets[index];
+      return target ? [target] : [];
+    });
+    const base = {
+      group,
+      input,
+      inputDigest,
+      receiptKey,
+      operations,
+      resolvedTargets,
+    };
+    const failedIndex = group.indexes.find((index) =>
+      translated.errors.has(index),
+    );
+    if (failedIndex !== undefined)
+      return {
+        ...base,
+        result: operationFailure(
+          translated.errors.get(failedIndex),
+          group.indexes.indexOf(failedIndex),
+        ),
+      };
+    if (await this.conflicts.blocked(input.edits))
+      return { ...base, result: repeatedConflictResult() };
+    try {
+      const proposal = await this.proposeEdit(
+        input,
+        snapshot,
+        operations,
+        receiptKey,
+        0,
+      );
+      const validations = await this.validateProposal(proposal);
+      const failure = failedValidation(proposal, validations);
+      return failure
+        ? {
+            ...base,
+            result: {
+              ...failure,
+              failed_operation_indexes: failedValidationIndexes(
+                operations,
+                validations,
+              ),
+            },
+          }
+        : { ...base, proposal, validations };
+    } catch (error) {
+      const result =
+        error instanceof NoChangesProposed
+          ? noChangeResult(snapshot.revision.source_revision_id, inputDigest)
+          : (knownEditFailure(error) ?? messageFailure(errorMessage(error)));
+      return { ...base, result };
+    }
+  }
+
+  private async commitPreparedGroup(prepared: PreparedEditGroup) {
+    const result = prepared.result ?? (await this.applyPreparedGroup(prepared));
     if (result.status === "applied")
-      await this.conflicts.recordApplied(input.edits);
+      await this.conflicts.recordApplied(prepared.input.edits);
     if (result.status === "conflict")
-      await this.conflicts.recordConflict(input.edits);
+      await this.conflicts.recordConflict(prepared.input.edits);
     return result;
   }
 
-  private async attempt(
-    input: EditCodeInput,
-    receiptKey: string,
-    inputDigest: string,
+  private async applyPreparedGroup(
+    prepared: PreparedEditGroup,
   ): Promise<EditCodeOutcome> {
     try {
-      assertNoManagedLockfileEdits(input.edits);
+      const receipt = await this.commitEdit(
+        prepared.proposal!,
+        prepared.receiptKey,
+        prepared.inputDigest,
+      );
+      const newSymbolRefs = await this.newSymbolReferences(
+        prepared.input,
+        prepared.proposal!,
+        receipt.source_revision.source_revision_id,
+      );
+      return appliedResult({
+        attempt: 0,
+        changedDetails: await this.changedDetails(prepared.proposal!),
+        validations: prepared.validations!,
+        proposal: prepared.proposal!,
+        rebased: prepared.resolvedTargets.some(
+          (target) => target.resolution === "automatically_rebased",
+        ),
+        rebaseStrategies: uniqueStrings(
+          prepared.resolvedTargets
+            .filter((target) => target.resolution === "automatically_rebased")
+            .map((target) => target.strategy),
+        ),
+        resolutionReceipts: prepared.resolvedTargets.map(
+          (target) => target.receipt,
+        ),
+        receipt,
+        newSymbolRefs,
+      });
     } catch (error) {
       return knownEditFailure(error) ?? messageFailure(errorMessage(error));
     }
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      try {
-        return await this.applyAttempt(input, receiptKey, inputDigest, attempt);
-      } catch (error) {
-        if (error instanceof NoChangesProposed)
-          return noChangeResult(await this.currentRevision());
-        const known = knownEditFailure(error);
-        if (known) return known;
-        const message = errorMessage(error);
-        if (attempt === 0 && retryableMessage(message)) continue;
-        return messageFailure(message);
-      }
-    }
-    return messageFailure(
-      "The edit could not be resolved on a stable snapshot.",
-    );
-  }
-
-  private async currentRevision() {
-    return (await this.files.snapshot()).revision.source_revision_id;
-  }
-
-  private async applyAttempt(
-    input: EditCodeInput,
-    receiptKey: string,
-    inputDigest: string,
-    attempt: number,
-  ): Promise<EditCodeOutcome> {
-    const snapshot = await this.files.snapshot();
-    const translated = await this.translate(input.edits, snapshot);
-    const proposal = await this.proposeEdit(
-      input,
-      snapshot,
-      translated.operations,
-      receiptKey,
-      attempt,
-    );
-    const validations = await this.validateProposal(proposal);
-    const validationFailure = failedValidation(proposal, validations);
-    if (validationFailure)
-      return {
-        ...validationFailure,
-        failed_operation_indexes: failedValidationIndexes(
-          translated.operations,
-          validations,
-        ),
-      };
-    const receipt = await this.commitEdit(proposal, receiptKey, inputDigest);
-    const changedDetails = await this.changedDetails(proposal);
-    const newSymbolRefs = await this.newSymbolReferences(
-      input,
-      proposal,
-      receipt.source_revision.source_revision_id,
-    );
-    return appliedResult({
-      attempt,
-      changedDetails,
-      validations,
-      proposal,
-      rebased: translated.rebased,
-      rebaseStrategies: translated.rebaseStrategies,
-      receipt,
-      newSymbolRefs,
-    });
   }
 
   private async validateProposal(proposal: StoredChangeProposal) {
@@ -438,26 +513,31 @@ export class EditService {
     edits: EditCodeOperation[],
     snapshot: WorkspaceSnapshot,
   ) {
-    const operations: ChangeOperation[] = [];
-    const rebaseStrategies = new Set<string>();
-    let rebased = false;
+    const operations: Array<ChangeOperation | undefined> = [];
+    const resolvedTargets: Array<ResolvedTarget | undefined> = [];
+    const errors = new Map<number, unknown>();
     for (const [index, edit] of edits.entries()) {
       try {
+        assertNoManagedLockfileEdits([edit]);
         if (hasSemanticTarget(edit)) {
           const translated = await this.translateTarget(edit, snapshot);
-          rebased ||=
-            translated.resolved.resolution === "automatically_rebased";
-          if (translated.resolved.resolution === "automatically_rebased")
-            rebaseStrategies.add(translated.resolved.strategy);
+          resolvedTargets.push(translated.resolved);
           operations.push(translated.operation);
-        } else operations.push(await this.fileOperation(edit));
+        } else {
+          resolvedTargets.push(undefined);
+          operations.push(await this.fileOperation(edit));
+        }
       } catch (error) {
-        if (error instanceof SemanticResolutionConflict)
-          throw new EditOperationResolutionConflict(error, index);
-        throw error;
+        operations.push(undefined);
+        resolvedTargets.push(undefined);
+        errors.set(index, error);
       }
     }
-    return { operations, rebased, rebaseStrategies: [...rebaseStrategies] };
+    return {
+      operations,
+      errors,
+      resolvedTargets,
+    };
   }
 
   private async translateTarget(
@@ -466,7 +546,12 @@ export class EditService {
   ) {
     if ("path" in edit && edit.path)
       assertSemanticEditSupported(this.files.normalizePath(edit.path));
-    const semantic = await this.resolver.resolve(edit.target, snapshot);
+    const semantic = await this.resolver.resolve(edit.target, snapshot, {
+      mode: "write",
+      operation: semanticWriteOperation(edit.operation),
+      casGenerated: true,
+      postValidationAvailable: true,
+    });
     const resolved = resolvedTarget(semantic);
     if (
       "path" in edit &&
@@ -747,6 +832,7 @@ function appliedResult(input: {
   proposal: StoredChangeProposal;
   rebased: boolean;
   rebaseStrategies: string[];
+  resolutionReceipts: SemanticResolutionReceipt[];
   receipt: Awaited<ReturnType<ChangeService["commitResolved"]>>;
   newSymbolRefs: string[];
 }): AppliedOutcome {
@@ -771,6 +857,7 @@ function appliedResult(input: {
     ...(input.rebaseStrategies.length
       ? { semantic_rebase_strategy: input.rebaseStrategies.join("+") }
       : {}),
+    semantic_resolution_receipts: input.resolutionReceipts,
     new_symbol_refs: input.newSymbolRefs,
     validation: {
       status,
@@ -797,9 +884,22 @@ function resolvedTarget(resolved: ResolvedSemanticReference): ResolvedTarget {
     handle: resolved.handle,
     path: resolved.path,
     resolution: resolved.rebased ? "automatically_rebased" : "exact",
+    receipt: resolved.receipt,
     strategy: resolved.strategy,
     target: resolved.reference,
   };
+}
+
+function semanticWriteOperation(
+  operation: Extract<EditCodeOperation, { target: unknown }>["operation"],
+): SemanticResolutionInput["operation"] {
+  if (operation === "replace_body") return "replace_body";
+  if (operation === "replace_signature") return "replace_signature";
+  if (operation === "insert_before" || operation === "insert_after")
+    return "insert_sibling";
+  if (operation === "delete" || operation === "delete_symbol")
+    return "delete_symbol";
+  return "replace_symbol";
 }
 
 function applyCssEdit(
@@ -900,11 +1000,16 @@ function repeatedConflictResult(): EditCodeOutcome {
   };
 }
 
-function noChangeResult(sourceRevision: string): EditCodeOutcome {
+function noChangeResult(
+  sourceRevision: string,
+  inputDigest: string,
+): EditCodeOutcome {
   return {
     status: "no_change",
     outcome: "no_change",
     changed: false,
+    postcondition_evidence_ref: `evidence://postcondition/${sha256(`${sourceRevision}\0${inputDigest}`)}`,
+    postcondition_satisfied: true,
     source_revision: sourceRevision,
   };
 }
@@ -941,18 +1046,33 @@ function assertNoManagedLockfileEdits(edits: EditCodeOperation[]) {
 }
 
 function knownEditFailure(error: unknown) {
-  return conflictFailure(error) ?? unsupportedFailure(error);
+  return (
+    recoveryFailure(error) ??
+    conflictFailure(error) ??
+    unsupportedFailure(error)
+  );
+}
+
+function operationFailure(error: unknown, localIndex: number) {
+  const result = knownEditFailure(error) ?? messageFailure(errorMessage(error));
+  return {
+    ...result,
+    failed_operation_indexes: [localIndex],
+  } as EditCodeOutcome;
+}
+
+function recoveryFailure(error: unknown): EditCodeOutcome | undefined {
+  if (!(error instanceof IncompleteRollbackError)) return undefined;
+  return {
+    status: "recovery_required",
+    outcome: "conflict",
+    reason: error.message,
+    recovery_artifact_ref: error.recovery_artifact_ref,
+    source_revision: error.source_revision_after,
+  };
 }
 
 function conflictFailure(error: unknown): EditCodeOutcome | undefined {
-  if (error instanceof EditOperationResolutionConflict)
-    return {
-      status: "conflict",
-      outcome: "conflict",
-      reason: error.message,
-      candidates: error.candidates,
-      failed_operation_indexes: [error.operationIndex],
-    };
   if (error instanceof SemanticResolutionConflict)
     return conflictResult(error.message, error.candidates);
   if (error instanceof PatchRecoveryConflict)
@@ -1028,23 +1148,8 @@ class UnsupportedEditOperation extends Error {
   }
 }
 
-class EditOperationResolutionConflict extends SemanticResolutionConflict {
-  readonly operationIndex: number;
-
-  constructor(conflict: SemanticResolutionConflict, operationIndex: number) {
-    super(conflict.message, conflict.candidates);
-    this.operationIndex = operationIndex;
-  }
-}
-
 function deniedMessage(message: string) {
   return /outside the workspace|escapes the workspace|policy protects|absolute paths are not allowed|symbolic-link/i.test(
-    message,
-  );
-}
-
-function retryableMessage(message: string) {
-  return /precondition|stale_revision|target bytes changed|file no longer exists/i.test(
     message,
   );
 }
@@ -1053,6 +1158,10 @@ function infrastructureMessage(message: string) {
   return /\b(?:eacces|emfile|enospc|io_error|read-only file system)\b/iu.test(
     message,
   );
+}
+
+function uniqueStrings(values: string[]) {
+  return [...new Set(values)];
 }
 
 function errorMessage(error: unknown) {

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -13,29 +13,33 @@ import {
 } from "./native-completion.js";
 import { harnessError, harnessSuccess } from "./protocol.js";
 import type { SemanticWorkspaceExecutor } from "./semantic-executor.js";
+import { WorkspaceFiles } from "./workspace-files.js";
 
 test("the installed Cline SDK exposes exactly the native terminal contract", async () => {
-  await withCompletion(async ({ root, tool }) => {
-    assert.equal(tool.name, nativeCompletionToolName);
-    assert.equal(tool.lifecycle?.completesRun, true);
-    assert.deepEqual(
-      Object.keys(
-        (tool.inputSchema as { properties: Record<string, unknown> })
-          .properties,
-      ).sort(),
-      ["summary", "verified"],
-    );
-    const result = await tool.execute(
-      { summary: "Natural final response", verified: true },
-      toolContext(),
-    );
-    assert.equal(result, "Natural final response");
-    const memory = new ConversationMemoryStore(root, "session");
-    assert.equal(
-      (await memory.snapshot()).recentDialogue.at(-1)?.content,
-      "Natural final response",
-    );
-  });
+  await withCompletion(
+    async ({ root, tool }) => {
+      assert.equal(tool.name, nativeCompletionToolName);
+      assert.equal(tool.lifecycle?.completesRun, true);
+      assert.deepEqual(
+        Object.keys(
+          (tool.inputSchema as { properties: Record<string, unknown> })
+            .properties,
+        ).sort(),
+        ["summary", "verified"],
+      );
+      const result = await tool.execute(
+        { summary: "Natural final response", verified: true },
+        toolContext(),
+      );
+      assert.equal(result, "Natural final response");
+      const memory = new ConversationMemoryStore(root, "session");
+      assert.equal(
+        (await memory.snapshot()).recentDialogue.at(-1)?.content,
+        "Natural final response",
+      );
+    },
+    { taskContract: { effect_requirement: "none" } },
+  );
 });
 
 test("completion persistence settles before notification and terminal return", async () => {
@@ -50,6 +54,7 @@ test("completion persistence settles before notification and terminal return", a
       assert.equal(persistedBeforeNotification, true);
     },
     {
+      taskContract: { effect_requirement: "none" },
       onComplete: async (_notification, memory) => {
         const snapshot = await memory.snapshot();
         persistedBeforeNotification =
@@ -60,52 +65,58 @@ test("completion persistence settles before notification and terminal return", a
 });
 
 test("Cline recognizes native submit_and_exit and preserves event order", async () => {
-  await withCompletion(async ({ tool }) => {
-    const eventTypes: string[] = [];
-    const runtime = createAgentRuntime({
-      agentId: "contract-agent",
-      completionPolicy: { requireCompletionTool: true },
-      maxIterations: 3,
-      model: {
-        async *stream() {
-          yield { type: "text-delta", text: "Working first." } as const;
-          yield {
-            type: "tool-call-delta",
-            toolCallId: "native-submit",
-            toolName: "submit_and_exit",
-            input: { summary: "Finished naturally.", verified: false },
-          } as const;
-          yield { type: "finish", reason: "tool-calls" } as const;
+  await withCompletion(
+    async ({ tool }) => {
+      const eventTypes: string[] = [];
+      const runtime = createAgentRuntime({
+        agentId: "contract-agent",
+        completionPolicy: { requireCompletionTool: true },
+        maxIterations: 3,
+        model: {
+          async *stream() {
+            yield { type: "text-delta", text: "Working first." } as const;
+            yield {
+              type: "tool-call-delta",
+              toolCallId: "native-submit",
+              toolName: "submit_and_exit",
+              input: { summary: "Finished naturally.", verified: false },
+            } as const;
+            yield { type: "finish", reason: "tool-calls" } as const;
+          },
         },
-      },
-      systemPrompt: "Use the terminal tool.",
-      tools: [tool],
-    });
-    runtime.subscribe((event: AgentEvent) => eventTypes.push(event.type));
-    const result = await runtime.run("Implement the request.");
-    assert.equal(result.status, "completed");
-    assert.equal(result.outputText, "Finished naturally.");
-    const messages = result.messages as Array<{
-      content: Array<{ type: string }>;
-      role: string;
-    }>;
-    const assistantMessage = messages.find(({ role }) => role === "assistant");
-    assert.deepEqual(
-      assistantMessage?.content.map(({ type }) => type),
-      ["text", "tool-call"],
-    );
-    assert.equal(
-      messages.find(({ role }) => role === "tool")?.content[0]?.type,
-      "tool-result",
-    );
-    assert.ok(
-      eventTypes.indexOf("assistant-text-delta") <
-        eventTypes.indexOf("tool-started"),
-    );
-    assert.ok(
-      eventTypes.indexOf("tool-finished") < eventTypes.indexOf("run-finished"),
-    );
-  });
+        systemPrompt: "Use the terminal tool.",
+        tools: [tool],
+      });
+      runtime.subscribe((event: AgentEvent) => eventTypes.push(event.type));
+      const result = await runtime.run("Implement the request.");
+      assert.equal(result.status, "completed");
+      assert.equal(result.outputText, "Finished naturally.");
+      const messages = result.messages as Array<{
+        content: Array<{ type: string }>;
+        role: string;
+      }>;
+      const assistantMessage = messages.find(
+        ({ role }) => role === "assistant",
+      );
+      assert.deepEqual(
+        assistantMessage?.content.map(({ type }) => type),
+        ["text", "tool-call"],
+      );
+      assert.equal(
+        messages.find(({ role }) => role === "tool")?.content[0]?.type,
+        "tool-result",
+      );
+      assert.ok(
+        eventTypes.indexOf("assistant-text-delta") <
+          eventTypes.indexOf("tool-started"),
+      );
+      assert.ok(
+        eventTypes.indexOf("tool-finished") <
+          eventTypes.indexOf("run-finished"),
+      );
+    },
+    { taskContract: { effect_requirement: "none" } },
+  );
 });
 
 test("Cline reports an incomplete run when the budget ends without submit_and_exit", async () => {
@@ -132,22 +143,46 @@ test("Cline reports an incomplete run when the budget ends without submit_and_ex
   });
 });
 
+test("a mutating task contract cannot complete without an effect", async () => {
+  const notifications: NativeCompletionNotification[] = [];
+  await withCompletion(
+    async ({ tool }) => {
+      await assert.rejects(
+        tool.execute(
+          { summary: "No files changed.", verified: true },
+          toolContext(),
+        ),
+        /delivery is unsatisfied/iu,
+      );
+      assert.deepEqual(notifications, []);
+    },
+    {
+      notifications,
+      taskContract: { effect_requirement: "source_change" },
+    },
+  );
+});
+
 test("automatic validation runs once and model verified is not trusted", async () => {
   const calls: unknown[] = [];
   const notifications: NativeCompletionNotification[] = [];
   const validationActivities: NativeValidationActivity[] = [];
   await withCompletion(
-    async ({ memory, tool }) => {
-      await recordPendingChange(memory);
+    async ({ memory, root, tool }) => {
+      await recordPendingChange(memory, root);
       const result = await tool.execute(
         { summary: "Implemented.", verified: false },
         toolContext(),
       );
       assert.equal(result, "Implemented.");
       assert.equal(calls.length, 1);
-      assert.deepEqual(notifications, [
-        { summary: "Implemented.", verified: true },
-      ]);
+      assert.equal(notifications[0]?.summary, "Implemented.");
+      assert.equal(notifications[0]?.verified, false);
+      assert.equal(notifications[0]?.completion.delivery, "satisfied");
+      assert.equal(
+        notifications[0]?.completion.verification,
+        "partially_verified",
+      );
       assert.deepEqual(
         validationActivities.map(({ phase }) => phase),
         ["started", "finished"],
@@ -166,7 +201,7 @@ test("automatic validation runs once and model verified is not trusted", async (
   );
 });
 
-test("automatic validation prefers a declared typecheck over heavier tasks", async () => {
+test("the evidence plan executes every selected declared check", async () => {
   const requests: unknown[] = [];
   await withCompletion(
     async ({ memory, root, tool }) => {
@@ -180,14 +215,16 @@ test("automatic validation prefers a declared typecheck over heavier tasks", asy
           },
         }),
       );
-      await recordPendingChange(memory);
+      await recordPendingChange(memory, root);
       await tool.execute(
         { summary: "Implemented.", verified: true },
         toolContext(),
       );
-      assert.equal(
-        nestedString(requests[0], "input", "task", "task_id"),
-        "typecheck",
+      assert.deepEqual(
+        requests.map((request) =>
+          nestedString(request, "input", "task", "task_id"),
+        ),
+        ["typecheck", "test"],
       );
     },
     {
@@ -199,7 +236,7 @@ test("automatic validation prefers a declared typecheck over heavier tasks", asy
   );
 });
 
-test("repairable validation permits one correction cycle without a retry loop", async () => {
+test("failed validation cannot be converted into a successful second submission", async () => {
   let calls = 0;
   await withCompletion(
     async ({ tool }) => {
@@ -210,11 +247,13 @@ test("repairable validation permits one correction cycle without a retry loop", 
         ),
         /repairable code error/iu,
       );
-      const result = await tool.execute(
-        { summary: "Second submission", verified: true },
-        toolContext(),
+      await assert.rejects(
+        tool.execute(
+          { summary: "Second submission", verified: true },
+          toolContext(),
+        ),
+        /required verification failed/iu,
       );
-      assert.match(String(result), /Validation non confirmée/);
       assert.equal(calls, 1);
     },
     {
@@ -231,7 +270,7 @@ test("a corrected revision receives one new validation and then completes", asyn
   let calls = 0;
   const notifications: NativeCompletionNotification[] = [];
   await withCompletion(
-    async ({ memory, tool }) => {
+    async ({ memory, root, tool }) => {
       await assert.rejects(
         tool.execute(
           { summary: "First submission", verified: true },
@@ -239,14 +278,22 @@ test("a corrected revision receives one new validation and then completes", asyn
         ),
         /repairable code error/iu,
       );
-      await recordPendingChange(memory, "src_11111111111111111111111111111111");
+      await writeFile(
+        join(root, "src/example.ts"),
+        "export const example = 2;\n",
+      );
+      await recordPendingChange(memory, root);
       const result = await tool.execute(
         { summary: "Corrected and complete.", verified: false },
         toolContext(),
       );
       assert.equal(result, "Corrected and complete.");
       assert.equal(calls, 2);
-      assert.equal(notifications.at(-1)?.verified, true);
+      assert.equal(notifications.at(-1)?.verified, false);
+      assert.equal(
+        notifications.at(-1)?.completion.verification,
+        "partially_verified",
+      );
     },
     {
       beforeTool: recordPendingChange,
@@ -308,10 +355,12 @@ test("an interrupted validation does not publish a terminal response", async () 
 test("a persisted successful validation is reused after reconnection", async () => {
   let calls = 0;
   await withCompletion(async ({ memory, root }) => {
-    await recordPendingChange(memory);
+    await recordPendingChange(memory, root);
+    const sourceRevisionId = (await new WorkspaceFiles(root).snapshot())
+      .revision.source_revision_id;
     await memory.recordValidation({
       id: "run://passed",
-      sourceRevisionId: "src_00000000000000000000000000000000",
+      sourceRevisionId,
       status: "passed",
       taskId: "test",
       taskKind: "test",
@@ -343,13 +392,19 @@ type CompletionFixture = {
 async function withCompletion(
   operation: (fixture: CompletionFixture) => Promise<void>,
   options: {
-    beforeTool?(memory: ConversationMemoryStore): Promise<unknown>;
+    beforeTool?(
+      memory: ConversationMemoryStore,
+      root: string,
+    ): Promise<unknown>;
     executor?: SemanticWorkspaceExecutor;
     notifications?: NativeCompletionNotification[];
     onComplete?(
       notification: NativeCompletionNotification,
       memory: ConversationMemoryStore,
     ): Promise<void> | void;
+    taskContract?: {
+      effect_requirement?: "none" | "source_change";
+    };
     validationActivities?: NativeValidationActivity[];
   } = {},
 ) {
@@ -359,12 +414,17 @@ async function withCompletion(
       join(root, "package.json"),
       JSON.stringify({ scripts: { test: "node --test" } }),
     );
+    await mkdir(join(root, "src"));
+    await writeFile(
+      join(root, "src/example.ts"),
+      "export const example = 1;\n",
+    );
     const memory = new ConversationMemoryStore(root, "session");
     await memory.beginRequest({
       currentRequest: "Implement it.",
       userGoal: "Goal",
     });
-    await options.beforeTool?.(memory);
+    await options.beforeTool?.(memory, root);
     const tool = createNativeCompletionTool({
       conversationId: "session",
       executor: options.executor ?? (async () => passedRun()),
@@ -375,6 +435,7 @@ async function withCompletion(
       onValidationActivity: (activity) => {
         options.validationActivities?.push(activity);
       },
+      taskContract: options.taskContract,
       workspaceRoot: root,
     });
     await operation({ memory, root, tool });
@@ -383,10 +444,12 @@ async function withCompletion(
   }
 }
 
-function recordPendingChange(
+async function recordPendingChange(
   memory: ConversationMemoryStore,
-  sourceRevisionId = "src_00000000000000000000000000000000",
+  root: string,
 ) {
+  const sourceRevisionId = (await new WorkspaceFiles(root).snapshot()).revision
+    .source_revision_id;
   return memory.recordChange({
     receiptId: `changeset://${sourceRevisionId}`,
     sourceRevisionId,

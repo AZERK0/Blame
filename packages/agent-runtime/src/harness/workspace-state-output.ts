@@ -156,6 +156,7 @@ function languageCapability(value: Record<string, unknown>) {
     extensions: [] as unknown[],
     level: value.level,
     edit_tool: value.recommendedEditTool,
+    operations: value.operations,
   };
 }
 

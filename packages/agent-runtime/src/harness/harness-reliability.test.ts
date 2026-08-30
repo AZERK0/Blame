@@ -567,12 +567,12 @@ test("edit_files reports independent operations that produced no change", async 
     const result = success(
       await workspace.editFiles({
         operations: [
-          { operation: "replace_file", path: "first.txt", content: "first\n" },
           {
             operation: "create_file",
             path: "created.ts",
             content: "export const created = true;\n",
           },
+          { operation: "replace_file", path: "first.txt", content: "first\n" },
         ],
       }),
     );
@@ -581,12 +581,24 @@ test("edit_files reports independent operations that produced no change", async 
     assert.equal(result.data.partial, true);
     assert.deepEqual(result.data.skipped_operations, [
       {
-        operation_index: 0,
+        operation_index: 1,
         path: "first.txt",
         reason: "NO_CHANGE",
         status: "no_change",
       },
     ]);
+    const groups = result.data.groups;
+    assert.ok(groups);
+    assert.equal(groups[0]?.outcome, "applied");
+    assert.equal(groups[1]?.outcome, "already_satisfied");
+    assert.equal(
+      groups[1]?.source_revision_before,
+      groups[0]?.source_revision_after,
+    );
+    assert.equal(
+      groups[1]?.source_revision_after,
+      groups[0]?.source_revision_after,
+    );
     assert.equal(await exists(join(root, "created.ts")), true);
   });
 });

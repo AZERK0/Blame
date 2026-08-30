@@ -35,6 +35,7 @@ import type {
   RemoteOptions as ClineRemoteOptions,
   SessionUsageSummary,
 } from "@cline/sdk";
+import type { ExecutionTerminalReason } from "@blame/harness-core";
 import {
   buildWorkspaceMetadata,
   createDelegatedAgentConfigProvider,
@@ -68,8 +69,10 @@ import {
 } from "./harness/cline-tools.js";
 import {
   localSemanticWorkspaceExecutor,
+  legacySemanticWorkspaceExecutor,
   managedSemanticWorkspaceExecutor,
-  type SemanticWorkspaceExecutor,
+  type CanonicalSemanticWorkspaceExecutor,
+  type SemanticWorkspaceBridgeExecutor,
 } from "./harness/semantic-executor.js";
 import {
   changeRequestCapsule,
@@ -102,6 +105,7 @@ import { harnessFeatureEnabled } from "./harness/harness-feature-flags.js";
 import { sha256 } from "./harness/protocol.js";
 import {
   RunLifecycleRegistry,
+  completionAwareTerminalState,
   type RunTerminalState,
 } from "./harness/run-lifecycle.js";
 import {
@@ -395,7 +399,7 @@ type RuntimeOptions = PreviewToolRuntimeOptions & {
   openExternalUrl?(url: string): void;
   git?(cwd: string, args: string[]): Promise<string>;
   modelInactivityTimeoutMs?: number;
-  semanticWorkspace?: SemanticWorkspaceExecutor;
+  semanticWorkspace?: CanonicalSemanticWorkspaceExecutor;
   tokenCounter?(input: {
     modelId: string;
     providerId: string;
@@ -410,6 +414,7 @@ type SessionTermination = {
   reason: string;
   sessionId: string;
   terminalState: RunTerminalState;
+  terminalReason?: ExecutionTerminalReason;
 };
 
 type SessionTerminationAttempt =
@@ -454,7 +459,10 @@ export class BlameAgentRuntime {
   private sessionExecutionIds = new Map<string, string>();
   private sessionToolInputs = new Map<string, unknown>();
   private sessionToolSequences = new Map<string, number>();
-  private sessionSubmittedSummaries = new Map<string, string>();
+  private sessionSubmittedSummaries = new Map<
+    string,
+    NativeCompletionNotification
+  >();
   private sessionTerminalDrains = new Map<string, Promise<void>>();
   private sessionTerminations = new Map<
     string,
@@ -785,10 +793,13 @@ export class BlameAgentRuntime {
       const configExtensions = input.enableBuiltInSkills
         ? withConfigExtensions(requestedConfigExtensions, "skills", "plugins")
         : requestedConfigExtensions;
+      const taskObjective = input.taskObjective ?? input.prompt;
       const taskContract = {
+        acceptance_criteria: [taskObjective],
+        effect_requirement: "source_change" as const,
         session_id: sessionId,
         ...(input.storyId ? { story_id: input.storyId } : {}),
-        objective: input.taskObjective ?? input.prompt,
+        objective: taskObjective,
       };
       const semanticExecutor =
         managedSemanticWorkspaceExecutor(this.options.semanticWorkspace, {
@@ -819,7 +830,7 @@ export class BlameAgentRuntime {
         input.nativeCompletion &&
         harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS")
           ? await createInitialTaskBriefing({
-              executor: semanticExecutor,
+              executor: legacySemanticWorkspaceExecutor(semanticExecutor),
               taskContract,
               workspaceRoot: input.workspaceRoot,
             })
@@ -1098,7 +1109,13 @@ export class BlameAgentRuntime {
     const executionId = this.sessionExecutionIds.get(sessionId);
     if (
       !executionId ||
-      this.runLifecycles.finish(sessionId, executionId, "failed")
+      this.runLifecycles.finish(
+        sessionId,
+        executionId,
+        "failed",
+        undefined,
+        "runtime_crash",
+      )
     )
       this.emitSessionError(sessionId, message, error, executionId);
     this.agentTelemetry.fail(sessionId, error);
@@ -1205,6 +1222,7 @@ export class BlameAgentRuntime {
         : "Blame runtime requested termination",
       sessionId,
       terminalState: "cancelled",
+      terminalReason: humanInitiated ? "user" : "shutdown",
     });
   }
 
@@ -1340,6 +1358,7 @@ export class BlameAgentRuntime {
       reason: "Model inactivity timeout",
       sessionId,
       terminalState: "failed",
+      terminalReason: "model_inactivity_timeout",
     });
   }
 
@@ -1512,34 +1531,48 @@ export class BlameAgentRuntime {
       )
     )
       return;
-    if (input.event)
-      await this.handleSessionEvent(input.sessionId, input.event);
-    if (input.terminalState !== "succeeded")
+    const completion = this.sessionSubmittedSummaries.get(
+      input.sessionId,
+    )?.completion;
+    const terminalState = completionAwareTerminalState(
+      input.terminalState,
+      completion,
+    );
+    const event =
+      terminalState === input.terminalState
+        ? input.event
+        : completionFailureEvent(input.sessionId, completion);
+    if (event) await this.handleSessionEvent(input.sessionId, event);
+    if (terminalState !== "succeeded")
       await this.recordInterruptedMemory(input.sessionId);
     const usage = await Promise.resolve()
       .then(() => input.cline.getAccumulatedUsage(input.sessionId))
       .then(normalizeAgentUsageSummary)
       .catch(() => undefined);
     if (usage) this.agentTelemetry.recordUsageSummary(input.sessionId, usage);
-    if (input.event && input.display) this.events?.emit(input.event);
     if (
       !this.runLifecycles.finish(
         input.sessionId,
         input.executionId,
-        input.terminalState,
+        terminalState,
+        completion,
+        terminalState === input.terminalState
+          ? input.terminalReason
+          : "code_failure",
       )
     )
       return;
-    if (input.terminalState === "cancelled")
+    if (terminalState === "cancelled")
       this.agentTelemetry.cancel(input.sessionId);
-    else if (input.terminalState !== "succeeded")
+    else if (terminalState !== "succeeded")
       this.agentTelemetry.fail(
         input.sessionId,
-        new Error(terminalProductMessage(input.terminalState)),
+        new Error(terminalProductMessage(terminalState)),
       );
     await this.logSession(input.sessionId, "run lifecycle terminal", {
       ...this.runLifecycles.state(input.sessionId),
     });
+    if (event && input.display) this.events?.emit(event);
     const termination = this.sessionTerminations.get(input.sessionId);
     if (termination?.executionId === input.executionId)
       this.sessionTerminations.delete(input.sessionId);
@@ -2674,11 +2707,16 @@ export class BlameAgentRuntime {
   }
 
   private withSubmittedSummary(sessionId: string, event: AgentEvent) {
-    const summary = this.sessionSubmittedSummaries.get(sessionId);
-    if (event.type !== "done" || !summary) return event;
+    const notification = this.sessionSubmittedSummaries.get(sessionId);
+    if (event.type !== "done" || !notification) return event;
     return {
       ...event,
-      payload: { ...asRecord(event.payload), text: summary },
+      payload: {
+        ...asRecord(event.payload),
+        text: notification.summary,
+        completion: notification.completion,
+        verified: notification.verified,
+      },
     };
   }
 
@@ -2835,7 +2873,7 @@ export class BlameAgentRuntime {
     sessionId: string,
     notification: NativeCompletionNotification,
   ) {
-    this.sessionSubmittedSummaries.set(sessionId, notification.summary);
+    this.sessionSubmittedSummaries.set(sessionId, notification);
   }
 
   private async publishNativeValidationActivity(
@@ -3938,11 +3976,13 @@ function runtimeTools(
   worktree?: string,
   previewContext?: PreviewRuntimeContext,
   taskContract?: {
+    acceptance_criteria?: string[];
+    effect_requirement?: "none" | "source_change";
     session_id?: string;
     story_id?: string;
     objective?: string;
   },
-  semanticWorkspaceExecutor?: SemanticWorkspaceExecutor,
+  semanticWorkspaceExecutor?: SemanticWorkspaceBridgeExecutor,
   governorBudget?: number,
   externalReadGovernor?: ExternalReadGovernor,
   costGovernor?: HarnessCostGovernor,
@@ -3959,6 +3999,9 @@ function runtimeTools(
       executor: semanticWorkspaceExecutor,
       governor: costGovernor,
       governorBudget,
+      protocolVersion: harnessFeatureEnabled("BLAME_HARNESS_PROTOCOL_V3")
+        ? "3"
+        : "2",
       legacyMutationTools:
         process.env.BLAME_HARNESS_LEGACY_MUTATIONS === "true",
     }),
@@ -3969,9 +4012,10 @@ function runtimeTools(
               "BLAME_NATIVE_CLINE_HARNESS",
             ),
             conversationId: completion.conversationId,
-            executor:
+            executor: legacySemanticWorkspaceExecutor(
               semanticWorkspaceExecutor ??
-              localSemanticWorkspaceExecutor(worktree ?? "", taskContract),
+                localSemanticWorkspaceExecutor(worktree ?? "", taskContract),
+            ),
             taskContract,
             workspaceRoot: worktree ?? "",
             onComplete: completion.onComplete,
@@ -3994,11 +4038,13 @@ function readOnlyRuntimeTools(
   worktree: string,
   previewContext: PreviewRuntimeContext,
   taskContract: {
+    acceptance_criteria?: string[];
+    effect_requirement?: "none" | "source_change";
     session_id?: string;
     story_id?: string;
     objective?: string;
   },
-  semanticWorkspaceExecutor: SemanticWorkspaceExecutor | undefined,
+  semanticWorkspaceExecutor: SemanticWorkspaceBridgeExecutor | undefined,
   externalReadGovernor?: ExternalReadGovernor,
 ) {
   const allowedTools = new Set([
@@ -6000,6 +6046,23 @@ function terminalProductMessage(status: string) {
   return "Agent stopped before submitting a final response.";
 }
 
+function completionFailureEvent(
+  sessionId: string,
+  completion: NativeCompletionNotification["completion"] | undefined,
+): AgentEvent {
+  return {
+    type: "error",
+    sessionId,
+    payload: {
+      completion,
+      message:
+        "Completion was rejected because delivery or required verification failed.",
+      recoverable: false,
+      terminalStatus: "failed",
+    },
+  };
+}
+
 function terminalLifecycleState(
   event: AgentEvent,
 ): RunTerminalState | undefined {
@@ -6032,7 +6095,7 @@ function terminalStateFromStatus(
 ): RunTerminalState {
   const normalized = status?.replaceAll("-", "_").toLowerCase();
   if (normalized === "max_iterations" || normalized === "mistake_limit")
-    return "max_iterations";
+    return normalized;
   if (
     normalized === "aborted" ||
     normalized === "cancelled" ||

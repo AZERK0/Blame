@@ -114,7 +114,30 @@ valid_semantic_harness_install() {
 const fs = require("fs");
 const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
 process.exit(manifest.version === process.argv[2] ? 0 : 1);
-' "$package_path" "0.0.0-$runtime_version" >/dev/null 2>&1
+' "$package_path" "0.0.0-$runtime_version" >/dev/null 2>&1 &&
+    semantic_harness_smoke_test
+}
+
+semantic_harness_smoke_test() {
+  workspace="$(mktemp -d)"
+  printf '%s\n' '{"scripts":{}}' >"$workspace/package.json"
+  if printf '{"input":{},"tool":"workspace_state","toolContext":{"executionId":"provision-smoke"},"workspaceRoot":"%s"}' "$workspace" |
+    blame-semantic-harness |
+    node -e '
+let value = "";
+process.stdin.on("data", (chunk) => value += chunk);
+process.stdin.on("end", () => {
+  const result = JSON.parse(value);
+  const valid = result.protocol_version === "3" && result.outcome === "completed" && result.effect === "observed";
+  process.exit(valid ? 0 : 1);
+});
+'; then
+    status=0
+  else
+    status=$?
+  fi
+  rm -rf "$workspace"
+  return "$status"
 }
 
 ensure_semantic_harness() {

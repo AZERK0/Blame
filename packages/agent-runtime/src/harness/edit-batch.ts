@@ -1,3 +1,4 @@
+import { type EditGroupReceipt as CoreEditGroupReceipt } from "@blame/harness-core";
 import {
   aggregateValidationStatus,
   aggregateValidator,
@@ -6,6 +7,7 @@ import {
 } from "./content-validation.js";
 import type { EditCodeOutcome } from "./edit-service.js";
 import { decodeHandle } from "./protocol.js";
+import { sha256 } from "./protocol.js";
 import type { ConflictCandidate } from "./semantic-reference-resolver.js";
 import type { ChangeOperation, EditCodeOperation } from "./schemas.js";
 
@@ -19,6 +21,7 @@ export type FailedEditOperation = {
     | "conflict"
     | "denied"
     | "infrastructure_error"
+    | "recovery_required"
     | "unsupported_operation"
     | "validation_failed";
 };
@@ -41,6 +44,13 @@ export type EditGroupResult = {
   result: EditCodeOutcome;
 };
 
+export type EditBatchContract = {
+  atomicity: "path_dependency_groups";
+  preparation_source_revision: string;
+  groups: CoreEditGroupReceipt[];
+  committed_revisions: string[];
+};
+
 type AppliedOutcome = Extract<EditCodeOutcome, { status: "applied" }>;
 type FailedOutcome = Exclude<
   EditCodeOutcome,
@@ -52,10 +62,16 @@ type NoChangeGroupResult = {
   result: Extract<EditCodeOutcome, { status: "no_change" }>;
 };
 
-export function createEditGroups(edits: EditCodeOperation[]) {
+export function createEditGroups(
+  edits: EditCodeOperation[],
+  resolvedOperations?: Array<ChangeOperation | undefined>,
+) {
   const groups: EditGroup[] = [];
   for (const [index, edit] of edits.entries()) {
-    const paths = new Set(operationPaths(edit, index));
+    const resolved = resolvedOperations?.[index];
+    const paths = new Set(
+      resolved ? changeOperationPaths(resolved) : operationPaths(edit, index),
+    );
     const overlapping = groups.filter((group) =>
       intersects(group.paths, paths),
     );
@@ -90,6 +106,26 @@ export function combineEditGroupResults(
   );
 }
 
+export function editBatchContract(
+  results: EditGroupResult[],
+  preparationSourceRevision: string,
+): EditBatchContract {
+  let currentRevision = preparationSourceRevision;
+  const groups = results.map(({ group, result }) => {
+    const receipt = groupReceipt(group, result, currentRevision);
+    currentRevision = receipt.source_revision_after;
+    return receipt;
+  });
+  return {
+    atomicity: "path_dependency_groups",
+    preparation_source_revision: preparationSourceRevision,
+    groups,
+    committed_revisions: groups
+      .filter((group) => group.outcome === "applied")
+      .map((group) => group.source_revision_after),
+  };
+}
+
 export function failedChangeOperationIndexes(
   operations: ChangeOperation[],
   rejectedPaths: Set<string>,
@@ -105,6 +141,65 @@ function mergeEditGroup(target: EditGroup, source: EditGroup) {
   target.edits.unshift(...source.edits);
   target.indexes.unshift(...source.indexes);
   for (const path of source.paths) target.paths.add(path);
+}
+
+function groupReceipt(
+  group: EditGroup,
+  result: EditCodeOutcome,
+  sourceRevisionBefore: string,
+): CoreEditGroupReceipt {
+  const identity = groupReceiptIdentity(group);
+  if (result.status === "applied")
+    return {
+      ...identity,
+      outcome: "applied",
+      effect: "changed",
+      satisfaction: "satisfied",
+      receipt_ref: result.receipt_ref,
+      source_revision_before: sourceRevisionBefore,
+      source_revision_after: result.source_revision,
+    };
+  if (result.status === "no_change")
+    return {
+      ...identity,
+      outcome: "already_satisfied",
+      effect: "none",
+      satisfaction: "satisfied",
+      receipt_ref: result.postcondition_evidence_ref,
+      source_revision_before: sourceRevisionBefore,
+      source_revision_after: sourceRevisionBefore,
+    };
+  if (result.status === "recovery_required")
+    return {
+      ...identity,
+      outcome: "blocked",
+      issue_code: "ROLLBACK_INCOMPLETE",
+      effect: "partial",
+      satisfaction: "unknown",
+      source_revision_before: sourceRevisionBefore,
+      source_revision_after: result.source_revision,
+      recovery_artifact_ref: result.recovery_artifact_ref,
+    };
+  return {
+    ...identity,
+    outcome: "blocked",
+    issue_code: editFailureReason(result),
+    effect: "none",
+    satisfaction: "unsatisfied",
+    source_revision_before: sourceRevisionBefore,
+    source_revision_after: sourceRevisionBefore,
+  };
+}
+
+function groupReceiptIdentity(group: EditGroup) {
+  const effectivePaths = [...group.paths]
+    .filter((path) => !path.startsWith("operation:"))
+    .sort();
+  return {
+    group_id: `edit-group://${sha256(JSON.stringify([group.indexes, effectivePaths])).slice(0, 24)}`,
+    operation_indexes: [...group.indexes],
+    effective_paths: effectivePaths,
+  };
 }
 
 function intersects(left: Set<string>, right: Set<string>) {
@@ -296,6 +391,9 @@ function combinedAppliedFields(outcomes: AppliedOutcome[]) {
       0,
     ),
     new_symbol_refs: outcomes.flatMap((outcome) => outcome.new_symbol_refs),
+    semantic_resolution_receipts: outcomes.flatMap(
+      (outcome) => outcome.semantic_resolution_receipts,
+    ),
     resolution: combinedResolution(outcomes),
     ...(strategies.length
       ? { semantic_rebase_strategy: strategies.join("+") }

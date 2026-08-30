@@ -43,6 +43,26 @@ const maximumProposalBytes = 10 * 1024 * 1024;
 
 export class NoChangesProposed extends Error {}
 
+export class IncompleteRollbackError extends AggregateError {
+  readonly code = "ROLLBACK_INCOMPLETE";
+  readonly rollback = "incomplete" as const;
+  readonly recovery_artifact_ref: string;
+  readonly source_revision_after: string;
+
+  constructor(
+    errors: unknown[],
+    proposalRef: string,
+    sourceRevisionAfter: string,
+  ) {
+    super(
+      errors,
+      "Commit failed and rollback was incomplete; recovery journal retained.",
+    );
+    this.recovery_artifact_ref = `recovery://commit/${sha256(proposalRef)}`;
+    this.source_revision_after = sourceRevisionAfter;
+  }
+}
+
 export class ChangeService {
   private readonly artifacts: ArtifactStore;
   private readonly files: WorkspaceFiles;
@@ -356,9 +376,10 @@ export class ChangeService {
           }
         }
         if (rollbackErrors.length)
-          throw new AggregateError(
+          throw new IncompleteRollbackError(
             [error, ...rollbackErrors],
-            "Commit failed and rollback was incomplete; recovery journal retained.",
+            proposal.proposal_ref,
+            (await this.files.snapshot()).revision.source_revision_id,
           );
         await this.store.removeJournal();
         throw error;

@@ -1,10 +1,26 @@
 export { BlameAgentRuntime } from "./cline-runtime.js";
+export * from "@blame/harness-core";
 export type {
+  CanonicalSemanticWorkspaceExecutor,
+  SemanticWorkspaceBridgeExecutor,
   SemanticWorkspaceExecutionRequest,
   SemanticWorkspaceExecutor,
   SemanticWorkspaceToolName,
 } from "./harness/semantic-executor.js";
-export { executeSemanticWorkspaceRequest } from "./harness/semantic-executor.js";
+export {
+  canonicalSemanticWorkspaceExecutor,
+  executeCanonicalSemanticWorkspaceRequest,
+  executeSemanticWorkspaceRequest,
+  localCanonicalSemanticWorkspaceExecutor,
+  legacySemanticWorkspaceExecutor,
+} from "./harness/semantic-executor.js";
+export {
+  clineAdapterCapabilities,
+  headlessAdapterCapabilities,
+  runAdapterConformance,
+  type AdapterConformanceScenario,
+  type HarnessAdapter,
+} from "./harness/adapter-conformance.js";
 export { taskComplexityBucket } from "./telemetry-cohorts.js";
 export type { TaskComplexityBucket } from "./telemetry-cohorts.js";
 export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";
@@ -27,6 +43,7 @@ export type {
   AgentApprovalRequest,
   AgentBackendConfig,
   AgentBackendMode,
+  AgentDonePayload,
   AgentRuntimePrewarmInput,
   AgentRuntimeEvents,
   AgentSessionRecord,

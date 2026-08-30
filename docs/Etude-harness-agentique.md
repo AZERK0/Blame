@@ -2238,6 +2238,36 @@ La validation déterministe du 29 août 2026 couvre l’enveloppe Apply Patch va
 
 ---
 
+### 21.23 Consolidation du Harness Core v3
+
+#### Contrats et décisions définitifs
+
+Le noyau indépendant `@blame/harness-core` définit les contrats et implémentations de référence des autorités de conversation, d’effets, de preuves et d’exécution, les ports d’adaptation, la machine de lifecycle, le protocole `HarnessResult` v3, le registre de capacités par opération, `semantic-rebase/v1`, les groupes transactionnels, l’Evidence Planner, la Completion Decision et les gates de release. Il ne dépend ni de Cline, ni d’Electron, ni du frontend. Les décisions normatives sont enregistrées dans les ADR [autorités](architecture/adr-001-harness-authorities.md), [résultat v3](architecture/adr-002-harness-result-v3.md), [atomicité](architecture/adr-003-edit-files-atomicity.md) et [completion](architecture/adr-004-evidence-completion.md).
+
+Le runner headless produit directement le résultat canonique v3. Le chemin Cline local adapte encore l’exécuteur historique v2 une seule fois, tandis que le bridge Lima/WSL accepte directement le v3 sans le retraiter comme du v2. Cline conserve la traduction de schéma, d’événement et de transport. Un blocage de domaine reste un succès de transport. La projection v2 temporaire est réservée aux consommateurs historiques et ne déclenche ni mutation, ni run, ni appel externe.
+
+`edit_files` résout toutes les opérations sur une révision de préparation unique, calcule les chemins effectifs après rebase, forme des `path_dependency_groups`, prépare tous les groupes avant le premier commit et publie un reçu par groupe. Un groupe indépendant peut réussir malgré un autre blocage ; une récupération incomplète reste explicitement `partial` avec un artefact de reprise. Une absence d’effet n’est satisfaite qu’avec une preuve de postcondition.
+
+La completion dérive `delivery`, `verification` et les réserves depuis un Evidence Plan lié à la révision. Le plan est calculé avant validation, ses checks déclarés sont exécutés, puis la décision est recalculée depuis leurs reçus. Elle ne fait pas confiance au booléen fourni par le modèle, exige du contrat de tâche une intention non mutante explicite et reste distincte du terminal `succeeded`, `failed` ou `cancelled`. Une preuve requise en échec impose un terminal échoué.
+
+Le gouverneur v2 et ses coupures par nombre d’itérations sont exclus du chemin v3. Un `RetryLedger` mémorise plutôt l’identité normalisée de l’appel, sa révision, son environnement et la version de politique. Un appel identique bloqué n’effectue aucun nouvel I/O tant que `new_input`, `new_source_revision`, `runtime_state_change` ou `explicit_user_action` n’est pas satisfait.
+
+#### Validation exécutée
+
+Le 30 août 2026, la suite de contrats Core passe 12 scénarios sur 12. La suite runtime complète compte 332 scénarios : 330 réussissent, aucun n’échoue et les deux scénarios live sont ignorés faute de credentials. Elle couvre notamment la preuve obligatoire des effets, l’idempotence démontrée, les résultats bloqués au niveau domaine, le lifecycle terminal, l’exécution des checks sélectionnés, la transaction multi-groupe et sa chaîne de révisions, le rebase ambigu refusé, les flags, la conformité Cline/headless et la réouverture d’un retry après changement d’entrée, de révision ou d’état runtime. Un test de frontière séparé construit le payload autonome et exécute réellement `workspace_state` depuis l’archive extraite. Les provisionneurs Lima et WSL appliquent le même smoke test v3 dans le runtime invité avant de valider l’installation. Le build, le lint et le typecheck du runtime ainsi que le build et le typecheck du Core passent.
+
+Ces résultats sont des tests déterministes locaux. Ils ne constituent pas la matrice live multi-plateforme, multi-modèle et multi-effort demandée pour une release générale.
+
+#### Baseline, mesures live et seuils
+
+Le manifeste [harness-core-v3-baseline.json](harness-core-v3-baseline.json) fige le commit antérieur à cette migration, les versions locales, l’environnement et les seuils. Il est volontairement marqué `incomplete_live_baseline` : les traces provider, paramètres, budgets et credentials du corpus live ne sont pas présents. Aucune mesure live avant/après n’est donc inventée et le gate de release reste fermé.
+
+Les seuils retenus sont ceux de la spécification : au moins 100 tâches stratifiées et trois répétitions live ; borne basse à 95 % du delta de résolution strictement supérieure à −2 points ; coût par tâche résolue au plus à 105 % ; p95 avant première mutation au plus à 110 % dans une catégorie comparable ; I/O réellement dupliqué strictement inférieur à 1 %. Les sept compteurs absolus — faux succès, écriture hors worktree, faux rebase, preuve périmée, événement post-terminal, atomicité sans récupération et infrastructure classée comme défaut du code — doivent rester à zéro.
+
+#### Limitations restantes
+
+Les quatre autorités et le `TransactionEngine` sont encore des contrats et implémentations de référence plus qu’un branchement de production complet. En production, l’adaptateur v3 utilise une autorité de preuves en mémoire ; les stores de conversation, d’effets et d’exécution ainsi que le moteur historique d’édition restent actifs. La release matrix Linux, WSL, Lima, runtime distant et Cloud Preview n’a pas été exécutée. Le corpus live ne contient pas encore les 100 tâches pré-enregistrées ni trois répétitions par sous-corpus variable. Les campagnes property/model-based, crash injection et fuzzing demandées restent à étendre au-delà des cas déterministes présents. La projection v2 et le flag de rollback sont conservés tant que ces gates ne sont pas franchis ; leur suppression, ainsi que celle des writers historiques ciblés, appartient à la phase finale de migration.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)

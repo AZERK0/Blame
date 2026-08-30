@@ -83,10 +83,30 @@ test("tags session events with their execution identity", () => {
 test("hides submit_and_exit cards and projects only its native summary", () => {
   const runtime = new BlameAgentRuntime();
   const internals = runtime as unknown as {
-    sessionSubmittedSummaries: Map<string, string>;
+    sessionSubmittedSummaries: Map<
+      string,
+      {
+        completion: {
+          delivery: "satisfied";
+          verification: "verified";
+          reservations: [];
+        };
+        summary: string;
+        verified: boolean;
+      }
+    >;
     withSubmittedSummary(sessionId: string, event: AgentEvent): AgentEvent;
   };
-  internals.sessionSubmittedSummaries.set("session", "Visible answer");
+  const completion = {
+    delivery: "satisfied" as const,
+    verification: "verified" as const,
+    reservations: [] as [],
+  };
+  internals.sessionSubmittedSummaries.set("session", {
+    completion,
+    summary: "Visible answer",
+    verified: true,
+  });
   assert.equal(
     terminalToolEvent({
       type: "tool",
@@ -101,6 +121,11 @@ test("hides submit_and_exit cards and projects only its native summary", () => {
     payload: { text: "internal completion output" },
   });
   assert.equal((done.payload as { text: string }).text, "Visible answer");
+  assert.deepEqual(
+    (done.payload as { completion: unknown }).completion,
+    completion,
+  );
+  assert.equal((done.payload as { verified: boolean }).verified, true);
 });
 
 test("publishes automatic validation as a stable run_task activity", async () => {

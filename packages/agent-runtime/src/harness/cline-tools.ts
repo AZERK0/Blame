@@ -1,4 +1,5 @@
 import { createTool, type AgentTool, type AgentToolContext } from "@cline/sdk";
+import { isHarnessResult, type HarnessResult } from "@blame/harness-core";
 import { z } from "zod";
 import { redactSecurityValue } from "../security-secret-redaction.js";
 import {
@@ -10,8 +11,17 @@ import { harnessFeatureEnabled } from "./harness-feature-flags.js";
 import {
   boundHarnessResult,
   harnessError,
+  harnessSuccess,
   type HarnessToolResult,
 } from "./protocol.js";
+import {
+  CanonicalResultMapper,
+  projectCanonicalResultV2,
+} from "./protocol-v3-adapter.js";
+import {
+  RecoveryController,
+  type RetrySuppression,
+} from "./recovery-controller.js";
 import {
   applyChangeInputSchema,
   createFileInputSchema,
@@ -46,7 +56,7 @@ import {
   semanticWorkspaceReadToolNames,
   semanticWorkspaceWriteToolNames,
   type SemanticWorkspaceExecutionRequest,
-  type SemanticWorkspaceExecutor,
+  type SemanticWorkspaceBridgeExecutor,
   type SemanticWorkspaceToolName,
 } from "./semantic-executor.js";
 import type { SemanticWorkspaceOptions } from "./semantic-workspace.js";
@@ -65,9 +75,10 @@ import { compactWorkspaceStateResult } from "./workspace-state-output.js";
 export { semanticWorkspaceReadToolNames, semanticWorkspaceWriteToolNames };
 
 export type SemanticWorkspaceToolsOptions = SemanticWorkspaceOptions & {
-  executor?: SemanticWorkspaceExecutor;
+  executor?: SemanticWorkspaceBridgeExecutor;
   governor?: HarnessCostGovernor;
   governorBudget?: number;
+  protocolVersion?: "2" | "3";
 };
 
 export function semanticWorkspaceTools(
@@ -85,6 +96,18 @@ export function semanticWorkspaceTools(
       harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS"),
     );
   const navigationFiles = new WorkspaceFiles(workspaceRoot);
+  const canonicalMapper = new CanonicalResultMapper();
+  const recoveryController = new RecoveryController(navigationFiles);
+  const createHarnessTool = <TSchema extends z.ZodTypeAny>(
+    input: HarnessToolDefinition<TSchema>,
+  ) =>
+    buildHarnessTool(input, {
+      environmentFingerprint: (context) =>
+        recoveryController.environmentFingerprint(context),
+      mapper: canonicalMapper,
+      protocolVersion: options.protocolVersion ?? "2",
+      recoveryController,
+    });
   let broadReadSequence = 0;
   const supportedOperations = supportedOperationsDescription();
   const semanticExtensions = semanticInspectionExtensionsDescription();
@@ -98,7 +121,9 @@ export function semanticWorkspaceTools(
       options.taskContract?.session_id,
       context,
     );
-    const governed = harnessFeatureEnabled("BLAME_COST_GOVERNOR_V2");
+    const governed =
+      (options.protocolVersion ?? "2") === "2" &&
+      harnessFeatureEnabled("BLAME_COST_GOVERNOR_V2");
     const reservationId = `${
       context.toolCallId ?? context.runId ?? "read"
     }:${broadReadSequence++}`;
@@ -121,9 +146,9 @@ export function semanticWorkspaceTools(
         ),
         context.signal,
       );
-      const result = normalizeHarnessToolResult(delegated, tool);
+      const result = normalizeDelegatedResult(delegated, tool);
       const observed = governed
-        ? governor.after(tool, input, result, {
+        ? governor.after(tool, input, legacyResult(result), {
             ...context,
             contextEpoch,
             conversationId: options.taskContract?.session_id,
@@ -354,11 +379,11 @@ async function recordReadKnowledge(
   workspaceRoot: string,
   conversationId: string | undefined,
   tool: SemanticWorkspaceToolName,
-  result: HarnessToolResult<unknown>,
+  result: SemanticWorkspaceExecutionResult,
 ) {
   if (
     !conversationId ||
-    result.status !== "success" ||
+    (!isHarnessResult(result) && result.status !== "success") ||
     !knowledgeReadTools.includes(tool)
   )
     return;
@@ -529,19 +554,28 @@ async function visibleResult<T>(
   return redactSensitiveContent ? redactSecurityValue(value) : value;
 }
 
-function createHarnessTool<TSchema extends z.ZodTypeAny>(input: {
-  name: string;
+type HarnessToolDefinition<TSchema extends z.ZodTypeAny> = {
+  name: SemanticWorkspaceToolName;
   description: string;
   schema: TSchema;
   execute: (
     value: z.infer<TSchema>,
     context: AgentToolContext,
-  ) => Promise<HarnessToolResult<unknown>>;
+  ) => Promise<SemanticWorkspaceExecutionResult>;
   retryable?: boolean;
-}): AgentTool {
-  // CoreSessionConfig stores heterogeneous tools as AgentTool<unknown, unknown>.
-  // Unknown input is still validated with the original Zod schema before the
-  // typed canonical handler is invoked.
+};
+
+type HarnessProtocol = {
+  environmentFingerprint(context: AgentToolContext): string;
+  mapper: CanonicalResultMapper;
+  protocolVersion: "2" | "3";
+  recoveryController: RecoveryController;
+};
+
+function buildHarnessTool<TSchema extends z.ZodTypeAny>(
+  input: HarnessToolDefinition<TSchema>,
+  protocol: HarnessProtocol,
+): AgentTool {
   return createTool<unknown, unknown>({
     name: input.name,
     description: input.description,
@@ -549,16 +583,38 @@ function createHarnessTool<TSchema extends z.ZodTypeAny>(input: {
     retryable: input.retryable ?? false,
     maxRetries: 0,
     async execute(raw: unknown, context: AgentToolContext) {
+      const retrySuppression =
+        protocol.protocolVersion === "3"
+          ? await protocol.recoveryController.before(input.name, raw, context)
+          : undefined;
+      if (retrySuppression)
+        return mapCanonicalResult(
+          retrySuppressedResult(retrySuppression),
+          input.name,
+          context,
+          protocol,
+        );
       const parsed = input.schema.safeParse(raw);
       if (!parsed.success)
-        return {
-          output: harnessError({
+        return publishToolResult(
+          harnessError({
             code: "INVALID_INPUT",
             message: formatSchemaError(parsed.error),
           }),
-          isError: false,
-        };
+          raw,
+          input.name,
+          context,
+          protocol,
+        );
       const executed = await input.execute(parsed.data, context);
+      if (isHarnessResult(executed))
+        return publishCanonicalResult(
+          prepareCanonicalResult(executed, input.name, parsed.data),
+          parsed.data,
+          input.name,
+          context,
+          protocol,
+        );
       const maximumTokens = requestedOutputTokens(input.name, parsed.data);
       const prepared =
         input.name === "workspace_state"
@@ -570,10 +626,127 @@ function createHarnessTool<TSchema extends z.ZodTypeAny>(input: {
             )
           : executed;
       const result = boundHarnessResult(prepared, maximumTokens);
-      return result.status === "error"
-        ? { output: result, isError: result.fatal }
-        : result;
+      return publishToolResult(
+        result,
+        parsed.data,
+        input.name,
+        context,
+        protocol,
+      );
     },
+  });
+}
+
+function prepareCanonicalResult(
+  result: HarnessResult<unknown, unknown>,
+  tool: SemanticWorkspaceToolName,
+  input: unknown,
+): HarnessResult<unknown, unknown> {
+  const maximumTokens = requestedOutputTokens(tool, input);
+  const projected = projectCanonicalResultV2(result);
+  const prepared =
+    tool === "workspace_state"
+      ? compactWorkspaceStateResult(
+          projected,
+          workspaceStateInclude(input),
+          workspaceStatePage(input),
+          maximumTokens,
+        )
+      : projected;
+  const bounded = boundHarnessResult(prepared, maximumTokens);
+  return bounded.status === "success"
+    ? { ...result, data: bounded.data }
+    : result;
+}
+
+type SemanticWorkspaceExecutionResult =
+  | HarnessToolResult<unknown>
+  | HarnessResult<unknown, unknown>;
+
+function publishCanonicalResult(
+  result: HarnessResult<unknown, unknown>,
+  input: unknown,
+  tool: SemanticWorkspaceToolName,
+  context: AgentToolContext,
+  protocol: HarnessProtocol,
+) {
+  if (protocol.protocolVersion === "2")
+    return publishToolResult(
+      projectCanonicalResultV2(result),
+      input,
+      tool,
+      context,
+      protocol,
+    );
+  protocol.recoveryController.observe(tool, input, context, result);
+  return result;
+}
+
+function publishToolResult(
+  result: HarnessToolResult<unknown>,
+  input: unknown,
+  tool: SemanticWorkspaceToolName,
+  context: AgentToolContext,
+  protocol: HarnessProtocol,
+) {
+  if (protocol.protocolVersion === "2")
+    return result.status === "error"
+      ? { output: result, isError: result.fatal }
+      : result;
+  const canonical = mapCanonicalResult(result, tool, context, protocol);
+  protocol.recoveryController.observe(tool, input, context, canonical);
+  return canonical;
+}
+
+function mapCanonicalResult(
+  result: HarnessToolResult<unknown>,
+  tool: SemanticWorkspaceToolName,
+  context: AgentToolContext,
+  protocol: HarnessProtocol,
+) {
+  return protocol.mapper.map(
+    result,
+    canonicalToolContext(
+      tool,
+      context,
+      protocol.environmentFingerprint(context),
+    ),
+  );
+}
+
+function canonicalToolContext(
+  tool: string,
+  context: AgentToolContext,
+  environmentFingerprint?: string,
+) {
+  return {
+    executionId:
+      context.runId ??
+      context.sessionId ??
+      context.conversationId ??
+      "cline-execution",
+    ...(context.toolCallId ? { toolCallId: context.toolCallId } : {}),
+    ...(environmentFingerprint ? { environmentFingerprint } : {}),
+    tool,
+  };
+}
+
+function retrySuppressedResult(input: RetrySuppression) {
+  const revision = input.sourceRevisionId
+    ? { source_revision_id: input.sourceRevisionId }
+    : {};
+  return harnessSuccess({
+    data: {
+      status: "retry_suppressed",
+      recovery: input.recovery,
+      postcondition_satisfied: false,
+    },
+    revision,
+    startedAt: Date.now(),
+    provenance: [],
+    outcome: "blocked",
+    reason: "RECOVERY_CONDITION_NOT_SATISFIED",
+    recommendation: `Retry only when ${input.recovery.condition} is satisfied.`,
   });
 }
 
@@ -613,6 +786,21 @@ function normalizeHarnessToolResult(
     recommendation:
       "Retry only after the executor IPC contract is healthy; other tools may continue.",
   });
+}
+
+function normalizeDelegatedResult(
+  value: unknown,
+  tool: SemanticWorkspaceToolName,
+): SemanticWorkspaceExecutionResult {
+  return isHarnessResult(value)
+    ? value
+    : normalizeHarnessToolResult(value, tool);
+}
+
+function legacyResult(
+  value: SemanticWorkspaceExecutionResult,
+): HarnessToolResult<unknown> {
+  return isHarnessResult(value) ? projectCanonicalResultV2(value) : value;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

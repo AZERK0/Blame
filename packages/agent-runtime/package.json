@@ -21,7 +21,7 @@
     "build": "tsc && node scripts/copy-prompt.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-code-practices.test.js dist/project-scanners.test.js dist/security-audit.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/commit-message.test.js dist/approve-merge.test.js dist/production.test.js dist/reasoning.test.js dist/specialist-agents.test.js dist/blame-native-skills.test.js dist/cline-runtime-events.test.js dist/agent-telemetry.test.js dist/provider-schema-compatibility.test.js dist/provider-catalog.test.js dist/cloud-api.test.js dist/title-generation.test.js dist/harness/conversation-memory.test.js dist/harness/native-completion.test.js dist/harness/harness-reliability.test.js dist/harness/headless-us007.test.js dist/harness/headless-us015.test.js dist/harness/headless-us016.test.js dist/harness/headless-us017.test.js dist/harness/headless-us018.test.js dist/harness/semantic-workspace.test.js"
+    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-code-practices.test.js dist/project-scanners.test.js dist/security-audit.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/commit-message.test.js dist/approve-merge.test.js dist/production.test.js dist/reasoning.test.js dist/specialist-agents.test.js dist/blame-native-skills.test.js dist/cline-runtime-events.test.js dist/agent-telemetry.test.js dist/provider-schema-compatibility.test.js dist/provider-catalog.test.js dist/cloud-api.test.js dist/title-generation.test.js dist/harness/conversation-memory.test.js dist/harness/native-completion.test.js dist/harness/harness-reliability.test.js dist/harness/harness-core-v3.test.js dist/harness/headless-us007.test.js dist/harness/headless-us015.test.js dist/harness/headless-us016.test.js dist/harness/headless-us017.test.js dist/harness/headless-us018.test.js dist/harness/semantic-workspace.test.js"
   },
   "dependencies": {
     "@ast-grep/lang-bash": "0.0.8",
@@ -31,6 +31,7 @@
     "@ast-grep/lang-python": "0.0.6",
     "@ast-grep/lang-rust": "0.0.7",
     "@ast-grep/napi": "0.42.2",
+    "@blame/harness-core": "workspace:*",
     "@blame/preview-contract": "workspace:*",
     "@blame/telemetry": "workspace:*",
     "@cline/llms": "0.0.68",

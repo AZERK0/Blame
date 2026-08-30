@@ -65,7 +65,11 @@ import {
   type WorkspaceSnapshot,
 } from "./workspace-files.js";
 import { searchWithRipgrep } from "./lexical-search.js";
-import { capabilityRegistrySnapshot } from "./language-capabilities.js";
+import {
+  capabilityRegistrySnapshot,
+  supportedCapabilityOperations,
+} from "./language-capabilities.js";
+import { harnessFeatureDefinitions } from "./harness-feature-flags.js";
 import {
   maximumSemanticParseBytes,
   outlineMaximumItems,
@@ -125,6 +129,8 @@ export type SemanticWorkspaceOptions = {
   redactSensitiveContent?: boolean;
   taskExecutor?: TaskExecutor;
   taskContract?: {
+    acceptance_criteria?: string[];
+    effect_requirement?: "none" | "source_change";
     session_id?: string;
     story_id?: string;
     objective?: string;
@@ -308,10 +314,10 @@ export class SemanticWorkspace {
             },
             capabilities: {
               semantic_workspace: {
-                protocol_version: "2.0",
+                protocol_version: "3",
                 languages: [
                   ...new Set(
-                    capabilityRegistrySnapshot().map(
+                    capabilityRegistrySnapshot(snapshot.files).map(
                       (capability) => capability.languageId,
                     ),
                   ),
@@ -324,36 +330,11 @@ export class SemanticWorkspace {
                   "raw",
                 ],
                 search: ["text", "symbol", "ast_pattern"],
-                edit_operations: [
-                  "replace",
-                  "replace_symbol",
-                  "replace_body",
-                  "replace_signature",
-                  "insert_before",
-                  "insert_after",
-                  "delete",
-                  "delete_symbol",
-                  "set_css_declarations",
-                  "set_css_declaration",
-                  "remove_css_declaration",
-                  "insert_css_declaration",
-                  "edit_json",
-                  "create_file",
-                  "replace_file",
-                  "delete_file",
-                  "move_file",
-                  "patch",
-                  "patch_file",
-                ],
-                feature_flags: [
-                  "BLAME_CONTEXT_EPOCHS",
-                  "BLAME_SEMANTIC_READ_REBASE",
-                  "BLAME_WORKING_SET_V2",
-                  "BLAME_SEMANTIC_REBASE_V2",
-                  "BLAME_PATCH_RECOVERY_V2",
-                  "BLAME_COST_GOVERNOR_V2",
-                ],
-                language_capabilities: capabilityRegistrySnapshot(),
+                edit_operations: supportedCapabilityOperations(snapshot.files),
+                feature_flags: harnessFeatureDefinitions(),
+                language_capabilities: capabilityRegistrySnapshot(
+                  snapshot.files,
+                ),
                 precision: "syntax",
                 raw_fallback: true,
               },

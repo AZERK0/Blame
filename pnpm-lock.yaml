@@ -54,6 +54,9 @@ importers:
       '@ast-grep/napi':
         specifier: 0.42.2
         version: 0.42.2
+      '@blame/harness-core':
+        specifier: workspace:*
+        version: link:../harness-core
       '@blame/preview-contract':
         specifier: workspace:*
         version: link:../preview-contract
@@ -557,6 +560,15 @@ importers:
       vite:
         specifier: ^7.3.1
         version: 7.3.3(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
+  packages/harness-core:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.12.0
+        version: 24.12.4
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
 
   packages/preview-contract:
     devDependencies:

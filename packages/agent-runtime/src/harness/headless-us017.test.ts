@@ -672,10 +672,12 @@ test("US-017 lifecycle uses execution CAS and rejects every event and token afte
     execution_id: "execution-one",
     post_stop_events: 2,
     post_stop_tokens: 48,
+    sequence: 4,
     session_id: "session",
     state: "cancelled",
     stop_requested_at: lifecycle.state("session")?.stop_requested_at,
     terminal_at: lifecycle.state("session")?.terminal_at,
+    terminal_reason: "user",
   });
   lifecycle.begin("session", "execution-two");
   assert.equal(lifecycle.accepts("session", "execution-one", 100), false);
