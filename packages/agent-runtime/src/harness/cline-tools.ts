@@ -801,7 +801,7 @@ function publishCanonicalResult(
       context,
       protocol,
     );
-  protocol.recoveryController.observe(tool, input, context, result);
+  protocol.recoveryController.observe(tool, input, result);
   return result;
 }
 
@@ -817,7 +817,7 @@ function publishToolResult(
       ? { output: result, isError: result.fatal }
       : result;
   const canonical = mapCanonicalResult(result, tool, context, protocol);
-  protocol.recoveryController.observe(tool, input, context, canonical);
+  protocol.recoveryController.observe(tool, input, canonical);
   return canonical;
 }
 

@@ -51,7 +51,6 @@ export class RecoveryController {
   observe(
     tool: SemanticWorkspaceToolName,
     input: unknown,
-    context: AgentToolContext,
     result: HarnessResult<unknown, unknown>,
   ) {
     const key = requestKey(tool, input);
@@ -61,13 +60,7 @@ export class RecoveryController {
       this.attempts.delete(key);
       return;
     }
-    const identity = retryIdentity(
-      tool,
-      input,
-      context,
-      this.files.root,
-      result,
-    );
+    const identity = retryIdentity(tool, input, result);
     if (prior) this.ledger.clear(prior.identity);
     this.ledger.remember(identity, result.recovery);
     this.attempts.set(key, { identity, recovery: result.recovery });
@@ -105,8 +98,6 @@ async function currentSourceRevision(
 function retryIdentity(
   tool: SemanticWorkspaceToolName,
   input: unknown,
-  context: AgentToolContext,
-  workspaceRoot: string,
   result: HarnessResult<unknown, unknown>,
 ): RetryIdentity {
   return {

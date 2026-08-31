@@ -12,7 +12,6 @@ import {
   rm,
   symlink,
 } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import fg from "fast-glob";
 import writeFileAtomic from "write-file-atomic";

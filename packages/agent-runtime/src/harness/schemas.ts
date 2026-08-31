@@ -613,10 +613,7 @@ export const editFilesInputSchema = z
     atomicity: z.enum(["all", "independent_groups"]).default("all").optional(),
     operations: z.array(editCodeOperationSchema).min(1).max(50),
   })
-  .strict()
-  .superRefine((input, context) =>
-    validateEditOperations(input.operations, context),
-  );
+  .strict();
 
 export const createFileInputSchema = z
   .object({ path: relativePathSchema, content: z.string() })
@@ -646,28 +643,6 @@ function validateEditCodeBatch(
     });
     return;
   }
-  validateEditOperations(input.edits ?? input.operations ?? [], context);
-}
-
-function validateEditOperations(
-  operations: z.infer<typeof editCodeOperationSchema>[],
-  context: z.RefinementCtx,
-) {
-  operations.forEach((operation, index) => {
-    const message = invalidCompositeOperation(operation);
-    if (!message) return;
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message,
-      path: [index],
-    });
-  });
-}
-
-function invalidCompositeOperation(
-  operation: z.infer<typeof editCodeOperationSchema>,
-) {
-  return undefined;
 }
 
 export const recallContextInputSchema = z
