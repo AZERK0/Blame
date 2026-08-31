@@ -154,10 +154,12 @@ function matchingReceipts(
   input: RegisterReadInput,
   repositoryIdentity: string,
 ) {
+  const contextEpoch = input.contextEpoch ?? "epoch-0";
   return receipts.filter(
     (receipt) =>
       (!receipt.repository_identity ||
         receipt.repository_identity === repositoryIdentity) &&
+      receipt.context_epoch === contextEpoch &&
       receipt.source_blob === input.sourceBlob &&
       receipt.path === input.path &&
       receipt.view === input.view &&

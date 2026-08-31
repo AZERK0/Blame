@@ -1281,7 +1281,7 @@ test("edit_code rolls back the full batch after a parse validation failure", asy
   });
 });
 
-test("inspect_code preserves content-addressed coverage across context epochs", async () => {
+test("inspect_code rehydrates exact content after a context epoch changes", async () => {
   await withWorkspace(async (root) => {
     const largeSource = Array.from(
       { length: 80 },
@@ -1370,8 +1370,8 @@ test("inspect_code preserves content-addressed coverage across context epochs", 
         { contextEpoch: "epoch-2" },
       ),
     );
-    assert.equal(compacted.data.status, "already_available");
-    assert.equal(compacted.data.new_bytes, 0);
+    assert.equal(compacted.data.status, "content");
+    assert.equal(compacted.data.new_bytes, 40);
   });
 });
 
@@ -2214,7 +2214,7 @@ test("Cline adapter registers a small read/write harness with strict schemas", a
   });
 });
 
-test("Cline adapter reuses reads across epochs without rerunning them", async () => {
+test("Cline adapter reuses reads only inside the active context epoch", async () => {
   await withWorkspace(async (root) => {
     const tools = semanticWorkspaceTools(root);
     const inspect = tools.find((tool) => tool.name === "inspect_code");
@@ -2237,7 +2237,7 @@ test("Cline adapter reuses reads across epochs without rerunning them", async ()
     const stopped = await inspect.execute(input, toolContext("epoch-two"));
     assert.equal(toolDataStatus(first), "content");
     assert.equal(toolDataStatus(repeated), "already_available");
-    assert.equal(toolDataStatus(afterCompaction), "already_available");
+    assert.equal(toolDataStatus(afterCompaction), "content");
     assert.equal(toolDataStatus(stopped), "already_available");
     assert.notEqual((afterCompaction as { isError?: boolean }).isError, true);
     assert.notEqual((stopped as { isError?: boolean }).isError, true);
@@ -2403,6 +2403,65 @@ test("Cline adapter can delegate semantic execution without changing its tool co
         "/home/blame/.local/share/blame/runtime/worktrees/project/story-US-1-test",
     },
   ]);
+});
+
+test("Cline adapter suppresses completed managed reads only for the same consumer context", async () => {
+  await withWorkspace(async (root) => {
+    let executions = 0;
+    const tools = semanticWorkspaceTools(root, {
+      taskContract: { session_id: "managed-cache" },
+      executor: async () => {
+        executions += 1;
+        return harnessSuccess({
+          data: { status: "content", content: "export const value = 1" },
+          revision: { source_revision_id: "src_managed" },
+          startedAt: Date.now(),
+          provenance: [],
+        });
+      },
+    });
+    const inspect = tools.find((tool) => tool.name === "inspect_code");
+    assert.ok(inspect);
+    const input = { target: { path: "src/service.ts" }, view: "raw" };
+    const lead = { agentId: "lead", conversationId: "managed-cache" } as never;
+    const specialist = {
+      agentId: "specialist",
+      conversationId: "specialist-context",
+    } as never;
+    await inspect.execute(input, lead);
+    const repeated = await inspect.execute(input, lead);
+    await inspect.execute(input, specialist);
+    assert.equal(executions, 2);
+    assert.equal(toolDataStatus(repeated), "already_available");
+  });
+});
+
+test("Cline adapter reuses the initial briefing instead of refetching unchanged state", async () => {
+  await withWorkspace(async (root) => {
+    const revision = success(await new SemanticWorkspace(root).workspaceState())
+      .data.source_revision.source_revision_id;
+    let executions = 0;
+    const tools = semanticWorkspaceTools(root, {
+      initialTaskBriefing: JSON.stringify({
+        source_revision: { source_revision_id: revision },
+      }),
+      executor: async () => {
+        executions += 1;
+        return harnessSuccess({
+          data: { changes: [] },
+          revision: { source_revision_id: revision },
+          startedAt: Date.now(),
+          provenance: [],
+        });
+      },
+    });
+    const state = tools.find((tool) => tool.name === "workspace_state");
+    assert.ok(state);
+    const reused = await state.execute({}, { agentId: "lead" } as never);
+    await state.execute({ include: ["changes"] }, { agentId: "lead" } as never);
+    assert.equal(toolDataStatus(reused), "already_available");
+    assert.equal(executions, 1);
+  });
 });
 
 test("Cline adapter converts malformed delegated envelopes into recoverable IPC failures", async () => {

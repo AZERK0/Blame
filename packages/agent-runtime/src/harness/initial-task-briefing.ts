@@ -49,5 +49,5 @@ export function appendInitialTaskBriefing(
   briefing: string | undefined,
 ) {
   if (!briefing) return systemPrompt;
-  return `${systemPrompt}\n\n<task_briefing>\nRuntime-generated starting map. Use these targets, dependencies, and tasks directly; do not call workspace_state merely to rediscover them. Refresh workspace_state only when this map is missing required metadata or the workspace changed.\n${briefing}\n</task_briefing>`;
+  return `${systemPrompt}\n\n<task_briefing>\nRuntime-generated starting map. Treat its revision-bound targets, dependency declarations, lockfile presence, capabilities, and tasks as resolved evidence. Do not reread manifests, lockfiles, or workspace_state to verify facts already stated here. Start from the first relevant target and make the first coherent edit after only the inspection needed for that target. Refresh workspace_state only when required metadata is absent or the workspace changed. Specialist advice is optional and never a prerequisite for a reversible first edit.\n${briefing}\n</task_briefing>`;
 }

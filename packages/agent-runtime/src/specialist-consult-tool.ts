@@ -309,7 +309,9 @@ function specialistTask(
     input.additional_consultation_justification
       ? `<additional_consultation_justification>\n${input.additional_consultation_justification}\n</additional_consultation_justification>`
       : undefined,
-    "Inspect only what is needed, distinguish evidence from inference, and return concise advice the lead can act on.",
+    "Treat revision-bound runtime evidence as authoritative. Do not inventory files, manifests, lockfiles, or dependencies already listed in it.",
+    "Inspect at most three targeted files and use at most one discovery search unless the lead explicitly requests a broader audit.",
+    "Stop as soon as the decision is supported. Return a concise recommendation, up to three evidence references, and only material unresolved uncertainty.",
   ]
     .filter((value): value is string => Boolean(value))
     .join("\n\n");

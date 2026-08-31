@@ -28,17 +28,25 @@ export async function workspaceTaskProjection(input: {
     terms,
   );
   const relevant = await relevantTargets(input.files, input.snapshot, terms);
+  const requestedPackages = objectiveDependencyPackages(input.objective);
+  const lockfile = await lockfileInventory(
+    input.files.root,
+    input.snapshot,
+    terms,
+    requestedPackages,
+  );
   return {
     packages: manifests.map(packageProjection),
     detected_frameworks: detectedFrameworks(manifests),
     dependency_inventory: {
       manifests,
-      lockfile: await lockfileInventory(
-        input.files.root,
-        input.snapshot,
-        terms,
-      ),
+      lockfile,
       mutation: input.dependencyCapability,
+      objective_dependency_candidates: objectiveDependencyStatus(
+        requestedPackages,
+        manifests,
+        lockfile,
+      ),
     },
     executable_tasks: input.tasks.map(({ task_id, kind, cwd, command }) => ({
       task_id,
@@ -132,11 +140,22 @@ async function lockfileInventory(
   root: string,
   snapshot: WorkspaceSnapshot,
   terms: string[],
+  requestedPackages: string[],
 ) {
   const path = snapshot.files
     .filter((candidate) => lockfileNames.has(basename(candidate)))
     .sort(lockfilePathOrder)[0];
-  if (!path) return { present: false, package_count: 0, packages: [] };
+  if (!path)
+    return {
+      present: false,
+      package_count: 0,
+      packages: [],
+      requested_packages: requestedPackages.map((name) => ({
+        name,
+        present: false,
+      })),
+      truncated: false,
+    };
   const packages = await lockfilePackages(join(root, path), basename(path));
   packages.sort((left, right) => relevanceOrder(left, right, terms));
   return {
@@ -144,8 +163,53 @@ async function lockfileInventory(
     path,
     package_count: packages.length,
     packages: packages.slice(0, 20),
+    requested_packages: requestedPackages.map((name) => ({
+      name,
+      present: packages.includes(name),
+    })),
     truncated: packages.length > 20,
   };
+}
+
+function objectiveDependencyStatus(
+  packages: string[],
+  manifests: ManifestInventory[],
+  lockfile: Awaited<ReturnType<typeof lockfileInventory>>,
+) {
+  const locked = new Map(
+    (lockfile.requested_packages ?? []).map(({ name, present }) => [
+      name,
+      present,
+    ]),
+  );
+  return packages.map((name) => {
+    const declaredIn = manifests
+      .filter((manifest) =>
+        manifest.dependencies.some((dependency) => dependency.name === name),
+      )
+      .map((manifest) => manifest.path);
+    return {
+      name,
+      evidence: "objective_signal",
+      declared: declaredIn.length > 0,
+      declared_in: declaredIn,
+      locked: locked.get(name) ?? false,
+    };
+  });
+}
+
+function objectiveDependencyPackages(objective?: string) {
+  const terms = new Set(
+    (objective ?? "")
+      .normalize("NFKC")
+      .toLowerCase()
+      .match(/[@\p{L}\p{N}._/-]+/gu) ?? [],
+  );
+  return unique(
+    objectiveDependencySignals.flatMap(({ packages, triggers }) =>
+      triggers.some((trigger) => terms.has(trigger)) ? packages : [],
+    ),
+  );
 }
 
 async function lockfilePackages(path: string, name: string) {
@@ -409,4 +473,12 @@ const frameworkSignals = [
   { framework: "Svelte", packages: ["svelte", "@sveltejs/kit"] },
   { framework: "Three.js", packages: ["three"] },
   { framework: "Vue", packages: ["vue"] },
+] as const;
+
+const objectiveDependencySignals = [
+  { triggers: ["3d", "three", "three.js", "threejs"], packages: ["three"] },
+  {
+    triggers: ["prisma"],
+    packages: ["prisma", "@prisma/client"],
+  },
 ] as const;

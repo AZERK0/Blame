@@ -943,6 +943,20 @@ test("recognizes only retryable provider transport interruptions", () => {
     retryableModelTransportFailure(new Error("HTTP 429 rate limited")),
     false,
   );
+  assert.equal(
+    retryableModelTransportFailure(
+      "An error occurred while processing your request. You can retry your request. Please include the request ID 4248fa32-1d4c-4645-b6ed-e6946118f013.",
+    ),
+    true,
+  );
+  assert.equal(
+    retryableModelTransportFailure(new Error("HTTP 503 service unavailable")),
+    true,
+  );
+  assert.equal(
+    retryableModelTransportFailure(new Error("HTTP 401 invalid API key")),
+    false,
+  );
 });
 
 test("resumes a failed provider stream once from persisted state", async () => {
@@ -1323,7 +1337,7 @@ test("renders the compact native Cline development prompt", async () => {
   assert.match(prompt, /\.tsx/);
   assert.match(prompt, /source_revision_id \+ environment_revision_id/);
   assert.match(prompt, /code_error/);
-  assert.match(prompt, /Runtime-repairable environment failures/);
+  assert.match(prompt, /non-retryable capability receipt/);
   assert.match(prompt, /application_ready/);
   assert.match(prompt, /proposal:current/);
   assert.match(prompt, /precise uncertainty that blocks implementation/);

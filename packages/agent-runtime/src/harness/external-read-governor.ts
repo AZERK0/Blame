@@ -507,14 +507,18 @@ function normalizedAgentToolResult(
     outcome,
     fatal,
     reason:
-      typeof result.reason === "string"
-        ? result.reason
-        : (fetchSemantics?.reason ?? externalOutcomeReason(outcome)),
+      fetchSemantics?.outcome === "partial"
+        ? fetchSemantics.reason
+        : typeof result.reason === "string"
+          ? result.reason
+          : (fetchSemantics?.reason ?? externalOutcomeReason(outcome)),
     recommendation:
-      typeof result.recommendation === "string"
-        ? result.recommendation
-        : (fetchSemantics?.recommendation ??
-          externalOutcomeRecommendation(outcome)),
+      fetchSemantics?.outcome === "partial"
+        ? fetchSemantics.recommendation
+        : typeof result.recommendation === "string"
+          ? result.recommendation
+          : (fetchSemantics?.recommendation ??
+            externalOutcomeRecommendation(outcome)),
     output,
     isError: fatal,
     metadata: { ...result.metadata, ...fetchSemantics?.metadata },
@@ -526,6 +530,7 @@ function normalizedExternalOutcome(
   fetchSemantics: ReturnType<typeof normalizedFetchSemantics>,
   isError: boolean | undefined,
 ) {
+  if (fetchSemantics?.outcome === "partial") return "partial";
   if (explicit && explicit !== "completed") return explicit;
   if (fetchSemantics?.outcome && fetchSemantics.outcome !== "completed") {
     return fetchSemantics.outcome;
@@ -557,7 +562,7 @@ function normalizedFetchSemantics(output: unknown) {
   const succeeded = items.length - failed.length;
   const notFound = failed.every(fetchItemNotFound);
   return {
-    outcome: succeeded ? "completed" : notFound ? "blocked" : "unavailable",
+    outcome: succeeded ? "partial" : notFound ? "blocked" : "unavailable",
     reason: fetchReason(succeeded, notFound),
     recommendation: fetchRecommendation(succeeded, notFound),
     metadata: {
@@ -601,6 +606,7 @@ function normalizedOutcome(value: unknown) {
       "blocked",
       "completed",
       "failed",
+      "partial",
       "skipped",
       "unavailable",
     ].includes(value)
@@ -608,9 +614,27 @@ function normalizedOutcome(value: unknown) {
     : undefined;
 }
 
-function normalizedFetchOutput(output: unknown) {
+function normalizedFetchOutput(output: unknown): unknown[] {
   if (Array.isArray(output)) return output;
+  if (typeof output === "string") {
+    const parsed = parsedJson(output);
+    return parsed === undefined ? [output] : normalizedFetchOutput(parsed);
+  }
+  const value = recordValue(output);
+  for (const key of ["items", "results", "output"])
+    if (Array.isArray(value[key])) return value[key] as unknown[];
   return output === undefined ? [] : [output];
+}
+
+function parsedJson(value: string) {
+  const normalized = value.trim();
+  if (!normalized.startsWith("[") && !normalized.startsWith("{"))
+    return undefined;
+  try {
+    return JSON.parse(normalized) as unknown;
+  } catch {
+    return undefined;
+  }
 }
 
 function boundedAgentToolResult(result: AgentToolResultEnvelope) {

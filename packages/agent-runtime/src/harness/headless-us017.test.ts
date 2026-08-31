@@ -247,6 +247,30 @@ test("US-017 workspace state hard-bounds a manifest with five thousand dependenc
   });
 });
 
+test("US-017 task briefing resolves objective dependency presence without lockfile searches", async () => {
+  await withUs017Workspace(async (root) => {
+    const workspace = new SemanticWorkspace(root, {
+      taskContract: {
+        objective: "Build a database-driven 3D project carousel",
+        session_id: "objective-dependencies",
+      },
+      taskExecutor: new UnavailableExecutor(),
+    });
+    const state = success(await workspace.workspaceState());
+    const projection = record(state.data.task_projection);
+    const inventory = record(projection.dependency_inventory);
+    assert.deepEqual(inventory.objective_dependency_candidates, [
+      {
+        name: "three",
+        evidence: "objective_signal",
+        declared: false,
+        declared_in: [],
+        locked: false,
+      },
+    ]);
+  });
+});
+
 test("US-017 unavailable dependencies remain non-fatal without closing exploration", async () => {
   await withUs017Workspace(async (root) => {
     const workspace = workspaceWith(
@@ -344,6 +368,34 @@ test("US-017 unavailable dependencies remain non-fatal without closing explorati
   });
 });
 
+test("US-017 dependency executor failures return actionable diagnostics and open one circuit", async () => {
+  await withUs017Workspace(async (root) => {
+    const executor = new BrokenPnpmExecutor();
+    const workspace = workspaceWith(root, "dependency-broken", executor);
+    const revision = success(await workspace.workspaceState()).data
+      .source_revision.source_revision_id;
+    const first = success(
+      await workspace.mutateDependencies(dependencyMutation(revision)),
+    );
+    const second = success(
+      await workspace.mutateDependencies(dependencyMutation(revision)),
+    );
+    assert.equal(first.outcome, "unavailable");
+    assert.equal(second.outcome, "unavailable");
+    assert.equal(executor.executions, 1);
+    assert.match(
+      String(record(first.data).reason),
+      /pnpm install --prefer-offline/u,
+    );
+    assert.match(String(record(first.data).reason), /exit_code=none/u);
+    assert.match(
+      String(record(first.data).reason),
+      /registry proxy unavailable/u,
+    );
+    assert.equal(record(first.data).retryable, false);
+  });
+});
+
 test("US-017 external reads deduplicate canonical URLs per batch resource without semantic false positives", async () => {
   const governor = new ExternalReadGovernor();
   let executions = 0;
@@ -409,7 +461,8 @@ test("US-017 recoverable failures in an external batch stay non-fatal and preser
       toolContext(1),
     ),
   );
-  assert.equal(result.outcome, "failed");
+  assert.equal(result.outcome, "partial");
+  assert.equal(result.reason, "EXTERNAL_READ_PARTIAL");
   assert.equal(result.fatal, false);
   assert.equal(result.isError, false);
   assert.equal((result.output as unknown[]).length, 2);
@@ -418,6 +471,31 @@ test("US-017 recoverable failures in an external batch stay non-fatal and preser
     toolContext(2),
   );
   assert.equal(record(negativeCache).outcome, "skipped");
+});
+
+test("US-017 classifies serialized mixed web batches as partial", async () => {
+  const governor = new ExternalReadGovernor();
+  const fetch = governor.wrap({
+    name: "fetch_web_content",
+    description: "fetch",
+    inputSchema: { type: "object" },
+    execute: async () => ({
+      isError: false,
+      output: JSON.stringify([
+        { query: "https://example.test/available", success: true },
+        { query: "https://example.test/missing", status: 404, success: false },
+      ]),
+    }),
+  });
+  const result = record(
+    await fetch.execute(
+      { requests: [{ url: "https://example.test/available" }] },
+      toolContext(1),
+    ),
+  );
+  assert.equal(result.outcome, "partial");
+  assert.equal(result.reason, "EXTERNAL_READ_PARTIAL");
+  assert.equal((result.output as unknown[]).length, 2);
 });
 
 test("US-017 repeated external reads reduce serialized token proxies by at least seventy percent", async () => {
@@ -985,6 +1063,38 @@ class PnpmExecutor implements TaskExecutor {
       stderr: "",
       stdout: "",
     };
+  }
+}
+
+class BrokenPnpmExecutor implements TaskExecutor {
+  executions = 0;
+
+  capability() {
+    return Promise.resolve("worktree" as const);
+  }
+
+  dependencyCapability(): Promise<DependencyExecutorCapability> {
+    return Promise.resolve({
+      available: true,
+      network: "managed_allowlist",
+    });
+  }
+
+  healthCheck() {
+    return Promise.resolve({ available: true, isolation: "worktree" as const });
+  }
+
+  execute(): Promise<TaskExecutionResult> {
+    this.executions += 1;
+    return Promise.resolve({
+      exitCode: null,
+      isolation: "worktree",
+      outputTruncated: false,
+      signal: null,
+      status: "execution_error",
+      stderr: "",
+      stdout: "registry proxy unavailable",
+    });
   }
 }
 

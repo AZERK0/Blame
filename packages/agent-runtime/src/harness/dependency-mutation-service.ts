@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
+import { redactSecuritySecrets } from "../security-secret-redaction.js";
 import { ArtifactStore } from "./artifact-store.js";
 import { ChangeService } from "./change-service.js";
 import { stableJson } from "./change-store.js";
@@ -410,13 +411,11 @@ export class DependencyMutationService {
     const health = await this.executor.healthCheck?.(executionInput);
     if (health && !health.available)
       throw new Error(
-        `EXECUTION_ERROR:${health.stderr ?? "Executor unavailable."}`,
+        `DEPENDENCY_EXECUTOR_UNAVAILABLE:${health.stderr ?? "Executor unavailable."}`,
       );
     const result = await this.executor.execute(executionInput);
     if (result.status !== "passed")
-      throw new Error(
-        `EXECUTION_ERROR:Dependency lockfile update ${result.status}: ${result.stderr.slice(0, 1_000)}`,
-      );
+      throw new Error(dependencyExecutionFailure(executionInput, result));
     return result;
   }
 
@@ -447,6 +446,41 @@ export class DependencyMutationService {
           reason: health.stderr ?? "DEPENDENCY_EXECUTOR_UNAVAILABLE",
         };
   }
+}
+
+function dependencyExecutionFailure(
+  input: TaskExecutionInput,
+  result: Awaited<ReturnType<TaskExecutor["execute"]>>,
+) {
+  const prefix = dependencyExecutionFailurePrefix(result.status);
+  const command = [input.executable, ...input.args].join(" ");
+  const diagnostic = dependencyExecutionDiagnostic(result);
+  return `${prefix}:command=${command}; status=${result.status}; exit_code=${result.exitCode ?? "none"}; signal=${result.signal ?? "none"}; isolation=${result.isolation}; ${diagnostic}`;
+}
+
+function dependencyExecutionFailurePrefix(status: string) {
+  if (status === "cancelled") return "CANCELLED";
+  if (status === "execution_error" || status === "timed_out")
+    return "DEPENDENCY_EXECUTOR_UNAVAILABLE";
+  return "EXECUTION_ERROR";
+}
+
+function dependencyExecutionDiagnostic(
+  result: Awaited<ReturnType<TaskExecutor["execute"]>>,
+) {
+  const output = result.stderr.trim() || result.stdout.trim();
+  const detail = output || "No stdout or stderr was captured.";
+  return `diagnostic=${redactedDependencyOutput(detail).slice(0, 2_000)}`;
+}
+
+function redactedDependencyOutput(value: string) {
+  return redactSecuritySecrets(value.slice(0, 4_000))
+    .replace(/(https?:\/\/)[^@\s/]+@/giu, "$1<REDACTED>@")
+    .replace(
+      /([?&](?:access_token|auth|key|password|secret|token)=)[^&\s]+/giu,
+      "$1<REDACTED>",
+    )
+    .replace(/((?:_authToken|password)\s*[=:]\s*)\S+/giu, "$1<REDACTED>");
 }
 
 async function dependencyExecutionInput(input: {

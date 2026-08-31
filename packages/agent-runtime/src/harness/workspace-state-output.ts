@@ -277,6 +277,9 @@ function compactDependencyInventory(
   const lockfile = recordValue(value.lockfile);
   return {
     mutation: compactMutation(value.mutation),
+    objective_dependency_candidates: arrayValue(
+      value.objective_dependency_candidates,
+    ),
     manifests,
     lockfile: {
       present: lockfile.present,

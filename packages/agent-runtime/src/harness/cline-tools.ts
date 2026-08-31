@@ -8,7 +8,8 @@ import { z } from "zod";
 import { redactSecurityValue } from "../security-secret-redaction.js";
 import type { PreviewDependencyRefreshResult } from "../preview-harness-tools.js";
 import { ConversationMemoryStore } from "./conversation-memory.js";
-import { harnessFeatureEnabled } from "./harness-feature-flags.js";
+import { resolveClineContextEpoch } from "./cline-context-epoch.js";
+import { ClineReadMemory } from "./cline-read-memory.js";
 import {
   boundHarnessResult,
   harnessError,
@@ -63,7 +64,6 @@ import {
 import type { SemanticWorkspaceOptions } from "./semantic-workspace.js";
 import { WorkspaceFiles } from "./workspace-files.js";
 import type { WorkspaceRevisionState } from "./workspace-revisions.js";
-import { semanticCallSignature } from "./semantic-loop-detector.js";
 import { compactWorkspaceStateResult } from "./workspace-state-output.js";
 import { HarnessToolObservability } from "./tool-observability.js";
 
@@ -71,6 +71,7 @@ export { semanticWorkspaceReadToolNames, semanticWorkspaceWriteToolNames };
 
 export type SemanticWorkspaceToolsOptions = SemanticWorkspaceOptions & {
   executor?: SemanticWorkspaceBridgeExecutor;
+  initialTaskBriefing?: string;
   protocolVersion?: "2" | "3";
   refreshPreviewDependencies?(): Promise<PreviewDependencyRefreshResult>;
 };
@@ -86,7 +87,10 @@ export function semanticWorkspaceTools(
   const navigationFiles = new WorkspaceFiles(workspaceRoot);
   const canonicalMapper = new CanonicalResultMapper();
   const recoveryController = new RecoveryController(navigationFiles);
-  const activeReads = new Set<string>();
+  const readMemory = new ClineReadMemory(
+    navigationFiles,
+    options.initialTaskBriefing,
+  );
   const observability = new HarnessToolObservability(workspaceRoot);
   const createHarnessTool = <TSchema extends z.ZodTypeAny>(
     input: HarnessToolDefinition<TSchema>,
@@ -105,19 +109,13 @@ export function semanticWorkspaceTools(
     input: unknown,
     context: AgentToolContext,
   ) => {
-    const contextEpoch = await activeContextEpoch(
+    const contextEpoch = await resolveClineContextEpoch(
       workspaceRoot,
       options.taskContract?.session_id,
       context,
     );
-    const reservation = await reserveRead(
-      navigationFiles,
-      activeReads,
-      tool,
-      input,
-    );
-    if (reservation?.duplicate)
-      return inFlightReadReceipt(reservation.revision);
+    const read = await readMemory.before(tool, input, contextEpoch);
+    if (read.result) return read.result;
     try {
       const delegated = await executor(
         executionRequest(
@@ -141,9 +139,10 @@ export function semanticWorkspaceTools(
         tool,
         result,
       );
+      readMemory.complete(read.key, result);
       return result;
     } finally {
-      if (reservation) activeReads.delete(reservation.key);
+      readMemory.release(read.key);
     }
   };
   return [
@@ -521,63 +520,6 @@ function mutationApplied(result: SemanticWorkspaceExecutionResult) {
   return (
     result.status === "success" && recordValue(result.data).status === "applied"
   );
-}
-
-async function reserveRead(
-  files: WorkspaceFiles,
-  activeReads: Set<string>,
-  tool: SemanticWorkspaceToolName,
-  input: unknown,
-) {
-  if (!semanticWorkspaceReadToolNames.some((name) => name === tool))
-    return undefined;
-  const { revision } = await files.snapshot().catch(() => ({
-    revision: undefined,
-  }));
-  if (!revision) return undefined;
-  const key = `${revision.source_revision_id}:${semanticCallSignature(tool, input)}`;
-  const duplicate = activeReads.has(key);
-  if (!duplicate) activeReads.add(key);
-  return { duplicate, key, revision };
-}
-
-function inFlightReadReceipt(revision: {
-  source_revision_id: string;
-  environment_revision_id?: string;
-}) {
-  return harnessSuccess({
-    startedAt: Date.now(),
-    revision,
-    provenance: [],
-    outcome: "skipped",
-    reason: "READ_IN_FLIGHT",
-    recommendation: "Reuse the active read receipt.",
-    coverage: { scope: "unknown", truncated: true },
-    data: {
-      status: "in_flight_reused",
-      duplicate_broad_read_suppressed: true,
-      content_coverage: "none",
-      shared_iteration_budget_suppressed: false,
-    },
-  });
-}
-
-async function activeContextEpoch(
-  workspaceRoot: string,
-  sessionId: string | undefined,
-  context: AgentToolContext,
-) {
-  const explicit = context.metadata?.contextEpoch;
-  if (typeof explicit === "string" && explicit) return explicit;
-  if (sessionId && harnessFeatureEnabled("BLAME_CONTEXT_EPOCHS"))
-    return new ConversationMemoryStore(
-      workspaceRoot,
-      sessionId,
-    ).currentEpochId();
-  const firstMessageId = context.snapshot?.messages[0]?.id;
-  if (firstMessageId)
-    return `${context.conversationId ?? context.sessionId ?? "context"}:${firstMessageId}`;
-  return context.runId ?? context.conversationId;
 }
 
 async function visibleResult<T>(

@@ -132,7 +132,7 @@ test("US-021 edits and moves Prisma text when validation is unsupported", async 
   });
 });
 
-test("US-021 mutates dependencies without losing unchanged read coverage", async () => {
+test("US-021 rehydrates unchanged source when dependency work crosses context epochs", async () => {
   await withUs021Workspace(async (root) => {
     const executor = new Us021PnpmExecutor();
     const workspace = new SemanticWorkspace(root, { taskExecutor: executor });
@@ -170,7 +170,7 @@ test("US-021 mutates dependencies without losing unchanged read coverage", async
     assert.equal(mutation.outcome, "applied");
     assert.equal(executor.executions, 1);
     assert.equal(firstRead.outcome, "completed");
-    assert.equal(repeatedRead.outcome, "skipped");
+    assert.equal(repeatedRead.outcome, "completed");
   });
 });
 

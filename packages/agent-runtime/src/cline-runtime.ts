@@ -862,11 +862,13 @@ export class BlameAgentRuntime {
             }
           : undefined,
         previewMcpTools,
+        initialTaskBriefing,
       );
       const specialistTool = input.enableSpecialistConsult
         ? runtimeConsultSpecialistTool({
             credential: resolvedCredential,
             input,
+            initialTaskBriefing,
             objective: input.taskObjective ?? input.prompt,
             readOnlyTools: readOnlyRuntimeTools(
               this.options,
@@ -875,6 +877,7 @@ export class BlameAgentRuntime {
               taskContract,
               semanticExecutor,
               externalReadGovernor,
+              initialTaskBriefing,
             ),
             externalReadGovernor,
           })
@@ -1386,6 +1389,10 @@ export class BlameAgentRuntime {
         executionId,
         timeoutMs,
       });
+      this.emitSessionNotice(
+        sessionId,
+        `The model has been silent for ${Math.ceil(timeoutMs / 1_000)} seconds. Blame is preserving the run and waiting for one final response window.`,
+      );
       return;
     }
     const message = `Agent model produced no activity for ${Math.ceil(timeoutMs / 1_000)} seconds.`;
@@ -4271,12 +4278,14 @@ function runtimeTools(
     onValidationActivity(activity: NativeValidationActivity): Promise<void>;
   },
   previewMcpTools: AgentTool[] = [],
+  initialTaskBriefing?: string,
 ) {
   const tools = [
     ...semanticWorkspaceTools(worktree, {
       taskContract,
       executor: semanticWorkspaceExecutor,
       protocolVersion: "3",
+      initialTaskBriefing,
       ...(options.refreshPreviewDependencies && previewContext
         ? {
             refreshPreviewDependencies: () =>
@@ -4325,6 +4334,7 @@ function readOnlyRuntimeTools(
   },
   semanticWorkspaceExecutor: SemanticWorkspaceBridgeExecutor | undefined,
   externalReadGovernor?: ExternalReadGovernor,
+  initialTaskBriefing?: string,
 ) {
   const allowedTools = new Set([
     ...semanticWorkspaceReadToolNames,
@@ -4339,6 +4349,9 @@ function readOnlyRuntimeTools(
       taskContract,
       semanticWorkspaceExecutor,
       externalReadGovernor,
+      undefined,
+      [],
+      initialTaskBriefing,
     ) ?? []
   ).filter((tool) => allowedTools.has(tool.name));
 }
@@ -4365,6 +4378,7 @@ function runtimeConsultSpecialistTool(options: {
     baseUrl: string | null;
   };
   input: RuntimeStartSessionInput;
+  initialTaskBriefing?: string;
   objective?: string;
   readOnlyTools: AgentTool[];
   externalReadGovernor?: ExternalReadGovernor;
@@ -4374,7 +4388,9 @@ function runtimeConsultSpecialistTool(options: {
     objective: options.objective,
     spawnTool: specialistSpawnTool(options),
     storyId: options.input.storyId,
-    timeoutMs: adaptiveSpecialistTimeoutMs(options.input.reasoningEffort),
+    timeoutMs: adaptiveSpecialistTimeoutMs(
+      specialistReasoningEffort(options.input.reasoningEffort),
+    ),
   });
   return options.externalReadGovernor?.wrap(tool) ?? tool;
 }
@@ -4389,7 +4405,9 @@ function specialistSpawnTool(options: {
     modelId: options.input.modelId,
     apiKey: options.credential.apiKey,
     baseUrl: options.credential.baseUrl ?? undefined,
-    ...reasoningConfig(options.input.reasoningEffort),
+    ...reasoningConfig(
+      specialistReasoningEffort(options.input.reasoningEffort),
+    ),
     cwd: options.input.cwd,
     maxIterations: 16,
   });
@@ -4410,16 +4428,28 @@ function specialistSpawnTool(options: {
 
 function specialistCapsuleProvider(options: {
   input: RuntimeStartSessionInput;
+  initialTaskBriefing?: string;
   objective?: string;
 }) {
-  return (consultation: { task: string }) =>
-    changeRequestCapsule({
+  return async (consultation: { task: string }) => {
+    const continuity = await changeRequestCapsule({
       conversationId: `${options.input.sessionId ?? options.input.storyId ?? "specialist"}:consultation`,
       newRequest: consultation.task,
       storySummary: options.objective ?? "",
       storyTitle: options.input.storyId ?? "Active change request",
       workspaceRoot: options.input.cwd,
     });
+    const briefing = options.initialTaskBriefing
+      ? `<runtime_task_briefing>\n${options.initialTaskBriefing}\n</runtime_task_briefing>`
+      : undefined;
+    return [continuity, briefing].filter(Boolean).join("\n\n");
+  };
+}
+
+function specialistReasoningEffort(
+  effort: RuntimeStartSessionInput["reasoningEffort"],
+) {
+  return effort === "xhigh" || effort === "max" ? "high" : effort;
 }
 
 async function projectInitializationInputFromMessages(
@@ -6377,7 +6407,24 @@ export function retryableModelTransportFailure(error: unknown) {
   ]
     .filter(Boolean)
     .join(" ");
+  if (nonRetryableProviderFailure(message)) return false;
+  return transportInterruption(message) || transientProviderFailure(message);
+}
+
+function transportInterruption(message: string) {
   return /(?:UND_ERR_(?:SOCKET|BODY_TIMEOUT|CONNECT_TIMEOUT|HEADERS_TIMEOUT)|ECONNRESET|EPIPE|ERR_STREAM_PREMATURE_CLOSE|terminated[^\n]*socket|socket[^\n]*other side closed)/iu.test(
+    message,
+  );
+}
+
+function transientProviderFailure(message: string) {
+  return /(?:an error occurred while processing your request[\s\S]{0,500}(?:retry|request id)|internal server error|service temporarily unavailable|provider[^\n]*(?:overloaded|unavailable)|(?:http|status(?: code)?)\s*50[0234]\b)/iu.test(
+    message,
+  );
+}
+
+function nonRetryableProviderFailure(message: string) {
+  return /(?:\b(?:401|403|429)\b|api[_ -]?key|authentication|authorization|billing|content policy|insufficient quota|invalid request|rate limit)/iu.test(
     message,
   );
 }
