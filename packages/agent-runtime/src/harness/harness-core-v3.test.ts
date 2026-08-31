@@ -23,6 +23,7 @@ import {
 } from "./run-lifecycle.js";
 import { RecoveryController } from "./recovery-controller.js";
 import { WorkspaceFiles } from "./workspace-files.js";
+import { currentWorkspaceRevisionState } from "./workspace-revisions.js";
 
 test("canonical result mapper rejects unproven effects", () => {
   const mapper = new CanonicalResultMapper();
@@ -159,7 +160,11 @@ test("Cline v3 suppresses repeated invalid input until input changes", async () 
     const input = { target: { path: "package.json" }, view: "body" };
     const context = { agentId: "test", iteration: 1, runId: "invalid-run" };
     const first = await tool.execute(input, context);
-    const second = await tool.execute(input, { ...context, iteration: 2 });
+    const second = await tool.execute(input, {
+      ...context,
+      iteration: 2,
+      runId: "different-run",
+    });
     assert.equal(
       (first as { issue?: { code?: string } }).issue?.code,
       "INVALID_INPUT",
@@ -299,44 +304,42 @@ test("Cline accepts canonical results from the managed bridge", async () => {
   }
 });
 
-test("runtime recovery fingerprint observes dependency installation", async () => {
+test("runtime recovery consumes the canonical workspace revisions", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-v3-runtime-state-"));
   try {
+    await writeFile(join(root, "package.json"), '{"scripts":{}}\n');
     const controller = new RecoveryController(new WorkspaceFiles(root));
-    const context = { agentId: "runtime-state", iteration: 1 };
-    const before = controller.environmentFingerprint(context);
-    await mkdir(join(root, "node_modules"));
-    await writeFile(join(root, "node_modules/runtime-marker"), "available\n");
-    const after = controller.environmentFingerprint(context);
-    assert.notEqual(after, before);
+    const current = await currentWorkspaceRevisionState(root);
+    assert.deepEqual(await controller.currentRevisions(), current);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
 });
 
-test("canonical bridge results retain the requested output bound", async () => {
-  const executor = canonicalSemanticWorkspaceExecutor(async () =>
-    harnessSuccess({
-      data: { items: Array.from({ length: 100 }, () => "x".repeat(500)) },
-      revision: { source_revision_id: "src_current" },
-      startedAt: Date.now(),
-      provenance: [],
-    }),
-  );
-  const tool = semanticWorkspaceTools("/workspace", {
-    executor,
-    protocolVersion: "3",
-  }).find(({ name }) => name === "search_code");
-  assert.ok(tool);
-  const result = await tool.execute(
-    {
-      query: { kind: "text", pattern: "value" },
-      budget: { max_output_tokens: 200 },
-    },
-    { agentId: "canonical-budget", iteration: 1 },
-  );
-  assert.ok(Buffer.byteLength(JSON.stringify(result), "utf8") <= 800);
-});
+test("canonical bridge results retain the requested output bound", async () =>
+  withHarnessWorkspace(async (root) => {
+    const executor = canonicalSemanticWorkspaceExecutor(async () =>
+      harnessSuccess({
+        data: { items: Array.from({ length: 100 }, () => "x".repeat(500)) },
+        revision: { source_revision_id: "src_current" },
+        startedAt: Date.now(),
+        provenance: [],
+      }),
+    );
+    const tool = semanticWorkspaceTools(root, {
+      executor,
+      protocolVersion: "3",
+    }).find(({ name }) => name === "search_code");
+    assert.ok(tool);
+    const result = await tool.execute(
+      {
+        query: { kind: "text", pattern: "value" },
+        budget: { max_output_tokens: 200 },
+      },
+      { agentId: "canonical-budget", iteration: 1 },
+    );
+    assert.ok(Buffer.byteLength(JSON.stringify(result), "utf8") <= 800);
+  }));
 
 test("external runtime limits normalize to the single failed lifecycle state", () => {
   const lifecycles = new RunLifecycleRegistry();
@@ -468,4 +471,16 @@ async function dependencyMutationFixture(
 function previewRefreshStatus(value: unknown) {
   return (value as { data?: { preview_refresh?: { status?: string } } }).data
     ?.preview_refresh?.status;
+}
+
+async function withHarnessWorkspace(
+  operation: (root: string) => Promise<void>,
+) {
+  const root = await mkdtemp(join(tmpdir(), "blame-v3-workspace-"));
+  try {
+    await writeFile(join(root, "package.json"), '{"scripts":{}}\n');
+    await operation(root);
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
 }

@@ -27,9 +27,9 @@ import type {
 } from "./semantic-executor.js";
 import { harnessError, sha256 } from "./protocol.js";
 import { validateContent } from "./content-validation.js";
-import { environmentSpec } from "./environment-service.js";
 import { readTaskCatalog } from "./task-catalog.js";
 import { WorkspaceFiles } from "./workspace-files.js";
+import { WorkspaceStateAuthority } from "./workspace-revisions.js";
 
 export const nativeCompletionToolName = "submit_and_exit";
 
@@ -620,13 +620,13 @@ async function completionEvidencePlan(
   const revision = await completionRevision(workspaceRoot, state, changes);
   const files = new WorkspaceFiles(workspaceRoot);
   const snapshot = await files.snapshot();
-  const environment = await environmentSpec(files, snapshot);
+  const revisions = await new WorkspaceStateAuthority(files).current(snapshot);
   const paths = unique(changes.flatMap((change) => change.files));
   const capabilityLanguages = capabilitySnapshot(paths);
   const snapshotId = `capability://${sha256(JSON.stringify(capabilityLanguages))}`;
   return new EvidencePlanner().plan({
     source_revision_id: revision,
-    environment_revision_id: environment.environment_spec_revision_id,
+    environment_revision_id: revisions.environment_revision_id,
     change_receipts: changes.map((change) => change.id),
     changed_files: paths,
     changed_symbols: changedSymbols(changes),
@@ -639,7 +639,7 @@ async function completionEvidencePlan(
         state,
         changes,
         capabilityLanguages,
-        environment.environment_spec_revision_id,
+        revisions.environment_revision_id,
       ),
       ...outcomeEvidence,
     ],

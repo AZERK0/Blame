@@ -23,6 +23,7 @@ export {
 } from "./harness/adapter-conformance.js";
 export {
   currentWorkspaceRevisionState,
+  WorkspaceStateAuthority,
   type WorkspaceRevisionState,
 } from "./harness/workspace-revisions.js";
 export {

@@ -22,8 +22,8 @@ export type CanonicalResultContext = {
   toolCallId?: string;
   tool: string;
   producerVersion?: string;
-  environmentFingerprint?: string;
   environmentRevisionId?: string;
+  sourceRevisionId?: string;
 };
 
 export class CanonicalResultMapper {
@@ -188,11 +188,14 @@ function canonicalProvenance<T>(
       ? legacy.subject_revision
       : legacy.subject_revision;
   return {
-    source_revision_id: revision?.source_revision_id ?? "src_unavailable",
+    source_revision_id:
+      revision?.source_revision_id ??
+      context.sourceRevisionId ??
+      "src_unavailable",
     environment_revision_id:
       revision?.environment_spec_revision_id ??
       context.environmentRevisionId ??
-      `env_${digest(context.environmentFingerprint ?? "unavailable").slice(0, 32)}`,
+      `env_${digest("unavailable").slice(0, 32)}`,
     execution_id: context.executionId,
     ...(context.toolCallId ? { tool_call_id: context.toolCallId } : {}),
     produced_at: new Date().toISOString(),
@@ -342,7 +345,7 @@ function recoveryCondition(
   if (/UNSUPPORTED/u.test(code)) return { condition: "never" };
   return {
     condition: "runtime_state_change",
-    fingerprint: context.environmentFingerprint ?? digest(stableJson(recovery)),
+    fingerprint: context.environmentRevisionId ?? digest(stableJson(recovery)),
   };
 }
 

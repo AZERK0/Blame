@@ -5,6 +5,7 @@ import {
 } from "./protocol-v3-adapter.js";
 import type { HarnessToolResult } from "./protocol.js";
 import { SemanticWorkspace } from "./semantic-workspace.js";
+import { currentWorkspaceRevisionState } from "./workspace-revisions.js";
 
 export const semanticWorkspaceReadToolNames = [
   "workspace_state",
@@ -121,7 +122,7 @@ export function canonicalSemanticWorkspaceExecutor(
   return async (request, signal) =>
     mapper.map(
       await executor(request, signal),
-      canonicalResultContext(request),
+      await canonicalResultContext(request),
     );
 }
 
@@ -157,7 +158,7 @@ export async function executeCanonicalSemanticWorkspaceRequest(
   const mapper = new CanonicalResultMapper();
   return mapper.map(
     await executeSemanticWorkspaceRequest(request, signal),
-    canonicalResultContext(request),
+    await canonicalResultContext(request),
   );
 }
 
@@ -227,7 +228,10 @@ function recordInput(input: unknown): Record<string, unknown> {
     : {};
 }
 
-function canonicalResultContext(request: SemanticWorkspaceExecutionRequest) {
+async function canonicalResultContext(
+  request: SemanticWorkspaceExecutionRequest,
+) {
+  const revisions = await currentWorkspaceRevisionState(request.workspaceRoot);
   return {
     executionId:
       request.toolContext?.executionId ??
@@ -237,6 +241,8 @@ function canonicalResultContext(request: SemanticWorkspaceExecutionRequest) {
     ...(request.toolContext?.toolCallId
       ? { toolCallId: request.toolContext.toolCallId }
       : {}),
+    sourceRevisionId: revisions.source_revision_id,
+    environmentRevisionId: revisions.environment_revision_id,
     tool: request.tool,
   };
 }

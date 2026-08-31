@@ -15,6 +15,7 @@ import {
 import { harnessError, harnessSuccess } from "./protocol.js";
 import type { SemanticWorkspaceExecutor } from "./semantic-executor.js";
 import { WorkspaceFiles } from "./workspace-files.js";
+import { currentWorkspaceRevisionState } from "./workspace-revisions.js";
 
 test("the installed Cline SDK exposes exactly the native terminal contract", async () => {
   await withCompletion(
@@ -358,8 +359,12 @@ test("a persisted successful validation is reused after reconnection", async () 
     const files = new WorkspaceFiles(root);
     const snapshot = await files.snapshot();
     const sourceRevisionId = snapshot.revision.source_revision_id;
-    const environmentRevisionId = (await environmentSpec(files, snapshot))
+    const genericEnvironmentRevisionId = (
+      await environmentSpec(files, snapshot)
+    ).environment_revision_id;
+    const environmentRevisionId = (await currentWorkspaceRevisionState(root))
       .environment_revision_id;
+    assert.notEqual(environmentRevisionId, genericEnvironmentRevisionId);
     await memory.recordValidation({
       environmentRevisionId,
       id: "run://passed",

@@ -42,6 +42,7 @@ import { editFilesInputSchema } from "./schemas.js";
 import { SemanticWorkspace } from "./semantic-workspace.js";
 import { WorkspaceFiles } from "./workspace-files.js";
 import { WorkspaceOverlay } from "./workspace-overlay.js";
+import { currentWorkspaceRevisionState } from "./workspace-revisions.js";
 import {
   SemanticLoopDetector,
   semanticCallSignature,
@@ -1458,34 +1459,7 @@ test("package registry bootstrap failures are infrastructure errors", async () =
 });
 
 test("run_task repairs exit 1 MODULE_NOT_FOUND for a declared dependency", async () => {
-  await withWorkspace(async (root) => {
-    await writeFile(
-      join(root, "package.json"),
-      JSON.stringify({
-        dependencies: { "fixture-package": "1.0.0" },
-        scripts: { build: "node build.js" },
-      }),
-    );
-    await writeFixtureDependency(root, false);
-    const executor = new ModuleRepairTaskExecutor();
-    const workspace = new SemanticWorkspace(root, { taskExecutor: executor });
-    const revision = success(await workspace.workspaceState()).data
-      .source_revision.source_revision_id;
-    const run = success(
-      await workspace.runTask({
-        source_revision_id: revision,
-        task: { task_id: "build" },
-        limits: { timeout_ms: 10_000 },
-      }),
-    );
-    assert.equal(run.data.status, "passed");
-    assert.deepEqual(run.data.environment_repair, {
-      attempted: true,
-      status: "recovered",
-    });
-    assert.equal(executor.executions, 3);
-    assert.equal(executor.dependencyExecutions, 1);
-  });
+  await withWorkspace(moduleRepairScenario);
 });
 
 test("run_task reports executor health failures without executing commands", async () => {
@@ -1565,6 +1539,44 @@ class ModuleRepairTaskExecutor implements TaskExecutor {
       isolation: "worktree",
     };
   }
+}
+
+async function moduleRepairScenario(root: string) {
+  await prepareModuleRepairWorkspace(root);
+  const executor = new ModuleRepairTaskExecutor();
+  const workspace = new SemanticWorkspace(root, { taskExecutor: executor });
+  const revision = success(await workspace.workspaceState()).data
+    .source_revision.source_revision_id;
+  const run = success(
+    await workspace.runTask({
+      source_revision_id: revision,
+      task: { task_id: "build" },
+      limits: { timeout_ms: 10_000 },
+    }),
+  );
+  assert.equal(run.data.status, "passed");
+  assert.deepEqual(run.data.environment_repair, {
+    attempted: true,
+    status: "recovered",
+  });
+  assert.equal(executor.executions, 3);
+  assert.equal(executor.dependencyExecutions, 1);
+  const current = await currentWorkspaceRevisionState(root);
+  assert.equal(
+    run.data.environment_spec_revision_id,
+    current.environment_revision_id,
+  );
+}
+
+async function prepareModuleRepairWorkspace(root: string) {
+  await writeFile(
+    join(root, "package.json"),
+    JSON.stringify({
+      dependencies: { "fixture-package": "1.0.0" },
+      scripts: { build: "node build.js" },
+    }),
+  );
+  await writeFixtureDependency(root, false);
 }
 
 function passedTaskExecution(input: TaskExecutionInput): TaskExecutionResult {

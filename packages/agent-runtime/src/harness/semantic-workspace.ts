@@ -1,7 +1,6 @@
 import { ArtifactStore } from "./artifact-store.js";
 import { EditService, type EditCodeOutcome } from "./edit-service.js";
 import type { ValidationStatus } from "./content-validation.js";
-import { environmentSpec } from "./environment-service.js";
 import {
   materializeSymbol,
   outlineSymbol,
@@ -66,6 +65,7 @@ import {
   WorkspaceFiles,
   type WorkspaceSnapshot,
 } from "./workspace-files.js";
+import { WorkspaceStateAuthority } from "./workspace-revisions.js";
 import { searchWithRipgrep } from "./lexical-search.js";
 import {
   capabilityRegistrySnapshot,
@@ -249,7 +249,9 @@ export class SemanticWorkspace {
             workspace_state_ref: previousReceipt,
           } as WorkspaceStateData,
         });
-      const environment = await environmentSpec(this.files, snapshot);
+      const environment = await new WorkspaceStateAuthority(
+        this.files,
+      ).environment(snapshot);
       const languages = Object.entries(
         countBy(
           snapshot.files.map(languageName).filter((name) => name !== "unknown"),

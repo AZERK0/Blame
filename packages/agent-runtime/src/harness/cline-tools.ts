@@ -62,6 +62,7 @@ import {
 } from "./semantic-executor.js";
 import type { SemanticWorkspaceOptions } from "./semantic-workspace.js";
 import { WorkspaceFiles } from "./workspace-files.js";
+import type { WorkspaceRevisionState } from "./workspace-revisions.js";
 import { semanticCallSignature } from "./semantic-loop-detector.js";
 import { compactWorkspaceStateResult } from "./workspace-state-output.js";
 import { HarnessToolObservability } from "./tool-observability.js";
@@ -91,8 +92,7 @@ export function semanticWorkspaceTools(
     input: HarnessToolDefinition<TSchema>,
   ) =>
     buildHarnessTool(input, {
-      environmentFingerprint: (context) =>
-        recoveryController.environmentFingerprint(context),
+      currentRevisions: () => recoveryController.currentRevisions(),
       mapper: canonicalMapper,
       observability,
       protocolVersion: options.protocolVersion ?? "2",
@@ -600,7 +600,7 @@ type HarnessToolDefinition<TSchema extends z.ZodTypeAny> = {
 };
 
 type HarnessProtocol = {
-  environmentFingerprint(context: AgentToolContext): string;
+  currentRevisions(): Promise<WorkspaceRevisionState>;
   mapper: CanonicalResultMapper;
   observability: HarnessToolObservability;
   protocolVersion: "2" | "3";
@@ -649,7 +649,7 @@ async function executeHarnessToolCall<TSchema extends z.ZodTypeAny>(
 ) {
   const retrySuppression =
     protocol.protocolVersion === "3"
-      ? await protocol.recoveryController.before(input.name, raw, context)
+      ? await protocol.recoveryController.before(input.name, raw)
       : undefined;
   if (retrySuppression)
     return mapCanonicalResult(
@@ -805,7 +805,7 @@ function publishCanonicalResult(
   return result;
 }
 
-function publishToolResult(
+async function publishToolResult(
   result: HarnessToolResult<unknown>,
   input: unknown,
   tool: SemanticWorkspaceToolName,
@@ -816,31 +816,28 @@ function publishToolResult(
     return result.status === "error"
       ? { output: result, isError: result.fatal }
       : result;
-  const canonical = mapCanonicalResult(result, tool, context, protocol);
+  const canonical = await mapCanonicalResult(result, tool, context, protocol);
   protocol.recoveryController.observe(tool, input, canonical);
   return canonical;
 }
 
-function mapCanonicalResult(
+async function mapCanonicalResult(
   result: HarnessToolResult<unknown>,
   tool: SemanticWorkspaceToolName,
   context: AgentToolContext,
   protocol: HarnessProtocol,
 ) {
+  const revisions = await protocol.currentRevisions();
   return protocol.mapper.map(
     result,
-    canonicalToolContext(
-      tool,
-      context,
-      protocol.environmentFingerprint(context),
-    ),
+    canonicalToolContext(tool, context, revisions),
   );
 }
 
 function canonicalToolContext(
   tool: string,
   context: AgentToolContext,
-  environmentFingerprint?: string,
+  revisions: WorkspaceRevisionState,
 ) {
   return {
     executionId:
@@ -849,7 +846,8 @@ function canonicalToolContext(
       context.conversationId ??
       "cline-execution",
     ...(context.toolCallId ? { toolCallId: context.toolCallId } : {}),
-    ...(environmentFingerprint ? { environmentFingerprint } : {}),
+    sourceRevisionId: revisions.source_revision_id,
+    environmentRevisionId: revisions.environment_revision_id,
     tool,
   };
 }
