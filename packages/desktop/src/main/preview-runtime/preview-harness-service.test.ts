@@ -36,6 +36,32 @@ test("failed previews return immediately with their failure", async () => {
   assert.equal(state.message, "Web container exited");
 });
 
+test("HTTP 500 preview diagnostics fail without a readiness wait", async () => {
+  let refreshes = 0;
+  const state = await resolvePreviewHarnessState(
+    async () =>
+      previewHarnessState(
+        {
+          ...browserTarget(true),
+          application: {
+            status: "failed",
+            httpStatus: 500,
+            diagnostic: "Failed to compile: module not found",
+          },
+        },
+        readyLifecycle(),
+      ),
+    "ready",
+    async () => {
+      refreshes += 1;
+    },
+  );
+  assert.equal(state.status, "failed");
+  assert.equal(state.readiness.application_ready, false);
+  assert.match(state.message, /module not found/iu);
+  assert.equal(refreshes, 0);
+});
+
 test("ready waits only while the preview is actively starting", async () => {
   let browserInspections = 0;
   let lifecycleInspections = 0;
@@ -52,8 +78,8 @@ test("ready waits only while the preview is actively starting", async () => {
 
   assert.equal(state.status, "ready");
   assert.equal(state.available, true);
-  assert.equal(state.reason, "PREVIEW_BROWSER_READY");
-  assert.match(state.message, /health is not yet verified/iu);
+  assert.equal(state.reason, "PREVIEW_APPLICATION_READY");
+  assert.equal(state.readiness.application_ready, true);
 });
 
 test("none returns the current starting state without refreshing", async () => {
@@ -101,6 +127,9 @@ test("stopping is non-waitable", () => {
 
 function browserTarget(available = false, loading = false) {
   return {
+    ...(available
+      ? { application: { status: "ready" as const, httpStatus: 200 } }
+      : {}),
     available,
     browserUrl: "http://127.0.0.1:9222",
     ...(available || loading ? { currentUrl: "http://127.0.0.1:3000/" } : {}),

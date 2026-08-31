@@ -17,7 +17,10 @@ import type { AgentEvent } from "../types.js";
 import { semanticWorkspaceTools } from "./cline-tools.js";
 import { maximumSemanticParseBytes } from "./code-navigation-policy.js";
 import { HarnessCostGovernor } from "./cost-governor.js";
-import { dependencyCacheRoot } from "./dependency-cache.js";
+import {
+  dependencyCacheRoot,
+  writeDependencyCacheManifest,
+} from "./dependency-cache.js";
 import { ExternalReadGovernor } from "./external-read-governor.js";
 import { harnessSuccess, type HarnessToolResult } from "./protocol.js";
 import type { TaskCatalogItem } from "./schemas.js";
@@ -216,7 +219,25 @@ test("US-016 resets the dependency circuit when a prepared cache appears", async
       ["package.json", "pnpm-lock.yaml"],
       requiredDependencyTask(taskCatalog),
     );
-    await writeFile(join(cacheRoot, "prepared"), "ready");
+    await writeDependencyCacheManifest(cacheRoot, {
+      schema_version: "1.0",
+      dependency_digest: "prepared",
+      package_manager: "pnpm",
+      resolved_version: "10.32.1",
+      platform: process.platform,
+      architecture: process.arch,
+      runtime_target: "linux-native",
+      created_at: new Date().toISOString(),
+      integrity_probe: {
+        status: "passed",
+        cwd: root,
+        executables: {},
+        packages: {},
+        symlink_targets_present: true,
+        store_present: true,
+        checked_at: new Date().toISOString(),
+      },
+    });
     const second = workspaceForCircuit(root, executor);
     const mutation = workspaceDependencyMutation(
       success(await second.workspaceState()).data.task_projection,

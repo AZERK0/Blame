@@ -26,14 +26,18 @@ export type PreviewHarnessState = PreviewDevtoolsTarget & {
     version: string;
   };
   reason: string;
+  readiness: {
+    browser_ready: boolean;
+    container_ready: boolean;
+    application_ready: boolean;
+  };
   status: PreviewHarnessStatus;
 };
 
 const previewStatusMessages = {
   ready: {
-    message:
-      "The preview browser is connected to DevTools. Application health is not yet verified.",
-    reason: "PREVIEW_BROWSER_READY",
+    message: "The preview application is ready.",
+    reason: "PREVIEW_APPLICATION_READY",
   },
   starting: {
     message: "The preview is currently starting.",
@@ -54,6 +58,7 @@ export function previewHarnessState(
   lifecycle?: PreviewLifecycleState,
 ): PreviewHarnessState {
   const status = previewHarnessStatus(browser, lifecycle);
+  const readiness = previewReadiness(browser, lifecycle);
   return {
     ...browser,
     available: status === "ready",
@@ -65,6 +70,7 @@ export function previewHarnessState(
       version: previewDevtoolsMcpVersion,
     },
     ...previewHarnessStatusMessage(status, browser, lifecycle),
+    readiness,
     status,
   };
 }
@@ -87,6 +93,7 @@ function previewHarnessStatus(
   browser: PreviewDevtoolsTarget,
   lifecycle: PreviewLifecycleState | undefined,
 ): PreviewHarnessStatus {
+  if (browser.application?.status === "failed") return "failed";
   if (lifecycle?.status === "error") return "failed";
   if (lifecycle?.status === "idle") return "stopped";
   if (lifecycle?.status === "pending") {
@@ -95,10 +102,14 @@ function previewHarnessStatus(
   }
   if (browser.error) return "failed";
   if (lifecycle?.status === "ready") {
-    if (browser.available) return "ready";
+    if (browser.available && browser.application?.status === "ready")
+      return "ready";
+    if (browser.available) return "starting";
     return browser.loading ? "starting" : "unavailable";
   }
-  if (browser.available) return "ready";
+  if (browser.available && browser.application?.status === "ready")
+    return "ready";
+  if (browser.available) return "starting";
   if (browser.loading || browser.currentUrl) return "starting";
   return "stopped";
 }
@@ -109,13 +120,32 @@ function previewHarnessStatusMessage(
   lifecycle: PreviewLifecycleState | undefined,
 ) {
   if (status === "failed") {
-    const message = browser.error ?? lifecycle?.failure?.message;
+    const message =
+      browser.application?.diagnostic ??
+      browser.error ??
+      lifecycle?.failure?.message;
     return {
       message: message ?? "The preview failed.",
       reason: "PREVIEW_FAILED",
     };
   }
   return previewStatusMessages[status];
+}
+
+function previewReadiness(
+  browser: PreviewDevtoolsTarget,
+  lifecycle: PreviewLifecycleState | undefined,
+) {
+  const browserReady = browser.available;
+  const containerReady = lifecycle
+    ? lifecycle.status === "ready"
+    : browserReady;
+  return {
+    browser_ready: browserReady,
+    container_ready: containerReady,
+    application_ready:
+      browserReady && containerReady && browser.application?.status === "ready",
+  };
 }
 
 function previewStopping(phase: PreviewLifecycleState["phase"]) {

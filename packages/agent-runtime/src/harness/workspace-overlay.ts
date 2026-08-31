@@ -80,6 +80,7 @@ export class WorkspaceOverlay {
     snapshot: WorkspaceSnapshot,
     signal?: AbortSignal,
     runtimeInputMode: OverlayRuntimeInputMode = "readonly",
+    dependencyWorkspaceRoot = files.root,
   ) {
     const directory = await mkdtemp(join(tmpdir(), "blame-run-overlay-"));
     const workspace = join(directory, "workspace");
@@ -92,7 +93,7 @@ export class WorkspaceOverlay {
         ),
       );
       const readonlyInputs = await prepareRuntimeInputs(
-        files.root,
+        dependencyWorkspaceRoot,
         workspace,
         snapshot.files,
         runtimeInputMode,

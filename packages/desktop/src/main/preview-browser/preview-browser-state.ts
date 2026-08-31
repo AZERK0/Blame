@@ -1,4 +1,5 @@
 export type PreviewBrowserState = {
+  application?: PreviewApplicationState;
   error?: string;
   id: string;
   loading: boolean;
@@ -7,8 +8,14 @@ export type PreviewBrowserState = {
 
 export type PreviewBrowserStateUpdate = Omit<
   Partial<Omit<PreviewBrowserState, "id">>,
-  "error"
-> & { error?: string | null };
+  "application" | "error"
+> & { application?: PreviewApplicationState | null; error?: string | null };
+
+export type PreviewApplicationState = {
+  status: "ready" | "failed" | "unverified";
+  httpStatus?: number;
+  diagnostic?: string;
+};
 
 export function updatedPreviewBrowserState(
   current: PreviewBrowserState | undefined,
@@ -17,10 +24,15 @@ export function updatedPreviewBrowserState(
 ): PreviewBrowserState {
   const error =
     update.error === null ? undefined : (update.error ?? current?.error);
+  const application =
+    update.application === null
+      ? undefined
+      : (update.application ?? current?.application);
   return {
     id: fallback.id,
     loading: update.loading ?? fallback.loading,
     url: update.url ?? fallback.url,
+    ...(application ? { application } : {}),
     ...(error ? { error } : {}),
   };
 }

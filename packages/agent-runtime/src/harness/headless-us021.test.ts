@@ -496,6 +496,17 @@ class Us021PnpmExecutor implements TaskExecutor {
     await mkdir(join(input.overlayRoot, "node_modules/.pnpm"), {
       recursive: true,
     });
+    await mkdir(join(input.overlayRoot, "node_modules/kleur"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(input.overlayRoot, "node_modules/kleur/package.json"),
+      '{"name":"kleur","main":"index.js"}\n',
+    );
+    await writeFile(
+      join(input.overlayRoot, "node_modules/kleur/index.js"),
+      "export default true\n",
+    );
     await writeFile(
       join(input.overlayRoot, "pnpm-lock.yaml"),
       "lockfile-generated-by-us021\n",

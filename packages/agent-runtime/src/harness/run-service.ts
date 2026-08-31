@@ -4,6 +4,11 @@ import stripAnsi from "strip-ansi";
 import { ArtifactStore } from "./artifact-store.js";
 import { ChangeService } from "./change-service.js";
 import { dependencyCacheRoot } from "./dependency-cache.js";
+import {
+  DependencyEnvironmentService,
+  probeDependencyEnvironment,
+  type DependencyEnvironment,
+} from "./dependency-environment.js";
 import { stableJson } from "./change-store.js";
 import { environmentSpec } from "./environment-service.js";
 import { sha256 } from "./protocol.js";
@@ -19,6 +24,7 @@ import {
   type InspectRunInput,
   type RunTaskInput,
   type StoredRun,
+  type TaskCatalogItem,
 } from "./schemas.js";
 import {
   readTaskCatalog,
@@ -40,6 +46,7 @@ export class RunService {
   private readonly changes: ChangeService;
   private readonly executor: TaskExecutor;
   private readonly files: WorkspaceFiles;
+  private readonly environments: DependencyEnvironmentService;
   private readonly store: RunStore;
   private readonly attempts: RunAttemptStore;
 
@@ -53,6 +60,7 @@ export class RunService {
     this.artifacts = artifacts;
     this.changes = changes;
     this.executor = executor ?? new SandboxedTaskExecutor();
+    this.environments = new DependencyEnvironmentService(files.root);
     this.store = new RunStore(files.root);
     this.attempts = new RunAttemptStore(files.root);
   }
@@ -66,7 +74,7 @@ export class RunService {
     runTaskInputSchema.parse(input);
     const prepared = await this.startRunAttempt(input, snapshot, context);
     try {
-      const run = await this.store.exclusiveIdempotency(
+      const run = await this.store.exclusiveIdempotency<StoredRun>(
         prepared.idempotencyKey,
         () => this.runUnlocked(prepared.effectiveInput, snapshot, signal),
       );
@@ -117,7 +125,9 @@ export class RunService {
     input: RunTaskInput,
     snapshot: WorkspaceSnapshot,
     signal?: AbortSignal,
-  ) {
+    repairAttempted = false,
+    restoredEnvironment?: DependencyEnvironment,
+  ): Promise<StoredRun> {
     const catalog = await readTaskCatalog(this.files.root, snapshot.files);
     const task = resolveTask(catalog, input.task);
     assertSupportedExecution(input);
@@ -133,7 +143,18 @@ export class RunService {
       );
       if (existing) return existing;
     }
-    const environment = await environmentSpec(this.files, snapshot);
+    let dependencyEnvironment =
+      restoredEnvironment ??
+      (task.kind === "dependencies"
+        ? undefined
+        : await this.ensureDependencyEnvironment(catalog, snapshot, signal));
+    let environment =
+      dependencyEnvironment?.spec ??
+      (await environmentSpec(this.files, snapshot, {
+        packageManager: task.package_manager,
+        resolvedPackageManagerVersion:
+          task.package_manager_version ?? "unversioned",
+      }));
     const isolation = await this.executor.capability();
     const runtimeInstanceId = `runtime_${sha256(randomBytes(32)).slice(0, 32)}`;
     const startedAt = new Date();
@@ -142,6 +163,7 @@ export class RunService {
       snapshot,
       signal,
       task.kind === "dependencies" ? "writable_dependencies" : "readonly",
+      dependencyEnvironment?.workspace,
     );
     try {
       await this.assertCanonicalRevision(snapshot, signal);
@@ -173,6 +195,42 @@ export class RunService {
         dependencyInstall: task.kind === "dependencies",
       };
       const result = await this.executeTask(executionInput, isolation);
+      if (
+        repairableDependencyFailure(result) &&
+        task.kind !== "dependencies" &&
+        dependencyEnvironment &&
+        !repairAttempted
+      ) {
+        await this.environments.invalidate(
+          dependencyEnvironment.spec.environment_revision_id,
+        );
+        const dependencyTask = catalog.find(
+          (candidate) => candidate.kind === "dependencies",
+        );
+        if (!dependencyTask)
+          throw new Error(
+            "ENVIRONMENT_REPAIR_FAILED:Dependency task unavailable.",
+          );
+        const restored = await this.restoreDependencyEnvironment(
+          dependencyTask,
+          snapshot,
+          signal,
+        );
+        return this.runUnlocked(input, snapshot, signal, true, restored);
+      }
+      if (task.kind === "dependencies" && result.status === "passed") {
+        dependencyEnvironment = await this.environments.persist({
+          files: this.files,
+          snapshot,
+          sourceWorkspace: overlay.workspace,
+          task,
+          resolvedVersion:
+            result.packageManagerResolution?.resolvedVersion ??
+            task.package_manager_version ??
+            "unversioned",
+        });
+        environment = dependencyEnvironment.spec;
+      }
       const effects = await overlay.effects(signal);
       const canonicalUnchanged = await this.canonicalRevisionMatches(snapshot);
       const revision = {
@@ -346,6 +404,93 @@ export class RunService {
     return automaticDependencyNetworkPolicy();
   }
 
+  private async ensureDependencyEnvironment(
+    catalog: TaskCatalogItem[],
+    snapshot: WorkspaceSnapshot,
+    signal?: AbortSignal,
+  ) {
+    const dependencyTask = catalog.find((task) => task.kind === "dependencies");
+    if (!dependencyTask)
+      throw new Error("ENVIRONMENT_REPAIR_FAILED:Dependency task unavailable.");
+    const current = await this.environments.current(
+      this.files,
+      snapshot,
+      dependencyTask,
+    );
+    if (current) return current;
+    const worktreeProbe = await probeDependencyEnvironment(
+      this.files.root,
+      snapshot.files,
+    );
+    if (worktreeProbe.status === "passed")
+      return await this.environments.persist({
+        files: this.files,
+        snapshot,
+        sourceWorkspace: this.files.root,
+        task: dependencyTask,
+        resolvedVersion:
+          dependencyTask.package_manager_version ?? "unversioned",
+      });
+    return this.restoreDependencyEnvironment(dependencyTask, snapshot, signal);
+  }
+
+  private async restoreDependencyEnvironment(
+    task: TaskCatalogItem,
+    snapshot: WorkspaceSnapshot,
+    signal?: AbortSignal,
+  ) {
+    const overlay = await WorkspaceOverlay.materialize(
+      this.files,
+      snapshot,
+      signal,
+      "writable_dependencies",
+    );
+    try {
+      const invocation = taskInvocation(task);
+      const executionInput: TaskExecutionInput = {
+        executable: invocation.executable,
+        args: invocation.args,
+        cwd: join(overlay.workspace, invocation.cwd),
+        overlayRoot: overlay.workspace,
+        canonicalWorkspaceRoot: this.files.root,
+        readonlyRoots: overlay.readonlyInputs,
+        dependencyCacheRoot: await dependencyCacheRoot(
+          this.files.root,
+          snapshot.files,
+          task,
+        ),
+        packageManager: task.package_manager,
+        packageManagerCompatibility: "pnpm_same_major",
+        packageManagerVersion: invocation.packageManagerVersion,
+        timeoutMs: 300_000,
+        outputBytes: 256 * 1024,
+        signal,
+        network: await this.dependencyNetworkPolicy(),
+        dependencyInstall: true,
+      };
+      const result = await this.executeTask(
+        executionInput,
+        await this.executor.capability(),
+      );
+      if (result.status !== "passed")
+        throw new Error(
+          `ENVIRONMENT_REPAIR_FAILED:${result.stderr || result.stdout}`,
+        );
+      return await this.environments.persist({
+        files: this.files,
+        snapshot,
+        sourceWorkspace: overlay.workspace,
+        task,
+        resolvedVersion:
+          result.packageManagerResolution?.resolvedVersion ??
+          task.package_manager_version ??
+          "unversioned",
+      });
+    } finally {
+      await overlay.cleanup();
+    }
+  }
+
   private async executeTask(
     input: TaskExecutionInput,
     isolation: Awaited<ReturnType<TaskExecutor["capability"]>>,
@@ -488,6 +633,13 @@ function normalizedRunStatus(
 function infrastructureRunFailure(output: string) {
   return /\b(?:corepack|econnrefused|enotfound|enetunreach|package manager unavailable|executor unavailable|executable unavailable)\b|BLAME_PROJECT_ALLOWLIST_PROXY|bwrap:\s+execvp|(?:registry|packages?)\.[^\s/]+\/[^\s:]+:\s+fetch failed/iu.test(
     output,
+  );
+}
+
+function repairableDependencyFailure(result: TaskExecutionResult) {
+  if (result.status !== "execution_error") return false;
+  return /\b(?:node_modules|symlink|dependency|package|module|executable)\b/iu.test(
+    `${result.stderr}\n${result.stdout}`,
   );
 }
 

@@ -56,6 +56,7 @@ let activePreviewDevtoolsTarget: PreviewBrowserState | undefined;
 const previewDevtoolsTargets = new Map<string, PreviewBrowserState>();
 
 export type PreviewDevtoolsTarget = {
+  application?: PreviewBrowserState["application"];
   available: boolean;
   browserUrl: string;
   currentUrl?: string;
@@ -95,6 +96,7 @@ function previewDevtoolsTarget(
   scope: string | undefined,
 ): PreviewDevtoolsTarget {
   return {
+    ...(target?.application ? { application: target.application } : {}),
     available,
     browserUrl: previewDevtoolsBrowserUrl,
     currentUrl: target?.url,
@@ -340,7 +342,11 @@ function attachPreviewBrowserEvents(record: PreviewBrowserRecord) {
   });
   record.view.webContents.on("did-start-loading", () => {
     startPreviewLoadTimeout(record, record.view.webContents.getURL());
-    sendPreviewBrowserState(record, { error: null, loading: true });
+    sendPreviewBrowserState(record, {
+      application: null,
+      error: null,
+      loading: true,
+    });
   });
   record.view.webContents.on("did-stop-loading", () => {
     clearPreviewLoadTimeout(record);
@@ -348,7 +354,7 @@ function attachPreviewBrowserEvents(record: PreviewBrowserRecord) {
   });
   record.view.webContents.on("did-finish-load", () => {
     clearPreviewLoadTimeout(record);
-    sendPreviewBrowserState(record, { error: null, loading: false });
+    void updateApplicationState(record);
   });
   record.view.webContents.on("did-navigate", (_event, url) =>
     sendPreviewBrowserState(record, { error: null, loading: false, url }),
@@ -381,6 +387,49 @@ function attachPreviewBrowserEvents(record: PreviewBrowserRecord) {
       loading: false,
     });
   });
+}
+
+async function updateApplicationState(record: PreviewBrowserRecord) {
+  try {
+    const application = await record.view.webContents.executeJavaScript(
+      `fetch(location.href,{cache:"no-store"}).then(async response=>({httpStatus:response.status,text:(await response.text()).slice(0,2000)}))`,
+      true,
+    );
+    sendPreviewBrowserState(record, {
+      application: classifyApplicationState(application),
+      error: null,
+      loading: false,
+    });
+  } catch (error) {
+    sendPreviewBrowserState(record, {
+      application: {
+        status: "failed",
+        diagnostic: error instanceof Error ? error.message : String(error),
+      },
+      loading: false,
+    });
+  }
+}
+
+function classifyApplicationState(value: unknown) {
+  const result = value as { httpStatus?: unknown; text?: unknown };
+  const httpStatus =
+    typeof result?.httpStatus === "number" ? result.httpStatus : undefined;
+  const text = typeof result?.text === "string" ? result.text : "";
+  const compilerDiagnostic = text.match(
+    /(?:failed to compile|module not found|build error|internal server error)[\s\S]{0,1000}/iu,
+  )?.[0];
+  const failed =
+    !httpStatus || httpStatus >= 500 || Boolean(compilerDiagnostic);
+  return {
+    status: failed ? ("failed" as const) : ("ready" as const),
+    ...(httpStatus ? { httpStatus } : {}),
+    ...(compilerDiagnostic
+      ? { diagnostic: compilerDiagnostic }
+      : failed
+        ? { diagnostic: `Preview returned HTTP ${httpStatus ?? "unknown"}.` }
+        : {}),
+  };
 }
 
 function startPreviewLoadTimeout(record: PreviewBrowserRecord, url: string) {

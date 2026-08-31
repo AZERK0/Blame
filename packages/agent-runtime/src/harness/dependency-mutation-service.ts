@@ -8,6 +8,10 @@ import {
   dependencyCacheRoot,
 } from "./dependency-cache.js";
 import { DependencyCapabilityCircuit } from "./dependency-capability-circuit.js";
+import {
+  DependencyEnvironmentService,
+  probeDependencyEnvironment,
+} from "./dependency-environment.js";
 import { sha256 } from "./protocol.js";
 import {
   dependencyMutationInputSchema,
@@ -78,6 +82,7 @@ export class DependencyMutationService {
   private readonly circuit: DependencyCapabilityCircuit;
   private readonly executor: TaskExecutor;
   private readonly files: WorkspaceFiles;
+  private readonly environments: DependencyEnvironmentService;
 
   constructor(
     files: WorkspaceFiles,
@@ -89,6 +94,7 @@ export class DependencyMutationService {
     this.changes = new ChangeService(files, artifacts);
     this.executor = executor ?? new SandboxedTaskExecutor();
     this.circuit = new DependencyCapabilityCircuit(files.root, sessionId);
+    this.environments = new DependencyEnvironmentService(files.root);
   }
 
   async capability(snapshot: WorkspaceSnapshot) {
@@ -330,9 +336,28 @@ export class DependencyMutationService {
       networkPolicy,
       signal,
     );
+    const requiredPackages = input.operations
+      .filter((operation) => operation.action === "add")
+      .map((operation) => operation.name);
+    await assertUsableDependencies(
+      overlay.workspace,
+      snapshot.files,
+      requiredPackages,
+    );
     const effects = await overlay.effects(signal);
     assertDependencyEffects(effects, packagePath, task.package_manager);
     const receipt = await this.commitEffects(input, snapshot, effects.changes);
+    const environment = await this.environments.persist({
+      files: this.files,
+      snapshot: await this.files.snapshot(),
+      sourceWorkspace: overlay.workspace,
+      task,
+      resolvedVersion:
+        execution.packageManagerResolution?.resolvedVersion ??
+        task.package_manager_version ??
+        "unversioned",
+      requiredPackages,
+    });
     return mutationReceipt(
       input,
       packagePath,
@@ -340,6 +365,7 @@ export class DependencyMutationService {
       execution,
       receipt,
       networkPolicy,
+      environment.spec.environment_revision_id,
     );
   }
 
@@ -526,31 +552,26 @@ function sortRecord(value: Record<string, string>) {
 }
 
 function lockfileArguments(task: TaskCatalogItem) {
-  if (task.package_manager === "pnpm")
-    return [
-      "install",
-      "--lockfile-only",
-      "--prefer-offline",
-      "--ignore-scripts",
-    ];
-  if (task.package_manager === "yarn")
-    return task.package_manager_version?.startsWith("1.")
-      ? [
-          "install",
-          "--ignore-scripts",
-          "--modules-folder",
-          ".blame/harness/yarn-modules",
-        ]
-      : ["install", "--mode=update-lockfile"];
-  if (task.package_manager === "bun")
-    return ["install", "--lockfile-only", "--ignore-scripts"];
-  return [
-    "install",
-    "--package-lock-only",
-    "--ignore-scripts",
-    "--no-audit",
-    "--no-fund",
-  ];
+  if (task.package_manager === "pnpm") return ["install", "--prefer-offline"];
+  if (task.package_manager === "yarn") return ["install"];
+  if (task.package_manager === "bun") return ["install"];
+  return ["install", "--no-audit", "--no-fund"];
+}
+
+async function assertUsableDependencies(
+  workspace: string,
+  files: string[],
+  requiredPackages: string[],
+) {
+  const probe = await probeDependencyEnvironment(
+    workspace,
+    files,
+    requiredPackages,
+  );
+  if (probe.status === "passed") return;
+  throw new Error(
+    `DEPENDENCY_INTEGRITY_PROBE_FAILED:${probe.failure_signature}`,
+  );
 }
 
 function assertDependencyEffects(
@@ -590,6 +611,7 @@ function mutationReceipt(
   execution: Awaited<ReturnType<TaskExecutor["execute"]>>,
   receipt: Awaited<ReturnType<ChangeService["commitResolved"]>>,
   networkPolicy: "deny" | "project_allowlist",
+  environmentRevisionId: string,
 ) {
   return {
     status: "applied" as const,
@@ -597,6 +619,7 @@ function mutationReceipt(
     operation_count: input.operations.length,
     changed_files: receipt.changed_files,
     source_revision_id: receipt.source_revision.source_revision_id,
+    environment_revision_id: environmentRevisionId,
     package_manager: task.package_manager,
     registry_policy: "configured_only",
     package_manager_version:

@@ -1993,12 +1993,7 @@ test("native dependency mutation updates the manifest and generated lockfile ato
       enforced: true,
     });
     assert.equal(executor.lastInput?.network, "project_allowlist");
-    assert.deepEqual(executor.lastInput?.args, [
-      "install",
-      "--lockfile-only",
-      "--prefer-offline",
-      "--ignore-scripts",
-    ]);
+    assert.deepEqual(executor.lastInput?.args, ["install", "--prefer-offline"]);
   });
 });
 
@@ -3005,6 +3000,7 @@ class LockfileTaskExecutor implements TaskExecutor {
 
   async execute(input: TaskExecutionInput): Promise<TaskExecutionResult> {
     this.lastInput = input;
+    await materializeTestDependencies(input.overlayRoot);
     const lockfile =
       input.packageManager === "pnpm" ? "pnpm-lock.yaml" : "package-lock.json";
     await writeFile(join(input.overlayRoot, lockfile), "generated-lock\n");
@@ -3022,5 +3018,23 @@ class LockfileTaskExecutor implements TaskExecutor {
         strategy: input.packageManagerVersion ? "exact" : "unversioned",
       },
     };
+  }
+}
+
+async function materializeTestDependencies(root: string) {
+  const manifest = JSON.parse(
+    await readFile(join(root, "package.json"), "utf8"),
+  ) as {
+    dependencies?: Record<string, string>;
+  };
+  await mkdir(join(root, "node_modules", ".pnpm"), { recursive: true });
+  for (const name of Object.keys(manifest.dependencies ?? {})) {
+    const directory = join(root, "node_modules", name);
+    await mkdir(directory, { recursive: true });
+    await writeFile(
+      join(directory, "package.json"),
+      JSON.stringify({ name, main: "index.js" }),
+    );
+    await writeFile(join(directory, "index.js"), "export default true\n");
   }
 }

@@ -73,12 +73,7 @@ test("US-017 available dependencies are applied by pnpm with its generated lockf
     );
     assert.equal(result.outcome, "applied");
     assert.ok("status" in result.data && result.data.status === "applied");
-    assert.deepEqual(executor.lastInput?.args, [
-      "install",
-      "--lockfile-only",
-      "--prefer-offline",
-      "--ignore-scripts",
-    ]);
+    assert.deepEqual(executor.lastInput?.args, ["install", "--prefer-offline"]);
     assert.equal(executor.lastInput?.packageManager, "pnpm");
     assert.equal(
       await readFile(join(root, "pnpm-lock.yaml"), "utf8"),
@@ -970,6 +965,7 @@ class PnpmExecutor implements TaskExecutor {
 
   async execute(input: TaskExecutionInput): Promise<TaskExecutionResult> {
     this.lastInput = input;
+    await materializeDeclaredDependencies(input.overlayRoot);
     await writeFile(
       join(input.overlayRoot, "pnpm-lock.yaml"),
       "lockfile-generated-by-pnpm\n",
@@ -989,6 +985,24 @@ class PnpmExecutor implements TaskExecutor {
       stderr: "",
       stdout: "",
     };
+  }
+}
+
+async function materializeDeclaredDependencies(root: string) {
+  const manifest = JSON.parse(
+    await readFile(join(root, "package.json"), "utf8"),
+  ) as {
+    dependencies?: Record<string, string>;
+  };
+  await mkdir(join(root, "node_modules", ".pnpm"), { recursive: true });
+  for (const name of Object.keys(manifest.dependencies ?? {})) {
+    const directory = join(root, "node_modules", name);
+    await mkdir(directory, { recursive: true });
+    await writeFile(
+      join(directory, "package.json"),
+      JSON.stringify({ name, main: "index.js" }),
+    );
+    await writeFile(join(directory, "index.js"), "export default true\n");
   }
 }
 

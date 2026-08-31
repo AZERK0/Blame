@@ -399,6 +399,12 @@ export function toolError<T = never>(error: unknown): HarnessToolResult<T> {
           "Use a package_path that exists in workspace_state; do not retry this missing target.",
       },
     });
+  if (
+    message.startsWith("DEPENDENCY_INTEGRITY_PROBE_FAILED:") ||
+    message.startsWith("ENVIRONMENT_REPAIR_FAILED:") ||
+    message === "DEPENDENCY_VOLUME_EMPTY"
+  )
+    return harnessError({ code: "EXECUTION_ERROR", message });
   for (const code of [
     "EXECUTION_ERROR",
     "IO_ERROR",

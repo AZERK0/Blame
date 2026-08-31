@@ -58,6 +58,11 @@ function previewState(
         ? "The preview is not running."
         : "The preview failed.",
     reason: status === "stopped" ? "PREVIEW_STOPPED" : "PREVIEW_FAILED",
+    readiness: {
+      browser_ready: status === "ready",
+      container_ready: status === "ready",
+      application_ready: status === "ready",
+    },
     status,
   };
 }

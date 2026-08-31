@@ -1456,6 +1456,59 @@ test("package registry bootstrap failures are infrastructure errors", async () =
   });
 });
 
+test("run_task repairs one environment failure before returning control", async () => {
+  await withWorkspace(async (root) => {
+    let executions = 0;
+    const executor: TaskExecutor = {
+      async capability() {
+        return "worktree";
+      },
+      async dependencyCapability() {
+        return { available: true, network: "managed_allowlist" };
+      },
+      async healthCheck() {
+        return { available: true, isolation: "worktree" };
+      },
+      async execute(input) {
+        executions += 1;
+        const failed = executions === 1;
+        return {
+          status: failed ? "execution_error" : "passed",
+          exitCode: failed ? null : 0,
+          signal: null,
+          stdout: "",
+          stderr: failed ? "node_modules symlink target is missing" : "",
+          outputTruncated: false,
+          isolation: "worktree",
+          ...(input.packageManager
+            ? {
+                packageManagerResolution: {
+                  name: input.packageManager,
+                  resolvedVersion: input.packageManagerVersion ?? "10.0.0",
+                  strategy: input.packageManagerVersion
+                    ? ("exact" as const)
+                    : ("unversioned" as const),
+                },
+              }
+            : {}),
+        };
+      },
+    };
+    const workspace = new SemanticWorkspace(root, { taskExecutor: executor });
+    const revision = success(await workspace.workspaceState()).data
+      .source_revision.source_revision_id;
+    const run = success(
+      await workspace.runTask({
+        source_revision_id: revision,
+        task: { task_id: "build" },
+        limits: { timeout_ms: 10_000 },
+      }),
+    );
+    assert.equal(run.data.status, "passed");
+    assert.equal(executions, 3);
+  });
+});
+
 test("run_task reports executor health failures without executing commands", async () => {
   await withWorkspace(async (root) => {
     let executions = 0;
