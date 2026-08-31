@@ -91,7 +91,7 @@ import {
 } from "./harness/native-completion.js";
 import { continuityFallbackMetrics } from "./harness/continuity-schema.js";
 import { ExternalReadGovernor } from "./harness/external-read-governor.js";
-import { HarnessCostGovernor } from "./harness/cost-governor.js";
+import { semanticInspectionExtensionsDescription } from "./harness/language-capabilities.js";
 import {
   appendInitialTaskBriefing,
   createInitialTaskBriefing,
@@ -302,7 +302,6 @@ type RuntimeStartSessionInput = StartSessionInput & {
   enableBuiltInSkills?: boolean;
   enableSpecialistConsult?: boolean;
   enableSpawnAgent?: boolean;
-  governorBudget?: number;
   nativeCompletion?: boolean;
   taskObjective?: string;
   tokenCounter?: TokenCounter;
@@ -489,7 +488,6 @@ export class BlameAgentRuntime {
   private sessionIterations = new Map<string, number>();
   private sessionSpawnAgentActiveCounts = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
-  private sessionGovernors = new Map<string, HarnessCostGovernor>();
   private sessionExternalReadGovernors = new Map<
     string,
     ExternalReadGovernor
@@ -817,18 +815,8 @@ export class BlameAgentRuntime {
           backendMode: input.backend?.mode,
           workspaceMode: input.workspaceMode,
         }) ?? localSemanticWorkspaceExecutor(input.workspaceRoot, taskContract);
-      const costGovernor = new HarnessCostGovernor(
-        input.governorBudget ?? input.maxIterations,
-        harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS"),
-      );
-      const externalReadGovernor = harnessFeatureEnabled(
-        "BLAME_COST_GOVERNOR_V2",
-      )
-        ? new ExternalReadGovernor()
-        : undefined;
-      this.sessionGovernors.set(sessionId, costGovernor);
-      if (externalReadGovernor)
-        this.sessionExternalReadGovernors.set(sessionId, externalReadGovernor);
+      const externalReadGovernor = new ExternalReadGovernor();
+      this.sessionExternalReadGovernors.set(sessionId, externalReadGovernor);
       this.sessionInactivityTimeouts.set(
         sessionId,
         adaptiveModelInactivityTimeoutMs(
@@ -837,9 +825,7 @@ export class BlameAgentRuntime {
         ),
       );
       const initialTaskBriefing =
-        autoSendPrompt &&
-        input.nativeCompletion &&
-        harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS")
+        autoSendPrompt && input.nativeCompletion
           ? await createInitialTaskBriefing({
               executor: legacySemanticWorkspaceExecutor(semanticExecutor),
               taskContract,
@@ -865,9 +851,7 @@ export class BlameAgentRuntime {
         previewContext,
         taskContract,
         semanticExecutor,
-        input.governorBudget ?? input.maxIterations,
         externalReadGovernor,
-        costGovernor,
         input.nativeCompletion
           ? {
               conversationId: sessionId,
@@ -905,9 +889,7 @@ export class BlameAgentRuntime {
       const systemPrompt =
         input.systemPrompt ?? loadPrompt("default-agent-system");
       const compactionController =
-        continuity &&
-        compactionModelState &&
-        harnessFeatureEnabled("BLAME_CLINE_MESSAGE_BUILDER_COMPACTION")
+        continuity && compactionModelState
           ? createBlameCompaction({
               memory: continuity,
               model: compactionModelState.model,
@@ -1206,7 +1188,6 @@ export class BlameAgentRuntime {
       throw new Error(
         "The previous execution is still stopping; no new model call was made.",
       );
-    this.sessionGovernors.get(input.sessionId)?.newUserRequest();
     this.sessionExternalReadGovernors.get(input.sessionId)?.newUserRequest();
     this.sessionSubmittedSummaries.delete(input.sessionId);
     this.sessionExecutionIds.set(input.sessionId, executionId);
@@ -3225,7 +3206,6 @@ export class BlameAgentRuntime {
         this.sessionToolSequences.delete(key);
     }
     this.sessionUsageSignatures.delete(sessionId);
-    this.sessionGovernors.delete(sessionId);
     this.sessionExternalReadGovernors.delete(sessionId);
     this.sessionInactivityTimeouts.delete(sessionId);
     this.sessionTransportRecoveries.delete(sessionId);
@@ -3634,7 +3614,6 @@ export class BlameAgentRuntime {
       initialMessages,
       mode: "act",
       maxIterations: iterationBudget,
-      governorBudget: iterationBudget,
       prompt: preparedRequest.prompt,
       continuityMetrics: preparedRequest.metrics,
       taskObjective: developmentInput.prompt,
@@ -4285,9 +4264,7 @@ function runtimeTools(
     objective?: string;
   },
   semanticWorkspaceExecutor?: SemanticWorkspaceBridgeExecutor,
-  governorBudget?: number,
   externalReadGovernor?: ExternalReadGovernor,
-  costGovernor?: HarnessCostGovernor,
   completion?: {
     conversationId: string;
     onComplete(notification: NativeCompletionNotification): void;
@@ -4299,20 +4276,12 @@ function runtimeTools(
     ...semanticWorkspaceTools(worktree, {
       taskContract,
       executor: semanticWorkspaceExecutor,
-      governor: costGovernor,
-      governorBudget,
-      protocolVersion: harnessFeatureEnabled("BLAME_HARNESS_PROTOCOL_V3")
-        ? "3"
-        : "2",
-      legacyMutationTools:
-        process.env.BLAME_HARNESS_LEGACY_MUTATIONS === "true",
+      protocolVersion: "3",
     }),
     ...(completion
       ? [
           createNativeCompletionTool({
-            automaticValidation: harnessFeatureEnabled(
-              "BLAME_NATIVE_CLINE_HARNESS",
-            ),
+            automaticValidation: true,
             conversationId: completion.conversationId,
             executor: legacySemanticWorkspaceExecutor(
               semanticWorkspaceExecutor ??
@@ -4361,7 +4330,6 @@ function readOnlyRuntimeTools(
       previewContext,
       taskContract,
       semanticWorkspaceExecutor,
-      undefined,
       externalReadGovernor,
     ) ?? []
   ).filter((tool) => allowedTools.has(tool.name));
@@ -4690,7 +4658,7 @@ function developmentStoryPrompt(
     "Work in the current worktree when code changes are clearly required.",
     "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files.",
     "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it.",
-    "Use get_preview_devtools with waitFor=none to inspect browser transport state before preview verification. If it is starting, choose whether to continue other work or call with waitFor=ready. Stopped, failed, and unopened browser states return immediately; do not poll them until the preview state changes. Browser readiness is not application-health evidence: take a scoped DOM snapshot before making browser assertions. A transient DevTools timeout is non-terminal; continue local validation and retry only after preview state changes.",
+    "Preview verification requires application_ready for the current source and environment revisions; browser_ready alone is transport state. A blocking compiler error or HTTP 500 returns immediately with its diagnostic.",
   );
   return prompt.join("\n");
 }
@@ -4908,6 +4876,7 @@ export async function buildDevelopmentSystemPrompt(
     CWD: input.cwd,
     IDE_NAME: "Blame",
     PLATFORM_NAME: process.platform,
+    SEMANTIC_EXTENSIONS: semanticInspectionExtensionsDescription(),
     WORKSPACE_METADATA: metadata,
     WORKSPACE_NAME: basename(input.workspaceRoot),
     WORKSPACE_ROOT: input.workspaceRoot,

@@ -5,7 +5,6 @@ import { join } from "node:path";
 import test from "node:test";
 import { semanticWorkspaceTools } from "./cline-tools.js";
 import { maximumSemanticParseBytes } from "./code-navigation-policy.js";
-import { HarnessCostGovernor } from "./cost-governor.js";
 import { languageCapabilityRegistry } from "./language-capabilities.js";
 import { harnessSuccess, type HarnessToolResult } from "./protocol.js";
 import { SemanticWorkspace } from "./semantic-workspace.js";
@@ -211,7 +210,6 @@ test("identical broad reads in flight execute only once", async () => {
       releaseExecution = resolve;
     });
     const tools = semanticWorkspaceTools(root, {
-      governor: new HarnessCostGovernor(80, false),
       executor: async () => {
         executions += 1;
         await executionGate;
@@ -256,7 +254,6 @@ test("distinct broad reads remain available in parallel", async () => {
       releaseExecution = resolve;
     });
     const tools = semanticWorkspaceTools(root, {
-      governor: new HarnessCostGovernor(80, false),
       executor: async ({ tool }) => {
         executions.push(tool);
         await executionGate;

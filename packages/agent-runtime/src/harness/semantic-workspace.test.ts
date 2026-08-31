@@ -2214,9 +2214,9 @@ test("Cline adapter registers a small read/write harness with strict schemas", a
   });
 });
 
-test("Cline adapter reuses reads across epochs and stops semantic cycles", async () => {
+test("Cline adapter reuses reads across epochs without rerunning them", async () => {
   await withWorkspace(async (root) => {
-    const tools = semanticWorkspaceTools(root, { governorBudget: 8 });
+    const tools = semanticWorkspaceTools(root);
     const inspect = tools.find((tool) => tool.name === "inspect_code");
     const search = tools.find((tool) => tool.name === "search_code");
     assert.ok(inspect);
@@ -2236,10 +2236,9 @@ test("Cline adapter reuses reads across epochs and stops semantic cycles", async
     );
     const stopped = await inspect.execute(input, toolContext("epoch-two"));
     assert.equal(toolDataStatus(first), "content");
-    assert.equal(toolDataStatus(repeated), "content");
-    assert.match(JSON.stringify(repeated), /RESULT_ALREADY_AVAILABLE/iu);
+    assert.equal(toolDataStatus(repeated), "already_available");
     assert.equal(toolDataStatus(afterCompaction), "already_available");
-    assert.equal(toolDataStatus(stopped), "retry_suppressed");
+    assert.equal(toolDataStatus(stopped), "already_available");
     assert.notEqual((afterCompaction as { isError?: boolean }).isError, true);
     assert.notEqual((stopped as { isError?: boolean }).isError, true);
     const targeted = await search.execute(

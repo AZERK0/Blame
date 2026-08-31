@@ -15,10 +15,7 @@ import {
   headlessAdapterCapabilities,
   runAdapterConformance,
 } from "./adapter-conformance.js";
-import {
-  harnessFeatureDefinitions,
-  harnessFeatureEnabled,
-} from "./harness-feature-flags.js";
+import { harnessFeatureDefinitions } from "./harness-feature-flags.js";
 import {
   RunLifecycleRegistry,
   completionAwareTerminalState,
@@ -351,7 +348,7 @@ test("Cline cannot retain a succeeded terminal after failed verification", () =>
   );
 });
 
-test("feature flag inventory is complete and protocol rollback is explicit", () => {
+test("feature flag inventory contains only active migrations", () => {
   const definitions = harnessFeatureDefinitions();
   assert.equal(
     definitions.every(
@@ -365,9 +362,9 @@ test("feature flag inventory is complete and protocol rollback is explicit", () 
     true,
   );
   assert.equal(
-    harnessFeatureEnabled("BLAME_HARNESS_PROTOCOL_V3", {
-      BLAME_HARNESS_PROTOCOL_V3: "false",
-    }),
+    definitions
+      .map(({ name }) => String(name))
+      .includes("BLAME_HARNESS_PROTOCOL_V3"),
     false,
   );
 });

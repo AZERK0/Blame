@@ -10,7 +10,6 @@ import {
   semanticWorkspaceReadToolNames,
   semanticWorkspaceTools,
 } from "./harness/cline-tools.js";
-import { harnessFeatureEnabled } from "./harness/harness-feature-flags.js";
 import { loadPrompt } from "./prompt-loader.js";
 import { appendProductionConfig } from "./production.js";
 import { reasoningConfig } from "./reasoning.js";
@@ -199,9 +198,7 @@ function auditConfig(
     enableAgentTeams: false,
     extraTools: [
       ...semanticWorkspaceTools(input.workspaceRoot, {
-        protocolVersion: harnessFeatureEnabled("BLAME_HARNESS_PROTOCOL_V3")
-          ? "3"
-          : "2",
+        protocolVersion: "3",
         redactSensitiveContent: true,
       }).filter((tool) => securityAuditReadTools.has(tool.name)),
       resultTool,

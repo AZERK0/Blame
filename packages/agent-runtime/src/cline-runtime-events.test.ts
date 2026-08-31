@@ -450,7 +450,6 @@ test("starts development sessions with native skills and private specialist cons
 test("continues the agent turn after bounding a large web fetch result", async () => {
   const workspace = await mkdtemp(join(tmpdir(), "blame-bounded-fetch-"));
   const originalFetch = globalThis.fetch;
-  const originalGovernorFlag = process.env.BLAME_COST_GOVERNOR_V2;
   let continuedAfterFetch = false;
   const core = {
     async dispose() {},
@@ -489,7 +488,6 @@ test("continues the agent turn after bounding a large web fetch result", async (
     },
   };
   globalThis.fetch = async () => providerCredentialResponse();
-  process.env.BLAME_COST_GOVERNOR_V2 = "true";
   const runtime = new BlameAgentRuntime(undefined, {
     createCore: async () => core as never,
   });
@@ -508,9 +506,6 @@ test("continues the agent turn after bounding a large web fetch result", async (
     assert.equal(continuedAfterFetch, true);
   } finally {
     globalThis.fetch = originalFetch;
-    if (originalGovernorFlag === undefined)
-      delete process.env.BLAME_COST_GOVERNOR_V2;
-    else process.env.BLAME_COST_GOVERNOR_V2 = originalGovernorFlag;
     await runtime.shutdown();
     await rm(workspace, { force: true, recursive: true });
   }
@@ -1322,21 +1317,17 @@ test("renders the compact native Cline development prompt", async () => {
   assert.match(prompt, /^# Blame Development Agent/);
   assert.match(prompt, /<runtime_context>/);
   assert.match(prompt, /<workspace_metadata>/);
-  assert.match(prompt, /Use Blame tools to inspect, modify, and validate/);
-  assert.match(prompt, /Never reinvent the wheel/);
-  assert.match(prompt, /mature open-source libraries or projects/);
-  assert.match(prompt, /Do not repeat a read, search, or inspection/);
-  assert.match(prompt, /## Code navigation policy/);
-  assert.match(prompt, /targeted `outline_code`/);
-  assert.match(prompt, /inspect the needed symbol/);
-  assert.match(prompt, /Truncated output: narrow/);
-  assert.match(prompt, /genuinely bounded range/);
-  assert.match(prompt, /runtime-generated `task_briefing`/);
-  assert.match(prompt, /genuinely new unresolved API question/);
-  assert.match(prompt, /concrete declaration is indispensable/);
-  assert.match(prompt, /Iteration count alone never/);
-  assert.doesNotMatch(prompt, /small directory|multiple complete reads/);
-  assert.match(prompt, /call `submit_and_exit` exactly once/);
+  assert.match(prompt, /observe minimal state → target necessary symbols/);
+  assert.match(prompt, /Start from `task_briefing`/);
+  assert.match(prompt, /Use `edit_code` as the primary atomic editor/);
+  assert.match(prompt, /\.tsx/);
+  assert.match(prompt, /source_revision_id \+ environment_revision_id/);
+  assert.match(prompt, /code_error/);
+  assert.match(prompt, /Runtime-repairable environment failures/);
+  assert.match(prompt, /application_ready/);
+  assert.match(prompt, /proposal:current/);
+  assert.match(prompt, /precise uncertainty that blocks implementation/);
+  assert.match(prompt, /call `submit_and_exit` once/);
   assert.doesNotMatch(prompt, /complete_turn/);
   assert.doesNotMatch(prompt, /continuity_update|change_receipt_refs/);
   assert.doesNotMatch(prompt, /execution[_ ]epoch/iu);

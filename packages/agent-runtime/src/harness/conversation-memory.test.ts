@@ -244,7 +244,10 @@ test("runtime continuity exposes only validation for the live revision", async (
   await withMemory(async (root) => {
     await writeFile(join(root, "current.ts"), "export const value = 1;\n");
     const memory = new ConversationMemoryStore(root, "live-validation");
-    await memory.beginRequest({ currentRequest: "Validate it.", userGoal: "Goal" });
+    await memory.beginRequest({
+      currentRequest: "Validate it.",
+      userGoal: "Goal",
+    });
     const initial = await memory.runtimeContinuity();
     const revision = initial.currentRepositoryState.match(
       /source_revision=(src_[a-f0-9]+)/u,
@@ -258,7 +261,10 @@ test("runtime continuity exposes only validation for the live revision", async (
       taskKind: "typecheck",
       terminal: "passed",
     });
-    assert.equal((await memory.runtimeContinuity()).validationEvidence.length, 1);
+    assert.equal(
+      (await memory.runtimeContinuity()).validationEvidence.length,
+      1,
+    );
     await writeFile(join(root, "later.ts"), "export const later = true;\n");
     assert.deepEqual((await memory.runtimeContinuity()).validationEvidence, []);
   });
@@ -787,13 +793,6 @@ test("version 1 memory migrates without destructive rewrite", async () => {
 });
 
 test("memory feature flags are independent and embeddings default off", () => {
-  assert.equal(harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS", {}), true);
-  assert.equal(
-    harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS", {
-      BLAME_NATIVE_CLINE_HARNESS: "false",
-    }),
-    false,
-  );
   assert.equal(harnessFeatureEnabled("BLAME_MEMORY_AUTHORITY_V2", {}), true);
   assert.equal(harnessFeatureEnabled("BLAME_HARD_CAPSULE_BUDGET", {}), true);
   assert.equal(harnessFeatureEnabled("BLAME_SEMANTIC_RECALL", {}), true);

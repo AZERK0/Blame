@@ -128,7 +128,6 @@ export type {
 } from "./semantic-workspace-support.js";
 
 export type SemanticWorkspaceOptions = {
-  legacyMutationTools?: boolean;
   redactSensitiveContent?: boolean;
   taskExecutor?: TaskExecutor;
   taskContract?: {

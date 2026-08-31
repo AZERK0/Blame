@@ -320,7 +320,6 @@ test("US-016 single-flight suppresses only identical reads", async () => {
       release = resolve;
     });
     const tools = semanticWorkspaceTools(root, {
-      governor: new HarnessCostGovernor(80, false),
       executor: async ({ tool }) => {
         calls.push(tool);
         await gate;

@@ -2,10 +2,6 @@ import { createTool, type AgentTool, type AgentToolContext } from "@cline/sdk";
 import { isHarnessResult, type HarnessResult } from "@blame/harness-core";
 import { z } from "zod";
 import { redactSecurityValue } from "../security-secret-redaction.js";
-import {
-  HarnessCostGovernor,
-  type BroadReadAdmission,
-} from "./cost-governor.js";
 import { ConversationMemoryStore } from "./conversation-memory.js";
 import { harnessFeatureEnabled } from "./harness-feature-flags.js";
 import {
@@ -23,7 +19,6 @@ import {
   type RetrySuppression,
 } from "./recovery-controller.js";
 import {
-  applyChangeInputSchema,
   createFileInputSchema,
   deleteFileInputSchema,
   editCodeInputSchema,
@@ -61,14 +56,6 @@ import {
 } from "./semantic-executor.js";
 import type { SemanticWorkspaceOptions } from "./semantic-workspace.js";
 import { WorkspaceFiles } from "./workspace-files.js";
-import {
-  outlineReadProfile,
-  rawReadLineProfile,
-  rawReadRequest,
-  rawReadSizeProfile,
-  relationReadProfile,
-  searchReadProfile,
-} from "./code-navigation-policy.js";
 import { semanticCallSignature } from "./semantic-loop-detector.js";
 import { compactWorkspaceStateResult } from "./workspace-state-output.js";
 import { HarnessToolObservability } from "./tool-observability.js";
@@ -77,8 +64,6 @@ export { semanticWorkspaceReadToolNames, semanticWorkspaceWriteToolNames };
 
 export type SemanticWorkspaceToolsOptions = SemanticWorkspaceOptions & {
   executor?: SemanticWorkspaceBridgeExecutor;
-  governor?: HarnessCostGovernor;
-  governorBudget?: number;
   protocolVersion?: "2" | "3";
 };
 
@@ -90,15 +75,10 @@ export function semanticWorkspaceTools(
   const executor =
     options.executor ??
     localSemanticWorkspaceExecutor(workspaceRoot, options.taskContract);
-  const governor =
-    options.governor ??
-    new HarnessCostGovernor(
-      options.governorBudget,
-      harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS"),
-    );
   const navigationFiles = new WorkspaceFiles(workspaceRoot);
   const canonicalMapper = new CanonicalResultMapper();
   const recoveryController = new RecoveryController(navigationFiles);
+  const activeReads = new Set<string>();
   const observability = new HarnessToolObservability(workspaceRoot);
   const createHarnessTool = <TSchema extends z.ZodTypeAny>(
     input: HarnessToolDefinition<TSchema>,
@@ -111,7 +91,6 @@ export function semanticWorkspaceTools(
       protocolVersion: options.protocolVersion ?? "2",
       recoveryController,
     });
-  let broadReadSequence = 0;
   const supportedOperations = supportedOperationsDescription();
   const semanticExtensions = semanticInspectionExtensionsDescription();
   const execute = async (
@@ -124,19 +103,14 @@ export function semanticWorkspaceTools(
       options.taskContract?.session_id,
       context,
     );
-    const governed =
-      (options.protocolVersion ?? "2") === "2" &&
-      harnessFeatureEnabled("BLAME_COST_GOVERNOR_V2");
-    const reservationId = `${
-      context.toolCallId ?? context.runId ?? "read"
-    }:${broadReadSequence++}`;
-    const admission = governed
-      ? await broadReadAdmission(navigationFiles, tool, input, reservationId)
-      : undefined;
-    const blocked = governed
-      ? governor.before(tool, contextEpoch, input, context.iteration, admission)
-      : undefined;
-    if (blocked) return blocked;
+    const reservation = await reserveRead(
+      navigationFiles,
+      activeReads,
+      tool,
+      input,
+    );
+    if (reservation?.duplicate)
+      return inFlightReadReceipt(reservation.revision);
     try {
       const delegated = await executor(
         executionRequest(
@@ -150,22 +124,15 @@ export function semanticWorkspaceTools(
         context.signal,
       );
       const result = normalizeDelegatedResult(delegated, tool);
-      const observed = governed
-        ? governor.after(tool, input, legacyResult(result), {
-            ...context,
-            contextEpoch,
-            conversationId: options.taskContract?.session_id,
-          })
-        : result;
       await recordReadKnowledge(
         workspaceRoot,
         options.taskContract?.session_id,
         tool,
-        observed,
+        result,
       );
-      return observed;
+      return result;
     } finally {
-      governor.releaseBroadRead(admission?.reservationId);
+      if (reservation) activeReads.delete(reservation.key);
     }
   };
   return [
@@ -301,19 +268,6 @@ export function semanticWorkspaceTools(
       execute: (input, context) => execute("edit_code", input, context),
       retryable: false,
     }),
-    ...(options.legacyMutationTools
-      ? [
-          createHarnessTool({
-            name: "apply_change",
-            description:
-              "Legacy protocol v1 transactional change executor. Available only when the legacy harness feature flag is enabled.",
-            schema: applyChangeInputSchema,
-            execute: (input, context) =>
-              execute("apply_change", input, context),
-            retryable: false,
-          }),
-        ]
-      : []),
     createHarnessTool({
       name: "mutate_dependencies",
       description:
@@ -475,60 +429,43 @@ function executionRequest(
   };
 }
 
-async function broadReadAdmission(
+async function reserveRead(
   files: WorkspaceFiles,
-  tool: SemanticWorkspaceToolName,
-  input: unknown,
-  reservationId: string,
-): Promise<BroadReadAdmission | undefined> {
-  try {
-    const profile = await toolReadProfile(files, tool, input);
-    return profile?.broad
-      ? {
-          ...profile,
-          reservationId,
-          signature: `${
-            (await files.snapshot()).revision.source_revision_id
-          }:${semanticCallSignature(tool, input)}`,
-        }
-      : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-async function toolReadProfile(
-  files: WorkspaceFiles,
+  activeReads: Set<string>,
   tool: SemanticWorkspaceToolName,
   input: unknown,
 ) {
-  if (tool === "search_code") return searchReadProfile(input);
-  if (tool === "get_relation_context") return relationReadProfile(input);
-  if (tool === "outline_code") {
-    const path = inputTargetPath(input);
-    return path
-      ? outlineReadProfile(input, await files.pathProfile(path))
-      : undefined;
-  }
-  if (tool !== "inspect_code") return undefined;
-  const request = rawReadRequest(input);
-  if (!request) return undefined;
-  const size = await files.fileSize(request.path);
-  const sizeProfile = rawReadSizeProfile(size, request.range);
-  if (sizeProfile.broad) return sizeProfile;
-  if (!sizeProfile.requestedRange) return undefined;
-  return rawReadLineProfile(
-    sizeProfile,
-    await files.readRange(request.path, sizeProfile.requestedRange),
-  );
+  if (!semanticWorkspaceReadToolNames.some((name) => name === tool))
+    return undefined;
+  const { revision } = await files.snapshot().catch(() => ({
+    revision: undefined,
+  }));
+  if (!revision) return undefined;
+  const key = `${revision.source_revision_id}:${semanticCallSignature(tool, input)}`;
+  const duplicate = activeReads.has(key);
+  if (!duplicate) activeReads.add(key);
+  return { duplicate, key, revision };
 }
 
-function inputTargetPath(input: unknown) {
-  if (!input || typeof input !== "object") return undefined;
-  const target = (input as { target?: unknown }).target;
-  if (!target || typeof target !== "object") return undefined;
-  const path = (target as { path?: unknown }).path;
-  return typeof path === "string" && path.trim() ? path.trim() : undefined;
+function inFlightReadReceipt(revision: {
+  source_revision_id: string;
+  environment_revision_id?: string;
+}) {
+  return harnessSuccess({
+    startedAt: Date.now(),
+    revision,
+    provenance: [],
+    outcome: "skipped",
+    reason: "READ_IN_FLIGHT",
+    recommendation: "Reuse the active read receipt.",
+    coverage: { scope: "unknown", truncated: true },
+    data: {
+      status: "in_flight_reused",
+      duplicate_broad_read_suppressed: true,
+      content_coverage: "none",
+      shared_iteration_budget_suppressed: false,
+    },
+  });
 }
 
 async function activeContextEpoch(
@@ -887,12 +824,6 @@ function normalizeDelegatedResult(
   return isHarnessResult(value)
     ? value
     : normalizeHarnessToolResult(value, tool);
-}
-
-function legacyResult(
-  value: SemanticWorkspaceExecutionResult,
-): HarnessToolResult<unknown> {
-  return isHarnessResult(value) ? projectCanonicalResultV2(value) : value;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
