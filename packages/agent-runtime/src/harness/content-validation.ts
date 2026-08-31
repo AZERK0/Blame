@@ -36,6 +36,7 @@ export function aggregateValidator(validations: ContentValidation[]) {
 
 export async function validateContent(input: {
   content: Buffer | null;
+  externalValidation?: "enabled" | "unsupported";
   path: string;
   workspaceRoot: string;
 }): Promise<ContentValidation> {
@@ -44,6 +45,14 @@ export async function validateContent(input: {
   const validationInput = { ...input, content };
   const capability = languageCapability(input.path, content);
   if (capability.validatorId === "jsonc") return validateJson(validationInput);
+  if (
+    capability.validatorId === "prisma" &&
+    input.externalValidation === "unsupported"
+  )
+    return prismaUnsupported(
+      input.path,
+      "Prisma validation requires the complete proposed project state.",
+    );
   if (capability.validatorId === "prisma")
     return validatePrisma(validationInput);
   if (capability.validatorId === "typescript")
@@ -122,9 +131,10 @@ async function validatePrisma(input: {
     input.path,
   );
   if (!executable)
-    return validation(input.path, "unsupported", "prisma", [
+    return prismaUnsupported(
+      input.path,
       "The project-local Prisma validator is unavailable.",
-    ]);
+    );
   return runPrismaValidation(input, executable);
 }
 
@@ -136,14 +146,13 @@ async function runPrismaValidation(
   const schema = join(directory, "schema.prisma");
   try {
     await writeFile(schema, input.content, { mode: 0o600 });
-    const result = await execa(executable, ["validate", "--schema", schema], {
-      cwd: input.workspaceRoot,
-      reject: false,
-      timeout: 30_000,
-    });
+    const result = await executePrismaValidator(input, executable, schema);
+    if ("error" in result) return prismaUnsupported(input.path, result.error);
     const diagnostics = compactDiagnostics(
       `${result.stderr}\n${result.stdout}`,
     );
+    if (result.exitCode !== 0 && prismaRuntimeFailure(diagnostics))
+      return prismaUnsupported(input.path, diagnostics.join("\n"));
     return validation(
       input.path,
       result.exitCode === 0 ? "passed" : "failed",
@@ -153,6 +162,34 @@ async function runPrismaValidation(
   } finally {
     await rm(directory, { force: true, recursive: true });
   }
+}
+
+async function executePrismaValidator(
+  input: { workspaceRoot: string },
+  executable: string,
+  schema: string,
+) {
+  try {
+    return await execa(executable, ["validate", "--schema", schema], {
+      cwd: input.workspaceRoot,
+      reject: false,
+      timeout: 30_000,
+    });
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function prismaRuntimeFailure(diagnostics: string[]) {
+  return /(?:cannot find module|module_not_found|command not found|enoent|eacces|permission denied|failed to load config|initialization failed)/iu.test(
+    diagnostics.join("\n"),
+  );
+}
+
+function prismaUnsupported(path: string, diagnostic: string) {
+  return validation(path, "unsupported", "prisma", [
+    diagnostic.slice(0, 1_000),
+  ]);
 }
 
 async function localPrismaExecutable(workspaceRoot: string, path: string) {

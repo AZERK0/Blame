@@ -46,6 +46,8 @@ type OverlaySnapshot = {
   truncated: boolean;
 };
 
+export type OverlayRuntimeInputMode = "readonly" | "writable_dependencies";
+
 export type OverlayEffects = {
   changes: PreparedFile[];
   created: string[];
@@ -77,6 +79,7 @@ export class WorkspaceOverlay {
     files: WorkspaceFiles,
     snapshot: WorkspaceSnapshot,
     signal?: AbortSignal,
+    runtimeInputMode: OverlayRuntimeInputMode = "readonly",
   ) {
     const directory = await mkdtemp(join(tmpdir(), "blame-run-overlay-"));
     const workspace = join(directory, "workspace");
@@ -88,10 +91,11 @@ export class WorkspaceOverlay {
           limit(() => copyWorkspaceEntry(files.root, workspace, path, signal)),
         ),
       );
-      const readonlyInputs = await linkReadonlyRuntimeInputs(
+      const readonlyInputs = await prepareRuntimeInputs(
         files.root,
         workspace,
         snapshot.files,
+        runtimeInputMode,
       );
       await Promise.all([
         mkdir(join(workspace, ".home"), { recursive: true, mode: 0o700 }),
@@ -222,20 +226,21 @@ async function copyWorkspaceEntry(
   await chmod(destination, info.mode & 0o777);
 }
 
-async function linkReadonlyRuntimeInputs(
+async function prepareRuntimeInputs(
   sourceRoot: string,
   destinationRoot: string,
   sourceFiles: string[],
+  mode: OverlayRuntimeInputMode,
 ) {
   const readonlyInputs: string[] = [];
-  const packageDirectories = new Set<string>(["."]);
-  for (const path of sourceFiles) {
-    if (path === "package.json" || path.endsWith("/package.json"))
-      packageDirectories.add(dirname(path));
-  }
+  const packageDirectories = packageManifestDirectories(sourceFiles);
   for (const directory of packageDirectories) {
     const source = join(sourceRoot, directory, "node_modules");
     const destination = join(destinationRoot, directory, "node_modules");
+    if (mode === "writable_dependencies") {
+      await mkdir(destination, { recursive: true, mode: 0o700 });
+      continue;
+    }
     try {
       if (!(await lstat(source)).isDirectory()) continue;
       await mkdir(dirname(destination), { recursive: true, mode: 0o700 });
@@ -246,6 +251,15 @@ async function linkReadonlyRuntimeInputs(
     }
   }
   return readonlyInputs;
+}
+
+function packageManifestDirectories(sourceFiles: string[]) {
+  const directories = new Set<string>(["."]);
+  for (const path of sourceFiles) {
+    if (path === "package.json" || path.endsWith("/package.json"))
+      directories.add(dirname(path));
+  }
+  return directories;
 }
 
 async function snapshotOverlay(root: string, signal?: AbortSignal) {

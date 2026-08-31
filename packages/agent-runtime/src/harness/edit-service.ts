@@ -398,11 +398,13 @@ export class EditService {
   }
 
   private async validateProposal(proposal: StoredChangeProposal) {
+    const paths = proposal.changes.map(({ path }) => path);
     return Promise.all(
       proposal.changes.map(async (change) => {
         const contents = await this.changes.proposalFileContents(change);
         return validateContent({
           content: contents.after ?? null,
+          externalValidation: proposalValidationMode(change.path, paths),
           path: change.path,
           workspaceRoot: this.files.root,
         });
@@ -1153,6 +1155,18 @@ function infrastructureMessage(message: string) {
   return /\b(?:eacces|emfile|enospc|io_error|read-only file system)\b/iu.test(
     message,
   );
+}
+
+function proposalValidationMode(path: string, proposalPaths: string[]) {
+  if (!path.toLowerCase().endsWith(".prisma")) return "enabled" as const;
+  const supportingProjectStateChanged = proposalPaths.some(
+    (candidate) =>
+      candidate !== path &&
+      /(?:^|\/)(?:package\.json|\.env(?:\..*)?|prisma\.config\.[cm]?[jt]s)$/iu.test(
+        candidate,
+      ),
+  );
+  return supportingProjectStateChanged ? "unsupported" : "enabled";
 }
 
 function uniqueStrings(values: string[]) {

@@ -293,7 +293,7 @@ test("starts development sessions with native skills and private specialist cons
         loading: false,
         mcpServer: { args: [], command: "node", name: "chrome-devtools" },
         message: "The preview is ready.",
-        reason: "PREVIEW_READY",
+        reason: "PREVIEW_BROWSER_READY",
         status: "ready",
       };
     },

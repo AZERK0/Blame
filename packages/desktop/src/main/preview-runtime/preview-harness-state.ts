@@ -31,8 +31,9 @@ export type PreviewHarnessState = PreviewDevtoolsTarget & {
 
 const previewStatusMessages = {
   ready: {
-    message: "The preview is ready for DevTools.",
-    reason: "PREVIEW_READY",
+    message:
+      "The preview browser is connected to DevTools. Application health is not yet verified.",
+    reason: "PREVIEW_BROWSER_READY",
   },
   starting: {
     message: "The preview is currently starting.",

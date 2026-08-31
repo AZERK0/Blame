@@ -4699,7 +4699,7 @@ function developmentStoryPrompt(
     "Work in the current worktree when code changes are clearly required.",
     "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files.",
     "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it.",
-    "Use get_preview_devtools with waitFor=none to inspect preview state before browser verification. If it is starting, choose whether to continue other work or call with waitFor=ready. Stopped, failed, and unopened browser states return immediately; do not poll them until the preview state changes. When ready, use the scoped preview_devtools__* tools directly.",
+    "Use get_preview_devtools with waitFor=none to inspect browser transport state before preview verification. If it is starting, choose whether to continue other work or call with waitFor=ready. Stopped, failed, and unopened browser states return immediately; do not poll them until the preview state changes. Browser readiness is not application-health evidence: take a scoped DOM snapshot before making browser assertions. A transient DevTools timeout is non-terminal; continue local validation and retry only after preview state changes.",
   );
   return prompt.join("\n");
 }

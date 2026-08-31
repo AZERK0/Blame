@@ -52,6 +52,8 @@ test("ready waits only while the preview is actively starting", async () => {
 
   assert.equal(state.status, "ready");
   assert.equal(state.available, true);
+  assert.equal(state.reason, "PREVIEW_BROWSER_READY");
+  assert.match(state.message, /health is not yet verified/iu);
 });
 
 test("none returns the current starting state without refreshing", async () => {

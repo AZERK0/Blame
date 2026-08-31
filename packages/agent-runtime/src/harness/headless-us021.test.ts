@@ -241,6 +241,36 @@ test("US-021 retries transient DevTools once with current revision evidence", as
   });
 });
 
+test("US-021 returns a non-terminal receipt without retrying a DevTools timeout", async () => {
+  await withUs021Workspace(async (root) => {
+    let calls = 0;
+    const tools = await previewDevtoolsMcpTools(
+      {
+        previewDevtools: async () => previewTarget(),
+        previewDevtoolsCall: async () => {
+          calls += 1;
+          throw new Error("MCP error -32001: Request timed out");
+        },
+        previewDevtoolsTools: async () => [
+          {
+            name: "take_screenshot",
+            inputSchema: { type: "object", properties: {} },
+          },
+        ],
+      },
+      { scope: "us021", worktree: root },
+      { log() {} },
+    );
+    const result = record(
+      await tools[0]!.execute({}, toolContext("src_us021")),
+    );
+    assert.equal(calls, 1);
+    assert.equal(result.isError, false);
+    assert.equal(result.outcome, "unavailable");
+    assert.equal(result.reason, "PREVIEW_DEVTOOLS_TRANSIENT_FAILURE");
+  });
+});
+
 test("US-021 lifecycle has one cancelling path and one terminal transition", () => {
   const runs = new RunLifecycleRegistry();
   assert.equal(runs.begin("session", "execution").state, "running");
@@ -432,7 +462,7 @@ function previewTarget() {
     loading: false,
     mcpServer: { args: [], command: "node", name: "devtools" },
     message: "Ready",
-    reason: "PREVIEW_READY",
+    reason: "PREVIEW_BROWSER_READY",
     status: "ready" as const,
   };
 }

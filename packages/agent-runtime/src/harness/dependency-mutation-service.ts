@@ -212,6 +212,7 @@ export class DependencyMutationService {
       this.files,
       snapshot,
       signal,
+      "writable_dependencies",
     );
     try {
       return await this.mutatePreparedOverlay(
@@ -450,6 +451,7 @@ async function dependencyExecutionInput(input: {
     outputBytes: 256 * 1024,
     signal: input.signal,
     network: input.networkPolicy,
+    dependencyInstall: true,
   };
 }
 

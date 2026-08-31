@@ -69,7 +69,7 @@ export const languageCapabilityRegistry: readonly LanguageCapability[] = [
   parserLanguage("vue", [".vue"], "ast-grep", "0.42"),
   structuredLanguage("json", [".json", ".jsonc"], "jsonc-parser", "3.3"),
   validatedLanguage("html", [".htm", ".html"], "ast-grep", "0.42"),
-  validatedLanguage("prisma", [".prisma"], "prisma-validate", "declared"),
+  prismaLanguage(),
 ] as const;
 
 export function languageCapability(path: string) {
@@ -258,6 +258,25 @@ function validatedLanguage(
   );
   operations.structured_edit = textualEditFallback();
   return { language_id: languageId, extensions, operations };
+}
+
+function prismaLanguage(): LanguageCapability {
+  const capability = validatedLanguage(
+    "prisma",
+    [".prisma"],
+    "prisma-validate",
+    "declared",
+  );
+  capability.operations.parse_validation = fallback(
+    "run_task",
+    ["revision_bound"],
+    [
+      "project_local_cli_required",
+      "complete_project_state_required",
+      "precommit_validation_may_be_unsupported",
+    ],
+  );
+  return capability;
 }
 
 function nativeSemanticOperations(engine: string, engineVersion: string) {

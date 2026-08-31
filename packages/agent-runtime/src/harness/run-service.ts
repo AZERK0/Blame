@@ -141,6 +141,7 @@ export class RunService {
       this.files,
       snapshot,
       signal,
+      task.kind === "dependencies" ? "writable_dependencies" : "readonly",
     );
     try {
       await this.assertCanonicalRevision(snapshot, signal);
@@ -169,6 +170,7 @@ export class RunService {
         outputBytes: input.limits.output_bytes ?? 512 * 1024,
         signal,
         network,
+        dependencyInstall: task.kind === "dependencies",
       };
       const result = await this.executeTask(executionInput, isolation);
       const effects = await overlay.effects(signal);

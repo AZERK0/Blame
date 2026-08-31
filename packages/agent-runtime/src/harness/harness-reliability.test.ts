@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   chmod,
+  lstat,
   mkdir,
   mkdtemp,
   readFile,
@@ -39,6 +40,8 @@ import {
 } from "./package-manager-runtime.js";
 import { editFilesInputSchema } from "./schemas.js";
 import { SemanticWorkspace } from "./semantic-workspace.js";
+import { WorkspaceFiles } from "./workspace-files.js";
+import { WorkspaceOverlay } from "./workspace-overlay.js";
 import {
   SemanticLoopDetector,
   semanticCallSignature,
@@ -63,6 +66,16 @@ test("the capability prompt is generated from the central registry", () => {
   for (const extension of extensions)
     assert.match(description, new RegExp(escape(extension)));
   assert.equal(new Set(extensions).size, extensions.length);
+  const prisma = capabilityRegistrySnapshot().find(
+    ({ languageId }) => languageId === "prisma",
+  );
+  assert.equal(prisma?.operations.parse_validation.support, "fallback");
+  if (prisma?.operations.parse_validation.support !== "fallback") return;
+  assert.ok(
+    prisma.operations.parse_validation.limitations.includes(
+      "project_local_cli_required",
+    ),
+  );
 });
 
 test("Cline registers the deterministic projection as a message builder", async () => {
@@ -354,6 +367,142 @@ test(
     });
   },
 );
+
+test(
+  "a broken project-local Prisma wrapper is unsupported",
+  { skip: process.platform === "win32" },
+  async () => {
+    await withWorkspace(async (root) => {
+      const directory = join(root, "node_modules", ".bin");
+      const executable = join(directory, "prisma");
+      await mkdir(directory, { recursive: true });
+      await writeFile(
+        executable,
+        "#!/bin/sh\necho \"Error: Cannot find module 'prisma/build/index.js'\" >&2\nexit 1\n",
+      );
+      await chmod(executable, 0o755);
+      const validation = await validateContent({
+        content: Buffer.from("model User { id Int @id }\n"),
+        path: "schema.prisma",
+        workspaceRoot: root,
+      });
+      assert.equal(validation.status, "unsupported");
+      assert.equal(validation.validator, "prisma");
+    });
+  },
+);
+
+test(
+  "atomic Prisma edits defer validation when project configuration changes",
+  { skip: process.platform === "win32" },
+  async () => {
+    await withWorkspace(async (root, workspace) => {
+      const directory = join(root, "node_modules", ".bin");
+      const executable = join(directory, "prisma");
+      await mkdir(directory, { recursive: true });
+      await writeFile(executable, "#!/bin/sh\nexit 1\n");
+      await chmod(executable, 0o755);
+      await writeFile(
+        join(root, "schema.prisma"),
+        "model User { id Int @id }\n",
+      );
+      const result = success(
+        await workspace.editFiles({
+          operations: [
+            {
+              operation: "create_file",
+              path: "prisma.config.ts",
+              content: "export default {}\n",
+            },
+            {
+              operation: "replace_file",
+              path: "schema.prisma",
+              content: "model User { id Int @id name String }\n",
+            },
+          ],
+        }),
+      );
+      assert.equal(result.data.status, "applied");
+      assert.equal(result.data.validation.status, "unsupported");
+    });
+  },
+);
+
+test("dependency overlays provide isolated writable node_modules", async () => {
+  await withWorkspace(async (root) => {
+    const canonicalModules = join(root, "node_modules");
+    await mkdir(canonicalModules, { recursive: true });
+    await writeFile(join(canonicalModules, "canonical.txt"), "canonical\n");
+    const files = new WorkspaceFiles(root);
+    const overlay = await WorkspaceOverlay.materialize(
+      files,
+      await files.snapshot(),
+      undefined,
+      "writable_dependencies",
+    );
+    try {
+      const overlayModules = join(overlay.workspace, "node_modules");
+      assert.equal((await lstat(overlayModules)).isSymbolicLink(), false);
+      await mkdir(join(overlayModules, ".pnpm"), { recursive: true });
+      await writeFile(join(overlayModules, ".pnpm", "installed"), "ok\n");
+      assert.equal(
+        await exists(join(canonicalModules, ".pnpm", "installed")),
+        false,
+      );
+      assert.deepEqual(overlay.readonlyInputs, []);
+    } finally {
+      await overlay.cleanup();
+    }
+  });
+});
+
+test("dependency workspace failures are infrastructure errors", async () => {
+  await withWorkspace(async (root) => {
+    const executor = new SandboxedTaskExecutor();
+    const result = await executor.execute({
+      args: [
+        "-e",
+        "process.stderr.write(`ENOENT: mkdir '${process.cwd()}/node_modules/.pnpm'`); process.exit(1)",
+      ],
+      cwd: root,
+      dependencyInstall: true,
+      executable: process.execPath,
+      network: "deny",
+      outputBytes: 10_000,
+      overlayRoot: root,
+      timeoutMs: 5_000,
+    });
+    assert.equal(result.status, "execution_error");
+  });
+});
+
+test("run_task dependencies installs in the private pnpm overlay", async () => {
+  await withWorkspace(async (root, workspace) => {
+    await writeFile(
+      join(root, "package.json"),
+      JSON.stringify({
+        name: "dependency-overlay",
+        packageManager: "pnpm@10.32.1",
+        private: true,
+      }),
+    );
+    await writeFile(
+      join(root, "pnpm-lock.yaml"),
+      "lockfileVersion: '9.0'\nsettings:\n  autoInstallPeers: true\n  excludeLinksFromLockfile: false\nimporters:\n  .: {}\n",
+    );
+    const revision = success(await workspace.workspaceState()).data
+      .source_revision.source_revision_id;
+    const result = success(
+      await workspace.runTask({
+        source_revision_id: revision,
+        task: { kind: "dependencies" },
+        limits: { timeout_ms: 30_000 },
+      }),
+    );
+    assert.equal(result.data.status, "passed");
+    assert.equal(await exists(join(root, "node_modules", ".pnpm")), false);
+  });
+});
 
 test("patch_file rejects patches targeting multiple files", async () => {
   await withWorkspace(async (_root, workspace) => {

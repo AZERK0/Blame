@@ -2,6 +2,8 @@ import { constants } from "node:fs";
 import {
   access,
   chmod,
+  lstat,
+  mkdir,
   mkdtemp,
   realpath,
   rm,
@@ -33,6 +35,7 @@ export type TaskExecutionInput = {
   packageManager?: PackageManagerName;
   packageManagerCompatibility?: PackageManagerCompatibility;
   packageManagerVersion?: string;
+  dependencyInstall?: boolean;
 };
 
 export type PackageManagerResolution = {
@@ -273,13 +276,7 @@ function completedExecution(
   const stdout = String(result.stdout ?? "");
   const stderr = String(result.stderr ?? "");
   return {
-    status: result.isCanceled
-      ? "cancelled"
-      : result.timedOut
-        ? "timed_out"
-        : result.failed
-          ? "failed"
-          : "passed",
+    status: completedExecutionStatus(result, input, stdout, stderr),
     exitCode: result.exitCode ?? null,
     signal: result.signal ?? null,
     stdout,
@@ -290,6 +287,27 @@ function completedExecution(
     isolation,
     ...packageManagerExecution(prepared),
   };
+}
+
+function completedExecutionStatus(
+  result: Awaited<ReturnType<typeof execa>>,
+  input: TaskExecutionInput,
+  stdout: string,
+  stderr: string,
+): TaskExecutionResult["status"] {
+  if (result.isCanceled) return "cancelled";
+  if (result.timedOut) return "timed_out";
+  if (!result.failed) return "passed";
+  return dependencyWorkspaceFailure(input, `${stderr}\n${stdout}`)
+    ? "execution_error"
+    : "failed";
+}
+
+function dependencyWorkspaceFailure(input: TaskExecutionInput, output: string) {
+  if (!input.dependencyInstall) return false;
+  return /(?:dependency_workspace_readonly|(?:enoent|eacces|erofs|read-only file system)[^\n]*node_modules[\\/](?:\.pnpm)?)/iu.test(
+    output,
+  );
 }
 
 function failedExecution(
@@ -598,6 +616,7 @@ function windowsQuote(value: string) {
 }
 
 async function prepareTaskExecution(input: TaskExecutionInput) {
+  await prepareDependencyWorkspace(input);
   const prepared = await preparePackageManager(input);
   const roots = [
     ...prepared.runtimeBinRoots,
@@ -609,6 +628,22 @@ async function prepareTaskExecution(input: TaskExecutionInput) {
       `EXECUTABLE_UNAVAILABLE:${prepared.executable} is not executable in this runtime.`,
     );
   return { ...prepared, executable };
+}
+
+async function prepareDependencyWorkspace(input: TaskExecutionInput) {
+  if (!input.dependencyInstall) return;
+  const directory = join(input.overlayRoot, "node_modules");
+  try {
+    const entry = await lstat(directory);
+    if (entry.isSymbolicLink() || !entry.isDirectory())
+      throw new Error(
+        "DEPENDENCY_WORKSPACE_READONLY:node_modules must be a writable overlay directory.",
+      );
+  } catch (error) {
+    if (errorCode(error) !== "ENOENT") throw error;
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+  }
+  await access(directory, constants.W_OK);
 }
 
 async function preparePackageManager(
@@ -664,6 +699,13 @@ function infrastructureFailure(
     outputTruncated: false,
     isolation,
   };
+}
+
+function errorCode(error: unknown) {
+  if (!error || typeof error !== "object") return undefined;
+  return "code" in error && typeof error.code === "string"
+    ? error.code
+    : undefined;
 }
 
 function projectAllowlistProxy() {

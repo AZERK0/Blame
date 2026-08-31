@@ -180,8 +180,33 @@ async function callPreviewTool(
     return await options.previewDevtoolsCall!(input);
   } catch (error) {
     if (!transientDevtoolsFailure(error) || signal?.aborted) throw error;
-    return options.previewDevtoolsCall!(input);
+    if (devtoolsTimeoutFailure(error))
+      return previewToolUnavailableResult(error);
+    try {
+      return await options.previewDevtoolsCall!(input);
+    } catch (retryError) {
+      if (!transientDevtoolsFailure(retryError) || signal?.aborted)
+        throw retryError;
+      return previewToolUnavailableResult(retryError);
+    }
   }
+}
+
+function previewToolUnavailableResult(error: unknown) {
+  return {
+    content: [
+      {
+        type: "text",
+        text: `Preview DevTools is temporarily unavailable: ${errorMessage(error)}`,
+      },
+    ],
+    isError: false,
+    outcome: "unavailable",
+    reason: "PREVIEW_DEVTOOLS_TRANSIENT_FAILURE",
+    recommendation:
+      "Continue with local validation. Retry browser inspection only after preview state changes.",
+    retryable: false,
+  };
 }
 
 function previewNotReadyResult(target: PreviewDevtoolsTarget | undefined) {
@@ -204,7 +229,7 @@ function previewEvidenceUnavailableResult() {
     content: [
       {
         type: "text",
-        text: "The current workspace revision could not be bound to preview readiness.",
+        text: "Browser transport evidence is unavailable for this preview session.",
       },
     ],
     isError: false,
@@ -215,9 +240,17 @@ function previewEvidenceUnavailableResult() {
 }
 
 function transientDevtoolsFailure(error: unknown) {
-  return /econnreset|navigation|session closed|target closed|timeout|temporar/iu.test(
+  return retryableDevtoolsFailure(error) || devtoolsTimeoutFailure(error);
+}
+
+function retryableDevtoolsFailure(error: unknown) {
+  return /econnreset|navigation|session closed|target closed|temporar/iu.test(
     errorMessage(error),
   );
+}
+
+function devtoolsTimeoutFailure(error: unknown) {
+  return /timed?\s*out/iu.test(errorMessage(error));
 }
 
 function attachPreviewEvidence(result: unknown, evidence: unknown) {
@@ -238,7 +271,7 @@ export function previewDevtoolsTool(
   return {
     name: "get_preview_devtools",
     description:
-      "Inspect the real lifecycle of this session's Blame preview. Choose an immediate state snapshot or wait only while a preview is actively starting. Stopped, failed, and unopened browser states always return immediately. When ready, use the preview_devtools__* tools directly.",
+      "Inspect the browser transport lifecycle of this session's Blame preview. Choose an immediate state snapshot or wait only while a preview is actively starting. Browser readiness is not application-health evidence. Stopped, failed, and unopened browser states always return immediately. When connected, use preview_devtools__take_snapshot before stronger browser assertions.",
     inputSchema: previewDevtoolsInputSchema(),
     execute: (input: unknown, context: ToolContext) =>
       executePreviewDevtoolsTool(options, preview, input, context.signal),
@@ -292,14 +325,20 @@ async function currentPreviewEvidence(
     const passed = target.status === "ready" && target.available;
     return {
       status: passed ? ("passed" as const) : ("unavailable" as const),
-      source_revision_id: revision,
-      evidence_ref: `preview-ready://${sha256(`${revision}\0${target.status}`)}`,
+      scope: "browser_transport" as const,
+      application_health: "unverified" as const,
+      workspace_source_revision_id: revision,
+      preview_source_revision_match: "unverified" as const,
+      evidence_ref: `preview-browser-ready://${sha256(`${revision}\0${target.status}`)}`,
     };
   } catch {
     return {
       status: "unavailable" as const,
-      source_revision_id: undefined,
-      evidence_ref: `preview-ready://${sha256(`${preview.worktree}\0unavailable`)}`,
+      scope: "browser_transport" as const,
+      application_health: "unverified" as const,
+      workspace_source_revision_id: undefined,
+      preview_source_revision_match: "unverified" as const,
+      evidence_ref: `preview-browser-ready://${sha256(`${preview.worktree}\0unavailable`)}`,
     };
   }
 }
@@ -329,7 +368,7 @@ function previewDevtoolsRecommendation(
   if (status === "unavailable") {
     return "Open the integrated preview browser before using DevTools.";
   }
-  return "Use the scoped preview_devtools__* tools for browser verification.";
+  return "Take a scoped DOM snapshot first. DevTools connectivity alone does not prove that the application is healthy.";
 }
 
 export function previewContainerLogsTool(
