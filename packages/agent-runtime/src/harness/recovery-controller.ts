@@ -84,10 +84,11 @@ export class RecoveryController {
     const sourceRevisionId = await currentSourceRevision(this.files, prior);
     const identity: RetryIdentity = {
       ...prior.identity,
-      environment_fingerprint: this.environmentFingerprint(context),
+      environment_revision_id: environmentRevisionId(
+        this.environmentFingerprint(context),
+      ),
     };
     if (sourceRevisionId) identity.source_revision_id = sourceRevisionId;
-    else delete identity.source_revision_id;
     return identity;
   }
 }
@@ -111,12 +112,14 @@ function retryIdentity(
   return {
     tool,
     normalized_input: input,
-    ...(result.provenance.source_revision_id
-      ? { source_revision_id: result.provenance.source_revision_id }
-      : {}),
-    environment_fingerprint: environmentFingerprint(workspaceRoot, context),
-    policy_version: "canonical-result/v3",
+    source_revision_id: result.provenance.source_revision_id,
+    environment_revision_id: result.provenance.environment_revision_id,
+    policy_version: "canonical-result/v4",
   };
+}
+
+function environmentRevisionId(fingerprint: string) {
+  return `env_${sha256(fingerprint)}`;
 }
 
 function environmentFingerprint(

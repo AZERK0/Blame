@@ -23,6 +23,7 @@ export type CanonicalResultContext = {
   tool: string;
   producerVersion?: string;
   environmentFingerprint?: string;
+  environmentRevisionId?: string;
 };
 
 export class CanonicalResultMapper {
@@ -187,13 +188,15 @@ function canonicalProvenance<T>(
       ? legacy.subject_revision
       : legacy.subject_revision;
   return {
-    ...(revision?.source_revision_id
-      ? { source_revision_id: revision.source_revision_id }
-      : {}),
+    source_revision_id: revision?.source_revision_id ?? "src_unavailable",
+    environment_revision_id:
+      revision?.environment_spec_revision_id ??
+      context.environmentRevisionId ??
+      `env_${digest(context.environmentFingerprint ?? "unavailable")}`,
     execution_id: context.executionId,
     ...(context.toolCallId ? { tool_call_id: context.toolCallId } : {}),
     produced_at: new Date().toISOString(),
-    producer_version: context.producerVersion ?? "agent-runtime/v3",
+    producer_version: context.producerVersion ?? "agent-runtime/v4",
   };
 }
 
@@ -308,11 +311,11 @@ function collectPathValues(value: unknown, depth: number): string[] {
 function causeKind(code: string, message: string): CauseKind {
   if (/CANCEL|ABORT/u.test(code) || /cancel|abort/iu.test(message))
     return "cancelled";
-  if (/INVALID_INPUT/u.test(code)) return "invalid_direct_input";
+  if (/INVALID_INPUT/u.test(code)) return "invalid_input";
   if (/STALE|CONFLICT|AMBIGUOUS|PRECONDITION|TARGET/u.test(code))
-    return "stale_target";
-  if (/UNSUPPORTED/u.test(code)) return "unsupported_capability";
-  if (/POLICY|DENIED/u.test(code)) return "invalid_direct_input";
+    return "invalid_input";
+  if (/UNSUPPORTED/u.test(code)) return "harness_limitation";
+  if (/POLICY|DENIED/u.test(code)) return "invalid_input";
   if (
     /EXECUTION|INFRASTRUCTURE|IO|NETWORK|STORE|PACKAGE_MANAGER_UNAVAILABLE/u.test(
       code,
@@ -320,7 +323,7 @@ function causeKind(code: string, message: string): CauseKind {
     /runtime|executor|network/iu.test(message)
   )
     return "infrastructure_failure";
-  if (/UNAVAILABLE/u.test(code)) return "unsupported_capability";
+  if (/UNAVAILABLE/u.test(code)) return "harness_limitation";
   if (/FAILED|VALIDATION|PARSE|TYPECHECK|TEST/u.test(code)) return "code_error";
   return "infrastructure_failure";
 }

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 export const harnessProtocolVersion = "3" as const;
 
 export type SourceRevisionId = string;
+export type EnvironmentRevisionId = string;
 export type ExecutionId = string;
 export type ToolCallId = string;
 export type ChangeReceiptRef = string;
@@ -10,8 +11,12 @@ export type RunReceiptRef = string;
 export type ArtifactRef = string;
 export type EvidenceRef = string;
 
-export type Provenance = {
-  source_revision_id?: SourceRevisionId;
+export type RevisionPair = {
+  source_revision_id: SourceRevisionId;
+  environment_revision_id: EnvironmentRevisionId;
+};
+
+export type Provenance = RevisionPair & {
   blob_hashes?: Record<string, string>;
   execution_id: ExecutionId;
   tool_call_id?: ToolCallId;
@@ -30,10 +35,10 @@ export type SatisfactionStatus =
 
 export type CauseKind =
   | "code_error"
-  | "unsupported_capability"
-  | "invalid_direct_input"
-  | "stale_target"
   | "infrastructure_failure"
+  | "harness_limitation"
+  | "invalid_input"
+  | "external_failure"
   | "cancelled";
 
 export type RecoveryCondition =
@@ -165,8 +170,8 @@ export function isHarnessResult(
 export type RetryIdentity = {
   tool: string;
   normalized_input: unknown;
-  source_revision_id?: SourceRevisionId;
-  environment_fingerprint: string;
+  source_revision_id: SourceRevisionId;
+  environment_revision_id: EnvironmentRevisionId;
   policy_version: string;
 };
 
@@ -211,8 +216,10 @@ function assertCompletedEvidence(
 }
 
 function assertCodeDependentProvenance(provenance: Provenance) {
-  if (provenance.source_revision_id || provenance.blob_hashes) return;
-  throw new Error("CODE_DEPENDENT_PROVENANCE_REQUIRED");
+  if (!provenance.source_revision_id)
+    throw new Error("SOURCE_REVISION_REQUIRED");
+  if (!provenance.environment_revision_id)
+    throw new Error("ENVIRONMENT_REVISION_REQUIRED");
 }
 
 function cloneProvenance(value: Provenance): Provenance {
@@ -279,11 +286,8 @@ function isProvenance(value: unknown): value is Provenance {
     typeof value.produced_at === "string" &&
     typeof value.producer_version === "string";
   if (!baseValid) return false;
-  if (
-    value.source_revision_id !== undefined &&
-    typeof value.source_revision_id !== "string"
-  )
-    return false;
+  if (typeof value.source_revision_id !== "string") return false;
+  if (typeof value.environment_revision_id !== "string") return false;
   if (value.blob_hashes === undefined) return true;
   return (
     isRecord(value.blob_hashes) &&
@@ -323,8 +327,8 @@ function validRecovery(value: unknown) {
 function codeScopedProvenance(value: unknown) {
   return (
     isRecord(value) &&
-    (typeof value.source_revision_id === "string" ||
-      isRecord(value.blob_hashes))
+    typeof value.source_revision_id === "string" &&
+    typeof value.environment_revision_id === "string"
   );
 }
 
@@ -335,7 +339,9 @@ function recoverySatisfied(prior: RetryRecord, current: RetryIdentity) {
     return !sameInput(prior.identity, current);
   if (prior.recovery.condition === "new_source_revision")
     return prior.identity.source_revision_id !== current.source_revision_id;
-  return prior.recovery.fingerprint !== current.environment_fingerprint;
+  return (
+    prior.identity.environment_revision_id !== current.environment_revision_id
+  );
 }
 
 function sameInput(left: RetryIdentity, right: RetryIdentity) {
@@ -367,12 +373,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 const causeKinds = new Set<string>([
   "invalid_input",
-  "conflict",
-  "code_failure",
-  "capability_unavailable",
-  "infrastructure",
-  "policy",
-  "internal",
+  "code_error",
+  "external_failure",
+  "harness_limitation",
+  "infrastructure_failure",
+  "cancelled",
 ]);
 
 const recoveryConditions = new Set<string>([

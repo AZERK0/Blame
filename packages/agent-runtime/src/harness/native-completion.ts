@@ -27,6 +27,7 @@ import type {
 } from "./semantic-executor.js";
 import { harnessError, sha256 } from "./protocol.js";
 import { validateContent } from "./content-validation.js";
+import { environmentSpec } from "./environment-service.js";
 import { readTaskCatalog } from "./task-catalog.js";
 import { WorkspaceFiles } from "./workspace-files.js";
 
@@ -46,6 +47,7 @@ export type NativeValidationActivity = {
 };
 
 type ResolvedValidation = {
+  environmentRevisionId: string;
   selectedPaths: string[];
   sourceRevisionId: string;
   taskId: string;
@@ -371,6 +373,7 @@ async function resolvePlannedValidations(
     if (!native && (!task || !coreTaskKind(task.kind))) return [];
     return [
       {
+        environmentRevisionId: plan.environment_revision_id,
         selectedPaths: check.selected_paths,
         sourceRevisionId: plan.source_revision_id,
         taskId: check.task_id,
@@ -452,6 +455,7 @@ function validationEvidence(
     check_id: validation.taskId,
     status,
     source_revision_id: validation.sourceRevisionId,
+    environment_revision_id: validation.environmentRevisionId,
     paths: validation.selectedPaths,
     policy_version: evidencePlannerPolicyVersion,
   };
@@ -486,7 +490,11 @@ function persistedValidationEvidence(
 function unavailableCheckEvidence(plan: EvidencePlan) {
   return plan.selected_checks.map((check) =>
     validationEvidence(
-      plannedValidation(plan.source_revision_id, check),
+      plannedValidation(
+        plan.source_revision_id,
+        plan.environment_revision_id,
+        check,
+      ),
       "unavailable",
     ),
   );
@@ -494,9 +502,11 @@ function unavailableCheckEvidence(plan: EvidencePlan) {
 
 function plannedValidation(
   sourceRevisionId: string,
+  environmentRevisionId: string,
   check: EvidencePlannedCheck,
 ): ResolvedValidation {
   return {
+    environmentRevisionId,
     selectedPaths: check.selected_paths,
     sourceRevisionId,
     taskId: check.task_id,
@@ -560,11 +570,15 @@ async function completionEvidencePlan(
     ...state.dirtyChanges,
   ]);
   const revision = await completionRevision(workspaceRoot, state, changes);
+  const files = new WorkspaceFiles(workspaceRoot);
+  const snapshot = await files.snapshot();
+  const environment = await environmentSpec(files, snapshot);
   const paths = unique(changes.flatMap((change) => change.files));
   const capabilityLanguages = capabilitySnapshot(paths);
   const snapshotId = `capability://${sha256(JSON.stringify(capabilityLanguages))}`;
   return new EvidencePlanner().plan({
     source_revision_id: revision,
+    environment_revision_id: environment.environment_spec_revision_id,
     change_receipts: changes.map((change) => change.id),
     changed_files: paths,
     changed_symbols: changedSymbols(changes),
@@ -573,7 +587,12 @@ async function completionEvidencePlan(
     task_catalog: await completionTasks(workspaceRoot),
     acceptance_criteria: acceptanceCriteria(taskContract),
     existing_evidence: [
-      ...completionEvidence(state, changes, capabilityLanguages),
+      ...completionEvidence(
+        state,
+        changes,
+        capabilityLanguages,
+        environment.environment_spec_revision_id,
+      ),
       ...outcomeEvidence,
     ],
     capability_snapshot: {
@@ -623,10 +642,11 @@ function completionEvidence(
   state: CompletionState,
   changes: CompletionState["dirtyChanges"],
   languages: ReturnType<typeof capabilitySnapshot>,
+  environmentRevisionId: string,
 ) {
   const parseEvidence = changes.flatMap((change) =>
     change.validation === "passed"
-      ? parseChangeEvidence(change, languages)
+      ? parseChangeEvidence(change, languages, environmentRevisionId)
       : [],
   );
   return [
@@ -639,6 +659,7 @@ function completionEvidence(
               check_id: receipt.taskId,
               status: validationEvidenceStatus(receipt.terminal),
               source_revision_id: receipt.sourceRevisionId,
+              environment_revision_id: environmentRevisionId,
               paths: [],
               policy_version: evidencePlannerPolicyVersion,
             },
@@ -651,6 +672,7 @@ function completionEvidence(
 function parseChangeEvidence(
   change: CompletionState["dirtyChanges"][number],
   languages: ReturnType<typeof capabilitySnapshot>,
+  environmentRevisionId: string,
 ): ExistingEvidence[] {
   if (!change.sourceRevisionId) return [];
   const pathsByLanguage = new Map<string, Set<string>>();
@@ -663,7 +685,16 @@ function parseChangeEvidence(
     pathsByLanguage.set(language.language_id, current);
   }
   return [...pathsByLanguage].flatMap(([languageId, paths]) =>
-    paths.size ? [parseEvidence(change, languageId, [...paths].sort())] : [],
+    paths.size
+      ? [
+          parseEvidence(
+            change,
+            languageId,
+            [...paths].sort(),
+            environmentRevisionId,
+          ),
+        ]
+      : [],
   );
 }
 
@@ -671,12 +702,14 @@ function parseEvidence(
   change: CompletionState["dirtyChanges"][number],
   languageId: string,
   paths: string[],
+  environmentRevisionId: string,
 ): ExistingEvidence {
   return {
     evidence_ref: `evidence://parse/${sha256(`${change.id}\0${languageId}`)}`,
     check_id: `native:parse:${languageId}`,
     status: "passed",
     source_revision_id: change.sourceRevisionId,
+    environment_revision_id: environmentRevisionId,
     paths,
     policy_version: evidencePlannerPolicyVersion,
   };

@@ -256,7 +256,7 @@ function blockedBatch(
       : "none",
     satisfaction: satisfied ? "partially_satisfied" : "unsatisfied",
     issue: {
-      kind: "stale_target",
+      kind: "invalid_input",
       code: "EDIT_GROUP_BLOCKED",
       message: "One or more path dependency groups were not committed.",
       details: {

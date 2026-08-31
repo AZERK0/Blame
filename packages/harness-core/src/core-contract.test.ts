@@ -7,6 +7,7 @@ import {
   ProjectionEngine,
   RetryLedger,
   SingleExecutionAuthority,
+  InMemoryStateAuthority,
   aggregateEditGroupReceipts,
   buildPathDependencyGroups,
   capabilitySnapshot,
@@ -25,6 +26,7 @@ import {
 
 const provenance: Provenance = {
   source_revision_id: "src_current",
+  environment_revision_id: "env_current",
   execution_id: "execution-1",
   tool_call_id: "tool-1",
   produced_at: "2026-08-29T00:00:00.000Z",
@@ -59,7 +61,7 @@ test("retry ledger suppresses an equivalent attempt until recovery", () => {
     tool: "run_task",
     normalized_input: { task_id: "test" },
     source_revision_id: "src_one",
-    environment_fingerprint: "environment-one",
+    environment_revision_id: "environment-one",
     policy_version: "canonical-result/v3",
   };
   ledger.remember(identity, { condition: "new_source_revision" });
@@ -129,7 +131,7 @@ test("edit group aggregation follows the normative table", () => {
   assert.equal(partial.outcome, "blocked");
   assert.equal(partial.effect, "partial");
   assert.equal(partial.satisfaction, "partially_satisfied");
-  assert.equal(partial.issue.kind, "stale_target");
+  assert.equal(partial.issue.kind, "invalid_input");
 });
 
 test("semantic write rebase refuses weak and ambiguous candidates", () => {
@@ -177,6 +179,14 @@ test("evidence planner reuses only fresh evidence and selects a minimum declared
     blob_hashes: { "src/private.ts": "new" },
   });
   assert.equal(stale.reused_evidence.includes("evidence://old-parse"), false);
+  const environmentChanged = planner.plan({
+    ...input,
+    environment_revision_id: "env_changed",
+  });
+  assert.equal(
+    environmentChanged.reused_evidence.includes("evidence://old-parse"),
+    false,
+  );
   const multiLanguage = planner.plan({
     ...input,
     changed_files: ["src/private.ts", "src/styles.css"],
@@ -193,6 +203,7 @@ test("evidence planner reuses only fresh evidence and selects a minimum declared
         check_id: "native:parse:typescript",
         status: "passed",
         source_revision_id: "src_current",
+        environment_revision_id: "env_current",
         paths: ["src/private.ts"],
         policy_version: "evidence-planner/v1",
       },
@@ -297,6 +308,40 @@ test("execution authority refuses a concurrent execution", () => {
   assert.throws(
     () => authority.begin(new ExecutionLifecycle("execution-two")),
     /ACTIVE_EXECUTION_EXISTS/u,
+  );
+});
+
+test("state authority invalidates revision-bound projections", () => {
+  const authority = new InMemoryStateAuthority({
+    source_revision_id: "src_one",
+    environment: environmentInput("dependencies-one"),
+  });
+  const first = authority.current();
+  authority.setDependency({ status: "ready", manifest_ref: "cache://one" });
+  authority.setPreview({
+    readiness: "application_ready",
+    revisions: {
+      source_revision_id: first.source_revision_id,
+      environment_revision_id: first.environment_revision_id,
+    },
+  });
+  const changed = authority.setEnvironment(environmentInput("dependencies-two"));
+  assert.notEqual(
+    changed.environment_revision_id,
+    first.environment_revision_id,
+  );
+  assert.equal(changed.dependency.status, "unknown");
+  assert.equal(changed.preview.readiness, "container_ready");
+  assert.throws(
+    () =>
+      authority.setPreview({
+        readiness: "application_ready",
+        revisions: {
+          source_revision_id: first.source_revision_id,
+          environment_revision_id: first.environment_revision_id,
+        },
+      }),
+    /PREVIEW_REVISION_MISMATCH/u,
   );
 });
 
@@ -426,6 +471,7 @@ function plannerInput(): EvidencePlannerInput {
   const [typescript] = capabilitySnapshot(["src/private.ts"]);
   return {
     source_revision_id: "src_current",
+    environment_revision_id: "env_current",
     change_receipts: ["receipt://one"],
     changed_files: ["src/private.ts"],
     changed_symbols: [
@@ -468,6 +514,7 @@ function plannerInput(): EvidencePlannerInput {
         evidence_ref: "evidence://old-parse",
         check_id: "native:parse:typescript",
         status: "passed",
+        environment_revision_id: "env_current",
         blob_hashes: { "src/private.ts": "same" },
         paths: ["src/private.ts"],
         policy_version: "evidence-planner/v1",
@@ -480,5 +527,19 @@ function plannerInput(): EvidencePlannerInput {
     capability_snapshot_id: "capability-1",
     policy_version: "evidence-planner/v1",
     blob_hashes: { "src/private.ts": "same" },
+  };
+}
+
+function environmentInput(dependencyDigest: string) {
+  return {
+    dependency_digest: dependencyDigest,
+    package_manager: "pnpm",
+    resolved_version: "10.33.2",
+    platform: "linux",
+    architecture: "x64",
+    runtime_target: "local",
+    build_environment_digest: "build-one",
+    dependency_volume_digest: "volume-one",
+    execution_profile: "default",
   };
 }

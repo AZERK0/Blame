@@ -8,4 +8,5 @@ export * from "./projections.js";
 export * from "./release.js";
 export * from "./result.js";
 export * from "./semantic-rebase.js";
+export * from "./state.js";
 export * from "./transaction.js";

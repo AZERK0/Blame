@@ -5,6 +5,7 @@ import type {
 import type { ChangeReceipt, SourceRevisionSnapshot } from "./ports.js";
 import type {
   EvidenceRef,
+  EnvironmentRevisionId,
   ExecutionId,
   Provenance,
   SourceRevisionId,
@@ -101,8 +102,9 @@ export type EvidenceRecord = {
 export interface EvidenceAuthority {
   record(evidence: EvidenceRecord): void;
   get(reference: EvidenceRef): EvidenceRecord | undefined;
-  freshForRevision(
+  freshForRevisions(
     sourceRevisionId: SourceRevisionId,
+    environmentRevisionId: EnvironmentRevisionId,
   ): readonly EvidenceRecord[];
   invalidate(
     predicate: (evidence: EvidenceRecord) => boolean,
@@ -114,11 +116,10 @@ export class InMemoryEvidenceAuthority implements EvidenceAuthority {
   private readonly records = new Map<EvidenceRef, EvidenceRecord>();
 
   record(evidence: EvidenceRecord) {
-    if (
-      !evidence.provenance.source_revision_id &&
-      !evidence.provenance.blob_hashes
-    )
-      throw new Error("UNSCOPED_EVIDENCE");
+    if (!evidence.provenance.source_revision_id)
+      throw new Error("UNSCOPED_SOURCE_EVIDENCE");
+    if (!evidence.provenance.environment_revision_id)
+      throw new Error("UNSCOPED_ENVIRONMENT_EVIDENCE");
     this.records.set(evidence.evidence_ref, cloneEvidence(evidence));
   }
 
@@ -127,11 +128,16 @@ export class InMemoryEvidenceAuthority implements EvidenceAuthority {
     return evidence ? cloneEvidence(evidence) : undefined;
   }
 
-  freshForRevision(sourceRevisionId: SourceRevisionId) {
+  freshForRevisions(
+    sourceRevisionId: SourceRevisionId,
+    environmentRevisionId: EnvironmentRevisionId,
+  ) {
     return [...this.records.values()]
       .filter(
         (evidence) =>
-          evidence.provenance.source_revision_id === sourceRevisionId,
+          evidence.provenance.source_revision_id === sourceRevisionId &&
+          evidence.provenance.environment_revision_id ===
+            environmentRevisionId,
       )
       .filter((evidence) => !evidence.freshness.invalidated_at)
       .map(cloneEvidence);

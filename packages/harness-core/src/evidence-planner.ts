@@ -7,6 +7,7 @@ import type {
 import type {
   ChangeReceiptRef,
   EvidenceRef,
+  EnvironmentRevisionId,
   SourceRevisionId,
 } from "./result.js";
 
@@ -76,6 +77,7 @@ export type ExistingEvidence = {
   check_id: string;
   status: "passed" | "failed" | "unavailable";
   source_revision_id?: SourceRevisionId;
+  environment_revision_id: EnvironmentRevisionId;
   blob_hashes?: Record<string, string>;
   paths: string[];
   policy_version: string;
@@ -88,6 +90,7 @@ export type CapabilitySnapshot = {
 
 export type EvidencePlannerInput = {
   source_revision_id: SourceRevisionId;
+  environment_revision_id: EnvironmentRevisionId;
   change_receipts: ChangeReceiptRef[];
   changed_files: string[];
   changed_symbols: SymbolChange[];
@@ -141,6 +144,7 @@ export type EvidencePlan = {
   plan_id: string;
   policy_version: string;
   source_revision_id: SourceRevisionId;
+  environment_revision_id: EnvironmentRevisionId;
   change_receipts: ChangeReceiptRef[];
   impacts: Impact[];
   risks: Risk[];
@@ -169,6 +173,7 @@ export class EvidencePlanner {
     const planContent = {
       policy_version: input.policy_version,
       source_revision_id: input.source_revision_id,
+      environment_revision_id: input.environment_revision_id,
       change_receipts: [...input.change_receipts],
       impacts,
       risks,
@@ -466,6 +471,8 @@ function evidenceFresh(
   evidenceScope: EvidenceScope,
   input: EvidencePlannerInput,
 ) {
+  if (evidence.environment_revision_id !== input.environment_revision_id)
+    return false;
   if (evidence.policy_version !== input.policy_version) return false;
   if (evidence.source_revision_id === input.source_revision_id) return true;
   if (!evidence.blob_hashes || !input.blob_hashes) return false;
@@ -765,6 +772,8 @@ function assertPlannerInput(input: EvidencePlannerInput) {
   if (input.capability_snapshot.snapshot_id !== input.capability_snapshot_id)
     throw new Error("CAPABILITY_SNAPSHOT_MISMATCH");
   if (!input.source_revision_id) throw new Error("SOURCE_REVISION_REQUIRED");
+  if (!input.environment_revision_id)
+    throw new Error("ENVIRONMENT_REVISION_REQUIRED");
 }
 
 function fileExtension(path: string) {
