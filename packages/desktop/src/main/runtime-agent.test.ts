@@ -6,6 +6,7 @@ import test from "node:test";
 import type { SemanticWorkspaceExecutionRequest } from "@blame/agent-runtime";
 import { RuntimeAgentClient } from "./runtime-agent.ts";
 import { semanticWorkspaceExecutionTarget } from "./semantic-workspace-routing.ts";
+import { worktreeRoot } from "./workspace-runtime.ts";
 
 const managedSemanticWorkspaceRoot =
   "/home/blame/.local/share/blame/runtime/worktrees/Blame/story-US-188-test";
@@ -366,6 +367,25 @@ test("keeps cloud previews and Linux semantic tools native", () => {
   );
 });
 
+test("covers both harness modes on Linux, macOS, and Windows", () => {
+  for (const runtimeCase of harnessRuntimeCases) {
+    const root = worktreeRoot(
+      runtimeCase.platform,
+      runtimeCase.environment,
+      runtimeCase.mode,
+    );
+    assert.equal(root, runtimeCase.root, runtimeCase.name);
+    assert.equal(
+      semanticWorkspaceExecutionTarget(
+        semanticRequest(runtimeCase.mode, runtimeCase.backend, root),
+        runtimeCase.platform,
+      ),
+      runtimeCase.target,
+      runtimeCase.name,
+    );
+  }
+});
+
 test("does not delegate host-native local worktrees", () => {
   assert.equal(
     semanticWorkspaceExecutionTarget(
@@ -388,6 +408,63 @@ function semanticRequest(
     workspaceRoot,
   };
 }
+
+const harnessRuntimeCases = [
+  {
+    name: "Linux local native",
+    platform: "linux",
+    mode: "local-container",
+    backend: "remote",
+    environment: { HOME: "/home/dev" },
+    root: "/home/dev/.local/share/blame/runtime/worktrees",
+    target: "native",
+  },
+  {
+    name: "macOS local Lima",
+    platform: "darwin",
+    mode: "local-container",
+    backend: "remote",
+    environment: { HOME: "/Users/dev" },
+    root: "/home/blame/.local/share/blame/runtime/worktrees",
+    target: "managed-runtime",
+  },
+  {
+    name: "Windows local WSL",
+    platform: "win32",
+    mode: "local-container",
+    backend: "remote",
+    environment: {},
+    root: "/home/blame/.local/share/blame/runtime/worktrees",
+    target: "managed-runtime",
+  },
+  {
+    name: "Linux Cloud Preview",
+    platform: "linux",
+    mode: "cloud-mirror",
+    backend: "local",
+    environment: { HOME: "/home/dev" },
+    root: "/home/dev/.local/share/blame/cloud/worktrees",
+    target: "native",
+  },
+  {
+    name: "macOS Cloud Preview",
+    platform: "darwin",
+    mode: "cloud-mirror",
+    backend: "local",
+    environment: { HOME: "/Users/dev" },
+    root: "/Users/dev/Library/Application Support/Blame/cloud/worktrees",
+    target: "native",
+  },
+  {
+    name: "Windows Cloud Preview",
+    platform: "win32",
+    mode: "cloud-mirror",
+    backend: "local",
+    environment: { LOCALAPPDATA: String.raw`C:\Users\dev\AppData\Local` },
+    root: String.raw`C:\Users\dev\AppData\Local\Blame\cloud\worktrees`,
+    target: "native",
+  },
+] as const;
 
 function fakeSpawn(
   processes: FakeAgentProcess[],

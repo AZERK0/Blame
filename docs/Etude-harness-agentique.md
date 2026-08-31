@@ -1844,7 +1844,7 @@ Le client Cloud conserve son mécanisme de récupération d’appels ambigus. L�
 
 Le prompt limite la consultation à l’ambiguïté produit ou visuelle importante, l’architecture transversale inconnue, l’échec d’un premier correctif, les risques auth/données/migration ou l’absence de validation fiable. La cible de timeout est 90 secondes. Le runtime transmet une capsule fraîche au spécialiste et limite la change request à une consultation ; une consultation supplémentaire exige une justification structurée explicite. Impeccable reste requis pour une nouvelle interface ou un redesign, mais plus pour un correctif mécanique localisé sans choix de design.
 
-Le gouverneur maintient à la fois un état par epoch et un état cumulé pour toute la task : appels et octets de lecture, octets nouveaux et supprimés, requêtes similaires, doublons, recouvrement faible, lectures après edit, conflits, retries et temps avant première édition appliquée. Les limites anti-boucle utilisent l’état cumulé. Un conflit ne remet aucun compteur à zéro ; un edit appliqué démarre une nouvelle phase. Après plusieurs lectures à faible nouveauté, les nouvelles explorations larges identiques sont refusées avec la cible déjà identifiée, tandis qu’une inspection étroite reste possible. La compaction est exécutée par le gestionnaire de contexte Cline et son callback de capsule. Blame lui fournit une fenêtre effective réduite afin que le seuil automatique de 90 % de Cline corresponde à 67,5 % de la fenêtre réelle du modèle ; une alerte de pression est émise à 55 %. Il ne s’agit donc plus d’une simple recommandation adressée au modèle.
+Cette architecture de gouverneur est historique et n'appartient plus au chemin de production. La section 21.20 retire les coupures cognitives et la section 21.27 décrit l'état final : coalescence des appels strictement identiques, reçus de lectures couvertes, déduplication des validations par état et métriques purement observables. La compaction utilise directement la fenêtre déclarée par le modèle et l'extension Cline officielle décrite en section 21.24.
 
 Le frontend mappe les éditions sur la surface diff existante et affiche fichiers, additions, suppressions, validation de parse et résolution exacte ou automatiquement rebasée. Les lectures affichent symbole ou nœud, vue, lignes, caractère partiel ou entier et badge de contenu réutilisé. Chaque événement porte `toolCallId`, `sequenceNumber`, `phase` et `timestamp`; les phases sont `started`, `progress`, `finished`, `failed` et `cancelled`. La déduplication utilise `sessionId + toolCallId + phase + sequenceNumber`, ce qui conserve deux outils homonymes parallèles et les résultats arrivant en moins de 100 ms. L’interface distingue ensuite transport terminé, opération appliquée, conflit, validation échouée et infrastructure indisponible.
 
@@ -1886,7 +1886,9 @@ Les tests automatisés exécutés dans ce worktree couvrent Linux natif, le cont
 
 ### 21.12 Déploiement et rollback
 
-Les capacités sont indépendantes et activées par défaut :
+Cette section décrivait le rollout du harness v2. Le flux de production canonique ne possède plus de rollback vers le protocole v2, l'ancien gouverneur, `apply_change`, la validation manuelle ou la compaction désactivée. Les flags supprimés sont `BLAME_COST_GOVERNOR_V2`, `BLAME_NATIVE_CLINE_HARNESS`, `BLAME_HARNESS_PROTOCOL_V3` et `BLAME_CLINE_MESSAGE_BUILDER_COMPACTION`.
+
+Les flags restants pilotent uniquement des migrations internes encore lisibles :
 
 ```text
 BLAME_CONTEXT_EPOCHS
@@ -1894,15 +1896,13 @@ BLAME_SEMANTIC_READ_REBASE
 BLAME_WORKING_SET_V2
 BLAME_SEMANTIC_REBASE_V2
 BLAME_PATCH_RECOVERY_V2
-BLAME_COST_GOVERNOR_V2
-BLAME_NATIVE_CLINE_HARNESS
 BLAME_MEMORY_AUTHORITY_V2
 BLAME_HARD_CAPSULE_BUDGET
 BLAME_SEMANTIC_RECALL
 BLAME_OPENROUTER_EMBEDDINGS
 ```
 
-La valeur `0`, `false` ou `off` restaure le comportement précédent pour la capacité concernée, sans migration ni suppression des artefacts. `BLAME_OPENROUTER_EMBEDDINGS` constitue l’exception : il est désactivé par défaut. `BLAME_NATIVE_CLINE_HARNESS` désactive temporairement la projection de continuité, la détection sémantique Blame et la validation automatique, mais conserve l’unique terminal natif afin de ne jamais recréer deux protocoles de fin concurrents. L’ordre de rollout est : instrumentation, working set, rebase des lectures et écritures, fallback patch, gouverneur, harness Cline natif, autorité mémoire, rappel lexical, puis activation générale après comparaison des métriques.
+`BLAME_OPENROUTER_EMBEDDINGS` reste désactivé par défaut. Sa présence réserve le schéma d'une éventuelle expérimentation backend ; aucun appel embedding n'existe dans le runtime local. Les autres flags ne peuvent pas réactiver les tools ou résultats supprimés.
 
 ### 21.13 Architecture de completion antérieure, remplacée
 
@@ -1971,7 +1971,7 @@ Les images WSL et Lima passent en runtime `9` et provisionnent npm 11.6.4, pnpm 
 
 #### Lectures externes session-wide
 
-Lorsque `BLAME_COST_GOVERNOR_V2` est actif, une même instance du gouverneur couvre toute la session, y compris les changements d’epoch. `fetch_web_content`, `consult_specialist`, les logs Preview et DevTools partagent une normalisation URL/requête, un cache de reçus et les compteurs cumulés. Une ressource canonique exacte répétée reçoit `skipped` sans nouvel appel. La proximité sémantique sert seulement au résumé et à l’avertissement : elle ne bloque jamais deux URL distinctes. Une réponse neuve est bornée à 8 Kio avant son insertion dans le contexte, borne conservatrice qui garantit au plus 8 000 tokens même sans tokenizer provider. Les métriques distinguent appels, cache hits, suppressions et octets retournés.
+Les lectures externes utilisent désormais toujours la même autorité session-wide. `fetch_web_content`, `consult_specialist`, les logs Preview et DevTools partagent une normalisation URL/requête et un cache de reçus exact. Une ressource canonique exacte répétée reçoit `skipped` sans nouvel appel. La proximité sémantique sert seulement au résumé et à l’avertissement : elle ne bloque jamais deux URL distinctes. Une réponse neuve est bornée à 8 Kio avant son insertion dans le contexte. Les métriques distinguent appels, cache hits, suppressions et octets retournés.
 
 #### Compaction effective
 
@@ -2010,7 +2010,7 @@ Le détecteur Blame complète le détecteur natif de Cline sur toute la session.
 
 #### Sorties terminales et rollback
 
-Les statuts `max_iterations`, `mistake_limit`, `failed`, `cancelled` et `aborted` sont convertis en erreurs produit lisibles. Le texte du dernier résultat outil et le payload brut ne sont pas transmis comme réponse assistant. Un run incomplet n’annonce donc jamais « Work completed ». `BLAME_NATIVE_CLINE_HARNESS=false` sert de rollback temporaire pour la projection, la détection sémantique et la validation automatique ; le terminal natif reste unique dans les deux modes.
+Les statuts `max_iterations`, `mistake_limit`, `failed`, `cancelled` et `aborted` sont convertis en erreurs produit lisibles. Le texte du dernier résultat outil et le payload brut ne sont pas transmis comme réponse assistant. Un run incomplet n’annonce donc jamais « Work completed ». Le rollback temporaire du harness natif a depuis été supprimé : le terminal, la projection et la validation automatiques possèdent un seul chemin de production.
 
 #### Mesures vérifiées localement le 27 août 2026
 
@@ -2195,7 +2195,7 @@ Un watchdog de session surveille enfin une exécution modèle silencieuse. Le d�
 
 ### 21.20 Suppression des coupe-circuits aval non démontrables
 
-Le gouverneur n'interdit plus une recherche, une création de fichier ou une mutation de dépendance selon la position dans le budget. Seule l'itération terminale reste bloquante. La fenêtre structurelle à 75 %, la réserve des huit dernières itérations et le quota de deux lectures larges ont été supprimés. Les appels larges distincts peuvent s'exécuter en parallèle dans la limite générale de concurrence de Cline ; seules deux requêtes de lecture réellement identiques en vol partagent une exécution.
+Le runtime n'interdit plus une recherche, une création de fichier ou une mutation de dépendance selon la position dans un budget. La fenêtre structurelle à 75 %, la réserve des huit dernières itérations, le quota de lectures larges et la coupure terminale par compteur ont été supprimés. Les appels distincts peuvent s'exécuter en parallèle dans la limite générale de concurrence de Cline ; seules deux requêtes de lecture réellement identiques en vol partagent une exécution.
 
 Les connaissances négatives sont désormais bornées par leur preuve. Un package prouvé absent supprime uniquement une nouvelle lecture explicite du même chemin `node_modules/<package>` ; il ne bloque jamais `mutate_dependencies` et cette mémoire est vidée lors d'une nouvelle demande utilisateur. Les compteurs d'échecs identiques sont liés à l'epoch, effacés après un progrès matériel et réinitialisés entre deux demandes. Les résultats en erreur ne sont plus placés dans le cache de boucle sémantique. L'indisponibilité d'un exécuteur de dépendances reste exposée par `workspace_state`, mais ne ferme plus par expression régulière la documentation, les spécialistes ou le lockfile.
 
@@ -2265,7 +2265,7 @@ Les seuils retenus sont ceux de la spécification : au moins 100 tâches stratif
 
 #### Limitations restantes
 
-Les quatre autorités et le `TransactionEngine` sont encore des contrats et implémentations de référence plus qu’un branchement de production complet. En production, l’adaptateur v3 utilise une autorité de preuves en mémoire ; les stores de conversation, d’effets et d’exécution ainsi que le moteur historique d’édition restent actifs. La release matrix Linux, WSL, Lima, runtime distant et Cloud Preview n’a pas été exécutée. Le corpus live ne contient pas encore les 100 tâches pré-enregistrées ni trois répétitions par sous-corpus variable. Le replay US-021 ajoute un batch property-style déterministe ; les campagnes model-based, crash injection et fuzzing restent à étendre. Le flag temporaire `BLAME_CLINE_MESSAGE_BUILDER_COMPACTION` est conservé tant que ces gates ne sont pas franchis ; sa suppression appartient à la phase finale de migration.
+Cette limitation historique est levée par la section 21.27 : les cinq autorités sont branchées dans le chemin de production, la double révision est portée par les résultats et preuves, et le flag temporaire de compaction est supprimé. La matrice physique Linux, WSL, Lima et Cloud Preview ainsi que le corpus live à trois répétitions restent toutefois des gates de release externes.
 
 ### 21.24 Compaction déterministe et atomicité US-021
 
@@ -2308,9 +2308,27 @@ Les overlays distinguent maintenant l’exécution ordinaire de l’installation
 
 La validation Prisma reste opportuniste et non bloquante lorsqu’aucun parseur fiable n’est disponible. Un exécutable local absent, un wrapper cassé, un module manquant, un timeout ou un échec de chargement de configuration produit `unsupported`, jamais `passed` ni `validation_failed`. Lorsqu’un batch atomique modifie à la fois un schéma Prisma et son état de projet — `prisma.config.*`, `package.json` ou `.env*` — le runtime ne valide plus le schéma temporaire contre l’ancien worktree. Il applique le batch en une transaction, marque la prévalidation externe `unsupported`, puis laisse le plan de preuves exécuter la tâche projet pertinente sur la révision cohérente. L’agent peut ainsi remplacer ou déplacer directement un fichier `.prisma` sans suppression, extension temporaire ou boucle de sérialisation.
 
-Les coupures DevTools rapides conservent un seul retry immédiat. Les formes réelles `timeout` et `timed out`, déjà coûteuses, ne sont pas rejouées sans changement d’état. Un timeout direct ou l’échec du retry d’une coupure rapide retourne un reçu non fatal `PREVIEW_DEVTOOLS_TRANSIENT_FAILURE` et demande de poursuivre la validation locale jusqu’à un changement d’état de la preview. L’état prêt se nomme désormais `PREVIEW_BROWSER_READY` et indique seulement que le transport navigateur est connecté. Sa preuve porte la portée `browser_transport`, l’état applicatif `unverified` et un match de révision de preview `unverified`; elle ne lie plus artificiellement la révision courante du workspace à la page affichée. Le prompt demande un snapshot DOM avant toute assertion applicative.
+Les coupures DevTools rapides conservent un seul retry immédiat. Les formes réelles `timeout` et `timed out`, déjà coûteuses, ne sont pas rejouées sans changement d’état. Un timeout direct ou l’échec du retry d’une coupure rapide retourne un reçu non fatal `PREVIEW_DEVTOOLS_TRANSIENT_FAILURE`. La readiness finale distingue maintenant `browser_ready`, `container_ready` et `application_ready`; seule la dernière vaut preuve sur la paire de révisions courante. Une compilation bloquée ou une réponse HTTP 500 échoue immédiatement avec son diagnostic.
 
 Les replays ajoutés vérifient l’isolation d’un `node_modules` inscriptible, une installation pnpm réelle dans cet overlay, la classification infrastructure d’un échec `.pnpm`, un wrapper Prisma cassé, une édition atomique schéma + configuration et un timeout MCP non rejoué. La suite runtime complète compte 351 scénarios : 349 réussissent, aucun n’échoue et les deux tests live sont ignorés faute de credentials. Les 336 scénarios desktop et les 12 scénarios Harness Core réussissent, ainsi que les typechecks et le lint des packages concernés. Une nouvelle US live dans l’AppImage reconstruite reste nécessaire pour mesurer la disparition de la cascade dans les conditions provider et preview réelles.
+
+### 21.27 Stabilisation systémique finale
+
+L'architecture réellement livrée est détaillée dans [Stabilisation systémique du Blame Harness](architecture/harness-systemic-stabilization.md). Elle remplace les descriptions historiques où les epochs, governors, caches ou reçus pouvaient être interprétés comme des autorités concurrentes.
+
+Le runtime est désormais organisé autour de cinq autorités uniques : State Authority, Lifecycle Machine, Result Envelope, Evidence System et Transaction Engine. Toute opération et toute preuve portent la paire exacte `source_revision_id + environment_revision_id`. L'environnement inclut les manifests et lockfiles, le gestionnaire résolu, le profil, la plateforme, l'architecture et la cible runtime. Une mutation de dépendances invalide l'ancienne paire, reconstruit l'environnement persistant, sonde les exécutables, packages, liens pnpm et store depuis le cwd réel, puis rafraîchit la preview avant de publier une disponibilité.
+
+Le `HarnessResult` v3 est obligatoire en production. Il sépare le succès de transport du résultat métier et classe les causes en `code_error`, `infrastructure_failure`, `harness_limitation`, `invalid_input`, `external_failure` ou `cancelled`, avec acteur responsable et changement d'état nécessaire. Une validation identique est adressée par tâche, paire de révisions, sélection et configuration ; elle réutilise son reçu sans processus. Une panne d'environnement réparable déclenche une unique réparation et une relance internes. Une panne non réparable ne peut ni être présentée comme défaut applicatif ni placer la story en review.
+
+`edit_code` est l'éditeur public composite pour symboles, imports, fichiers, patchs et JSON. Un batch `atomicity: all` prépare, parse et committe sous une transaction unique. Les références `proposal:current`, `revision:current` et `changeset:latest` remplacent les identifiants opaques recopiés par le modèle, et `review_change` accepte directement le diff courant. La preview expose séparément `browser_ready`, `container_ready` et `application_ready`; une erreur de compilation ou une réponse HTTP 500 termine immédiatement la preuve avec son diagnostic.
+
+Le chemin Cline de production active sans flag le briefing initial, le protocole v3, la validation d'impact, la mémoire compacte et l'extension officielle `messageBuilders`. L'ancien `apply_change` et les flags de retour vers le protocole v2, le gouverneur, le harness natif optionnel ou la compaction optionnelle sont supprimés. Le prompt se réduit au flux observer l'état minimal, cibler, modifier tôt, valider selon l'impact, corriger uniquement le code puis soumettre avec les preuves. Les métriques mesurent les répétitions, rejets, temps, contexte, réparations, classification et soumissions sans imposer de coupe-circuit au modèle.
+
+La matrice contractuelle exécute les six combinaisons Linux/macOS/Windows et local/Cloud Preview. Linux local reste natif, macOS local passe par Lima, Windows local par WSL, et les trois Cloud Preview conservent le worktree et l'agent natifs avant synchronisation explicite vers Vercel Sandbox. Les tests de contrats couvrent en plus les volumes de dépendances, le restart cloud, la sonde, le HTTP 500, l'atomicité, le rebase ambigu, le lifecycle et la compaction. Les invités Lima et WSL réels et les trois sessions Cloud réelles ne sont pas disponibles sur cet hôte Linux : ils restent une gate CI/release et ne sont pas présentés comme physiquement validés.
+
+Le replay déterministe comparable à Portfolio V4 passe de 668 748 à 72 000 tokens de contexte maximal, de 1 080 000 à 45 000 ms avant première mutation, de 200 à 80 octets de lecture comparables et d'une lecture répétée exécutée à zéro. Les variations respectives sont −89,2 %, −95,8 %, −60 % et −100 %. Une validation identique crée zéro nouveau processus. Ces chiffres sont ceux du replay versionné, pas d'un nouveau run provider. Les traces US-022 et US-023 restent les baselines live pré-stabilisation ; un run comparable à US-024, avec même modèle, effort, story et trois répétitions, reste nécessaire pour publier le gain live.
+
+La suite runtime validée après suppression des chemins legacy compte 359 scénarios : 357 réussissent, aucun n'échoue et deux scénarios provider live sont ignorés faute de credentials. Les limitations restantes sont la matrice physique multi-OS, le benchmark provider comparable à US-024 et la conservation de la lecture des artefacts v2 historiques. Aucun embedding n'est implémenté ; une évolution éventuelle restera exclusivement backend via OpenRouter.
 
 ## Références complémentaires
 
