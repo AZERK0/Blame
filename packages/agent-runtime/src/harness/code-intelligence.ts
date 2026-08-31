@@ -1,4 +1,6 @@
 import bashLanguage from "@ast-grep/lang-bash";
+import cLanguage from "@ast-grep/lang-c";
+import cppLanguage from "@ast-grep/lang-cpp";
 import csharpLanguage from "@ast-grep/lang-csharp";
 import goLanguage from "@ast-grep/lang-go";
 import javaLanguage from "@ast-grep/lang-java";
@@ -11,11 +13,15 @@ import {
   type SgNode,
 } from "@ast-grep/napi";
 import { packagedResourcePath } from "./packaged-resource-path.js";
-import { encodeHandle, sha256 } from "./protocol.js";
+import { sha256 } from "./light-identity.js";
 import {
   languageCapability,
   type SemanticParserId,
 } from "./language-capabilities.js";
+import {
+  componentElementBodyRange,
+  componentElementName,
+} from "./component-symbols.js";
 
 let dynamicLanguagesRegistered = false;
 
@@ -36,7 +42,8 @@ export type SymbolKind =
   | "css_rule"
   | "css_media"
   | "css_keyframes"
-  | "css_custom_property";
+  | "css_custom_property"
+  | "element";
 
 export type CodeSymbol = {
   kind: SymbolKind;
@@ -46,12 +53,11 @@ export type CodeSymbol = {
   visibility?: string;
   range_utf8_bytes: [number, number];
   line_range: [number, number];
-  symbol_ref: string;
 };
 
 export type OutlineSymbol = Pick<
   CodeSymbol,
-  "kind" | "line_range" | "name" | "qualified_name" | "symbol_ref"
+  "kind" | "line_range" | "name" | "qualified_name"
 > & {
   signature?: string;
   visibility?: string;
@@ -66,15 +72,6 @@ export type ParsedTree = {
 export type ParsedNode = ParsedTree & { node: SgNode };
 
 export type ParsedSymbol = Omit<CodeSymbol, "symbol_ref"> & ParsedNode;
-
-type CurrentNodeCandidate = {
-  kind: string;
-  line_range: [number, number];
-  node_ref: string;
-  range_utf8_bytes: [number, number];
-};
-
-export type EnclosingNode = CurrentNodeCandidate & { text: string };
 
 export type ParseResult = {
   language: string;
@@ -181,37 +178,12 @@ export function materializeSymbol(input: {
   ordinal?: number;
 }): CodeSymbol {
   const { symbol } = input;
-  const [start, end] = symbol.range_utf8_bytes;
-  const handle = encodeHandle("sym", {
-    version: 2,
-    revision: input.revision,
-    path: input.path,
-    start,
-    end,
-    digest: sha256(input.content.subarray(start, end)).slice(0, 32),
-    observedBlobHash: sha256(input.content).slice(0, 32),
-    kind: symbol.kind,
-    language: languageName(input.path),
-    qualifiedName: symbol.qualified_name,
-    signatureDigest: sha256(normalizedSignature(symbol.signature)).slice(0, 16),
-    bodyFingerprint: bodyFingerprint(symbol, input.content),
-    ancestryFingerprint: ancestryFingerprint(symbol.qualified_name),
-    ...(input.neighborNames?.length
-      ? {
-          neighborFingerprint: sha256(input.neighborNames.join("\0")).slice(
-            0,
-            16,
-          ),
-        }
-      : {}),
-    ...(input.ordinal === undefined ? {} : { ordinal: input.ordinal }),
-  });
   const { byteOffset, lineOffset, node, root, ...publicSymbol } = symbol;
   void byteOffset;
   void lineOffset;
   void node;
   void root;
-  return { ...publicSymbol, symbol_ref: handle };
+  return publicSymbol;
 }
 
 export function symbolEditRange(
@@ -220,6 +192,10 @@ export function symbolEditRange(
 ) {
   const range = byteRange(symbol.node, symbol.byteOffset);
   if (view === "symbol") return range;
+  const elementBody = componentElementBodyRange(symbol.node, symbol.byteOffset);
+  if (view === "body" && elementBody) return elementBody;
+  if (view === "signature" && elementBody)
+    return [range[0], elementBody[0]] as [number, number];
   const body = bodyNode(symbol.node);
   if (view === "body") return body ? byteRange(body, symbol.byteOffset) : range;
   return [
@@ -237,207 +213,11 @@ export function outlineSymbol(
     name: symbol.name,
     qualified_name: symbol.qualified_name,
     line_range: symbol.line_range,
-    symbol_ref: symbol.symbol_ref,
     ...(include.includes("signature") ? { signature: symbol.signature } : {}),
     ...(include.includes("visibility") && symbol.visibility
       ? { visibility: symbol.visibility }
       : {}),
   };
-}
-
-export function inspectParsedNode(input: {
-  content: Buffer;
-  parsed: ParsedNode;
-  view: "body" | "declaration" | "interface" | "neighborhood" | "signature";
-}) {
-  const nodeRange = byteRange(input.parsed.node, input.parsed.byteOffset);
-  if (input.view === "neighborhood")
-    return inspectedRange(
-      input.content,
-      neighborhoodRange(input.content, nodeRange, 8),
-    );
-  const body = bodyNode(input.parsed.node);
-  if (input.view === "body" && body)
-    return inspectedRange(
-      input.content,
-      byteRange(body, input.parsed.byteOffset),
-    );
-  if (["declaration", "interface", "signature"].includes(input.view)) {
-    const end = body
-      ? byteRange(body, input.parsed.byteOffset)[0]
-      : nodeRange[1];
-    return inspectedRange(input.content, [nodeRange[0], end], true);
-  }
-  return inspectedRange(input.content, nodeRange);
-}
-
-export function findExactNode(
-  parsed: ParseResult,
-  content: Buffer,
-  start: number,
-  end: number,
-  digest: string,
-): ParsedNode | undefined {
-  if (!sha256(content.subarray(start, end)).startsWith(digest))
-    return undefined;
-  for (const tree of parsed.trees) {
-    let match: SgNode | undefined;
-    walk(tree.root, (node) => {
-      const range = byteRange(node, tree.byteOffset);
-      if (range[0] === start && range[1] === end && node.isNamed())
-        match = node;
-    });
-    if (match) return { ...tree, node: match };
-  }
-  return undefined;
-}
-
-export function smallestEnclosingNode(input: {
-  content: Buffer;
-  end: number;
-  path: string;
-  revision: string;
-  start: number;
-}): EnclosingNode | undefined {
-  const parsed = parseCode(input.path, input.content);
-  let selected: { kind: string; range: [number, number] } | undefined;
-  for (const tree of parsed.trees)
-    walk(tree.root, (node) => {
-      if (!node.isNamed()) return;
-      const range = byteRange(node, tree.byteOffset);
-      if (range[0] > input.start || range[1] < input.end) return;
-      if (
-        !selected ||
-        range[1] - range[0] < selected.range[1] - selected.range[0]
-      )
-        selected = { kind: String(node.kind()), range };
-    });
-  if (!selected) return undefined;
-  return materializeEnclosingNode(input, selected);
-}
-
-function materializeEnclosingNode(
-  input: Parameters<typeof smallestEnclosingNode>[0],
-  selected: { kind: string; range: [number, number] },
-): EnclosingNode {
-  const fragment = input.content.subarray(...selected.range);
-  return {
-    kind: selected.kind,
-    line_range: byteLineRange(input.content, selected.range),
-    node_ref: encodeHandle("node", {
-      version: 2,
-      revision: input.revision,
-      path: input.path,
-      start: selected.range[0],
-      end: selected.range[1],
-      digest: sha256(fragment).slice(0, 32),
-      observedBlobHash: sha256(input.content).slice(0, 32),
-      kind: selected.kind,
-      language: languageName(input.path),
-    }),
-    range_utf8_bytes: selected.range,
-    text: fragment.toString("utf8"),
-  };
-}
-
-export function structuralMatches(
-  path: string,
-  content: Buffer,
-  pattern: string,
-  maxResults: number,
-) {
-  const units = sourceUnits(path, content.toString("utf8"));
-  if (!units) return undefined;
-  const matches = units.flatMap((unit) =>
-    unit.root.findAll(pattern).map((node) => structuralMatch(node, unit)),
-  );
-  return {
-    language: languageName(path),
-    matches: matches.slice(0, maxResults),
-  };
-}
-
-export function currentSymbolCandidates(input: {
-  content: Buffer;
-  kind?: string;
-  path: string;
-  qualifiedName?: string;
-  revision: string;
-  signatureDigest?: string;
-}) {
-  return parseCode(input.path, input.content)
-    .symbols.filter((symbol) => !input.kind || symbol.kind === input.kind)
-    .filter(
-      (symbol) =>
-        !input.qualifiedName || symbol.qualified_name === input.qualifiedName,
-    )
-    .map((symbol) => ({
-      symbol,
-      materialized: materializeSymbol({
-        symbol,
-        path: input.path,
-        revision: input.revision,
-        content: input.content,
-      }),
-      signatureMatches:
-        !input.signatureDigest ||
-        sha256(normalizedSignature(symbol.signature)).startsWith(
-          input.signatureDigest,
-        ),
-    }));
-}
-
-export function currentNodeCandidates(input: {
-  content: Buffer;
-  digest: string;
-  kind?: string;
-  path: string;
-  revision: string;
-}) {
-  const parsed = parseCode(input.path, input.content);
-  const candidates: CurrentNodeCandidate[] = [];
-  for (const tree of parsed.trees)
-    collectNodeCandidates(input, tree, candidates);
-  return candidates;
-}
-
-function collectNodeCandidates(
-  input: Parameters<typeof currentNodeCandidates>[0],
-  tree: ParsedTree,
-  candidates: CurrentNodeCandidate[],
-) {
-  walk(tree.root, (node) => {
-    if (!node.isNamed()) return;
-    const kind = String(node.kind());
-    if (input.kind && kind !== input.kind) return;
-    const range = byteRange(node, tree.byteOffset);
-    if (!sha256(input.content.subarray(...range)).startsWith(input.digest))
-      return;
-    candidates.push({
-      kind,
-      line_range: lineRange(node, tree.lineOffset),
-      node_ref: encodeNodeCandidate(input, kind, range),
-      range_utf8_bytes: range,
-    });
-  });
-}
-
-function encodeNodeCandidate(
-  input: Parameters<typeof currentNodeCandidates>[0],
-  kind: string,
-  range: [number, number],
-) {
-  return encodeHandle("node", {
-    version: 2,
-    revision: input.revision,
-    path: input.path,
-    start: range[0],
-    end: range[1],
-    digest: input.digest,
-    observedBlobHash: sha256(input.content).slice(0, 32),
-    kind,
-    language: languageName(input.path),
-  });
 }
 
 function parseCodeUncached(path: string, content: Buffer): ParseResult {
@@ -480,14 +260,17 @@ function unsupportedParse(): ParseResult {
 }
 
 function sourceUnits(path: string, source: string): SourceUnit[] | undefined {
-  if (extension(path) === ".vue") return vueSourceUnits(source);
+  if ([".svelte", ".vue"].includes(extension(path)))
+    return componentSourceUnits(source);
   const language = directLanguage(path);
   if (!language) return undefined;
   return [parseSourceUnit(language, source, 0, 0)];
 }
 
-function vueSourceUnits(source: string) {
-  const units: SourceUnit[] = [];
+function componentSourceUnits(source: string) {
+  const units: SourceUnit[] = [
+    parseSourceUnit({ lang: Lang.Html, name: "component" }, source, 0, 0),
+  ];
   const expression = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/giu;
   for (const match of source.matchAll(expression)) {
     const content = match[2] ?? "";
@@ -528,6 +311,8 @@ function ensureDynamicLanguages(language: Lang | string) {
     return;
   registerDynamicLanguage({
     bash: loadableLanguage(bashLanguage),
+    c: loadableLanguage(cLanguage),
+    cpp: loadableLanguage(cppLanguage),
     csharp: loadableLanguage(csharpLanguage),
     go: loadableLanguage(goLanguage),
     java: loadableLanguage(javaLanguage),
@@ -582,6 +367,12 @@ function symbolFromNode(
 }
 
 function symbolKind(node: SgNode): SymbolKind | undefined {
+  if (
+    ["element", "script_element", "self_closing_tag", "style_element"].includes(
+      String(node.kind()),
+    )
+  )
+    return "element";
   if (node.kind() === "rule_set") return "css_rule";
   if (node.kind() === "media_statement") return "css_media";
   if (node.kind() === "keyframes_statement") return "css_keyframes";
@@ -597,7 +388,9 @@ function symbolKind(node: SgNode): SymbolKind | undefined {
   if (node.kind() === "variable_declarator")
     return isRelevantVariable(node) ? "variable" : undefined;
   if (node.kind() === "function_definition")
-    return hasAncestor(node, "class_definition") ? "method" : "function";
+    return hasAnyAncestor(node, ["class_definition", "class_specifier"])
+      ? "method"
+      : "function";
   if (node.kind() === "function_item")
     return hasAncestor(node, "impl_item") ? "method" : "function";
   if (node.kind() === "type_spec") return goTypeKind(node);
@@ -612,15 +405,26 @@ function goTypeKind(node: SgNode): SymbolKind {
 }
 
 function symbolName(node: SgNode, kind: SymbolKind) {
+  if (kind === "element") return componentElementName(node);
   if (kind.startsWith("css_")) return cssSymbolName(node, kind);
   const named = fieldNode(node, "name")?.text().trim();
   if (named) return named;
+  const declarator = fieldNode(node, "declarator");
+  const declared = declaratorName(declarator);
+  if (declared) return declared;
   if (kind === "variable") return node.child(0)?.text().trim();
   return node
     .children()
     .find((child) => /(?:identifier|name)$/u.test(String(child.kind())))
     ?.text()
     .trim();
+}
+
+function declaratorName(node?: SgNode): string | undefined {
+  if (!node) return undefined;
+  if (["identifier", "field_identifier"].includes(String(node.kind())))
+    return node.text().trim();
+  return declaratorName(fieldNode(node, "declarator"));
 }
 
 function isRelevantVariable(node: SgNode) {
@@ -641,7 +445,9 @@ function isFunctionVariable(node: SgNode) {
 function signature(node: SgNode, source: Buffer, byteOffset: number) {
   const range = byteRange(node, byteOffset);
   const body = bodyNode(node);
-  const end = body ? byteRange(body, byteOffset)[0] : range[1];
+  const elementBody = componentElementBodyRange(node, byteOffset);
+  const end =
+    elementBody?.[0] ?? (body ? byteRange(body, byteOffset)[0] : range[1]);
   return compact(
     source.subarray(range[0], end).toString("utf8").trimEnd(),
     500,
@@ -663,10 +469,6 @@ function bodyNode(node: SgNode) {
 function qualifiedName(kind: SymbolKind, containers: string[], name: string) {
   const separator = kind.startsWith("css_") ? "::" : ".";
   return [...containers, name].join(separator);
-}
-
-export function normalizedSignature(value: string) {
-  return value.replace(/\s+/gu, " ").trim();
 }
 
 function fieldNode(node: SgNode, name: string): SgNode | undefined {
@@ -710,34 +512,23 @@ function namedChildText(node: SgNode, kind: string) {
 
 function directLanguage(path: string): LanguageSpec | undefined {
   const parserId = languageCapability(path).parserId;
-  if (!parserId || parserId === "vue") return undefined;
+  if (!parserId || parserId === "svelte" || parserId === "vue")
+    return undefined;
   return languageByParserId[parserId];
 }
 
 export function semanticLanguageName(path: string) {
-  const capability = languageCapability(path);
-  return capability.level === "plain_text" || capability.level === "unsupported"
-    ? "unknown"
-    : capability.languageId;
+  const parserId = languageCapability(path).parserId;
+  if (!parserId) return "unknown";
+  if ([".js", ".jsx", ".mjs", ".cjs"].includes(extension(path)))
+    return "javascript";
+  if ([".ts", ".tsx", ".mts", ".cts"].includes(extension(path)))
+    return "typescript";
+  return parserId;
 }
 
 function languageName(path: string) {
   return semanticLanguageName(path);
-}
-
-function bodyFingerprint(symbol: ParsedSymbol, content: Buffer) {
-  const body = bodyNode(symbol.node);
-  if (!body) return undefined;
-  return sha256(content.subarray(...byteRange(body, symbol.byteOffset))).slice(
-    0,
-    16,
-  );
-}
-
-function ancestryFingerprint(qualifiedName: string) {
-  const parts = qualifiedName.split(/\.|::/u);
-  parts.pop();
-  return sha256(parts.join("\0")).slice(0, 12);
 }
 
 function extension(path: string) {
@@ -771,74 +562,14 @@ function lineRange(node: SgNode, lineOffset = 0): [number, number] {
   ];
 }
 
-function byteLineRange(
-  content: Buffer,
-  range: [number, number],
-): [number, number] {
-  const start = content
-    .subarray(0, range[0])
-    .toString("utf8")
-    .split("\n").length;
-  const lines = content
-    .subarray(...range)
-    .toString("utf8")
-    .split("\n").length;
-  return [start, start + Math.max(0, lines - 1)];
-}
-
-function structuralMatch(node: SgNode, unit: SourceUnit) {
-  return {
-    kind: String(node.kind()),
-    range_utf8_bytes: byteRange(node, unit.byteOffset),
-    line_range: lineRange(node, unit.lineOffset),
-    text: compact(node.text(), 240),
-  };
-}
-
-function inspectedRange(
-  content: Buffer,
-  range: [number, number],
-  trimEnd = false,
-) {
-  const value = content.subarray(...range).toString("utf8");
-  return {
-    content: trimEnd ? value.trimEnd() : value,
-    range_utf8_bytes: range,
-  };
-}
-
-function neighborhoodRange(
-  content: Buffer,
-  range: [number, number],
-  contextLines: number,
-): [number, number] {
-  return [
-    previousLinesStart(content, range[0], contextLines),
-    nextLinesEnd(content, range[1], contextLines),
-  ];
-}
-
-function previousLinesStart(content: Buffer, initial: number, count: number) {
-  let start = initial;
-  for (let line = 0; line < count && start > 0; line += 1) {
-    start = content.lastIndexOf(10, Math.max(0, start - 2));
-    if (start < 0) return 0;
-  }
-  return start;
-}
-
-function nextLinesEnd(content: Buffer, initial: number, count: number) {
-  let end = initial;
-  for (let line = 0; line < count && end < content.length; line += 1) {
-    const next = content.indexOf(10, end);
-    if (next < 0) return content.length;
-    end = next + 1;
-  }
-  return end;
-}
-
 function hasAncestor(node: SgNode, kind: string) {
   return node.ancestors().some((ancestor) => ancestor.kind() === kind);
+}
+
+function hasAnyAncestor(node: SgNode, kinds: string[]) {
+  return node
+    .ancestors()
+    .some((ancestor) => kinds.includes(String(ancestor.kind())));
 }
 
 function lineCount(value: string) {
@@ -875,8 +606,10 @@ const symbolKindByNode: Record<string, SymbolKind> = {
   abstract_method_signature: "method",
   class_definition: "class",
   class_declaration: "class",
+  class_specifier: "class",
   constructor_declaration: "constructor",
   enum_declaration: "enum",
+  enum_specifier: "enum",
   enum_item: "enum",
   file_scoped_namespace_declaration: "namespace",
   function_declaration: "function",
@@ -888,19 +621,23 @@ const symbolKindByNode: Record<string, SymbolKind> = {
   mod_item: "module",
   module_declaration: "module",
   namespace_declaration: "namespace",
+  namespace_definition: "namespace",
   property_declaration: "property",
   record_declaration: "class",
   struct_declaration: "struct",
+  struct_specifier: "struct",
   struct_item: "struct",
   trait_item: "trait",
   type_alias_declaration: "type",
 };
 
 const languageByParserId: Record<
-  Exclude<SemanticParserId, "vue">,
+  Exclude<SemanticParserId, "svelte" | "vue">,
   LanguageSpec
 > = {
   bash: { lang: "bash", name: "bash" },
+  c: { lang: "c", name: "c" },
+  cpp: { lang: "cpp", name: "cpp" },
   csharp: { lang: "csharp", name: "csharp" },
   css: { lang: Lang.Css, name: "css" },
   go: { lang: "go", name: "go" },
@@ -915,6 +652,8 @@ const languageByParserId: Record<
 
 const dynamicLanguageNames = new Set([
   "bash",
+  "c",
+  "cpp",
   "csharp",
   "go",
   "java",

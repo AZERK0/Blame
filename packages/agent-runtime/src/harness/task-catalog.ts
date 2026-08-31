@@ -1,7 +1,26 @@
 import { access, readFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import fg from "fast-glob";
-import type { RunTaskInput, TaskCatalogItem } from "./schemas.js";
+
+export type TaskCatalogItem = {
+  command: string;
+  cwd: string;
+  dependencyPolicy: "optional" | "required";
+  kind:
+    | "build"
+    | "custom"
+    | "dependencies"
+    | "lint"
+    | "service"
+    | "test"
+    | "typecheck";
+  package_manager: "bun" | "npm" | "pnpm" | "yarn";
+  package_manager_version?: string;
+  requiresNetwork: boolean;
+  script?: string;
+  supportsFileSelection: boolean;
+  task_id: string;
+};
 
 export type TaskInvocation = {
   executable: string;
@@ -50,70 +69,15 @@ export async function readTaskCatalog(
   ].sort((left, right) => left.task_id.localeCompare(right.task_id));
 }
 
-export function resolveTask(
-  catalog: TaskCatalogItem[],
-  requested: RunTaskInput["task"],
-) {
-  if ("task_id" in requested) {
-    const exact = catalog.find((task) => task.task_id === requested.task_id);
-    if (!exact)
-      throw new Error(
-        `Unknown task_id ${requested.task_id}; call workspace_state for the task catalog.`,
-      );
-    return exact;
-  }
-  const candidates = catalog.filter((task) => task.kind === requested.kind);
-  const targeted = requested.target
-    ? candidates.filter((task) => taskMatchesTarget(task, requested.target!))
-    : candidates;
-  if (targeted.length === 1) return targeted[0]!;
-  if (!targeted.length)
-    throw new Error(`No ${requested.kind} task matches the requested target.`);
-  throw new Error(
-    `Task selection is ambiguous: ${targeted.map(({ task_id }) => task_id).join(", ")}. Use task.task_id.`,
-  );
-}
-
-export function taskInvocation(
-  task: TaskCatalogItem,
-  selection?: RunTaskInput["selection"],
-): TaskInvocation {
+export function taskInvocation(task: TaskCatalogItem): TaskInvocation {
   if (task.kind === "dependencies") return dependencyInvocation(task);
-  const selected = task.supportsFileSelection
-    ? selectedTaskPaths(task.cwd, selection)
-    : [];
-  const forwarded = selected.length ? ["--", ...selected] : [];
   const script = task.script ?? task.task_id;
-  switch (task.package_manager) {
-    case "bun":
-      return taskCommand(
-        "bun",
-        ["run", script, ...forwarded],
-        task.cwd,
-        task.package_manager_version,
-      );
-    case "pnpm":
-      return taskCommand(
-        "pnpm",
-        ["run", script, ...forwarded],
-        task.cwd,
-        task.package_manager_version,
-      );
-    case "yarn":
-      return taskCommand(
-        "yarn",
-        ["run", script, ...forwarded],
-        task.cwd,
-        task.package_manager_version,
-      );
-    default:
-      return taskCommand(
-        "npm",
-        ["run", script, ...forwarded],
-        task.cwd,
-        task.package_manager_version,
-      );
-  }
+  return taskCommand(
+    task.package_manager,
+    ["run", script],
+    task.cwd,
+    task.package_manager_version,
+  );
 }
 
 function dependencyTask(
@@ -143,34 +107,21 @@ function dependencyTask(
 function dependencyInvocation(
   task: Pick<TaskCatalogItem, "package_manager" | "package_manager_version">,
 ) {
-  if (task.package_manager === "pnpm")
-    return taskCommand(
-      "pnpm",
-      ["install", "--frozen-lockfile", "--prefer-offline"],
-      ".",
-      task.package_manager_version,
-    );
-  if (task.package_manager === "yarn")
-    return taskCommand(
-      "yarn",
-      ["install", "--immutable", "--cached"],
-      ".",
-      task.package_manager_version,
-    );
-  if (task.package_manager === "bun")
-    return taskCommand(
-      "bun",
-      ["install", "--frozen-lockfile"],
-      ".",
-      task.package_manager_version,
-    );
+  const args = dependencyArguments[task.package_manager];
   return taskCommand(
-    "npm",
-    ["ci", "--prefer-offline", "--no-audit", "--no-fund"],
+    task.package_manager,
+    args,
     ".",
     task.package_manager_version,
   );
 }
+
+const dependencyArguments = {
+  bun: ["install", "--frozen-lockfile"],
+  npm: ["ci", "--prefer-offline", "--no-audit", "--no-fund"],
+  pnpm: ["install", "--frozen-lockfile", "--prefer-offline"],
+  yarn: ["install", "--immutable", "--cached"],
+};
 
 async function readPackageManifests(root: string, workspaceFiles?: string[]) {
   const files = workspaceFiles
@@ -286,27 +237,6 @@ function disambiguateTasks(candidates: CatalogCandidate[]) {
 function packageLabel(manifest: PackageManifest, cwd: string) {
   const declared = manifest.name?.split("/").at(-1)?.trim();
   return declared || basename(cwd);
-}
-
-function taskMatchesTarget(task: TaskCatalogItem, target: string) {
-  const normalized = target.replaceAll("\\", "/");
-  return (
-    task.task_id === target ||
-    task.task_id.startsWith(`${target}:`) ||
-    task.cwd === normalized ||
-    basename(task.cwd) === target
-  );
-}
-
-function selectedTaskPaths(cwd: string, selection?: RunTaskInput["selection"]) {
-  const selected = [...(selection?.tests ?? []), ...(selection?.files ?? [])];
-  if (cwd === ".") return selected;
-  const prefix = `${cwd}/`;
-  return selected.map((path) =>
-    path.replaceAll("\\", "/").startsWith(prefix)
-      ? path.replaceAll("\\", "/").slice(prefix.length)
-      : path,
-  );
 }
 
 function taskCommand(

@@ -1,8 +1,8 @@
-import { ipcMain } from "electron"
+import { ipcMain } from "electron";
 import type {
   DesktopBridgeGrant,
   PreviewBridgeSource,
-} from "./preview-browser/preview-bridge-grant"
+} from "./preview-browser/preview-bridge-grant";
 import {
   capturePreviewBrowser,
   createPreviewBrowser,
@@ -12,18 +12,18 @@ import {
   reloadPreviewBrowser,
   setPreviewBrowserBounds,
   setPreviewBrowserDevtoolsScope,
-} from "./preview-browser/preview-browser-manager"
+} from "./preview-browser/preview-browser-manager";
 
-export { getPreviewDevtoolsTarget }
+export { getPreviewDevtoolsTarget };
 export {
   destroyAllPreviewBrowsers,
   enablePreviewDevtools,
-} from "./preview-browser/preview-browser-manager"
-export type { PreviewDevtoolsTarget } from "./preview-browser/preview-browser-manager"
+} from "./preview-browser/preview-browser-manager";
+export type { PreviewDevtoolsTarget } from "./preview-browser/preview-browser-manager";
 
 export function registerPreviewBrowserIpcHandlers(
   options: {
-    bridgeGrant?(source: PreviewBridgeSource): Promise<DesktopBridgeGrant>
+    bridgeGrant?(source: PreviewBridgeSource): Promise<DesktopBridgeGrant>;
   } = {},
 ) {
   ipcMain.handle(
@@ -31,28 +31,31 @@ export function registerPreviewBrowserIpcHandlers(
     (
       event,
       input: {
-        storageKey: string
-        previewSessionId?: string
-        previewWorktree?: string
+        storageKey: string;
+        previewSessionId?: string;
+        previewWorktree?: string;
       },
     ) => createPreviewBrowser(event, input, options),
-  )
-  ipcMain.handle("preview-browser:load", (_event, input: { id: string; url: string }) =>
-    loadPreviewBrowser(input),
-  )
-  ipcMain.handle("preview-browser:set-bounds", (_event, input) => setPreviewBrowserBounds(input))
+  );
+  ipcMain.handle(
+    "preview-browser:load",
+    (_event, input: { id: string; url: string }) => loadPreviewBrowser(input),
+  );
+  ipcMain.handle("preview-browser:set-bounds", (_event, input) =>
+    setPreviewBrowserBounds(input),
+  );
   ipcMain.handle("preview-browser:set-devtools-scope", (_event, input) =>
     setPreviewBrowserDevtoolsScope(input),
-  )
+  );
   ipcMain.handle("preview-browser:reload", (_event, input: { id: string }) =>
     reloadPreviewBrowser(input),
-  )
+  );
   ipcMain.handle("preview-browser:destroy", (_event, input: { id: string }) =>
     destroyPreviewBrowser(input.id),
-  )
+  );
   ipcMain.handle(
     "preview-browser:capture",
     (_event, input: { id: string; size?: "full" | "thumbnail" }) =>
       capturePreviewBrowser(input.id, input.size ?? "full"),
-  )
+  );
 }

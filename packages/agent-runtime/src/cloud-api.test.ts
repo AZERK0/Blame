@@ -1,34 +1,36 @@
-import assert from "node:assert/strict"
-import test from "node:test"
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { listProviders } from "./cloud-api.js"
+import { listProviders } from "./cloud-api.js";
 
 test("loads the provider catalog and recommendations only from the protected API", async () => {
-  const originalFetch = globalThis.fetch
-  const requests: string[] = []
+  const originalFetch = globalThis.fetch;
+  const requests: string[] = [];
   globalThis.fetch = async (input) => {
-    const url = input.toString()
-    requests.push(url)
-    return url.endsWith("/providers/catalog") ? jsonResponse(catalog) : jsonResponse({ data: credentials })
-  }
+    const url = input.toString();
+    requests.push(url);
+    return url.endsWith("/providers/catalog")
+      ? jsonResponse(catalog)
+      : jsonResponse({ data: credentials });
+  };
 
   try {
     const providers = await listProviders({
       url: "https://api.blame.test/api/v1",
       token: "license-token",
-    })
+    });
 
     assert.deepEqual(requests, [
       "https://api.blame.test/api/v1/providers/catalog",
       "https://api.blame.test/api/v1/providers/credentials",
-    ])
-    assert.deepEqual(providers.connected, ["anthropic"])
-    assert.equal(providers.recommendations.all[0]?.modelId, "claude-test")
-    assert.equal(providers.credentials.length, 2)
+    ]);
+    assert.deepEqual(providers.connected, ["anthropic"]);
+    assert.equal(providers.recommendations.all[0]?.modelId, "claude-test");
+    assert.equal(providers.credentials.length, 2);
   } finally {
-    globalThis.fetch = originalFetch
+    globalThis.fetch = originalFetch;
   }
-})
+});
 
 const catalog = {
   all: [
@@ -65,9 +67,12 @@ const catalog = {
       sampleCount: 0,
     },
   },
-}
+};
 
-const credentials = [credential("work", "credential-work"), credential("personal", "credential-personal")]
+const credentials = [
+  credential("work", "credential-work"),
+  credential("personal", "credential-personal"),
+];
 
 function credential(label: string, id: string) {
   return {
@@ -78,12 +83,12 @@ function credential(label: string, id: string) {
     baseUrl: null,
     createdAt: "2026-07-30T00:00:00.000Z",
     updatedAt: null,
-  }
+  };
 }
 
 function jsonResponse(value: unknown) {
   return new Response(JSON.stringify(value), {
     headers: { "Content-Type": "application/json" },
     status: 200,
-  })
+  });
 }

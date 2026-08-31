@@ -1,36 +1,36 @@
-import assert from "node:assert/strict"
-import { execFile } from "node:child_process"
-import { mkdir, mkdtemp, rm, unlink, writeFile } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
-import { Readable } from "node:stream"
-import { promisify } from "node:util"
-import { gunzipSync } from "node:zlib"
-import test from "node:test"
-import { extract } from "tar-stream"
+import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
+import { mkdir, mkdtemp, rm, unlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { Readable } from "node:stream";
+import { promisify } from "node:util";
+import { gunzipSync } from "node:zlib";
+import test from "node:test";
+import { extract } from "tar-stream";
 import {
   buildWorkspaceArtifact,
   buildWorkspaceDeltaArtifact,
   buildWorkspaceIncrementalDeltaArtifact,
-} from "./workspace-artifact.ts"
-import { workspaceSourceMode } from "./baseline-transfer.ts"
-import { snapshotWorkspace } from "./workspace-snapshot.ts"
+} from "./workspace-artifact.ts";
+import { workspaceSourceMode } from "./baseline-transfer.ts";
+import { snapshotWorkspace } from "./workspace-snapshot.ts";
 
-const exec = promisify(execFile)
+const exec = promisify(execFile);
 
 test("uses deltas only for exact baselines", () => {
-  assert.equal(workspaceSourceMode(undefined), "full")
-  assert.equal(workspaceSourceMode({ match: "cache" }), "full")
-  assert.equal(workspaceSourceMode({ match: "exact" }), "delta")
-  assert.equal(workspaceSourceMode({}), "delta")
-})
+  assert.equal(workspaceSourceMode(undefined), "full");
+  assert.equal(workspaceSourceMode({ match: "cache" }), "full");
+  assert.equal(workspaceSourceMode({ match: "exact" }), "delta");
+  assert.equal(workspaceSourceMode({}), "delta");
+});
 
 test("builds a reproducible source artifact without runtime secrets", async () => {
-  const root = await mkdtemp(join(tmpdir(), "blame-source-test-"))
+  const root = await mkdtemp(join(tmpdir(), "blame-source-test-"));
   try {
-    await exec("git", ["init", root])
-    await writeFile(join(root, "index.js"), "console.log('ok')\n")
-    await exec("git", ["-C", root, "add", "index.js"])
+    await exec("git", ["init", root]);
+    await writeFile(join(root, "index.js"), "console.log('ok')\n");
+    await exec("git", ["-C", root, "add", "index.js"]);
     await exec("git", [
       "-C",
       root,
@@ -41,9 +41,12 @@ test("builds a reproducible source artifact without runtime secrets", async () =
       "commit",
       "-m",
       "base",
-    ])
-    await writeFile(join(root, ".env"), "HISTORICAL_SECRET=never-upload-history\n")
-    await exec("git", ["-C", root, "add", ".env"])
+    ]);
+    await writeFile(
+      join(root, ".env"),
+      "HISTORICAL_SECRET=never-upload-history\n",
+    );
+    await exec("git", ["-C", root, "add", ".env"]);
     await exec("git", [
       "-C",
       root,
@@ -54,9 +57,9 @@ test("builds a reproducible source artifact without runtime secrets", async () =
       "commit",
       "-m",
       "add old environment",
-    ])
-    await unlink(join(root, ".env"))
-    await exec("git", ["-C", root, "add", ".env"])
+    ]);
+    await unlink(join(root, ".env"));
+    await exec("git", ["-C", root, "add", ".env"]);
     await exec("git", [
       "-C",
       root,
@@ -67,33 +70,42 @@ test("builds a reproducible source artifact without runtime secrets", async () =
       "commit",
       "-m",
       "remove old environment",
-    ])
-    await writeFile(join(root, ".env"), "SECRET=never-upload\n")
-    const first = await buildWorkspaceArtifact(root)
-    const second = await buildWorkspaceArtifact(root)
-    assert.equal(first.workspaceHash, second.workspaceHash)
-    assert.equal(first.sourceRevision, second.sourceRevision)
-    assert.equal(first.sha256, second.sha256)
-    assert.ok(first.size > 0)
-    const entries = await archiveEntries(first.content)
-    assert.equal(entries.has("workspace/.env"), false)
-    const bundle = join(root, "repository.bundle")
-    await writeFile(bundle, entries.get(".blame/repository.bundle")!)
-    const clone = join(root, "transport-clone")
-    await exec("git", ["clone", "--quiet", bundle, clone])
-    const { stdout: history } = await exec("git", ["-C", clone, "log", "--all", "-p"])
-    assert.equal(history.includes("HISTORICAL_SECRET=never-upload-history"), false)
+    ]);
+    await writeFile(join(root, ".env"), "SECRET=never-upload\n");
+    const first = await buildWorkspaceArtifact(root);
+    const second = await buildWorkspaceArtifact(root);
+    assert.equal(first.workspaceHash, second.workspaceHash);
+    assert.equal(first.sourceRevision, second.sourceRevision);
+    assert.equal(first.sha256, second.sha256);
+    assert.ok(first.size > 0);
+    const entries = await archiveEntries(first.content);
+    assert.equal(entries.has("workspace/.env"), false);
+    const bundle = join(root, "repository.bundle");
+    await writeFile(bundle, entries.get(".blame/repository.bundle")!);
+    const clone = join(root, "transport-clone");
+    await exec("git", ["clone", "--quiet", bundle, clone]);
+    const { stdout: history } = await exec("git", [
+      "-C",
+      clone,
+      "log",
+      "--all",
+      "-p",
+    ]);
+    assert.equal(
+      history.includes("HISTORICAL_SECRET=never-upload-history"),
+      false,
+    );
   } finally {
-    await rm(root, { recursive: true, force: true })
+    await rm(root, { recursive: true, force: true });
   }
-})
+});
 
 test("builds a delta against the committed tree and includes new files", async () => {
-  const root = await mkdtemp(join(tmpdir(), "blame-source-delta-test-"))
+  const root = await mkdtemp(join(tmpdir(), "blame-source-delta-test-"));
   try {
-    await exec("git", ["init", root])
-    await writeFile(join(root, "index.js"), "console.log('base')\n")
-    await exec("git", ["-C", root, "add", "index.js"])
+    await exec("git", ["init", root]);
+    await writeFile(join(root, "index.js"), "console.log('base')\n");
+    await exec("git", ["-C", root, "add", "index.js"]);
     await exec("git", [
       "-C",
       root,
@@ -104,36 +116,47 @@ test("builds a delta against the committed tree and includes new files", async (
       "commit",
       "-m",
       "base",
-    ])
-    await writeFile(join(root, "index.js"), "console.log('changed')\n")
-    await writeFile(join(root, "new.txt"), "new\n")
-    await mkdir(join(root, ".blame/runtime-tools/lima"), { recursive: true })
-    await mkdir(join(root, "packages/desktop/out/main"), { recursive: true })
-    await writeFile(join(root, ".blame/runtime-tools/lima/limactl"), "generated\n")
-    await writeFile(join(root, "packages/desktop/out/main/index.js"), "generated\n")
-    const delta = await buildWorkspaceDeltaArtifact(root)
-    assert.ok(delta.baseHash.match(/^[a-f0-9]{64}$/))
-    const entries = await archiveEntries(delta.content)
-    const manifest = JSON.parse(entries.get(".blame/delta-manifest.json")!.toString("utf8"))
-    assert.ok(manifest.finalHash.match(/^[a-f0-9]{64}$/))
-    assert.deepEqual(manifest.changed.sort(), ["index.js", "new.txt"])
-    assert.deepEqual(manifest.deleted, [])
-    assert.equal(entries.has("files/index.js"), true)
-    assert.equal(entries.has("files/new.txt"), true)
-    assert.equal(entries.has("files/.blame/runtime-tools/lima/limactl"), false)
-    assert.equal(entries.has("files/packages/desktop/out/main/index.js"), false)
+    ]);
+    await writeFile(join(root, "index.js"), "console.log('changed')\n");
+    await writeFile(join(root, "new.txt"), "new\n");
+    await mkdir(join(root, ".blame/runtime-tools/lima"), { recursive: true });
+    await mkdir(join(root, "packages/desktop/out/main"), { recursive: true });
+    await writeFile(
+      join(root, ".blame/runtime-tools/lima/limactl"),
+      "generated\n",
+    );
+    await writeFile(
+      join(root, "packages/desktop/out/main/index.js"),
+      "generated\n",
+    );
+    const delta = await buildWorkspaceDeltaArtifact(root);
+    assert.ok(delta.baseHash.match(/^[a-f0-9]{64}$/));
+    const entries = await archiveEntries(delta.content);
+    const manifest = JSON.parse(
+      entries.get(".blame/delta-manifest.json")!.toString("utf8"),
+    );
+    assert.ok(manifest.finalHash.match(/^[a-f0-9]{64}$/));
+    assert.deepEqual(manifest.changed.sort(), ["index.js", "new.txt"]);
+    assert.deepEqual(manifest.deleted, []);
+    assert.equal(entries.has("files/index.js"), true);
+    assert.equal(entries.has("files/new.txt"), true);
+    assert.equal(entries.has("files/.blame/runtime-tools/lima/limactl"), false);
+    assert.equal(
+      entries.has("files/packages/desktop/out/main/index.js"),
+      false,
+    );
   } finally {
-    await rm(root, { recursive: true, force: true })
+    await rm(root, { recursive: true, force: true });
   }
-})
+});
 
 test("builds an incremental delta against the last synchronized workspace", async () => {
-  const root = await mkdtemp(join(tmpdir(), "blame-source-live-delta-test-"))
+  const root = await mkdtemp(join(tmpdir(), "blame-source-live-delta-test-"));
   try {
-    await exec("git", ["init", root])
-    await writeFile(join(root, "index.js"), "console.log('base')\n")
-    await writeFile(join(root, "removed.txt"), "remove me\n")
-    await exec("git", ["-C", root, "add", "."])
+    await exec("git", ["init", root]);
+    await writeFile(join(root, "index.js"), "console.log('base')\n");
+    await writeFile(join(root, "removed.txt"), "remove me\n");
+    await exec("git", ["-C", root, "add", "."]);
     await exec("git", [
       "-C",
       root,
@@ -144,42 +167,47 @@ test("builds an incremental delta against the last synchronized workspace", asyn
       "commit",
       "-m",
       "base",
-    ])
-    const base = await snapshotWorkspace(root)
-    await writeFile(join(root, "index.js"), "console.log('live')\n")
-    await writeFile(join(root, "new.txt"), "new\n")
-    await unlink(join(root, "removed.txt"))
+    ]);
+    const base = await snapshotWorkspace(root);
+    await writeFile(join(root, "index.js"), "console.log('live')\n");
+    await writeFile(join(root, "new.txt"), "new\n");
+    await unlink(join(root, "removed.txt"));
 
-    const delta = await buildWorkspaceIncrementalDeltaArtifact(root, base)
-    const entries = await archiveEntries(delta.content)
-    const manifest = JSON.parse(entries.get(".blame/delta-manifest.json")!.toString("utf8"))
+    const delta = await buildWorkspaceIncrementalDeltaArtifact(root, base);
+    const entries = await archiveEntries(delta.content);
+    const manifest = JSON.parse(
+      entries.get(".blame/delta-manifest.json")!.toString("utf8"),
+    );
 
-    assert.equal(delta.baseHash, base.hash)
-    assert.equal(manifest.baseHash, base.hash)
-    assert.equal(manifest.finalHash, delta.workspaceHash)
-    assert.deepEqual(delta.changed.sort(), ["index.js", "new.txt"])
-    assert.deepEqual(delta.deleted, ["removed.txt"])
-    assert.equal(entries.get("files/index.js")?.toString("utf8"), "console.log('live')\n")
+    assert.equal(delta.baseHash, base.hash);
+    assert.equal(manifest.baseHash, base.hash);
+    assert.equal(manifest.finalHash, delta.workspaceHash);
+    assert.deepEqual(delta.changed.sort(), ["index.js", "new.txt"]);
+    assert.deepEqual(delta.deleted, ["removed.txt"]);
+    assert.equal(
+      entries.get("files/index.js")?.toString("utf8"),
+      "console.log('live')\n",
+    );
   } finally {
-    await rm(root, { recursive: true, force: true })
+    await rm(root, { recursive: true, force: true });
   }
-})
+});
 
 function archiveEntries(content: Buffer) {
   return new Promise<Map<string, Buffer>>((resolve, reject) => {
-    const entries = new Map<string, Buffer>()
-    const archive = extract()
+    const entries = new Map<string, Buffer>();
+    const archive = extract();
     archive.on("entry", (header, stream, next) => {
-      const chunks: Buffer[] = []
-      stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)))
+      const chunks: Buffer[] = [];
+      stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
       stream.once("end", () => {
-        entries.set(header.name, Buffer.concat(chunks))
-        next()
-      })
-      stream.once("error", reject)
-    })
-    archive.once("finish", () => resolve(entries))
-    archive.once("error", reject)
-    Readable.from(gunzipSync(content)).pipe(archive)
-  })
+        entries.set(header.name, Buffer.concat(chunks));
+        next();
+      });
+      stream.once("error", reject);
+    });
+    archive.once("finish", () => resolve(entries));
+    archive.once("error", reject);
+    Readable.from(gunzipSync(content)).pipe(archive);
+  });
 }

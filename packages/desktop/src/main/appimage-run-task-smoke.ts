@@ -1,4 +1,4 @@
-import { executeSemanticWorkspaceRequest } from "@blame/agent-runtime";
+import { executeLightWorkspaceRequest } from "@blame/agent-runtime";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,13 +7,10 @@ export async function runAppImageTaskSmoke() {
   const workspace = await mkdtemp(join(tmpdir(), "blame-appimage-task-"));
   try {
     await prepareWorkspace(workspace);
-    const sourceRevisionId = await sourceRevision(workspace);
-    const result = await executeSemanticWorkspaceRequest({
+    const result = await executeLightWorkspaceRequest({
       input: {
-        limits: { timeout_ms: 10_000 },
-        network: "deny",
-        source_revision_id: sourceRevisionId,
-        task: { task_id: "test" },
+        kind: "project",
+        task: "test",
       },
       tool: "run_task",
       workspaceRoot: workspace,
@@ -38,26 +35,11 @@ async function prepareWorkspace(workspace: string) {
   await writeFile(join(workspace, "src", "index.js"), "export {}\n");
 }
 
-async function sourceRevision(workspace: string) {
-  const result = await executeSemanticWorkspaceRequest({
-    input: {},
-    tool: "workspace_state",
-    workspaceRoot: workspace,
-  });
-  if (result.status !== "success") throw new Error(result.error.message);
-  const data = result.data as {
-    source_revision?: { source_revision_id?: string };
-  };
-  const sourceRevisionId = data.source_revision?.source_revision_id;
-  if (!sourceRevisionId) throw new Error("AppImage smoke revision is missing");
-  return sourceRevisionId;
-}
-
 function assertPassed(
-  result: Awaited<ReturnType<typeof executeSemanticWorkspaceRequest>>,
+  result: Awaited<ReturnType<typeof executeLightWorkspaceRequest>>,
 ) {
-  if (result.status !== "success") throw new Error(result.error.message);
-  const data = result.data as { status?: string; stderr_summary?: string };
-  if (data.status === "passed") return;
-  throw new Error(data.stderr_summary ?? `run_task ended with ${data.status}`);
+  if (result.status !== "ok") throw new Error(result.message);
+  const data = result.data as { exitCode?: number; diagnostic?: string };
+  if (data.exitCode === 0) return;
+  throw new Error(data.diagnostic ?? `run_task exited with ${data.exitCode}`);
 }

@@ -17,7 +17,7 @@ import { buildSemanticHarnessPayload } from "./semantic-harness-payload.mjs";
 const rootDir = resolve(import.meta.dirname, "..");
 const agentRuntimeDir = join(rootDir, "packages/agent-runtime");
 
-test("standalone payload executes the canonical workspace bridge", async () => {
+test("standalone payload executes the Light workspace bridge", async () => {
   const temporary = await mkdtemp(join(tmpdir(), "semantic-payload-test-"));
   try {
     const archive = join(temporary, "semantic-harness.tgz");
@@ -30,15 +30,14 @@ test("standalone payload executes the canonical workspace bridge", async () => {
     await extractArchive(archive, installRoot);
     const packageRoot = join(installRoot, "package");
     await linkRuntimeDependencies(packageRoot);
-    await access(
-      join(packageRoot, "node_modules/@blame/harness-core/dist/index.js"),
+    await assert.rejects(
+      access(join(packageRoot, "harness/semantic-workspace.js")),
     );
     await mkdir(workspaceRoot);
     await writeFile(join(workspaceRoot, "package.json"), '{"scripts":{}}\n');
     const result = await executeRunner(packageRoot, workspaceRoot);
-    assert.equal(result.protocol_version, "3");
-    assert.equal(result.outcome, "completed");
-    assert.equal(result.effect, "observed");
+    assert.equal(result.status, "ok");
+    assert.match(result.data.description, /Symbol read\/edit/u);
   } finally {
     await rm(temporary, { force: true, recursive: true });
   }
@@ -53,9 +52,7 @@ async function linkRuntimeDependencies(packageRoot) {
   const manifest = JSON.parse(
     await readFile(join(packageRoot, "package.json"), "utf8"),
   );
-  const dependencies = Object.keys(manifest.dependencies).filter(
-    (name) => name !== "@blame/harness-core",
-  );
+  const dependencies = Object.keys(manifest.dependencies);
   for (const name of dependencies) {
     const destination = join(packageRoot, "node_modules", name);
     await mkdir(dirname(destination), { recursive: true });
@@ -72,9 +69,9 @@ async function executeRunner(packageRoot, workspaceRoot) {
     process.execPath,
     [join(packageRoot, "harness/semantic-harness-runner.js")],
     JSON.stringify({
-      input: {},
-      tool: "workspace_state",
-      toolContext: { executionId: "payload-e2e" },
+      input: { target: "@capabilities" },
+      taskContract: { session_id: "payload-e2e" },
+      tool: "read_code",
       workspaceRoot,
     }),
   );

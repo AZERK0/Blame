@@ -34,7 +34,7 @@ type ServiceSpec = {
 };
 
 export function projectSetupRecipe(
-  configuration: NewProjectConfiguration
+  configuration: NewProjectConfiguration,
 ): ProjectSetupRecipe {
   const runtime = runtimePlan(configuration);
   const services = [
@@ -52,7 +52,7 @@ export function projectSetupRecipe(
 
 export function setupScript(
   configuration: NewProjectConfiguration,
-  runtime = runtimePlan(configuration)
+  runtime = runtimePlan(configuration),
 ) {
   return [
     "#!/usr/bin/env bash",
@@ -69,7 +69,7 @@ export function setupScript(
 
 export function dockerCompose(
   configuration: NewProjectConfiguration,
-  runtime = runtimePlan(configuration)
+  runtime = runtimePlan(configuration),
 ) {
   return composeYaml([
     ...nodeModulesServices(runtime),
@@ -79,9 +79,13 @@ export function dockerCompose(
   ]);
 }
 
-export function runtimePlan(configuration: NewProjectConfiguration): RuntimePlan {
+export function runtimePlan(
+  configuration: NewProjectConfiguration,
+): RuntimePlan {
   return {
-    containerCorepackCommand: containerCorepackCommand(configuration.packageManager),
+    containerCorepackCommand: containerCorepackCommand(
+      configuration.packageManager,
+    ),
     containerDevCommand: containerDevCommand(configuration.frontend),
     containerInstallIfNeededCommand: containerInstallIfNeededCommand(
       configuration.packageManager,
@@ -92,14 +96,13 @@ export function runtimePlan(configuration: NewProjectConfiguration): RuntimePlan
   };
 }
 
-function nodeModulesServices(
-  runtime: RuntimePlan,
-): ServiceSpec[] {
+function nodeModulesServices(runtime: RuntimePlan): ServiceSpec[] {
   return [
     {
       name: "node-modules-init",
       image: runtime.nodeImage,
-      command: 'sh -lc "mkdir -p /workspace/node_modules && chown -R 0:0 /workspace/node_modules"',
+      command:
+        'sh -lc "mkdir -p /workspace/node_modules && chown -R 0:0 /workspace/node_modules"',
       volumes: ["blame_node_modules:/workspace/node_modules"],
     },
   ];
@@ -107,14 +110,17 @@ function nodeModulesServices(
 
 function nodeAppService(
   configuration: NewProjectConfiguration,
-  runtime: RuntimePlan
+  runtime: RuntimePlan,
 ): ServiceSpec {
   return {
     name: "app",
     image: runtime.nodeImage,
     workingDir: "/workspace",
     command: `sh -lc "${runtime.containerCorepackCommand} && ${runtime.containerInstallIfNeededCommand} && ${containerOrmSetupCommand(configuration)} && ${runtime.containerDevCommand}"`,
-    volumes: ["${BLAME_PROJECT_ROOT}:/workspace", "blame_node_modules:/workspace/node_modules"],
+    volumes: [
+      "${BLAME_PROJECT_ROOT}:/workspace",
+      "blame_node_modules:/workspace/node_modules",
+    ],
     ports: [`127.0.0.1::${runtime.previewPort}`],
     environment: nodeEnvironment(configuration),
     dependsOn: ["node-modules-init", ...serviceDependencies(configuration)],
@@ -127,7 +133,9 @@ function nodeAppService(
   };
 }
 
-function backendServices(configuration: NewProjectConfiguration): ServiceSpec[] {
+function backendServices(
+  configuration: NewProjectConfiguration,
+): ServiceSpec[] {
   if (nodeBackendService(configuration.backend)) {
     return [
       {
@@ -135,9 +143,15 @@ function backendServices(configuration: NewProjectConfiguration): ServiceSpec[] 
         image: runtimePlan(configuration).nodeImage,
         workingDir: "/workspace",
         command: `sh -lc "${containerCorepackCommand(configuration.packageManager)} && ${containerWaitForFrontendDependenciesCommand(configuration.frontend)} && ${nodeApiCommand(configuration.backend, configuration.packageManager)}"`,
-        volumes: ["${BLAME_PROJECT_ROOT}:/workspace", "blame_node_modules:/workspace/node_modules"],
+        volumes: [
+          "${BLAME_PROJECT_ROOT}:/workspace",
+          "blame_node_modules:/workspace/node_modules",
+        ],
         environment: nodeApiEnvironment(configuration),
-        dependsOn: ["node-modules-init", ...databaseDependency(configuration.database)],
+        dependsOn: [
+          "node-modules-init",
+          ...databaseDependency(configuration.database),
+        ],
       },
     ];
   }
@@ -205,10 +219,7 @@ function backendSetupCommands(configuration: NewProjectConfiguration) {
 }
 
 function hostToolChecks(configuration: NewProjectConfiguration) {
-  return [
-    ...toolChecks(["git"]),
-    ...pythonToolChecks(configuration),
-  ];
+  return [...toolChecks(["git"]), ...pythonToolChecks(configuration)];
 }
 
 function toolChecks(commands: string[]) {
@@ -230,7 +241,8 @@ function setupEnvironmentExports(configuration: NewProjectConfiguration) {
     ...nodeEnvironment(configuration),
     ...pythonEnvironment(configuration),
   }).map(
-    ([key, value]) => `export ${key}="\${${key}:-${shellDoubleQuotedValue(value)}}"`,
+    ([key, value]) =>
+      `export ${key}="\${${key}:-${shellDoubleQuotedValue(value)}}"`,
   );
 }
 
@@ -296,7 +308,10 @@ function externalApiUrl(backend: BackendFramework) {
   return undefined;
 }
 
-function nodeApiCommand(backend: BackendFramework, packageManager: PackageManager) {
+function nodeApiCommand(
+  backend: BackendFramework,
+  packageManager: PackageManager,
+) {
   const label = backendLabel(backend);
   const runner = containerPackageCommand(packageManager);
   return `if npm run | grep -q "dev:api"; then ${runner} run dev:api -- --host 0.0.0.0; else echo "Add a dev:api script for ${label} on port 4000."; tail -f /dev/null; fi`;
@@ -315,16 +330,19 @@ function databaseDependency(database: DatabaseOption) {
 }
 
 function databaseUrl(database: DatabaseOption, orm: OrmOption) {
-  if (database === "postgresql") return "postgresql://blame:blame@database:5432/blame";
+  if (database === "postgresql")
+    return "postgresql://blame:blame@database:5432/blame";
   if (database === "mysql") return "mysql://blame:blame@database:3306/blame";
   if (database === "sqlite") return "file:./dev.db";
   if (database === "mongodb") return "mongodb://database:27017/blame";
-  if (orm === "prisma" || orm === "drizzle" || orm === "kysely") return "file:./dev.db";
+  if (orm === "prisma" || orm === "drizzle" || orm === "kysely")
+    return "file:./dev.db";
   return undefined;
 }
 
 function pythonInstallCommand(packageManager: PackageManager) {
-  if (packageManager === "poetry") return "pip install poetry && poetry install";
+  if (packageManager === "poetry")
+    return "pip install poetry && poetry install";
   if (packageManager === "pip") return "pip install -e .";
   return "pip install uv && uv sync";
 }
@@ -350,8 +368,10 @@ function containerPackageCommand(packageManager: PackageManager) {
 }
 
 function containerCorepackCommand(packageManager: PackageManager) {
-  if (packageManager === "pnpm") return "corepack prepare pnpm@10.33.2 --activate";
-  if (packageManager === "yarn") return "corepack prepare yarn@stable --activate";
+  if (packageManager === "pnpm")
+    return "corepack prepare pnpm@10.33.2 --activate";
+  if (packageManager === "yarn")
+    return "corepack prepare yarn@stable --activate";
   return "true";
 }
 
@@ -363,7 +383,9 @@ function containerInstallIfNeededCommand(
   return `if [ ! -e ${containerExecutablePath(frontend)} ]; then ${installCommand}; fi`;
 }
 
-function containerWaitForFrontendDependenciesCommand(frontend: FrontendFramework) {
+function containerWaitForFrontendDependenciesCommand(
+  frontend: FrontendFramework,
+) {
   return `while [ ! -e ${containerExecutablePath(frontend)} ]; do sleep 1; done`;
 }
 
@@ -386,8 +408,10 @@ function previewPort(frontend: FrontendFramework) {
 }
 
 function containerDevCommand(frontend: FrontendFramework) {
-  if (frontend === "next") return `${containerExecutablePath(frontend)} dev -H 0.0.0.0`;
-  if (frontend === "nuxt") return `${containerExecutablePath(frontend)} dev --host 0.0.0.0`;
+  if (frontend === "next")
+    return `${containerExecutablePath(frontend)} dev -H 0.0.0.0`;
+  if (frontend === "nuxt")
+    return `${containerExecutablePath(frontend)} dev --host 0.0.0.0`;
   return `${containerExecutablePath(frontend)} --host 0.0.0.0`;
 }
 

@@ -238,7 +238,10 @@ async function removeDanglingBlameNetworks(exec: ExecFileRunner) {
   await removeNetworks(exec, networks.filter(danglingBlameNetwork));
 }
 
-async function removeNetworks(exec: ExecFileRunner, networks: RuntimeNetwork[]) {
+async function removeNetworks(
+  exec: ExecFileRunner,
+  networks: RuntimeNetwork[],
+) {
   const ids = networks
     .filter((network) => Object.keys(network.Containers ?? {}).length === 0)
     .map((network) => network.Id)

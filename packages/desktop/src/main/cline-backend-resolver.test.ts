@@ -1,5 +1,5 @@
-import assert from "node:assert/strict"
-import test from "node:test"
+import assert from "node:assert/strict";
+import test from "node:test";
 import {
   localWorkspaceInput,
   refreshRuntimeBackendConnection,
@@ -7,23 +7,24 @@ import {
   retryableHubTransportError,
   runtimeHubBackendIdentity,
   runtimeHubHealthUrl,
-} from "./cline-backend-resolver.ts"
+} from "./cline-backend-resolver.ts";
 
 test("builds the Cline health URL with or without an auth query", () => {
   assert.equal(
     runtimeHubHealthUrl("ws://127.0.0.1:25463/hub"),
     "http://127.0.0.1:25463/health",
-  )
+  );
   assert.equal(
     runtimeHubHealthUrl("wss://runtime.test/hub?authToken=secret"),
     "https://runtime.test/health",
-  )
-})
+  );
+});
 test("resolves Windows runtime worktrees to a remote Cline backend", async () => {
   const input = {
     cwd: "/home/blame/.local/share/blame/runtime/worktrees/repo/story",
-    workspaceRoot: "/home/blame/.local/share/blame/runtime/worktrees/repo/story",
-  }
+    workspaceRoot:
+      "/home/blame/.local/share/blame/runtime/worktrees/repo/story",
+  };
 
   const resolved = await resolveAgentWorkspaceInput(input, {
     agentClient: {
@@ -39,10 +40,10 @@ test("resolves Windows runtime worktrees to a remote Cline backend", async () =>
       status: "ready",
     }),
     platform: "win32",
-  })
+  });
 
-  assert.equal(resolved.cwd, input.cwd)
-  assert.equal(resolved.workspaceRoot, input.workspaceRoot)
+  assert.equal(resolved.cwd, input.cwd);
+  assert.equal(resolved.workspaceRoot, input.workspaceRoot);
   assert.deepEqual(resolved.backend, {
     authToken: "secret",
     cwd: input.cwd,
@@ -53,13 +54,12 @@ test("resolves Windows runtime worktrees to a remote Cline backend", async () =>
     }).key,
     mode: "remote",
     workspaceRoot: input.workspaceRoot,
-  })
-  assert.equal(resolved.backend.key.includes("secret"), false)
-})
+  });
+  assert.equal(resolved.backend.key.includes("secret"), false);
+});
 
 test("resolves macOS runtime worktrees to a remote Cline backend", async () => {
-  const cwd =
-    "/home/blame/.local/share/blame/runtime/worktrees/repo/story"
+  const cwd = "/home/blame/.local/share/blame/runtime/worktrees/repo/story";
 
   const resolved = await resolveAgentWorkspaceInput(
     { cwd, workspaceRoot: cwd },
@@ -75,15 +75,15 @@ test("resolves macOS runtime worktrees to a remote Cline backend", async () => {
       }),
       platform: "darwin",
     },
-  )
+  );
 
-  assert.equal(resolved.cwd, cwd)
-  assert.equal(resolved.backend.mode, "remote")
-})
+  assert.equal(resolved.cwd, cwd);
+  assert.equal(resolved.backend.mode, "remote");
+});
 
 test("keeps legacy macOS shared worktrees connected to the remote backend", async () => {
   const cwd =
-    "/Users/dev/Library/Application Support/Blame/runtime/worktrees/repo/story"
+    "/Users/dev/Library/Application Support/Blame/runtime/worktrees/repo/story";
 
   const resolved = await resolveAgentWorkspaceInput(
     { cwd, workspaceRoot: cwd },
@@ -99,24 +99,30 @@ test("keeps legacy macOS shared worktrees connected to the remote backend", asyn
       }),
       platform: "darwin",
     },
-  )
+  );
 
-  assert.equal(resolved.cwd, cwd)
-  assert.equal(resolved.backend.mode, "remote")
-})
+  assert.equal(resolved.cwd, cwd);
+  assert.equal(resolved.backend.mode, "remote");
+});
 
 test("resolves Linux and unmanaged paths to local Cline backend", async () => {
-  const input = { cwd: "/home/dev/project", workspaceRoot: "/home/dev/project" }
+  const input = {
+    cwd: "/home/dev/project",
+    workspaceRoot: "/home/dev/project",
+  };
 
-  assert.deepEqual(await resolveAgentWorkspaceInput(input, { platform: "linux" }), {
-    ...input,
-    backend: { mode: "local", key: "local" },
-  })
+  assert.deepEqual(
+    await resolveAgentWorkspaceInput(input, { platform: "linux" }),
+    {
+      ...input,
+      backend: { mode: "local", key: "local" },
+    },
+  );
   assert.deepEqual(localWorkspaceInput(input, "win32"), {
     ...input,
     backend: { mode: "local", key: "local" },
-  })
-})
+  });
+});
 
 test("keeps an explicit cloud mirror on the native Cline backend", async () => {
   const input = {
@@ -124,13 +130,13 @@ test("keeps an explicit cloud mirror on the native Cline backend", async () => {
     workspaceMode: "cloud-mirror" as const,
     workspaceRoot:
       "/Users/dev/Library/Application Support/Blame/cloud/worktrees/repo/story",
-  }
+  };
 
   assert.deepEqual(
     await resolveAgentWorkspaceInput(input, { platform: "darwin" }),
     { ...input, backend: { mode: "local", key: "local" } },
-  )
-})
+  );
+});
 
 test("rejects a cloud mirror that still points inside Lima or WSL", async () => {
   await assert.rejects(
@@ -144,41 +150,41 @@ test("rejects a cloud mirror that still points inside Lima or WSL", async () => 
       { platform: "darwin" },
     ),
     /Stop and requeue the story/,
-  )
-})
+  );
+});
 
 test("normalizes runtime hub auth while changing identity after a hub restart", () => {
   const separateAuth = runtimeHubBackendIdentity("darwin", {
     authToken: "first-token",
     url: "ws://127.0.0.1:25463/hub",
-  })
+  });
   const queryAuth = runtimeHubBackendIdentity("darwin", {
     url: "ws://127.0.0.1:25463/hub?authToken=first-token",
-  })
+  });
   const restartedHub = runtimeHubBackendIdentity("darwin", {
     authToken: "second-token",
     url: "ws://127.0.0.1:25463/hub",
-  })
+  });
 
-  assert.deepEqual(queryAuth, separateAuth)
-  assert.equal(separateAuth.endpoint, "ws://127.0.0.1:25463/hub")
-  assert.equal(separateAuth.key.includes("first-token"), false)
-  assert.notEqual(restartedHub.key, separateAuth.key)
-})
+  assert.deepEqual(queryAuth, separateAuth);
+  assert.equal(separateAuth.endpoint, "ws://127.0.0.1:25463/hub");
+  assert.equal(separateAuth.key.includes("first-token"), false);
+  assert.notEqual(restartedHub.key, separateAuth.key);
+});
 
 test("retries only abnormal Cline hub connection closures", () => {
-  const closed = new Error("Hub connection closed (code=1006)")
-  closed.name = "HubTransportError"
-  assert.equal(retryableHubTransportError(closed), true)
+  const closed = new Error("Hub connection closed (code=1006)");
+  closed.name = "HubTransportError";
+  assert.equal(retryableHubTransportError(closed), true);
 
-  const provider = new Error("Provider returned 429")
-  provider.name = "HubTransportError"
-  assert.equal(retryableHubTransportError(provider), false)
+  const provider = new Error("Provider returned 429");
+  provider.name = "HubTransportError";
+  assert.equal(retryableHubTransportError(provider), false);
   assert.equal(
     retryableHubTransportError(new Error("Hub connection closed (code=1006)")),
     false,
-  )
-})
+  );
+});
 
 test("forces a fresh Cline core only for a retried remote connection", () => {
   const remote = {
@@ -187,15 +193,15 @@ test("forces a fresh Cline core only for a retried remote connection", () => {
       mode: "remote",
     },
     cwd: "/worktree",
-  }
+  };
   assert.deepEqual(refreshRuntimeBackendConnection(remote, "retry-1"), {
     ...remote,
     backend: {
       ...remote.backend,
       key: "runtime:darwin:hub:connection:retry-1",
     },
-  })
+  });
 
-  const local = { backend: { key: "local", mode: "local" }, cwd: "/project" }
-  assert.equal(refreshRuntimeBackendConnection(local, "retry-1"), local)
-})
+  const local = { backend: { key: "local", mode: "local" }, cwd: "/project" };
+  assert.equal(refreshRuntimeBackendConnection(local, "retry-1"), local);
+});

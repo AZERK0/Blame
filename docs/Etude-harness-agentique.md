@@ -3,6 +3,8 @@
 **Version 1.0 — 9 août 2026**  
 **Objet :** définir les primitives d’un IDE agentique qui dépassent le paradigme actuel `grep → read_file(lines) → patch → shell`, en s’appuyant sur la littérature scientifique, les systèmes existants et les contraintes propres à Blame.
 
+> **Statut normatif au 31 août 2026.** La section 21.30, « Light Semantic Harness », remplace les recommandations d’architecture précédentes. Les sections antérieures restent conservées comme historique des hypothèses, incidents et migrations ; leurs protocoles MVCC agent-facing, leurs multiples autorités, leurs outils séparés et leurs mécanismes de coordination ne décrivent plus le chemin normal de production.
+
 ---
 
 ## Résumé décisionnel
@@ -2283,12 +2285,12 @@ Le lifecycle canonique visible est `running → cancelling → succeeded | faile
 
 Le replay déterministe `headless-us021.test.ts` vérifie une réduction de contexte supérieure à 50 %, l’unicité de la demande, l’intégrité des paires appel/résultat, la stabilité du capsule après replay, le reçu `workspace_state`, l’absence de toute écriture partielle par défaut, le rollback d’un move et l’unicité du terminal. La télémétrie conserve uniquement les tailles, le mode, la longueur du suffixe, le hash du capsule et les hashes des événements retirés. La publication générale reste conditionnée à la matrice live Linux, WSL, Lima, runtime distant et Cloud Preview ; ces environnements externes ne sont pas déclarés validés par les seuls tests locaux.
 
-| Runtime | Vérification exécutée | Résultat | Limite restante |
-| --- | --- | --- | --- |
-| Linux natif | Plugin, tools, événements, interruption, terminal, compaction normale et overflow dans les suites runtime | 339 réussites, 0 échec, 2 live ignorés | Replay provider avec credentials non exécuté |
-| Windows/WSL | Manifestes, provisionneur, chemins, smoke contracts et suite desktop | 336 réussites, 0 échec | Invité WSL réel non disponible sur cet hôte Linux |
-| macOS/Lima | Manifestes, provisionneur, chemins et contrats desktop communs | Contrats réussis | Invité Lima réel non disponible sur cet hôte Linux |
-| Cloud Preview | Build réel de l’image runner, inspection de `@cline/sdk` et `@cline/core`, contrats runner et preview | Image et versions `0.0.81` vérifiées, runner 41/41, preview 27/27 | Session distante live non exécutée |
+| Runtime       | Vérification exécutée                                                                                     | Résultat                                                          | Limite restante                                    |
+| ------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------- |
+| Linux natif   | Plugin, tools, événements, interruption, terminal, compaction normale et overflow dans les suites runtime | 339 réussites, 0 échec, 2 live ignorés                            | Replay provider avec credentials non exécuté       |
+| Windows/WSL   | Manifestes, provisionneur, chemins, smoke contracts et suite desktop                                      | 336 réussites, 0 échec                                            | Invité WSL réel non disponible sur cet hôte Linux  |
+| macOS/Lima    | Manifestes, provisionneur, chemins et contrats desktop communs                                            | Contrats réussis                                                  | Invité Lima réel non disponible sur cet hôte Linux |
+| Cloud Preview | Build réel de l’image runner, inspection de `@cline/sdk` et `@cline/core`, contrats runner et preview     | Image et versions `0.0.81` vérifiées, runner 41/41, preview 27/27 | Session distante live non exécutée                 |
 
 ### 21.25 Correctifs causaux issus du run US-022
 
@@ -2359,6 +2361,47 @@ Une panne de l'exécuteur de dépendances fournit désormais la commande, le sta
 La reprise provider reconnaît maintenant, en plus des coupures socket, la forme générique « an error occurred while processing your request » accompagnée d'une invitation à retry ou d'une request ID, ainsi que les erreurs 500, 502, 503 et 504. Elle reste limitée à une reprise depuis l'état persistant et refuse explicitement authentification, autorisation, quota, rate limit, facturation, policy et requête invalide. La première fenêtre d'inactivité publie un avis utilisateur sans interrompre le raisonnement ; seule une seconde fenêtre silencieuse mène au terminal existant.
 
 Ces corrections restent conformes au principe retenu : aucune règle « muter avant N itérations » et aucun arrêt fondé sur le nombre de lectures n'ont été ajoutés. Le runtime fournit plus tôt les faits exacts, empêche les répétitions déterministes, isole correctement les contextes et absorbe les pannes qu'il possède. Les tests ciblés couvrent la réhydratation post-epoch, l'isolation lead/spécialiste, la déduplication managed, le briefing sans second `workspace_state`, le statut web partiel sérialisé, le diagnostic et le circuit de dépendances, ainsi que la reprise de l'erreur provider réelle. Un nouveau run live comparable reste nécessaire pour mesurer le temps avant première mutation et la baisse des tokens cumulés.
+
+### 21.30 Light Semantic Harness — architecture normative
+
+Cette section remplace les architectures v1, v2 et v3 décrites plus haut. Le worktree textuel est l’unique vérité du code. L’index ast-grep est dérivé, local au fichier et jetable. Cline reste propriétaire du transcript, de la compaction, du streaming et du terminal. Un `SessionJournal` append-only conserve uniquement les demandes utilisateur, aliases courts, changements, validations liées au contenu et état terminal. Aucun contenu complet de tool, transcript parallèle, plan temporaire ou raisonnement n’y est recopié.
+
+Le noyau permanent expose exactement `search_code`, `read_code`, `edit_code`, `run_task` et `finish_task`. Les outils optionnels de preview et de consultation sont sélectionnés lors de la création de session. Une consultation n’est jamais automatique, reste en lecture seule et ne peut modifier ni la couverture, ni les contraintes, ni le terminal du lead. Les anciens `workspace_state`, `outline_code`, `inspect_code`, `recall_context`, `apply_change`, `edit_files` et `mutate_dependencies` ne sont plus enregistrés dans une nouvelle session de développement.
+
+`read_code` route un petit fichier vers le texte brut, un grand fichier applicatif vers l’outline, un alias vers son symbole, et un format sans adapter vers raw ou range dans le même appel. La couverture est indexée par consommateur, identifiant réel de compaction Cline, chemin, hash du fichier et intervalles effectivement projetés. Un nouveau message utilisateur ne change pas la génération ; un message Cline portant `kind: compaction_summary` autorise une réhydratation. Les aliases `sN` sont persistés dans le journal. Une relocalisation périmée reste limitée au même fichier, au même langage, au même kind et au même qualified name, avec un candidat unique.
+
+`edit_code` résout toutes ses opérations sur un snapshot unique. Il accepte dans un même batch les opérations symboliques et le dialecte Apply Patch de Cline. Le header de patch n’accorde aucune autorité de chemin. Le parseur officiel Cline calcule le changement ; Blame refuse tout fuzz et tout contexte exact apparaissant plusieurs fois. Les modifications sont converties en byte ranges, les overlaps et insertions concurrentes au même offset sont refusés, puis seul l’état final est parsé. Le commit vérifie encore la fraîcheur interne, prépare toutes les écritures et restaure le batch si une écriture échoue. Aucun hash, offset ou identifiant de révision n’est demandé au modèle.
+
+Le registre runtime smoke-teste les adapters avant de les annoncer. Les capacités effectivement chargées lors de cette livraison sont :
+
+| Niveau         | Extensions livrées                                                                                                                           | Contrat vérifié                                                                     |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| A — symbolique | `.ts`, `.mts`, `.cts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.jsx`, `.py`, `.rs`, `.go`, `.java`, `.cs`, `.c`, `.h`, `.cpp`, `.cc`, `.cxx`, `.hpp` | outline, lecture, body, remplacement, insertion, suppression et parse final         |
+| B — structure  | `.html`, `.htm`, `.css`, `.vue`, `.svelte`                                                                                                   | outline local, plage structurelle exacte, édition et parse lorsqu’il est disponible |
+| C — texte      | Prisma, JSON/JSONC, YAML, TOML, SQL, Markdown, `.env`, lockfiles et extensions inconnues                                                     | raw, range, recherche textuelle et patch                                            |
+
+Les grammaires C et C++ pinnées sont embarquées avec leurs prebuilds Linux x64/ARM64, macOS x64/ARM64 et Windows x64. Le smoke test runtime exige désormais au moins un symbole exploitable, et non le seul chargement de la grammaire. Un adapter absent donne `unavailable`; un format sans adapter donne `unsupported`; aucun de ces cas ne peut produire `passed`.
+
+`run_task` exécute les scripts et commandes dans le worktree courant avec une politique shell centralisée. Une mutation de dépendances reste déléguée au service atomique de manifests et lockfiles : détection du gestionnaire, snapshot, une stratégie, restauration sur échec et diagnostic réel. Elle n’est jamais décrite comme transactionnelle au-delà de ces fichiers. Le briefing sonde une fois l’exécutable du gestionnaire et annonce son indisponibilité avant le premier appel. `finish_task` lit le `SessionJournal`, refuse une tâche mutante sans effet, réutilise les validations encore liées aux hashes courants et exécute au maximum une validation manquante. Une validation indisponible produit l’état interne `completed_with_validation_unavailable` tout en laissant Cline afficher uniquement le résumé naturel.
+
+#### Mesures déterministes de cette livraison
+
+Les mesures suivantes ont été exécutées localement le 31 août 2026 :
+
+- 45 scénarios Light Harness sur 45 passent, incluant les opérations symboliques réelles sur les 19 extensions de niveau A, HTML/CSS/Vue/Svelte, patch Prisma, batch hybride, ambiguïté, rollback syntaxique et physique, erreur préexistante dégradée, aliases persistants, compaction, couverture distante, fraîcheur des validations, completion locale et distante, et indisponibilité des dépendances ;
+- les suites maintenues passent sans échec : 178 scénarios agent runtime, 338 desktop, 231 frontend et 13 Harness Core, soit 760 scénarios ;
+- les typechecks `@blame/harness-core`, `@blame/agent-runtime`, `@blame/desktop` et `@blame/app`, ainsi que le lint du runtime, passent ;
+- le payload autonome installe et charge les parseurs C/C++ et exécute le bridge canonique dans un répertoire isolé ;
+- le template du prompt permanent passe de 443 à 248 mots, soit −44,0 % ;
+- la surface mesurée des noms, descriptions et schémas passe de 21 outils et 80 896 caractères UTF-8 à 5 outils et 4 244 caractères, soit −94,8 %. Les caractères sont ici un proxy reproductible, pas un comptage provider de tokens.
+
+#### Benchmark de release et limitations restantes
+
+Le benchmark live de release à 100 tâches, trois répétitions randomisées et six environnements n’a pas été exécuté dans ce workspace. Aucune amélioration de qualité, de tokens, de p95 avant première mutation ou de taux d’erreurs d’édition n’est donc revendiquée. Les gates de −30 % de tokens d’entrée, −40 % de p95, −70 % d’erreurs/retries, moins de 1 % d’octets relus et les invariants à zéro restent ouvertes jusqu’aux runs comparables.
+
+Les prebuilds natifs sont présents dans les artefacts de dépendances, mais les smoke tests physiques Lima, WSL, macOS, Windows et Cloud Preview restent des gates CI/release ; seuls les contrats exécutables sur l’hôte Linux courant ont été lancés ici.
+
+Le nettoyage final ferme le gate structurel. Les primitives de commit et de dépendances sont désormais des services Light directs ; le runtime ne conserve plus les exécuteurs, protocoles, projections, mémoires, gouverneurs, stores, éditeurs spécialisés et suites de compatibilité v1/v2/v3. Le dossier du harness passe de 89 fichiers TypeScript et 41 327 lignes dans la révision de référence à 33 fichiers et 7 817 lignes, tests compris, soit −81,1 %. Hors tests, il passe de 77 fichiers et 30 595 lignes à 32 fichiers et 6 853 lignes, soit −77,6 %. Le payload distant utilise encore le nom de binaire `blame-semantic-harness` pour compatibilité de provisioning, mais sa liste blanche n’embarque que le graphe d’exécution Light et ne dépend plus du package de contrats historique.
 
 ## Références complémentaires
 

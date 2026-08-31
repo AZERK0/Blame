@@ -1,1 +1,1 @@
-export { previewPartition as previewSessionPartition } from "../preview-browser-partition"
+export { previewPartition as previewSessionPartition } from "../preview-browser-partition";

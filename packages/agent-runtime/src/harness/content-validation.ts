@@ -3,9 +3,9 @@ import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { execa } from "execa";
+import { parse, type ParseError } from "jsonc-parser";
 import ts from "typescript";
 import { parseCode } from "./code-intelligence.js";
-import { jsoncErrors } from "./json-editor.js";
 import { languageCapability } from "./language-capabilities.js";
 
 export type ValidationStatus = "passed" | "failed" | "unsupported";
@@ -63,7 +63,11 @@ export async function validateContent(input: {
 }
 
 function validateJson(input: { content: Buffer; path: string }) {
-  const errors = jsoncErrors(input.content.toString("utf8"));
+  const errors: ParseError[] = [];
+  parse(input.content.toString("utf8"), errors, {
+    allowTrailingComma: true,
+    disallowComments: false,
+  });
   return validation(
     input.path,
     errors.length ? "failed" : "passed",

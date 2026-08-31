@@ -51,12 +51,9 @@ test("routes resumed sessions back to their original worker", async () => {
   const first = await harness.pool.startSession("sessions.start", {});
   await harness.pool.startSession("sessions.start", {});
 
-  const resumed = await harness.pool.startSession(
-    "sessions.startDevelopment",
-    {
-      resumeSessionId: first.sessionId,
-    },
-  );
+  const resumed = await harness.pool.startSession("sessions.startDevelopment", {
+    resumeSessionId: first.sessionId,
+  });
 
   assert.equal(resumed.sessionId, first.sessionId);
   assert.equal(harness.processes.length, 2);
@@ -178,10 +175,7 @@ class FakeAgentRuntimeProcess implements AgentRuntimeProcessLike {
 
   async request<Result>(method: AgentRuntimeMethod, input?: unknown) {
     this.calls.push({ input, method });
-    if (
-      method === "sessions.start" ||
-      method === "sessions.startDevelopment"
-    ) {
+    if (method === "sessions.start" || method === "sessions.startDevelopment") {
       const requestedSessionId = sessionInputId(input);
       if (requestedSessionId && this.sessionIds.has(requestedSessionId)) {
         return { sessionId: requestedSessionId } as Result;

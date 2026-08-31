@@ -48,13 +48,12 @@ export class PreviewHarnessService {
 
   async inspect(input: PreviewHarnessInput) {
     const [browser, lifecycle, revisions] = await Promise.all([
-      Promise.resolve(
-        this.dependencies.browserTarget({ scope: input.scope }),
-      ),
+      Promise.resolve(this.dependencies.browserTarget({ scope: input.scope })),
       this.lifecycle(input),
       this.revisions(input),
     ]);
-    if (browser.error) return previewHarnessState(browser, undefined, revisions);
+    if (browser.error)
+      return previewHarnessState(browser, undefined, revisions);
     return previewHarnessState(browser, lifecycle, revisions);
   }
 

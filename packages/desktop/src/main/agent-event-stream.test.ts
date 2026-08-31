@@ -1,23 +1,23 @@
-import assert from "node:assert/strict"
-import { EventEmitter } from "node:events"
-import test from "node:test"
+import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
+import test from "node:test";
 
-import type { AgentEvent } from "@blame/agent-runtime"
+import type { AgentEvent } from "@blame/agent-runtime";
 
-import { AgentEventStream } from "./agent-event-stream.ts"
+import { AgentEventStream } from "./agent-event-stream.ts";
 
 class Response extends EventEmitter {
-  chunks: string[] = []
-  ended = false
-  writable = true
+  chunks: string[] = [];
+  ended = false;
+  writable = true;
 
   writeHead() {}
   write(chunk: string) {
-    this.chunks.push(chunk)
-    return this.writable
+    this.chunks.push(chunk);
+    return this.writable;
   }
   end() {
-    this.ended = true
+    this.ended = true;
   }
 }
 
@@ -26,130 +26,130 @@ function request(url: string, lastEventId?: string) {
     headers: lastEventId ? { "last-event-id": lastEventId } : {},
     method: "GET",
     url: new URL(url).pathname + new URL(url).search,
-  }
+  };
 }
 
 function event(sessionId: string, text: string): AgentEvent {
-  return { payload: { text }, sessionId, type: "text" }
+  return { payload: { text }, sessionId, type: "text" };
 }
 
 test("authenticates streams and replays events after the last event id", () => {
-  const stream = new AgentEventStream()
-  const url = stream.url("session", "http://127.0.0.1:1234")
-  stream.publish(event("session", "one"))
-  stream.flush()
-  stream.publish(event("session", "two"))
-  stream.flush()
+  const stream = new AgentEventStream();
+  const url = stream.url("session", "http://127.0.0.1:1234");
+  stream.publish(event("session", "one"));
+  stream.flush();
+  stream.publish(event("session", "two"));
+  stream.flush();
 
-  const rejected = new Response()
+  const rejected = new Response();
   assert.equal(
     stream.handle(
       request(url.replace(/token=.*/, "token=wrong")) as never,
-      rejected as never
+      rejected as never,
     ),
-    false
-  )
+    false,
+  );
 
-  const response = new Response()
+  const response = new Response();
   assert.equal(
     stream.handle(request(url, "1") as never, response as never),
-    true
-  )
-  assert.match(response.chunks.join(""), /id: 2\ndata: .*two/)
-  assert.doesNotMatch(response.chunks.join(""), /one/)
-})
+    true,
+  );
+  assert.match(response.chunks.join(""), /id: 2\ndata: .*two/);
+  assert.doesNotMatch(response.chunks.join(""), /one/);
+});
 
 test("replays from the resume cursor encoded in the stream URL", () => {
-  const stream = new AgentEventStream()
-  const url = new URL(stream.url("session", "http://127.0.0.1:1234"))
-  stream.publish(event("session", "one"))
-  stream.publish(event("session", "two"))
-  url.searchParams.set("lastEventId", "1")
+  const stream = new AgentEventStream();
+  const url = new URL(stream.url("session", "http://127.0.0.1:1234"));
+  stream.publish(event("session", "one"));
+  stream.publish(event("session", "two"));
+  url.searchParams.set("lastEventId", "1");
 
-  const response = new Response()
-  stream.handle(request(url.toString()) as never, response as never)
+  const response = new Response();
+  stream.handle(request(url.toString()) as never, response as never);
 
-  assert.match(response.chunks.join(""), /id: 2\ndata: .*two/)
-  assert.doesNotMatch(response.chunks.join(""), /one/)
-})
+  assert.match(response.chunks.join(""), /id: 2\ndata: .*two/);
+  assert.doesNotMatch(response.chunks.join(""), /one/);
+});
 
 test("queues events for a slow client and resumes on drain", () => {
-  const stream = new AgentEventStream()
-  const url = stream.url("session", "http://127.0.0.1:1234")
-  const response = new Response()
-  response.writable = false
-  stream.handle(request(url) as never, response as never)
+  const stream = new AgentEventStream();
+  const url = stream.url("session", "http://127.0.0.1:1234");
+  const response = new Response();
+  response.writable = false;
+  stream.handle(request(url) as never, response as never);
 
-  stream.publish(event("session", "one"))
-  stream.flush()
-  stream.publish(event("session", "two"))
-  stream.flush()
-  assert.doesNotMatch(response.chunks.join(""), /two/)
+  stream.publish(event("session", "one"));
+  stream.flush();
+  stream.publish(event("session", "two"));
+  stream.flush();
+  assert.doesNotMatch(response.chunks.join(""), /two/);
 
-  response.writable = true
-  response.emit("drain")
-  assert.match(response.chunks.join(""), /one/)
-  assert.match(response.chunks.join(""), /two/)
-})
+  response.writable = true;
+  response.emit("drain");
+  assert.match(response.chunks.join(""), /one/);
+  assert.match(response.chunks.join(""), /two/);
+});
 
 test("starts a fresh history for a reused runtime session", () => {
-  const stream = new AgentEventStream()
-  const firstUrl = stream.url("session", "http://127.0.0.1:1234")
-  stream.publish(event("session", "old execution"))
-  stream.flush()
-  stream.beginSession("session")
-  const nextUrl = stream.url("session", "http://127.0.0.1:1234")
+  const stream = new AgentEventStream();
+  const firstUrl = stream.url("session", "http://127.0.0.1:1234");
+  stream.publish(event("session", "old execution"));
+  stream.flush();
+  stream.beginSession("session");
+  const nextUrl = stream.url("session", "http://127.0.0.1:1234");
 
-  const staleResponse = new Response()
+  const staleResponse = new Response();
   assert.equal(
     stream.handle(request(firstUrl) as never, staleResponse as never),
-    false
-  )
-  const response = new Response()
-  stream.handle(request(nextUrl) as never, response as never)
-  assert.doesNotMatch(response.chunks.join(""), /old execution/)
-})
+    false,
+  );
+  const response = new Response();
+  stream.handle(request(nextUrl) as never, response as never);
+  assert.doesNotMatch(response.chunks.join(""), /old execution/);
+});
 
 test("keeps events published before the stream URL is requested", () => {
-  const stream = new AgentEventStream()
-  stream.beginSession("session")
-  stream.publish(event("session", "early event"))
-  stream.flush()
-  const url = stream.url("session", "http://127.0.0.1:1234")
-  const response = new Response()
-  stream.handle(request(url) as never, response as never)
-  assert.match(response.chunks.join(""), /early event/)
-})
+  const stream = new AgentEventStream();
+  stream.beginSession("session");
+  stream.publish(event("session", "early event"));
+  stream.flush();
+  const url = stream.url("session", "http://127.0.0.1:1234");
+  const response = new Response();
+  stream.handle(request(url) as never, response as never);
+  assert.match(response.chunks.join(""), /early event/);
+});
 
 test("does not reset history when multiple consumers request a URL", () => {
-  const stream = new AgentEventStream()
-  stream.beginSession("session")
-  stream.publish(event("session", "shared event"))
-  stream.flush()
-  const firstUrl = stream.url("session", "http://127.0.0.1:1234")
-  const secondUrl = stream.url("session", "http://127.0.0.1:1234")
-  assert.equal(firstUrl, secondUrl)
-  const response = new Response()
-  stream.handle(request(secondUrl) as never, response as never)
-  assert.match(response.chunks.join(""), /shared event/)
-})
+  const stream = new AgentEventStream();
+  stream.beginSession("session");
+  stream.publish(event("session", "shared event"));
+  stream.flush();
+  const firstUrl = stream.url("session", "http://127.0.0.1:1234");
+  const secondUrl = stream.url("session", "http://127.0.0.1:1234");
+  assert.equal(firstUrl, secondUrl);
+  const response = new Response();
+  stream.handle(request(secondUrl) as never, response as never);
+  assert.match(response.chunks.join(""), /shared event/);
+});
 
 test("preserves adjacent native streaming deltas", () => {
-  const stream = new AgentEventStream()
-  const url = stream.url("session", "http://127.0.0.1:1234")
-  const response = new Response()
-  stream.handle(request(url) as never, response as never)
+  const stream = new AgentEventStream();
+  const url = stream.url("session", "http://127.0.0.1:1234");
+  const response = new Response();
+  stream.handle(request(url) as never, response as never);
 
-  stream.publish(event("session", "one"))
-  stream.publish(event("session", "two"))
-  stream.flush()
+  stream.publish(event("session", "one"));
+  stream.publish(event("session", "two"));
+  stream.flush();
 
-  const payload = response.chunks.join("")
-  assert.equal(payload.match(/^data:/gm)?.length, 2)
-  assert.match(payload, /"text":"one"/)
-  assert.match(payload, /"text":"two"/)
-  assert.match(payload, /"sequenceNumber":1/)
-  assert.match(payload, /"sequenceNumber":2/)
-  assert.match(payload, /"eventType":"text"/)
-  assert.match(payload, /"eventId":"[^"]+"/)
-})
+  const payload = response.chunks.join("");
+  assert.equal(payload.match(/^data:/gm)?.length, 2);
+  assert.match(payload, /"text":"one"/);
+  assert.match(payload, /"text":"two"/);
+  assert.match(payload, /"sequenceNumber":1/);
+  assert.match(payload, /"sequenceNumber":2/);
+  assert.match(payload, /"eventType":"text"/);
+  assert.match(payload, /"eventId":"[^"]+"/);
+});

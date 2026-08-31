@@ -7,7 +7,10 @@ type SetupShellInput = {
   platform?: NodeJS.Platform;
 };
 
-export function setupShellCommand(scriptPath: string, input: SetupShellInput = {}) {
+export function setupShellCommand(
+  scriptPath: string,
+  input: SetupShellInput = {},
+) {
   const platform = input.platform ?? process.platform;
   return {
     args: [setupScriptPath(scriptPath, platform)],
@@ -22,7 +25,9 @@ export function resolveSetupBash(input: SetupShellInput = {}) {
   const pathExists = input.pathExists ?? existsSync;
   const configuredPath = env.BLAME_BASH_PATH?.trim();
   if (configuredPath && pathExists(configuredPath)) return configuredPath;
-  return windowsGitBashCandidates(env).find((path) => pathExists(path)) ?? "bash";
+  return (
+    windowsGitBashCandidates(env).find((path) => pathExists(path)) ?? "bash"
+  );
 }
 
 function windowsGitBashCandidates(env: NodeJS.ProcessEnv) {

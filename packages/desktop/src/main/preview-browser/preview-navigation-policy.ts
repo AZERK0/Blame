@@ -4,6 +4,6 @@ export function keepsManagedPreviewBridge(
   expectedOrigin: (url: string) => boolean,
 ) {
   const startsInsidePreview =
-    !currentUrl || currentUrl === "about:blank" || expectedOrigin(currentUrl)
-  return startsInsidePreview && expectedOrigin(nextUrl)
+    !currentUrl || currentUrl === "about:blank" || expectedOrigin(currentUrl);
+  return startsInsidePreview && expectedOrigin(nextUrl);
 }

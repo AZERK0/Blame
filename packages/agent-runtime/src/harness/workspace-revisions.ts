@@ -1,65 +1,73 @@
-import {
-  DependencyEnvironmentService,
-  probeDependencyEnvironment,
-} from "./dependency-environment.js";
-import { environmentSpec } from "./environment-service.js";
-import { readTaskCatalog } from "./task-catalog.js";
-import { WorkspaceFiles, type WorkspaceSnapshot } from "./workspace-files.js";
+import { access } from "node:fs/promises";
+import { join } from "node:path";
+import { sha256 } from "./light-identity.js";
+import { WorkspaceFiles } from "./workspace-files.js";
 
 export type WorkspaceRevisionState = {
-  source_revision_id: string;
-  environment_revision_id: string;
   dependencies_ready: boolean;
+  environment_revision_id: string;
+  source_revision_id: string;
 };
 
-export class WorkspaceStateAuthority {
-  private readonly files: WorkspaceFiles;
+export async function currentWorkspaceRevisionState(workspaceRoot: string) {
+  const files = new WorkspaceFiles(workspaceRoot);
+  const snapshot = await files.snapshot();
+  return {
+    dependencies_ready: await dependenciesReady(files, snapshot.files),
+    environment_revision_id: await environmentRevision(files, snapshot.files),
+    source_revision_id: snapshot.revision.source_revision_id,
+  } satisfies WorkspaceRevisionState;
+}
 
-  constructor(files: WorkspaceFiles) {
-    this.files = files;
-  }
+async function environmentRevision(files: WorkspaceFiles, paths: string[]) {
+  const entries = await Promise.all(
+    paths.filter(environmentPath).map(async (path) => {
+      const content = (await files.read(path)).content;
+      return `${path}\0${sha256(content)}`;
+    }),
+  );
+  return `env_${sha256(entries.sort().join("\n")).slice(0, 32)}`;
+}
 
-  async current(snapshot?: WorkspaceSnapshot): Promise<WorkspaceRevisionState> {
-    const resolved = await this.resolve(snapshot);
-    return {
-      source_revision_id: resolved.snapshot.revision.source_revision_id,
-      environment_revision_id: resolved.environment.environment_revision_id,
-      dependencies_ready: resolved.probe.status === "passed",
-    };
-  }
-
-  async environment(snapshot?: WorkspaceSnapshot) {
-    return (await this.resolve(snapshot)).environment;
-  }
-
-  private async resolve(snapshotInput?: WorkspaceSnapshot) {
-    const snapshot = snapshotInput ?? (await this.files.snapshot());
-    const catalog = await readTaskCatalog(this.files.root, snapshot.files);
-    const dependencyTask = catalog.find((task) => task.kind === "dependencies");
-    const persistent = dependencyTask
-      ? await new DependencyEnvironmentService(this.files.root).inspect(
-          this.files,
-          snapshot,
-          dependencyTask,
-        )
-      : undefined;
-    const probe = persistent
-      ? persistent.integrity_probe
-      : await probeDependencyEnvironment(this.files.root, snapshot.files);
-    const environment =
-      persistent?.spec ??
-      (await environmentSpec(this.files, snapshot, {
-        packageManager: dependencyTask?.package_manager,
-        resolvedPackageManagerVersion:
-          dependencyTask?.package_manager_version ?? "unversioned",
-      }));
-    return { environment, probe, snapshot };
+async function dependenciesReady(files: WorkspaceFiles, paths: string[]) {
+  const manifests = paths.filter((path) => path.endsWith("package.json"));
+  if (!(await hasDeclaredDependencies(files, manifests))) return true;
+  try {
+    await access(join(files.root, "node_modules"));
+    return true;
+  } catch {
+    return false;
   }
 }
 
-export async function currentWorkspaceRevisionState(
-  workspaceRoot: string,
-): Promise<WorkspaceRevisionState> {
-  const files = new WorkspaceFiles(workspaceRoot);
-  return new WorkspaceStateAuthority(files).current();
+async function hasDeclaredDependencies(
+  files: WorkspaceFiles,
+  manifests: string[],
+) {
+  for (const path of manifests) {
+    try {
+      const manifest = JSON.parse((await files.read(path)).content.toString());
+      const sections = [
+        "dependencies",
+        "devDependencies",
+        "optionalDependencies",
+      ];
+      if (
+        sections.some((section) => Object.keys(manifest[section] ?? {}).length)
+      )
+        return true;
+    } catch {
+      return true;
+    }
+  }
+  return false;
+}
+
+function environmentPath(path: string) {
+  return (
+    path.endsWith("package.json") ||
+    /(?:^|\/)(?:bun\.lockb?|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$/u.test(
+      path,
+    )
+  );
 }

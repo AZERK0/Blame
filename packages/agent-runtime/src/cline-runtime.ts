@@ -38,7 +38,6 @@ import type {
 import type { ExecutionTerminalReason } from "@blame/harness-core";
 import {
   buildWorkspaceMetadata,
-  createBuiltinTools,
   createDelegatedAgentConfigProvider,
   createSpawnAgentTool,
   getClineDefaultSystemPrompt,
@@ -65,40 +64,26 @@ import {
 } from "@blame/telemetry";
 
 import {
-  semanticWorkspaceReadToolNames,
-  semanticWorkspaceTools,
-} from "./harness/cline-tools.js";
+  lightReadToolNames,
+  lightSemanticHarnessTools,
+} from "./harness/light-tools.js";
+import { createFinishTaskTool } from "./harness/finish-task.js";
 import {
-  localSemanticWorkspaceExecutor,
-  legacySemanticWorkspaceExecutor,
-  managedSemanticWorkspaceExecutor,
-  type CanonicalSemanticWorkspaceExecutor,
-  type SemanticWorkspaceBridgeExecutor,
-} from "./harness/semantic-executor.js";
+  lightCompletionToolName,
+  type LightCompletionNotification,
+  type LightValidationActivity,
+} from "./harness/light-completion.js";
+import type { LightTaskContract } from "./harness/light-contracts.js";
 import {
-  changeRequestCapsule,
-  prepareChangeRequest,
-} from "./harness/change-request-capsule.js";
-import {
-  ConversationMemoryStore,
-  type TokenCounter,
-} from "./harness/conversation-memory.js";
-import {
-  createNativeCompletionTool,
-  nativeCompletionToolName,
-  type NativeCompletionNotification,
-  type NativeValidationActivity,
-} from "./harness/native-completion.js";
-import { continuityFallbackMetrics } from "./harness/continuity-schema.js";
-import { ExternalReadGovernor } from "./harness/external-read-governor.js";
-import { semanticInspectionExtensionsDescription } from "./harness/language-capabilities.js";
+  managedLightWorkspaceExecutor,
+  type LightWorkspaceExecutor,
+} from "./harness/light-executor.js";
+import { SessionJournal } from "./harness/session-journal.js";
 import {
   appendInitialTaskBriefing,
   createInitialTaskBriefing,
 } from "./harness/initial-task-briefing.js";
-import { createBlameCompaction } from "./harness/blame-compaction.js";
-import { harnessFeatureEnabled } from "./harness/harness-feature-flags.js";
-import { sha256 } from "./harness/protocol.js";
+import { sha256 } from "./harness/light-identity.js";
 import {
   RunLifecycleRegistry,
   completionAwareTerminalState,
@@ -113,7 +98,6 @@ import {
 } from "./cline-tool-policy.js";
 import { blameSpecialistRoutingSystemPrompt } from "./specialist-agents.js";
 import { createConsultSpecialistTool } from "./specialist-consult-tool.js";
-import { clineModels } from "./provider-catalog.js";
 import {
   deleteProviderCredential,
   listProviders,
@@ -194,10 +178,7 @@ import {
   usageLimitMessage,
 } from "./production.js";
 import type { ProjectInitializationScan } from "./project-initialization.js";
-import type {
-  ProductionConfig,
-  ProductionSessionContext,
-} from "./production.js";
+import type { ProductionSessionContext } from "./production.js";
 import { reasoningConfig } from "./reasoning.js";
 import type {
   AgentApprovalRequest,
@@ -297,21 +278,12 @@ type PendingApproval = {
 
 type RuntimeStartSessionInput = StartSessionInput & {
   compaction?: CoreCompactionConfig;
-  continuityMetrics?: ContinuityMetrics;
   enableAgentTeams?: boolean;
   enableBuiltInSkills?: boolean;
   enableSpecialistConsult?: boolean;
   enableSpawnAgent?: boolean;
   nativeCompletion?: boolean;
   taskObjective?: string;
-  tokenCounter?: TokenCounter;
-};
-
-type ContinuityMetrics = {
-  inputTokens: number;
-  outputTokens: number;
-  requestedTokens?: number;
-  truncated?: boolean;
 };
 
 type RuntimeSessionSummary = {
@@ -394,12 +366,8 @@ type RuntimeOptions = PreviewToolRuntimeOptions & {
   createCore?(backend?: AgentBackendConfig): Promise<ClineCore>;
   openExternalUrl?(url: string): void;
   git?(cwd: string, args: string[]): Promise<string>;
+  lightWorkspace?: LightWorkspaceExecutor;
   modelInactivityTimeoutMs?: number;
-  semanticWorkspace?: CanonicalSemanticWorkspaceExecutor;
-  tokenCounter?(input: {
-    modelId: string;
-    providerId: string;
-  }): TokenCounter | undefined;
 };
 
 type SessionTermination = {
@@ -464,10 +432,9 @@ export class BlameAgentRuntime {
   private sessionExecutionIds = new Map<string, string>();
   private sessionToolInputs = new Map<string, unknown>();
   private sessionToolSequences = new Map<string, number>();
-  private sessionContinuityWrites = new Map<string, Promise<void>>();
   private sessionSubmittedSummaries = new Map<
     string,
-    NativeCompletionNotification
+    LightCompletionNotification
   >();
   private sessionTerminalDrains = new Map<string, Promise<void>>();
   private sessionTerminations = new Map<
@@ -488,10 +455,6 @@ export class BlameAgentRuntime {
   private sessionIterations = new Map<string, number>();
   private sessionSpawnAgentActiveCounts = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
-  private sessionExternalReadGovernors = new Map<
-    string,
-    ExternalReadGovernor
-  >();
   private readonly runLifecycles = new RunLifecycleRegistry();
   private readonly userInstructionServices = new BlameUserInstructionServices();
   private structuredEventSessions = new Set<string>();
@@ -697,11 +660,6 @@ export class BlameAgentRuntime {
       ...input,
       taskComplexityBucket: sessionTaskComplexity(input),
     });
-    this.agentTelemetry.recordContinuityCapsule(
-      sessionId,
-      input.prompt,
-      input.continuityMetrics,
-    );
     const telemetryContext = this.agentTelemetry.context(sessionId);
     const startLogFile = startLogPath(input.cwd);
     await appendLog(
@@ -810,13 +768,13 @@ export class BlameAgentRuntime {
         ...(input.storyId ? { story_id: input.storyId } : {}),
         objective: taskObjective,
       };
-      const semanticExecutor =
-        managedSemanticWorkspaceExecutor(this.options.semanticWorkspace, {
+      const lightExecutor = managedLightWorkspaceExecutor(
+        this.options.lightWorkspace,
+        {
           backendMode: input.backend?.mode,
           workspaceMode: input.workspaceMode,
-        }) ?? localSemanticWorkspaceExecutor(input.workspaceRoot, taskContract);
-      const externalReadGovernor = new ExternalReadGovernor();
-      this.sessionExternalReadGovernors.set(sessionId, externalReadGovernor);
+        },
+      );
       this.sessionInactivityTimeouts.set(
         sessionId,
         adaptiveModelInactivityTimeoutMs(
@@ -827,18 +785,11 @@ export class BlameAgentRuntime {
       const initialTaskBriefing =
         autoSendPrompt && input.nativeCompletion
           ? await createInitialTaskBriefing({
-              executor: legacySemanticWorkspaceExecutor(semanticExecutor),
+              executor: lightExecutor,
               taskContract,
               workspaceRoot: input.workspaceRoot,
             })
           : undefined;
-      const compactionModelState = input.nativeCompletion
-        ? await earlyCompactionModelState(
-            input.providerId,
-            input.modelId,
-            this.productionConfig,
-          )
-        : undefined;
       const previewContext = previewRuntimeContext(input);
       const previewMcpTools = await previewDevtoolsMcpTools(
         this.options,
@@ -850,8 +801,7 @@ export class BlameAgentRuntime {
         input.workspaceRoot,
         previewContext,
         taskContract,
-        semanticExecutor,
-        externalReadGovernor,
+        lightExecutor,
         input.nativeCompletion
           ? {
               conversationId: sessionId,
@@ -875,78 +825,19 @@ export class BlameAgentRuntime {
               input.workspaceRoot,
               previewContext,
               taskContract,
-              semanticExecutor,
-              externalReadGovernor,
+              lightExecutor,
               initialTaskBriefing,
             ),
-            externalReadGovernor,
           })
         : undefined;
       const extraTools = [
         ...(standardTools ?? []),
         ...(specialistTool ? [specialistTool] : []),
       ];
-      const continuity = input.nativeCompletion
-        ? new ConversationMemoryStore(input.cwd, sessionId)
-        : undefined;
       const systemPrompt =
         input.systemPrompt ?? loadPrompt("default-agent-system");
-      const compactionController =
-        continuity && compactionModelState
-          ? createBlameCompaction({
-              memory: continuity,
-              model: compactionModelState.model,
-              systemPrompt,
-              tools: compactionToolDefinitions(input.workspaceRoot, extraTools),
-              warningRatio:
-                this.productionConfig.compactionWarningRatio ?? 0.55,
-              triggerRatio: this.productionConfig.compactionTriggerRatio ?? 0.7,
-              targetRatio: this.productionConfig.compactionTargetRatio ?? 0.4,
-              tokenCounter: input.tokenCounter,
-              beforeProjection: () =>
-                this.flushContinuityToolActivity(sessionId),
-              overflowTargetRatio:
-                this.productionConfig.compactionOverflowTargetRatio ?? 0.35,
-              onCompaction: (metrics) => {
-                this.agentTelemetry.recordContextCompaction(
-                  sessionId,
-                  metrics.tokensBefore,
-                  metrics.tokensAfter,
-                  metrics.capsuleHash,
-                  metrics.compactedEventHashes,
-                  metrics.tailMessages,
-                  metrics.mode,
-                );
-                productionLogger.log("Blame deterministic compaction", {
-                  capsuleHash: metrics.capsuleHash,
-                  messageCountAfter: metrics.tailMessages + 1,
-                  status: metrics.mode,
-                  tailMessages: metrics.tailMessages,
-                  tokensAfter: metrics.tokensAfter,
-                  tokensBefore: metrics.tokensBefore,
-                });
-                for (const compactedEventHash of metrics.compactedEventHashes)
-                  productionLogger.log("Blame compacted event", {
-                    compactedEventHash,
-                    status: metrics.mode,
-                  });
-              },
-              onWarning: (contextUtilizationRatio) =>
-                productionLogger.log("Blame context pressure warning", {
-                  contextUtilizationRatio,
-                  status: "warning",
-                }),
-            })
-          : undefined;
-      const hooks = externalReadGovernor?.fetchHooks();
-      const compactionConfig = compactionController
-        ? {
-            ...(input.compaction ??
-              blameCompactionConfig(this.productionConfig)),
-            enabled: true,
-            compact: compactionController.overflowRecovery,
-          }
-        : (input.compaction ?? blameCompactionConfig(this.productionConfig));
+      const compactionConfig =
+        input.compaction ?? blameCompactionConfig(this.productionConfig);
       const startInput = {
         ...(autoSendPrompt
           ? {
@@ -973,9 +864,6 @@ export class BlameAgentRuntime {
             apiKey: resolvedCredential.apiKey,
             baseUrl: resolvedCredential.baseUrl ?? undefined,
             ...reasoningConfig(input.reasoningEffort),
-            ...(compactionModelState
-              ? { knownModels: compactionModelState.models }
-              : {}),
             systemPrompt,
             cwd: input.cwd,
             workspaceRoot: input.workspaceRoot,
@@ -995,10 +883,6 @@ export class BlameAgentRuntime {
             enableSpawnAgent: input.enableSpawnAgent ?? false,
             enableAgentTeams: input.enableAgentTeams ?? false,
             extensionContext: extensionContext(input),
-            ...(hooks ? { hooks } : {}),
-            ...(compactionController
-              ? { extensions: [compactionController.extension] }
-              : {}),
             ...(extraTools.length ? { extraTools } : {}),
           }),
         },
@@ -1162,7 +1046,9 @@ export class BlameAgentRuntime {
       },
       activeContext,
     );
-    await this.recordInterruptedMemory(sessionId);
+    await this.recordSessionJournalTerminal(sessionId, "failed").catch(
+      () => undefined,
+    );
     const executionId = this.sessionExecutionIds.get(sessionId);
     if (
       !executionId ||
@@ -1180,7 +1066,7 @@ export class BlameAgentRuntime {
   }
 
   private async sendSession(
-    input: SendSessionInput & { continuityMetrics?: ContinuityMetrics },
+    input: SendSessionInput,
     interventionType?: string,
   ) {
     const executionId =
@@ -1191,7 +1077,6 @@ export class BlameAgentRuntime {
       throw new Error(
         "The previous execution is still stopping; no new model call was made.",
       );
-    this.sessionExternalReadGovernors.get(input.sessionId)?.newUserRequest();
     this.sessionSubmittedSummaries.delete(input.sessionId);
     this.sessionExecutionIds.set(input.sessionId, executionId);
     this.agentTelemetry.beginTurn(
@@ -1199,11 +1084,6 @@ export class BlameAgentRuntime {
       input.executionId,
       input.storyId,
       sessionTaskComplexity(input),
-    );
-    this.agentTelemetry.recordContinuityCapsule(
-      input.sessionId,
-      input.prompt,
-      input.continuityMetrics,
     );
     if (interventionType) {
       this.agentTelemetry.humanIntervention(input.sessionId, interventionType);
@@ -1237,20 +1117,21 @@ export class BlameAgentRuntime {
     );
     const workspaceRoot = this.sessionStartInputs.get(input.sessionId)?.config
       .cwd;
-    const preparedRequest = await developmentRequestPrompt(
-      developmentInput.prompt,
-      input,
-      workspaceRoot,
-      input.sessionId,
-    );
+    if (workspaceRoot) {
+      const journal = new SessionJournal(workspaceRoot, input.sessionId);
+      await journal.hydrate();
+      await journal.ingestUserRequest(
+        input.executionId ??
+          `user-message://${sha256(developmentInput.prompt)}`,
+        developmentInput.prompt,
+      );
+    }
     return this.sendSession(
       {
         sessionId: input.sessionId,
         executionId: input.executionId,
         storyId: input.storyId,
         ...developmentInput,
-        prompt: preparedRequest.prompt,
-        continuityMetrics: preparedRequest.metrics,
       },
       input.feedbackOnly ? "feedback" : undefined,
     );
@@ -1584,20 +1465,18 @@ export class BlameAgentRuntime {
       ["cancelled", "failed", "succeeded"].includes(lifecycle.state)
     )
       return;
-    await this.flushContinuityToolActivity(input.sessionId);
     const notification = this.sessionSubmittedSummaries.get(input.sessionId);
     const completion = notification?.completion;
     const terminalState = completionAwareTerminalState(
       input.terminalState,
       completion,
     );
+    await this.recordSessionJournalTerminal(input.sessionId, terminalState);
     const event =
       terminalState === input.terminalState
         ? input.event
         : completionFailureEvent(input.sessionId, notification);
     if (event) await this.handleSessionEvent(input.sessionId, event);
-    if (terminalState !== "succeeded")
-      await this.recordInterruptedMemory(input.sessionId);
     const usage = await Promise.resolve()
       .then(() => input.cline.getAccumulatedUsage(input.sessionId))
       .then(normalizeAgentUsageSummary)
@@ -1629,17 +1508,6 @@ export class BlameAgentRuntime {
     const termination = this.sessionTerminations.get(input.sessionId);
     if (termination?.executionId === input.executionId)
       this.sessionTerminations.delete(input.sessionId);
-  }
-
-  private async recordInterruptedMemory(sessionId: string) {
-    const workspaceRoot = this.sessionStartInputs.get(sessionId)?.config.cwd;
-    if (!workspaceRoot || !harnessFeatureEnabled("BLAME_MEMORY_AUTHORITY_V2"))
-      return;
-    const usedFallback = await new ConversationMemoryStore(
-      workspaceRoot,
-      sessionId,
-    ).ensureDeterministicFallback(true);
-    this.recordFallbackTelemetry(sessionId, usedFallback);
   }
 
   private async releaseWorkspaceSessions(workspace: string) {
@@ -2725,7 +2593,6 @@ export class BlameAgentRuntime {
           return;
         }
         if (this.shouldSkipDuplicateSessionEvent(sessionId, event)) return;
-        this.enqueueContinuityToolActivity(sessionId, event);
         const terminalState = terminalLifecycleState(event);
         if (terminalState) {
           const drain = this.finalizeStreamTerminal(
@@ -2872,52 +2739,6 @@ export class BlameAgentRuntime {
     };
   }
 
-  private async recordContinuityToolActivity(
-    sessionId: string,
-    event: AgentEvent,
-  ) {
-    if (event.type !== "tool") return;
-    const workspaceRoot = this.sessionStartInputs.get(sessionId)?.config.cwd;
-    if (!workspaceRoot) return;
-    const payload = asRecord(event.payload);
-    const phase = stringValue(payload.phase);
-    const toolCall = asRecord(payload.toolCall);
-    const toolName =
-      stringValue(toolCall.name) ?? stringValue(payload.toolName);
-    const input = asRecord(toolCall.input);
-    const memory = new ConversationMemoryStore(workspaceRoot, sessionId);
-    if (phase === "failed")
-      await memory.recordRuntimeEvent(
-        "tool_failure",
-        stringValue(payload.toolCallId) ?? toolName ?? "tool",
-        toolName,
-      );
-    if (phase !== "finished" || !toolName) return;
-    const fact = continuityToolFact(toolName, input, payload);
-    if (fact) await memory.recordKnowledge([fact]);
-  }
-
-  private enqueueContinuityToolActivity(sessionId: string, event: AgentEvent) {
-    const previous = this.sessionContinuityWrites.get(sessionId);
-    const write = Promise.resolve(previous)
-      .catch(() => undefined)
-      .then(() => this.recordContinuityToolActivity(sessionId, event))
-      .catch((error: unknown) =>
-        this.logSession(sessionId, "continuity tool activity failed", {
-          error: errorMessage(error),
-        }),
-      );
-    this.sessionContinuityWrites.set(sessionId, write);
-    void write.finally(() => {
-      if (this.sessionContinuityWrites.get(sessionId) === write)
-        this.sessionContinuityWrites.delete(sessionId);
-    });
-  }
-
-  private async flushContinuityToolActivity(sessionId: string) {
-    await this.sessionContinuityWrites.get(sessionId);
-  }
-
   private withSessionIteration(sessionId: string, event: AgentEvent) {
     const payload = asRecord(event.payload);
     const eventIteration = numberValue(payload.iteration);
@@ -3032,7 +2853,6 @@ export class BlameAgentRuntime {
         : undefined;
     if (event.type === "done") {
       await this.recordSessionQuality(sessionId, qualityContext);
-      await this.recordConversationResponse(sessionId, event.payload);
     }
     this.agentTelemetry.observeEvent(sessionId, event);
     await this.logSession(
@@ -3045,38 +2865,27 @@ export class BlameAgentRuntime {
     await this.handleUsageUpdate(sessionId, usage, activeContext);
   }
 
-  private async recordConversationResponse(
-    sessionId: string,
-    payload: unknown,
-  ) {
-    if (!harnessFeatureEnabled("BLAME_MEMORY_AUTHORITY_V2")) return;
-    const workspaceRoot = this.sessionStartInputs.get(sessionId)?.config.cwd;
-    const content = assistantResponseText(payload);
-    if (!workspaceRoot) return;
-    const memory = new ConversationMemoryStore(workspaceRoot, sessionId);
-    if (content) await memory.recordAssistant(content);
-    const usedFallback = await memory.ensureDeterministicFallback(false);
-    this.recordFallbackTelemetry(sessionId, usedFallback);
-  }
-
-  private recordFallbackTelemetry(sessionId: string, usedFallback: boolean) {
-    if (!usedFallback) return;
-    this.agentTelemetry.recordContinuityUpdate(
-      sessionId,
-      continuityFallbackMetrics(false),
-    );
-  }
-
   private recordNativeCompletion(
     sessionId: string,
-    notification: NativeCompletionNotification,
+    notification: LightCompletionNotification,
   ) {
     this.sessionSubmittedSummaries.set(sessionId, notification);
   }
 
+  private async recordSessionJournalTerminal(
+    sessionId: string,
+    state: RunTerminalState,
+  ) {
+    const workspaceRoot = this.sessionStartInputs.get(sessionId)?.config.cwd;
+    if (!workspaceRoot) return;
+    const journal = new SessionJournal(workspaceRoot, sessionId);
+    await journal.hydrate();
+    await journal.recordTerminal(lightTerminalState(state));
+  }
+
   private async publishNativeValidationActivity(
     sessionId: string,
-    activity: NativeValidationActivity,
+    activity: LightValidationActivity,
   ) {
     const event = this.nativeValidationEvent(sessionId, activity);
     this.events?.emit(event);
@@ -3085,7 +2894,7 @@ export class BlameAgentRuntime {
 
   private nativeValidationEvent(
     sessionId: string,
-    activity: NativeValidationActivity,
+    activity: LightValidationActivity,
   ) {
     const event: AgentEvent = {
       type: "tool",
@@ -3097,7 +2906,7 @@ export class BlameAgentRuntime {
         toolCall: {
           id: activity.toolCallId,
           name: "run_task",
-          input: activity.request.input,
+          input: activity.input,
         },
         ...(activity.output === undefined ? {} : { output: activity.output }),
       },
@@ -3184,7 +2993,6 @@ export class BlameAgentRuntime {
     } catch {
       // Session cleanup must continue even when a provider unsubscribe fails.
     }
-    await this.flushContinuityToolActivity(sessionId);
     this.clearSessionState(sessionId, preserveTelemetry);
     const logFile = this.sessionLogFiles.get(sessionId);
     this.sessionLogFiles.delete(sessionId);
@@ -3213,7 +3021,6 @@ export class BlameAgentRuntime {
         this.sessionToolSequences.delete(key);
     }
     this.sessionUsageSignatures.delete(sessionId);
-    this.sessionExternalReadGovernors.delete(sessionId);
     this.sessionInactivityTimeouts.delete(sessionId);
     this.sessionTransportRecoveries.delete(sessionId);
     this.sessionTerminalDrains.delete(sessionId);
@@ -3592,17 +3399,6 @@ export class BlameAgentRuntime {
       input,
       newAttachmentDirectory(input.cwd),
     );
-    const tokenCounter = this.options.tokenCounter?.({
-      modelId: input.modelId,
-      providerId: input.providerId,
-    });
-    const preparedRequest = await developmentRequestPrompt(
-      developmentInput.prompt,
-      input,
-      input.cwd,
-      conversationId,
-      tokenCounter,
-    );
     const iterationBudget =
       input.maxIterations ?? uninterruptedSessionMaxIterations;
     const compaction = blameCompactionConfig(this.productionConfig);
@@ -3621,10 +3417,8 @@ export class BlameAgentRuntime {
       initialMessages,
       mode: "act",
       maxIterations: iterationBudget,
-      prompt: preparedRequest.prompt,
-      continuityMetrics: preparedRequest.metrics,
+      prompt: developmentInput.prompt,
       taskObjective: developmentInput.prompt,
-      tokenCounter,
       userFiles: developmentInput.userFiles,
       userImages: developmentInput.userImages,
       pluginPaths: input.pluginPaths,
@@ -3940,70 +3734,6 @@ function clineToolActivity(
   return { phase, toolCallId, toolName };
 }
 
-function continuityToolFact(
-  toolName: string,
-  input: Record<string, unknown>,
-  payload: Record<string, unknown>,
-) {
-  if (["skill", "skills"].includes(toolName)) {
-    const skill = firstStableIdentifier(input, ["skill", "name", "id"]);
-    return skill ? `Loaded skill: ${skill}` : undefined;
-  }
-  if (toolName === "consult_specialist") {
-    const specialist = firstStableIdentifier(input, ["specialist"]);
-    if (!specialist) return undefined;
-    const conclusion = continuityToolOutput(payload);
-    return `Specialist consultation: ${specialist}${
-      conclusion ? `; conclusion=${conclusion}` : ""
-    }`;
-  }
-  return undefined;
-}
-
-function continuityToolOutput(payload: Record<string, unknown>) {
-  const toolCall = asRecord(payload.toolCall);
-  const raw = asRecord(payload.raw);
-  const rawToolCall = asRecord(raw.toolCall);
-  return boundedContinuityText(
-    payload.output ??
-      payload.result ??
-      payload.update ??
-      toolCall.output ??
-      raw.output ??
-      raw.result ??
-      raw.update ??
-      rawToolCall.output,
-  );
-}
-
-function boundedContinuityText(value: unknown, depth = 0): string | undefined {
-  if (depth > 3 || value === undefined || value === null) return undefined;
-  if (typeof value === "string")
-    return value.replace(/\s+/gu, " ").trim().slice(0, 2_000) || undefined;
-  if (Array.isArray(value))
-    return value
-      .map((entry) => boundedContinuityText(entry, depth + 1))
-      .filter((entry): entry is string => Boolean(entry))
-      .join(" ")
-      .slice(0, 2_000);
-  if (typeof value !== "object") return undefined;
-  const record = value as Record<string, unknown>;
-  for (const key of ["output", "summary", "text", "message", "content"]) {
-    const selected = boundedContinuityText(record[key], depth + 1);
-    if (selected) return selected;
-  }
-  return undefined;
-}
-
-function firstStableIdentifier(input: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = stringValue(input[key]);
-    if (value && /^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,127}$/u.test(value))
-      return value;
-  }
-  return undefined;
-}
-
 export function nextSpawnAgentActiveCount(
   current: number,
   phase: "started" | "finished",
@@ -4263,29 +3993,21 @@ function runtimeTools(
   options: RuntimeOptions,
   worktree?: string,
   previewContext?: PreviewRuntimeContext,
-  taskContract?: {
-    acceptance_criteria?: string[];
-    effect_requirement?: "none" | "source_change";
-    session_id?: string;
-    story_id?: string;
-    objective?: string;
-  },
-  semanticWorkspaceExecutor?: SemanticWorkspaceBridgeExecutor,
-  externalReadGovernor?: ExternalReadGovernor,
+  taskContract?: LightTaskContract,
+  executor?: LightWorkspaceExecutor,
   completion?: {
     conversationId: string;
-    onComplete(notification: NativeCompletionNotification): void;
-    onValidationActivity(activity: NativeValidationActivity): Promise<void>;
+    onComplete(notification: LightCompletionNotification): void;
+    onValidationActivity(activity: LightValidationActivity): Promise<void>;
   },
   previewMcpTools: AgentTool[] = [],
   initialTaskBriefing?: string,
 ) {
+  void initialTaskBriefing;
   const tools = [
-    ...semanticWorkspaceTools(worktree, {
+    ...lightSemanticHarnessTools(worktree, {
+      executor,
       taskContract,
-      executor: semanticWorkspaceExecutor,
-      protocolVersion: "3",
-      initialTaskBriefing,
       ...(options.refreshPreviewDependencies && previewContext
         ? {
             refreshPreviewDependencies: () =>
@@ -4297,13 +4019,9 @@ function runtimeTools(
     }),
     ...(completion
       ? [
-          createNativeCompletionTool({
-            automaticValidation: true,
+          createFinishTaskTool({
             conversationId: completion.conversationId,
-            executor: legacySemanticWorkspaceExecutor(
-              semanticWorkspaceExecutor ??
-                localSemanticWorkspaceExecutor(worktree ?? "", taskContract),
-            ),
+            executor,
             taskContract,
             workspaceRoot: worktree ?? "",
             onComplete: completion.onComplete,
@@ -4314,10 +4032,7 @@ function runtimeTools(
     previewDevtoolsTool(options, previewContext),
     previewContainerLogsTool(options, previewContext),
     ...previewMcpTools,
-    ...(externalReadGovernor ? [externalReadGovernor.receiptTool()] : []),
-  ]
-    .filter((tool): tool is AgentTool => Boolean(tool))
-    .map((tool) => externalReadGovernor?.wrap(tool) ?? tool);
+  ].filter((tool): tool is AgentTool => Boolean(tool));
   return tools.length ? tools : undefined;
 }
 
@@ -4325,19 +4040,12 @@ function readOnlyRuntimeTools(
   options: RuntimeOptions,
   worktree: string,
   previewContext: PreviewRuntimeContext,
-  taskContract: {
-    acceptance_criteria?: string[];
-    effect_requirement?: "none" | "source_change";
-    session_id?: string;
-    story_id?: string;
-    objective?: string;
-  },
-  semanticWorkspaceExecutor: SemanticWorkspaceBridgeExecutor | undefined,
-  externalReadGovernor?: ExternalReadGovernor,
+  taskContract: LightTaskContract,
+  executor?: LightWorkspaceExecutor,
   initialTaskBriefing?: string,
 ) {
   const allowedTools = new Set([
-    ...semanticWorkspaceReadToolNames,
+    ...lightReadToolNames,
     "get_preview_devtools",
     "get_preview_container_logs",
   ]);
@@ -4347,29 +4055,12 @@ function readOnlyRuntimeTools(
       worktree,
       previewContext,
       taskContract,
-      semanticWorkspaceExecutor,
-      externalReadGovernor,
+      executor,
       undefined,
       [],
       initialTaskBriefing,
     ) ?? []
   ).filter((tool) => allowedTools.has(tool.name));
-}
-
-function compactionToolDefinition(tool: AgentTool) {
-  return {
-    name: tool.name,
-    description: tool.description,
-    inputSchema: tool.inputSchema,
-  };
-}
-
-function compactionToolDefinitions(
-  workspaceRoot: string,
-  extraTools: AgentTool[],
-) {
-  const tools = [...createBuiltinTools({ cwd: workspaceRoot }), ...extraTools];
-  return tools.map(compactionToolDefinition);
 }
 
 function runtimeConsultSpecialistTool(options: {
@@ -4381,9 +4072,8 @@ function runtimeConsultSpecialistTool(options: {
   initialTaskBriefing?: string;
   objective?: string;
   readOnlyTools: AgentTool[];
-  externalReadGovernor?: ExternalReadGovernor;
 }) {
-  const tool = createConsultSpecialistTool({
+  return createConsultSpecialistTool({
     capsule: specialistCapsuleProvider(options),
     objective: options.objective,
     spawnTool: specialistSpawnTool(options),
@@ -4392,7 +4082,6 @@ function runtimeConsultSpecialistTool(options: {
       specialistReasoningEffort(options.input.reasoningEffort),
     ),
   });
-  return options.externalReadGovernor?.wrap(tool) ?? tool;
 }
 
 function specialistSpawnTool(options: {
@@ -4432,17 +4121,16 @@ function specialistCapsuleProvider(options: {
   objective?: string;
 }) {
   return async (consultation: { task: string }) => {
-    const continuity = await changeRequestCapsule({
-      conversationId: `${options.input.sessionId ?? options.input.storyId ?? "specialist"}:consultation`,
-      newRequest: consultation.task,
-      storySummary: options.objective ?? "",
-      storyTitle: options.input.storyId ?? "Active change request",
-      workspaceRoot: options.input.cwd,
-    });
     const briefing = options.initialTaskBriefing
       ? `<runtime_task_briefing>\n${options.initialTaskBriefing}\n</runtime_task_briefing>`
       : undefined;
-    return [continuity, briefing].filter(Boolean).join("\n\n");
+    const request = JSON.stringify({
+      objective: options.objective,
+      specialistTask: consultation.task,
+    });
+    return [`<specialist_request>${request}</specialist_request>`, briefing]
+      .filter(Boolean)
+      .join("\n\n");
   };
 }
 
@@ -4914,7 +4602,6 @@ export async function buildDevelopmentSystemPrompt(
     CWD: input.cwd,
     IDE_NAME: "Blame",
     PLATFORM_NAME: process.platform,
-    SEMANTIC_EXTENSIONS: semanticInspectionExtensionsDescription(),
     WORKSPACE_METADATA: metadata,
     WORKSPACE_NAME: basename(input.workspaceRoot),
     WORKSPACE_ROOT: input.workspaceRoot,
@@ -5875,58 +5562,6 @@ function sessionContext(
   };
 }
 
-async function developmentRequestPrompt(
-  prompt: string,
-  input: Pick<
-    StartDevelopmentSessionInput,
-    "executionId" | "summary" | "title"
-  >,
-  workspaceRoot?: string,
-  conversationId?: string,
-  tokenCounter?: TokenCounter,
-) {
-  if (!workspaceRoot || !conversationId) return { prompt };
-  const prepared = await prepareChangeRequest({
-    conversationId,
-    newRequest: prompt,
-    storySummary: input.summary,
-    storyTitle: input.title,
-    workspaceRoot,
-    requestRef: input.executionId
-      ? `user-message://${input.executionId}`
-      : undefined,
-    tokenCounter,
-  });
-  return {
-    prompt,
-    metrics: {
-      inputTokens: prepared.inputTokens,
-      outputTokens: prepared.outputTokens,
-      requestedTokens: prepared.requestedTokens,
-      truncated: prepared.truncated,
-    },
-  };
-}
-
-async function earlyCompactionModelState(
-  providerId: string,
-  modelId: string,
-  config: ProductionConfig,
-) {
-  if (config.compactionEnabled === false) return undefined;
-  try {
-    const models = await clineModels(providerId);
-    const model = models[modelId];
-    if (!model?.contextWindow && !model?.maxInputTokens) return undefined;
-    return {
-      model,
-      models,
-    };
-  } catch {
-    return undefined;
-  }
-}
-
 function adaptiveModelInactivityTimeoutMs(
   reasoningEffort: unknown,
   configured?: number,
@@ -6346,7 +5981,7 @@ function terminalProductMessage(status: string) {
 
 function completionFailureEvent(
   sessionId: string,
-  notification: NativeCompletionNotification | undefined,
+  notification: LightCompletionNotification | undefined,
 ): AgentEvent {
   return {
     type: "error",
@@ -6578,10 +6213,10 @@ function eventText(payload: Record<string, unknown>) {
   );
 }
 
-function assistantResponseText(payload: unknown) {
-  if (typeof payload === "string") return payload;
-  const value = asRecord(payload);
-  return eventText(value) ?? eventText(asRecord(value.result));
+function lightTerminalState(state: RunTerminalState) {
+  if (state === "succeeded") return "completed";
+  if (state === "cancelled") return "cancelled";
+  return "harness_failure";
 }
 
 function toolNameFromPayload(payload: Record<string, unknown>) {
@@ -6596,7 +6231,7 @@ function toolNameFromPayload(payload: Record<string, unknown>) {
 export function terminalToolEvent(event: AgentEvent) {
   return (
     event.type === "tool" &&
-    toolNameFromPayload(asRecord(event.payload)) === nativeCompletionToolName
+    toolNameFromPayload(asRecord(event.payload)) === lightCompletionToolName
   );
 }
 

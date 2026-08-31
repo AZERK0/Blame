@@ -1,6 +1,6 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import type { SemanticWorkspaceExecutionRequest } from "@blame/agent-runtime";
+import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
@@ -163,19 +163,19 @@ export class RuntimeAgentClient {
     return result as AgentClineHubResult;
   }
 
-  async semanticWorkspace(
-    input: SemanticWorkspaceExecutionRequest,
+  async lightWorkspace(
+    input: LightWorkspaceExecutionRequest,
     signal?: AbortSignal,
   ) {
     const operationId = randomUUID();
     return this.request(
-      "semanticWorkspace",
+      "lightWorkspace",
       { ...input, operationId },
       15 * 60_000,
       signal,
       () => {
         void this.request(
-          "semanticWorkspaceCancel",
+          "lightWorkspaceCancel",
           { operationId },
           5_000,
         ).catch(() => undefined);

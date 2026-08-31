@@ -1,18 +1,19 @@
 import {
-  semanticWorkspaceReadToolNames,
-  semanticWorkspaceWriteToolNames,
-} from "./harness/cline-tools.js";
+  lightReadToolNames,
+  lightWriteToolNames,
+} from "./harness/light-tools.js";
+export { blockedCommandParts } from "./harness/command-policy.js";
 
 export const readTools: string[] = [
-  "submit_and_exit",
+  "finish_task",
   "consult_specialist",
   "fetch_web_content",
   "get_preview_devtools",
   "get_preview_container_logs",
-  ...semanticWorkspaceReadToolNames,
+  ...lightReadToolNames,
 ];
 
-export const writeTools: string[] = [...semanticWorkspaceWriteToolNames];
+export const writeTools: string[] = [...lightWriteToolNames];
 
 // These Cline built-ins bypass source revisions, immutable proposals, and the
 // execution overlay. They remain available only to the dedicated project-
@@ -30,11 +31,3 @@ export const initializationFallbackReadTools = new Set([
   "read_files",
   "search_codebase",
 ]);
-
-export const blockedCommandParts = [
-  "rm -rf",
-  "sudo",
-  "curl | sh",
-  "wget | sh",
-  "> /dev/",
-];

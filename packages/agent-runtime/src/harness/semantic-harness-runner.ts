@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { stdin, stdout } from "node:process";
 import {
-  executeCanonicalSemanticWorkspaceRequest,
-  type SemanticWorkspaceExecutionRequest,
-} from "./semantic-executor.js";
+  executeLightWorkspaceRequest,
+  type LightWorkspaceExecutionRequest,
+} from "./light-executor.js";
 
 const chunks: Buffer[] = [];
 for await (const chunk of stdin) chunks.push(Buffer.from(chunk));
@@ -11,8 +11,8 @@ for await (const chunk of stdin) chunks.push(Buffer.from(chunk));
 try {
   const request = JSON.parse(
     Buffer.concat(chunks).toString("utf8"),
-  ) as SemanticWorkspaceExecutionRequest;
-  const result = await executeCanonicalSemanticWorkspaceRequest(request);
+  ) as LightWorkspaceExecutionRequest;
+  const result = await executeLightWorkspaceRequest(request);
   stdout.write(`${JSON.stringify(result)}\n`);
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);

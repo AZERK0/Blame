@@ -1,20 +1,27 @@
 # Stabilisation systémique du Blame Harness
 
-**État :** architecture implémentée le 31 août 2026  
-**Protocole de production :** Harness Result v3  
+> **Archive historique.** Cette architecture v3 a été retirée du chemin de
+> production. L’architecture normative courante est le Light Semantic Harness
+> décrit dans la section 21.30 de `docs/Etude-harness-agentique.md`. Les noms de
+> protocole, autorités et outils ci-dessous documentent uniquement la migration.
+
+**État :** architecture décommissionnée le 31 août 2026
+
+**Ancien protocole :** Harness Result v3
+
 **Portée :** agent Cline, runtime local, Lima, WSL, Cloud Preview et transactions du worktree
 
 ## Autorités uniques
 
 Le harness possède cinq autorités. Les caches, capsules, reçus, epochs et métriques sont des projections de ces autorités et ne décident jamais seuls de l'état courant.
 
-| Autorité           | Implémentation principale                                                                            | Responsabilité                                                                 |
-| ------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| State Authority    | `WorkspaceStateAuthority`, `WorkspaceFiles` et `DependencyEnvironmentService`                        | Révision source, révision d'environnement, dépendances, preview et working set |
-| Lifecycle Machine  | `RunLifecycleRegistry` et lifecycle de `@blame/harness-core`                                         | Une transition par événement, interruption déterministe et terminal unique     |
-| Result Envelope    | `HarnessResult` v3 et `CanonicalResultMapper`                                                        | Transport, résultat métier, cause, révisions, preuves et politique de retry    |
-| Evidence System    | `EvidencePlanner`, reçus de validation et preuve preview                                             | Plan minimal depuis l'impact et validité sur une paire exacte de révisions     |
-| Transaction Engine | `edit_code`, `EditService` et mutation de dépendances                                                | Préparation, parse, commit atomique, rollback et invalidation                  |
+| Autorité           | Implémentation principale                                                     | Responsabilité                                                                 |
+| ------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| State Authority    | `WorkspaceStateAuthority`, `WorkspaceFiles` et `DependencyEnvironmentService` | Révision source, révision d'environnement, dépendances, preview et working set |
+| Lifecycle Machine  | `RunLifecycleRegistry` et lifecycle de `@blame/harness-core`                  | Une transition par événement, interruption déterministe et terminal unique     |
+| Result Envelope    | `HarnessResult` v3 et `CanonicalResultMapper`                                 | Transport, résultat métier, cause, révisions, preuves et politique de retry    |
+| Evidence System    | `EvidencePlanner`, reçus de validation et preuve preview                      | Plan minimal depuis l'impact et validité sur une paire exacte de révisions     |
+| Transaction Engine | `edit_code`, `EditService` et mutation de dépendances                         | Préparation, parse, commit atomique, rollback et invalidation                  |
 
 Le chemin Cline de production utilise toujours le protocole v3, le briefing initial, la validation automatique et l'extension de compaction. Les projections v2 restantes servent uniquement à lire les fixtures et reçus historiques. `apply_change` n'est plus exposé au modèle.
 

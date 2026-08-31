@@ -1,7 +1,7 @@
 import {
   BlameAgentRuntime,
   type AgentEvent,
-  type SemanticWorkspaceExecutionRequest,
+  type LightWorkspaceExecutionRequest,
 } from "@blame/agent-runtime";
 import {
   configureDesktopTelemetry,
@@ -88,11 +88,11 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
         hostRequest(hostClient, "refreshPreviewDependencies", input),
       ...(process.platform === "darwin" || process.platform === "win32"
         ? {
-            semanticWorkspace: (
-              input: SemanticWorkspaceExecutionRequest,
+            lightWorkspace: (
+              input: LightWorkspaceExecutionRequest,
               signal?: AbortSignal,
             ) =>
-              hostRequest(hostClient, "semanticWorkspace", {
+              hostRequest(hostClient, "lightWorkspace", {
                 ...input,
                 signal,
               }),

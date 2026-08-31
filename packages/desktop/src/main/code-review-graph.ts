@@ -1029,10 +1029,10 @@ function limitStrings(value: unknown, limit: number) {
 }
 
 function parseMcpToolResult(value: CallToolResult) {
-  if (value.structuredContent) return value.structuredContent
+  if (value.structuredContent) return value.structuredContent;
   const text = value.content.find(
     (item): item is Extract<typeof item, { type: "text" }> =>
-      item.type === "text"
+      item.type === "text",
   )?.text;
   if (!text) return value;
   return parseJson(text) ?? { text: truncate(text, 4_000) };

@@ -71,7 +71,10 @@ test("removes stopped Blame preview containers and their unused networks", async
       "blame_abandoned_db_data",
     ]),
   );
-  assert.equal(callIncludes(calls, ["volume", "rm", "blame_pnpm_store"]), false);
+  assert.equal(
+    callIncludes(calls, ["volume", "rm", "blame_pnpm_store"]),
+    false,
+  );
   assert.equal(callIncludes(calls, ["rm", "running"]), false);
   assert.equal(callIncludes(calls, ["rm", "external"]), false);
 });
@@ -135,7 +138,9 @@ test("removes resources for an explicitly deleted worktree project", async () =>
     calls.push({ file, args });
     if (args[0] === "ps") return { stdout: "running\n" };
     if (args[0] === "inspect" && args.includes("running"))
-      return { stdout: JSON.stringify([container("running", project, true, true)]) };
+      return {
+        stdout: JSON.stringify([container("running", project, true, true)]),
+      };
     if (args[0] === "volume" && args[1] === "ls")
       return { stdout: `${project}_node_modules\nblame_pnpm_store\n` };
     return { stdout: "" };
@@ -146,7 +151,10 @@ test("removes resources for an explicitly deleted worktree project", async () =>
   assert.equal(removed, true);
   assert.ok(callIncludes(calls, ["rm", "--force", "running"]));
   assert.ok(callIncludes(calls, ["volume", "rm", `${project}_node_modules`]));
-  assert.equal(callIncludes(calls, ["volume", "rm", "blame_pnpm_store"]), false);
+  assert.equal(
+    callIncludes(calls, ["volume", "rm", "blame_pnpm_store"]),
+    false,
+  );
 });
 
 function container(

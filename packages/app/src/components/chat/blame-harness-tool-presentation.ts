@@ -31,7 +31,11 @@ export function presentBlameHarnessTool(
   ) {
     return searchPresentation(details)
   }
-  if (["outline_code", "inspect_code"].includes(details.toolName ?? "")) {
+  if (
+    ["outline_code", "inspect_code", "read_code"].includes(
+      details.toolName ?? ""
+    )
+  ) {
     return readPresentation(details)
   }
   if (
@@ -75,18 +79,25 @@ function presentedReadFile(details: ToolPresentation, path: string) {
   const input = recordValue(details.input)
   const data = recordValue(harnessData(details.output))
   const semanticTarget = recordValue(data.semantic_target)
-  const isOutline = details.toolName === "outline_code"
+  const isOutline =
+    details.toolName === "outline_code" || stringValue(data.view) === "outline"
   const requestedRange = numberPair(input.range_utf8_bytes)
   const status = stringValue(data.status)
-  const reused = status === "already_available"
+  const reused = ["already_available", "already_in_context"].includes(
+    status ?? ""
+  )
   const parallelSuppressed =
     status === "in_flight_reused" ||
     data.parallel_broad_read_suppressed === true
   const autoNarrowedKind = stringValue(data.auto_narrowed_kind)
-  const inputTargetType = readTargetType(recordValue(input.target))
+  const inputTargetType =
+    readTargetType(recordValue(input.target)) ??
+    (stringValue(input.view) === "symbol" ? "symbol" : undefined)
   return {
     path,
-    view: isOutline ? "outline" : stringValue(input.view),
+    view: isOutline
+      ? "outline"
+      : (stringValue(data.view) ?? stringValue(input.view)),
     read_kind: presentedReadKind(
       semanticTarget,
       inputTargetType,
@@ -171,13 +182,14 @@ function isEntireFileRead(input: {
 
 function editPresentation(details: ToolPresentation): ToolPresentation {
   const files = changedFiles(details.input, details.output)
-  const outcome = stringValue(
-    recordValue(harnessResultEnvelope(details.output)).outcome
-  )
+  const envelope = recordValue(harnessResultEnvelope(details.output))
+  const outcome = stringValue(envelope.outcome)
+  const status = stringValue(envelope.status)
+  const blocked = ["blocked", "failed"].includes(status ?? "")
   return {
     ...details,
     input:
-      files.length > 0 || (outcome && outcome !== "applied")
+      files.length > 0 || blocked || (outcome && outcome !== "applied")
         ? { files }
         : details.input,
     toolName: "apply_patch",
@@ -196,6 +208,7 @@ function commandPresentation(details: ToolPresentation): ToolPresentation {
 
 function searchQuery(value: unknown) {
   const input = recordValue(value)
+  if (typeof input.query === "string") return input.query
   const query = recordValue(input.query)
   const kind = stringValue(query.kind)
   const term = stringValue(query.name) ?? stringValue(query.pattern)
@@ -206,8 +219,12 @@ function searchQuery(value: unknown) {
 }
 
 function inspectedPath(input: unknown, output: unknown) {
-  const target = recordValue(recordValue(input).target)
+  const inputTarget = recordValue(input).target
+  const target = recordValue(inputTarget)
   return (
+    (typeof inputTarget === "string" && !/^s\d+$/u.test(inputTarget)
+      ? inputTarget.split("#", 1)[0]
+      : undefined) ??
     stringValue(target.path) ??
     stringValue(recordValue(harnessData(output)).path) ??
     stringValue(recordValue(harnessData(output)).target)
@@ -218,6 +235,8 @@ function changedFiles(input: unknown, output: unknown) {
   const envelope = harnessResultEnvelope(output)
   const resultFiles = changedFilesFromResult(envelope)
   const outcome = stringValue(recordValue(envelope).outcome)
+  const status = stringValue(recordValue(envelope).status)
+  if (["blocked", "failed"].includes(status ?? "")) return resultFiles
   if (outcome && outcome !== "applied") return resultFiles
   return deduplicateFiles(
     resultFiles.length > 0 ? resultFiles : changedFilesFromInput(input)
@@ -239,7 +258,9 @@ function changedFilesFromResult(output: unknown): PresentedFile[] {
     firstArray(data.changed_files, receipt.changed_files) ??
     []
   const resolution = stringValue(data.resolution)
-  const validation = stringValue(recordValue(data.validation).parse)
+  const validation =
+    stringValue(recordValue(data.parse).status) ??
+    stringValue(recordValue(data.validation).parse)
   return candidates.flatMap((value) =>
     presentedResultFile(value, {
       ...(resolution ? { resolution } : {}),
@@ -299,7 +320,17 @@ function taskLabel(toolName: string | undefined, value: unknown) {
       .join(" ")
   }
   const task = recordValue(input.task)
+  const packages = Array.isArray(input.packages)
+    ? input.packages.filter(
+        (value): value is string => typeof value === "string"
+      )
+    : []
   return (
+    stringValue(input.command) ??
+    (typeof input.task === "string" ? input.task : undefined) ??
+    (typeof input.action === "string" && packages.length
+      ? `${input.action} ${packages.join(" ")}`
+      : undefined) ??
     stringValue(task.task_id) ??
     [stringValue(task.kind), stringValue(task.target)].filter(Boolean).join(" ")
   )
@@ -318,7 +349,8 @@ function resultCards(query: string | undefined, output: unknown) {
 
 function successfulResult(output: unknown) {
   const result = recordValue(output)
-  if (result.status === "error") return false
+  if (["blocked", "error", "failed"].includes(String(result.status)))
+    return false
   const data = recordValue(harnessData(output))
   const status = stringValue(data.status)
   const outcome = stringValue(data.outcome)

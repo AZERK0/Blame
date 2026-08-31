@@ -1,13 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createRuntimeManager, type RuntimeProgress } from "./runtime-manager.ts";
+import {
+  createRuntimeManager,
+  type RuntimeProgress,
+} from "./runtime-manager.ts";
 
 test("checks Linux runtime with native nerdctl probes", async () => {
   const calls: string[] = [];
-  const manager = createRuntimeManager({ platform: "linux" }, async (command, args) => {
-    calls.push([command, ...args].join(" "));
-    return "ok";
-  });
+  const manager = createRuntimeManager(
+    { platform: "linux" },
+    async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      return "ok";
+    },
+  );
 
   const status = await manager.checkRuntimeDependencies();
 
@@ -22,10 +28,13 @@ test("checks Linux runtime with native nerdctl probes", async () => {
 
 test("uses passive managed runtime status checks", async () => {
   const calls: string[] = [];
-  const manager = createRuntimeManager({ platform: "darwin" }, async (command, args) => {
-    calls.push([command, ...args].join(" "));
-    return "ready";
-  });
+  const manager = createRuntimeManager(
+    { platform: "darwin" },
+    async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      return "ready";
+    },
+  );
 
   const status = await manager.checkRuntimeDependencies();
 
@@ -35,7 +44,10 @@ test("uses passive managed runtime status checks", async () => {
     "blame-lima-runtime status",
     "blame-lima-runtime agent status",
   ]);
-  assert.equal(calls.some((call) => call.includes(" true")), false);
+  assert.equal(
+    calls.some((call) => call.includes(" true")),
+    false,
+  );
 });
 
 test("requires the managed runtime agent to execute", async () => {
@@ -69,9 +81,12 @@ test("reports managed runtime binary failures as missing", async () => {
 });
 
 test("preserves managed runtime status output", async () => {
-  const manager = createRuntimeManager({ platform: "darwin" }, async (_command, args) => {
-    return args[0] === "status" ? "repairable" : "ok";
-  });
+  const manager = createRuntimeManager(
+    { platform: "darwin" },
+    async (_command, args) => {
+      return args[0] === "status" ? "repairable" : "ok";
+    },
+  );
 
   const status = await manager.checkRuntimeDependencies();
 
@@ -81,19 +96,22 @@ test("preserves managed runtime status output", async () => {
 });
 
 test("uses managed runtime status checks from JSON output", async () => {
-  const manager = createRuntimeManager({ platform: "win32" }, async (_command, args) => {
-    if (args[0] !== "status") return "ok";
-    return JSON.stringify({
-      status: "unsupported",
-      checks: [
-        {
-          action: "Enable WSL2, then run Blame runtime setup again.",
-          name: "wsl",
-          status: "unsupported",
-        },
-      ],
-    });
-  });
+  const manager = createRuntimeManager(
+    { platform: "win32" },
+    async (_command, args) => {
+      if (args[0] !== "status") return "ok";
+      return JSON.stringify({
+        status: "unsupported",
+        checks: [
+          {
+            action: "Enable WSL2, then run Blame runtime setup again.",
+            name: "wsl",
+            status: "unsupported",
+          },
+        ],
+      });
+    },
+  );
 
   const status = await manager.checkRuntimeDependencies();
 
@@ -104,17 +122,20 @@ test("uses managed runtime status checks from JSON output", async () => {
 });
 
 test("reports missing managed runtime Git as repairable", async () => {
-  const manager = createRuntimeManager({ platform: "win32" }, async (_command, args) => {
-    if (args[0] !== "status") return "ok";
-    return JSON.stringify({
-      status: "repairable",
-      checks: [
-        { name: "wsl", status: "available" },
-        { name: "distro", status: "available" },
-        { name: "git", status: "missing" },
-      ],
-    });
-  });
+  const manager = createRuntimeManager(
+    { platform: "win32" },
+    async (_command, args) => {
+      if (args[0] !== "status") return "ok";
+      return JSON.stringify({
+        status: "repairable",
+        checks: [
+          { name: "wsl", status: "available" },
+          { name: "distro", status: "available" },
+          { name: "git", status: "missing" },
+        ],
+      });
+    },
+  );
 
   const status = await manager.checkRuntimeDependencies();
 
@@ -124,17 +145,20 @@ test("reports missing managed runtime Git as repairable", async () => {
 });
 
 test("reports missing Windows runtime Cline SDK as repairable", async () => {
-  const manager = createRuntimeManager({ platform: "win32" }, async (_command, args) => {
-    if (args[0] !== "status") return "ok";
-    return JSON.stringify({
-      status: "repairable",
-      checks: [
-        { name: "wsl", status: "available" },
-        { name: "distro", status: "available" },
-        { name: "cline-sdk", status: "missing" },
-      ],
-    });
-  });
+  const manager = createRuntimeManager(
+    { platform: "win32" },
+    async (_command, args) => {
+      if (args[0] !== "status") return "ok";
+      return JSON.stringify({
+        status: "repairable",
+        checks: [
+          { name: "wsl", status: "available" },
+          { name: "distro", status: "available" },
+          { name: "cline-sdk", status: "missing" },
+        ],
+      });
+    },
+  );
 
   const status = await manager.checkRuntimeDependencies();
 
@@ -144,21 +168,24 @@ test("reports missing Windows runtime Cline SDK as repairable", async () => {
 });
 
 test("reports stale Windows runtime version as repairable runtime", async () => {
-  const manager = createRuntimeManager({ platform: "win32" }, async (_command, args) => {
-    if (args[0] !== "status") return "ok";
-    return JSON.stringify({
-      status: "repairable",
-      checks: [
-        { name: "wsl", status: "available" },
-        { name: "distro", status: "available" },
-        {
-          action: "Repair BlameRuntime from Blame runtime setup.",
-          name: "runtime-version",
-          status: "missing",
-        },
-      ],
-    });
-  });
+  const manager = createRuntimeManager(
+    { platform: "win32" },
+    async (_command, args) => {
+      if (args[0] !== "status") return "ok";
+      return JSON.stringify({
+        status: "repairable",
+        checks: [
+          { name: "wsl", status: "available" },
+          { name: "distro", status: "available" },
+          {
+            action: "Repair BlameRuntime from Blame runtime setup.",
+            name: "runtime-version",
+            status: "missing",
+          },
+        ],
+      });
+    },
+  );
 
   const status = await manager.checkRuntimeDependencies();
 
@@ -169,21 +196,24 @@ test("reports stale Windows runtime version as repairable runtime", async () => 
 });
 
 test("reports stale Lima runtime version as repairable runtime", async () => {
-  const manager = createRuntimeManager({ platform: "darwin" }, async (_command, args) => {
-    if (args[0] !== "status") return "ok";
-    return JSON.stringify({
-      status: "repairable",
-      checks: [
-        { name: "lima", status: "available" },
-        { name: "vm", status: "available" },
-        {
-          action: "Repair BlameRuntime from Blame runtime setup.",
-          name: "runtime-version",
-          status: "missing",
-        },
-      ],
-    });
-  });
+  const manager = createRuntimeManager(
+    { platform: "darwin" },
+    async (_command, args) => {
+      if (args[0] !== "status") return "ok";
+      return JSON.stringify({
+        status: "repairable",
+        checks: [
+          { name: "lima", status: "available" },
+          { name: "vm", status: "available" },
+          {
+            action: "Repair BlameRuntime from Blame runtime setup.",
+            name: "runtime-version",
+            status: "missing",
+          },
+        ],
+      });
+    },
+  );
 
   const status = await manager.checkRuntimeDependencies();
 
@@ -194,19 +224,23 @@ test("reports stale Lima runtime version as repairable runtime", async () => {
 });
 
 test("reports missing bundled Lima as managed runtime missing", async () => {
-  const manager = createRuntimeManager({ platform: "darwin" }, async (_command, args) => {
-    if (args[0] !== "status") return "ok";
-    return JSON.stringify({
-      status: "missing",
-      checks: [
-        {
-          action: "Package bundled Lima resources with Blame, then run Blame runtime setup again.",
-          name: "lima",
-          status: "missing",
-        },
-      ],
-    });
-  });
+  const manager = createRuntimeManager(
+    { platform: "darwin" },
+    async (_command, args) => {
+      if (args[0] !== "status") return "ok";
+      return JSON.stringify({
+        status: "missing",
+        checks: [
+          {
+            action:
+              "Package bundled Lima resources with Blame, then run Blame runtime setup again.",
+            name: "lima",
+            status: "missing",
+          },
+        ],
+      });
+    },
+  );
 
   const status = await manager.checkRuntimeDependencies();
 
@@ -217,20 +251,24 @@ test("reports missing bundled Lima as managed runtime missing", async () => {
 });
 
 test("reports missing Blame Lima VM as managed runtime missing", async () => {
-  const manager = createRuntimeManager({ platform: "darwin" }, async (_command, args) => {
-    if (args[0] !== "status") return "ok";
-    return JSON.stringify({
-      status: "missing",
-      checks: [
-        { name: "lima", status: "available" },
-        {
-          action: "Create or repair the BlameRuntime Lima VM from Blame runtime setup.",
-          name: "vm",
-          status: "missing",
-        },
-      ],
-    });
-  });
+  const manager = createRuntimeManager(
+    { platform: "darwin" },
+    async (_command, args) => {
+      if (args[0] !== "status") return "ok";
+      return JSON.stringify({
+        status: "missing",
+        checks: [
+          { name: "lima", status: "available" },
+          {
+            action:
+              "Create or repair the BlameRuntime Lima VM from Blame runtime setup.",
+            name: "vm",
+            status: "missing",
+          },
+        ],
+      });
+    },
+  );
 
   const status = await manager.checkRuntimeDependencies();
 
@@ -241,20 +279,24 @@ test("reports missing Blame Lima VM as managed runtime missing", async () => {
 });
 
 test("reports stopped Blame Lima VM as repairable", async () => {
-  const manager = createRuntimeManager({ platform: "darwin" }, async (_command, args) => {
-    if (args[0] !== "status") return "ok";
-    return JSON.stringify({
-      status: "repairable",
-      checks: [
-        { name: "lima", status: "available" },
-        {
-          action: "Create or repair the BlameRuntime Lima VM from Blame runtime setup.",
-          name: "vm",
-          status: "unavailable",
-        },
-      ],
-    });
-  });
+  const manager = createRuntimeManager(
+    { platform: "darwin" },
+    async (_command, args) => {
+      if (args[0] !== "status") return "ok";
+      return JSON.stringify({
+        status: "repairable",
+        checks: [
+          { name: "lima", status: "available" },
+          {
+            action:
+              "Create or repair the BlameRuntime Lima VM from Blame runtime setup.",
+            name: "vm",
+            status: "unavailable",
+          },
+        ],
+      });
+    },
+  );
 
   const status = await manager.checkRuntimeDependencies();
 
@@ -264,21 +306,25 @@ test("reports stopped Blame Lima VM as repairable", async () => {
 });
 
 test("reports missing Lima host mount as runtime repair action", async () => {
-  const manager = createRuntimeManager({ platform: "darwin" }, async (_command, args) => {
-    if (args[0] !== "status") return "ok";
-    return JSON.stringify({
-      status: "repairable",
-      checks: [
-        { name: "lima", status: "available" },
-        { name: "vm", status: "available" },
-        {
-          action: "Reset BlameRuntime from Blame runtime setup so macOS project folders are mounted.",
-          name: "host-home",
-          status: "missing",
-        },
-      ],
-    });
-  });
+  const manager = createRuntimeManager(
+    { platform: "darwin" },
+    async (_command, args) => {
+      if (args[0] !== "status") return "ok";
+      return JSON.stringify({
+        status: "repairable",
+        checks: [
+          { name: "lima", status: "available" },
+          { name: "vm", status: "available" },
+          {
+            action:
+              "Reset BlameRuntime from Blame runtime setup so macOS project folders are mounted.",
+            name: "host-home",
+            status: "missing",
+          },
+        ],
+      });
+    },
+  );
 
   const status = await manager.checkRuntimeDependencies();
 
@@ -288,16 +334,18 @@ test("reports missing Lima host mount as runtime repair action", async () => {
   assert.match(status.issues[0]?.action ?? "", /Reset BlameRuntime/);
 });
 
-
 test("skips ensure when managed runtime is already ready", async () => {
   const calls: string[] = [];
-  const manager = createRuntimeManager({ platform: "win32" }, async (command, args) => {
-    calls.push([command, ...args].join(" "));
-    if (args[0] === "status") {
-      return JSON.stringify({ status: "ready", checks: [] });
-    }
-    return "ready";
-  });
+  const manager = createRuntimeManager(
+    { platform: "win32" },
+    async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      if (args[0] === "status") {
+        return JSON.stringify({ status: "ready", checks: [] });
+      }
+      return "ready";
+    },
+  );
 
   const report = await manager.ensureRuntimeReady();
   assert.equal(report.status, "ready");
@@ -311,22 +359,25 @@ test("skips ensure when managed runtime is already ready", async () => {
 test("runs ensure when managed runtime is not ready", async () => {
   const calls: string[] = [];
   let isReady = false;
-  const manager = createRuntimeManager({ platform: "win32" }, async (command, args) => {
-    calls.push([command, ...args].join(" "));
-    if (args[0] === "status") {
-      if (!isReady) {
-        return JSON.stringify({
-          status: "missing",
-          checks: [{ name: "agent", status: "missing" }],
-        });
+  const manager = createRuntimeManager(
+    { platform: "win32" },
+    async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      if (args[0] === "status") {
+        if (!isReady) {
+          return JSON.stringify({
+            status: "missing",
+            checks: [{ name: "agent", status: "missing" }],
+          });
+        }
+        return JSON.stringify({ status: "ready", checks: [] });
       }
-      return JSON.stringify({ status: "ready", checks: [] });
-    }
-    if (args[0] === "ensure") {
-      isReady = true;
-    }
-    return "ready";
-  });
+      if (args[0] === "ensure") {
+        isReady = true;
+      }
+      return "ready";
+    },
+  );
 
   const report = await manager.ensureRuntimeReady();
   assert.equal(report.status, "ready");
@@ -354,7 +405,9 @@ test("streams valid runtime lifecycle progress", async () => {
       }
       if (args[0] === "ensure") {
         onOutput?.('ignored\nBLAME_RUNTIME_PROGRESS {"phase":"down');
-        onOutput?.('loading","completedBytes":50,"totalBytes":100,"percent":50}\r\n');
+        onOutput?.(
+          'loading","completedBytes":50,"totalBytes":100,"percent":50}\r\n',
+        );
         onOutput?.('BLAME_RUNTIME_PROGRESS {"phase":"verifying"}\n');
         ready = true;
       }
@@ -380,14 +433,17 @@ test("streams valid runtime lifecycle progress", async () => {
 test("runs other managed runtime lifecycle commands explicitly", async () => {
   const calls: string[] = [];
   const timeouts: Array<number | undefined> = [];
-  const manager = createRuntimeManager({ platform: "win32" }, async (command, args, _env, timeoutMs) => {
-    calls.push([command, ...args].join(" "));
-    timeouts.push(timeoutMs);
-    if (args[0] === "status") {
-      return JSON.stringify({ status: "ready", checks: [] });
-    }
-    return "ready";
-  });
+  const manager = createRuntimeManager(
+    { platform: "win32" },
+    async (command, args, _env, timeoutMs) => {
+      calls.push([command, ...args].join(" "));
+      timeouts.push(timeoutMs);
+      if (args[0] === "status") {
+        return JSON.stringify({ status: "ready", checks: [] });
+      }
+      return "ready";
+    },
+  );
 
   await manager.repairRuntime();
   await manager.resetRuntime();
@@ -425,10 +481,13 @@ test("runs other managed runtime lifecycle commands explicitly", async () => {
 
 test("keeps Linux lifecycle operations lightweight", async () => {
   const calls: string[] = [];
-  const manager = createRuntimeManager({ platform: "linux" }, async (command, args) => {
-    calls.push([command, ...args].join(" "));
-    return "ok";
-  });
+  const manager = createRuntimeManager(
+    { platform: "linux" },
+    async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      return "ok";
+    },
+  );
 
   await manager.ensureRuntimeReady();
 

@@ -14,8 +14,7 @@ import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js"
 
 import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
 import { ClineFreeModelLimitError, ClineNotSubscribedError } from "@cline/llms";
-import { ConversationMemoryStore } from "./harness/conversation-memory.js";
-import { SemanticWorkspace } from "./harness/semantic-workspace.js";
+import { SessionJournal } from "./harness/session-journal.js";
 import type { AgentEvent } from "./types.js";
 
 import {
@@ -82,7 +81,7 @@ test("tags session events with their execution identity", () => {
   );
 });
 
-test("hides submit_and_exit cards and projects only its native summary", () => {
+test("hides finish_task cards and projects only its native summary", () => {
   const runtime = new BlameAgentRuntime();
   const internals = runtime as unknown as {
     sessionSubmittedSummaries: Map<
@@ -113,7 +112,7 @@ test("hides submit_and_exit cards and projects only its native summary", () => {
     terminalToolEvent({
       type: "tool",
       sessionId: "session",
-      payload: { toolCall: { name: "submit_and_exit" } },
+      payload: { toolCall: { name: "finish_task" } },
     }),
     true,
   );
@@ -139,23 +138,23 @@ test("publishes automatic validation as a stable run_task activity", async () =>
     publishNativeValidationActivity(
       sessionId: string,
       activity: {
+        input: unknown;
         output?: unknown;
         phase: "finished" | "started";
-        request: { input: unknown };
         toolCallId: string;
       },
     ): Promise<void>;
   };
-  const request = { input: { task: { task_id: "typecheck" } } };
+  const input = { kind: "project" as const, task: "typecheck" };
   await internals.publishNativeValidationActivity("session", {
+    input,
     phase: "started",
-    request,
     toolCallId: "submit:validation",
   });
   await internals.publishNativeValidationActivity("session", {
-    output: { status: "success", data: { status: "passed" } },
+    input,
+    output: { status: "ok", data: { exitCode: 0 } },
     phase: "finished",
-    request,
     toolCallId: "submit:validation",
   });
   assert.deepEqual(
@@ -166,10 +165,7 @@ test("publishes automatic validation as a stable run_task activity", async () =>
   assert.equal(finished.toolName, "run_task");
   assert.equal(finished.toolCallId, "submit:validation");
   assert.equal(finished.sequenceNumber, 1);
-  assert.deepEqual(
-    (finished.toolCall as { input: unknown }).input,
-    request.input,
-  );
+  assert.deepEqual((finished.toolCall as { input: unknown }).input, input);
 });
 
 test("prewarms and removes the reserved remote runtime session", async () => {
@@ -254,7 +250,6 @@ test("starts development sessions with native skills and private specialist cons
   let previewCall: Record<string, unknown> | undefined;
   let previewCallCount = 0;
   let previewTargetInput: Record<string, unknown> | undefined;
-  let tokenCounterInput: { modelId: string; providerId: string } | undefined;
   let sessionSubscriber: ((event: CoreSessionEvent) => void) | undefined;
   const core = {
     async dispose() {},
@@ -319,13 +314,6 @@ test("starts development sessions with native skills and private specialist cons
         inputSchema: { type: "object", properties: {} },
       },
     ],
-    tokenCounter: (input) => {
-      tokenCounterInput = input;
-      return {
-        strategy: "provider_tokenizer",
-        count: (text) => Math.ceil(text.length / 3),
-      };
-    },
   });
 
   try {
@@ -342,10 +330,6 @@ test("starts development sessions with native skills and private specialist cons
     });
 
     assert.ok(capturedStart);
-    assert.deepEqual(tokenCounterInput, {
-      modelId: "model",
-      providerId: "provider",
-    });
     assert.equal(capturedStart.config.enableSpawnAgent, false);
     assert.ok(capturedStart.localRuntime?.configExtensions?.includes("skills"));
     assert.ok(
@@ -366,10 +350,26 @@ test("starts development sessions with native skills and private specialist cons
     assert.ok(toolNames?.includes("consult_specialist"));
     assert.ok(toolNames?.includes("get_preview_devtools"));
     assert.ok(toolNames?.includes("preview_devtools__take_snapshot"));
-    assert.ok(toolNames?.includes("submit_and_exit"));
+    for (const name of [
+      "search_code",
+      "read_code",
+      "edit_code",
+      "run_task",
+      "finish_task",
+    ])
+      assert.ok(toolNames?.includes(name));
+    for (const name of [
+      "workspace_state",
+      "outline_code",
+      "inspect_code",
+      "recall_context",
+      "edit_files",
+      "mutate_dependencies",
+    ])
+      assert.equal(toolNames?.includes(name), false);
     assert.equal(
       capturedStart.config.extraTools?.find(
-        (tool: { name: string }) => tool.name === "submit_and_exit",
+        (tool: { name: string }) => tool.name === "finish_task",
       )?.lifecycle?.completesRun,
       true,
     );
@@ -428,18 +428,10 @@ test("starts development sessions with native skills and private specialist cons
         { output: "Keep the Prisma move atomic." },
       ),
     );
-    const internals = runtime as unknown as {
-      flushContinuityToolActivity(sessionId: string): Promise<void>;
-    };
-    await internals.flushContinuityToolActivity(sessionId);
-    const continuity = await new ConversationMemoryStore(
-      workspace,
-      sessionId,
-    ).runtimeContinuity();
-    assert.deepEqual(continuity.skills, ["workspace-skill"]);
-    assert.deepEqual(continuity.specialists, [
-      "reliability-reviewer; conclusion=Keep the Prisma move atomic.",
-    ]);
+    const journal = new SessionJournal(workspace, sessionId);
+    await journal.hydrate();
+    assert.deepEqual(journal.currentChanges(), []);
+    assert.deepEqual(journal.currentValidations(), []);
   } finally {
     globalThis.fetch = originalFetch;
     await runtime.shutdown();
@@ -447,40 +439,17 @@ test("starts development sessions with native skills and private specialist cons
   }
 });
 
-test("continues the agent turn after bounding a large web fetch result", async () => {
+test("does not install a harness read governor around optional tools", async () => {
   const workspace = await mkdtemp(join(tmpdir(), "blame-bounded-fetch-"));
   const originalFetch = globalThis.fetch;
-  let continuedAfterFetch = false;
+  let readGovernorAbsent = false;
   const core = {
     async dispose() {},
     async list() {
       return [];
     },
     async start(input: ClineCoreStartInput) {
-      const afterTool = input.config.hooks?.afterTool;
-      assert.ok(afterTool);
-      const update = await afterTool({
-        durationMs: 10,
-        endedAt: new Date(),
-        input: { requests: [{ url: "https://example.com/large" }] },
-        result: {
-          output: [
-            {
-              query: "https://example.com/large",
-              result: "large content ".repeat(2_000),
-              success: true,
-            },
-          ],
-          isError: false,
-          metadata: { requestId: "fetch-request" },
-        },
-        snapshot: {},
-        startedAt: new Date(),
-        tool: { name: "fetch_web_content" },
-        toolCall: {},
-      } as never);
-      const output = update?.result?.output as Array<{ result: string }>;
-      continuedAfterFetch = output.map((item) => item.result).length === 1;
+      readGovernorAbsent = input.config.hooks?.afterTool === undefined;
       return { result: { status: "done" }, sessionId: input.config.sessionId! };
     },
     async subscribe() {
@@ -503,7 +472,7 @@ test("continues the agent turn after bounding a large web fetch result", async (
       title: "Bounded web fetch",
       workspaceRoot: workspace,
     });
-    assert.equal(continuedAfterFetch, true);
+    assert.equal(readGovernorAbsent, true);
   } finally {
     globalThis.fetch = originalFetch;
     await runtime.shutdown();
@@ -511,11 +480,10 @@ test("continues the agent turn after bounding a large web fetch result", async (
   }
 });
 
-test("compaction preserves an unfinished multi-file edit", async () => {
+test("uses native Cline compaction without a parallel projection", async () => {
   const workspace = await mkdtemp(join(tmpdir(), "blame-live-compaction-"));
   const fixture = developmentCompactionFixture("true");
   try {
-    const sessionId = "unfinished-edit-compaction";
     await fixture.runtime.sessions.startDevelopment({
       apiConnection: { url: "https://api.example" },
       autoSendPrompt: false,
@@ -523,19 +491,14 @@ test("compaction preserves an unfinished multi-file edit", async () => {
       maxIterations: 80,
       modelId: "claude-sonnet-4-5",
       providerId: "anthropic",
-      sessionId,
+      sessionId: "native-compaction",
       summary: "Create both unfinished files and validate them later.",
       title: "Unfinished edit",
       workspaceRoot: workspace,
     });
-    await applyUnfinishedEdit(workspace, sessionId);
-    const update = await compactAtCheckpoint(fixture.start());
-    const serialized = JSON.stringify(update?.messages);
-    assert.match(serialized, /Create both unfinished files/);
-    assert.match(serialized, /src\/first\.ts/);
-    assert.match(serialized, /src\/second\.ts/);
-    const memory = new ConversationMemoryStore(workspace, sessionId);
-    assert.ok((await memory.completionState()).requiredValidation);
+    assert.equal(fixture.start()?.config.compaction?.enabled, true);
+    assert.equal(fixture.start()?.config.compaction?.compact, undefined);
+    assert.equal(fixture.start()?.config.extensions, undefined);
   } finally {
     await fixture.restore();
     await rm(workspace, { force: true, recursive: true });
@@ -694,38 +657,6 @@ function compactionFixtureResult(
       await runtime.shutdown();
     },
   };
-}
-
-async function applyUnfinishedEdit(root: string, sessionId: string) {
-  const workspace = new SemanticWorkspace(root, {
-    taskContract: { session_id: sessionId },
-  });
-  const result = await workspace.editFiles({
-    operations: [
-      {
-        operation: "create_file",
-        path: "src/first.ts",
-        content: "export {}\n",
-      },
-      {
-        operation: "create_file",
-        path: "src/second.ts",
-        content: "export {}\n",
-      },
-    ],
-  });
-  assert.equal(result.status, "success");
-}
-
-function compactAtCheckpoint(start: ClineCoreStartInput | undefined) {
-  assert.ok(start?.config.compaction?.compact);
-  return start.config.compaction.compact({
-    mode: "overflow_recovery",
-    messages: [
-      { role: "user", content: [{ type: "text", text: "request" }] },
-      { role: "assistant", content: [{ type: "text", text: "working" }] },
-    ],
-  } as never);
 }
 
 function newProjectGenerationInput(workspace: string) {
@@ -1331,22 +1262,29 @@ test("renders the compact native Cline development prompt", async () => {
   assert.match(prompt, /^# Blame Development Agent/);
   assert.match(prompt, /<runtime_context>/);
   assert.match(prompt, /<workspace_metadata>/);
-  assert.match(prompt, /observe minimal state → target necessary symbols/);
-  assert.match(prompt, /Start from `task_briefing`/);
-  assert.match(prompt, /Use `edit_code` as the primary atomic editor/);
-  assert.match(prompt, /\.tsx/);
-  assert.match(prompt, /source_revision_id \+ environment_revision_id/);
-  assert.match(prompt, /code_error/);
-  assert.match(prompt, /non-retryable capability receipt/);
-  assert.match(prompt, /application_ready/);
-  assert.match(prompt, /proposal:current/);
-  assert.match(prompt, /precise uncertainty that blocks implementation/);
-  assert.match(prompt, /call `submit_and_exit` once/);
+  assert.match(prompt, /briefing contains facts already known/);
+  assert.match(prompt, /Read a small file directly/);
+  assert.match(
+    prompt,
+    /`edit_code` can combine symbolic operations and Cline Apply Patch operations/,
+  );
+  assert.match(
+    prompt,
+    /Unsupported structural operations fall back to raw reads and patches/,
+  );
+  assert.match(prompt, /Use `run_task` for proportionate validation/);
+  assert.match(prompt, /application is ready/);
+  assert.match(prompt, /call `finish_task` once/);
   assert.doesNotMatch(prompt, /complete_turn/);
   assert.doesNotMatch(prompt, /continuity_update|change_receipt_refs/);
-  assert.doesNotMatch(prompt, /execution[_ ]epoch/iu);
+  assert.doesNotMatch(
+    prompt,
+    /workspace_state|source_revision|execution[_ ]epoch/iu,
+  );
+  assert.doesNotMatch(prompt, /submit_and_exit/);
   assert.match(prompt, /## Blame Specialist Consultations/);
   assert.match(prompt, /consult_specialist/);
+  assert.match(prompt, /only when the user or lead explicitly requests/);
   assert.match(prompt, /private instructions internally/);
   assert.doesNotMatch(prompt, /<system_prompt/);
   assert.doesNotMatch(prompt, /## Specialist knowledge/);

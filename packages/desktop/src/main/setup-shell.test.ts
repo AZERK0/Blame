@@ -19,7 +19,8 @@ test("uses configured bash path on Windows", () => {
 test("prefers Git Bash install paths on Windows", () => {
   const command = resolveSetupBash({
     env: { ProgramFiles: String.raw`C:\Program Files` },
-    pathExists: (path) => path === String.raw`C:\Program Files\Git\bin\bash.exe`,
+    pathExists: (path) =>
+      path === String.raw`C:\Program Files\Git\bin\bash.exe`,
     platform: "win32",
   });
 
@@ -38,7 +39,8 @@ test("builds setup shell command arguments", () => {
 test("normalizes Windows setup script argument for Bash", () => {
   const command = setupShellCommand(String.raw`C:\Project\.blame\setup.sh`, {
     env: { ProgramFiles: String.raw`C:\Program Files` },
-    pathExists: (path) => path === String.raw`C:\Program Files\Git\bin\bash.exe`,
+    pathExists: (path) =>
+      path === String.raw`C:\Program Files\Git\bin\bash.exe`,
     platform: "win32",
   });
 

@@ -46,7 +46,7 @@ export const agentHostMethods = [
   "previewDevtoolsTools",
   "previewContainerLogs",
   "refreshPreviewDependencies",
-  "semanticWorkspace",
+  "lightWorkspace",
 ] as const;
 
 export type AgentRuntimeMethod = (typeof agentRuntimeMethods)[number];

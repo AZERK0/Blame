@@ -209,6 +209,69 @@ test("presents edit_code through the diff surface with validation and rebase sta
   })
 })
 
+test("presents light reads, edits, and dependency tasks through existing cards", () => {
+  const read = presentBlameHarnessTool({
+    input: { target: "s1", view: "symbol" },
+    output: {
+      status: "ok",
+      data: {
+        path: "src/value.ts",
+        status: "already_in_context",
+        view: "symbol",
+      },
+    },
+    toolName: "read_code",
+  })
+  const edit = presentBlameHarnessTool({
+    input: { operations: [{ kind: "patch", path: "src/value.ts" }] },
+    output: {
+      status: "ok",
+      data: {
+        changes: [{ additions: 1, deletions: 1, path: "src/value.ts" }],
+        parse: { status: "passed" },
+      },
+    },
+    toolName: "edit_code",
+  })
+  const dependency = presentBlameHarnessTool({
+    input: { action: "add", kind: "dependency", packages: ["zod"] },
+    toolName: "run_task",
+  })
+
+  assert.deepEqual(read.input, {
+    files: [
+      {
+        entire_file: false,
+        path: "src/value.ts",
+        read_kind: "symbol",
+        reused: true,
+        view: "symbol",
+      },
+    ],
+  })
+  assert.deepEqual(edit.input, {
+    files: [
+      {
+        additions: 1,
+        deletions: 1,
+        path: "src/value.ts",
+        validation: "passed",
+      },
+    ],
+  })
+  assert.deepEqual(dependency.input, { commands: ["add zod"] })
+})
+
+test("does not present a blocked light edit as changed files", () => {
+  const presentation = presentBlameHarnessTool({
+    input: { operations: [{ kind: "patch", path: "src/not-edited.ts" }] },
+    output: { status: "blocked", category: "code", message: "parse failed" },
+    toolName: "edit_code",
+  })
+
+  assert.deepEqual(presentation.input, { files: [] })
+})
+
 test("uses operation paths before an apply result is available", () => {
   const presentation = presentBlameHarnessTool({
     input: {

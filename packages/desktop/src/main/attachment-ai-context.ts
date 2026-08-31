@@ -113,11 +113,7 @@ async function runMarkItDown(path: string) {
     "result = MarkItDown(enable_plugins=False).convert(sys.argv[1])",
     "print(result.text_content)",
   ].join("\n");
-  return execFileText(
-    python,
-    ["-c", script, path],
-    markItDownRunTimeoutMs,
-  );
+  return execFileText(python, ["-c", script, path], markItDownRunTimeoutMs);
 }
 
 async function ensureMarkItDownPython() {

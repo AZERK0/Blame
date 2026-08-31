@@ -1,5 +1,5 @@
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
-import type { SemanticWorkspaceExecutionRequest } from "@blame/agent-runtime";
+import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
 import { shell } from "electron";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -12,7 +12,7 @@ import { PreviewHarnessService } from "./preview-runtime/preview-harness-service
 import { previewLogService } from "./preview-runtime/preview-log-service.ts";
 import type { PreviewService } from "./preview-runtime/preview-service.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
-import { semanticWorkspaceExecutionTarget } from "./semantic-workspace-routing.ts";
+import { lightWorkspaceExecutionTarget } from "./light-workspace-routing.ts";
 import {
   ensureRuntimeGitUserIdentity,
   getRuntimeGitIdentity,
@@ -60,8 +60,8 @@ async function handleAgentHostRequest(
   if (method === "refreshPreviewDependencies") {
     return refreshPreviewDependencies(input, signal, harness, previews);
   }
-  if (method === "semanticWorkspace") {
-    return agentSemanticWorkspace(input, signal);
+  if (method === "lightWorkspace") {
+    return agentLightWorkspace(input, signal);
   }
   throw new Error(`Unsupported agent host method: ${method}`);
 }
@@ -182,18 +182,18 @@ function unavailablePreviewDevtoolsResult(preview: {
   };
 }
 
-async function agentSemanticWorkspace(input: unknown, signal: AbortSignal) {
-  const request = input as SemanticWorkspaceExecutionRequest;
+async function agentLightWorkspace(input: unknown, signal: AbortSignal) {
+  const request = input as LightWorkspaceExecutionRequest;
   if (
     !runtimeAgentSupported() ||
     !request ||
     typeof request !== "object" ||
     typeof request.workspaceRoot !== "string" ||
-    semanticWorkspaceExecutionTarget(request) !== "managed-runtime"
+    lightWorkspaceExecutionTarget(request) !== "managed-runtime"
   ) {
     throw new Error("Invalid managed semantic workspace request");
   }
-  return runtimeAgentClient().semanticWorkspace(request, signal);
+  return runtimeAgentClient().lightWorkspace(request, signal);
 }
 
 async function agentGit(input: unknown) {

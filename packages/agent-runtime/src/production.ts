@@ -1,62 +1,62 @@
-import { delimiter, isAbsolute, relative, resolve } from "node:path"
+import { delimiter, isAbsolute, relative, resolve } from "node:path";
 import type {
   BasicLogger,
   CoreCheckpointConfig,
   CoreCompactionConfig,
   CoreSessionConfig,
   SessionUsageSummary,
-} from "@cline/sdk"
+} from "@cline/sdk";
 import {
   getBlameTelemetry,
   sanitizeText,
   type TelemetrySeverity,
-} from "@blame/telemetry"
+} from "@blame/telemetry";
 import type {
   AgentRuntimeConfigExtension,
   AgentUsageSummary,
   AgentUsageTotals,
-} from "./types.js"
+} from "./types.js";
 
 export type ProductionConfig = {
-  checkpointEnabled?: boolean
-  compactionEnabled?: boolean
-  compactionPreserveRecentTokens?: number
-  compactionStrategy?: "agentic" | "basic"
-  compactionTargetRatio?: number
-  compactionOverflowTargetRatio?: number
-  compactionTriggerRatio?: number
-  compactionWarningRatio?: number
-  configExtensions?: AgentRuntimeConfigExtension[]
-  disableMcpSettingsTools?: boolean
-  maxInputTokens?: number
-  messageBuilderMaxToolResultChars?: number
-  messageBuilderMaxTotalTextBytes?: number
-  messageBuilderMinOutdatedRewriteBytes?: number
-  maxOutputTokens?: number
-  maxParallelToolCalls?: number
-  maxSessionCostUsd?: number
-  maxTotalTokens?: number
-  pluginPaths?: string[]
-}
+  checkpointEnabled?: boolean;
+  compactionEnabled?: boolean;
+  compactionPreserveRecentTokens?: number;
+  compactionStrategy?: "agentic" | "basic";
+  compactionTargetRatio?: number;
+  compactionOverflowTargetRatio?: number;
+  compactionTriggerRatio?: number;
+  compactionWarningRatio?: number;
+  configExtensions?: AgentRuntimeConfigExtension[];
+  disableMcpSettingsTools?: boolean;
+  maxInputTokens?: number;
+  messageBuilderMaxToolResultChars?: number;
+  messageBuilderMaxTotalTextBytes?: number;
+  messageBuilderMinOutdatedRewriteBytes?: number;
+  maxOutputTokens?: number;
+  maxParallelToolCalls?: number;
+  maxSessionCostUsd?: number;
+  maxTotalTokens?: number;
+  pluginPaths?: string[];
+};
 
 export type ProductionSessionContext = {
-  checkpointEnabled?: boolean
-  configExtensions?: string
-  disableMcpSettingsTools?: boolean
-  durationMs?: number
-  finishReason?: string
-  maxIterations?: number
-  mode?: string
-  modelId?: string
-  providerId?: string
-  pluginPathCount?: number
-  sessionId?: string
-  status?: string
-  storyId?: string | number
-}
+  checkpointEnabled?: boolean;
+  configExtensions?: string;
+  disableMcpSettingsTools?: boolean;
+  durationMs?: number;
+  finishReason?: string;
+  maxIterations?: number;
+  mode?: string;
+  modelId?: string;
+  providerId?: string;
+  pluginPathCount?: number;
+  sessionId?: string;
+  status?: string;
+  storyId?: string | number;
+};
 
-type UsageSummary = AgentUsageSummary | SessionUsageSummary
-type UsageTotals = AgentUsageTotals | NonNullable<SessionUsageSummary["usage"]>
+type UsageSummary = AgentUsageSummary | SessionUsageSummary;
+type UsageTotals = AgentUsageTotals | NonNullable<SessionUsageSummary["usage"]>;
 
 const secretKeys = [
   "access",
@@ -66,7 +66,7 @@ const secretKeys = [
   "oauthCredentials",
   "refresh",
   "token",
-]
+];
 
 const allowedLogKeys = new Set([
   "cacheReadTokens",
@@ -119,7 +119,7 @@ const allowedLogKeys = new Set([
   "tokensSaved",
   "transformsApplied",
   "triggerTokens",
-])
+]);
 
 const stableStringLogKeys = new Set([
   "capsuleHash",
@@ -132,41 +132,81 @@ const stableStringLogKeys = new Set([
   "status",
   "storyId",
   "toolName",
-])
+]);
 
-const stableStringPattern = /^[A-Za-z0-9][A-Za-z0-9._:@-]{0,127}$/
+const stableStringPattern = /^[A-Za-z0-9][A-Za-z0-9._:@-]{0,127}$/;
 
-export function loadProductionConfig(env: NodeJS.ProcessEnv = process.env): ProductionConfig {
+export function loadProductionConfig(
+  env: NodeJS.ProcessEnv = process.env,
+): ProductionConfig {
   return {
     checkpointEnabled: booleanValue(env.BLAME_AGENT_CHECKPOINTS_ENABLED, true),
     compactionEnabled: booleanValue(env.BLAME_AGENT_COMPACTION_ENABLED, true),
-    compactionPreserveRecentTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_PRESERVE_RECENT_TOKENS),
+    compactionPreserveRecentTokens: positiveNumber(
+      env.BLAME_AGENT_COMPACTION_PRESERVE_RECENT_TOKENS,
+    ),
     compactionStrategy: compactionStrategy(env.BLAME_AGENT_COMPACTION_STRATEGY),
-    compactionTargetRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_TARGET_RATIO, 0.4),
-    compactionOverflowTargetRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_OVERFLOW_TARGET_RATIO, 0.35),
-    compactionTriggerRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_TRIGGER_RATIO, 0.7),
-    compactionWarningRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_WARNING_RATIO, 0.55),
+    compactionTargetRatio: boundedRatio(
+      env.BLAME_AGENT_COMPACTION_TARGET_RATIO,
+      0.4,
+    ),
+    compactionOverflowTargetRatio: boundedRatio(
+      env.BLAME_AGENT_COMPACTION_OVERFLOW_TARGET_RATIO,
+      0.35,
+    ),
+    compactionTriggerRatio: boundedRatio(
+      env.BLAME_AGENT_COMPACTION_TRIGGER_RATIO,
+      0.7,
+    ),
+    compactionWarningRatio: boundedRatio(
+      env.BLAME_AGENT_COMPACTION_WARNING_RATIO,
+      0.55,
+    ),
     configExtensions: configExtensions(env.BLAME_AGENT_CONFIG_EXTENSIONS),
-    disableMcpSettingsTools: !booleanValue(env.BLAME_AGENT_MCP_SETTINGS_TOOLS_ENABLED, true),
+    disableMcpSettingsTools: !booleanValue(
+      env.BLAME_AGENT_MCP_SETTINGS_TOOLS_ENABLED,
+      true,
+    ),
     maxInputTokens: positiveNumber(env.BLAME_AGENT_MAX_INPUT_TOKENS),
-    messageBuilderMaxToolResultChars: positiveNumber(env.BLAME_AGENT_MESSAGE_BUILDER_MAX_TOOL_RESULT_CHARS),
-    messageBuilderMaxTotalTextBytes: positiveNumber(env.BLAME_AGENT_MESSAGE_BUILDER_MAX_TOTAL_TEXT_BYTES),
-    messageBuilderMinOutdatedRewriteBytes: positiveNumber(env.BLAME_AGENT_MESSAGE_BUILDER_MIN_OUTDATED_REWRITE_BYTES),
+    messageBuilderMaxToolResultChars: positiveNumber(
+      env.BLAME_AGENT_MESSAGE_BUILDER_MAX_TOOL_RESULT_CHARS,
+    ),
+    messageBuilderMaxTotalTextBytes: positiveNumber(
+      env.BLAME_AGENT_MESSAGE_BUILDER_MAX_TOTAL_TEXT_BYTES,
+    ),
+    messageBuilderMinOutdatedRewriteBytes: positiveNumber(
+      env.BLAME_AGENT_MESSAGE_BUILDER_MIN_OUTDATED_REWRITE_BYTES,
+    ),
     maxOutputTokens: positiveNumber(env.BLAME_AGENT_MAX_OUTPUT_TOKENS),
-    maxParallelToolCalls: positiveNumber(env.BLAME_AGENT_MAX_PARALLEL_TOOL_CALLS, 8),
+    maxParallelToolCalls: positiveNumber(
+      env.BLAME_AGENT_MAX_PARALLEL_TOOL_CALLS,
+      8,
+    ),
     maxSessionCostUsd: positiveNumber(env.BLAME_AGENT_MAX_SESSION_COST_USD),
     maxTotalTokens: positiveNumber(env.BLAME_AGENT_MAX_TOTAL_TOKENS),
     pluginPaths: listValue(env.BLAME_AGENT_PLUGIN_PATHS),
-  }
+  };
 }
 
 export function applyProductionEnvironment(
   config: ProductionConfig,
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
 ) {
-  setDefaultEnvValue(env, "CLINE_MESSAGE_BUILDER_MAX_TOOL_RESULT_CHARS", config.messageBuilderMaxToolResultChars)
-  setDefaultEnvValue(env, "CLINE_MESSAGE_BUILDER_MAX_TOTAL_TEXT_BYTES", config.messageBuilderMaxTotalTextBytes)
-  setDefaultEnvValue(env, "CLINE_MESSAGE_BUILDER_MIN_OUTDATED_REWRITE_BYTES", config.messageBuilderMinOutdatedRewriteBytes)
+  setDefaultEnvValue(
+    env,
+    "CLINE_MESSAGE_BUILDER_MAX_TOOL_RESULT_CHARS",
+    config.messageBuilderMaxToolResultChars,
+  );
+  setDefaultEnvValue(
+    env,
+    "CLINE_MESSAGE_BUILDER_MAX_TOTAL_TEXT_BYTES",
+    config.messageBuilderMaxTotalTextBytes,
+  );
+  setDefaultEnvValue(
+    env,
+    "CLINE_MESSAGE_BUILDER_MIN_OUTDATED_REWRITE_BYTES",
+    config.messageBuilderMinOutdatedRewriteBytes,
+  );
 }
 
 export function createProductionLogger(): BasicLogger {
@@ -177,36 +217,38 @@ export function createProductionLogger(): BasicLogger {
       writeProductionLog("info", "blame.agent.sdk.log", metadata),
     error: (_message: string, metadata?: unknown) =>
       writeProductionLog("error", "blame.agent.sdk.error", metadata),
-  }
+  };
 }
 
 function writeProductionLog(
   severity: TelemetrySeverity,
   eventName: string,
-  metadata?: unknown
+  metadata?: unknown,
 ) {
   const record = getBlameTelemetry().structuredLog(
     severity,
     eventName,
-    safeLogPayload(metadata)
-  )
-  const serialized = JSON.stringify(record)
-  if (severity === "error") console.error(serialized)
-  else if (severity === "debug") console.debug(serialized)
-  else console.info(serialized)
+    safeLogPayload(metadata),
+  );
+  const serialized = JSON.stringify(record);
+  if (severity === "error") console.error(serialized);
+  else if (severity === "debug") console.debug(serialized);
+  else console.info(serialized);
 }
 
 export function promptMetadata(prompt: string) {
   return {
     promptLength: prompt.length,
-  }
+  };
 }
 
-export function appendProductionConfig<T extends CoreSessionConfig>(config: T): T {
+export function appendProductionConfig<T extends CoreSessionConfig>(
+  config: T,
+): T {
   const configWithLimits = config as T & {
-    maxConsecutiveMistakes?: number
-    maxParallelToolCalls?: number
-  }
+    maxConsecutiveMistakes?: number;
+    maxParallelToolCalls?: number;
+  };
   return {
     ...config,
     execution: {
@@ -218,50 +260,63 @@ export function appendProductionConfig<T extends CoreSessionConfig>(config: T): 
       maxConsecutiveMistakes: config.execution?.maxConsecutiveMistakes ?? 3,
     },
     maxConsecutiveMistakes: configWithLimits.maxConsecutiveMistakes ?? 3,
-    maxParallelToolCalls: configWithLimits.maxParallelToolCalls ?? loadProductionConfig().maxParallelToolCalls,
-  }
+    maxParallelToolCalls:
+      configWithLimits.maxParallelToolCalls ??
+      loadProductionConfig().maxParallelToolCalls,
+  };
 }
 
-export function blameCheckpointConfig(config: ProductionConfig): CoreCheckpointConfig {
+export function blameCheckpointConfig(
+  config: ProductionConfig,
+): CoreCheckpointConfig {
   return {
     enabled: config.checkpointEnabled ?? true,
-  }
+  };
 }
 
-export function blameCompactionConfig(config: ProductionConfig): CoreCompactionConfig {
+export function blameCompactionConfig(
+  config: ProductionConfig,
+): CoreCompactionConfig {
   return {
     enabled: config.compactionEnabled ?? true,
-    ...(config.compactionPreserveRecentTokens ? { preserveRecentTokens: config.compactionPreserveRecentTokens } : {}),
+    ...(config.compactionPreserveRecentTokens
+      ? { preserveRecentTokens: config.compactionPreserveRecentTokens }
+      : {}),
     strategy: config.compactionStrategy ?? "agentic",
-  }
+  };
 }
 
 export function runtimeConfigExtensions(config: ProductionConfig) {
-  return config.configExtensions?.length ? config.configExtensions : undefined
+  return config.configExtensions?.length ? config.configExtensions : undefined;
 }
 
 export function runtimePluginPaths(config: ProductionConfig, paths?: string[]) {
-  const pluginPaths = [...(config.pluginPaths ?? []), ...(paths ?? [])]
-  return pluginPaths.length ? Array.from(new Set(pluginPaths)) : undefined
+  const pluginPaths = [...(config.pluginPaths ?? []), ...(paths ?? [])];
+  return pluginPaths.length ? Array.from(new Set(pluginPaths)) : undefined;
 }
 
-export function assertWorkspacePath(path: string, workspaceRoot: string, label: string) {
-  const resolvedPath = resolve(path)
-  const resolvedWorkspace = resolve(workspaceRoot)
-  if (!isAbsolute(path)) throw new Error(`${label} must be an absolute path.`)
-  if (!isAbsolute(workspaceRoot)) throw new Error("workspaceRoot must be an absolute path.")
+export function assertWorkspacePath(
+  path: string,
+  workspaceRoot: string,
+  label: string,
+) {
+  const resolvedPath = resolve(path);
+  const resolvedWorkspace = resolve(workspaceRoot);
+  if (!isAbsolute(path)) throw new Error(`${label} must be an absolute path.`);
+  if (!isAbsolute(workspaceRoot))
+    throw new Error("workspaceRoot must be an absolute path.");
   if (!isPathInside(resolvedPath, resolvedWorkspace)) {
-    throw new Error(`${label} must stay inside workspaceRoot.`)
+    throw new Error(`${label} must stay inside workspaceRoot.`);
   }
 }
 
 export function assertRepositoryPath(path: string, label: string) {
-  if (!isAbsolute(path)) throw new Error(`${label} must be an absolute path.`)
+  if (!isAbsolute(path)) throw new Error(`${label} must be an absolute path.`);
 }
 
 export function summarizeUsage(summary: UsageSummary | undefined) {
-  const usage = summary?.aggregateUsage ?? summary?.usage
-  if (!usage) return {}
+  const usage = summary?.aggregateUsage ?? summary?.usage;
+  if (!usage) return {};
   return {
     cacheReadTokens: usage.cacheReadTokens,
     cacheWriteTokens: usage.cacheWriteTokens,
@@ -273,80 +328,115 @@ export function summarizeUsage(summary: UsageSummary | undefined) {
     totalCost: usageTotalCost(usage),
     totalInputTokens: usageTotalInputTokens(usage),
     totalOutputTokens: usageTotalOutputTokens(usage),
-  }
+  };
 }
 
-export function shouldAbortForUsage(summary: UsageSummary | undefined, config: ProductionConfig) {
-  const usage = summary?.aggregateUsage ?? summary?.usage
-  if (!usage) return false
-  if (config.maxTotalTokens !== undefined && totalTokens(usage) > config.maxTotalTokens) return true
-  if (config.maxSessionCostUsd !== undefined && totalCost(usage) > config.maxSessionCostUsd) return true
-  if (config.maxInputTokens !== undefined && usageTotalInputTokens(usage) > config.maxInputTokens) return true
-  if (config.maxOutputTokens !== undefined && usageTotalOutputTokens(usage) > config.maxOutputTokens) return true
-  return false
+export function shouldAbortForUsage(
+  summary: UsageSummary | undefined,
+  config: ProductionConfig,
+) {
+  const usage = summary?.aggregateUsage ?? summary?.usage;
+  if (!usage) return false;
+  if (
+    config.maxTotalTokens !== undefined &&
+    totalTokens(usage) > config.maxTotalTokens
+  )
+    return true;
+  if (
+    config.maxSessionCostUsd !== undefined &&
+    totalCost(usage) > config.maxSessionCostUsd
+  )
+    return true;
+  if (
+    config.maxInputTokens !== undefined &&
+    usageTotalInputTokens(usage) > config.maxInputTokens
+  )
+    return true;
+  if (
+    config.maxOutputTokens !== undefined &&
+    usageTotalOutputTokens(usage) > config.maxOutputTokens
+  )
+    return true;
+  return false;
 }
 
-export function usageLimitMessage(summary: UsageSummary | undefined, config: ProductionConfig) {
-  const usage = summary?.aggregateUsage ?? summary?.usage
-  if (!usage) return "Usage limit exceeded."
-  if (config.maxTotalTokens !== undefined && totalTokens(usage) > config.maxTotalTokens) {
-    return `Total token limit exceeded (${config.maxTotalTokens})`
+export function usageLimitMessage(
+  summary: UsageSummary | undefined,
+  config: ProductionConfig,
+) {
+  const usage = summary?.aggregateUsage ?? summary?.usage;
+  if (!usage) return "Usage limit exceeded.";
+  if (
+    config.maxTotalTokens !== undefined &&
+    totalTokens(usage) > config.maxTotalTokens
+  ) {
+    return `Total token limit exceeded (${config.maxTotalTokens})`;
   }
-  if (config.maxSessionCostUsd !== undefined && totalCost(usage) > config.maxSessionCostUsd) {
-    return `Cost limit exceeded ($${config.maxSessionCostUsd.toFixed(2)})`
+  if (
+    config.maxSessionCostUsd !== undefined &&
+    totalCost(usage) > config.maxSessionCostUsd
+  ) {
+    return `Cost limit exceeded ($${config.maxSessionCostUsd.toFixed(2)})`;
   }
-  if (config.maxInputTokens !== undefined && usageTotalInputTokens(usage) > config.maxInputTokens) {
-    return `Input token limit exceeded (${config.maxInputTokens})`
+  if (
+    config.maxInputTokens !== undefined &&
+    usageTotalInputTokens(usage) > config.maxInputTokens
+  ) {
+    return `Input token limit exceeded (${config.maxInputTokens})`;
   }
-  if (config.maxOutputTokens !== undefined && usageTotalOutputTokens(usage) > config.maxOutputTokens) {
-    return `Output token limit exceeded (${config.maxOutputTokens})`
+  if (
+    config.maxOutputTokens !== undefined &&
+    usageTotalOutputTokens(usage) > config.maxOutputTokens
+  ) {
+    return `Output token limit exceeded (${config.maxOutputTokens})`;
   }
-  return "Usage limit exceeded."
+  return "Usage limit exceeded.";
 }
 
 export function safeLogPayload(value: unknown): Record<string, unknown> {
-  if (!isRecord(value)) return {}
+  if (!isRecord(value)) return {};
   return Object.fromEntries(
     Object.entries(value)
       .filter(([key]) => allowedLogKeys.has(key) && !secretKeys.includes(key))
       .map(([key, field]) => [key, safeLogValue(key, field)])
       .filter(
         (entry): entry is [string, string | number | boolean] =>
-          entry[1] !== undefined
-      )
-  )
+          entry[1] !== undefined,
+      ),
+  );
 }
 
 function safeLogValue(
   key: string,
-  value: unknown
+  value: unknown,
 ): string | number | boolean | undefined {
-  if (typeof value === "number" || typeof value === "boolean") return value
-  if (typeof value !== "string" || !stableStringLogKeys.has(key)) return undefined
-  const sanitizedValue = sanitizeText(value)
-  if (stableStringPattern.test(sanitizedValue)) return sanitizedValue
-  return undefined
+  if (typeof value === "number" || typeof value === "boolean") return value;
+  if (typeof value !== "string" || !stableStringLogKeys.has(key))
+    return undefined;
+  const sanitizedValue = sanitizeText(value);
+  if (stableStringPattern.test(sanitizedValue)) return sanitizedValue;
+  return undefined;
 }
 
 function positiveNumber(value: string | undefined, fallback?: number) {
-  if (!value) return fallback
-  const parsed = Number(value)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+  if (!value) return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function boundedRatio(value: string | undefined, fallback: number) {
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed) || parsed < 0.1 || parsed > 0.9) return fallback
-  return parsed
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0.1 || parsed > 0.9) return fallback;
+  return parsed;
 }
 
 function booleanValue(value: string | undefined, fallback: boolean) {
-  if (value === undefined) return fallback
-  return value !== "false"
+  if (value === undefined) return fallback;
+  return value !== "false";
 }
 
 function compactionStrategy(value: string | undefined) {
-  return value === "basic" ? "basic" : "agentic"
+  return value === "basic" ? "basic" : "agentic";
 }
 
 function configExtensions(value: string | undefined) {
@@ -355,72 +445,89 @@ function configExtensions(value: string | undefined) {
     "rules",
     "skills",
     "workflows",
-  ])
+  ]);
   const values = listValue(value).filter(
     (entry): entry is AgentRuntimeConfigExtension =>
-      allowed.has(entry as AgentRuntimeConfigExtension)
-  )
-  return values.length ? values : undefined
+      allowed.has(entry as AgentRuntimeConfigExtension),
+  );
+  return values.length ? values : undefined;
 }
 
 function listValue(value: string | undefined) {
-  if (!value) return []
+  if (!value) return [];
   return value
     .split(delimiter)
     .flatMap((entry) => entry.split(","))
     .map((entry) => entry.trim())
-    .filter(Boolean)
+    .filter(Boolean);
 }
 
-function setDefaultEnvValue(env: NodeJS.ProcessEnv, key: string, value: number | undefined) {
-  if (value === undefined || env[key]) return
-  env[key] = String(value)
+function setDefaultEnvValue(
+  env: NodeJS.ProcessEnv,
+  key: string,
+  value: number | undefined,
+) {
+  if (value === undefined || env[key]) return;
+  env[key] = String(value);
 }
 
 function numberValue(value: unknown) {
-  return typeof value === "number" ? value : 0
+  return typeof value === "number" ? value : 0;
 }
 
 function totalTokens(usage: UsageTotals) {
-  return usageTotalInputTokens(usage) + usageTotalOutputTokens(usage)
+  return usageTotalInputTokens(usage) + usageTotalOutputTokens(usage);
 }
 
 function totalCost(usage: UsageTotals) {
-  return usageTotalCost(usage)
+  return usageTotalCost(usage);
 }
 
 function usageCost(usage: UsageTotals) {
-  return "cost" in usage ? usage.cost : undefined
+  return "cost" in usage ? usage.cost : undefined;
 }
 
 function usageTotalCost(usage: UsageTotals) {
-  return numberValue(usage.totalCost ?? usageCost(usage))
+  return numberValue(usage.totalCost ?? usageCost(usage));
 }
 
 function usageTotalInputTokens(usage: UsageTotals) {
-  return numberValue("totalInputTokens" in usage ? usage.totalInputTokens : usage.inputTokens)
+  return numberValue(
+    "totalInputTokens" in usage ? usage.totalInputTokens : usage.inputTokens,
+  );
 }
 
 function usageTotalOutputTokens(usage: UsageTotals) {
-  return numberValue("totalOutputTokens" in usage ? usage.totalOutputTokens : usage.outputTokens)
+  return numberValue(
+    "totalOutputTokens" in usage ? usage.totalOutputTokens : usage.outputTokens,
+  );
 }
 
 function usageTotalCacheReadTokens(usage: UsageTotals) {
-  return numberValue("totalCacheReadTokens" in usage ? usage.totalCacheReadTokens : usage.cacheReadTokens)
+  return numberValue(
+    "totalCacheReadTokens" in usage
+      ? usage.totalCacheReadTokens
+      : usage.cacheReadTokens,
+  );
 }
 
 function usageTotalCacheWriteTokens(usage: UsageTotals) {
-  return numberValue("totalCacheWriteTokens" in usage ? usage.totalCacheWriteTokens : usage.cacheWriteTokens)
+  return numberValue(
+    "totalCacheWriteTokens" in usage
+      ? usage.totalCacheWriteTokens
+      : usage.cacheWriteTokens,
+  );
 }
 
 function isPathInside(path: string, parent: string) {
-  const pathRelativeToParent = relative(parent, path)
+  const pathRelativeToParent = relative(parent, path);
   return (
     pathRelativeToParent === "" ||
-    (!pathRelativeToParent.startsWith("..") && !isAbsolute(pathRelativeToParent))
-  )
+    (!pathRelativeToParent.startsWith("..") &&
+      !isAbsolute(pathRelativeToParent))
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object"
+  return !!value && typeof value === "object";
 }

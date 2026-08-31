@@ -10,8 +10,7 @@ import {
 } from "node:fs/promises";
 import { extname, isAbsolute, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
-import type { FileRef, SourceRevisionRef } from "./protocol.js";
-import { encodeHandle, sha256 } from "./protocol.js";
+import { sha256, type SourceRevisionRef } from "./light-identity.js";
 
 const execFileAsync = promisify(execFile);
 const ignoredDirectories = new Set([
@@ -61,49 +60,48 @@ export class WorkspaceFiles {
     const changedPaths = git
       ? await this.gitChangedPaths(Boolean(baseCommit), signal)
       : files;
-    const entries: string[] = [];
-    const changes: WorkspaceChange[] = [];
-    for (const path of changedPaths.sort()) {
-      signal?.throwIfAborted();
-      const state = await this.pathState(path);
-      entries.push(`${path}\0${state.digest}\0${state.kind}`);
-      changes.push({
-        path,
-        status:
-          state.kind === "gone" ? "deleted" : baseCommit ? "modified" : "added",
-      });
-    }
-    if (git) {
-      const untracked = new Set(
-        nulList(
-          await this.git(
-            ["ls-files", "--others", "--exclude-standard", "-z"],
-            signal,
-          ),
-        ).filter(isHarnessSourcePath),
-      );
-      for (const change of changes) {
-        if (untracked.has(change.path)) change.status = "added";
-      }
-    }
-    const overlayMerkleRoot = sha256(entries.join("\n"));
-    const sourceRevisionId = `src_${sha256(
-      `${baseCommit ?? "no-git"}\0${overlayMerkleRoot}`,
-    ).slice(0, 32)}`;
+    const state = await this.changedState(changedPaths, baseCommit, signal);
+    if (git) await this.markUntracked(state.changes, signal);
     const branch = git
       ? await this.gitOptional(["branch", "--show-current"], signal)
       : undefined;
+    const revision = sourceRevision(baseCommit, state.entries);
     return {
       ...(branch ? { branch } : {}),
-      changes,
+      changes: state.changes,
       files,
       git,
-      revision: {
-        source_revision_id: sourceRevisionId,
-        ...(baseCommit ? { base_commit: baseCommit } : {}),
-        overlay_merkle_root: overlayMerkleRoot,
-      },
+      revision,
     };
+  }
+
+  private async changedState(
+    paths: string[],
+    baseCommit: string | undefined,
+    signal?: AbortSignal,
+  ) {
+    const entries: string[] = [];
+    const changes: WorkspaceChange[] = [];
+    for (const path of paths.sort()) {
+      signal?.throwIfAborted();
+      const state = await this.pathState(path);
+      entries.push(`${path}\0${state.digest}\0${state.kind}`);
+      changes.push({ path, status: changeStatus(state.kind, baseCommit) });
+    }
+    return { changes, entries };
+  }
+
+  private async markUntracked(
+    changes: WorkspaceChange[],
+    signal?: AbortSignal,
+  ) {
+    const output = await this.git(
+      ["ls-files", "--others", "--exclude-standard", "-z"],
+      signal,
+    );
+    const untracked = new Set(nulList(output).filter(isHarnessSourcePath));
+    for (const change of changes)
+      if (untracked.has(change.path)) change.status = "added";
   }
 
   async read(path: string) {
@@ -160,30 +158,6 @@ export class WorkspaceFiles {
       signal,
     );
     return { content, mode };
-  }
-
-  async fileRef(
-    path: string,
-    revision: string,
-    observedContent?: Buffer,
-  ): Promise<FileRef> {
-    const normalized = this.normalizePath(path);
-    const content = observedContent ?? (await this.read(normalized)).content;
-    const digest = sha256(content);
-    return {
-      ref: encodeHandle("file", {
-        version: 2,
-        revision,
-        path: normalized,
-        start: 0,
-        end: content.byteLength,
-        digest,
-        observedBlobHash: digest,
-      }),
-      source_revision_id: revision,
-      path: normalized,
-      blob_hash: digest,
-    };
   }
 
   resolveForWrite(path: string) {
@@ -351,6 +325,26 @@ export class WorkspaceFiles {
   }
 }
 
+function sourceRevision(baseCommit: string | undefined, entries: string[]) {
+  const overlayMerkleRoot = sha256(entries.join("\n"));
+  const sourceRevisionId = `src_${sha256(
+    `${baseCommit ?? "no-git"}\0${overlayMerkleRoot}`,
+  ).slice(0, 32)}`;
+  return {
+    source_revision_id: sourceRevisionId,
+    ...(baseCommit ? { base_commit: baseCommit } : {}),
+    overlay_merkle_root: overlayMerkleRoot,
+  };
+}
+
+function changeStatus(
+  kind: string,
+  baseCommit: string | undefined,
+): WorkspaceChange["status"] {
+  if (kind === "gone") return "deleted";
+  return baseCommit ? "modified" : "added";
+}
+
 export function languageName(path: string) {
   return languageByExtension[extname(path).toLowerCase()] ?? "unknown";
 }
@@ -401,21 +395,28 @@ function errorCode(error: unknown) {
 const languageByExtension: Record<string, string> = {
   ".bash": "bash",
   ".bats": "bash",
+  ".c": "c",
+  ".cc": "cpp",
   ".cjs": "javascript",
+  ".cpp": "cpp",
   ".cs": "csharp",
   ".css": "css",
   ".cts": "typescript",
+  ".cxx": "cpp",
   ".go": "go",
   ".html": "html",
   ".htm": "html",
+  ".h": "c",
   ".java": "java",
   ".js": "javascript",
   ".jsx": "javascript",
   ".mjs": "javascript",
   ".mts": "typescript",
+  ".hpp": "cpp",
   ".py": "python",
   ".rs": "rust",
   ".sh": "bash",
+  ".svelte": "svelte",
   ".ts": "typescript",
   ".tsx": "typescript",
   ".vue": "vue",

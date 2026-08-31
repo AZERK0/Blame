@@ -121,14 +121,14 @@ process.exit(manifest.version === process.argv[2] ? 0 : 1);
 semantic_harness_smoke_test() {
   workspace="$(mktemp -d)"
   printf '%s\n' '{"scripts":{}}' >"$workspace/package.json"
-  if printf '{"input":{},"tool":"workspace_state","toolContext":{"executionId":"provision-smoke"},"workspaceRoot":"%s"}' "$workspace" |
+  if printf '{"input":{"target":"@capabilities"},"taskContract":{"session_id":"provision-smoke"},"tool":"read_code","workspaceRoot":"%s"}' "$workspace" |
     blame-semantic-harness |
     node -e '
 let value = "";
 process.stdin.on("data", (chunk) => value += chunk);
 process.stdin.on("end", () => {
   const result = JSON.parse(value);
-  const valid = result.protocol_version === "3" && result.outcome === "completed" && result.effect === "observed";
+  const valid = result.status === "ok" && typeof result.data?.description === "string";
   process.exit(valid ? 0 : 1);
 });
 '; then
@@ -871,8 +871,8 @@ methods = {
     "kill": run_kill,
     "scanEnvFiles": run_scan_env_files,
     "readExistingFiles": run_read_existing_files,
-    "semanticWorkspace": run_semantic_workspace,
-    "semanticWorkspaceCancel": run_semantic_workspace_cancel,
+    "lightWorkspace": run_semantic_workspace,
+    "lightWorkspaceCancel": run_semantic_workspace_cancel,
     "clineHubEnsure": run_cline_hub_ensure,
     "clineHubStatus": run_cline_hub_status,
     "clineHubStop": run_cline_hub_stop,

@@ -1,37 +1,37 @@
-import { resolve } from "node:path"
+import { resolve } from "node:path";
 
-export type DesktopAuthCallback = { code?: string; error?: string }
+export type DesktopAuthCallback = { code?: string; error?: string };
 
 export function desktopDeepLink(processArguments: string[]) {
   for (const argument of processArguments) {
-    const match = argument.match(/blame:\/\/[^\s"'<>]+/i)
-    if (!match) continue
+    const match = argument.match(/blame:\/\/[^\s"'<>]+/i);
+    if (!match) continue;
     try {
-      const url = new URL(match[0])
-      if (url.protocol === "blame:") return url.toString()
+      const url = new URL(match[0]);
+      if (url.protocol === "blame:") return url.toString();
     } catch {}
   }
-  return undefined
+  return undefined;
 }
 
 export function desktopProtocolClientArguments(
   isPackaged: boolean,
   executablePath: string,
-  processArguments: string[]
+  processArguments: string[],
 ): [] | [string, string[]] {
-  const applicationPath = processArguments[1]
-  if (isPackaged || !applicationPath) return []
-  return [executablePath, [resolve(applicationPath)]]
+  const applicationPath = processArguments[1];
+  if (isPackaged || !applicationPath) return [];
+  return [executablePath, [resolve(applicationPath)]];
 }
 
 export function desktopAuthCallback(
-  value: string | undefined
+  value: string | undefined,
 ): DesktopAuthCallback | undefined {
-  if (!value) return undefined
+  if (!value) return undefined;
   try {
-    return parsedAuthCallback(new URL(value))
+    return parsedAuthCallback(new URL(value));
   } catch {
-    return undefined
+    return undefined;
   }
 }
 
@@ -41,19 +41,19 @@ function parsedAuthCallback(url: URL) {
     url.hostname !== "auth" ||
     url.pathname !== "/callback"
   ) {
-    return undefined
+    return undefined;
   }
-  const code = url.searchParams.get("code") ?? undefined
-  const error = url.searchParams.get("error") ?? undefined
-  if (code && validCode(code, url.searchParams.size)) return { code }
-  if (error && validError(error, url.searchParams.size)) return { error }
-  return undefined
+  const code = url.searchParams.get("code") ?? undefined;
+  const error = url.searchParams.get("error") ?? undefined;
+  if (code && validCode(code, url.searchParams.size)) return { code };
+  if (error && validError(error, url.searchParams.size)) return { error };
+  return undefined;
 }
 
 function validCode(code: string, parameterCount: number) {
-  return /^[A-Za-z0-9_-]{32,128}$/.test(code) && parameterCount === 1
+  return /^[A-Za-z0-9_-]{32,128}$/.test(code) && parameterCount === 1;
 }
 
 function validError(error: string, parameterCount: number) {
-  return /^[a-z_]{1,64}$/.test(error) && parameterCount === 1
+  return /^[a-z_]{1,64}$/.test(error) && parameterCount === 1;
 }

@@ -56,7 +56,6 @@ import type {
   AgentUsageSummary,
   StartSessionInput,
 } from "./types.js";
-import type { ContinuityMergeMetrics } from "./harness/continuity-schema.js";
 
 type AgentTelemetryInput = Pick<StartSessionInput, "modelId" | "providerId"> &
   Partial<
@@ -135,18 +134,6 @@ const telemetry = getBlameTelemetry();
 const executions = getExecutionRegistry();
 const businessExecutionScope = new AsyncLocalStorage<BusinessExecutionScope>();
 const toolCallFinishPayload = { finishReason: "tool-calls" };
-
-function continuityMetricValues(metrics: ContinuityMergeMetrics) {
-  return {
-    continuity_update_present: Number(metrics.continuity_update_present),
-    continuity_update_valid: Number(metrics.continuity_update_valid),
-    continuity_fallback_used: Number(metrics.continuity_fallback_used),
-    facts_added_count: metrics.facts_added_count,
-    facts_superseded_count: metrics.facts_superseded_count,
-    invalid_evidence_ref_count: metrics.invalid_evidence_ref_count,
-    memory_merge_conflict_count: metrics.memory_merge_conflict_count,
-  };
-}
 
 export class AgentTelemetry {
   private readonly sessions = new Map<string, AgentSessionTelemetry>();
@@ -380,122 +367,6 @@ export class AgentTelemetry {
       attributes,
       state.component.span.context,
     );
-  }
-
-  recordContinuityCapsule(
-    sessionId: string,
-    prompt: string,
-    measured?: {
-      inputTokens: number;
-      outputTokens: number;
-      requestedTokens?: number;
-      truncated?: boolean;
-    },
-  ) {
-    const state = this.sessions.get(sessionId);
-    if (!state?.component) return;
-    const capsule = continuityCapsuleMetrics(prompt);
-    if (!capsule) return;
-    const attributes = metricDimensions(state);
-    telemetry.record(
-      "blame.harness.capsule_input_tokens" as never,
-      measured?.inputTokens ?? capsule.tokens,
-      attributes,
-      state.component.span.context,
-    );
-    telemetry.record(
-      "blame.harness.capsule_output_tokens" as never,
-      measured?.outputTokens ?? capsule.tokens,
-      attributes,
-      state.component.span.context,
-    );
-    telemetry.record(
-      "blame.harness.preserved_constraints" as never,
-      capsule.constraints,
-      attributes,
-      state.component.span.context,
-    );
-    telemetry.record(
-      "blame.harness.capsule_requested_tokens" as never,
-      measured?.requestedTokens ?? capsule.tokens,
-      attributes,
-      state.component.span.context,
-    );
-    telemetry.record(
-      "blame.harness.capsule_actual_tokens" as never,
-      measured?.outputTokens ?? capsule.tokens,
-      attributes,
-      state.component.span.context,
-    );
-    telemetry.record(
-      "blame.harness.capsule_truncated" as never,
-      Number(measured?.truncated ?? false),
-      attributes,
-      state.component.span.context,
-    );
-    state.component.span.addEvent("blame.harness.continuity_capsule", {
-      conversation_id: capsule.conversationId,
-      execution_epoch_id: capsule.executionEpochId,
-      capsule_input_tokens: measured?.inputTokens ?? capsule.tokens,
-      capsule_output_tokens: measured?.outputTokens ?? capsule.tokens,
-      preserved_constraints_count: capsule.constraints,
-      capsule_requested_tokens: measured?.requestedTokens ?? capsule.tokens,
-      capsule_actual_tokens: measured?.outputTokens ?? capsule.tokens,
-      capsule_truncated: measured?.truncated ?? false,
-    });
-  }
-
-  recordContinuityUpdate(sessionId: string, metrics: ContinuityMergeMetrics) {
-    const state = this.sessions.get(sessionId);
-    if (!state?.component) return;
-    const attributes = metricDimensions(state);
-    const values = continuityMetricValues(metrics);
-    for (const [name, value] of Object.entries(values))
-      telemetry.record(
-        `blame.harness.${name}` as never,
-        value,
-        attributes,
-        state.component.span.context,
-      );
-    state.component.span.addEvent("blame.harness.continuity_update", values);
-  }
-
-  recordContextCompaction(
-    sessionId: string,
-    inputTokens: number,
-    outputTokens: number,
-    capsuleHash: string,
-    compactedEventHashes: string[],
-    tailMessages: number,
-    mode: "normal" | "overflow",
-  ) {
-    const state = this.sessions.get(sessionId);
-    if (!state?.component) return;
-    const attributes = metricDimensions(state);
-    telemetry.count(
-      "blame.harness.compactions" as never,
-      1,
-      attributes,
-      state.component.span.context,
-    );
-    telemetry.record(
-      "blame.harness.context_size_before_compaction" as never,
-      inputTokens,
-      attributes,
-      state.component.span.context,
-    );
-    telemetry.record(
-      "blame.harness.context_size_after_compaction" as never,
-      outputTokens,
-      attributes,
-      state.component.span.context,
-    );
-    state.component.span.addEvent("blame.harness.context_compaction", {
-      capsule_hash: capsuleHash,
-      compacted_event_hashes: compactedEventHashes.join(","),
-      mode,
-      tail_messages: tailMessages,
-    });
   }
 
   recordRevertedChange(sessionId: string) {
@@ -1720,32 +1591,15 @@ function recordHarnessToolMetrics(
   const body = asRecord(output.data ?? output.output ?? output);
   const data: Record<string, unknown> = {
     ...body,
-    ...(body.outcome === undefined ? { outcome: output.outcome } : {}),
-    ...(body.reason === undefined ? { reason: output.reason } : {}),
-    ...(body.fatal === undefined ? { fatal: output.fatal } : {}),
+    ...(body.status === undefined ? { status: output.status } : {}),
+    ...(body.category === undefined ? { category: output.category } : {}),
   };
   const metricContext = { attributes, current, data, state };
-  if (stringValue(output.outcome) === "unavailable")
+  if (output.status === "blocked" && output.category === "environment")
     recordHarnessCount(metricContext, "blame.harness.unavailable_capabilities");
   current.span.setAttributes(harnessTraceAttributes(data));
   if (navigationReadTool(current.name)) recordReadMetrics(metricContext);
-  if (
-    current.name !== "inspect_code" &&
-    data.parallel_broad_read_suppressed === true
-  )
-    recordHarnessCount(
-      metricContext,
-      "blame.harness.parallel_broad_reads_suppressed",
-    );
-  const savedTokens = numericValue(data.estimated_tokens_saved);
-  if (current.name !== "inspect_code" && savedTokens !== undefined)
-    recordHarnessValue(
-      metricContext,
-      "blame.harness.estimated_tokens_saved",
-      savedTokens,
-    );
   if (semanticEditTool(current.name)) recordEditMetrics(metricContext);
-  if (current.name === "recall_context") recordRecallMetrics(metricContext);
   if (externalReadTool(current.name)) recordExternalReadMetrics(metricContext);
   if (current.name === "consult_specialist")
     recordHarnessValue(
@@ -1762,53 +1616,7 @@ function recordHarnessToolMetrics(
       alert: "SPECIALIST_TIMEOUT",
     });
   }
-  recordProgressGovernorMetrics(metricContext);
   if (current.name === "run_task") recordRunMetrics(metricContext);
-  if (data.circuit_opened === true)
-    recordHarnessCount(metricContext, "blame.harness.capability_circuits_open");
-  if (stringValue(data.status) === "in_flight_reused")
-    recordHarnessCount(metricContext, "blame.harness.single_flight_reuse");
-  if (stringValue(data.reason) === "PACKAGE_NOT_DECLARED_OR_INSTALLED")
-    recordHarnessCount(
-      metricContext,
-      "blame.harness.absent_package_calls_suppressed",
-    );
-}
-
-function recordProgressGovernorMetrics(context: HarnessMetricContext) {
-  const governor = asRecord(context.data.progress_governor);
-  const firstEditIteration = numericValue(governor.first_edit_iteration);
-  if (firstEditIteration !== undefined)
-    recordHarnessValue(
-      context,
-      "blame.harness.first_edit_iteration",
-      firstEditIteration,
-    );
-  recordHarnessValue(
-    context,
-    "blame.harness.no_progress_iterations",
-    numericValue(governor.no_progress_iterations) ?? 0,
-  );
-  recordHarnessValue(
-    context,
-    "blame.harness.identical_or_covered_reads",
-    numericValue(governor.identical_or_covered_reads) ?? 0,
-  );
-  const unavailable = Array.isArray(governor.unavailable_capabilities)
-    ? governor.unavailable_capabilities.length
-    : 0;
-  recordHarnessValue(
-    context,
-    "blame.harness.unavailable_capabilities",
-    unavailable,
-  );
-  if (
-    Array.isArray(governor.alerts) &&
-    governor.alerts.includes("NO_MUTATION_AFTER_8_ITERATIONS")
-  )
-    context.current.span.addEvent("blame.harness.alert", {
-      alert: "NO_MUTATION_AFTER_8_ITERATIONS",
-    });
 }
 
 function recordExternalReadMetrics(context: HarnessMetricContext) {
@@ -1828,28 +1636,6 @@ function recordExternalReadMetrics(context: HarnessMetricContext) {
     );
 }
 
-function recordRecallMetrics(context: HarnessMetricContext) {
-  if (stringValue(context.data.reason) === "STALE_REFERENCE")
-    recordHarnessCount(context, "blame.harness.recall_context_errors");
-  const strategy = stringValue(context.data.retrieval_strategy) ?? "lexical";
-  telemetry.record(
-    "blame.harness.recall_strategy",
-    1,
-    { ...context.attributes, recall_strategy: strategy },
-    context.current.span.context,
-  );
-  recordHarnessValue(
-    context,
-    "blame.harness.recall_candidate_count",
-    numericValue(context.data.candidate_count) ?? 0,
-  );
-  recordHarnessValue(
-    context,
-    "blame.harness.recall_returned_count",
-    numericValue(context.data.returned_count) ?? 0,
-  );
-}
-
 type HarnessMetricContext = {
   attributes: Record<string, unknown>;
   current: ToolSpanState;
@@ -1859,21 +1645,13 @@ type HarnessMetricContext = {
 
 function recordReadMetrics(context: HarnessMetricContext) {
   recordHarnessCount(context, "blame.harness.reads");
-  const readBytes =
-    numericValue(context.data.read_requested_bytes) ??
-    byteRangeLength(context.data.range_utf8_bytes);
+  const readBytes = readContentBytes(context.data);
   recordHarnessValue(context, "blame.harness.read_requested_bytes", readBytes);
   if (readBytes > 0)
     recordHarnessValue(context, "blame.harness.read_bytes", readBytes);
-  recordHarnessValue(
-    context,
-    "blame.harness.new_read_bytes",
-    numericValue(context.data.new_bytes) ?? readBytes,
-  );
+  recordHarnessValue(context, "blame.harness.new_read_bytes", readBytes);
   const returnedBytes =
-    numericValue(context.data.read_returned_bytes) ??
-    numericValue(context.data.new_bytes) ??
-    readBytes;
+    stringValue(context.data.status) === "already_in_context" ? 0 : readBytes;
   recordHarnessValue(
     context,
     "blame.harness.read_returned_bytes",
@@ -1890,109 +1668,47 @@ function recordReadMetrics(context: HarnessMetricContext) {
     "blame.harness.read_suppressed_bytes",
     Math.max(0, readBytes - returnedBytes),
   );
-  const overlap = numericValue(context.data.overlap_rate);
-  if (overlap !== undefined)
-    recordHarnessValue(context, "blame.harness.read_overlap_rate", overlap);
-  if (stringValue(context.data.status) === "already_available")
+  if (stringValue(context.data.status) === "already_in_context")
     recordHarnessCount(context, "blame.harness.deduplicated_reads");
-  if (stringValue(context.data.status) === "already_available")
+  if (stringValue(context.data.status) === "already_in_context")
     recordHarnessCount(context, "blame.harness.duplicate_read_count");
-  if (stringValue(context.data.rebase_strategy))
-    recordHarnessCount(context, "blame.harness.semantic_read_rebases");
-  if (stringValue(context.data.status) === "auto_narrowed")
-    recordHarnessCount(context, "blame.harness.auto_narrowed_raw_reads");
-  if (context.data.auto_narrowed === true)
-    recordHarnessCount(context, "blame.harness.auto_narrowed_outlines");
-  if (context.data.parallel_broad_read_suppressed === true)
-    recordHarnessCount(
-      context,
-      "blame.harness.parallel_broad_reads_suppressed",
-    );
-  const semanticTarget = asRecord(context.data.semantic_target);
   recordHarnessValue(
     context,
     "blame.harness.symbol_target_ratio",
-    stringValue(semanticTarget.type) === "symbol" ? 1 : 0,
+    stringValue(context.data.view) === "symbol" ? 1 : 0,
   );
-  const savedTokens = numericValue(context.data.estimated_tokens_saved);
-  if (savedTokens !== undefined)
-    recordHarnessValue(
-      context,
-      "blame.harness.estimated_tokens_saved",
-      savedTokens,
-    );
+}
+
+function readContentBytes(data: Record<string, unknown>) {
+  return [data.content, data.body, data.signature, data.imports]
+    .filter((value): value is string => typeof value === "string")
+    .reduce((total, value) => total + Buffer.byteLength(value), 0);
 }
 
 function recordEditMetrics(context: HarnessMetricContext) {
   const status = stringValue(context.data.status);
-  if (status === "applied") {
+  if (context.data.changed === true) {
     recordFirstEdit(context);
     recordHarnessCount(context, "blame.harness.direct_edits");
   }
-  if (
-    status === "applied" &&
-    stringValue(context.data.resolution) === "automatically_rebased"
-  )
-    recordHarnessCount(context, "blame.harness.automatically_rebased_edits");
-  if (status === "conflict")
-    recordHarnessCount(context, "blame.harness.edit_conflicts");
-  if (status === "conflict")
+  if (status === "blocked" && context.data.category === "input")
     recordHarnessCount(context, "blame.harness.edit_conflict_count");
-  const retries = numericValue(context.data.internal_retries) ?? 0;
-  if (retries > 0)
-    recordHarnessCount(context, "blame.harness.internal_retries", retries);
-  if (retries > 0)
-    recordHarnessCount(context, "blame.harness.tool_retry_count", retries);
 }
 
 function harnessTraceAttributes(data: Record<string, unknown>) {
-  const governor = asRecord(data.governor);
-  const taskGovernor = asRecord(data.task_governor);
   return compactAttributes({
-    conversation_id: stringValue(data.conversation_id),
-    execution_epoch_id: stringValue(data.execution_epoch_id),
-    read_requested_bytes: numericValue(governor.read_requested_bytes),
-    read_returned_bytes: numericValue(governor.read_returned_bytes),
-    read_suppressed_bytes: numericValue(governor.read_suppressed_bytes),
-    duplicate_read_count: numericValue(governor.duplicate_read_count),
-    time_to_first_applied_edit: numericValue(
-      governor.time_to_first_applied_edit,
-    ),
-    semantic_rebase_strategy:
-      stringValue(data.semantic_rebase_strategy) ??
-      stringValue(data.rebase_strategy),
-    edit_conflict_count: numericValue(governor.edit_conflict_count),
-    tool_retry_count: numericValue(governor.tool_retry_count),
-    task_read_requested_bytes: numericValue(taskGovernor.read_requested_bytes),
-    task_read_returned_bytes: numericValue(taskGovernor.read_returned_bytes),
-    task_duplicate_read_count: numericValue(taskGovernor.duplicate_read_count),
-    task_edit_conflict_count: numericValue(taskGovernor.edit_conflict_count),
-    task_tool_retry_count: numericValue(taskGovernor.tool_retry_count),
+    harness_category: stringValue(data.category),
+    harness_status: stringValue(data.status),
+    harness_view: stringValue(data.view),
   });
 }
 
 function semanticEditTool(name: string) {
-  return [
-    "create_file",
-    "delete_file",
-    "edit_code",
-    "edit_files",
-    "edit_json",
-    "edit_symbol",
-    "move_file",
-    "patch_file",
-    "replace_file",
-    "mutate_dependencies",
-  ].includes(name);
+  return name === "edit_code";
 }
 
 function navigationReadTool(name: string) {
-  return [
-    "get_relation_context",
-    "inspect_code",
-    "outline_code",
-    "search_code",
-  ].includes(name);
+  return name === "read_code" || name === "search_code";
 }
 
 function externalReadTool(name: string) {
@@ -2083,36 +1799,6 @@ function recordHarnessValue(
     context.attributes,
     context.current.span.context,
   );
-}
-
-function byteRangeLength(value: unknown) {
-  if (!Array.isArray(value) || value.length !== 2) return 0;
-  const start = numericValue(value[0]);
-  const end = numericValue(value[1]);
-  return start === undefined || end === undefined
-    ? 0
-    : Math.max(0, end - start);
-}
-
-function continuityCapsuleMetrics(prompt: string) {
-  const match = prompt.match(
-    /<continuity_capsule>\n([\s\S]*?)\n<\/continuity_capsule>/u,
-  );
-  if (!match?.[1]) return undefined;
-  try {
-    const capsule = JSON.parse(match[1]) as Record<string, unknown>;
-    const constraints = Array.isArray(capsule.relevantConstraints)
-      ? capsule.relevantConstraints.length
-      : 0;
-    return {
-      constraints,
-      conversationId: stringValue(capsule.conversationId),
-      executionEpochId: stringValue(capsule.executionEpochId),
-      tokens: Math.ceil(Buffer.byteLength(match[1], "utf8") / 4),
-    };
-  } catch {
-    return undefined;
-  }
 }
 
 function recordToolDuration(

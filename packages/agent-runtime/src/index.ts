@@ -1,37 +1,19 @@
 export { BlameAgentRuntime } from "./cline-runtime.js";
-export * from "@blame/harness-core";
 export type {
-  CanonicalSemanticWorkspaceExecutor,
-  SemanticWorkspaceBridgeExecutor,
-  SemanticWorkspaceExecutionRequest,
-  SemanticWorkspaceExecutor,
-  SemanticWorkspaceToolName,
-} from "./harness/semantic-executor.js";
-export {
-  canonicalSemanticWorkspaceExecutor,
-  executeCanonicalSemanticWorkspaceRequest,
-  executeSemanticWorkspaceRequest,
-  localCanonicalSemanticWorkspaceExecutor,
-  legacySemanticWorkspaceExecutor,
-} from "./harness/semantic-executor.js";
-export {
-  clineAdapterCapabilities,
-  headlessAdapterCapabilities,
-  runAdapterConformance,
-  type AdapterConformanceScenario,
-  type HarnessAdapter,
-} from "./harness/adapter-conformance.js";
+  LightWorkspaceExecutionRequest,
+  LightWorkspaceExecutor,
+  LightWorkspaceToolName,
+} from "./harness/light-executor.js";
+export { executeLightWorkspaceRequest } from "./harness/light-executor.js";
+export * from "./harness/light-capabilities.js";
+export * from "./harness/light-contracts.js";
+export * from "./harness/light-tools.js";
+export * from "./harness/light-workspace.js";
+export * from "./harness/session-journal.js";
 export {
   currentWorkspaceRevisionState,
-  WorkspaceStateAuthority,
   type WorkspaceRevisionState,
 } from "./harness/workspace-revisions.js";
-export {
-  harnessBenchmarkMetrics,
-  type HarnessModelIteration,
-  type HarnessSubmissionObservation,
-} from "./harness/harness-benchmark-metrics.js";
-export type { HarnessToolObservation } from "./harness/tool-observability.js";
 export { taskComplexityBucket } from "./telemetry-cohorts.js";
 export type { TaskComplexityBucket } from "./telemetry-cohorts.js";
 export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";

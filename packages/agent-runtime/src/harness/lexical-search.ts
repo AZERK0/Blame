@@ -2,9 +2,12 @@ import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import { rgPath } from "@vscode/ripgrep";
 import { packagedResourcePath } from "./packaged-resource-path.js";
-import type { SearchCodeInput } from "./schemas.js";
 
-type TextQuery = Extract<SearchCodeInput["query"], { kind: "text" }>;
+type TextQuery = {
+  case_sensitive?: boolean;
+  pattern: string;
+  regex?: boolean;
+};
 
 export type LexicalSearchMatch = {
   path: string;
@@ -28,36 +31,43 @@ type RipgrepEvent = {
     line_number?: number;
     lines?: EncodedText;
     path?: EncodedText;
-    submatches?: Array<{
-      end?: number;
-      match?: EncodedText;
-      start?: number;
-    }>;
+    submatches?: RipgrepSubmatch[];
   };
 };
 
 type EncodedText = { bytes?: string; text?: string };
+type RipgrepSubmatch = { end?: number; match?: EncodedText; start?: number };
 
-export async function searchWithRipgrep(input: {
+type RipgrepSearchInput = {
   candidates: string[];
   maximum: number;
   query: TextQuery;
   root: string;
   scopePaths?: string[];
   signal?: AbortSignal;
-}): Promise<LexicalSearchResult> {
+};
+
+export async function searchWithRipgrep(
+  input: RipgrepSearchInput,
+): Promise<LexicalSearchResult> {
   input.signal?.throwIfAborted();
-  const command = ripgrepCommand();
   const candidateSet = new Set(input.candidates);
-  if (candidateSet.size === 0)
-    return {
-      available: true,
-      engine: "ripgrep",
-      items: [],
-      truncated: false,
-    };
-  const roots = searchRoots(input.scopePaths);
-  const args = [
+  if (!candidateSet.size) return emptySearchResult();
+  const child = spawn(ripgrepCommand(), ripgrepArguments(input), {
+    cwd: input.root,
+    env: process.env,
+    signal: input.signal,
+    stdio: ["ignore", "pipe", "pipe"],
+    windowsHide: true,
+  });
+  const processState = observeProcess(child);
+  const search = await collectMatches(child, input, candidateSet);
+  const completion = await processState.completion;
+  return finalizeSearch(input, search, completion, processState);
+}
+
+function ripgrepArguments(input: RipgrepSearchInput) {
+  return [
     "--json",
     "--no-config",
     "--no-messages",
@@ -76,109 +86,143 @@ export async function searchWithRipgrep(input: {
     ...(input.query.regex ? [] : ["--fixed-strings"]),
     "--",
     input.query.pattern,
-    ...roots,
+    ...searchRoots(input.scopePaths),
   ];
-  const child = spawn(command, args, {
-    cwd: input.root,
-    env: process.env,
-    signal: input.signal,
-    stdio: ["ignore", "pipe", "pipe"],
-    windowsHide: true,
-  });
-  const items: LexicalSearchMatch[] = [];
-  const errors: Buffer[] = [];
-  let limited = false;
-  let unavailable = false;
-  const completionPromise = new Promise<{
-    code: number | null;
-    signal: NodeJS.Signals | null;
-  }>((resolve) => {
-    child.once("close", (code, signal) => resolve({ code, signal }));
-  });
-  child.stderr.on("data", (chunk) => errors.push(Buffer.from(chunk)));
-  child.on("error", (error) => {
-    if (errorCode(error) === "ENOENT") unavailable = true;
-  });
+}
 
-  const lines = createInterface({ input: child.stdout, crlfDelay: Infinity });
+function observeProcess(child: ReturnType<typeof spawn>) {
+  const state = {
+    errors: [] as Buffer[],
+    unavailable: false,
+    completion: new Promise<{
+      code: number | null;
+      signal: NodeJS.Signals | null;
+    }>((resolve) => {
+      child.once("close", (code, signal) => resolve({ code, signal }));
+    }),
+  };
+  child.stderr?.on("data", (chunk) => state.errors.push(Buffer.from(chunk)));
+  child.on("error", (error) => {
+    if (errorCode(error) === "ENOENT") state.unavailable = true;
+  });
+  return state;
+}
+
+async function collectMatches(
+  child: ReturnType<typeof spawn>,
+  input: RipgrepSearchInput,
+  candidates: Set<string>,
+) {
+  const items: LexicalSearchMatch[] = [];
+  let limited = false;
+  const lines = createInterface({ input: child.stdout!, crlfDelay: Infinity });
   try {
     for await (const line of lines) {
-      if (!line) continue;
-      const event = parseEvent(line);
-      if (event?.type !== "match" || !event.data) continue;
-      const path = text(event.data.path)
-        ?.replaceAll("\\", "/")
-        .replace(/^\.\//u, "");
-      const absoluteOffset = event.data.absolute_offset;
-      const lineNumber = event.data.line_number;
-      const lineContent = text(event.data.lines);
-      if (
-        !path ||
-        !candidateSet.has(path) ||
-        !Number.isSafeInteger(absoluteOffset) ||
-        !Number.isSafeInteger(lineNumber) ||
-        lineContent === undefined
-      )
-        continue;
-      const lineBytes = Buffer.from(lineContent);
-      for (const submatch of event.data.submatches ?? []) {
-        if (
-          !Number.isSafeInteger(submatch.start) ||
-          !Number.isSafeInteger(submatch.end) ||
-          submatch.start! < 0 ||
-          submatch.end! < submatch.start! ||
-          submatch.end! > lineBytes.byteLength
-        )
-          continue;
-        const matched =
-          text(submatch.match) ??
-          lineBytes.subarray(submatch.start, submatch.end).toString("utf8");
-        const precedingLines = countNewlines(
-          lineBytes.subarray(0, submatch.start),
-        );
-        const startLine = lineNumber! + precedingLines;
-        const start = absoluteOffset! + submatch.start!;
-        items.push({
-          path,
-          line_range: [
-            startLine,
-            startLine + countNewlines(Buffer.from(matched)),
-          ],
-          range_utf8_bytes: [start, absoluteOffset! + submatch.end!],
-          excerpt: compactLine(lineContent),
-          match_reason: input.query.regex ? "lexical_regex" : "lexical_exact",
-        });
-        if (items.length >= input.maximum) {
-          limited = true;
-          child.kill();
-          break;
-        }
-      }
+      const matches = eventMatches(parseEvent(line), input, candidates);
+      items.push(...matches.slice(0, input.maximum - items.length));
+      limited = items.length >= input.maximum;
+      if (limited) child.kill();
       if (limited) break;
     }
   } finally {
     lines.close();
   }
 
-  const completion = await completionPromise;
-  if (unavailable)
-    return { available: false, engine: "node", items: [], truncated: false };
+  return { items, limited };
+}
+
+function eventMatches(
+  event: RipgrepEvent | undefined,
+  input: RipgrepSearchInput,
+  candidates: Set<string>,
+) {
+  if (event?.type !== "match" || !event.data) return [];
+  const data = event.data;
+  const path = text(data.path)?.replaceAll("\\", "/").replace(/^\.\//u, "");
+  const lineContent = text(data.lines);
   if (
-    !limited &&
+    !path ||
+    !candidates.has(path) ||
+    !Number.isSafeInteger(data.absolute_offset) ||
+    !Number.isSafeInteger(data.line_number) ||
+    lineContent === undefined
+  )
+    return [];
+  return (data.submatches ?? []).flatMap((submatch) =>
+    submatchResult(data, submatch, path, lineContent, input.query.regex),
+  );
+}
+
+function submatchResult(
+  data: NonNullable<RipgrepEvent["data"]>,
+  submatch: RipgrepSubmatch,
+  path: string,
+  lineContent: string,
+  regex?: boolean,
+): LexicalSearchMatch[] {
+  const lineBytes = Buffer.from(lineContent);
+  if (!validSubmatch(submatch, lineBytes.byteLength)) return [];
+  const matched =
+    text(submatch.match) ??
+    lineBytes.subarray(submatch.start, submatch.end).toString("utf8");
+  const startLine =
+    data.line_number! + countNewlines(lineBytes.subarray(0, submatch.start));
+  const start = data.absolute_offset! + submatch.start!;
+  return [
+    {
+      path,
+      line_range: [startLine, startLine + countNewlines(Buffer.from(matched))],
+      range_utf8_bytes: [start, data.absolute_offset! + submatch.end!],
+      excerpt: compactLine(lineContent),
+      match_reason: regex ? "lexical_regex" : "lexical_exact",
+    },
+  ];
+}
+
+function validSubmatch(
+  submatch: { end?: number; start?: number },
+  lineLength: number,
+) {
+  return (
+    Number.isSafeInteger(submatch.start) &&
+    Number.isSafeInteger(submatch.end) &&
+    submatch.start! >= 0 &&
+    submatch.end! >= submatch.start! &&
+    submatch.end! <= lineLength
+  );
+}
+
+function finalizeSearch(
+  input: RipgrepSearchInput,
+  search: { items: LexicalSearchMatch[]; limited: boolean },
+  completion: { code: number | null },
+  state: { errors: Buffer[]; unavailable: boolean },
+): LexicalSearchResult {
+  if (state.unavailable) return unavailableSearchResult();
+  if (
+    !search.limited &&
     completion.code !== 0 &&
     completion.code !== 1 &&
     !input.signal?.aborted
   )
     throw new Error(
-      `ripgrep failed: ${Buffer.concat(errors).toString("utf8").trim() || `exit ${completion.code}`}`,
+      `ripgrep failed: ${Buffer.concat(state.errors).toString("utf8").trim() || `exit ${completion.code}`}`,
     );
   input.signal?.throwIfAborted();
   return {
     available: true,
     engine: "ripgrep",
-    items,
-    truncated: limited,
+    items: search.items,
+    truncated: search.limited,
   };
+}
+
+function emptySearchResult(): LexicalSearchResult {
+  return { available: true, engine: "ripgrep", items: [], truncated: false };
+}
+
+function unavailableSearchResult(): LexicalSearchResult {
+  return { available: false, engine: "node", items: [], truncated: false };
 }
 
 function searchRoots(paths?: string[]) {

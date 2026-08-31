@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, realpath, stat, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -42,7 +49,7 @@ test("rejects path traversal project names", async () => {
 
   await assert.rejects(
     () => validateProjectTarget(parent, "../escape"),
-    /letters, numbers/
+    /letters, numbers/,
   );
 });
 
@@ -54,7 +61,7 @@ test("rejects non-empty target directories", async () => {
 
   await assert.rejects(
     () => validateProjectTarget(parent, "taken"),
-    /not empty/
+    /not empty/,
   );
 });
 
@@ -75,7 +82,11 @@ test("creates an empty target directory and delegates generation to the AI agent
       receivedConfiguration = input.configuration;
       const info = await stat(input.cwd);
       assert.equal(info.isDirectory(), true);
-      await writeFile(join(input.cwd, "package.json"), '{"name":"agent-app"}', "utf8");
+      await writeFile(
+        join(input.cwd, "package.json"),
+        '{"name":"agent-app"}',
+        "utf8",
+      );
       return {
         path: input.cwd,
         sessionId: input.sessionId ?? "session",
@@ -108,7 +119,11 @@ test("initializes generated projects as independent git repositories", async () 
   const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
   const target = join(parent, "nested-app");
   await mkdir(target);
-  await writeFile(join(target, "package.json"), '{"name":"nested-app"}', "utf8");
+  await writeFile(
+    join(target, "package.json"),
+    '{"name":"nested-app"}',
+    "utf8",
+  );
   await runGit(parent, ["init"]);
   await runGit(parent, ["add", "--all"]);
   await runGit(parent, ["commit", "-m", "parent"]);
@@ -124,9 +139,21 @@ test("initial repository commit excludes generated runtime artifacts", async () 
   const target = join(parent, "runtime-artifacts-app");
   await mkdir(join(target, "node_modules", "package"), { recursive: true });
   await mkdir(join(target, ".blame", "logs"), { recursive: true });
-  await writeFile(join(target, "package.json"), '{"name":"runtime-artifacts-app"}', "utf8");
-  await writeFile(join(target, "node_modules", "package", "index.js"), "module.exports = {}\n", "utf8");
-  await writeFile(join(target, ".blame", "logs", "cline.log"), "debug\n", "utf8");
+  await writeFile(
+    join(target, "package.json"),
+    '{"name":"runtime-artifacts-app"}',
+    "utf8",
+  );
+  await writeFile(
+    join(target, "node_modules", "package", "index.js"),
+    "module.exports = {}\n",
+    "utf8",
+  );
+  await writeFile(
+    join(target, ".blame", "logs", "cline.log"),
+    "debug\n",
+    "utf8",
+  );
 
   await initializeGeneratedRepository(target);
 
@@ -141,7 +168,11 @@ test("creates and extends the root gitignore before the initial commit", async (
   await writeFile(join(target, ".gitignore"), "dist/\n", "utf8");
   await writeFile(join(target, ".env"), "SECRET=value\n", "utf8");
   await writeFile(join(target, ".env.example"), "SECRET=\n", "utf8");
-  await writeFile(join(target, "package.json"), '{"name":"gitignore-app"}', "utf8");
+  await writeFile(
+    join(target, "package.json"),
+    '{"name":"gitignore-app"}',
+    "utf8",
+  );
 
   await initializeGeneratedRepository(target);
 
@@ -162,13 +193,19 @@ test("pins package manager in generated package manifest", async () => {
   const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
   const target = join(parent, "manifest-app");
   await mkdir(target);
-  await writeFile(join(target, "package.json"), '{"name":"manifest-app"}', "utf8");
+  await writeFile(
+    join(target, "package.json"),
+    '{"name":"manifest-app"}',
+    "utf8",
+  );
 
   await initializeGeneratedRepository(target);
   const recipe = projectCreationRecipe(baseConfiguration, target);
   await applyProjectOverlays(target, recipe.overlays, baseConfiguration);
 
-  const parsed = JSON.parse(await readFile(join(target, "package.json"), "utf8"));
+  const parsed = JSON.parse(
+    await readFile(join(target, "package.json"), "utf8"),
+  );
   assert.equal(parsed.packageManager, "pnpm@10.33.2");
   assert.deepEqual(parsed.pnpm.onlyBuiltDependencies, [
     "@prisma/engines",
@@ -181,7 +218,7 @@ test("pins package manager in generated package manifest", async () => {
 test("builds Next.js recipe with selected package manager and overlays", () => {
   const recipe = projectCreationRecipe(
     { ...baseConfiguration, packageManager: "npm" },
-    "/tmp/my-app"
+    "/tmp/my-app",
   );
 
   assert.equal(recipe.scaffold.command, "npm");
@@ -192,8 +229,10 @@ test("builds Next.js recipe with selected package manager and overlays", () => {
   ]);
   assert.equal(recipe.installs[0]?.command, "npm");
   assert.equal(
-    recipe.overlays.some((overlay) => overlay.path.endsWith(".blame/preview.json")),
-    true
+    recipe.overlays.some((overlay) =>
+      overlay.path.endsWith(".blame/preview.json"),
+    ),
+    true,
   );
 });
 
@@ -211,7 +250,7 @@ test("scaffolds uppercase project names with npm-safe directory names", () => {
 test("builds Vite recipe for React templates", () => {
   const recipe = projectCreationRecipe(
     { ...baseConfiguration, frontend: "react-vite", backend: "hono" },
-    "/tmp/react-app"
+    "/tmp/react-app",
   );
 
   assert.equal(recipe.scaffold.command, "pnpm");
@@ -237,20 +276,17 @@ test("maps advanced options to generated files", () => {
         "unitTests",
       ],
     },
-    "/tmp/full-app"
+    "/tmp/full-app",
   );
 
-  assert.deepEqual(
-    recipe.overlays.map((overlay) => overlay.path).sort(),
-    [
-      "/tmp/full-app/.github/workflows/ci.yml",
-      "/tmp/full-app/Dockerfile",
-      "/tmp/full-app/docker-compose.yml",
-      "/tmp/full-app/pnpm-workspace.yaml",
-      "/tmp/full-app/src/blame.generated.test.ts",
-      "/tmp/full-app/tests/preview.spec.ts",
-    ]
-  );
+  assert.deepEqual(recipe.overlays.map((overlay) => overlay.path).sort(), [
+    "/tmp/full-app/.github/workflows/ci.yml",
+    "/tmp/full-app/Dockerfile",
+    "/tmp/full-app/docker-compose.yml",
+    "/tmp/full-app/pnpm-workspace.yaml",
+    "/tmp/full-app/src/blame.generated.test.ts",
+    "/tmp/full-app/tests/preview.spec.ts",
+  ]);
 });
 
 test("advanced scripts and TypeScript alias options update project files", async () => {
@@ -260,7 +296,7 @@ test("advanced scripts and TypeScript alias options update project files", async
   await writeFile(
     join(target, "package.json"),
     JSON.stringify({ name: "advanced-app" }),
-    "utf8"
+    "utf8",
   );
   await writeFile(join(target, "tsconfig.json"), "{}", "utf8");
 
@@ -269,18 +305,32 @@ test("advanced scripts and TypeScript alias options update project files", async
     projectCreationRecipe(
       {
         ...baseConfiguration,
-        advancedOptions: ["standardScripts", "typescriptAlias", "unitTests", "e2eTests"],
+        advancedOptions: [
+          "standardScripts",
+          "typescriptAlias",
+          "unitTests",
+          "e2eTests",
+        ],
       },
-      target
+      target,
     ).overlays,
     {
       ...baseConfiguration,
-      advancedOptions: ["standardScripts", "typescriptAlias", "unitTests", "e2eTests"],
-    }
+      advancedOptions: [
+        "standardScripts",
+        "typescriptAlias",
+        "unitTests",
+        "e2eTests",
+      ],
+    },
   );
 
-  const packageJson = JSON.parse(await readFile(join(target, "package.json"), "utf8"));
-  const tsconfig = JSON.parse(await readFile(join(target, "tsconfig.json"), "utf8"));
+  const packageJson = JSON.parse(
+    await readFile(join(target, "package.json"), "utf8"),
+  );
+  const tsconfig = JSON.parse(
+    await readFile(join(target, "tsconfig.json"), "utf8"),
+  );
   assert.equal(packageJson.scripts.dev, "next dev");
   assert.equal(packageJson.scripts.test, "vitest run");
   assert.equal(packageJson.scripts.e2e, "playwright test");
@@ -302,7 +352,7 @@ test("TypeScript alias option accepts JSONC tsconfig files", async () => {
       "}",
       "",
     ].join("\n"),
-    "utf8"
+    "utf8",
   );
 
   await applyProjectOverlays(target, [], {
@@ -310,7 +360,9 @@ test("TypeScript alias option accepts JSONC tsconfig files", async () => {
     advancedOptions: ["typescriptAlias"],
   });
 
-  const tsconfig = JSON.parse(await readFile(join(target, "tsconfig.json"), "utf8"));
+  const tsconfig = JSON.parse(
+    await readFile(join(target, "tsconfig.json"), "utf8"),
+  );
   assert.deepEqual(tsconfig.compilerOptions.paths["@/*"], ["./src/*"]);
 });
 
@@ -318,7 +370,11 @@ test("monorepo option updates workspace metadata", async () => {
   const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
   const target = join(parent, "monorepo-app");
   await mkdir(target);
-  await writeFile(join(target, "package.json"), '{"name":"monorepo-app"}', "utf8");
+  await writeFile(
+    join(target, "package.json"),
+    '{"name":"monorepo-app"}',
+    "utf8",
+  );
 
   const configuration: NewProjectConfiguration = {
     ...baseConfiguration,
@@ -328,14 +384,16 @@ test("monorepo option updates workspace metadata", async () => {
   await applyProjectOverlays(
     target,
     projectCreationRecipe(configuration, target).overlays,
-    configuration
+    configuration,
   );
 
-  const packageJson = JSON.parse(await readFile(join(target, "package.json"), "utf8"));
+  const packageJson = JSON.parse(
+    await readFile(join(target, "package.json"), "utf8"),
+  );
   assert.deepEqual(packageJson.workspaces, ["apps/*", "packages/*"]);
   assert.equal(
     await readFile(join(target, "pnpm-workspace.yaml"), "utf8"),
-    "packages:\n  - apps/*\n  - packages/*\n"
+    "packages:\n  - apps/*\n  - packages/*\n",
   );
 });
 
@@ -350,35 +408,61 @@ test("disabled advanced scripts option does not synthesize standard scripts", as
     advancedOptions: [],
   });
 
-  const packageJson = JSON.parse(await readFile(join(target, "package.json"), "utf8"));
+  const packageJson = JSON.parse(
+    await readFile(join(target, "package.json"), "utf8"),
+  );
   assert.deepEqual(packageJson.scripts, {});
 });
 
 test("builds Blame initialization defaults without AI analysis", () => {
-  assert.doesNotMatch(setupScript(baseConfiguration), /\b(?:npm|pnpm|yarn|bun|corepack)\b/);
+  assert.doesNotMatch(
+    setupScript(baseConfiguration),
+    /\b(?:npm|pnpm|yarn|bun|corepack)\b/,
+  );
   assert.match(setupScript(baseConfiguration), /set -euo pipefail/);
   assert.doesNotMatch(setupScript(baseConfiguration), /command -v docker/);
   assert.match(setupScript(baseConfiguration), /COMPOSE_PROJECT_NAME/);
   assert.match(setupScript(baseConfiguration), /cp \.env\.example \.env/);
   assert.match(dockerCompose(baseConfiguration), /blame\.preview: "true"/);
-  assert.match(dockerCompose(baseConfiguration), /blame\.preview\.protocol: "http"/);
+  assert.match(
+    dockerCompose(baseConfiguration),
+    /blame\.preview\.protocol: "http"/,
+  );
   assert.match(dockerCompose(baseConfiguration), /blame\.preview\.path: "\/"/);
   assert.match(dockerCompose(baseConfiguration), /-H 0\.0\.0\.0/);
   assert.match(dockerCompose(baseConfiguration), /node:22-bookworm-slim/);
   assert.doesNotMatch(dockerCompose(baseConfiguration), /node:22-alpine/);
   assert.match(dockerCompose(baseConfiguration), /node-modules-init:/);
   assert.match(dockerCompose(baseConfiguration), /chown -R 0:0/);
-  assert.match(dockerCompose(baseConfiguration), /\[ ! -e \.\/node_modules\/\.bin\/next \]/);
-  assert.match(dockerCompose(baseConfiguration), /blame_node_modules:\/workspace\/node_modules/);
+  assert.match(
+    dockerCompose(baseConfiguration),
+    /\[ ! -e \.\/node_modules\/\.bin\/next \]/,
+  );
+  assert.match(
+    dockerCompose(baseConfiguration),
+    /blame_node_modules:\/workspace\/node_modules/,
+  );
   assert.match(dockerCompose(baseConfiguration), /corepack pnpm install/);
-  assert.match(dockerCompose(baseConfiguration), /corepack pnpm exec prisma generate/);
+  assert.match(
+    dockerCompose(baseConfiguration),
+    /corepack pnpm exec prisma generate/,
+  );
   assert.doesNotMatch(dockerCompose(baseConfiguration), /"pnpm install/);
-  assert.match(dockerCompose(baseConfiguration), /\.\/node_modules\/\.bin\/next dev -H 0\.0\.0\.0/);
+  assert.match(
+    dockerCompose(baseConfiguration),
+    /\.\/node_modules\/\.bin\/next dev -H 0\.0\.0\.0/,
+  );
   assert.doesNotMatch(dockerCompose(baseConfiguration), /pnpm run dev -- -H/);
-  assert.doesNotMatch(dockerCompose(baseConfiguration), /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
+  assert.doesNotMatch(
+    dockerCompose(baseConfiguration),
+    /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/,
+  );
   assert.match(dockerCompose(baseConfiguration), /- "127\.0\.0\.1::3000"/);
   assert.doesNotMatch(dockerCompose(baseConfiguration), /3000:3000/);
-  assert.match(dockerCompose(baseConfiguration), /\$\{BLAME_PROJECT_ROOT\}:\/workspace/);
+  assert.match(
+    dockerCompose(baseConfiguration),
+    /\$\{BLAME_PROJECT_ROOT\}:\/workspace/,
+  );
 });
 
 test("builds Vite preview host arguments for Blame initialization", () => {
@@ -398,19 +482,19 @@ test("builds database services for SQL and document databases", () => {
   assert.doesNotMatch(dockerCompose(baseConfiguration), /5432:5432/);
   assert.match(
     dockerCompose({ ...baseConfiguration, database: "mysql" }),
-    /image: mysql:9/
+    /image: mysql:9/,
   );
   assert.doesNotMatch(
     dockerCompose({ ...baseConfiguration, database: "mysql" }),
-    /3306:3306/
+    /3306:3306/,
   );
   assert.match(
     dockerCompose({ ...baseConfiguration, database: "mongodb", orm: "none" }),
-    /image: mongo:8/
+    /image: mongo:8/,
   );
   assert.doesNotMatch(
     dockerCompose({ ...baseConfiguration, database: "mongodb", orm: "none" }),
-    /27017:27017/
+    /27017:27017/,
   );
 });
 
@@ -425,7 +509,10 @@ test("builds FastAPI service with Python package manager setup", () => {
   const recipe = projectSetupRecipe(configuration);
 
   assert.match(recipe.setupScript, /pip install uv && uv sync/);
-  assert.match(recipe.setupScript, /if \[ -f alembic\.ini \]; then uv run alembic upgrade head; fi/);
+  assert.match(
+    recipe.setupScript,
+    /if \[ -f alembic\.ini \]; then uv run alembic upgrade head; fi/,
+  );
   assert.match(recipe.dockerCompose, /api:/);
   assert.match(recipe.dockerCompose, /python:3\.13-slim/);
   assert.match(recipe.dockerCompose, /uvicorn api\.main:app/);
@@ -452,33 +539,43 @@ test("builds Node API services for Hono Fastify and NestJS", () => {
 test("builds package-manager specific setup commands", () => {
   assert.doesNotMatch(
     setupScript({ ...baseConfiguration, packageManager: "npm" }),
-    /npm install/
+    /npm install/,
   );
   assert.doesNotMatch(
     setupScript({ ...baseConfiguration, packageManager: "bun" }),
-    /bun install/
+    /bun install/,
   );
   assert.match(
-    setupScript({ ...baseConfiguration, backend: "fastapi", packageManager: "poetry" }),
-    /poetry install/
+    setupScript({
+      ...baseConfiguration,
+      backend: "fastapi",
+      packageManager: "poetry",
+    }),
+    /poetry install/,
   );
 });
 
 test("builds container-safe package manager commands", () => {
-  assert.match(dockerCompose(baseConfiguration), /corepack prepare pnpm@10\.33\.2 --activate/);
+  assert.match(
+    dockerCompose(baseConfiguration),
+    /corepack prepare pnpm@10\.33\.2 --activate/,
+  );
   assert.match(dockerCompose(baseConfiguration), /corepack pnpm install/);
-  assert.match(dockerCompose(baseConfiguration), /\[ ! -e \.\/node_modules\/\.bin\/next \]/);
+  assert.match(
+    dockerCompose(baseConfiguration),
+    /\[ ! -e \.\/node_modules\/\.bin\/next \]/,
+  );
   assert.match(
     dockerCompose({ ...baseConfiguration, packageManager: "yarn" }),
-    /corepack yarn install/
+    /corepack yarn install/,
   );
   assert.match(
     dockerCompose({ ...baseConfiguration, packageManager: "npm" }),
-    /npm install/
+    /npm install/,
   );
   assert.match(
     dockerCompose({ ...baseConfiguration, packageManager: "bun" }),
-    /oven\/bun:1/
+    /oven\/bun:1/,
   );
 });
 
@@ -486,12 +583,12 @@ test("guards ORM setup commands until config files exist", () => {
   assert.doesNotMatch(setupScript(baseConfiguration), /prisma generate/);
   assert.match(
     dockerCompose(baseConfiguration),
-    /if \[ -f prisma\/schema\.prisma \].+corepack pnpm exec prisma generate; fi/
+    /if \[ -f prisma\/schema\.prisma \].+corepack pnpm exec prisma generate; fi/,
   );
   assert.doesNotMatch(dockerCompose(baseConfiguration), /npx prisma generate/);
   assert.match(
     dockerCompose({ ...baseConfiguration, orm: "drizzle" }),
-    /if \[ -f drizzle\.config\.ts \].+corepack pnpm exec drizzle-kit generate; fi/
+    /if \[ -f drizzle\.config\.ts \].+corepack pnpm exec drizzle-kit generate; fi/,
   );
 });
 
@@ -513,7 +610,11 @@ const matrixCases: Array<{
     name: "Next.js + Tailwind + shadcn + Next API + PostgreSQL + Prisma + pnpm",
     configuration: baseConfiguration,
     expected: {
-      compose: [/- "127\.0\.0\.1::3000"/, /postgres:17-alpine/, /DATABASE_URL: "postgresql:\/\/blame:blame@database:5432\/blame"/],
+      compose: [
+        /- "127\.0\.0\.1::3000"/,
+        /postgres:17-alpine/,
+        /DATABASE_URL: "postgresql:\/\/blame:blame@database:5432\/blame"/,
+      ],
       dependencies: ["@prisma/client", "pg"],
       devDependencies: ["prisma", "shadcn"],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
@@ -536,11 +637,22 @@ const matrixCases: Array<{
       uiLibrary: "daisyui",
     },
     expected: {
-      compose: [/- "127\.0\.0\.1::5173"/, /api:/, /DATABASE_URL: "file:.\/dev.db"/],
+      compose: [
+        /- "127\.0\.0\.1::5173"/,
+        /api:/,
+        /DATABASE_URL: "file:.\/dev.db"/,
+      ],
       dependencies: ["better-sqlite3", "daisyui", "drizzle-orm", "hono"],
       devDependencies: ["@biomejs/biome", "drizzle-kit"],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
-      scaffold: ["pnpm", "create", "vite", "matrix-react", "--template", "react-ts"],
+      scaffold: [
+        "pnpm",
+        "create",
+        "vite",
+        "matrix-react",
+        "--template",
+        "react-ts",
+      ],
       setup: [/COMPOSE_PROJECT_NAME/, /cp \.env\.example \.env/],
       target: "/tmp/matrix-react",
     },
@@ -559,7 +671,18 @@ const matrixCases: Array<{
       compose: [/- "127\.0\.0\.1::3000"/, /postgres:17-alpine/],
       dependencies: ["@nuxt/ui", "pg"],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
-      scaffold: ["pnpm", "create", "nuxt", "matrix-nuxt", "--template", "minimal", "--no-install", "--packageManager=pnpm", "--gitInit=false", "--modules="],
+      scaffold: [
+        "pnpm",
+        "create",
+        "nuxt",
+        "matrix-nuxt",
+        "--template",
+        "minimal",
+        "--no-install",
+        "--packageManager=pnpm",
+        "--gitInit=false",
+        "--modules=",
+      ],
       setup: [/COMPOSE_PROJECT_NAME/, /cp \.env\.example \.env/],
       target: "/tmp/matrix-nuxt",
     },
@@ -576,10 +699,28 @@ const matrixCases: Array<{
       uiLibrary: "primevue",
     },
     expected: {
-      compose: [/- "127\.0\.0\.1::5173"/, /api:/, /postgres:17-alpine/, /uvicorn api\.main:app/],
+      compose: [
+        /- "127\.0\.0\.1::5173"/,
+        /api:/,
+        /postgres:17-alpine/,
+        /uvicorn api\.main:app/,
+      ],
       dependencies: ["pg", "primevue"],
-      overlays: [".env.example", "README.md", ".blame/preview.json", "api/main.py", "pyproject.toml"],
-      scaffold: ["npm", "create", "vite@latest", "matrix-vue", "--template", "vue-ts"],
+      overlays: [
+        ".env.example",
+        "README.md",
+        ".blame/preview.json",
+        "api/main.py",
+        "pyproject.toml",
+      ],
+      scaffold: [
+        "npm",
+        "create",
+        "vite@latest",
+        "matrix-vue",
+        "--template",
+        "vue-ts",
+      ],
       setup: [/pip install uv && uv sync/, /uv run alembic upgrade head/],
       target: "/tmp/matrix-vue",
     },
@@ -599,7 +740,21 @@ const matrixCases: Array<{
       dependencies: ["better-sqlite3", "drizzle-orm"],
       devDependencies: ["drizzle-kit", "shadcn-svelte"],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
-      scaffold: ["pnpm", "dlx", "sv", "create", "matrix-svelte", "--template", "minimal", "--types", "ts", "--no-add-ons", "--no-install", "--no-dir-check", "--no-download-check"],
+      scaffold: [
+        "pnpm",
+        "dlx",
+        "sv",
+        "create",
+        "matrix-svelte",
+        "--template",
+        "minimal",
+        "--types",
+        "ts",
+        "--no-add-ons",
+        "--no-install",
+        "--no-dir-check",
+        "--no-download-check",
+      ],
       setup: [/COMPOSE_PROJECT_NAME/, /cp \.env\.example \.env/],
       target: "/tmp/matrix-svelte",
     },
@@ -617,7 +772,14 @@ const matrixCases: Array<{
     expected: {
       compose: [/- "127\.0\.0\.1::5173"/],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
-      scaffold: ["pnpm", "create", "vite", "matrix-empty", "--template", "react-ts"],
+      scaffold: [
+        "pnpm",
+        "create",
+        "vite",
+        "matrix-empty",
+        "--template",
+        "react-ts",
+      ],
       setup: [/COMPOSE_PROJECT_NAME/, /cp \.env\.example \.env/],
       target: "/tmp/matrix-empty",
     },
@@ -628,7 +790,7 @@ for (const item of matrixCases) {
   test(`matrix recipe: ${item.name}`, () => {
     const recipe = projectCreationRecipe(
       item.configuration,
-      item.expected.target ?? "/tmp/matrix-project"
+      item.expected.target ?? "/tmp/matrix-project",
     );
     const setup = projectSetupRecipe(item.configuration);
 
@@ -637,8 +799,10 @@ for (const item of matrixCases) {
     assertPackages(recipe, item.expected.dependencies ?? [], false);
     assertPackages(recipe, item.expected.devDependencies ?? [], true);
     assertOverlays(recipe, item.expected.overlays ?? []);
-    for (const pattern of item.expected.setup) assert.match(setup.setupScript, pattern);
-    for (const pattern of item.expected.compose) assert.match(setup.dockerCompose, pattern);
+    for (const pattern of item.expected.setup)
+      assert.match(setup.setupScript, pattern);
+    for (const pattern of item.expected.compose)
+      assert.match(setup.dockerCompose, pattern);
   });
 }
 
@@ -650,47 +814,62 @@ test("matrix recipe: npm-safe scaffold target keeps final path for uppercase nam
 });
 
 function assertScaffold(recipe: ProjectCreationRecipe, expected: string[]) {
-  assert.deepEqual([recipe.scaffold.command, ...recipe.scaffold.args].slice(0, expected.length), expected);
+  assert.deepEqual(
+    [recipe.scaffold.command, ...recipe.scaffold.args].slice(
+      0,
+      expected.length,
+    ),
+    expected,
+  );
 }
 
 function assertScaffoldContains(
   recipe: ProjectCreationRecipe,
-  expectedItems: string[]
+  expectedItems: string[],
 ) {
   const command = [recipe.scaffold.command, ...recipe.scaffold.args];
   for (const item of expectedItems) {
-    assert.equal(command.includes(item), true, `${item} should be in scaffold command`);
+    assert.equal(
+      command.includes(item),
+      true,
+      `${item} should be in scaffold command`,
+    );
   }
 }
 
 function assertPackages(
   recipe: ProjectCreationRecipe,
   expectedPackages: string[],
-  dev: boolean
+  dev: boolean,
 ) {
   const args = recipe.installs.flatMap((install) => install.args);
   for (const packageName of expectedPackages) {
-    assert.equal(args.includes(packageName), true, `${packageName} should be installed${dev ? " as dev dependency" : ""}`);
+    assert.equal(
+      args.includes(packageName),
+      true,
+      `${packageName} should be installed${dev ? " as dev dependency" : ""}`,
+    );
   }
 }
 
-function assertOverlays(recipe: ProjectCreationRecipe, expectedPaths: string[]) {
+function assertOverlays(
+  recipe: ProjectCreationRecipe,
+  expectedPaths: string[],
+) {
   const paths = recipe.overlays.map((overlay) => overlay.path);
   for (const path of expectedPaths) {
-    assert.equal(paths.some((overlayPath) => overlayPath.endsWith(path)), true, `${path} overlay should exist`);
+    assert.equal(
+      paths.some((overlayPath) => overlayPath.endsWith(path)),
+      true,
+      `${path} overlay should exist`,
+    );
   }
 }
 
 function runGit(cwd: string, args: string[]) {
   return execFileAsync(
     "git",
-    [
-      "-c",
-      "user.name=Blame",
-      "-c",
-      "user.email=blame@example.local",
-      ...args,
-    ],
+    ["-c", "user.name=Blame", "-c", "user.email=blame@example.local", ...args],
     { cwd },
   );
 }

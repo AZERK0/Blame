@@ -1,38 +1,39 @@
-import type { ClineCore } from "@cline/sdk"
+import type { ClineCore } from "@cline/sdk";
 
-import { loadPrompt } from "./prompt-loader.js"
-import { appendProductionConfig } from "./production.js"
-import { reasoningConfig } from "./reasoning.js"
+import { loadPrompt } from "./prompt-loader.js";
+import { appendProductionConfig } from "./production.js";
+import { reasoningConfig } from "./reasoning.js";
 import type {
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
-} from "./types.js"
+} from "./types.js";
 
 type PromptOptimizationCredential = {
-  apiKey: string
-  baseUrl: string | null
-}
+  apiKey: string;
+  baseUrl: string | null;
+};
 
 export async function optimizeUserStoryPrompt(
   input: OptimizeUserStoryPromptInput,
   cline: ClineCore,
-  credential: PromptOptimizationCredential
+  credential: PromptOptimizationCredential,
 ): Promise<OptimizeUserStoryPromptResult> {
-  const prompt = promptOptimizationUserPrompt(input)
+  const prompt = promptOptimizationUserPrompt(input);
   const session = await cline.start({
     prompt,
     config: promptOptimizationConfig(input, credential),
     interactive: false,
     source: "blame-prompt-optimizer",
-  })
-  const markdown = optimizedMarkdown(session.result?.text)
-  if (!markdown) throw new Error("Prompt optimizer agent did not return Markdown.")
-  return { sessionId: session.sessionId, markdown }
+  });
+  const markdown = optimizedMarkdown(session.result?.text);
+  if (!markdown)
+    throw new Error("Prompt optimizer agent did not return Markdown.");
+  return { sessionId: session.sessionId, markdown };
 }
 
 function promptOptimizationConfig(
   input: OptimizeUserStoryPromptInput,
-  credential: PromptOptimizationCredential
+  credential: PromptOptimizationCredential,
 ) {
   return appendProductionConfig({
     providerId: input.providerId,
@@ -47,7 +48,7 @@ function promptOptimizationConfig(
     enableSpawnAgent: false,
     enableAgentTeams: false,
     maxIterations: 4,
-  })
+  });
 }
 
 function promptOptimizationUserPrompt(input: OptimizeUserStoryPromptInput) {
@@ -59,23 +60,23 @@ function promptOptimizationUserPrompt(input: OptimizeUserStoryPromptInput) {
     input.prompt.trim(),
   ]
     .filter(Boolean)
-    .join("\n")
+    .join("\n");
 }
 
 function optionalTitle(title: string | undefined) {
-  const value = title?.trim()
-  return value ? `Current title: ${value}\n` : ""
+  const value = title?.trim();
+  return value ? `Current title: ${value}\n` : "";
 }
 
 function optimizedMarkdown(value: unknown) {
-  const markdown = stringValue(value)?.trim()
-  if (!markdown) return undefined
+  const markdown = stringValue(value)?.trim();
+  if (!markdown) return undefined;
   return markdown
     .replace(/^```(?:markdown|md)?\s*/i, "")
     .replace(/\s*```$/i, "")
-    .trim()
+    .trim();
 }
 
 function stringValue(value: unknown) {
-  return typeof value === "string" ? value : undefined
+  return typeof value === "string" ? value : undefined;
 }

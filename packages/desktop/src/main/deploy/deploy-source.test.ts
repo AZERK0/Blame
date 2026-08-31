@@ -93,9 +93,8 @@ test("blocks case-insensitive path collisions before upload", async (context) =>
     await writeFile(join(root, "README.md"), "one");
     await writeFile(join(root, "readme.md"), "two");
     if (
-      (await readdir(root)).filter(
-        (name) => name.toLowerCase() === "readme.md",
-      ).length < 2
+      (await readdir(root)).filter((name) => name.toLowerCase() === "readme.md")
+        .length < 2
     ) {
       context.skip("The host filesystem is case-insensitive");
       return;

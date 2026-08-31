@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "cline": {
-    "plugins": ["./index.js"]
+    "plugins": [
+      "./index.js"
+    ]
   }
 }

@@ -1,5 +1,9 @@
 # Semantic Workspace Harness
 
+> **Archive historique.** Ce document décrit la P0 antérieure, désormais
+> décommissionnée. Le chemin de production unique est le Light Semantic Harness
+> de la section 21.30 de `docs/Etude-harness-agentique.md`.
+
 Ce document décrit l’implémentation P0 de
 `docs/Etude-harness-agentique.md`. L’étude fixe les invariants et le protocole ;
 l’architecture Blame et le SDK Cline ne sont que des adapters autour de ce
@@ -28,7 +32,7 @@ capacités non disponibles sont annoncées par `workspace_state` et refusées av
 | checkpoint                        | checkpoint Cline activé par session, compare/restore exposés par le control plane desktop                    |
 | audit des effets                  | artifacts liés aux révisions, raw scellé, logs redacted et écritures de run capturées en `ChangeProposalRef` |
 
-Les exit criteria sont donc respectés dans les chemins contrôlés : un handle
+Les exit criteria étaient respectés dans les chemins contrôlés : un handle
 stale n’est jamais remappé, chaque patch et run porte sa source revision, les
 tâches n’écrivent pas la worktree canonique, et le mode raw reste utilisable si
 le parser échoue.

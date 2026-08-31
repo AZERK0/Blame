@@ -3,12 +3,12 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { PassThrough, Writable } from "node:stream";
 import test from "node:test";
-import type { SemanticWorkspaceExecutionRequest } from "@blame/agent-runtime";
+import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
 import { RuntimeAgentClient } from "./runtime-agent.ts";
-import { semanticWorkspaceExecutionTarget } from "./semantic-workspace-routing.ts";
+import { lightWorkspaceExecutionTarget } from "./light-workspace-routing.ts";
 import { worktreeRoot } from "./workspace-runtime.ts";
 
-const managedSemanticWorkspaceRoot =
+const managedLightWorkspaceRoot =
   "/home/blame/.local/share/blame/runtime/worktrees/Blame/story-US-188-test";
 
 type Request = {
@@ -257,7 +257,7 @@ test("runtime agent client batches existing file reads", async () => {
 test("runtime agent client delegates and cancels semantic workspace execution", async () => {
   const processes: FakeAgentProcess[] = [];
   const spawnProcess = fakeSpawn(processes, (request, process) => {
-    if (request.method !== "semanticWorkspaceCancel") return;
+    if (request.method !== "lightWorkspaceCancel") return;
     process.stdout.write(
       `${JSON.stringify({
         id: request.id,
@@ -268,14 +268,14 @@ test("runtime agent client delegates and cancels semantic workspace execution", 
   });
   const client = new RuntimeAgentClient({ platform: "darwin", spawnProcess });
   const controller = new AbortController();
-  const execution = client.semanticWorkspace(
+  const execution = client.lightWorkspace(
     {
       execution: {
         backendMode: "remote",
         workspaceMode: "local-container",
       },
-      input: {},
-      tool: "workspace_state",
+      input: { target: "@capabilities" },
+      tool: "read_code",
       workspaceRoot:
         "/home/blame/.local/share/blame/runtime/worktrees/project/story-US-1",
     },
@@ -286,8 +286,8 @@ test("runtime agent client delegates and cancels semantic workspace execution", 
   await assert.rejects(execution, { name: "AbortError" });
   await new Promise((resolve) => setImmediate(resolve));
 
-  assert.equal(processes[0].requests[0].method, "semanticWorkspace");
-  assert.equal(processes[0].requests[1].method, "semanticWorkspaceCancel");
+  assert.equal(processes[0].requests[0].method, "lightWorkspace");
+  assert.equal(processes[0].requests[1].method, "lightWorkspaceCancel");
   assert.equal(
     processes[0].requests[1].params.operationId,
     processes[0].requests[0].params.operationId,
@@ -327,40 +327,36 @@ test("routes local-container semantic tools into Lima and WSL2", () => {
   const request = semanticRequest(
     "local-container",
     "remote",
-    managedSemanticWorkspaceRoot,
+    managedLightWorkspaceRoot,
   );
   assert.equal(
-    semanticWorkspaceExecutionTarget(request, "darwin"),
+    lightWorkspaceExecutionTarget(request, "darwin"),
     "managed-runtime",
   );
   assert.equal(
-    semanticWorkspaceExecutionTarget(request, "win32"),
+    lightWorkspaceExecutionTarget(request, "win32"),
     "managed-runtime",
   );
 });
 
 test("keeps cloud previews and Linux semantic tools native", () => {
   assert.equal(
-    semanticWorkspaceExecutionTarget(
+    lightWorkspaceExecutionTarget(
       semanticRequest("cloud-mirror", "local", "/tmp/native-worktree"),
       "darwin",
     ),
     "native",
   );
   assert.equal(
-    semanticWorkspaceExecutionTarget(
+    lightWorkspaceExecutionTarget(
       semanticRequest("cloud-mirror", "local", "C:\\native-worktree"),
       "win32",
     ),
     "native",
   );
   assert.equal(
-    semanticWorkspaceExecutionTarget(
-      semanticRequest(
-        "local-container",
-        "remote",
-        managedSemanticWorkspaceRoot,
-      ),
+    lightWorkspaceExecutionTarget(
+      semanticRequest("local-container", "remote", managedLightWorkspaceRoot),
       "linux",
     ),
     "native",
@@ -376,7 +372,7 @@ test("covers both harness modes on Linux, macOS, and Windows", () => {
     );
     assert.equal(root, runtimeCase.root, runtimeCase.name);
     assert.equal(
-      semanticWorkspaceExecutionTarget(
+      lightWorkspaceExecutionTarget(
         semanticRequest(runtimeCase.mode, runtimeCase.backend, root),
         runtimeCase.platform,
       ),
@@ -388,7 +384,7 @@ test("covers both harness modes on Linux, macOS, and Windows", () => {
 
 test("does not delegate host-native local worktrees", () => {
   assert.equal(
-    semanticWorkspaceExecutionTarget(
+    lightWorkspaceExecutionTarget(
       semanticRequest("local-container", "local", "/Users/dev/project"),
       "darwin",
     ),
@@ -400,11 +396,11 @@ function semanticRequest(
   workspaceMode: "local-container" | "cloud-mirror",
   backendMode: "local" | "remote",
   workspaceRoot: string,
-): SemanticWorkspaceExecutionRequest {
+): LightWorkspaceExecutionRequest {
   return {
     execution: { backendMode, workspaceMode },
-    input: {},
-    tool: "workspace_state",
+    input: { target: "@capabilities" },
+    tool: "read_code",
     workspaceRoot,
   };
 }

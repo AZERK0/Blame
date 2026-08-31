@@ -487,20 +487,14 @@ function observeCapturedTestTool(agent: AgentTelemetry) {
 }
 
 function observeCapturedNavigationTools(agent: AgentTelemetry) {
-  const autoNarrowed = {
-    estimated_tokens_saved: 2_000,
-    read_requested_bytes: 10_000,
-    read_returned_bytes: 2_000,
-    semantic_target: { type: "symbol" },
-    status: "auto_narrowed",
-  };
-  observeCompletedTool(agent, "inspect_code", "navigation-auto", autoNarrowed);
-  observeCompletedTool(agent, "search_code", "navigation-parallel", {
-    estimated_tokens_saved: 2_500,
-    parallel_broad_read_suppressed: true,
-    read_requested_bytes: 10_000,
-    read_returned_bytes: 0,
-    status: "retry_suppressed",
+  observeCompletedTool(agent, "read_code", "navigation-symbol", {
+    body: "return project",
+    signature: "function project()",
+    view: "symbol",
+  });
+  observeCompletedTool(agent, "read_code", "navigation-covered", {
+    status: "already_in_context",
+    view: "raw",
   });
 }
 
@@ -532,35 +526,12 @@ function completeCapturedAgentExecution(agent: AgentTelemetry) {
     filesModified: 2,
     testsAdded: 1,
   });
-  recordCapturedContinuity(agent);
   agent.observeEvent("session-integration", {
     type: "done",
     payload: {
       finishReason: "private model response",
       responseModel: "gpt-response",
     },
-  });
-}
-
-function recordCapturedContinuity(agent: AgentTelemetry) {
-  agent.recordContinuityCapsule(
-    "session-integration",
-    '<continuity_capsule>\n{"conversationId":"conversation","executionEpochId":"epoch","relevantConstraints":[]}\n</continuity_capsule>',
-    {
-      inputTokens: 600,
-      outputTokens: 400,
-      requestedTokens: 500,
-      truncated: true,
-    },
-  );
-  agent.recordContinuityUpdate("session-integration", {
-    continuity_update_present: true,
-    continuity_update_valid: true,
-    continuity_fallback_used: false,
-    facts_added_count: 2,
-    facts_superseded_count: 1,
-    invalid_evidence_ref_count: 0,
-    memory_merge_conflict_count: 0,
   });
 }
 
@@ -779,26 +750,18 @@ function assertCapturedMetrics(exporter: InMemoryMetricExporter) {
   assert.equal(serialized.includes("execution-integration"), false);
   assert.equal(serialized.includes("story-integration"), false);
   assert.equal(serialized.includes("private-secret"), false);
-  assertContinuityMetrics(metricData);
+  assertHarnessMetrics(metricData);
 }
 
-function assertContinuityMetrics(
+function assertHarnessMetrics(
   metricData: ReturnType<
     InMemoryMetricExporter["getMetrics"]
   >[number]["scopeMetrics"][number]["metrics"],
 ) {
   for (const name of [
-    "blame.harness.capsule_requested_tokens",
-    "blame.harness.capsule_actual_tokens",
-    "blame.harness.capsule_truncated",
-    "blame.harness.continuity_update_present",
-    "blame.harness.continuity_update_valid",
-    "blame.harness.facts_added_count",
-    "blame.harness.facts_superseded_count",
-    "blame.harness.auto_narrowed_raw_reads",
-    "blame.harness.parallel_broad_reads_suppressed",
+    "blame.harness.reads",
+    "blame.harness.deduplicated_reads",
     "blame.harness.symbol_target_ratio",
-    "blame.harness.estimated_tokens_saved",
   ])
     assert.ok(
       metricData.some((metric) => metric.descriptor.name === name),

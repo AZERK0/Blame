@@ -1,8 +1,8 @@
-import { app, BrowserWindow, ipcMain } from "electron"
-import electronUpdater from "electron-updater"
-import type { ProgressInfo, UpdateInfo } from "electron-updater"
+import { app, BrowserWindow, ipcMain } from "electron";
+import electronUpdater from "electron-updater";
+import type { ProgressInfo, UpdateInfo } from "electron-updater";
 
-const { autoUpdater } = electronUpdater
+const { autoUpdater } = electronUpdater;
 
 export type DesktopUpdatePhase =
   | "idle"
@@ -12,124 +12,126 @@ export type DesktopUpdatePhase =
   | "downloading"
   | "downloaded"
   | "error"
-  | "unsupported"
+  | "unsupported";
 
 export type DesktopUpdateStatus = {
-  currentVersion: string
-  error?: string
-  latestVersion?: string
-  phase: DesktopUpdatePhase
-  progress?: number
-  reason?: string
-  releaseDate?: string
-  releaseNotes?: string
-}
+  currentVersion: string;
+  error?: string;
+  latestVersion?: string;
+  phase: DesktopUpdatePhase;
+  progress?: number;
+  reason?: string;
+  releaseDate?: string;
+  releaseNotes?: string;
+};
 
 type DesktopUpdateOptions = {
-  beforeInstall(): Promise<void>
-}
+  beforeInstall(): Promise<void>;
+};
 
-let status: DesktopUpdateStatus = initialStatus()
-let configured = false
+let status: DesktopUpdateStatus = initialStatus();
+let configured = false;
 
-export function registerDesktopUpdateIpcHandlers(options: DesktopUpdateOptions) {
-  configureUpdater()
+export function registerDesktopUpdateIpcHandlers(
+  options: DesktopUpdateOptions,
+) {
+  configureUpdater();
 
-  ipcMain.handle("updates:get-status", () => status)
+  ipcMain.handle("updates:get-status", () => status);
   ipcMain.handle("updates:check", async () => {
-    await checkForUpdates()
-    return status
-  })
+    await checkForUpdates();
+    return status;
+  });
   ipcMain.handle("updates:download", async () => {
-    await downloadUpdate()
-    return status
-  })
+    await downloadUpdate();
+    return status;
+  });
   ipcMain.handle("updates:install", async () => {
-    await installUpdate(options)
-    return status
-  })
+    await installUpdate(options);
+    return status;
+  });
 }
 
 export function checkForUpdatesOnStartup() {
-  if (!isUpdaterSupported()) return
+  if (!isUpdaterSupported()) return;
   setTimeout(() => {
-    void checkForUpdates()
-  }, 2_000)
+    void checkForUpdates();
+  }, 2_000);
 }
 
 function configureUpdater() {
-  if (configured) return
-  configured = true
-  if (!isUpdaterSupported()) return
+  if (configured) return;
+  configured = true;
+  if (!isUpdaterSupported()) return;
 
-  autoUpdater.autoDownload = false
-  autoUpdater.autoInstallOnAppQuit = false
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
 
   autoUpdater.on("checking-for-update", () => {
-    setStatus({ ...baseStatus(), phase: "checking" })
-  })
+    setStatus({ ...baseStatus(), phase: "checking" });
+  });
 
   autoUpdater.on("update-available", (info) => {
-    setStatus(updateStatus("available", info))
-  })
+    setStatus(updateStatus("available", info));
+  });
 
   autoUpdater.on("update-not-available", (info) => {
-    setStatus(updateStatus("not-available", info))
-  })
+    setStatus(updateStatus("not-available", info));
+  });
 
   autoUpdater.on("download-progress", (progress) => {
-    setStatus(downloadStatus(progress))
-  })
+    setStatus(downloadStatus(progress));
+  });
 
   autoUpdater.on("update-downloaded", (info) => {
-    setStatus(updateStatus("downloaded", info))
-  })
+    setStatus(updateStatus("downloaded", info));
+  });
 
   autoUpdater.on("error", (error) => {
-    setStatus({ ...baseStatus(), error: errorMessage(error), phase: "error" })
-  })
+    setStatus({ ...baseStatus(), error: errorMessage(error), phase: "error" });
+  });
 }
 
 async function checkForUpdates() {
   if (!isUpdaterSupported()) {
-    setStatus(unsupportedStatus())
-    return
+    setStatus(unsupportedStatus());
+    return;
   }
-  if (status.phase === "checking" || status.phase === "downloading") return
+  if (status.phase === "checking" || status.phase === "downloading") return;
 
-  setStatus({ ...baseStatus(), phase: "checking" })
+  setStatus({ ...baseStatus(), phase: "checking" });
   try {
-    await autoUpdater.checkForUpdates()
+    await autoUpdater.checkForUpdates();
   } catch (error) {
-    setStatus({ ...baseStatus(), error: errorMessage(error), phase: "error" })
+    setStatus({ ...baseStatus(), error: errorMessage(error), phase: "error" });
   }
 }
 
 async function downloadUpdate() {
   if (!isUpdaterSupported()) {
-    setStatus(unsupportedStatus())
-    return
+    setStatus(unsupportedStatus());
+    return;
   }
-  if (status.phase === "downloading" || status.phase === "downloaded") return
-  if (status.phase !== "available") return
+  if (status.phase === "downloading" || status.phase === "downloaded") return;
+  if (status.phase !== "available") return;
 
-  setStatus({ ...status, phase: "downloading", progress: 0 })
+  setStatus({ ...status, phase: "downloading", progress: 0 });
   try {
-    await autoUpdater.downloadUpdate()
+    await autoUpdater.downloadUpdate();
   } catch (error) {
-    setStatus({ ...baseStatus(), error: errorMessage(error), phase: "error" })
+    setStatus({ ...baseStatus(), error: errorMessage(error), phase: "error" });
   }
 }
 
 async function installUpdate(options: DesktopUpdateOptions) {
-  if (status.phase !== "downloaded") return
-  await options.beforeInstall()
-  autoUpdater.quitAndInstall(false, true)
+  if (status.phase !== "downloaded") return;
+  await options.beforeInstall();
+  autoUpdater.quitAndInstall(false, true);
 }
 
 function initialStatus(): DesktopUpdateStatus {
-  if (!isUpdaterSupported()) return unsupportedStatus()
-  return baseStatus()
+  if (!isUpdaterSupported()) return unsupportedStatus();
+  return baseStatus();
 }
 
 function unsupportedStatus(): DesktopUpdateStatus {
@@ -139,24 +141,27 @@ function unsupportedStatus(): DesktopUpdateStatus {
     reason: app.isPackaged
       ? "Updates are unavailable for this package."
       : "Updates are unavailable in development.",
-  }
+  };
 }
 
 function baseStatus(): DesktopUpdateStatus {
   return {
     currentVersion: app.getVersion(),
     phase: "idle",
-  }
+  };
 }
 
-function updateStatus(phase: DesktopUpdatePhase, info: UpdateInfo): DesktopUpdateStatus {
+function updateStatus(
+  phase: DesktopUpdatePhase,
+  info: UpdateInfo,
+): DesktopUpdateStatus {
   return {
     ...baseStatus(),
     latestVersion: info.version,
     phase,
     releaseDate: info.releaseDate,
     releaseNotes: releaseNotes(info.releaseNotes),
-  }
+  };
 }
 
 function downloadStatus(progress: ProgressInfo): DesktopUpdateStatus {
@@ -164,30 +169,30 @@ function downloadStatus(progress: ProgressInfo): DesktopUpdateStatus {
     ...status,
     phase: "downloading",
     progress: progress.percent,
-  }
+  };
 }
 
 function releaseNotes(value: UpdateInfo["releaseNotes"]) {
-  if (typeof value === "string") return value
-  if (!Array.isArray(value)) return undefined
+  if (typeof value === "string") return value;
+  if (!Array.isArray(value)) return undefined;
   return value
     .map((note) => note.note)
     .filter(Boolean)
-    .join("\n\n")
+    .join("\n\n");
 }
 
 function isUpdaterSupported() {
-  return app.isPackaged
+  return app.isPackaged;
 }
 
 function setStatus(nextStatus: DesktopUpdateStatus) {
-  status = nextStatus
+  status = nextStatus;
   BrowserWindow.getAllWindows().forEach((window) => {
-    window.webContents.send("updates:status", status)
-  })
+    window.webContents.send("updates:status", status);
+  });
 }
 
 function errorMessage(error: unknown) {
-  if (error instanceof Error) return error.message
-  return String(error)
+  if (error instanceof Error) return error.message;
+  return String(error);
 }

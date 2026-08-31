@@ -7,9 +7,9 @@ import {
   writeTools,
 } from "./cline-tool-policy.js";
 import {
-  semanticWorkspaceReadToolNames,
-  semanticWorkspaceTools,
-} from "./harness/cline-tools.js";
+  lightReadToolNames,
+  lightSemanticHarnessTools,
+} from "./harness/light-tools.js";
 import { loadPrompt } from "./prompt-loader.js";
 import { appendProductionConfig } from "./production.js";
 import { reasoningConfig } from "./reasoning.js";
@@ -47,12 +47,7 @@ export type SecurityAuditSessionControl = {
 };
 
 const maxAttempts = 3;
-const securityAuditReadTools = new Set([
-  "workspace_state",
-  "search_code",
-  "outline_code",
-  "inspect_code",
-]);
+const securityAuditReadTools = new Set<string>(lightReadToolNames);
 
 export async function runSecurityDiscovery(
   cline: ClineCore,
@@ -197,10 +192,9 @@ function auditConfig(
     enableSpawnAgent: false,
     enableAgentTeams: false,
     extraTools: [
-      ...semanticWorkspaceTools(input.workspaceRoot, {
-        protocolVersion: "3",
-        redactSensitiveContent: true,
-      }).filter((tool) => securityAuditReadTools.has(tool.name)),
+      ...lightSemanticHarnessTools(input.workspaceRoot).filter((tool) =>
+        securityAuditReadTools.has(tool.name),
+      ),
       resultTool,
     ],
     maxIterations,
@@ -236,9 +230,10 @@ function auditToolPolicies(resultToolName: string) {
     ]),
     ...readTools.map((name) => [name, { enabled: false, autoApprove: false }]),
     ...writeTools.map((name) => [name, { enabled: false, autoApprove: false }]),
-    ...semanticWorkspaceReadToolNames
-      .filter((name) => securityAuditReadTools.has(name))
-      .map((name) => [name, { enabled: true, autoApprove: true }]),
+    ...lightReadToolNames.map((name) => [
+      name,
+      { enabled: true, autoApprove: true },
+    ]),
   ]);
 }
 

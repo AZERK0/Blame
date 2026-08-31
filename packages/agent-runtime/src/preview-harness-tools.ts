@@ -1,7 +1,7 @@
 import type { CoreSessionConfig } from "@cline/sdk";
 import { createMcpTools } from "@cline/sdk";
 import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js";
-import { sha256 } from "./harness/protocol.js";
+import { sha256 } from "./harness/light-identity.js";
 
 type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
 type ToolContext = Parameters<AgentTool["execute"]>[1];

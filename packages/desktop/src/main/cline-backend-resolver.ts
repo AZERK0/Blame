@@ -1,55 +1,51 @@
-import { spawn } from "node:child_process"
-import { createHash, randomUUID } from "node:crypto"
-import { withoutTelemetryEnvironment } from "@blame/telemetry"
-import type { AgentBackendConfig } from "@blame/agent-runtime"
-import { setupPath } from "./host-tool-path.ts"
-import { runtimeAgentClient } from "./runtime-agent.ts"
-import { ensureRuntimeReady } from "./runtime-manager.ts"
-import {
-  runtimeHostPath,
-  runtimeManagedPath,
-} from "./workspace-runtime.ts"
+import { spawn } from "node:child_process";
+import { createHash, randomUUID } from "node:crypto";
+import { withoutTelemetryEnvironment } from "@blame/telemetry";
+import type { AgentBackendConfig } from "@blame/agent-runtime";
+import { setupPath } from "./host-tool-path.ts";
+import { runtimeAgentClient } from "./runtime-agent.ts";
+import { ensureRuntimeReady } from "./runtime-manager.ts";
+import { runtimeHostPath, runtimeManagedPath } from "./workspace-runtime.ts";
 
 export type AgentWorkspaceResolution = {
-  backend: AgentBackendConfig
-  input: Record<string, unknown>
-}
+  backend: AgentBackendConfig;
+  input: Record<string, unknown>;
+};
 type ResolverInput = {
   agentClient?: {
-    clineHubEnsure(): Promise<{ authToken?: string; url?: string }>
-  }
-  env?: NodeJS.ProcessEnv
-  ensureReady?: typeof ensureRuntimeReady
-  platform?: NodeJS.Platform
-}
+    clineHubEnsure(): Promise<{ authToken?: string; url?: string }>;
+  };
+  env?: NodeJS.ProcessEnv;
+  ensureReady?: typeof ensureRuntimeReady;
+  platform?: NodeJS.Platform;
+};
 
 const runtimeBackendMessage =
-  "Cline runtime backend unavailable in BlameRuntime. Repair or reset the Blame runtime and try again."
+  "Cline runtime backend unavailable in BlameRuntime. Repair or reset the Blame runtime and try again.";
 
-export async function resolveAgentWorkspaceInput<T extends Record<string, unknown>>(
-  input: T,
-  options: ResolverInput = {},
-) {
-  const platform = options.platform ?? process.platform
-  const workspaceMode = explicitWorkspaceMode(input)
-  const runtimeField = runtimeManagedWorkspaceField(input, platform)
+export async function resolveAgentWorkspaceInput<
+  T extends Record<string, unknown>,
+>(input: T, options: ResolverInput = {}) {
+  const platform = options.platform ?? process.platform;
+  const workspaceMode = explicitWorkspaceMode(input);
+  const runtimeField = runtimeManagedWorkspaceField(input, platform);
   if (workspaceMode === "cloud-mirror") {
     if (runtimeField) {
       throw new Error(
-        "This managed preview still uses a Lima/WSL worktree. Stop and requeue the story to create its native host worktree."
-      )
+        "This managed preview still uses a Lima/WSL worktree. Stop and requeue the story to create its native host worktree.",
+      );
     }
-    return localWorkspaceInput(input, platform)
+    return localWorkspaceInput(input, platform);
   }
   if (workspaceMode === "local-container" && !runtimeField) {
-    return localWorkspaceInput(input, platform)
+    return localWorkspaceInput(input, platform);
   }
-  if (!runtimeField) return localWorkspaceInput(input, platform)
+  if (!runtimeField) return localWorkspaceInput(input, platform);
   await (options.ensureReady ?? ensureRuntimeReady)(
-    runtimeEnvironment(options, platform)
-  )
-  const hub = await ensureRuntimeClineHub(options, platform)
-  const identity = runtimeHubBackendIdentity(platform, hub)
+    runtimeEnvironment(options, platform),
+  );
+  const hub = await ensureRuntimeClineHub(options, platform);
+  const identity = runtimeHubBackendIdentity(platform, hub);
   return {
     ...runtimeNativeWorkspaceInput(input),
     backend: {
@@ -60,14 +56,14 @@ export async function resolveAgentWorkspaceInput<T extends Record<string, unknow
       workspaceRoot: stringField(input.workspaceRoot),
       key: identity.key,
     },
-  }
+  };
 }
 
 function explicitWorkspaceMode(input: Record<string, unknown>) {
   return input.workspaceMode === "local-container" ||
     input.workspaceMode === "cloud-mirror"
     ? input.workspaceMode
-    : undefined
+    : undefined;
 }
 
 export function localWorkspaceInput<T extends Record<string, unknown>>(
@@ -89,7 +85,7 @@ export function localWorkspaceInput<T extends Record<string, unknown>>(
       ? { repositoryRoot: runtimeHostPath(input.repositoryRoot, platform) }
       : {}),
     backend: { mode: "local", key: "local" },
-  }
+  };
 }
 
 function runtimeNativeWorkspaceInput<T extends Record<string, unknown>>(
@@ -105,7 +101,7 @@ function runtimeNativeWorkspaceInput<T extends Record<string, unknown>>(
     ...(typeof input.repositoryRoot === "string"
       ? { repositoryRoot: input.repositoryRoot }
       : {}),
-  }
+  };
 }
 
 function runtimeManagedWorkspaceField(
@@ -113,9 +109,9 @@ function runtimeManagedWorkspaceField(
   platform: NodeJS.Platform,
 ) {
   return ["cwd", "workspaceRoot", "worktree", "repositoryRoot"].find((key) => {
-    const value = input[key]
-    return typeof value === "string" && runtimeManagedPath(value, platform)
-  })
+    const value = input[key];
+    return typeof value === "string" && runtimeManagedPath(value, platform);
+  });
 }
 
 async function ensureRuntimeClineHub(
@@ -128,51 +124,51 @@ async function ensureRuntimeClineHub(
       runtimeAgentClient({
         env: runtimeEnvironment(options, platform).env,
         platform,
-      })
-    const hub = await client.clineHubEnsure()
-    if (!hub.url) throw new Error("Runtime Cline hub did not return a URL.")
+      });
+    const hub = await client.clineHubEnsure();
+    if (!hub.url) throw new Error("Runtime Cline hub did not return a URL.");
     if ((platform === "win32" || platform === "darwin") && hub.url) {
       try {
-        await preWarmRoute(runtimeHubHealthUrl(hub.url), platform)
+        await preWarmRoute(runtimeHubHealthUrl(hub.url), platform);
       } catch (error) {
         // Ignore pre-warm errors
       }
     }
-    return hub
+    return hub;
   } catch (error) {
-    throw runtimeBackendUnavailable(error)
+    throw runtimeBackendUnavailable(error);
   }
 }
 
 export function runtimeHubHealthUrl(url: string) {
-  const parsed = new URL(url)
-  parsed.protocol = parsed.protocol === "wss:" ? "https:" : "http:"
-  parsed.pathname = parsed.pathname.replace(/\/hub\/?$/, "/health")
-  parsed.search = ""
-  parsed.hash = ""
-  return parsed.toString()
+  const parsed = new URL(url);
+  parsed.protocol = parsed.protocol === "wss:" ? "https:" : "http:";
+  parsed.pathname = parsed.pathname.replace(/\/hub\/?$/, "/health");
+  parsed.search = "";
+  parsed.hash = "";
+  return parsed.toString();
 }
 
 export function runtimeHubBackendIdentity(
   platform: NodeJS.Platform,
   hub: { authToken?: string; url?: string },
 ) {
-  if (!hub.url) throw new Error("Runtime Cline hub did not return a URL.")
-  const endpoint = new URL(hub.url)
+  if (!hub.url) throw new Error("Runtime Cline hub did not return a URL.");
+  const endpoint = new URL(hub.url);
   const authToken =
-    hub.authToken ?? endpoint.searchParams.get("authToken") ?? undefined
-  endpoint.searchParams.delete("authToken")
-  endpoint.hash = ""
-  const normalizedEndpoint = endpoint.toString()
+    hub.authToken ?? endpoint.searchParams.get("authToken") ?? undefined;
+  endpoint.searchParams.delete("authToken");
+  endpoint.hash = "";
+  const normalizedEndpoint = endpoint.toString();
   const authFingerprint = createHash("sha256")
     .update(authToken ?? "")
     .digest("hex")
-    .slice(0, 16)
+    .slice(0, 16);
   return {
     authToken,
     endpoint: normalizedEndpoint,
     key: `runtime:${platform}:${normalizedEndpoint}:auth:${authFingerprint}`,
-  }
+  };
 }
 
 export function retryableHubTransportError(error: unknown) {
@@ -181,20 +177,20 @@ export function retryableHubTransportError(error: unknown) {
       ? error.name
       : typeof error === "object" && error && "name" in error
         ? String(error.name)
-        : ""
-  const message = errorMessage(error)
+        : "";
+  const message = errorMessage(error);
   return (
     name === "HubTransportError" &&
     (/hub connection closed/i.test(message) ||
       /hub_connection_closed/i.test(message) ||
       /\bcode=1006\b/i.test(message))
-  )
+  );
 }
 
 export function refreshRuntimeBackendConnection<
   T extends Record<string, unknown>,
 >(input: T, connectionId = randomUUID()) {
-  const backend = input.backend
+  const backend = input.backend;
   if (
     !backend ||
     typeof backend !== "object" ||
@@ -203,7 +199,7 @@ export function refreshRuntimeBackendConnection<
     !("key" in backend) ||
     typeof backend.key !== "string"
   ) {
-    return input
+    return input;
   }
   return {
     ...input,
@@ -211,7 +207,7 @@ export function refreshRuntimeBackendConnection<
       ...backend,
       key: `${backend.key}:connection:${connectionId}`,
     },
-  }
+  };
 }
 
 function preWarmRoute(url: string, platform: NodeJS.Platform): Promise<void> {
@@ -222,10 +218,10 @@ function preWarmRoute(url: string, platform: NodeJS.Platform): Promise<void> {
   // writer the Python daemon receives EOF on stdin and exits cleanly (code 0).
   // spawn with stdio:'ignore' sets bInheritHandles=FALSE so curl.exe never
   // acquires any of the parent's pipe handles.
-  const bin = platform === "win32" ? "curl.exe" : "curl"
-  const maxTimeSeconds = platform === "win32" ? "35" : "2"
-  const connectTimeoutSeconds = platform === "win32" ? "35" : "1"
-  const killTimeoutMs = platform === "win32" ? 40_000 : 3_000
+  const bin = platform === "win32" ? "curl.exe" : "curl";
+  const maxTimeSeconds = platform === "win32" ? "35" : "2";
+  const connectTimeoutSeconds = platform === "win32" ? "35" : "1";
+  const killTimeoutMs = platform === "win32" ? 40_000 : 3_000;
   return new Promise<void>((resolve) => {
     try {
       const child = spawn(
@@ -242,42 +238,48 @@ function preWarmRoute(url: string, platform: NodeJS.Platform): Promise<void> {
           env: withoutTelemetryEnvironment(process.env),
           stdio: "ignore",
           windowsHide: true,
-        }
-      )
-      const timer = setTimeout(() => { child.kill(); resolve() }, killTimeoutMs)
-      child.on("close", () => { clearTimeout(timer); resolve() })
-      child.on("error", () => { clearTimeout(timer); resolve() })
+        },
+      );
+      const timer = setTimeout(() => {
+        child.kill();
+        resolve();
+      }, killTimeoutMs);
+      child.on("close", () => {
+        clearTimeout(timer);
+        resolve();
+      });
+      child.on("error", () => {
+        clearTimeout(timer);
+        resolve();
+      });
     } catch {
-      resolve()
+      resolve();
     }
-  })
+  });
 }
 
-function runtimeEnvironment(
-  options: ResolverInput,
-  platform: NodeJS.Platform,
-) {
+function runtimeEnvironment(options: ResolverInput, platform: NodeJS.Platform) {
   return {
     env: withoutTelemetryEnvironment(
       options.env ?? {
         ...process.env,
         PATH: setupPath({ platform }),
-      }
+      },
     ),
     platform,
-  }
+  };
 }
 
 function runtimeBackendUnavailable(error: unknown) {
-  const next = new Error(`${runtimeBackendMessage}\n${errorMessage(error)}`)
-  Object.assign(next, { cause: error })
-  return next
+  const next = new Error(`${runtimeBackendMessage}\n${errorMessage(error)}`);
+  Object.assign(next, { cause: error });
+  return next;
 }
 
 function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error)
+  return error instanceof Error ? error.message : String(error);
 }
 
 function stringField(value: unknown) {
-  return typeof value === "string" ? value : undefined
+  return typeof value === "string" ? value : undefined;
 }

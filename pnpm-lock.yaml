@@ -35,6 +35,12 @@ importers:
       '@ast-grep/lang-bash':
         specifier: 0.0.8
         version: 0.0.8
+      '@ast-grep/lang-c':
+        specifier: 0.0.6
+        version: 0.0.6
+      '@ast-grep/lang-cpp':
+        specifier: 0.0.6
+        version: 0.0.6
       '@ast-grep/lang-csharp':
         specifier: 0.0.6
         version: 0.0.6
@@ -71,9 +77,6 @@ importers:
       '@vscode/ripgrep':
         specifier: 1.18.0
         version: 1.18.0
-      cacache:
-        specifier: 20.0.4
-        version: 20.0.4
       diff:
         specifier: 9.0.0
         version: 9.0.0
@@ -83,30 +86,18 @@ importers:
       fast-glob:
         specifier: 3.3.3
         version: 3.3.3
-      isbinaryfile:
-        specifier: 5.0.7
-        version: 5.0.7
       jsonc-parser:
         specifier: 3.3.1
         version: 3.3.1
       npm:
         specifier: 11.6.4
         version: 11.6.4
-      p-limit:
-        specifier: 6.2.0
-        version: 6.2.0
       pnpm:
         specifier: 10.33.2
         version: 10.33.2
-      prettier:
-        specifier: 3.8.3
-        version: 3.8.3
       proper-lockfile:
         specifier: 4.1.2
         version: 4.1.2
-      strip-ansi:
-        specifier: 7.2.0
-        version: 7.2.0
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
@@ -138,9 +129,6 @@ importers:
       '@opentelemetry/sdk-trace':
         specifier: 2.9.0
         version: 2.9.0(@opentelemetry/api@1.9.1)
-      '@types/cacache':
-        specifier: 20.0.1
-        version: 20.0.1
       '@types/node':
         specifier: ^24.12.0
         version: 24.12.4
@@ -1137,6 +1125,22 @@ packages:
 
   '@ast-grep/lang-bash@0.0.8':
     resolution: {integrity: sha512-qFykSsOdBv35I1rtt2PstJ4luzV9J1YCiFZBgySI8UPOh+TFnmpdlq9CrryNOj0Q7f6zZhc1OIau+/mUSs6HAg==}
+    peerDependencies:
+      tree-sitter-cli: 0.25.8
+    peerDependenciesMeta:
+      tree-sitter-cli:
+        optional: true
+
+  '@ast-grep/lang-c@0.0.6':
+    resolution: {integrity: sha512-z4ldQyXENqqiNr+F3qhhtKYxgRwLGpOrpc0RIsINwbzeixyFnlNWw5MB1p5yIXN1DkHWrnz5Sd6Wl5s0Mbf6OQ==}
+    peerDependencies:
+      tree-sitter-cli: 0.25.8
+    peerDependenciesMeta:
+      tree-sitter-cli:
+        optional: true
+
+  '@ast-grep/lang-cpp@0.0.6':
+    resolution: {integrity: sha512-VsNr3fzgV969wuWnno7Rb2LexpeO9TwVBiwnCeH9NsDD6/v7Vr529FJF07E2bAsQjB2HPdljY2/a11GbT3xG9A==}
     peerDependencies:
       tree-sitter-cli: 0.25.8
     peerDependenciesMeta:
@@ -2861,10 +2865,6 @@ packages:
   '@nolyfill/is-core-module@1.0.39':
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
-
-  '@npmcli/fs@5.0.0':
-    resolution: {integrity: sha512-7OsC1gNORBEawOa5+j2pXN9vsicaIOH5cPXxoR6fJOmH6/EXpJB2CajXOu1fPRFun2m1lktEFX11+P89hqO/og==}
-    engines: {node: ^20.17.0 || >=22.9.0}
 
   '@octokit/auth-token@6.0.0':
     resolution: {integrity: sha512-P4YJBPdPSpWTQ1NU4XYdvHvXJJDxM6YwpS0FZHRgP7YFkdVxsWcpWGy/NVqlAA7PcPCnMacXlRm1y2PFZRWL/w==}
@@ -4801,9 +4801,6 @@ packages:
   '@types/babel__traverse@7.28.0':
     resolution: {integrity: sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==}
 
-  '@types/cacache@20.0.1':
-    resolution: {integrity: sha512-QlKW3AFoFr/hvPHwFHMIVUH/ZCYeetBNou3PCmxu5LaNDvrtBlPJtIA6uhmU9JRt9oxj7IYoqoLcpxtzpPiTcw==}
-
   '@types/cacheable-request@6.0.3':
     resolution: {integrity: sha512-IQ3EbTzGxIigb1I3qPZc1rWJnH0BmSKv5QYTalEwweFvyBDLSAe24zP0le/hyi7ecGfZVlIVAg4BZqb8WBwKqw==}
 
@@ -5747,10 +5744,6 @@ packages:
   cac@6.7.14:
     resolution: {integrity: sha512-b6Ilus+c3RrdDk+JhLKUAQfzzgLEPy6wcXqS7f/xe1EETvsDP6GORG7SFuOs6cID5YkqchW/LXZbX5bc8j7ZcQ==}
     engines: {node: '>=8'}
-
-  cacache@20.0.4:
-    resolution: {integrity: sha512-M3Lab8NPYlZU2exsL3bMVvMrMqgwCnMWfdZbK28bn3pK6APT/Te/I8hjRPNu1uwORY9a1eEQoifXbKPQMfMTOA==}
-    engines: {node: ^20.17.0 || >=22.9.0}
 
   cacheable-lookup@5.0.4:
     resolution: {integrity: sha512-2/kNscPhpcxrOigMZzbiWF7dz8ilhb/nIHU3EyZiXWXpeq/au8qJ8VhdftMkty3n7Gj6HIGalQG8oiBNB3AJgA==}
@@ -7131,10 +7124,6 @@ packages:
     resolution: {integrity: sha512-hcg3ZmepS30/7BSFqRvoo3DOMQu7IjqxO5nCDt+zM9XWjb33Wg7ziNT+Qvqbuc3+gWpzO02JubVyk2G4Zvo1OQ==}
     engines: {node: '>=10'}
 
-  fs-minipass@3.0.3:
-    resolution: {integrity: sha512-XUBA9XClHbnJWSfBzjkm6RvPsyg3sryZt06BEQoXcF7EK/xpGaQYJgQKDJSUH5SGZ76Y7pFx1QBnXz09rU5Fbw==}
-    engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
-
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
 
@@ -8255,22 +8244,6 @@ packages:
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
-  minipass-collect@2.0.1:
-    resolution: {integrity: sha512-D7V8PO9oaz7PWGLbCACuI1qEOsq7UKfLotx/C0Aet43fCUB/wfQ7DYeq2oR/svFJGYDHPr38SHATeaj/ZoKHKw==}
-    engines: {node: '>=16 || 14 >=14.17'}
-
-  minipass-flush@1.0.7:
-    resolution: {integrity: sha512-TbqTz9cUwWyHS2Dy89P3ocAGUGxKjjLuR9z8w4WUTGAVgEj17/4nhgo2Du56i0Fm3Pm30g4iA8Lcqctc76jCzA==}
-    engines: {node: '>= 8'}
-
-  minipass-pipeline@1.2.4:
-    resolution: {integrity: sha512-xuIq7cIOt09RPRJ19gdi4b+RiNvDFYe5JH+ggNvBqGqpQXcru3PcRmOZuHBKWK1Txf9+cQ+HMVN4d6z46LZP7A==}
-    engines: {node: '>=8'}
-
-  minipass@3.3.6:
-    resolution: {integrity: sha512-DxiNidxSEK+tHG6zOIklvNOwm3hvCrbUrdtzY74U6HKTJxvIDfOUL5W5P2Ghd3DTkhhKPYGqeNUIh5qcM4YBfw==}
-    engines: {node: '>=8'}
-
   minipass@7.1.3:
     resolution: {integrity: sha512-tEBHqDnIoM/1rXME1zgka9g6Q2lcoCkxHLuc7ODJ5BxbP5d4c2Z5cGgtXAku59200Cx7diuHTOYfSBD8n6mm8A==}
     engines: {node: '>=16 || 14 >=14.17'}
@@ -8663,17 +8636,9 @@ packages:
     resolution: {integrity: sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ==}
     engines: {node: '>=10'}
 
-  p-limit@6.2.0:
-    resolution: {integrity: sha512-kuUqqHNUqoIWp/c467RI4X6mmyuojY5jGutNU0wVTmEOOfcuwLqyMVoAi9MKi2Ak+5i9+nhmrK4ufZE8069kHA==}
-    engines: {node: '>=18'}
-
   p-locate@5.0.0:
     resolution: {integrity: sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==}
     engines: {node: '>=10'}
-
-  p-map@7.0.6:
-    resolution: {integrity: sha512-I4Prw6ivkd6p8PiYR1tXASOAOBzIJwu0TB7fqaX0c/8c3QAehNYmX57EijyGGGBt3c/BIowGwV03RVBtXvHEVg==}
-    engines: {node: '>=18'}
 
   package-manager-detector@1.6.0:
     resolution: {integrity: sha512-61A5ThoTiDG/C8s8UMZwSorAGwMJ0ERVGj2OjoW5pAalsNOg15+iQiPzrLJ4jhZ1HJzmC2PIHT2oEiH3R5fzNA==}
@@ -9566,10 +9531,6 @@ packages:
     resolution: {integrity: sha512-BsTCV265VpTp8tm1wyIm1xqQCS+Q9NHx2Sr+WcnUrgLrQ6yiDIvHYJV5gHxsj1lMBy2zm5twLaZao8Jd+S8JJw==}
     engines: {bun: '>=1.0.0', deno: '>=2.0.0', node: '>=12.0.0'}
 
-  ssri@13.0.1:
-    resolution: {integrity: sha512-QUiRf1+u9wPTL/76GTYlKttDEBWV1ga9ZXW8BG6kfdeyyM8LGPix9gROyg9V2+P0xNyF3X2Go526xKFdMZrHSQ==}
-    engines: {node: ^20.17.0 || >=22.9.0}
-
   stable-hash@0.0.5:
     resolution: {integrity: sha512-+L3ccpzibovGXFK+Ap/f8LOS0ahMrHTf3xu7mMLSpEGU0EO9ucaysSylKo9eRDFNhWve/y275iPmIZ4z39a9iA==}
 
@@ -10316,10 +10277,6 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  yocto-queue@1.2.2:
-    resolution: {integrity: sha512-4LCcse/U2MHZ63HAJVE+v71o7yOdIe4cZ70Wpf8D/IyjDKYQLV5GD46B+hSTjJsvV5PztjvHoU580EftxjDZFQ==}
-    engines: {node: '>=12.20'}
-
   yocto-spinner@1.2.0:
     resolution: {integrity: sha512-Yw0hUB6UA3o4YUgKy3oSe9a4cxoaZ9sBfYDw+JSxo6Id0KoJGoxzPA24qqUXYKBWABs/zDSGTz9kww7t3F0XGw==}
     engines: {node: '>=18.19'}
@@ -10791,6 +10748,14 @@ snapshots:
   '@arr/every@1.0.1': {}
 
   '@ast-grep/lang-bash@0.0.8':
+    dependencies:
+      '@ast-grep/setup-lang': 0.0.6
+
+  '@ast-grep/lang-c@0.0.6':
+    dependencies:
+      '@ast-grep/setup-lang': 0.0.6
+
+  '@ast-grep/lang-cpp@0.0.6':
     dependencies:
       '@ast-grep/setup-lang': 0.0.6
 
@@ -12529,10 +12494,6 @@ snapshots:
       fastq: 1.20.1
 
   '@nolyfill/is-core-module@1.0.39': {}
-
-  '@npmcli/fs@5.0.0':
-    dependencies:
-      semver: 7.8.0
 
   '@octokit/auth-token@6.0.0': {}
 
@@ -14904,11 +14865,6 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.0
 
-  '@types/cacache@20.0.1':
-    dependencies:
-      '@types/node': 25.6.2
-      minipass: 7.1.3
-
   '@types/cacheable-request@6.0.3':
     dependencies:
       '@types/http-cache-semantics': 4.2.0
@@ -15981,19 +15937,6 @@ snapshots:
   bytes@3.1.2: {}
 
   cac@6.7.14: {}
-
-  cacache@20.0.4:
-    dependencies:
-      '@npmcli/fs': 5.0.0
-      fs-minipass: 3.0.3
-      glob: 13.0.6
-      lru-cache: 11.3.6
-      minipass: 7.1.3
-      minipass-collect: 2.0.1
-      minipass-flush: 1.0.7
-      minipass-pipeline: 1.2.4
-      p-map: 7.0.6
-      ssri: 13.0.1
 
   cacheable-lookup@5.0.4: {}
 
@@ -17705,10 +17648,6 @@ snapshots:
       jsonfile: 6.2.1
       universalify: 2.0.1
 
-  fs-minipass@3.0.3:
-    dependencies:
-      minipass: 7.1.3
-
   fs.realpath@1.0.0: {}
 
   fsevents@2.3.3:
@@ -18765,22 +18704,6 @@ snapshots:
 
   minimist@1.2.8: {}
 
-  minipass-collect@2.0.1:
-    dependencies:
-      minipass: 7.1.3
-
-  minipass-flush@1.0.7:
-    dependencies:
-      minipass: 3.3.6
-
-  minipass-pipeline@1.2.4:
-    dependencies:
-      minipass: 3.3.6
-
-  minipass@3.3.6:
-    dependencies:
-      yallist: 4.0.0
-
   minipass@7.1.3: {}
 
   minizlib@3.1.0:
@@ -19160,15 +19083,9 @@ snapshots:
     dependencies:
       yocto-queue: 0.1.0
 
-  p-limit@6.2.0:
-    dependencies:
-      yocto-queue: 1.2.2
-
   p-locate@5.0.0:
     dependencies:
       p-limit: 3.1.0
-
-  p-map@7.0.6: {}
 
   package-manager-detector@1.6.0: {}
 
@@ -20264,10 +20181,6 @@ snapshots:
 
   sql-escaper@1.3.3: {}
 
-  ssri@13.0.1:
-    dependencies:
-      minipass: 7.1.3
-
   stable-hash@0.0.5: {}
 
   stack-trace@0.0.10: {}
@@ -21089,8 +21002,6 @@ snapshots:
       fd-slicer: 1.1.0
 
   yocto-queue@0.1.0: {}
-
-  yocto-queue@1.2.2: {}
 
   yocto-spinner@1.2.0:
     dependencies:

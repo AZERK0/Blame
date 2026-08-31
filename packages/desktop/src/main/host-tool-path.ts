@@ -12,27 +12,35 @@ export function setupPath(input: SetupPathInput = {}) {
   const platform = input.platform ?? process.platform;
   const execPath = input.execPath ?? process.execPath;
   const execDir = dirnameForPlatform(execPath, platform);
-  return uniquePaths([
-    execDir,
-    ...runtimeToolPaths(env, execDir, platform),
-    ...windowsRuntimeToolPaths(env, execDir, platform),
-    ...windowsPackageManagerPaths(env, platform),
-    ...nodeVersionManagerPaths(env),
-    env.PATH,
-  ], platform).join(pathDelimiter(platform));
+  return uniquePaths(
+    [
+      execDir,
+      ...runtimeToolPaths(env, execDir, platform),
+      ...windowsRuntimeToolPaths(env, execDir, platform),
+      ...windowsPackageManagerPaths(env, platform),
+      ...nodeVersionManagerPaths(env),
+      env.PATH,
+    ],
+    platform,
+  ).join(pathDelimiter(platform));
 }
 
-export function runtimeToolCommand(command: string, input: SetupPathInput = {}) {
+export function runtimeToolCommand(
+  command: string,
+  input: SetupPathInput = {},
+) {
   const env = input.env ?? process.env;
   const platform = input.platform ?? process.platform;
   const execPath = input.execPath ?? process.execPath;
   const execDir = dirnameForPlatform(execPath, platform);
   if (platform === "win32") {
     const file = command.endsWith(".cmd") ? command : `${command}.cmd`;
-    return windowsRuntimeToolPaths(env, execDir, platform)
-      .filter((path): path is string => Boolean(path))
-      .map((path) => win32.join(path, file))
-      .find((path) => existsSync(path)) ?? file;
+    return (
+      windowsRuntimeToolPaths(env, execDir, platform)
+        .filter((path): path is string => Boolean(path))
+        .map((path) => win32.join(path, file))
+        .find((path) => existsSync(path)) ?? file
+    );
   }
   return command;
 }
@@ -103,9 +111,7 @@ function windowsPackageManagerPaths(
   if (platform !== "win32") return [];
   return [
     env.APPDATA ? win32.join(env.APPDATA, "npm") : undefined,
-    env.LOCALAPPDATA
-      ? win32.join(env.LOCALAPPDATA, "pnpm")
-      : undefined,
+    env.LOCALAPPDATA ? win32.join(env.LOCALAPPDATA, "pnpm") : undefined,
     env.ProgramFiles ? win32.join(env.ProgramFiles, "nodejs") : undefined,
     env["ProgramFiles(x86)"]
       ? win32.join(env["ProgramFiles(x86)"], "nodejs")

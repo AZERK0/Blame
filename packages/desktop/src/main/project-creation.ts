@@ -197,17 +197,22 @@ let projectCreationWindowsProvider = () => [] as ProjectCreationWindow[];
 let newProjectAgentRuntime: NewProjectAgentRuntime | undefined;
 
 export function setProjectCreationWindowsProvider(
-  provider: () => ProjectCreationWindow[]
+  provider: () => ProjectCreationWindow[],
 ) {
   projectCreationWindowsProvider = provider;
 }
 
-export function setNewProjectAgentRuntime(runtime: NewProjectAgentRuntime | undefined) {
+export function setNewProjectAgentRuntime(
+  runtime: NewProjectAgentRuntime | undefined,
+) {
   newProjectAgentRuntime = runtime;
 }
 
 export async function createProject(input: CreateProjectInput) {
-  const target = await validateProjectTarget(input.parentPath, input.projectName);
+  const target = await validateProjectTarget(
+    input.parentPath,
+    input.projectName,
+  );
   const emit = projectCreationEmitter(input.runId);
 
   if (!newProjectAgentRuntime) {
@@ -243,7 +248,7 @@ export async function createProject(input: CreateProjectInput) {
 
 export async function initializeGeneratedRepository(
   target: string,
-  emit: (event: ProjectCreationEvent) => void = () => undefined
+  emit: (event: ProjectCreationEvent) => void = () => undefined,
 ) {
   emit({ type: "stdout", data: "$ git init\n" });
   await git(target, ["init"]);
@@ -251,18 +256,15 @@ export async function initializeGeneratedRepository(
   await git(target, ["add", "--all", "--", "."]);
   const changed = await hasStagedChanges(target);
   if (!changed) return;
-  await git(
-    target,
-    [
-      "-c",
-      "user.name=Blame",
-      "-c",
-      "user.email=blame@example.local",
-      "commit",
-      "-m",
-      "chore: initialize project",
-    ]
-  );
+  await git(target, [
+    "-c",
+    "user.name=Blame",
+    "-c",
+    "user.email=blame@example.local",
+    "commit",
+    "-m",
+    "chore: initialize project",
+  ]);
 }
 
 async function hasStagedChanges(target: string) {
@@ -279,7 +281,7 @@ async function ensureGeneratedProjectGitignore(target: string) {
   const existing = existsSync(path) ? await readFile(path, "utf8") : "";
   const existingEntries = new Set(existing.split(/\r?\n/));
   const missingEntries = generatedProjectGitignoreEntries.filter(
-    (entry) => !existingEntries.has(entry)
+    (entry) => !existingEntries.has(entry),
   );
   if (!missingEntries.length) return;
   const prefix = existing && !existing.endsWith("\n") ? "\n" : "";
@@ -296,18 +298,22 @@ async function git(cwd: string, args: string[]) {
 
 export async function validateProjectTarget(
   parentPath: string,
-  projectName: string
+  projectName: string,
 ) {
   const name = projectName.trim();
   if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name)) {
-    throw new Error("Project name can contain letters, numbers, dots, dashes and underscores.");
+    throw new Error(
+      "Project name can contain letters, numbers, dots, dashes and underscores.",
+    );
   }
 
   const parent = resolve(parentPath);
   const target = resolve(parent, name);
   const pathInsideParent = relative(parent, target);
   if (!pathInsideParent || pathInsideParent.startsWith("..")) {
-    throw new Error("Project path must stay inside the selected parent folder.");
+    throw new Error(
+      "Project path must stay inside the selected parent folder.",
+    );
   }
 
   if (existsSync(target) && (await readdir(target)).length > 0) {
@@ -320,14 +326,16 @@ export async function validateProjectTarget(
 
 export function projectCreationRecipe(
   configuration: NewProjectConfiguration,
-  target: string
+  target: string,
 ): ProjectCreationRecipe {
   if (configuration.platform !== "web") {
     throw new Error("Only web applications are supported in this version.");
   }
 
   if (configuration.frontend === "none") {
-    throw new Error("A frontend framework is required for the first web generator.");
+    throw new Error(
+      "A frontend framework is required for the first web generator.",
+    );
   }
 
   const scaffold = scaffoldCommand(configuration, target);
@@ -339,7 +347,7 @@ export function projectCreationRecipe(
 
 function scaffoldCommand(
   configuration: NewProjectConfiguration,
-  target: string
+  target: string,
 ): CommandRecipe {
   const name = basename(target);
   const scaffoldName = scaffoldProjectName(target);
@@ -396,8 +404,33 @@ function scaffoldCommand(
     command: pm === "npm" ? "npx" : pm,
     args:
       pm === "npm"
-        ? ["sv", "create", scaffoldName, "--template", "minimal", "--types", "ts", "--no-add-ons", "--no-install", "--no-dir-check", "--no-download-check"]
-        : ["dlx", "sv", "create", scaffoldName, "--template", "minimal", "--types", "ts", "--no-add-ons", "--no-install", "--no-dir-check", "--no-download-check"],
+        ? [
+            "sv",
+            "create",
+            scaffoldName,
+            "--template",
+            "minimal",
+            "--types",
+            "ts",
+            "--no-add-ons",
+            "--no-install",
+            "--no-dir-check",
+            "--no-download-check",
+          ]
+        : [
+            "dlx",
+            "sv",
+            "create",
+            scaffoldName,
+            "--template",
+            "minimal",
+            "--types",
+            "ts",
+            "--no-add-ons",
+            "--no-install",
+            "--no-dir-check",
+            "--no-download-check",
+          ],
     cwd: parent,
   };
 }
@@ -406,7 +439,7 @@ function viteCommand(
   packageManager: string,
   parent: string,
   name: string,
-  template: string
+  template: string,
 ): CommandRecipe {
   return {
     command: packageManager,
@@ -417,18 +450,22 @@ function viteCommand(
 
 function installCommands(
   configuration: NewProjectConfiguration,
-  target: string
+  target: string,
 ): CommandRecipe[] {
   const packageManager = nodePackageManager(configuration.packageManager);
   const packages = additionalPackages(configuration);
   const commands = [installCommand(packageManager, target)];
 
   if (packages.dependencies.length > 0) {
-    commands.push(addCommand(packageManager, target, packages.dependencies, false));
+    commands.push(
+      addCommand(packageManager, target, packages.dependencies, false),
+    );
   }
 
   if (packages.devDependencies.length > 0) {
-    commands.push(addCommand(packageManager, target, packages.devDependencies, true));
+    commands.push(
+      addCommand(packageManager, target, packages.devDependencies, true),
+    );
   }
 
   return commands;
@@ -440,12 +477,20 @@ function additionalPackages(configuration: NewProjectConfiguration) {
 
   addUiPackages(configuration.uiLibrary, dependencies, devDependencies);
   addBackendPackages(configuration.backend, dependencies, devDependencies);
-  addDataPackages(configuration.database, configuration.orm, dependencies, devDependencies);
+  addDataPackages(
+    configuration.database,
+    configuration.orm,
+    dependencies,
+    devDependencies,
+  );
   addQualityPackages(configuration.codeQuality, devDependencies);
   addAdvancedPackages(configuration.advancedOptions, devDependencies);
 
   if (configuration.styling === "sass") devDependencies.add("sass");
-  if (configuration.styling === "tailwind" && configuration.frontend !== "next") {
+  if (
+    configuration.styling === "tailwind" &&
+    configuration.frontend !== "next"
+  ) {
     devDependencies.add("tailwindcss");
     devDependencies.add("@tailwindcss/vite");
   }
@@ -459,7 +504,7 @@ function additionalPackages(configuration: NewProjectConfiguration) {
 function addUiPackages(
   uiLibrary: UiLibrary,
   dependencies: Set<string>,
-  devDependencies: Set<string>
+  devDependencies: Set<string>,
 ) {
   const dependencyMap: Partial<Record<UiLibrary, string[]>> = {
     radix: ["radix-ui"],
@@ -485,7 +530,7 @@ function addUiPackages(
 function addBackendPackages(
   backend: BackendFramework,
   dependencies: Set<string>,
-  devDependencies: Set<string>
+  devDependencies: Set<string>,
 ) {
   if (backend === "hono") dependencies.add("hono");
   if (backend === "fastify") dependencies.add("fastify");
@@ -501,7 +546,7 @@ function addDataPackages(
   database: DatabaseOption,
   orm: OrmOption,
   dependencies: Set<string>,
-  devDependencies: Set<string>
+  devDependencies: Set<string>,
 ) {
   if (database === "postgresql") dependencies.add("pg");
   if (database === "mysql") dependencies.add("mysql2");
@@ -520,7 +565,7 @@ function addDataPackages(
 
 function addQualityPackages(
   codeQuality: CodeQualityOption,
-  devDependencies: Set<string>
+  devDependencies: Set<string>,
 ) {
   if (codeQuality === "biome") devDependencies.add("@biomejs/biome");
   if (codeQuality === "prettier" || codeQuality === "eslint-prettier") {
@@ -533,59 +578,96 @@ function addQualityPackages(
 
 function addAdvancedPackages(
   advancedOptions: AdvancedProjectOption[],
-  devDependencies: Set<string>
+  devDependencies: Set<string>,
 ) {
   if (advancedOptions.includes("unitTests")) devDependencies.add("vitest");
-  if (advancedOptions.includes("e2eTests")) devDependencies.add("@playwright/test");
+  if (advancedOptions.includes("e2eTests"))
+    devDependencies.add("@playwright/test");
   if (advancedOptions.includes("auth")) devDependencies.add("better-auth");
 }
 
 function projectOverlays(
   configuration: NewProjectConfiguration,
-  target: string
+  target: string,
 ) {
   const overlays: Array<{ path: string; content: string }> = [];
   const advanced = configuration.advancedOptions;
 
   if (advanced.includes("envExample")) {
-    overlays.push({ path: join(target, ".env.example"), content: envExample(configuration) });
+    overlays.push({
+      path: join(target, ".env.example"),
+      content: envExample(configuration),
+    });
   }
 
   if (advanced.includes("readme")) {
-    overlays.push({ path: join(target, "README.md"), content: readme(configuration, target) });
+    overlays.push({
+      path: join(target, "README.md"),
+      content: readme(configuration, target),
+    });
   }
 
   if (advanced.includes("docker")) {
-    overlays.push({ path: join(target, "Dockerfile"), content: dockerfile(configuration) });
+    overlays.push({
+      path: join(target, "Dockerfile"),
+      content: dockerfile(configuration),
+    });
   }
 
   if (advanced.includes("dockerCompose")) {
-    overlays.push({ path: join(target, "docker-compose.yml"), content: dockerCompose(configuration) });
+    overlays.push({
+      path: join(target, "docker-compose.yml"),
+      content: dockerCompose(configuration),
+    });
   }
 
   if (advanced.includes("githubActions")) {
-    overlays.push({ path: join(target, ".github", "workflows", "ci.yml"), content: githubActions(configuration) });
+    overlays.push({
+      path: join(target, ".github", "workflows", "ci.yml"),
+      content: githubActions(configuration),
+    });
   }
 
   if (advanced.includes("blamePreview")) {
-    overlays.push({ path: join(target, ".blame", "preview.json"), content: blamePreview(configuration) });
+    overlays.push({
+      path: join(target, ".blame", "preview.json"),
+      content: blamePreview(configuration),
+    });
   }
 
   if (configuration.backend === "fastapi") {
-    overlays.push({ path: join(target, "api", "main.py"), content: fastApiMain() });
-    overlays.push({ path: join(target, "pyproject.toml"), content: pyproject(configuration) });
+    overlays.push({
+      path: join(target, "api", "main.py"),
+      content: fastApiMain(),
+    });
+    overlays.push({
+      path: join(target, "pyproject.toml"),
+      content: pyproject(configuration),
+    });
   }
 
   if (advanced.includes("unitTests")) {
-    overlays.push({ path: join(target, "src", "blame.generated.test.ts"), content: unitTest(configuration) });
+    overlays.push({
+      path: join(target, "src", "blame.generated.test.ts"),
+      content: unitTest(configuration),
+    });
   }
 
   if (advanced.includes("e2eTests")) {
-    overlays.push({ path: join(target, "tests", "preview.spec.ts"), content: e2eTest() });
+    overlays.push({
+      path: join(target, "tests", "preview.spec.ts"),
+      content: e2eTest(),
+    });
   }
 
-  if (advanced.includes("monorepo") && configuration.packageManager === "pnpm") {
-    overlays.push({ path: join(target, "pnpm-workspace.yaml"), content: pnpmWorkspace() });
+  if (
+    advanced.includes("monorepo") &&
+    configuration.packageManager === "pnpm"
+  ) {
+    overlays.push({
+      path: join(target, "pnpm-workspace.yaml"),
+      content: pnpmWorkspace(),
+    });
   }
 
   return overlays;
@@ -594,7 +676,7 @@ function projectOverlays(
 export async function applyProjectOverlays(
   target: string,
   overlays: Array<{ path: string; content: string }>,
-  configuration: NewProjectConfiguration
+  configuration: NewProjectConfiguration,
 ) {
   await updatePackageJson(target, configuration);
   await updateTypeScriptAliases(target, configuration);
@@ -608,7 +690,9 @@ export async function applyProjectOverlays(
 async function renameScaffoldTarget(scaffoldTarget: string, target: string) {
   if (scaffoldTarget === target) return;
   if (!existsSync(scaffoldTarget)) {
-    throw new Error("Scaffold command did not create the expected project directory.");
+    throw new Error(
+      "Scaffold command did not create the expected project directory.",
+    );
   }
   if (existsSync(target)) {
     throw new Error("Project directory already exists after scaffold.");
@@ -618,7 +702,7 @@ async function renameScaffoldTarget(scaffoldTarget: string, target: string) {
 
 async function updatePackageJson(
   target: string,
-  configuration: NewProjectConfiguration
+  configuration: NewProjectConfiguration,
 ) {
   const path = join(target, "package.json");
   if (!existsSync(path)) return;
@@ -651,7 +735,7 @@ function pnpmOnlyBuiltDependencies(configuration: NewProjectConfiguration) {
 
 async function updateTypeScriptAliases(
   target: string,
-  configuration: NewProjectConfiguration
+  configuration: NewProjectConfiguration,
 ) {
   if (!configuration.advancedOptions.includes("typescriptAlias")) return;
   for (const file of ["tsconfig.json", "tsconfig.app.json"]) {
@@ -702,7 +786,11 @@ function stripJsonComments(content: string) {
     }
     if (current === "/" && next === "*") {
       index += 2;
-      while (index < content.length && !(content[index] === "*" && content[index + 1] === "/")) index += 1;
+      while (
+        index < content.length &&
+        !(content[index] === "*" && content[index + 1] === "/")
+      )
+        index += 1;
       index += 1;
       continue;
     }
@@ -717,18 +805,20 @@ function stripTrailingCommas(content: string) {
 
 function packageScripts(
   scripts: Record<string, string> | undefined,
-  configuration: NewProjectConfiguration
+  configuration: NewProjectConfiguration,
 ) {
   const nextScripts = { ...scripts };
   if (configuration.advancedOptions.includes("standardScripts")) {
-    nextScripts.dev = nextScripts.dev ?? defaultDevScript(configuration.frontend);
-    nextScripts.build = nextScripts.build ?? defaultBuildScript(configuration.frontend);
+    nextScripts.dev =
+      nextScripts.dev ?? defaultDevScript(configuration.frontend);
+    nextScripts.build =
+      nextScripts.build ?? defaultBuildScript(configuration.frontend);
     nextScripts.lint = nextScripts.lint ?? "eslint .";
   }
   if (configuration.advancedOptions.includes("unitTests")) {
     nextScripts.test = nextScripts.test ?? "vitest run";
   } else if (configuration.advancedOptions.includes("standardScripts")) {
-    nextScripts.test = nextScripts.test ?? "echo \"No tests configured\"";
+    nextScripts.test = nextScripts.test ?? 'echo "No tests configured"';
   }
   if (configuration.advancedOptions.includes("e2eTests")) {
     nextScripts.e2e = nextScripts.e2e ?? "playwright test";
@@ -737,9 +827,12 @@ function packageScripts(
 }
 
 function installCommand(packageManager: string, target: string): CommandRecipe {
-  if (packageManager === "npm") return { command: "npm", args: ["install"], cwd: target };
-  if (packageManager === "yarn") return { command: "yarn", args: ["install"], cwd: target };
-  if (packageManager === "bun") return { command: "bun", args: ["install"], cwd: target };
+  if (packageManager === "npm")
+    return { command: "npm", args: ["install"], cwd: target };
+  if (packageManager === "yarn")
+    return { command: "yarn", args: ["install"], cwd: target };
+  if (packageManager === "bun")
+    return { command: "bun", args: ["install"], cwd: target };
   return { command: "pnpm", args: ["install"], cwd: target };
 }
 
@@ -747,18 +840,34 @@ function addCommand(
   packageManager: string,
   target: string,
   packages: string[],
-  dev: boolean
+  dev: boolean,
 ): CommandRecipe {
   if (packageManager === "npm") {
-    return { command: "npm", args: ["install", dev ? "--save-dev" : "--save", ...packages], cwd: target };
+    return {
+      command: "npm",
+      args: ["install", dev ? "--save-dev" : "--save", ...packages],
+      cwd: target,
+    };
   }
   if (packageManager === "yarn") {
-    return { command: "yarn", args: ["add", ...(dev ? ["--dev"] : []), ...packages], cwd: target };
+    return {
+      command: "yarn",
+      args: ["add", ...(dev ? ["--dev"] : []), ...packages],
+      cwd: target,
+    };
   }
   if (packageManager === "bun") {
-    return { command: "bun", args: ["add", ...(dev ? ["--dev"] : []), ...packages], cwd: target };
+    return {
+      command: "bun",
+      args: ["add", ...(dev ? ["--dev"] : []), ...packages],
+      cwd: target,
+    };
   }
-  return { command: "pnpm", args: ["add", ...(dev ? ["-D"] : []), ...packages], cwd: target };
+  return {
+    command: "pnpm",
+    args: ["add", ...(dev ? ["-D"] : []), ...packages],
+    cwd: target,
+  };
 }
 
 function createArgs(packageManager: string, packageName: string) {
@@ -770,7 +879,8 @@ function createArgs(packageManager: string, packageName: string) {
 
 function nextQualityArgs(codeQuality: CodeQualityOption) {
   if (codeQuality === "biome") return ["--biome"];
-  if (codeQuality === "none" || codeQuality === "prettier") return ["--no-linter"];
+  if (codeQuality === "none" || codeQuality === "prettier")
+    return ["--no-linter"];
   return ["--eslint"];
 }
 
@@ -824,7 +934,8 @@ function scaffoldProjectName(target: string) {
 function envExample(configuration: NewProjectConfiguration) {
   const lines = ["APP_URL=http://localhost:3000"];
   if (configuration.database !== "none") lines.push("DATABASE_URL=");
-  if (configuration.advancedOptions.includes("auth")) lines.push("AUTH_SECRET=");
+  if (configuration.advancedOptions.includes("auth"))
+    lines.push("AUTH_SECRET=");
   return `${lines.join("\n")}\n`;
 }
 
@@ -864,10 +975,10 @@ function dockerCompose(configuration: NewProjectConfiguration) {
     "  app:",
     "    build: .",
     "    ports:",
-    "      - \"3000\"",
+    '      - "3000"',
     "    labels:",
-    "      blame.preview: \"true\"",
-    "      blame.preview.port: \"3000\"",
+    '      blame.preview: "true"',
+    '      blame.preview.port: "3000"',
   ];
 
   if (database) services.push(...database);
@@ -919,7 +1030,10 @@ function githubActions(configuration: NewProjectConfiguration) {
 }
 
 function blamePreview(configuration: NewProjectConfiguration) {
-  const port = configuration.frontend === "next" || configuration.frontend === "nuxt" ? 3000 : 5173;
+  const port =
+    configuration.frontend === "next" || configuration.frontend === "nuxt"
+      ? 3000
+      : 5173;
   return `${JSON.stringify({ command: "dev", port }, null, 2)}\n`;
 }
 
@@ -961,12 +1075,7 @@ function e2eTest() {
 }
 
 function pnpmWorkspace() {
-  return [
-    "packages:",
-    "  - apps/*",
-    "  - packages/*",
-    "",
-  ].join("\n");
+  return ["packages:", "  - apps/*", "  - packages/*", ""].join("\n");
 }
 
 function fastApiMain() {
@@ -985,13 +1094,15 @@ function fastApiMain() {
 
 function pyproject(configuration: NewProjectConfiguration) {
   const dependencies = ["fastapi", "uvicorn[standard]"];
-  if (configuration.orm === "sqlalchemy") dependencies.push("sqlalchemy", "alembic");
-  if (configuration.orm === "sqlmodel") dependencies.push("sqlmodel", "alembic");
+  if (configuration.orm === "sqlalchemy")
+    dependencies.push("sqlalchemy", "alembic");
+  if (configuration.orm === "sqlmodel")
+    dependencies.push("sqlmodel", "alembic");
   return [
     "[project]",
-    "name = \"api\"",
-    "version = \"0.1.0\"",
-    "requires-python = \">=3.12\"",
+    'name = "api"',
+    'version = "0.1.0"',
+    'requires-python = ">=3.12"',
     `dependencies = [${dependencies.map((item) => `"${item}"`).join(", ")}]`,
     "",
   ].join("\n");
@@ -999,9 +1110,12 @@ function pyproject(configuration: NewProjectConfiguration) {
 
 function runCommand(
   recipe: CommandRecipe,
-  emit: (event: ProjectCreationEvent) => void
+  emit: (event: ProjectCreationEvent) => void,
 ) {
-  emit({ type: "stdout", data: `$ ${recipe.command} ${recipe.args.join(" ")}\n` });
+  emit({
+    type: "stdout",
+    data: `$ ${recipe.command} ${recipe.args.join(" ")}\n`,
+  });
 
   return new Promise<void>((resolveCommand, reject) => {
     const child = spawn(recipe.command, recipe.args, {
@@ -1017,15 +1131,17 @@ function runCommand(
     child.stdin.end();
 
     child.stdout.on("data", (data: Buffer) =>
-      emit({ type: "stdout", data: data.toString() })
+      emit({ type: "stdout", data: data.toString() }),
     );
     child.stderr.on("data", (data: Buffer) =>
-      emit({ type: "stderr", data: data.toString() })
+      emit({ type: "stderr", data: data.toString() }),
     );
     child.on("error", (error) => reject(error));
     child.on("exit", (code) => {
       if (code === 0) return resolveCommand();
-      reject(new Error(`${recipe.command} exited with code ${code ?? "unknown"}.`));
+      reject(
+        new Error(`${recipe.command} exited with code ${code ?? "unknown"}.`),
+      );
     });
   });
 }
@@ -1033,7 +1149,10 @@ function runCommand(
 function projectCreationEmitter(runId: string) {
   return (event: ProjectCreationEvent) => {
     for (const window of projectCreationWindowsProvider()) {
-      window.webContents.send(`workspace:project-creation:event:${runId}`, event);
+      window.webContents.send(
+        `workspace:project-creation:event:${runId}`,
+        event,
+      );
     }
   };
 }
