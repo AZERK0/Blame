@@ -13,6 +13,7 @@ import test from "node:test";
 import {
   dependencyCachePopulated,
   dependencyCacheRoot,
+  readDependencyCacheManifest,
 } from "./dependency-cache.js";
 import { DependencyEnvironmentService } from "./dependency-environment.js";
 import type { TaskCatalogItem } from "./schemas.js";
@@ -57,6 +58,24 @@ test("persistent dependency environments require a fresh integrity probe", async
       requiredPackages: ["fixture-package"],
     });
     assert.equal(persisted.integrity_probe.status, "passed");
+    assert.equal(persisted.persistence?.strategy, "reflink_with_copy_fallback");
+    assert.equal(persisted.persistence?.directories, 1);
+    assert.equal(Number.isFinite(persisted.persistence?.duration_ms), true);
+    const reused = await service.persist({
+      files,
+      snapshot,
+      sourceWorkspace: root,
+      task,
+      resolvedVersion: "10.33.2",
+      requiredPackages: ["fixture-package"],
+    });
+    assert.equal(reused.root, persisted.root);
+    assert.deepEqual(reused.persistence, persisted.persistence);
+    const cache = await dependencyCacheRoot(root, snapshot.files, task);
+    assert.deepEqual(
+      (await readDependencyCacheManifest(cache))?.persistence,
+      persisted.persistence,
+    );
     assert.equal(
       (await service.current(files, snapshot, task))?.spec
         .environment_revision_id,

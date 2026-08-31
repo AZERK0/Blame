@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { constants as fileSystemConstants } from "node:fs";
 import { createRequire } from "node:module";
 import {
   access,
@@ -21,6 +22,7 @@ import {
   writeDependencyCacheManifest,
   type DependencyCacheManifest,
   type DependencyIntegrityProbe,
+  type DependencyPersistence,
 } from "./dependency-cache.js";
 import {
   environmentSpec,
@@ -37,7 +39,10 @@ export type DependencyEnvironment = {
   workspace: string;
   spec: EnvironmentSpec;
   integrity_probe: DependencyIntegrityProbe;
+  persistence?: DependencyPersistence;
 };
+
+export type { DependencyPersistence } from "./dependency-cache.js";
 
 export class DependencyEnvironmentService {
   private readonly root: string;
@@ -172,7 +177,7 @@ export class DependencyEnvironmentService {
         workspace,
         input.snapshot.files,
       );
-      await copyDependencyDirectories(
+      const persistence = await copyDependencyDirectories(
         input.sourceWorkspace,
         workspace,
         input.snapshot.files,
@@ -186,7 +191,11 @@ export class DependencyEnvironmentService {
         throw new Error(
           `DEPENDENCY_INTEGRITY_PROBE_FAILED:${probe.failure_signature}`,
         );
-      const manifest = { spec: input.spec, integrity_probe: probe };
+      const manifest = {
+        spec: input.spec,
+        integrity_probe: probe,
+        persistence,
+      };
       await writeFileAtomic(
         join(staging, environmentManifestName),
         JSON.stringify(manifest),
@@ -197,7 +206,7 @@ export class DependencyEnvironmentService {
         if (errorCode(error) !== "EEXIST") throw error;
         await rm(staging, { force: true, recursive: true });
       });
-      await this.writeCacheManifest(input, probe);
+      await this.writeCacheManifest(input, probe, persistence);
       return (await this.read(input.spec.environment_revision_id))!;
     } catch (error) {
       await rm(staging, { force: true, recursive: true });
@@ -214,6 +223,7 @@ export class DependencyEnvironmentService {
       spec: EnvironmentSpec;
     },
     probe: DependencyIntegrityProbe,
+    persistence: DependencyPersistence,
   ) {
     const cacheRoot = await dependencyCacheRoot(
       input.files.root,
@@ -230,6 +240,7 @@ export class DependencyEnvironmentService {
       runtime_target: input.spec.runtime_target,
       created_at: new Date().toISOString(),
       integrity_probe: probe,
+      persistence,
     };
     await writeDependencyCacheManifest(cacheRoot, manifest);
   }
@@ -242,6 +253,7 @@ export class DependencyEnvironmentService {
       ) as {
         spec?: EnvironmentSpec;
         integrity_probe?: DependencyIntegrityProbe;
+        persistence?: DependencyPersistence;
       };
       if (
         value.spec?.environment_revision_id !== environmentRevisionId ||
@@ -253,6 +265,7 @@ export class DependencyEnvironmentService {
         workspace: join(root, "workspace"),
         spec: value.spec,
         integrity_probe: value.integrity_probe,
+        ...(value.persistence ? { persistence: value.persistence } : {}),
       } satisfies DependencyEnvironment;
     } catch (error) {
       if (errorCode(error) === "ENOENT") return undefined;
@@ -387,6 +400,7 @@ async function copyDependencyDirectories(
   destinationRoot: string,
   files: string[],
 ) {
+  const startedAt = Date.now();
   let copied = 0;
   for (const directory of packageDirectories(files)) {
     const source = join(sourceRoot, directory, "node_modules");
@@ -401,6 +415,7 @@ async function copyDependencyDirectories(
       await cp(copySource, destination, {
         dereference: false,
         force: false,
+        mode: fileSystemConstants.COPYFILE_FICLONE,
         preserveTimestamps: true,
         recursive: true,
         verbatimSymlinks: true,
@@ -417,6 +432,11 @@ async function copyDependencyDirectories(
       mode: 0o600,
     });
   }
+  return {
+    strategy: "reflink_with_copy_fallback" as const,
+    duration_ms: Math.max(0, Date.now() - startedAt),
+    directories: copied,
+  };
 }
 
 async function copyDependencyMetadata(

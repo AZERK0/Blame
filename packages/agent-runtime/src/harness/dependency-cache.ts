@@ -19,6 +19,12 @@ export type DependencyIntegrityProbe = {
   failure_signature?: string;
 };
 
+export type DependencyPersistence = {
+  strategy: "reflink_with_copy_fallback";
+  duration_ms: number;
+  directories: number;
+};
+
 export type DependencyCacheManifest = {
   schema_version: "1.0";
   dependency_digest: string;
@@ -29,6 +35,7 @@ export type DependencyCacheManifest = {
   runtime_target: string;
   created_at: string;
   integrity_probe: DependencyIntegrityProbe;
+  persistence?: DependencyPersistence;
 };
 
 export async function dependencyCacheRoot(
@@ -111,7 +118,21 @@ function validManifest(value: unknown): value is DependencyCacheManifest {
     nonEmptyString(manifest.architecture) &&
     nonEmptyString(manifest.runtime_target) &&
     nonEmptyString(manifest.created_at) &&
-    validProbe(probe)
+    validProbe(probe) &&
+    (!manifest.persistence || validPersistence(manifest.persistence))
+  );
+}
+
+function validPersistence(value: unknown): value is DependencyPersistence {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const persistence = value as Record<string, unknown>;
+  return (
+    persistence.strategy === "reflink_with_copy_fallback" &&
+    typeof persistence.duration_ms === "number" &&
+    Number.isFinite(persistence.duration_ms) &&
+    persistence.duration_ms >= 0 &&
+    Number.isSafeInteger(persistence.directories) &&
+    Number(persistence.directories) >= 0
   );
 }
 
