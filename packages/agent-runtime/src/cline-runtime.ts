@@ -4277,6 +4277,14 @@ function runtimeTools(
       taskContract,
       executor: semanticWorkspaceExecutor,
       protocolVersion: "3",
+      ...(options.refreshPreviewDependencies && previewContext
+        ? {
+            refreshPreviewDependencies: () =>
+              Promise.resolve(
+                options.refreshPreviewDependencies!(previewContext),
+              ),
+          }
+        : {}),
     }),
     ...(completion
       ? [

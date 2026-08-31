@@ -31,6 +31,7 @@ export function createAgentHostRequestHandler(previews: PreviewService) {
       signal,
       harness,
       previewDevtoolsMcpService,
+      previews,
     );
 }
 
@@ -40,6 +41,7 @@ async function handleAgentHostRequest(
   signal: AbortSignal,
   harness: PreviewHarnessService,
   devtools: PreviewDevtoolsMcpService,
+  previews: PreviewService,
 ) {
   if (method === "git") return agentGit(input);
   if (method === "openExternalUrl") return openAgentExternalUrl(input);
@@ -55,10 +57,70 @@ async function handleAgentHostRequest(
   if (method === "previewContainerLogs") {
     return previewContainerLogs(input, signal, harness);
   }
+  if (method === "refreshPreviewDependencies") {
+    return refreshPreviewDependencies(input, signal, harness, previews);
+  }
   if (method === "semanticWorkspace") {
     return agentSemanticWorkspace(input, signal);
   }
   throw new Error(`Unsupported agent host method: ${method}`);
+}
+
+async function refreshPreviewDependencies(
+  input: unknown,
+  signal: AbortSignal,
+  harness: PreviewHarnessService,
+  previews: PreviewService,
+) {
+  const request = recordInput(input);
+  const worktree = String(request.worktree ?? "");
+  try {
+    if (request.workspaceMode === "cloud-mirror") {
+      await previews.syncBarrier(worktree);
+    } else {
+      const { refreshProjectPreviewDependencies } =
+        await import("./workspace-ipc.ts");
+      const local = await refreshProjectPreviewDependencies(worktree);
+      if (local.status === "not_running") return local;
+    }
+    const state = await harness.target({
+      ...request,
+      signal,
+      waitFor: "ready",
+    } as never);
+    return dependencyRefreshState(state);
+  } catch (error) {
+    return {
+      diagnostic: error instanceof Error ? error.message : String(error),
+      status: "failed" as const,
+    };
+  }
+}
+
+function dependencyRefreshState(
+  state: Awaited<ReturnType<PreviewHarnessService["target"]>>,
+) {
+  if (state.status === "failed")
+    return { diagnostic: state.message, status: "failed" as const };
+  if (state.status === "stopped") return { status: "not_running" as const };
+  if (!dependencyPreviewRuntimeReady(state))
+    return { diagnostic: state.message, status: "failed" as const };
+  return {
+    readiness: state.readiness,
+    revisions: state.revisions,
+    status: "ready" as const,
+  };
+}
+
+function dependencyPreviewRuntimeReady(
+  state: Awaited<ReturnType<PreviewHarnessService["target"]>>,
+) {
+  if (state.status === "ready") return true;
+  return (
+    state.status === "unavailable" &&
+    state.readiness.container_ready &&
+    state.revisions?.dependencies_ready === true
+  );
 }
 
 async function previewDevtoolsTarget(

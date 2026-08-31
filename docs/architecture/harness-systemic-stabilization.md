@@ -38,6 +38,8 @@ L'environnement persiste pendant la story. Linux utilise le worktree et son over
 
 Une panne d'environnement réparable déclenche une seule réparation interne : invalidation, recréation, installation ou restauration, sonde puis relance de la validation initiale. L'agent ne reçoit la main que si une correction du code reste nécessaire. Une panne non réparable reste une cause runtime et ne peut ni valider le code ni placer la story en review.
 
+Après `mutate_dependencies`, le pont runtime rafraîchit automatiquement toute preview active avant de rendre le contrôle. Le runtime local redémarre la sélection pour remonter les volumes de la nouvelle révision ; Cloud Preview vide la file de synchronisation, reconstruit l'environnement distant et attend le nouvel état. Le reçu `preview_refresh` vaut `ready`, `not_running` ou `failed`. Un échec est une panne d'infrastructure avec effet partiel, puisque la mutation source reste commitée.
+
 ## Résultat et déduplication
 
 Tous les tools publient les champs canoniques suivants :

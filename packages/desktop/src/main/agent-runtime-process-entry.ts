@@ -84,6 +84,8 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
         hostRequest(hostClient, "previewDevtoolsCall", input),
       previewDevtoolsTools: (input) =>
         hostRequest(hostClient, "previewDevtoolsTools", input),
+      refreshPreviewDependencies: (input) =>
+        hostRequest(hostClient, "refreshPreviewDependencies", input),
       ...(process.platform === "darwin" || process.platform === "win32"
         ? {
             semanticWorkspace: (

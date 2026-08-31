@@ -317,7 +317,7 @@ function causeKind(code: string, message: string): CauseKind {
   if (/UNSUPPORTED/u.test(code)) return "harness_limitation";
   if (/POLICY|DENIED/u.test(code)) return "invalid_input";
   if (
-    /EXECUTION|INFRASTRUCTURE|IO|NETWORK|STORE|PACKAGE_MANAGER_UNAVAILABLE/u.test(
+    /EXECUTION|INFRASTRUCTURE|IO|NETWORK|PREVIEW_REFRESH|STORE|PACKAGE_MANAGER_UNAVAILABLE/u.test(
       code,
     ) ||
     /runtime|executor|network/iu.test(message)

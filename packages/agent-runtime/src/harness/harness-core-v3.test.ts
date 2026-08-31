@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import type { PreviewDependencyRefreshResult } from "../preview-harness-tools.js";
 import { CanonicalResultMapper } from "./protocol-v3-adapter.js";
 import { harnessSuccess, provenance } from "./protocol.js";
 import { semanticWorkspaceTools } from "./cline-tools.js";
@@ -107,6 +108,43 @@ test("Cline adapter publishes domain blocks as transport successes", async () =>
     assert.equal(Object.hasOwn(result as object, "isError"), false);
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("dependency mutation refreshes preview before returning control", async () => {
+  const fixture = await dependencyMutationFixture(async () => ({
+    status: "ready",
+  }));
+  try {
+    const result = await fixture.tool.execute(
+      dependencyMutationInput(fixture.sourceRevisionId),
+      { agentId: "test", iteration: 1, runId: "dependency-ready" },
+    );
+    assert.equal((result as { outcome?: string }).outcome, "completed");
+    assert.equal(previewRefreshStatus(result), "ready");
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("failed preview refresh preserves the dependency mutation", async () => {
+  const fixture = await dependencyMutationFixture(async () => ({
+    diagnostic: "Preview volume failed to mount.",
+    status: "failed",
+  }));
+  try {
+    const result = await fixture.tool.execute(
+      dependencyMutationInput(fixture.sourceRevisionId),
+      { agentId: "test", iteration: 1, runId: "dependency-failed" },
+    );
+    assert.equal((result as { outcome?: string }).outcome, "blocked");
+    assert.equal(
+      (result as { cause?: string }).cause,
+      "infrastructure_failure",
+    );
+    assert.equal((result as { effect?: string }).effect, "partial");
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
   }
 });
 
@@ -383,4 +421,51 @@ function legacySuccess<T>(data: T) {
 
 function resultContext(tool: string) {
   return { executionId: "execution", toolCallId: "tool-call", tool };
+}
+
+function dependencyMutationInput(sourceRevisionId: string) {
+  return {
+    source_revision_id: sourceRevisionId,
+    package_path: "package.json",
+    operations: [
+      {
+        action: "add" as const,
+        name: "fixture-package",
+        version: "1.0.0",
+        dependency_type: "dependencies" as const,
+      },
+    ],
+  };
+}
+
+async function dependencyMutationFixture(
+  refreshPreviewDependencies: () => Promise<PreviewDependencyRefreshResult>,
+) {
+  const root = await mkdtemp(join(tmpdir(), "blame-v3-dependency-preview-"));
+  await writeFile(join(root, "package.json"), '{"scripts":{}}\n');
+  const revision = (await new WorkspaceFiles(root).snapshot()).revision;
+  const executor = async () =>
+    harnessSuccess({
+      data: {
+        status: "applied",
+        changed_files: ["package.json"],
+        receipt_ref: "changeset://dependency-preview",
+      },
+      revision,
+      startedAt: Date.now(),
+      provenance: [provenance("harness", revision)],
+      outcome: "applied",
+    });
+  const tool = semanticWorkspaceTools(root, {
+    executor,
+    protocolVersion: "3",
+    refreshPreviewDependencies,
+  }).find(({ name }) => name === "mutate_dependencies");
+  assert.ok(tool);
+  return { root, sourceRevisionId: revision.source_revision_id, tool };
+}
+
+function previewRefreshStatus(value: unknown) {
+  return (value as { data?: { preview_refresh?: { status?: string } } }).data
+    ?.preview_refresh?.status;
 }

@@ -45,6 +45,7 @@ export const agentHostMethods = [
   "previewDevtoolsCall",
   "previewDevtoolsTools",
   "previewContainerLogs",
+  "refreshPreviewDependencies",
   "semanticWorkspace",
 ] as const;
 

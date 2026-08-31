@@ -47,6 +47,13 @@ export type PreviewRuntimeContext = {
   worktree: string;
 };
 
+export type PreviewDependencyRefreshResult = {
+  diagnostic?: string;
+  readiness?: PreviewDevtoolsTarget["readiness"];
+  revisions?: PreviewDevtoolsTarget["revisions"];
+  status: "failed" | "not_running" | "ready";
+};
+
 type PreviewDevtoolsToolDescriptor = {
   description?: string;
   inputSchema: Record<string, unknown>;
@@ -91,6 +98,9 @@ export type PreviewToolRuntimeOptions = {
   ):
     | Promise<readonly PreviewDevtoolsToolDescriptor[]>
     | readonly PreviewDevtoolsToolDescriptor[];
+  refreshPreviewDependencies?(
+    input: PreviewDevtoolsProviderInput,
+  ): Promise<PreviewDependencyRefreshResult> | PreviewDependencyRefreshResult;
 };
 
 type PreviewToolsLogger = {

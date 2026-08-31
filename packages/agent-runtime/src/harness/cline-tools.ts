@@ -1,13 +1,19 @@
 import { createTool, type AgentTool, type AgentToolContext } from "@cline/sdk";
-import { isHarnessResult, type HarnessResult } from "@blame/harness-core";
+import {
+  blockedResult,
+  isHarnessResult,
+  type HarnessResult,
+} from "@blame/harness-core";
 import { z } from "zod";
 import { redactSecurityValue } from "../security-secret-redaction.js";
+import type { PreviewDependencyRefreshResult } from "../preview-harness-tools.js";
 import { ConversationMemoryStore } from "./conversation-memory.js";
 import { harnessFeatureEnabled } from "./harness-feature-flags.js";
 import {
   boundHarnessResult,
   harnessError,
   harnessSuccess,
+  sha256,
   type HarnessToolResult,
 } from "./protocol.js";
 import {
@@ -65,6 +71,7 @@ export { semanticWorkspaceReadToolNames, semanticWorkspaceWriteToolNames };
 export type SemanticWorkspaceToolsOptions = SemanticWorkspaceOptions & {
   executor?: SemanticWorkspaceBridgeExecutor;
   protocolVersion?: "2" | "3";
+  refreshPreviewDependencies?(): Promise<PreviewDependencyRefreshResult>;
 };
 
 export function semanticWorkspaceTools(
@@ -123,7 +130,11 @@ export function semanticWorkspaceTools(
         ),
         context.signal,
       );
-      const result = normalizeDelegatedResult(delegated, tool);
+      const result = await refreshDependenciesAfterMutation(
+        tool,
+        normalizeDelegatedResult(delegated, tool),
+        options.refreshPreviewDependencies,
+      );
       await recordReadKnowledge(
         workspaceRoot,
         options.taskContract?.session_id,
@@ -427,6 +438,89 @@ function executionRequest(
       : {}),
     workspaceRoot,
   };
+}
+
+async function refreshDependenciesAfterMutation(
+  tool: SemanticWorkspaceToolName,
+  result: SemanticWorkspaceExecutionResult,
+  refresh: (() => Promise<PreviewDependencyRefreshResult>) | undefined,
+): Promise<SemanticWorkspaceExecutionResult> {
+  if (tool !== "mutate_dependencies" || !refresh || !mutationApplied(result))
+    return result;
+  const previewRefresh = await resolvePreviewDependencyRefresh(refresh);
+  return isHarnessResult(result)
+    ? attachCanonicalPreviewRefresh(result, previewRefresh)
+    : attachLegacyPreviewRefresh(result, previewRefresh);
+}
+
+async function resolvePreviewDependencyRefresh(
+  refresh: () => Promise<PreviewDependencyRefreshResult>,
+) {
+  try {
+    return await refresh();
+  } catch (error) {
+    return {
+      diagnostic: error instanceof Error ? error.message : String(error),
+      status: "failed" as const,
+    };
+  }
+}
+
+function attachCanonicalPreviewRefresh(
+  result: HarnessResult<unknown, unknown>,
+  previewRefresh: PreviewDependencyRefreshResult,
+) {
+  const data = {
+    ...recordValue(result.data),
+    preview_refresh: previewRefresh,
+  };
+  if (previewRefresh.status !== "failed") return { ...result, data };
+  return blockedResult({
+    data,
+    effect: "partial",
+    issue: previewRefreshIssue(previewRefresh),
+    recovery: {
+      condition: "runtime_state_change",
+      fingerprint: sha256(JSON.stringify(previewRefresh)),
+    },
+    satisfaction: "partially_satisfied",
+    evidence: result.evidence,
+    provenance: result.provenance,
+  });
+}
+
+function attachLegacyPreviewRefresh(
+  result: HarnessToolResult<unknown>,
+  previewRefresh: PreviewDependencyRefreshResult,
+): HarnessToolResult<unknown> {
+  if (result.status !== "success") return result;
+  const data = { ...recordValue(result.data), preview_refresh: previewRefresh };
+  if (previewRefresh.status !== "failed") return { ...result, data };
+  return {
+    ...result,
+    data: { ...data, partial: true },
+    outcome: "blocked",
+    reason: "PREVIEW_REFRESH_FAILED",
+    recommendation:
+      "The dependency change is committed. Wait for the runtime preview state to change.",
+  };
+}
+
+function previewRefreshIssue(previewRefresh: PreviewDependencyRefreshResult) {
+  return {
+    kind: "infrastructure_failure" as const,
+    code: "PREVIEW_REFRESH_FAILED",
+    message: previewRefresh.diagnostic ?? "Preview refresh failed.",
+    details: previewRefresh,
+  };
+}
+
+function mutationApplied(result: SemanticWorkspaceExecutionResult) {
+  if (isHarnessResult(result))
+    return result.effect === "changed" && result.outcome === "completed";
+  return (
+    result.status === "success" && recordValue(result.data).status === "applied"
+  );
 }
 
 async function reserveRead(

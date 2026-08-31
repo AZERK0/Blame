@@ -3214,6 +3214,16 @@ export async function controlProjectPreview(input: ControlProjectPreviewInput) {
   return startProjectPreview(selection, input.action === "restart");
 }
 
+export async function refreshProjectPreviewDependencies(worktreeInput: string) {
+  const worktree = resolveRuntimePath(worktreeInput);
+  const state = await readPreviewRuntimeFileState(worktree);
+  if (state.desiredStatus !== "running")
+    return { status: "not_running" as const };
+  previewRecoveryCircuit.reset(worktree);
+  await controlProjectPreview({ action: "restart", worktree });
+  return { status: "ready" as const };
+}
+
 async function previewRecoveryConfigurationFingerprint(
   worktree: string,
   configurations: ProjectRunConfiguration[],
