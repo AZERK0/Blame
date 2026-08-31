@@ -51,6 +51,7 @@ import {
   automaticDependencyNetworkPolicy,
   SandboxedTaskExecutor,
   type TaskExecutionInput,
+  type TaskExecutionResult,
   type TaskExecutor,
 } from "./task-executor.js";
 import {
@@ -1456,44 +1457,17 @@ test("package registry bootstrap failures are infrastructure errors", async () =
   });
 });
 
-test("run_task repairs one environment failure before returning control", async () => {
+test("run_task repairs exit 1 MODULE_NOT_FOUND for a declared dependency", async () => {
   await withWorkspace(async (root) => {
-    let executions = 0;
-    const executor: TaskExecutor = {
-      async capability() {
-        return "worktree";
-      },
-      async dependencyCapability() {
-        return { available: true, network: "managed_allowlist" };
-      },
-      async healthCheck() {
-        return { available: true, isolation: "worktree" };
-      },
-      async execute(input) {
-        executions += 1;
-        const failed = executions === 1;
-        return {
-          status: failed ? "execution_error" : "passed",
-          exitCode: failed ? null : 0,
-          signal: null,
-          stdout: "",
-          stderr: failed ? "node_modules symlink target is missing" : "",
-          outputTruncated: false,
-          isolation: "worktree",
-          ...(input.packageManager
-            ? {
-                packageManagerResolution: {
-                  name: input.packageManager,
-                  resolvedVersion: input.packageManagerVersion ?? "10.0.0",
-                  strategy: input.packageManagerVersion
-                    ? ("exact" as const)
-                    : ("unversioned" as const),
-                },
-              }
-            : {}),
-        };
-      },
-    };
+    await writeFile(
+      join(root, "package.json"),
+      JSON.stringify({
+        dependencies: { "fixture-package": "1.0.0" },
+        scripts: { build: "node build.js" },
+      }),
+    );
+    await writeFixtureDependency(root, false);
+    const executor = new ModuleRepairTaskExecutor();
     const workspace = new SemanticWorkspace(root, { taskExecutor: executor });
     const revision = success(await workspace.workspaceState()).data
       .source_revision.source_revision_id;
@@ -1505,7 +1479,12 @@ test("run_task repairs one environment failure before returning control", async 
       }),
     );
     assert.equal(run.data.status, "passed");
-    assert.equal(executions, 3);
+    assert.deepEqual(run.data.environment_repair, {
+      attempted: true,
+      status: "recovered",
+    });
+    assert.equal(executor.executions, 3);
+    assert.equal(executor.dependencyExecutions, 1);
   });
 });
 
@@ -1551,6 +1530,76 @@ test("run_task reports executor health failures without executing commands", asy
     assert.match(summary.stderr_summary, /bwrap: execvp/);
   });
 });
+
+class ModuleRepairTaskExecutor implements TaskExecutor {
+  executions = 0;
+  dependencyExecutions = 0;
+
+  async capability() {
+    return "worktree" as const;
+  }
+
+  async dependencyCapability() {
+    return { available: true, network: "managed_allowlist" as const };
+  }
+
+  async healthCheck() {
+    return { available: true, isolation: "worktree" as const };
+  }
+
+  async execute(input: TaskExecutionInput): Promise<TaskExecutionResult> {
+    this.executions += 1;
+    if (input.dependencyInstall) {
+      this.dependencyExecutions += 1;
+      await writeFixtureDependency(input.overlayRoot, true);
+      return passedTaskExecution(input);
+    }
+    if (this.dependencyExecutions) return passedTaskExecution(input);
+    return {
+      status: "failed",
+      exitCode: 1,
+      signal: null,
+      stdout: "",
+      stderr: "Error: Cannot find module 'fixture-package/runtime.js'",
+      outputTruncated: false,
+      isolation: "worktree",
+    };
+  }
+}
+
+function passedTaskExecution(input: TaskExecutionInput): TaskExecutionResult {
+  return {
+    status: "passed",
+    exitCode: 0,
+    signal: null,
+    stdout: "",
+    stderr: "",
+    outputTruncated: false,
+    isolation: "worktree",
+    ...(input.packageManager
+      ? {
+          packageManagerResolution: {
+            name: input.packageManager,
+            resolvedVersion: input.packageManagerVersion ?? "10.0.0",
+            strategy: input.packageManagerVersion ? "exact" : "unversioned",
+          },
+        }
+      : {}),
+  };
+}
+
+async function writeFixtureDependency(root: string, includeRuntime: boolean) {
+  const packageRoot = join(root, "node_modules", "fixture-package");
+  await mkdir(packageRoot, { recursive: true });
+  await writeFile(
+    join(packageRoot, "package.json"),
+    JSON.stringify({ name: "fixture-package", main: "index.js" }),
+  );
+  await writeFile(join(packageRoot, "index.js"), "module.exports = {}\n");
+  await writeFile(join(root, "node_modules", ".package-lock.json"), "{}\n");
+  if (includeRuntime)
+    await writeFile(join(packageRoot, "runtime.js"), "module.exports = {}\n");
+}
 
 async function withWorkspace(
   operation: (root: string, workspace: SemanticWorkspace) => Promise<void>,

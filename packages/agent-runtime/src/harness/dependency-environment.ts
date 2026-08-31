@@ -328,8 +328,8 @@ export async function probeDependencyEnvironment(
   sourceFiles: string[],
   requiredPackages: string[] = [],
 ): Promise<DependencyIntegrityProbe> {
-  const packages = await directPackages(workspace, sourceFiles);
-  requiredPackages.forEach((name) => packages.add(name));
+  const declaredPackages = await directPackages(workspace, sourceFiles);
+  const packages = new Set([...declaredPackages, ...requiredPackages]);
   const packageResults = await resolvePackages(
     workspace,
     sourceFiles,
@@ -338,7 +338,7 @@ export async function probeDependencyEnvironment(
   const expectedExecutables = await declaredExecutables(
     workspace,
     sourceFiles,
-    packages,
+    declaredPackages,
   );
   const executableResults = await resolveExecutables(
     workspace,
@@ -373,6 +373,13 @@ export async function probeDependencyEnvironment(
     checked_at: new Date().toISOString(),
     ...(failureSignature ? { failure_signature: failureSignature } : {}),
   };
+}
+
+export function declaredDependencyPackages(
+  workspace: string,
+  sourceFiles: string[],
+) {
+  return directPackages(workspace, sourceFiles);
 }
 
 async function copyDependencyDirectories(

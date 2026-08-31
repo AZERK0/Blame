@@ -6,6 +6,7 @@ import { ChangeService } from "./change-service.js";
 import { dependencyCacheRoot } from "./dependency-cache.js";
 import {
   DependencyEnvironmentService,
+  declaredDependencyPackages,
   probeDependencyEnvironment,
   type DependencyEnvironment,
 } from "./dependency-environment.js";
@@ -223,8 +224,24 @@ export class RunService {
         dependencyInstall: task.kind === "dependencies",
       };
       const result = await this.executeTask(executionInput, isolation);
+      const declaredPackages = await declaredDependencyPackages(
+        this.files.root,
+        snapshot.files,
+      );
+      const missingDeclaredModules =
+        task.kind !== "dependencies" &&
+        dependencyEnvironment &&
+        !repairAttempted
+          ? await missingDeclaredDependencyModules(
+              result,
+              dependencyEnvironment,
+              snapshot.files,
+              declaredPackages,
+            )
+          : [];
       if (
-        repairableDependencyFailure(result) &&
+        (repairableDependencyFailure(result) ||
+          missingDeclaredModules.length > 0) &&
         task.kind !== "dependencies" &&
         dependencyEnvironment &&
         !repairAttempted
@@ -393,7 +410,11 @@ export class RunService {
           output_truncated: result.outputTruncated,
         },
         failures: extractFailures(normalized),
-        diagnostics: extractDiagnostics(normalized, this.files.root),
+        diagnostics: extractDiagnostics(
+          normalized,
+          this.files.root,
+          declaredPackages,
+        ),
         filesystem_effects: {
           created: effects.created,
           modified: effects.modified,
@@ -716,6 +737,28 @@ function repairableDependencyFailure(result: TaskExecutionResult) {
   );
 }
 
+async function missingDeclaredDependencyModules(
+  result: TaskExecutionResult,
+  environment: DependencyEnvironment,
+  sourceFiles: string[],
+  declaredPackages: Set<string>,
+) {
+  if (result.status !== "failed") return [];
+  const missingModules = missingModuleSpecifiers(
+    `${result.stderr}\n${result.stdout}`,
+  ).filter((specifier) => {
+    const packageName = modulePackageName(specifier);
+    return packageName ? declaredPackages.has(packageName) : false;
+  });
+  if (!missingModules.length) return [];
+  const probe = await probeDependencyEnvironment(
+    environment.workspace,
+    sourceFiles,
+    missingModules,
+  );
+  return probe.status === "failed" ? missingModules : [];
+}
+
 function executionErrorResult(
   isolation: TaskExecutionResult["isolation"],
   stderr: string,
@@ -807,70 +850,114 @@ function extractFailures(output: string) {
     .slice(0, 100);
 }
 
-function extractDiagnostics(output: string, workspaceRoot: string) {
-  const diagnostics: Array<{
-    severity: "error" | "warning" | "info";
-    message: string;
-    path?: string;
-    line?: number;
-    column?: number;
-  }> = [];
-  for (const line of output.split(/\r?\n/)) {
-    const match = line.match(
-      /^(.*?):(\d+):(\d+)(?:\s*-\s*|\s+)(error|warning|info)?\s*(.*)$/i,
-    );
-    if (!match) continue;
-    const reportedPath = match[1]!;
-    const path = reportedPath.startsWith("<workspace>/")
-      ? reportedPath.slice("<workspace>/".length)
-      : relative(workspaceRoot, reportedPath).replaceAll("\\", "/");
-    if (!path || path === ".." || path.startsWith("../")) continue;
-    diagnostics.push({
-      severity:
-        match[4]?.toLowerCase() === "warning"
-          ? "warning"
-          : match[4]?.toLowerCase() === "info"
-            ? "info"
-            : "error",
-      message: compact(match[5] ?? line, 2_000),
-      path,
-      line: Number(match[2]),
-      column: Number(match[3]),
-    });
-    if (diagnostics.length >= 500) break;
-  }
-  return [...missingDependencyDiagnostics(output), ...diagnostics].slice(
-    0,
-    500,
-  );
+function extractDiagnostics(
+  output: string,
+  workspaceRoot: string,
+  declaredPackages: Set<string>,
+) {
+  const diagnostics = output
+    .split(/\r?\n/)
+    .map((line) => sourceDiagnostic(line, workspaceRoot))
+    .filter((diagnostic) => diagnostic !== undefined)
+    .slice(0, 500);
+  return [
+    ...missingDependencyDiagnostics(output, declaredPackages),
+    ...diagnostics,
+  ].slice(0, 500);
 }
 
-function missingDependencyDiagnostics(output: string) {
+function sourceDiagnostic(line: string, workspaceRoot: string) {
+  const match = line.match(
+    /^(.*?):(\d+):(\d+)(?:\s*-\s*|\s+)(error|warning|info)?\s*(.*)$/i,
+  );
+  if (!match) return undefined;
+  const reportedPath = match[1]!;
+  const path = reportedPath.startsWith("<workspace>/")
+    ? reportedPath.slice("<workspace>/".length)
+    : relative(workspaceRoot, reportedPath).replaceAll("\\", "/");
+  if (!path || path === ".." || path.startsWith("../")) return undefined;
+  const reportedSeverity = match[4]?.toLowerCase();
+  const severity = ["warning", "info"].includes(reportedSeverity ?? "")
+    ? (reportedSeverity as "info" | "warning")
+    : ("error" as const);
+  return {
+    severity,
+    message: compact(match[5] ?? line, 2_000),
+    path,
+    line: Number(match[2]),
+    column: Number(match[3]),
+  };
+}
+
+function missingDependencyDiagnostics(
+  output: string,
+  declaredPackages: Set<string>,
+) {
+  return missingDependencies(output)
+    .slice(0, 20)
+    .map((dependency) =>
+      missingDependencyDiagnostic(dependency, declaredPackages),
+    );
+}
+
+const missingModuleExpressions = [
+  /Cannot find (?:module|package)\s+['"]([^'"]+)['"]/giu,
+  /Module not found:\s*(?:Error:\s*)?Can't resolve\s+['"]([^'"]+)['"]/giu,
+];
+
+const missingDependencyExpressions = [
+  ...missingModuleExpressions,
+  /^(?:[^:\r\n]+:\s*)?(?:(?:line\s+)?\d+:\s*)?([^:\s]+):\s*(?:command\s+)?not found\s*$/gimu,
+  /['"]?([^'"\r\n]+?)['"]?\s+is not recognized as an internal or external command/giu,
+];
+
+function missingModuleSpecifiers(output: string) {
+  return matchedDependencies(output, missingModuleExpressions);
+}
+
+function missingDependencies(output: string) {
+  return matchedDependencies(output, missingDependencyExpressions);
+}
+
+function matchedDependencies(output: string, expressions: RegExp[]) {
   const dependencies = new Set<string>();
-  for (const expression of missingDependencyExpressions) {
+  for (const expression of expressions)
     for (const match of output.matchAll(expression)) {
       const dependency = match[1]?.trim();
       if (dependency && plausibleDependency(dependency))
         dependencies.add(dependency);
     }
-  }
-  return [...dependencies].slice(0, 20).map((dependency) => ({
-    code: "DEPENDENCY_MISSING",
-    severity: "error" as const,
-    message: `Dependency ${dependency} is missing from the execution environment.`,
-    dependency,
-    installation_supported: false,
-    recommendation:
-      "The package is neither declared nor installed. Do not probe alternate node_modules paths; use the dependency inventory and capability alternatives from workspace_state.",
-  }));
+  return [...dependencies];
 }
 
-const missingDependencyExpressions = [
-  /Cannot find (?:module|package)\s+['"]([^'"]+)['"]/giu,
-  /Module not found:\s*(?:Error:\s*)?Can't resolve\s+['"]([^'"]+)['"]/giu,
-  /^(?:[^:\r\n]+:\s*)?(?:(?:line\s+)?\d+:\s*)?([^:\s]+):\s*(?:command\s+)?not found\s*$/gimu,
-  /['"]?([^'"\r\n]+?)['"]?\s+is not recognized as an internal or external command/giu,
-];
+function missingDependencyDiagnostic(
+  dependency: string,
+  declaredPackages: Set<string>,
+) {
+  const declared = declaredPackages.has(modulePackageName(dependency) ?? "");
+  return {
+    code: "DEPENDENCY_MISSING",
+    severity: "error" as const,
+    message: declared
+      ? `Declared dependency module ${dependency} could not be loaded after environment verification.`
+      : `Dependency ${dependency} is missing from the execution environment.`,
+    dependency,
+    installation_supported: declared,
+    recommendation: declared
+      ? "The repaired environment passed its probe. Verify the requested module path and declared package version."
+      : "The package is not declared. Use mutate_dependencies when it is required by the requested change.",
+  };
+}
+
+function modulePackageName(specifier: string) {
+  if (specifier.startsWith(".") || specifier.startsWith("/")) return undefined;
+  const segments = specifier.split("/");
+  return specifier.startsWith("@")
+    ? segments.length >= 2
+      ? `${segments[0]}/${segments[1]}`
+      : undefined
+    : segments[0];
+}
 
 function plausibleDependency(value: string) {
   return /^(?:@[^/\s]+\/)?[A-Za-z0-9][A-Za-z0-9._/-]*$/u.test(value);
