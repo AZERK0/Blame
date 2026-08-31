@@ -8,7 +8,9 @@ import {
   deleteActivityArtifacts,
 } from '#services/agent_activity_artifacts'
 import {
+  persistTerminalUserStoryRunActivities,
   persistUserStoryRunActivity,
+  terminalAgentRunActivities,
   userStoryRunActivities,
   userStoryRunActivity,
 } from '#services/agent_run_activity_log'
@@ -300,11 +302,12 @@ export default class UserStoriesService {
   private async updateInput(userStory: UserStory, input: UpdateUserStoryInput) {
     const { agentActivity, agentActivityUpdates, fileAttachments, ...update } = input
     void fileAttachments
-    const activities = await Promise.all(
+    const prepared = await Promise.all(
       requestedActivities(agentActivity, agentActivityUpdates).map((activity) =>
         activityWithArtifact(userStory.id, userStory.clineSessionId, activity)
       )
     )
+    const activities = userStory.activeAgentRunId ? prepared : terminalAgentRunActivities(prepared)
     if (!activities.length) return update
     return {
       ...update,
@@ -392,12 +395,7 @@ export default class UserStoriesService {
     if (persistence === undefined) return
     assertAgentRunStatusTransition(run.status, input.status)
     if (terminalStatus(run.status)) {
-      run.merge(persistence)
-      await run.save()
-      if (story.activeAgentRunId === run.id) {
-        story.merge(finalAgentRunStoryUpdate(run, input))
-        await story.save()
-      }
+      await persistAlreadyTerminalStoryRun(story, run, input, persistence, transaction)
       return
     }
     const activities = await this.preparedRunActivities(story, run, input.activities)
@@ -440,11 +438,12 @@ export default class UserStoriesService {
       ...update,
       ...agentRunCompletedAtUpdate(update),
     }
-    const activities = await Promise.all(
+    const prepared = await Promise.all(
       requestedActivities(agentActivity, agentActivityUpdates).map((activity) =>
         activityWithArtifact(story.id, run.clineSessionId, activity, run.id)
       )
     )
+    const activities = terminalStatus(run.status) ? terminalAgentRunActivities(prepared) : prepared
     if (!activities.length) return nextUpdate
     await Promise.all(
       activities.map((activity) => persistUserStoryRunActivity(run.id, activity, transaction))
@@ -454,6 +453,25 @@ export default class UserStoriesService {
       activities: activities.reduce(upsertActivity, run.activities ?? []),
     }
   }
+}
+
+async function persistAlreadyTerminalStoryRun(
+  story: UserStory,
+  run: UserStoryAgentRun,
+  input: FinalizeUserStoryAgentRunInput,
+  persistence: NonNullable<ReturnType<typeof agentRunPersistenceUpdate>>,
+  transaction: TransactionClientContract
+) {
+  const activities = await persistTerminalUserStoryRunActivities(
+    run.id,
+    run.activities ?? [],
+    transaction
+  )
+  run.merge({ ...persistence, activities })
+  await run.save()
+  if (story.activeAgentRunId !== run.id) return
+  story.merge(finalAgentRunStoryUpdate(run, input))
+  await story.save()
 }
 
 function storedAttachments(owner: UserStory | UserStoryComment): FileAttachment[] {
@@ -554,8 +572,17 @@ async function cancelActiveAgentRun(
     .where('id', story.activeAgentRunId)
     .forUpdate()
     .first()
-  if (!run || terminalStatus(run.status)) return
-  run.merge({ status: 'cancelled', completedAt: DateTime.now() })
+  if (!run) return
+  const terminal = terminalStatus(run.status)
+  const completedAt = run.completedAt ?? DateTime.now()
+  const completedAtIso = completedAt.toISO() ?? undefined
+  const activities = terminalAgentRunActivities(run.activities ?? [], completedAtIso)
+  await persistTerminalUserStoryRunActivities(run.id, activities, transaction)
+  story.agentActivities = terminalAgentRunActivities(story.agentActivities ?? [], completedAtIso)
+  run.merge({
+    activities,
+    ...(terminal ? {} : { status: 'cancelled' as const, completedAt }),
+  })
   await run.save()
 }
 
@@ -623,7 +650,9 @@ function finalResponseActivities(
   updates: UserStoryAgentActivity[],
   response: string | null | undefined
 ) {
-  const activities = updates.reduce(upsertActivity, run.activities ?? [])
+  const activities = terminalAgentRunActivities(
+    updates.reduce(upsertActivity, run.activities ?? [])
+  )
   const finalResponse = response?.trim()
   if (!finalResponse || activities.some((activity) => activity.kind === 'message')) {
     return activities

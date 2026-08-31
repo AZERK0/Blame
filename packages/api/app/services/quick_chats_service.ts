@@ -9,9 +9,11 @@ import {
   deleteActivityArtifacts,
 } from '#services/agent_activity_artifacts'
 import {
+  persistTerminalQuickChatRunActivities,
   persistQuickChatRunActivity,
   quickChatRunActivities,
   quickChatRunActivity,
+  terminalAgentRunActivities,
 } from '#services/agent_run_activity_log'
 import ProjectsService from '#services/projects_service'
 import type {
@@ -241,8 +243,7 @@ export default class QuickChatsService {
       if (persistence === undefined) return
       assertAgentRunStatusTransition(run.status, input.status)
       if (terminalStatus(run.status)) {
-        run.merge(persistence)
-        await run.save()
+        await persistAlreadyTerminalQuickChatRun(run, persistence, transaction)
         return
       }
       const activities = await this.preparedFinalActivities(quickChat, run, input, transaction)
@@ -354,11 +355,12 @@ export default class QuickChatsService {
       ...update,
       ...agentRunCompletedAtUpdate(update),
     }
-    const activities = await Promise.all(
+    const prepared = await Promise.all(
       requestedActivities(agentActivity, agentActivityUpdates).map((activity) =>
         activityWithArtifact(quickChat.id, run.clineSessionId, activity, run.id)
       )
     )
+    const activities = terminalStatus(run.status) ? terminalAgentRunActivities(prepared) : prepared
     if (!activities.length) return nextUpdate
     await Promise.all(
       activities.map((activity) => persistQuickChatRunActivity(run.id, activity, transaction))
@@ -387,6 +389,20 @@ export default class QuickChatsService {
     )
     return finalActivities
   }
+}
+
+async function persistAlreadyTerminalQuickChatRun(
+  run: QuickChatAgentRun,
+  persistence: NonNullable<ReturnType<typeof agentRunPersistenceUpdate>>,
+  transaction: TransactionClientContract
+) {
+  const activities = await persistTerminalQuickChatRunActivities(
+    run.id,
+    run.activities ?? [],
+    transaction
+  )
+  run.merge({ ...persistence, activities })
+  await run.save()
 }
 
 function finalQuickChatRunUpdate(
@@ -427,12 +443,13 @@ function finalResponseActivities(
   activities: UserStoryAgentActivity[],
   response: string | null | undefined
 ) {
+  const terminalActivities = terminalAgentRunActivities(activities)
   const finalResponse = response?.trim()
-  if (!finalResponse || activities.some((activity) => activity.kind === 'message')) {
-    return activities
+  if (!finalResponse || terminalActivities.some((activity) => activity.kind === 'message')) {
+    return terminalActivities
   }
   return [
-    ...activities,
+    ...terminalActivities,
     {
       createdAt: (run.completedAt ?? DateTime.now()).toISO() ?? new Date().toISOString(),
       detail: finalResponse,

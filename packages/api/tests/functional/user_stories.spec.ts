@@ -21,6 +21,7 @@ type UserStoryBody = {
       detailArtifact?: string
       id: string
       originalDetailLength?: number
+      status?: string
     }[]
     activeAgentRunId?: string | null
     agentFinalResponse?: string | null
@@ -81,6 +82,7 @@ type UserStoryAgentRunBody = {
       detailArtifact?: string
       id: string
       originalDetailLength?: number
+      status?: string
     }[]
     commentId?: string | null
     completedAt?: string | null
@@ -765,6 +767,25 @@ test.group('user stories', (group) => {
       .loginAs(user)
       .json({ executionId: crypto.randomUUID(), kind: 'initial' })
     const run = (runResponse.body() as UserStoryAgentRunBody).data
+    const reasoningActivity = {
+      createdAt: new Date().toISOString(),
+      detail: 'Inspecting the harness',
+      id: 'reasoning-36-1',
+      kind: 'reasoning',
+      status: 'running',
+      title: 'Reasoning',
+    }
+
+    const activityResponse = await client
+      .patch(`/api/v1/projects/user-stories/${story.data.id}/agent-runs/${run.id}`)
+      .loginAs(user)
+      .json({ agentActivity: reasoningActivity })
+    activityResponse.assertStatus(200)
+    const storyActivityResponse = await client
+      .patch(`/api/v1/projects/user-stories/${story.data.id}`)
+      .loginAs(user)
+      .json({ agentActivity: reasoningActivity })
+    storyActivityResponse.assertStatus(200)
 
     const discardedResponse = await client
       .patch(`/api/v1/projects/user-stories/${story.data.id}`)
@@ -778,6 +799,33 @@ test.group('user stories', (group) => {
     assert.equal(discarded.data.agentStatus, null)
     assert.equal(cancelled?.status, 'cancelled')
     assert.isNotNull(cancelled?.completedAt)
+    assert.equal(
+      cancelled?.activities?.find(({ id }) => id === 'reasoning-36-1')?.status,
+      'completed'
+    )
+    assert.equal(
+      discarded.data.agentActivities?.find(({ id }) => id === 'reasoning-36-1')?.status,
+      'completed'
+    )
+
+    const lateRunResponse = await client
+      .patch(`/api/v1/projects/user-stories/${story.data.id}/agent-runs/${run.id}`)
+      .loginAs(user)
+      .json({ agentActivity: reasoningActivity })
+    const lateRun = (lateRunResponse.body() as UserStoryAgentRunBody).data
+    lateRunResponse.assertStatus(200)
+    assert.equal(lateRun.activities?.find(({ id }) => id === 'reasoning-36-1')?.status, 'completed')
+
+    const lateStoryResponse = await client
+      .patch(`/api/v1/projects/user-stories/${story.data.id}`)
+      .loginAs(user)
+      .json({ agentActivity: reasoningActivity })
+    const lateStory = (lateStoryResponse.body() as UserStoryBody).data
+    lateStoryResponse.assertStatus(200)
+    assert.equal(
+      lateStory.agentActivities?.find(({ id }) => id === 'reasoning-36-1')?.status,
+      'completed'
+    )
   })
 
   test('deletes a story while its agent run is active', async ({ client }) => {

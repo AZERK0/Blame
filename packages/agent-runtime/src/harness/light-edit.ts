@@ -15,7 +15,7 @@ import {
   SymbolResolutionError,
   type ResolvedLightSymbol,
 } from "./light-aliases.js";
-import { planLightPatch } from "./light-patch.js";
+import { planLightPatch, splitLightPatch } from "./light-patch.js";
 import {
   LightCommitConflict,
   LightCommitService,
@@ -95,16 +95,41 @@ export class LightEditService {
 
   private async plan(input: LightEditCodeInput, snapshot: WorkspaceSnapshot) {
     const files = new Map<string, PlannedFile>();
+    let operationCount = 0;
     for (const operation of input.operations) {
-      if (operation.kind === "patch")
-        await this.planPatch(files, operation.path, operation.patch);
-      else await this.planSymbol(files, operation, snapshot);
+      if (operation.kind === "patch") {
+        operationCount += await this.planPatch(
+          files,
+          operation.path,
+          operation.patch,
+          50 - operationCount,
+        );
+      } else {
+        if (operationCount >= 50)
+          throw new Error("Edit batch contains too many operations.");
+        operationCount += 1;
+        await this.planSymbol(files, operation, snapshot);
+      }
     }
     for (const file of files.values()) assertCompatibleMutations(file);
     return [...files.values()];
   }
 
   private async planPatch(
+    plans: Map<string, PlannedFile>,
+    requestedPath: string | undefined,
+    patch: string,
+    remainingOperations: number,
+  ) {
+    const operations = splitLightPatch(patch, requestedPath);
+    if (operations.length > remainingOperations)
+      throw new Error("Edit batch contains too many operations.");
+    for (const operation of operations)
+      await this.planPatchFile(plans, operation.path, operation.patch);
+    return operations.length;
+  }
+
+  private async planPatchFile(
     plans: Map<string, PlannedFile>,
     requestedPath: string,
     patch: string,

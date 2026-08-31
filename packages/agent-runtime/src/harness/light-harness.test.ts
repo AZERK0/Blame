@@ -9,6 +9,7 @@ import {
 } from "./light-capabilities.js";
 import { LightCommitService } from "./light-commit.js";
 import type { LightToolResult } from "./light-contracts.js";
+import { alignDependencyPackages } from "./light-dependencies.js";
 import { executeLightWorkspaceRequest } from "./light-executor.js";
 import { lightSemanticHarnessTools } from "./light-tools.js";
 import { LightWorkspace } from "./light-workspace.js";
@@ -169,6 +170,61 @@ test("tool surface contains only the four workspace tools", async () => {
   );
 });
 
+test("auto search combines lexical matches and supports multi-term glob scopes", async () => {
+  await withWorkspace(
+    {
+      "package.json": JSON.stringify(
+        { name: "root-package", scripts: { build: "tsc" } },
+        null,
+        2,
+      ),
+      "packages/web/package.json": JSON.stringify(
+        { name: "web-package", scripts: { test: "node --test" } },
+        null,
+        2,
+      ),
+      "src/scripts.ts": "export function scripts() { return 'code' }\n",
+    },
+    async (root) => {
+      const workspace = lightWorkspace(root, "search-routing");
+      const global = data(await workspace.searchCode({ query: "scripts" }));
+      assert.ok(
+        array(global.results).some(
+          (value) => record(value).path === "package.json",
+        ),
+      );
+      assert.ok(
+        array(global.results).some(
+          (value) => record(value).qualifiedName === "scripts",
+        ),
+      );
+      const scoped = data(
+        await workspace.searchCode({
+          query: "scripts",
+          scope: ["**/package.json"],
+        }),
+      );
+      assert.equal(scoped.mode, "auto");
+      assert.deepEqual(
+        new Set(array(scoped.results).map((value) => record(value).path)),
+        new Set(["package.json", "packages/web/package.json"]),
+      );
+      const terms = data(
+        await workspace.searchCode({
+          query: "scripts package",
+          scope: "**/package.json",
+        }),
+      );
+      assert.ok(array(terms.results).length > 0);
+      assert.ok(
+        array(terms.results).every((value) =>
+          String(record(value).path).endsWith("package.json"),
+        ),
+      );
+    },
+  );
+});
+
 test("small raw reads deduplicate by emitted bytes without invalidating other files", async () => {
   await withWorkspace(
     { "a.ts": "export const a = 1\n", "b.ts": "export const b = 2\n" },
@@ -257,6 +313,83 @@ test("an unavailable package manager is reported without mutating manifests", as
     if (result.status === "blocked")
       assert.equal(result.category, "environment");
     assert.equal(await readFile(join(root, "package.json"), "utf8"), manifest);
+  });
+});
+
+test("the briefing exposes package topology, key files, and stack versions", async () => {
+  await withWorkspace(
+    {
+      "package.json": JSON.stringify({
+        name: "workspace",
+        scripts: { build: "tsc", test: "node --test" },
+        dependencies: { "@prisma/client": "7.9.1" },
+      }),
+      "packages/api/package.json": JSON.stringify({
+        name: "api",
+        scripts: { dev: "node src/server.js" },
+      }),
+      "packages/api/src/server.ts": "export const server = true\n",
+      "prisma/schema.prisma": "model User {\n  id Int @id\n}\n",
+      "tsconfig.json": "{}\n",
+    },
+    async (root) => {
+      const briefing = await createInitialTaskBriefing({
+        workspaceRoot: root,
+        taskContract: contract("briefing-map"),
+      });
+      assert.match(briefing ?? "", /Project map: packages \(/u);
+      assert.match(briefing ?? "", /prisma\/schema\.prisma/u);
+      assert.match(briefing ?? "", /@prisma\/client@7\.9\.1/u);
+      assert.match(briefing ?? "", /scripts build,test/u);
+      assert.match(briefing ?? "", /node_modules/u);
+      assert.ok((briefing?.length ?? Infinity) < 6_000);
+    },
+  );
+});
+
+test("Prisma family additions align with the installed client version", () => {
+  const packages = alignDependencyPackages(
+    ["@prisma/adapter-pg", "@prisma/client@7.10.0", "zod"],
+    { dependencies: { "@prisma/client": "^7.9.1" } },
+  );
+  assert.deepEqual(packages, [
+    "@prisma/adapter-pg@7.9.1",
+    "@prisma/client@7.10.0",
+    "zod",
+  ]);
+});
+
+test("run_task preserves pipeline failures and complete diagnostics", async () => {
+  await withWorkspace({ "package.json": "{}\n" }, async (root) => {
+    const workspace = lightWorkspace(root, "pipeline-diagnostic");
+    const result = await workspace.tasks.run({
+      kind: "command",
+      command:
+        "node -e \"console.error('diagnostic start'); console.error('fatal detail'); process.exit(7)\" 2>&1 | cat",
+    });
+    assert.equal(result.status, "blocked");
+    if (result.status !== "blocked") return;
+    assert.equal(result.category, "code");
+    assert.match(result.message, /code 7/u);
+    assert.match(result.message, /diagnostic start/u);
+    assert.match(result.message, /fatal detail/u);
+  });
+});
+
+test("run_task classifies a missing declared dependency as environment", async () => {
+  const manifest = JSON.stringify({
+    dependencies: { "@prisma/client": "7.9.1" },
+  });
+  await withWorkspace({ "package.json": manifest }, async (root) => {
+    const workspace = lightWorkspace(root, "dependency-diagnostic");
+    const result = await workspace.tasks.run({
+      kind: "command",
+      command:
+        'node -e "console.error(\\"Cannot find module \'@prisma/client\'\\"); process.exit(1)"',
+    });
+    assert.equal(result.status, "blocked");
+    if (result.status === "blocked")
+      assert.equal(result.category, "environment");
   });
 });
 
@@ -751,6 +884,48 @@ test("content changes invalidate journal validations", async () => {
   );
 });
 
+test("one native Cline patch edits multiple files atomically", async () => {
+  await withWorkspace(
+    {
+      "a.ts": "export const a = 1\n",
+      "b.ts": "export const b = 2\n",
+    },
+    async (root) => {
+      const workspace = lightWorkspace(root, "multi-file-patch");
+      const result = await workspace.editCode({
+        operations: [
+          {
+            kind: "patch",
+            patch: multiFilePatch([
+              [
+                "*** Update File: a.ts",
+                "@@",
+                "-export const a = 1",
+                "+export const a = 3",
+              ],
+              [
+                "*** Update File: b.ts",
+                "@@",
+                "-export const b = 2",
+                "+export const b = 4",
+              ],
+            ]),
+          },
+        ],
+      });
+      assert.equal(result.status, "ok");
+      assert.equal(
+        await readFile(join(root, "a.ts"), "utf8"),
+        "export const a = 3\n",
+      );
+      assert.equal(
+        await readFile(join(root, "b.ts"), "utf8"),
+        "export const b = 4\n",
+      );
+    },
+  );
+});
+
 test("overlaps and final parse failures leave every file unchanged", async () => {
   const initial = {
     "a.ts": "export function a() { return 1 }\n",
@@ -779,18 +954,19 @@ test("overlaps and final parse failures leave every file unchanged", async () =>
         operations: [
           {
             kind: "patch",
-            path: "a.ts",
-            patch: applyPatch("a.ts", [
-              "-export function a() { return 1 }",
-              "+export function a() { return 4 }",
-            ]),
-          },
-          {
-            kind: "patch",
-            path: "b.ts",
-            patch: applyPatch("b.ts", [
-              "-export function b() { return 2 }",
-              "+export function b(",
+            patch: multiFilePatch([
+              [
+                "*** Update File: a.ts",
+                "@@",
+                "-export function a() { return 1 }",
+                "+export function a() { return 4 }",
+              ],
+              [
+                "*** Update File: b.ts",
+                "@@",
+                "-export function b() { return 2 }",
+                "+export function b(",
+              ],
             ]),
           },
         ],
@@ -832,15 +1008,10 @@ test("patch operations create and delete files atomically", async () => {
         operations: [
           {
             kind: "patch",
-            path: "new.txt",
-            patch:
-              "*** Begin Patch\n*** Add File: ignored.txt\n+new\n*** End Patch",
-          },
-          {
-            kind: "patch",
-            path: "old.txt",
-            patch:
-              "*** Begin Patch\n*** Delete File: ignored.txt\n*** End Patch",
+            patch: multiFilePatch([
+              ["*** Add File: new.txt", "+new"],
+              ["*** Delete File: old.txt"],
+            ]),
           },
         ],
       },
@@ -926,6 +1097,10 @@ function applyPatch(path: string, lines: string[]) {
     ...lines,
     "*** End Patch",
   ].join("\n");
+}
+
+function multiFilePatch(operations: string[][]) {
+  return ["*** Begin Patch", ...operations.flat(), "*** End Patch"].join("\n");
 }
 
 async function withWorkspace(

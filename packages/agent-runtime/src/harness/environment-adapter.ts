@@ -16,7 +16,10 @@ export class EnvironmentAdapter {
   command(command: string) {
     if (this.platform === "win32")
       return { executable: "cmd.exe", args: ["/d", "/s", "/c", command] };
-    return { executable: "/bin/sh", args: ["-lc", command] };
+    return {
+      executable: "/bin/bash",
+      args: ["-o", "pipefail", "-lc", command],
+    };
   }
 
   async cwd(path = ".") {

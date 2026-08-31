@@ -13,12 +13,37 @@ export type LightPatchPlan =
   | { mode: "delete" }
   | { mode: "update"; replacements: LightPatchReplacement[] };
 
+export type LightPatchOperation = { patch: string; path: string };
+
 type ParsedPatch = {
   headerIndex: number;
   hunks: string[][];
   mode: "add" | "delete" | "update";
   lines: string[];
 };
+
+export function splitLightPatch(
+  patch: string,
+  requestedPath?: string,
+): LightPatchOperation[] {
+  const lines = patch.trimEnd().split(/\r?\n/u);
+  assertPatchEnvelope(lines);
+  const headers = patchHeaders(lines);
+  if (!headers.length) throw new Error("Patch contains no file operation.");
+  if (headers.length > 50) throw new Error("Patch contains too many files.");
+  assertEmptyPatchPrefix(lines, headers[0]!.index);
+  return headers.map((header, index) => {
+    const end = headers[index + 1]?.index ?? lines.length - 1;
+    const path =
+      headers.length === 1 && requestedPath ? requestedPath : header.path;
+    const section = [
+      "*** Begin Patch",
+      ...lines.slice(header.index, end),
+      "*** End Patch",
+    ];
+    return { path, patch: section.join("\n") };
+  });
+}
 
 export async function planLightPatch(
   workspaceRoot: string,
@@ -66,11 +91,8 @@ function patchPlanFromChange(
 
 function parseClinePatchShape(patch: string): ParsedPatch {
   const lines = patch.trimEnd().split(/\r?\n/u);
-  if (lines[0] !== "*** Begin Patch" || lines.at(-1) !== "*** End Patch")
-    throw new Error("Patch must use the Cline Apply Patch format.");
-  const headerIndexes = lines.flatMap((line, index) =>
-    /^\*\*\* (?:Add|Delete|Update) File:/u.test(line) ? [index] : [],
-  );
+  assertPatchEnvelope(lines);
+  const headerIndexes = patchHeaders(lines).map(({ index }) => index);
   if (headerIndexes.length !== 1)
     throw new Error("Each patch operation must contain exactly one file.");
   const headerIndex = headerIndexes[0]!;
@@ -84,6 +106,25 @@ function parseClinePatchShape(patch: string): ParsedPatch {
     lines,
     mode: action.toLowerCase() as ParsedPatch["mode"],
   };
+}
+
+function assertPatchEnvelope(lines: string[]) {
+  if (lines[0] !== "*** Begin Patch" || lines.at(-1) !== "*** End Patch")
+    throw new Error("Patch must use the Cline Apply Patch format.");
+}
+
+function patchHeaders(lines: string[]) {
+  return lines.flatMap((line, index) => {
+    const match = line.match(/^\*\*\* (?:Add|Delete|Update) File:\s*(.+)$/u);
+    const path = match?.[1]?.trim();
+    return path ? [{ index, path }] : [];
+  });
+}
+
+function assertEmptyPatchPrefix(lines: string[], firstHeader: number) {
+  const prefix = lines.slice(1, firstHeader);
+  if (prefix.some((line) => line.trim()))
+    throw new Error("Patch contains content before its first file operation.");
 }
 
 function patchHunks(lines: string[]) {

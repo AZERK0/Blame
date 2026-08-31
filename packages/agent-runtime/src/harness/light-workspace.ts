@@ -53,6 +53,7 @@ type ReadContext = Partial<
 
 const smallFileCharacters = 16_000;
 const maximumRawCharacters = 64_000;
+type SearchMode = "references" | "symbol" | "text";
 
 export class LightWorkspace {
   readonly edits: LightEditService;
@@ -111,17 +112,14 @@ export class LightWorkspace {
         input.scope,
       );
       const mode = searchMode(input);
-      const symbolic = await this.trySymbolSearch(
+      const result = await this.searchResult(
         input,
         mode,
         candidates,
         snapshot.revision.source_revision_id,
         signal,
       );
-      if (symbolic) return this.persistAliases(symbolic);
-      return this.persistAliases(
-        await this.textSearchResult(input, candidates, signal),
-      );
+      return this.persistAliases(result);
     } catch (error) {
       return inputBlocked(error);
     }
@@ -159,39 +157,32 @@ export class LightWorkspace {
     return result;
   }
 
-  private async trySymbolSearch(
+  private async searchResult(
     input: LightSearchCodeInput,
-    mode: string,
+    mode: SearchMode,
     candidates: string[],
     revision: string,
     signal?: AbortSignal,
-  ): Promise<LightToolResult<unknown> | undefined> {
-    if (mode !== "symbol") return undefined;
-    const results = await this.symbolSearch(
-      input.query,
+  ): Promise<LightToolResult<unknown>> {
+    if (mode === "symbol" && input.mode === "symbol")
+      return symbolSearchResult(
+        await this.symbolSearch(input.query, candidates, revision, signal),
+        candidates,
+      );
+    const text = await this.textSearch(input.query, candidates, signal);
+    if (mode !== "symbol") return textSearchResult(mode, text, candidates);
+    const symbolCandidates = autoSymbolCandidates(
+      text,
       candidates,
+      input.query,
+    );
+    const symbols = await this.symbolSearch(
+      input.query,
+      symbolCandidates,
       revision,
       signal,
     );
-    if (!results.length && input.mode !== "symbol") return undefined;
-    return { status: "ok", data: { mode, results } };
-  }
-
-  private async textSearchResult(
-    input: LightSearchCodeInput,
-    candidates: string[],
-    signal?: AbortSignal,
-  ): Promise<LightToolResult<unknown>> {
-    const results = await this.textSearch(input.query, candidates, signal);
-    const references = input.mode === "references";
-    return {
-      status: "ok",
-      data: {
-        mode: references ? "references" : "text",
-        engine: references ? "lexical_fallback" : "ripgrep",
-        results,
-      },
-    };
+    return autoSearchResult(symbols, text, candidates);
   }
 
   private specialReadResult(target: string) {
@@ -253,13 +244,14 @@ export class LightWorkspace {
   ) {
     const searched = await searchWithRipgrep({
       candidates,
-      maximum: 8,
-      query: { pattern: query },
+      maximum: 32,
+      query: lexicalQuery(query),
       root: this.files.root,
       signal,
     });
     if (!searched.available) return this.nodeTextSearch(query, candidates);
-    return Promise.all(searched.items.map((match) => this.textMatch(match)));
+    const matches = rankedTextMatches(searched.items, query).slice(0, 8);
+    return Promise.all(matches.map((match) => this.textMatch(match)));
   }
 
   private async textMatch(match: LexicalSearchMatch) {
@@ -281,21 +273,26 @@ export class LightWorkspace {
 
   private async nodeTextSearch(query: string, candidates: string[]) {
     const results: unknown[] = [];
+    const terms = searchTerms(query);
     for (const path of candidates) {
       if (results.length >= 8) break;
       const content = (await this.files.read(path)).content;
       const source = content.toString("utf8");
-      const index = source.indexOf(query);
+      const index = firstTermIndex(source, terms, query);
       if (index < 0) continue;
+      const matched = matchedTerm(source, index, terms, query);
       const start = Buffer.byteLength(source.slice(0, index));
-      const range: [number, number] = [start, start + Buffer.byteLength(query)];
+      const range: [number, number] = [
+        start,
+        start + Buffer.byteLength(matched),
+      ];
       results.push({
         alias: this.aliases.registerRange(path, content, range),
         kind: "text",
         path,
         lines: lineRange(content, range),
         snippet: sourceLine(source, index),
-        reason: "lexical_exact",
+        reason: terms.length > 1 ? "lexical_regex" : "lexical_exact",
       });
     }
     return results;
@@ -665,22 +662,197 @@ function capabilitiesResult(): LightToolResult<unknown> {
   };
 }
 
-function searchMode(input: LightSearchCodeInput) {
-  if (input.mode && input.mode !== "auto" && input.mode !== "references")
-    return input.mode;
+function searchMode(input: LightSearchCodeInput): SearchMode {
+  if (input.mode === "references") return "references";
+  if (input.mode && input.mode !== "auto") return input.mode;
   return /^[\p{L}_$][\p{L}\p{N}_$.-]*$/u.test(input.query) ? "symbol" : "text";
+}
+
+function symbolSearchResult(results: unknown[], candidates: string[]) {
+  return searchResult("symbol", "syntax", results, candidates);
+}
+
+function textSearchResult(
+  mode: Exclude<SearchMode, "symbol">,
+  results: unknown[],
+  candidates: string[],
+) {
+  const engine = mode === "references" ? "lexical_fallback" : "ripgrep";
+  return searchResult(mode, engine, results, candidates);
+}
+
+function autoSearchResult(
+  symbols: unknown[],
+  text: unknown[],
+  candidates: string[],
+) {
+  const results = uniqueSearchResults([...symbols.slice(0, 4), ...text]);
+  return searchResult(
+    "auto",
+    "syntax_and_ripgrep",
+    results.slice(0, 8),
+    candidates,
+  );
+}
+
+function searchResult(
+  mode: string,
+  engine: string,
+  results: unknown[],
+  candidates: string[],
+): LightToolResult<unknown> {
+  return {
+    status: "ok",
+    data: {
+      mode,
+      engine,
+      results,
+      candidateCount: candidates.length,
+      ...(results.length
+        ? {}
+        : { guidance: "No match in the selected scope." }),
+    },
+  };
+}
+
+function uniqueSearchResults(results: unknown[]) {
+  const seen = new Set<string>();
+  return results.filter((value) => {
+    const result = recordValue(value);
+    const key = `${result.path}:${result.qualifiedName ?? result.lines}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function autoSymbolCandidates(
+  textResults: unknown[],
+  candidates: string[],
+  query: string,
+) {
+  const matchingPaths = new Set(
+    textResults.flatMap((value) => {
+      const path = stringValue(recordValue(value).path);
+      return path ? [path] : [];
+    }),
+  );
+  if (matchingPaths.size)
+    return candidates.filter((path) => matchingPaths.has(path));
+  return query.includes(".") ? candidates : [];
 }
 
 function scopedCandidates(
   files: WorkspaceFiles,
   paths: string[],
-  scope?: string[],
+  scope?: string | string[],
 ) {
-  if (!scope?.length) return paths;
-  const roots = scope.map((path) => files.normalizePath(path));
-  return paths.filter((path) =>
-    roots.some((root) => path === root || path.startsWith(`${root}/`)),
+  const values = typeof scope === "string" ? [scope] : scope;
+  if (!values?.length) return paths;
+  const matchers = values.map((value) => scopeMatcher(files, value));
+  return paths.filter((path) => matchers.some((matches) => matches(path)));
+}
+
+function scopeMatcher(files: WorkspaceFiles, value: string) {
+  const portable = safeScopePattern(value);
+  if (/[?*]/u.test(portable)) {
+    const expression = globExpression(portable);
+    return (path: string) => expression.test(path);
+  }
+  const root = files.normalizePath(portable);
+  if (root === ".") return () => true;
+  return (path: string) => path === root || path.startsWith(`${root}/`);
+}
+
+function safeScopePattern(value: string) {
+  const portable = value.trim().replaceAll("\\", "/").replace(/^\.\//u, "");
+  if (!portable || portable.startsWith("/") || /^[A-Za-z]:\//u.test(portable))
+    throw new Error("Search scopes must be workspace-relative paths or globs.");
+  if (portable.split("/").includes(".."))
+    throw new Error("Search scope escapes the workspace root.");
+  return portable;
+}
+
+function globExpression(pattern: string) {
+  let source = "^";
+  for (let index = 0; index < pattern.length; index += 1) {
+    const character = pattern[index]!;
+    if (character === "*" && pattern[index + 1] === "*") {
+      const followedBySlash = pattern[index + 2] === "/";
+      source += followedBySlash ? "(?:.*/)?" : ".*";
+      index += followedBySlash ? 2 : 1;
+    } else if (character === "*") source += "[^/]*";
+    else if (character === "?") source += "[^/]";
+    else source += escapeRegex(character);
+  }
+  return new RegExp(`${source}$`, "u");
+}
+
+function lexicalQuery(query: string) {
+  const terms = searchTerms(query);
+  if (terms.length < 2) return { pattern: query };
+  return { pattern: terms.map(escapeRegex).join("|"), regex: true };
+}
+
+function searchTerms(query: string) {
+  return [
+    ...new Set(
+      (
+        query
+          .normalize("NFKC")
+          .toLocaleLowerCase()
+          .match(/[\p{L}\p{N}_$@./-]+/gu) ?? []
+      ).filter(Boolean),
+    ),
+  ].slice(0, 12);
+}
+
+function rankedTextMatches(matches: LexicalSearchMatch[], query: string) {
+  const terms = searchTerms(query);
+  const unique = new Map<string, LexicalSearchMatch>();
+  for (const match of matches) {
+    const key = `${match.path}:${match.line_range.join(":")}:${match.excerpt}`;
+    if (!unique.has(key)) unique.set(key, match);
+  }
+  return [...unique.values()].sort((left, right) => {
+    const score = textMatchScore(right, terms) - textMatchScore(left, terms);
+    return score || left.path.localeCompare(right.path);
+  });
+}
+
+function textMatchScore(match: LexicalSearchMatch, terms: string[]) {
+  const path = match.path.toLocaleLowerCase();
+  const content = `${path}\n${match.excerpt.toLocaleLowerCase()}`;
+  const coverage = terms.filter((term) => content.includes(term)).length;
+  const pathCoverage = terms.filter((term) => path.includes(term)).length;
+  return coverage * 100 + pathCoverage * 20;
+}
+
+function firstTermIndex(source: string, terms: string[], query: string) {
+  const normalized = source.toLocaleLowerCase();
+  const needles = terms.length ? terms : [query.toLocaleLowerCase()];
+  return needles.reduce((best, needle) => {
+    const index = normalized.indexOf(needle);
+    return index >= 0 && (best < 0 || index < best) ? index : best;
+  }, -1);
+}
+
+function matchedTerm(
+  source: string,
+  index: number,
+  terms: string[],
+  query: string,
+) {
+  const normalized = source.toLocaleLowerCase();
+  const needles = terms.length ? terms : [query.toLocaleLowerCase()];
+  const needle = needles.find((candidate) =>
+    normalized.startsWith(candidate, index),
   );
+  return source.slice(index, index + (needle ?? query).length);
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
 
 function symbolicPath(path: string) {

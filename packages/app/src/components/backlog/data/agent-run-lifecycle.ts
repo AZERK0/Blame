@@ -50,7 +50,7 @@ export function agentRunFinalization(
     return undefined
   }
   return {
-    activities,
+    activities: terminalActivities(activities, runInput.completedAt),
     agentLastError: storyInput.agentLastError,
     agentLastEvent: storyInput.agentLastEvent,
     completedAt: runInput.completedAt,
@@ -64,4 +64,24 @@ export function agentRunFinalization(
     status: runInput.status,
     usage: runInput.usage ?? storyInput.agentUsage,
   }
+}
+
+function terminalActivities(
+  activities: UserStoryAgentActivity[],
+  completedAt: string | null | undefined
+) {
+  return activities.map((activity) => {
+    if (activity.status !== "running") return activity
+    return {
+      ...activity,
+      status: terminalActivityStatus(activity.kind),
+      ...(completedAt ? { updatedAt: completedAt } : {}),
+    }
+  })
+}
+
+function terminalActivityStatus(kind: UserStoryAgentActivity["kind"]) {
+  return kind === "tool" || kind === "approval" || kind === "error"
+    ? ("failed" as const)
+    : ("completed" as const)
 }

@@ -3,7 +3,11 @@ import { redactSecuritySecrets } from "../security-secret-redaction.js";
 import { EnvironmentAdapter } from "./environment-adapter.js";
 import { blockedCommandReason } from "./command-policy.js";
 import type { LightRunTaskInput, LightToolResult } from "./light-contracts.js";
-import { LightDependencyService } from "./light-dependencies.js";
+import {
+  dependencyManifestSections,
+  LightDependencyService,
+} from "./light-dependencies.js";
+import { boundedDiagnostic } from "./light-diagnostic.js";
 import type { SessionJournal } from "./session-journal.js";
 import {
   readTaskCatalog,
@@ -54,19 +58,28 @@ export class LightTaskRunner {
   ): Promise<LightToolResult<unknown>> {
     try {
       const task = await this.resolveProjectTask(input);
-      const invocation = taskInvocation(task);
-      const cwd = await this.environment.cwd(invocation.cwd);
-      return await this.execute(
-        invocation.executable,
-        invocation.args,
-        cwd,
-        task.command,
-        context,
-        { taskId: task.task_id, taskKind: task.kind },
-      );
+      return await this.executeProjectTask(task, context);
     } catch (error) {
-      return blocked("input", errorMessage(error));
+      const category =
+        error instanceof TaskSelectionError ? "input" : "environment";
+      return blocked(category, errorMessage(error));
     }
+  }
+
+  private async executeProjectTask(
+    task: TaskCatalogItem,
+    context: RunnerContext,
+  ) {
+    const invocation = taskInvocation(task);
+    const cwd = await this.environment.cwd(invocation.cwd);
+    return this.execute(
+      invocation.executable,
+      invocation.args,
+      cwd,
+      task.command,
+      context,
+      { taskId: task.task_id, taskKind: task.kind },
+    );
   }
 
   private async command(
@@ -157,11 +170,17 @@ export class LightTaskRunner {
     metadata: ValidationMetadata = {},
   ): Promise<LightToolResult<unknown>> {
     const result = await executeCommand(executable, args, cwd, context.signal);
-    const output = redactedOutput(result.stdout, result.stderr);
+    const output = redactedOutput(
+      result.all ?? `${result.stdout}\n${result.stderr}`,
+    );
     const status = result.exitCode === 0 ? "passed" : "failed";
     await this.recordCommandValidation(command, status, metadata);
     if (result.exitCode !== 0)
-      return failedCommandResult(result.exitCode, output);
+      return failedCommandResult(
+        result.exitCode,
+        output,
+        await commandFailureCategory(output, this.files),
+      );
     return passedCommandResult(
       command,
       result.exitCode,
@@ -200,10 +219,12 @@ export class LightTaskRunner {
       : tasks;
     const candidates = scoped.filter((task) => taskMatches(task, input.task));
     if (candidates.length !== 1)
-      throw new Error(taskSelectionError(input.task, candidates));
+      throw new TaskSelectionError(taskSelectionError(input.task, candidates));
     return candidates[0]!;
   }
 }
+
+class TaskSelectionError extends Error {}
 
 function taskMatches(task: TaskCatalogItem, requested: string) {
   return (
@@ -231,6 +252,7 @@ function executeCommand(
   signal?: AbortSignal,
 ) {
   return execa(executable, args, {
+    all: true,
     cancelSignal: signal,
     cwd,
     reject: false,
@@ -240,33 +262,89 @@ function executeCommand(
   });
 }
 
-function redactedOutput(
-  stdout: string | Uint8Array,
-  stderr: string | Uint8Array,
-) {
-  return redactSecuritySecrets(
-    `${String(stdout ?? "")}\n${String(stderr ?? "")}`.trim(),
-  );
-}
-
-function firstDiagnostic(output: string) {
-  return output
-    .split(/\r?\n/u)
-    .find((line) => /(?:error|failed|fatal)/iu.test(line))
-    ?.slice(0, 2_000);
+function redactedOutput(output: string | Uint8Array) {
+  return redactSecuritySecrets(String(output ?? "").trim());
 }
 
 function failedCommandResult(
   exitCode: number | undefined,
   output: string,
+  category: "code" | "environment",
 ): LightToolResult<unknown> {
+  const diagnostic =
+    boundedDiagnostic(output) || "No diagnostic output was produced.";
   return {
     status: "blocked",
-    category: "code",
-    message: firstDiagnostic(output) || `Command exited with code ${exitCode}.`,
-    recovery:
-      "Fix the reported project error before running the relevant validation again.",
+    category,
+    message: `Command exited with code ${exitCode ?? "unknown"}.\n${diagnostic}`,
+    recovery: failureRecovery(category),
   };
+}
+
+async function commandFailureCategory(
+  output: string,
+  files: WorkspaceFiles,
+): Promise<"code" | "environment"> {
+  if (environmentDiagnostic(output)) return "environment";
+  const missing = missingDependencyNames(output);
+  if (!missing.length) return "code";
+  const declared = await declaredDependencies(files);
+  return missing.some((name) => declared.has(name)) ? "environment" : "code";
+}
+
+function environmentDiagnostic(output: string) {
+  return /(?:\bEAI_AGAIN\b|\bECONN(?:REFUSED|RESET)?\b|\bENETUNREACH\b|\bENOENT\b|\bELOOP\b|broken (?:symbolic )?link|dangling symlink|command not found|PACKAGE_MANAGER_UNAVAILABLE|\.prisma\/client)/iu.test(
+    output,
+  );
+}
+
+function missingDependencyNames(output: string) {
+  const expression = /Cannot find (?:module|package)\s+['"`]([^'"`]+)['"`]/giu;
+  return [...output.matchAll(expression)].flatMap((match) => {
+    const name = dependencyName(match[1] ?? "");
+    return name ? [name] : [];
+  });
+}
+
+function dependencyName(value: string) {
+  if (
+    !value ||
+    value.startsWith(".") ||
+    value.startsWith("/") ||
+    value.includes("\\")
+  )
+    return undefined;
+  const segments = value.split("/");
+  return value.startsWith("@") ? segments.slice(0, 2).join("/") : segments[0];
+}
+
+async function declaredDependencies(files: WorkspaceFiles) {
+  const names = new Set<string>();
+  const snapshot = await files.snapshot();
+  const manifests = snapshot.files.filter((path) =>
+    path.endsWith("package.json"),
+  );
+  for (const path of manifests.slice(0, 200))
+    for (const name of await manifestDependencies(files, path)) names.add(name);
+  return names;
+}
+
+async function manifestDependencies(files: WorkspaceFiles, path: string) {
+  try {
+    const content = (await files.read(path)).content.toString("utf8");
+    const manifest = JSON.parse(content) as Record<string, unknown>;
+    return dependencyManifestSections.flatMap((key) =>
+      Object.keys(record(manifest[key])),
+    );
+  } catch {
+    return [];
+  }
+}
+
+function failureRecovery(category: "code" | "environment") {
+  return category === "environment"
+    ? "Repair the declared workspace dependencies or environment, then rerun the same validation."
+    : "Fix the reported project error before running the relevant validation again.";
 }
 
 function passedCommandResult(
@@ -295,4 +373,10 @@ function blocked(
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
+}
+
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }

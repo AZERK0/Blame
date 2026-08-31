@@ -7,6 +7,7 @@ import {
 } from "./package-manager-runtime.js";
 import { LightCommitService, type LightFileMutation } from "./light-commit.js";
 import type { LightRunTaskInput } from "./light-contracts.js";
+import { boundedDiagnostic } from "./light-diagnostic.js";
 import { readTaskCatalog } from "./task-catalog.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
 
@@ -39,10 +40,16 @@ export class LightDependencyService {
   ): Promise<LightDependencyResult> {
     const snapshot = await this.files.snapshot(signal);
     const manifest = manifestPath(this.files, input.packagePath);
-    await this.files.read(manifest);
+    const manifestContent = (await this.files.read(manifest)).content;
     const before = await snapshotDependencyFiles(this.files, snapshot);
     try {
-      const execution = await this.execute(input, manifest, snapshot, signal);
+      const effectiveInput = alignedDependencyInput(input, manifestContent);
+      const execution = await this.execute(
+        effectiveInput,
+        manifest,
+        snapshot,
+        signal,
+      );
       if (execution.exitCode !== 0)
         return await this.rollbackFailure(before, execution.output);
       const changedPaths = await changedDependencyPaths(this.files, before);
@@ -69,6 +76,7 @@ export class LightDependencyService {
       ...dependencyArguments(manager.name, input),
     ];
     const result = await execa(resolved.executable, args, {
+      all: true,
       cancelSignal: signal,
       cwd: dirname(this.files.resolveForWrite(manifest).absolute),
       maxBuffer: 512 * 1024,
@@ -87,7 +95,7 @@ export class LightDependencyService {
     return {
       status: "blocked",
       category: dependencyFailureCategory(diagnostic),
-      message: firstDiagnostic(diagnostic),
+      message: boundedDiagnostic(diagnostic, "Dependency mutation failed."),
     };
   }
 }
@@ -118,6 +126,61 @@ function dependencyArguments(
     return [input.action === "add" ? "install" : "uninstall", ...packages];
   return [input.action, ...packages];
 }
+
+function alignedDependencyInput(input: DependencyInput, manifest: Buffer) {
+  if (input.action !== "add") return input;
+  try {
+    const value = JSON.parse(manifest.toString("utf8")) as unknown;
+    return {
+      ...input,
+      packages: alignDependencyPackages(input.packages, value),
+    };
+  } catch {
+    return input;
+  }
+}
+
+export function alignDependencyPackages(packages: string[], manifest: unknown) {
+  const version = prismaFamilyVersion(manifest);
+  if (!version) return packages;
+  return packages.map((value) =>
+    prismaFamilyPackage(value) && !explicitPackageVersion(value)
+      ? `${value}@${version}`
+      : value,
+  );
+}
+
+function prismaFamilyVersion(manifest: unknown) {
+  const value = record(manifest);
+  for (const packageName of ["@prisma/client", "prisma"])
+    for (const section of dependencyManifestSections) {
+      const declared = record(value[section])[packageName];
+      const version = semanticVersion(declared);
+      if (version) return version;
+    }
+  return undefined;
+}
+
+function semanticVersion(value: unknown) {
+  return typeof value === "string"
+    ? value.match(/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/u)?.[0]
+    : undefined;
+}
+
+function prismaFamilyPackage(value: string) {
+  return value === "prisma" || value.startsWith("@prisma/");
+}
+
+function explicitPackageVersion(value: string) {
+  return value.lastIndexOf("@") > 0;
+}
+
+export const dependencyManifestSections = [
+  "dependencies",
+  "devDependencies",
+  "optionalDependencies",
+  "peerDependencies",
+];
 
 function packageName(value: string) {
   const separator = value.lastIndexOf("@");
@@ -198,8 +261,14 @@ function sameContent(left: Buffer | null, right: Buffer | null) {
   return left.equals(right);
 }
 
-function processOutput(result: { stderr: string; stdout: string }) {
-  return redactSecuritySecrets(`${result.stdout}\n${result.stderr}`.trim());
+function processOutput(result: {
+  all?: string;
+  stderr: string;
+  stdout: string;
+}) {
+  return redactSecuritySecrets(
+    (result.all ?? `${result.stdout}\n${result.stderr}`).trim(),
+  );
 }
 
 function dependencyFailureCategory(diagnostic: string) {
@@ -210,17 +279,6 @@ function dependencyFailureCategory(diagnostic: string) {
     : ("code" as const);
 }
 
-function firstDiagnostic(value: string) {
-  return (
-    value
-      .split(/\r?\n/u)
-      .find((line) => /(?:error|failed|fatal|ERR_)/iu.test(line))
-      ?.slice(0, 2_000) ||
-    value.slice(0, 2_000) ||
-    "Dependency mutation failed."
-  );
-}
-
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
@@ -229,4 +287,10 @@ function errorCode(error: unknown) {
   return error && typeof error === "object" && "code" in error
     ? String(error.code)
     : undefined;
+}
+
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }

@@ -27,9 +27,10 @@ async function localBriefing(input: InitialTaskBriefingInput) {
   const snapshot = await files.snapshot();
   const tasks = await readTaskCatalog(input.workspaceRoot, snapshot.files);
   const dependencyTask = tasks.find(({ kind }) => kind === "dependencies");
-  const packages = snapshot.files.filter((path) =>
+  const packagePaths = snapshot.files.filter((path) =>
     path.endsWith("package.json"),
   );
+  const packages = await packageSummaries(files, packagePaths);
   const candidates = briefingCandidates(
     snapshot.files,
     snapshot.changes.map(({ path }) => path),
@@ -37,9 +38,11 @@ async function localBriefing(input: InitialTaskBriefingInput) {
   );
   return briefingLines({
     candidates,
+    keyFiles: briefingKeyFiles(snapshot.files),
     manager: dependencyTask?.package_manager,
     managerAvailability: await packageManagerAvailability(dependencyTask),
     packages,
+    projectMap: projectMap(snapshot.files),
     snapshot,
     tasks,
   }).join("\n");
@@ -47,11 +50,20 @@ async function localBriefing(input: InitialTaskBriefingInput) {
 
 type BriefingFacts = {
   candidates: string[];
+  keyFiles: string[];
   manager?: string;
   managerAvailability: string;
-  packages: string[];
+  packages: PackageSummary[];
+  projectMap: string[];
   snapshot: Awaited<ReturnType<WorkspaceFiles["snapshot"]>>;
   tasks: Awaited<ReturnType<typeof readTaskCatalog>>;
+};
+
+type PackageSummary = {
+  dependencies: string[];
+  name?: string;
+  path: string;
+  scripts: string[];
 };
 
 function briefingLines(input: BriefingFacts) {
@@ -65,7 +77,9 @@ function briefingLines(input: BriefingFacts) {
     : "not detected";
   return [
     `Project: ${projectDescription(input.snapshot.files)}.`,
-    `Packages: ${input.packages.slice(0, 12).join(", ") || "none detected"}.`,
+    `Project map: ${input.projectMap.join(", ") || "root only"}.`,
+    `Key files: ${input.keyFiles.join(", ") || "none detected"}.`,
+    `Packages: ${packageDescription(input.packages)}.`,
     `Package manager: ${input.manager ?? "not detected"}; ${input.managerAvailability}.`,
     `Scripts: ${scripts || "none detected"}.`,
     `Git: ${git}.`,
@@ -73,8 +87,71 @@ function briefingLines(input: BriefingFacts) {
     ...(input.candidates.length
       ? [`Likely targets: ${input.candidates.join(", ")}.`]
       : []),
+    "Navigation excludes generated outputs and node_modules; use run_task diagnostics for dependency or generated-client state.",
   ];
 }
+
+async function packageSummaries(files: WorkspaceFiles, paths: string[]) {
+  const ordered = paths
+    .filter((path) => !briefingExcludedPath(path))
+    .sort((left, right) => {
+      if (left === "package.json") return -1;
+      if (right === "package.json") return 1;
+      return pathDepth(left) - pathDepth(right) || left.localeCompare(right);
+    });
+  const summaries = await Promise.all(
+    ordered.slice(0, 12).map((path) => packageSummary(files, path)),
+  );
+  return summaries.filter((value): value is PackageSummary => Boolean(value));
+}
+
+async function packageSummary(files: WorkspaceFiles, path: string) {
+  try {
+    const content = (await files.read(path)).content.toString("utf8");
+    const manifest = JSON.parse(content) as Record<string, unknown>;
+    return {
+      path,
+      ...(typeof manifest.name === "string" ? { name: manifest.name } : {}),
+      scripts: Object.keys(record(manifest.scripts)).slice(0, 8),
+      dependencies: dependencySignals(manifest),
+    } satisfies PackageSummary;
+  } catch {
+    return undefined;
+  }
+}
+
+function dependencySignals(manifest: Record<string, unknown>) {
+  const dependencies = new Map<string, string>();
+  for (const section of packageDependencySections)
+    for (const [name, version] of Object.entries(record(manifest[section])))
+      if (typeof version === "string") dependencies.set(name, version);
+  return [...dependencies]
+    .filter(([name]) => stackDependency.test(name))
+    .slice(0, 5)
+    .map(([name, version]) => `${name}@${version.slice(0, 24)}`);
+}
+
+function packageDescription(packages: PackageSummary[]) {
+  if (!packages.length) return "none detected";
+  return packages.slice(0, 6).map(formatPackage).join(" | ");
+}
+
+function formatPackage(packageValue: PackageSummary) {
+  const identity = packageValue.name
+    ? `${packageValue.path} (${packageValue.name})`
+    : packageValue.path;
+  const scripts = packageValue.scripts.length
+    ? `scripts ${packageValue.scripts.join(",")}`
+    : "no scripts";
+  const dependencies = packageValue.dependencies.length
+    ? `stack ${packageValue.dependencies.join(",")}`
+    : undefined;
+  return [identity, scripts, dependencies].filter(Boolean).join("; ");
+}
+
+const packageDependencySections = ["dependencies", "devDependencies"];
+const stackDependency =
+  /(?:^|\/)(?:client|electron|express|fastify|next|prisma|react|svelte|typescript|vite|vue)$/iu;
 
 async function remoteBriefing(input: InitialTaskBriefingInput) {
   const result = await input.executor!({
@@ -127,6 +204,55 @@ function projectDescription(paths: string[]) {
   return `${paths.length} files; ${dominant.join(", ") || "text/configuration"}`;
 }
 
+function projectMap(paths: string[]) {
+  const counts = new Map<string, number>();
+  for (const path of paths) {
+    const root = path.includes("/") ? path.split("/", 1)[0]! : "root";
+    counts.set(root, (counts.get(root) ?? 0) + 1);
+  }
+  return [...counts]
+    .sort(
+      (left, right) => right[1] - left[1] || left[0].localeCompare(right[0]),
+    )
+    .slice(0, 10)
+    .map(([root, count]) => `${root} (${count})`);
+}
+
+function briefingKeyFiles(paths: string[]) {
+  return paths
+    .map((path) => ({ path, score: keyFileScore(path) }))
+    .filter(({ score }) => score > 0)
+    .sort(
+      (left, right) =>
+        right.score - left.score || left.path.localeCompare(right.path),
+    )
+    .slice(0, 10)
+    .map(({ path }) => path);
+}
+
+function keyFileScore(path: string) {
+  if (briefingExcludedPath(path)) return 0;
+  const depth = pathDepth(path);
+  if (path === "package.json") return 100;
+  if (/^(?:pnpm-workspace\.yaml|README\.md|tsconfig\.json)$/iu.test(path))
+    return 90;
+  if (/(?:^|\/)schema\.prisma$/u.test(path)) return 85 - depth;
+  if (/(?:^|\/)package\.json$/u.test(path)) return 80 - depth;
+  if (/(?:^|\/)src\/(?:app|index|main|server)\.[^.]+$/u.test(path))
+    return 70 - depth;
+  if (/(?:^|\/)(?:compose\.ya?ml|docker-compose\.ya?ml)$/u.test(path))
+    return 60;
+  return 0;
+}
+
+function briefingExcludedPath(path: string) {
+  return /(?:^|\/)(?:__fixtures__|fixtures|test-fixtures)(?:\/|$)/u.test(path);
+}
+
+function pathDepth(path: string) {
+  return path.split("/").length - 1;
+}
+
 function briefingCandidates(
   paths: string[],
   changedPaths: string[],
@@ -137,6 +263,7 @@ function briefingCandidates(
   return paths
     .filter(
       (path) =>
+        !briefingExcludedPath(path) &&
         !/(?:^|\/)(?:dist|migrations?|node_modules)(?:\/|$)/u.test(path),
     )
     .map((path) => ({
@@ -169,4 +296,10 @@ function candidateScore(path: string, terms: string[], changed: boolean) {
     (score, term) => score + (normalized.includes(term) ? 10 : 0),
     changed ? 20 : 0,
   );
+}
+
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }

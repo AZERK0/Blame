@@ -5,7 +5,7 @@ const relativePath = z.string().trim().min(1).max(4_096);
 export const lightSearchCodeInputSchema = z
   .object({
     query: z.string().trim().min(1).max(1_000),
-    scope: z.array(relativePath).max(100).optional(),
+    scope: z.union([relativePath, z.array(relativePath).max(100)]).optional(),
     mode: z.enum(["auto", "text", "symbol", "references"]).optional(),
   })
   .strict();
@@ -47,7 +47,7 @@ const symbolEdit = z
 const patchEdit = z
   .object({
     kind: z.literal("patch"),
-    path: relativePath,
+    path: relativePath.optional(),
     patch: z
       .string()
       .min(1)

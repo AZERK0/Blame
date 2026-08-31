@@ -69,6 +69,55 @@ export async function quickChatRunActivities(runIds: string[]) {
   return records.flatMap((record) => (record.activity ? [record.activity] : []))
 }
 
+export function terminalAgentRunActivities(
+  activities: UserStoryAgentActivity[],
+  completedAt = new Date().toISOString()
+) {
+  return activities.map((activity) => {
+    if (activity.status !== 'running') return activity
+    return {
+      ...activity,
+      status: terminalActivityStatus(activity.kind),
+      updatedAt: completedAt,
+    }
+  })
+}
+
+export function persistTerminalUserStoryRunActivities(
+  runId: string,
+  activities: UserStoryAgentActivity[],
+  client?: TransactionClientContract
+) {
+  return persistTerminalActivities(activities, (activity) =>
+    persistUserStoryRunActivity(runId, activity, client)
+  )
+}
+
+export function persistTerminalQuickChatRunActivities(
+  runId: string,
+  activities: UserStoryAgentActivity[],
+  client?: TransactionClientContract
+) {
+  return persistTerminalActivities(activities, (activity) =>
+    persistQuickChatRunActivity(runId, activity, client)
+  )
+}
+
+async function persistTerminalActivities(
+  activities: UserStoryAgentActivity[],
+  persist: (activity: UserStoryAgentActivity) => Promise<unknown>
+) {
+  const terminalActivities = terminalAgentRunActivities(activities)
+  await Promise.all(terminalActivities.map(persist))
+  return terminalActivities
+}
+
+function terminalActivityStatus(kind: UserStoryAgentActivity['kind']) {
+  return kind === 'tool' || kind === 'approval' || kind === 'error'
+    ? ('failed' as const)
+    : ('completed' as const)
+}
+
 function activityWithDurableDetail(
   existing: UserStoryAgentActivity | null,
   input: UserStoryAgentActivity

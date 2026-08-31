@@ -183,7 +183,7 @@ async function callPreviewTool(
   return connection.client.callTool(
     { arguments: argumentsValue, name: tool.name },
     undefined,
-    { signal: input.signal, timeout: 300_000 },
+    { signal: input.signal, timeout: 15_000 },
   );
 }
 
@@ -521,7 +521,7 @@ async function previewPageId(
   const result = await client.callTool(
     { arguments: {}, name: "list_pages" },
     undefined,
-    { signal, timeout: 30_000 },
+    { signal, timeout: 15_000 },
   );
   return scopedPreviewPageId(structuredPages(result), currentUrl);
 }

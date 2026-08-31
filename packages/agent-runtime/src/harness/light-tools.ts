@@ -103,7 +103,7 @@ function searchCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "search_code",
     description:
-      "Find code by text, symbol, or references. Auto routes likely identifiers to the loaded syntax adapters and free text to ripgrep. Returns at most eight short results with sN aliases; reference mode reports when it used lexical fallback.",
+      "Find code by text, symbol, or references. Auto combines syntax and lexical matches for identifiers; multi-term queries match useful terms instead of requiring an exact phrase. Scope accepts paths or *, **, and ? globs. Returns at most eight short results with sN aliases.",
     schema: lightSearchCodeInputSchema,
     execute: (input, context) => workspace.searchCode(input, context.signal),
   });
@@ -121,7 +121,7 @@ function readCodeTool(workspace: LightWorkspacePort, capabilities: string) {
 function editCodeTool(workspace: LightWorkspacePort, capabilities: string) {
   return harnessTool({
     name: "edit_code",
-    description: `Apply one atomic batch of symbolic replacements and Cline Apply Patch operations. Operations share one starting snapshot, may mix files and formats, reject overlaps, parse only final states, and never require hashes or revisions.\n${capabilities}`,
+    description: `Apply one atomic batch of symbolic replacements and native Cline Apply Patch operations. A patch may contain one or many files; path is optional for a native multi-file patch and remains authoritative for a legacy single-file patch. Operations share one snapshot, reject overlaps, parse only final states, and never require hashes or revisions.\n${capabilities}`,
     schema: lightEditCodeInputSchema,
     execute: (input, context) =>
       workspace.editCode(input, {
@@ -135,7 +135,7 @@ function runTaskTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "run_task",
     description:
-      "Run a known project script or bounded command in the current worktree, or add/remove dependencies through the detected package manager. Returns the command, exit code, first useful diagnostic, and realistic recovery without generic retries.",
+      "Run a known project script or bounded command in the current worktree, or add/remove dependencies through the detected package manager. Preserves pipeline failures and returns the exit code with a bounded complete diagnostic and a code/environment classification.",
     schema: lightRunTaskInputSchema,
     execute: (input, context) => workspace.runTask(input, context),
   });

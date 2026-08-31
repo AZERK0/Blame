@@ -141,7 +141,7 @@ export async function previewDevtoolsMcpTools(
       provider: previewMcpProvider(options, preview),
       retryable: false,
       serverName: "preview-devtools",
-      timeoutMs: 300_000,
+      timeoutMs: 15_000,
     });
   } catch (error) {
     logger.log("Preview DevTools MCP tools unavailable", {

@@ -32,6 +32,7 @@ const payloadHarnessFiles = new Set([
   "light-capabilities.js",
   "light-commit.js",
   "light-dependencies.js",
+  "light-diagnostic.js",
   "light-edit.js",
   "light-executor.js",
   "light-finish-service.js",

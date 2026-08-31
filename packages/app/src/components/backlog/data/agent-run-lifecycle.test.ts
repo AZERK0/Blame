@@ -86,6 +86,32 @@ test("keeps iteration-limit runs resumable", () => {
   assert.equal(finalization?.status, "failed")
 })
 
+test("terminal finalization closes every still-running activity", () => {
+  const completedAt = "2026-08-22T00:01:00.000Z"
+  const finalization = agentRunFinalization(
+    [
+      activity("reasoning-36-1", "reasoning"),
+      activity("tool-64", "tool"),
+      { ...activity("message-1", "message"), status: "completed" },
+    ],
+    { status: "in-progress" },
+    { completedAt, status: "cancelled" }
+  )
+
+  assert.deepEqual(
+    finalization?.activities.map(({ id, status, updatedAt }) => ({
+      id,
+      status,
+      updatedAt,
+    })),
+    [
+      { id: "reasoning-36-1", status: "completed", updatedAt: completedAt },
+      { id: "tool-64", status: "failed", updatedAt: completedAt },
+      { id: "message-1", status: "completed", updatedAt: undefined },
+    ]
+  )
+})
+
 test("rejects events tagged for another execution", () => {
   const event = {
     executionId: "execution-1",
@@ -138,5 +164,16 @@ function run(id: string): UserStoryAgentRun {
     kind: "resume",
     status: "running",
     userStoryId: "story-1",
+  }
+}
+
+function activity(id: string, kind: "message" | "reasoning" | "tool") {
+  return {
+    createdAt: "2026-08-22T00:00:00.000Z",
+    detail: id,
+    id,
+    kind,
+    status: "running" as const,
+    title: id,
   }
 }

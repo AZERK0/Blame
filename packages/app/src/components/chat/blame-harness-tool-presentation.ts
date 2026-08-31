@@ -300,11 +300,24 @@ function changedFilesFromInput(input: unknown): PresentedFile[] {
 function operationFiles(operation: Record<string, unknown>): PresentedFile[] {
   const path = stringValue(operation.path)
   if (path) return [{ path }]
+  const patchFiles = filesFromClinePatch(stringValue(operation.patch))
+  if (patchFiles.length) return patchFiles
   const fromPath = stringValue(operation.from_path)
   const toPath = stringValue(operation.to_path)
   return [fromPath, toPath].flatMap((candidate) =>
     candidate ? [{ path: candidate }] : []
   )
+}
+
+function filesFromClinePatch(patch: string | undefined): PresentedFile[] {
+  if (!patch) return []
+  const matches = patch.matchAll(
+    /^\*\*\* (?:Add|Delete|Update) File:\s*(.+)$/gmu
+  )
+  return [...matches].flatMap((match) => {
+    const path = stringValue(match[1])
+    return path ? [{ path }] : []
+  })
 }
 
 function deduplicateFiles(files: PresentedFile[]) {

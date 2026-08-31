@@ -297,6 +297,33 @@ test("uses operation paths before an apply result is available", () => {
   })
 })
 
+test("shows native multi-file patch targets before the result", () => {
+  const presentation = presentBlameHarnessTool({
+    input: {
+      operations: [
+        {
+          kind: "patch",
+          patch: [
+            "*** Begin Patch",
+            "*** Update File: src/a.ts",
+            "@@",
+            "-old",
+            "+new",
+            "*** Add File: src/b.ts",
+            "+new",
+            "*** End Patch",
+          ].join("\n"),
+        },
+      ],
+    },
+    toolName: "edit_code",
+  })
+
+  assert.deepEqual(presentation.input, {
+    files: [{ path: "src/a.ts" }, { path: "src/b.ts" }],
+  })
+})
+
 test("never presents unavailable or blocked mutations as edited files", () => {
   const presentation = presentBlameHarnessTool({
     input: {
