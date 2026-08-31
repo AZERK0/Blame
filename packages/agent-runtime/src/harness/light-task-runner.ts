@@ -28,7 +28,29 @@ type LightTaskRunnerOptions = {
   refreshPreviewDependencies?: () => Promise<unknown>;
 };
 
-type ValidationMetadata = { taskId?: string; taskKind?: string };
+type ValidationMetadata = {
+  reuseFailures?: boolean;
+  reusePasses?: boolean;
+  taskId?: string;
+  taskKind?: string;
+};
+
+type FailureAssessment = {
+  category: "code" | "environment";
+  recovery: string;
+};
+
+type ReusableValidation = NonNullable<
+  Awaited<ReturnType<SessionJournal["reusableValidation"]>>
+>;
+
+const reusableProjectTaskKinds = new Set<TaskCatalogItem["kind"]>([
+  "build",
+  "dependencies",
+  "lint",
+  "test",
+  "typecheck",
+]);
 
 export class LightTaskRunner {
   private readonly environment: EnvironmentAdapter;
@@ -58,6 +80,7 @@ export class LightTaskRunner {
   ): Promise<LightToolResult<unknown>> {
     try {
       const task = await this.resolveProjectTask(input);
+      if (task.kind === "service") return managedServiceResult(task.task_id);
       return await this.executeProjectTask(task, context);
     } catch (error) {
       const category =
@@ -78,7 +101,11 @@ export class LightTaskRunner {
       cwd,
       task.command,
       context,
-      { taskId: task.task_id, taskKind: task.kind },
+      {
+        reusePasses: reusableProjectTask(task),
+        taskId: task.task_id,
+        taskKind: task.kind,
+      },
     );
   }
 
@@ -97,6 +124,10 @@ export class LightTaskRunner {
         cwd,
         input.command,
         context,
+        {
+          reuseFailures: true,
+          reusePasses: reusableInspection(input.command),
+        },
       );
     } catch (error) {
       return blocked("environment", errorMessage(error));
@@ -123,13 +154,20 @@ export class LightTaskRunner {
     output: string,
   ): Promise<LightToolResult<unknown>> {
     if (!paths.length)
-      return { status: "ok", data: { changed: false, output } };
+      return {
+        status: "ok",
+        data: { changed: false, output: boundedDiagnostic(output, "", 4_000) },
+      };
     const receipt = `d${++this.dependencyReceiptSequence}`;
     const sourceRevisionId = (await this.files.snapshot()).revision
       .source_revision_id;
     await this.recordDependency(input, paths, receipt, sourceRevisionId);
     const preview = await this.refreshPreviewDependencies?.();
-    const data = { changed: true, paths, output: output.slice(0, 16_000) };
+    const data = {
+      changed: true,
+      paths,
+      output: boundedDiagnostic(output, "", 4_000),
+    };
     if (preview === undefined) return { status: "ok", receipt, data };
     return {
       status: "ok",
@@ -169,18 +207,48 @@ export class LightTaskRunner {
     context: RunnerContext,
     metadata: ValidationMetadata = {},
   ): Promise<LightToolResult<unknown>> {
+    const reused = await this.reusedResult(command, metadata);
+    if (reused) return reused;
     const result = await executeCommand(executable, args, cwd, context.signal);
+    return this.recordedResult(command, result, metadata);
+  }
+
+  private async reusedResult(command: string, metadata: ValidationMetadata) {
+    if (!metadata.reusePasses && !metadata.reuseFailures) return undefined;
+    const sourceRevisionId = (await this.files.snapshot()).revision
+      .source_revision_id;
+    const candidate = await this.journal.reusableValidation(
+      command,
+      sourceRevisionId,
+    );
+    if (!candidate || !canReuseValidation(candidate, metadata))
+      return undefined;
+    return reusedCommandResult(command, candidate, this.environment.target());
+  }
+
+  private async recordedResult(
+    command: string,
+    result: Awaited<ReturnType<typeof executeCommand>>,
+    metadata: ValidationMetadata,
+  ): Promise<LightToolResult<unknown>> {
     const output = redactedOutput(
       result.all ?? `${result.stdout}\n${result.stderr}`,
     );
     const status = result.exitCode === 0 ? "passed" : "failed";
-    await this.recordCommandValidation(command, status, metadata);
-    if (result.exitCode !== 0)
-      return failedCommandResult(
-        result.exitCode,
-        output,
-        await commandFailureCategory(output, this.files),
-      );
+    const failure =
+      result.exitCode === 0
+        ? undefined
+        : await commandFailureAssessment(output, this.files);
+    const validatedRevisionId = (await this.files.snapshot()).revision
+      .source_revision_id;
+    await this.recordCommandValidation(
+      command,
+      status,
+      validatedRevisionId,
+      metadata,
+      failure,
+    );
+    if (failure) return failedCommandResult(result.exitCode, output, failure);
     return passedCommandResult(
       command,
       result.exitCode,
@@ -192,17 +260,21 @@ export class LightTaskRunner {
   private async recordCommandValidation(
     command: string,
     status: "failed" | "passed",
+    sourceRevisionId: string,
     metadata: ValidationMetadata,
+    failure?: FailureAssessment,
   ) {
-    const paths = (await this.journal.completionSnapshot()).changedPaths;
-    const sourceRevisionId = (await this.files.snapshot()).revision
-      .source_revision_id;
+    const paths = await this.journal.currentChangedPaths();
     await this.journal.recordValidation({
       command,
       paths,
       sourceRevisionId,
       status,
-      ...metadata,
+      taskId: metadata.taskId,
+      taskKind: metadata.taskKind,
+      ...(failure
+        ? { category: failure.category, recovery: failure.recovery }
+        : {}),
     });
   }
 
@@ -225,6 +297,65 @@ export class LightTaskRunner {
 }
 
 class TaskSelectionError extends Error {}
+
+function reusableProjectTask(task: TaskCatalogItem) {
+  return reusableProjectTaskKinds.has(task.kind);
+}
+
+function canReuseValidation(
+  validation: ReusableValidation,
+  metadata: ValidationMetadata,
+) {
+  if (validation.status === "passed") return Boolean(metadata.reusePasses);
+  return Boolean(
+    validation.status === "failed" &&
+    validation.category !== "environment" &&
+    (metadata.reusePasses || metadata.reuseFailures),
+  );
+}
+
+function reusableInspection(command: string) {
+  if (/^\s*pwd\s*$/u.test(command)) return true;
+  if (/[;&|\n]/u.test(command)) return false;
+  return /^\s*git\s+(?:branch\s+--show-current|diff|log|rev-parse|show|status)\b/u.test(
+    command,
+  );
+}
+
+function managedServiceResult(taskId: string): LightToolResult<unknown> {
+  return blocked(
+    "environment",
+    `Project task ${taskId} is a long-running service managed by the preview runtime.`,
+    "Inspect the managed preview once when visual evidence matters. Do not start a replacement server or database from run_task.",
+  );
+}
+
+function reusedCommandResult(
+  command: string,
+  validation: ReusableValidation,
+  environment: string,
+): LightToolResult<unknown> {
+  if (validation.status === "passed")
+    return {
+      status: "ok",
+      receipt: validation.id,
+      data: {
+        cached: true,
+        command,
+        environment,
+        validatedAt: validation.timestamp,
+      },
+    };
+  return {
+    status: "blocked",
+    category: validation.category ?? "code",
+    message:
+      "The identical command already failed at this source revision; it was not executed again.",
+    recovery:
+      validation.recovery ??
+      "Change the relevant source or environment before requesting this validation again.",
+  };
+}
 
 function taskMatches(task: TaskCatalogItem, requested: string) {
   return (
@@ -269,41 +400,49 @@ function redactedOutput(output: string | Uint8Array) {
 function failedCommandResult(
   exitCode: number | undefined,
   output: string,
-  category: "code" | "environment",
+  failure: FailureAssessment,
 ): LightToolResult<unknown> {
   const diagnostic =
     boundedDiagnostic(output) || "No diagnostic output was produced.";
   return {
     status: "blocked",
-    category,
+    category: failure.category,
     message: `Command exited with code ${exitCode ?? "unknown"}.\n${diagnostic}`,
-    recovery: failureRecovery(category),
+    recovery: failure.recovery,
   };
 }
 
-async function commandFailureCategory(
+async function commandFailureAssessment(
   output: string,
   files: WorkspaceFiles,
-): Promise<"code" | "environment"> {
-  if (environmentDiagnostic(output)) return "environment";
+): Promise<FailureAssessment> {
   const missing = missingDependencyNames(output);
-  if (!missing.length) return "code";
-  const declared = await declaredDependencies(files);
-  return missing.some((name) => declared.has(name)) ? "environment" : "code";
+  if (missing.length) {
+    const declared = await declaredDependencies(files);
+    if (missing.some((name) => declared.has(name)))
+      return environmentDependencyFailure();
+    return codeFailure();
+  }
+  return environmentDiagnostic(output) ? environmentFailure() : codeFailure();
 }
 
 function environmentDiagnostic(output: string) {
-  return /(?:\bEAI_AGAIN\b|\bECONN(?:REFUSED|RESET)?\b|\bENETUNREACH\b|\bENOENT\b|\bELOOP\b|broken (?:symbolic )?link|dangling symlink|command not found|PACKAGE_MANAGER_UNAVAILABLE|\.prisma\/client)/iu.test(
+  return /(?:\bEAI_AGAIN\b|\bEACCES\b|\bECONN(?:REFUSED|RESET)?\b|\bENETUNREACH\b|\bENOSPC\b|\bENOENT\b|\bENOTFOUND\b|\bEPERM\b|\bETIMEDOUT\b|\bELOOP\b|\bP1001\b|broken (?:symbolic )?link|can't reach database server|command not found|connection refused|could not connect to server|dangling symlink|failed to connect|managed preview.*(?:failed|unavailable)|no space left on device|no such file or directory|PACKAGE_MANAGER_UNAVAILABLE|permission denied|preview (?:container|runtime).*(?:failed|unavailable)|\.prisma\/client)/iu.test(
     output,
   );
 }
 
 function missingDependencyNames(output: string) {
-  const expression = /Cannot find (?:module|package)\s+['"`]([^'"`]+)['"`]/giu;
-  return [...output.matchAll(expression)].flatMap((match) => {
-    const name = dependencyName(match[1] ?? "");
-    return name ? [name] : [];
-  });
+  const expressions = [
+    /Cannot find (?:module|package)\s+['"`]([^'"`]+)['"`]/giu,
+    /Module not found:\s*(?:Error:\s*)?Can't resolve\s+['"`]([^'"`]+)['"`]/giu,
+  ];
+  return expressions
+    .flatMap((expression) => [...output.matchAll(expression)])
+    .flatMap((match) => {
+      const name = dependencyName(match[1] ?? "");
+      return name ? [name] : [];
+    });
 }
 
 function dependencyName(value: string) {
@@ -341,10 +480,28 @@ async function manifestDependencies(files: WorkspaceFiles, path: string) {
   }
 }
 
-function failureRecovery(category: "code" | "environment") {
-  return category === "environment"
-    ? "Repair the declared workspace dependencies or environment, then rerun the same validation."
-    : "Fix the reported project error before running the relevant validation again.";
+function codeFailure(): FailureAssessment {
+  return {
+    category: "code",
+    recovery:
+      "Fix the reported project error before running the relevant validation again.",
+  };
+}
+
+function environmentDependencyFailure(): FailureAssessment {
+  return {
+    category: "environment",
+    recovery:
+      "Use the dependency operation once if the declared installation is incomplete; do not edit manifests or copy files through the shell.",
+  };
+}
+
+function environmentFailure(): FailureAssessment {
+  return {
+    category: "environment",
+    recovery:
+      "Do not retry unchanged, alter dependencies, or start replacement databases, containers, or servers. Continue with available local validation; finish_task can report this validation unavailable.",
+  };
 }
 
 function passedCommandResult(
@@ -358,7 +515,7 @@ function passedCommandResult(
     data: {
       command,
       exitCode,
-      output: output.slice(0, 16_000),
+      output: boundedDiagnostic(output, "", 4_000),
       environment,
     },
   };
@@ -367,8 +524,14 @@ function passedCommandResult(
 function blocked(
   category: "input" | "code" | "environment" | "external",
   message: string,
+  recovery?: string,
 ): LightToolResult<unknown> {
-  return { status: "blocked", category, message };
+  return {
+    status: "blocked",
+    category,
+    message,
+    ...(recovery ? { recovery } : {}),
+  };
 }
 
 function errorMessage(error: unknown) {

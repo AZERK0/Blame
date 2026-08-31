@@ -229,7 +229,7 @@ import type {
 
 const execFileAsync = promisify(execFile);
 const defaultSessionMaxIterations = 32;
-const uninterruptedSessionMaxIterations = Number.MAX_SAFE_INTEGER;
+const developmentSessionMaxIterations = 64;
 const maxInitializationAttempts = 3;
 const maxMergeConflictResolutionAttempts = 3;
 const runtimeArtifactPaths = [".blame", ".blame-preview", ".pnpm-store"];
@@ -3400,7 +3400,7 @@ export class BlameAgentRuntime {
       newAttachmentDirectory(input.cwd),
     );
     const iterationBudget =
-      input.maxIterations ?? uninterruptedSessionMaxIterations;
+      input.maxIterations ?? developmentSessionMaxIterations;
     const compaction = blameCompactionConfig(this.productionConfig);
     const session = await this.startSession({
       apiConnection: input.apiConnection,

@@ -23,6 +23,7 @@ import {
 } from "./light-commit.js";
 import type { SessionJournal } from "./session-journal.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
+import { symbolsTouchedByPatch } from "./patch-symbol-attribution.js";
 
 type Replacement = { end: number; replacement: string; start: number };
 
@@ -143,6 +144,7 @@ export class LightEditService {
       source,
       patch,
     );
+    file.symbols.push(...symbolsTouchedByPatch(path, file.initial, patchPlan));
     applyPatchPlan(file, path, patchPlan);
   }
 
@@ -477,12 +479,25 @@ function editFailure(error: unknown): LightToolResult<unknown> {
         : {}),
       diagnosticId,
     };
+  const message = errorMessage(error);
+  const recovery = patchFailureRecovery(message);
   return {
     status: "blocked",
     category: "input",
-    message: errorMessage(error),
+    message,
+    ...(recovery ? { recovery } : {}),
     diagnosticId,
   };
+}
+
+function patchFailureRecovery(message: string) {
+  if (/context is ambiguous/iu.test(message))
+    return "Do not resend the same patch. Read the affected outline and target its symbol or selector alias, or add one short unique context line.";
+  if (/context does not match/iu.test(message))
+    return "Read only the affected symbol or short range, then submit a focused patch against the current text.";
+  if (/too many (?:files|operations)/iu.test(message))
+    return "Split the change into smaller atomic batches without repeating completed files.";
+  return undefined;
 }
 
 type LightEditFailure = Exclude<LightToolResult<unknown>, { status: "ok" }>;
@@ -532,6 +547,7 @@ function fileChange(file: FinalFile) {
     path: file.path,
     additions: lineCount(after) - commonLineCount(before, after),
     deletions: lineCount(before) - commonLineCount(before, after),
+    ...(file.symbols.length ? { symbols: [...new Set(file.symbols)] } : {}),
   };
 }
 

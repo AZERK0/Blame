@@ -3,7 +3,7 @@
 **Version 1.0 — 9 août 2026**  
 **Objet :** définir les primitives d’un IDE agentique qui dépassent le paradigme actuel `grep → read_file(lines) → patch → shell`, en s’appuyant sur la littérature scientifique, les systèmes existants et les contraintes propres à Blame.
 
-> **Statut normatif au 31 août 2026.** La section 21.30, « Light Semantic Harness », remplace les recommandations d’architecture précédentes. Les sections antérieures restent conservées comme historique des hypothèses, incidents et migrations ; leurs protocoles MVCC agent-facing, leurs multiples autorités, leurs outils séparés et leurs mécanismes de coordination ne décrivent plus le chemin normal de production.
+> **Statut normatif au 1er septembre 2026.** La section 21.30, « Light Semantic Harness », remplace les recommandations d’architecture précédentes. Les sections antérieures restent conservées comme historique des hypothèses, incidents et migrations ; leurs protocoles MVCC agent-facing, leurs multiples autorités, leurs outils séparés et leurs mécanismes de coordination ne décrivent plus le chemin normal de production.
 
 ---
 
@@ -2396,7 +2396,27 @@ Le run US-027 a établi une régression forte : 39 min 27 s, 36 itérations, 64 
 
 Cette mesure invalide l’hypothèse qu’une simple présence de capacités symboliques produit un gain. La correction porte donc sur les causes observées plutôt que sur une contrainte cognitive supplémentaire : recherche lexicalement utile même pour un identifiant, carte initiale exploitable, diagnostics d’exécution complets, classification environnementale, acceptation atomique du format natif de Cline et cohérence terminale en base. Un nouveau run comparable reste requis ; aucun gain live n’est revendiqué par cette correction locale.
 
-#### Mesures déterministes de cette livraison
+#### Retour US-028 et garde-fous de dérive
+
+Le run US-028 a réussi fonctionnellement et validé tests, ESLint, TypeScript, build Next.js, Prisma ainsi qu’un smoke test page/API à `200`. Il reste néanmoins non représentatif d’un harness compact : 37 min 44 s, 81 itérations, 125 appels d’outils, 5,92 millions de tokens d’entrée cumulés et un coût de 4,09 $. Les 24 lectures comportaient 17 projections raw et 6 ranges, sans outline ni symbole ; les 19 éditions étaient textuelles. Le premier edit échouait après 12 min 12 s et la première mutation réussie arrivait après 13 min 16 s. Sur 62 `run_task`, 13 étaient bloqués, notamment par des défaillances de dépendances, PostgreSQL, preview et stockage interprétées comme du code. Le run a aussi contourné l’édition atomique avec le shell et démarré de l’infrastructure manuelle.
+
+La correction réduit ces dérives mécaniquement sans restaurer l’ancien gouverneur :
+
+- la projection automatique passe à l’outline dès 8 000 caractères pour un langage structurel supporté, et le briefing associe les fichiers probables à un symbole qualifié lorsque l’objectif le permet ;
+- le prompt et les descriptions demandent une édition symbolique dans un symbole existant et réservent les patches aux imports, configurations, créations et petits changements transverses ; un patch textuel accepté est attribué aux plus petits symboles englobants dans le résultat et le journal ;
+- un contexte de patch ambigu renvoie une récupération qui interdit de soumettre à nouveau le même document et oriente vers l’outline, l’alias de symbole ou de sélecteur, ou un contexte textuel court et unique ;
+- `run_task` refuse les scripts de service, l’infrastructure preview ou base de données manuelle, les processus de fond, les mutations Git et les contournements d’écriture shell usuels ; les dépendances restent modifiables uniquement par l’opération dédiée ;
+- les diagnostics reconnaissent notamment `ENOSPC`, les erreurs d’accès, les connexions PostgreSQL/Prisma et les previews indisponibles comme des pannes d’environnement. Leur récupération interdit les retries inchangés et les infrastructures de remplacement, mais un échec environnemental reste réexécutable après une récupération externe ;
+- les validations réussies identiques et les échecs de code identiques sont réutilisés à révision source constante. Les commandes d’inspection libres réussies ne sont réutilisées que pour `pwd` et les lectures Git déterministes ;
+- une sortie réussie est bornée à 4 000 caractères, tandis qu’un échec conserve un diagnostic début/fin de 16 000 caractères. Le plafond total d’une session de développement est désormais 64 itérations au lieu de la sentinelle `Number.MAX_SAFE_INTEGER` ; ce plafond est un coupe-circuit produit, pas une règle imposant de lire ou muter avant une itération donnée.
+
+La saturation de la partition racine constituait une panne hôte distincte. Le nettoyage des conteneurs arrêtés, images et cache de build Docker, sans suppression des volumes, a libéré 13,39 Go et fait passer `/` de 100 % avec 0 disponible à 87 % avec 13 Go disponibles. Cette remise en état est nécessaire pour le prochain benchmark, mais elle ne constitue pas une preuve d’amélioration du harness.
+
+#### Contrôles déterministes du correctif US-028
+
+Les contrôles exécutés localement le 1er septembre 2026 passent : 59 scénarios Light Harness sur 59, 192 scénarios agent runtime sur 192, build TypeScript, ESLint et bridge du payload autonome. Ils couvrent notamment le seuil d’outline, les cibles symboliques du briefing, l’attribution sémantique des patches multi-fichiers, les diagnostics d’environnement, les refus shell et infrastructure, la réutilisation entre exécutions isolées du bridge, la possibilité de revalider après une récupération externe et le plafond de session. Aucun benchmark live US-029 n’a encore été exécuté ; aucune baisse de durée, de tokens ou de coût n’est donc revendiquée.
+
+#### Mesures déterministes de la livraison du 31 août 2026
 
 Les mesures suivantes ont été exécutées localement le 31 août 2026 :
 

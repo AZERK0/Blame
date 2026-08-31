@@ -1,4 +1,5 @@
 import { lightCapabilityDescription } from "./light-capabilities.js";
+import { parseCode } from "./code-intelligence.js";
 import type { LightTaskContract } from "./light-contracts.js";
 import type { LightWorkspaceExecutor } from "./light-executor.js";
 import { readTaskCatalog } from "./task-catalog.js";
@@ -36,8 +37,13 @@ async function localBriefing(input: InitialTaskBriefingInput) {
     snapshot.changes.map(({ path }) => path),
     input.taskContract?.objective,
   );
-  return briefingLines({
+  const targets = await briefingTargets(
+    files,
     candidates,
+    input.taskContract?.objective,
+  );
+  return briefingLines({
+    candidates: targets,
     keyFiles: briefingKeyFiles(snapshot.files),
     manager: dependencyTask?.package_manager,
     managerAvailability: await packageManagerAvailability(dependencyTask),
@@ -68,7 +74,7 @@ type PackageSummary = {
 
 function briefingLines(input: BriefingFacts) {
   const scripts = input.tasks
-    .filter(({ kind }) => kind !== "dependencies")
+    .filter(({ kind }) => kind !== "dependencies" && kind !== "service")
     .slice(0, 16)
     .map(({ task_id }) => task_id)
     .join(", ");
@@ -87,8 +93,52 @@ function briefingLines(input: BriefingFacts) {
     ...(input.candidates.length
       ? [`Likely targets: ${input.candidates.join(", ")}.`]
       : []),
-    "Navigation excludes generated outputs and node_modules; use run_task diagnostics for dependency or generated-client state.",
+    "Navigation excludes generated outputs and node_modules; use run_task diagnostics for dependency or generated-client state. Preview services and databases are managed by Blame and must not be started manually.",
   ];
+}
+
+async function briefingTargets(
+  files: WorkspaceFiles,
+  paths: string[],
+  objective?: string,
+) {
+  const terms = objectiveTerms(objective);
+  const symbols = await Promise.all(
+    paths.map((path) => briefingSymbolTarget(files, path, terms)),
+  );
+  return [
+    ...symbols.filter((value): value is string => Boolean(value)),
+    ...paths,
+  ].slice(0, 8);
+}
+
+async function briefingSymbolTarget(
+  files: WorkspaceFiles,
+  path: string,
+  terms: string[],
+) {
+  try {
+    if ((await files.fileSize(path)) > 512_000) return undefined;
+    const content = (await files.read(path)).content;
+    const symbols = parseCode(path, content)
+      .symbols.map((symbol) => ({
+        name: symbol.qualified_name,
+        score: symbolTargetScore(symbol.qualified_name, terms),
+      }))
+      .filter(({ score }) => score > 0)
+      .sort((left, right) => right.score - left.score);
+    return symbols[0] ? `${path}#${symbols[0].name}` : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function symbolTargetScore(name: string, terms: string[]) {
+  const normalized = name.toLocaleLowerCase();
+  return terms.reduce(
+    (score, term) => score + (normalized.includes(term) ? 10 : 0),
+    0,
+  );
 }
 
 async function packageSummaries(files: WorkspaceFiles, paths: string[]) {
@@ -112,12 +162,18 @@ async function packageSummary(files: WorkspaceFiles, path: string) {
     return {
       path,
       ...(typeof manifest.name === "string" ? { name: manifest.name } : {}),
-      scripts: Object.keys(record(manifest.scripts)).slice(0, 8),
+      scripts: Object.keys(record(manifest.scripts))
+        .filter(finiteScriptName)
+        .slice(0, 8),
       dependencies: dependencySignals(manifest),
     } satisfies PackageSummary;
   } catch {
     return undefined;
   }
+}
+
+function finiteScriptName(name: string) {
+  return !/^(?:dev|preview|serve|start|watch)(?::|$)/iu.test(name);
 }
 
 function dependencySignals(manifest: Record<string, unknown>) {

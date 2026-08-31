@@ -335,12 +335,18 @@ test("the briefing exposes package topology, key files, and stack versions", asy
     async (root) => {
       const briefing = await createInitialTaskBriefing({
         workspaceRoot: root,
-        taskContract: contract("briefing-map"),
+        taskContract: {
+          ...contract("briefing-map"),
+          objective: "Update the API server",
+        },
       });
       assert.match(briefing ?? "", /Project map: packages \(/u);
       assert.match(briefing ?? "", /prisma\/schema\.prisma/u);
       assert.match(briefing ?? "", /@prisma\/client@7\.9\.1/u);
       assert.match(briefing ?? "", /scripts build,test/u);
+      assert.match(briefing ?? "", /packages\/api\/src\/server\.ts#server/u);
+      assert.doesNotMatch(briefing ?? "", /scripts dev/u);
+      assert.match(briefing ?? "", /must not be started manually/u);
       assert.match(briefing ?? "", /node_modules/u);
       assert.ok((briefing?.length ?? Infinity) < 6_000);
     },
@@ -393,6 +399,152 @@ test("run_task classifies a missing declared dependency as environment", async (
   });
 });
 
+test("run_task classifies infrastructure and storage failures as environment", async () => {
+  await withWorkspace({ "package.json": "{}\n" }, async (root) => {
+    const workspace = lightWorkspace(root, "environment-diagnostics");
+    for (const diagnostic of [
+      "P1001: Can't reach database server",
+      "ENOSPC: no space left on device",
+      "Managed preview unavailable",
+    ]) {
+      const result = await workspace.tasks.run({
+        kind: "command",
+        command: `node -e "console.error(process.argv[1]); process.exit(1)" ${JSON.stringify(diagnostic)}`,
+      });
+      assert.equal(result.status, "blocked");
+      if (result.status !== "blocked") continue;
+      assert.equal(result.category, "environment");
+      assert.match(result.recovery ?? "", /Do not retry unchanged/u);
+    }
+  });
+});
+
+test("run_task denies shell writes and unmanaged infrastructure", async () => {
+  await withWorkspace({ "value.txt": "safe\n" }, async (root) => {
+    const workspace = lightWorkspace(root, "command-policy");
+    for (const command of [
+      "printf unsafe > value.txt",
+      "cp value.txt copy.txt",
+      "sed -i s/safe/unsafe/ value.txt",
+      "node -e \"require('node:fs').writeFileSync('value.txt', 'unsafe')\"",
+      "pnpm install",
+      "git add value.txt",
+      "git -C . add value.txt",
+      "docker run postgres:17",
+    ]) {
+      const result = await workspace.tasks.run({ kind: "command", command });
+      assert.equal(result.status, "blocked");
+      if (result.status === "blocked") assert.equal(result.category, "input");
+    }
+    assert.equal(await readFile(join(root, "value.txt"), "utf8"), "safe\n");
+  });
+});
+
+test("run_task reuses identical inspections and rejects service scripts", async () => {
+  await withWorkspace(
+    {
+      "package.json": JSON.stringify({
+        scripts: {
+          dev: "next dev",
+          preview: "vite preview",
+          test: 'node -e "process.exit(0)"',
+        },
+      }),
+    },
+    async (root) => {
+      const workspace = lightWorkspace(root, "task-reuse");
+      const first = data(
+        await workspace.tasks.run({ kind: "command", command: "pwd" }),
+      );
+      const second = data(
+        await workspace.tasks.run({ kind: "command", command: "pwd" }),
+      );
+      assert.equal(first.cached, undefined);
+      assert.equal(second.cached, true);
+      await workspace.tasks.run({ kind: "project", task: "test" });
+      const validation = data(
+        await workspace.tasks.run({ kind: "project", task: "test" }),
+      );
+      assert.equal(validation.cached, true);
+      const service = await workspace.tasks.run({
+        kind: "project",
+        task: "dev",
+      });
+      assert.equal(service.status, "blocked");
+      if (service.status !== "blocked") return;
+      assert.equal(service.category, "environment");
+      assert.match(service.recovery ?? "", /Do not start a replacement/u);
+      const preview = await workspace.tasks.run({
+        kind: "project",
+        task: "preview",
+      });
+      assert.equal(preview.status, "blocked");
+    },
+  );
+});
+
+test("run_task reuse survives isolated Light bridge executions", async () => {
+  await withWorkspace({ "package.json": "{}\n" }, async (root) => {
+    const request = {
+      input: { kind: "command" as const, command: "pwd" },
+      taskContract: contract("remote-task-reuse"),
+      tool: "run_task" as const,
+      workspaceRoot: root,
+    };
+    const first = data(await executeLightWorkspaceRequest(request));
+    const second = data(await executeLightWorkspaceRequest(request));
+    assert.equal(first.cached, undefined);
+    assert.equal(second.cached, true);
+  });
+});
+
+test("run_task does not repeat a failed command at one source revision", async () => {
+  await withWorkspace({ "package.json": "{}\n" }, async (root) => {
+    const workspace = lightWorkspace(root, "failed-task-reuse");
+    const command = "node -e \"console.error('failure'); process.exit(3)\"";
+    const first = await workspace.tasks.run({ kind: "command", command });
+    const second = await workspace.tasks.run({ kind: "command", command });
+    assert.equal(first.status, "blocked");
+    assert.equal(second.status, "blocked");
+    if (second.status !== "blocked") return;
+    assert.match(second.message, /already failed/u);
+  });
+});
+
+test("run_task permits environment validation after external recovery", async () => {
+  const manifest = JSON.stringify({
+    scripts: {
+      test: "node -e \"console.error('P1001: cannot connect'); process.exit(1)\"",
+    },
+  });
+  await withWorkspace({ "package.json": manifest }, async (root) => {
+    const workspace = lightWorkspace(root, "environment-task-retry");
+    await workspace.tasks.run({ kind: "project", task: "test" });
+    const retried = await workspace.tasks.run({
+      kind: "project",
+      task: "test",
+    });
+    assert.equal(retried.status, "blocked");
+    if (retried.status !== "blocked") return;
+    assert.match(retried.message, /Command exited/u);
+    assert.doesNotMatch(retried.message, /already failed/u);
+  });
+});
+
+test("run_task bounds successful command output", async () => {
+  await withWorkspace({ "package.json": "{}\n" }, async (root) => {
+    const workspace = lightWorkspace(root, "bounded-success");
+    const result = data(
+      await workspace.tasks.run({
+        kind: "command",
+        command: `node -e "console.log('x'.repeat(10000))"`,
+      }),
+    );
+    assert.ok(String(result.output).length <= 4_000);
+    assert.match(String(result.output), /diagnostic truncated/u);
+  });
+});
+
 test("large application files route through outline and symbol reads", async () => {
   const filler = Array.from(
     { length: 1_500 },
@@ -418,6 +570,20 @@ test("large application files route through outline and symbol reads", async () 
     );
     assert.equal(symbol.qualifiedName, "target");
     assert.match(String(symbol.body), /return 1/u);
+  });
+});
+
+test("medium supported files route through an outline", async () => {
+  const source = Array.from(
+    { length: 400 },
+    (_, index) => `export const mediumValue${index} = ${index}`,
+  ).join("\n");
+  await withWorkspace({ "medium.ts": `${source}\n` }, async (root) => {
+    const workspace = lightWorkspace(root, "medium-outline");
+    const result = data(
+      await workspace.readCode({ target: "medium.ts" }, { agentId: "lead" }),
+    );
+    assert.equal(result.view, "outline");
   });
 });
 
@@ -704,6 +870,8 @@ test("ambiguous patch context is refused without fuzzy recovery", async () => {
       ],
     });
     assert.equal(result.status, "blocked");
+    if (result.status === "blocked")
+      assert.match(result.recovery ?? "", /Do not resend the same patch/u);
     assert.equal(await readFile(join(root, "duplicate.txt"), "utf8"), source);
   });
 });
@@ -914,6 +1082,11 @@ test("one native Cline patch edits multiple files atomically", async () => {
         ],
       });
       assert.equal(result.status, "ok");
+      const changes = array(data(result).changes).map(record);
+      assert.deepEqual(
+        changes.map(({ symbols }) => symbols),
+        [["a"], ["b"]],
+      );
       assert.equal(
         await readFile(join(root, "a.ts"), "utf8"),
         "export const a = 3\n",

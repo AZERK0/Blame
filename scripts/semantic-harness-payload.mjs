@@ -42,6 +42,7 @@ const payloadHarnessFiles = new Set([
   "light-workspace.js",
   "package-manager-runtime.js",
   "packaged-resource-path.js",
+  "patch-symbol-attribution.js",
   "read-coverage.js",
   "semantic-harness-runner.js",
   "session-journal.js",

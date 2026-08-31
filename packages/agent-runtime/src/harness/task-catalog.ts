@@ -301,7 +301,7 @@ const packageManagerFiles = [
 
 function taskKind(name: string, command: string): TaskCatalogItem["kind"] {
   if (
-    /^(dev|serve|start|watch)(:|$)/i.test(name) ||
+    /^(dev|preview|serve|start|watch)(:|$)/i.test(name) ||
     /\b--watch\b/.test(command)
   )
     return "service";

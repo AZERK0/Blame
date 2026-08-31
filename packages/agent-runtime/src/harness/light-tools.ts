@@ -112,7 +112,7 @@ function searchCodeTool(workspace: LightWorkspacePort) {
 function readCodeTool(workspace: LightWorkspacePort, capabilities: string) {
   return harnessTool({
     name: "read_code",
-    description: `Read a path, sN alias, path#qualifiedName, @changes, or @capabilities. Auto reads small files raw and uses outlines or symbols only when they save context. Unsupported symbolic views fall back to raw in this call.\n${capabilities}`,
+    description: `Read a path, sN alias, path#qualifiedName, @changes, or @capabilities. Omit view normally: auto reads small files raw and routes large supported files to outlines; use returned aliases or qualified targets for symbol bodies. Explicit raw is intended only for small or non-structural files. Unsupported symbolic views fall back to raw in this call.\n${capabilities}`,
     schema: lightReadCodeInputSchema,
     execute: (input, context) => workspace.readCode(input, context),
   });
@@ -121,7 +121,7 @@ function readCodeTool(workspace: LightWorkspacePort, capabilities: string) {
 function editCodeTool(workspace: LightWorkspacePort, capabilities: string) {
   return harnessTool({
     name: "edit_code",
-    description: `Apply one atomic batch of symbolic replacements and native Cline Apply Patch operations. A patch may contain one or many files; path is optional for a native multi-file patch and remains authoritative for a legacy single-file patch. Operations share one snapshot, reject overlaps, parse only final states, and never require hashes or revisions.\n${capabilities}`,
+    description: `Apply one atomic batch of symbolic replacements and native Cline Apply Patch operations. Prefer symbol operations inside existing supported symbols; use focused patches for imports, raw/config files, new files, or small cross-symbol changes. Multi-file patches are accepted and their touched symbols are attributed automatically. Operations share one snapshot, reject overlaps, parse only final states, and never require hashes or revisions.\n${capabilities}`,
     schema: lightEditCodeInputSchema,
     execute: (input, context) =>
       workspace.editCode(input, {
@@ -135,7 +135,7 @@ function runTaskTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "run_task",
     description:
-      "Run a known project script or bounded command in the current worktree, or add/remove dependencies through the detected package manager. Preserves pipeline failures and returns the exit code with a bounded complete diagnostic and a code/environment classification.",
+      "Run a known finite project validation or read-only bounded command, or add/remove dependencies through the detected package manager. Identical validations at the same source revision are reused. Filesystem writes, dev servers, databases, containers, background processes, and manual preview infrastructure are denied. Returns compact successful output or a complete bounded failure diagnostic with code/environment classification.",
     schema: lightRunTaskInputSchema,
     execute: (input, context) => workspace.runTask(input, context),
   });

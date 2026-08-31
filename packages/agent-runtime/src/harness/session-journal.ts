@@ -25,8 +25,8 @@ export type JournalCompletionSnapshot = {
 };
 
 export type JournalValidation = {
+  category?: "code" | "environment";
   command?: string;
-  environmentRevisionId?: string;
   files: JournalFileState[];
   id: string;
   paths: string[];
@@ -34,6 +34,7 @@ export type JournalValidation = {
   status: string;
   taskId?: string;
   taskKind?: string;
+  recovery?: string;
   terminal: "failed" | "passed" | "pending" | "unknown";
   timestamp: string;
 };
@@ -150,6 +151,25 @@ export class SessionJournal {
 
   currentValidations() {
     return this.validations.map(publicValidation);
+  }
+
+  async reusableValidation(command: string, sourceRevisionId: string) {
+    const candidates = [...this.validations].reverse();
+    for (const validation of candidates) {
+      if (
+        validation.command !== command ||
+        validation.sourceRevisionId !== sourceRevisionId ||
+        !(await this.allFilesCurrent(validation.files))
+      )
+        continue;
+      return publicValidation(validation);
+    }
+    return undefined;
+  }
+
+  async currentChangedPaths() {
+    await this.hydrate();
+    return (await this.currentChangesByPath()).map(({ path }) => path);
   }
 
   async completionSnapshot(): Promise<JournalCompletionSnapshot> {
@@ -279,9 +299,11 @@ function publicChange(change: JournalChange) {
 
 function publicValidation(validation: JournalValidation) {
   return {
+    category: validation.category,
     command: validation.command,
     id: validation.id,
     paths: [...validation.paths],
+    recovery: validation.recovery,
     status: validation.status,
     taskId: validation.taskId,
     taskKind: validation.taskKind,

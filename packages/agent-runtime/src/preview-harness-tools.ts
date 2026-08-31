@@ -229,12 +229,13 @@ function previewToolUnavailableResult(error: unknown) {
     outcome: "unavailable",
     reason: "PREVIEW_DEVTOOLS_TRANSIENT_FAILURE",
     recommendation:
-      "Continue with local validation. Retry browser inspection only after preview state changes.",
+      "Continue with local validation. Retry browser inspection only after managed preview state changes; do not start replacement infrastructure.",
     retryable: false,
   };
 }
 
 function previewNotReadyResult(target: PreviewDevtoolsTarget | undefined) {
+  const status = target?.status ?? "unavailable";
   return {
     content: [
       {
@@ -245,7 +246,8 @@ function previewNotReadyResult(target: PreviewDevtoolsTarget | undefined) {
     isError: false,
     outcome: "unavailable",
     reason: target?.reason ?? "PREVIEW_NOT_READY",
-    retryable: target?.status === "starting",
+    recommendation: previewDevtoolsRecommendation(status),
+    retryable: status === "starting",
   };
 }
 
@@ -406,12 +408,13 @@ function previewDevtoolsRecommendation(
   if (status === "starting") {
     return "Call again with waitFor=ready only if blocking for startup is useful; otherwise continue other work.";
   }
-  if (status === "stopped") return "Start the preview before using DevTools.";
+  if (status === "stopped")
+    return "The managed preview is stopped. Continue with local validation; do not start a replacement server, database, or container.";
   if (status === "failed") {
-    return "Inspect preview logs or repair the preview failure.";
+    return "Inspect managed preview logs once if useful, then continue with local validation. Do not create replacement infrastructure or alter dependencies to repair preview state.";
   }
   if (status === "unavailable") {
-    return "Open the integrated preview browser before using DevTools.";
+    return "Preview evidence is unavailable. Continue with local validation and report the limitation; do not start manual infrastructure.";
   }
   return "The application and its revision pair are ready. Take a scoped DOM snapshot for UI assertions.";
 }

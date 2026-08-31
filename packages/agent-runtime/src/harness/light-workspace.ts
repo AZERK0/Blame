@@ -44,14 +44,9 @@ type LightWorkspaceOptions = {
   taskContract?: LightTaskContract;
 };
 
-type ReadContext = Partial<
-  Pick<
-    AgentToolContext,
-    "agentId" | "conversationId" | "metadata" | "sessionId" | "snapshot"
-  >
->;
+type ReadContext = Partial<AgentToolContext>;
 
-const smallFileCharacters = 16_000;
+const smallFileCharacters = 8_000;
 const maximumRawCharacters = 64_000;
 type SearchMode = "references" | "symbol" | "text";
 

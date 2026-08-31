@@ -330,6 +330,7 @@ test("starts development sessions with native skills and private specialist cons
     });
 
     assert.ok(capturedStart);
+    assert.equal(capturedStart.config.maxIterations, 64);
     assert.equal(capturedStart.config.enableSpawnAgent, false);
     assert.ok(capturedStart.localRuntime?.configExtensions?.includes("skills"));
     assert.ok(
@@ -1263,17 +1264,14 @@ test("renders the compact native Cline development prompt", async () => {
   assert.match(prompt, /<runtime_context>/);
   assert.match(prompt, /<workspace_metadata>/);
   assert.match(prompt, /briefing contains facts already known/);
-  assert.match(prompt, /Read a small file directly/);
+  assert.match(prompt, /Omit `view` for ordinary reads/);
   assert.match(
     prompt,
-    /`edit_code` can combine symbolic operations and Cline Apply Patch operations/,
+    /Use symbol operations for changes contained in an existing supported symbol/,
   );
-  assert.match(
-    prompt,
-    /Unsupported structural operations fall back to raw reads and patches/,
-  );
-  assert.match(prompt, /Use `run_task` for proportionate validation/);
-  assert.match(prompt, /application is ready/);
+  assert.match(prompt, /patch-to-symbol attribution/);
+  assert.match(prompt, /Use `run_task` only for inspection/);
+  assert.match(prompt, /must never be started manually/);
   assert.match(prompt, /call `finish_task` once/);
   assert.doesNotMatch(prompt, /complete_turn/);
   assert.doesNotMatch(prompt, /continuity_update|change_receipt_refs/);
