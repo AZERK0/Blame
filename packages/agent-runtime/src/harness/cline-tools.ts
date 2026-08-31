@@ -71,6 +71,7 @@ import {
 } from "./code-navigation-policy.js";
 import { semanticCallSignature } from "./semantic-loop-detector.js";
 import { compactWorkspaceStateResult } from "./workspace-state-output.js";
+import { HarnessToolObservability } from "./tool-observability.js";
 
 export { semanticWorkspaceReadToolNames, semanticWorkspaceWriteToolNames };
 
@@ -98,6 +99,7 @@ export function semanticWorkspaceTools(
   const navigationFiles = new WorkspaceFiles(workspaceRoot);
   const canonicalMapper = new CanonicalResultMapper();
   const recoveryController = new RecoveryController(navigationFiles);
+  const observability = new HarnessToolObservability(workspaceRoot);
   const createHarnessTool = <TSchema extends z.ZodTypeAny>(
     input: HarnessToolDefinition<TSchema>,
   ) =>
@@ -105,6 +107,7 @@ export function semanticWorkspaceTools(
       environmentFingerprint: (context) =>
         recoveryController.environmentFingerprint(context),
       mapper: canonicalMapper,
+      observability,
       protocolVersion: options.protocolVersion ?? "2",
       recoveryController,
     });
@@ -568,6 +571,7 @@ type HarnessToolDefinition<TSchema extends z.ZodTypeAny> = {
 type HarnessProtocol = {
   environmentFingerprint(context: AgentToolContext): string;
   mapper: CanonicalResultMapper;
+  observability: HarnessToolObservability;
   protocolVersion: "2" | "3";
   recoveryController: RecoveryController;
 };
@@ -583,58 +587,119 @@ function buildHarnessTool<TSchema extends z.ZodTypeAny>(
     retryable: input.retryable ?? false,
     maxRetries: 0,
     async execute(raw: unknown, context: AgentToolContext) {
-      const retrySuppression =
-        protocol.protocolVersion === "3"
-          ? await protocol.recoveryController.before(input.name, raw, context)
-          : undefined;
-      if (retrySuppression)
-        return mapCanonicalResult(
-          retrySuppressedResult(retrySuppression),
-          input.name,
-          context,
-          protocol,
-        );
-      const parsed = input.schema.safeParse(raw);
-      if (!parsed.success)
-        return publishToolResult(
-          harnessError({
-            code: "INVALID_INPUT",
-            message: formatSchemaError(parsed.error),
-          }),
-          raw,
-          input.name,
-          context,
-          protocol,
-        );
-      const executed = await input.execute(parsed.data, context);
-      if (isHarnessResult(executed))
-        return publishCanonicalResult(
-          prepareCanonicalResult(executed, input.name, parsed.data),
-          parsed.data,
-          input.name,
-          context,
-          protocol,
-        );
-      const maximumTokens = requestedOutputTokens(input.name, parsed.data);
-      const prepared =
-        input.name === "workspace_state"
-          ? compactWorkspaceStateResult(
-              executed,
-              workspaceStateInclude(parsed.data),
-              workspaceStatePage(parsed.data),
-              maximumTokens,
-            )
-          : executed;
-      const result = boundHarnessResult(prepared, maximumTokens);
-      return publishToolResult(
-        result,
-        parsed.data,
-        input.name,
-        context,
-        protocol,
-      );
+      const startedAt = Date.now();
+      let result: unknown;
+      let failure: unknown;
+      try {
+        result = await executeHarnessToolCall(input, protocol, raw, context);
+        return result;
+      } catch (error) {
+        failure = error;
+        throw error;
+      } finally {
+        await protocol.observability.record({
+          durationMs: Date.now() - startedAt,
+          error: failure,
+          input: raw,
+          result,
+          startedAt,
+          tool: input.name,
+        });
+      }
     },
   });
+}
+
+async function executeHarnessToolCall<TSchema extends z.ZodTypeAny>(
+  input: HarnessToolDefinition<TSchema>,
+  protocol: HarnessProtocol,
+  raw: unknown,
+  context: AgentToolContext,
+) {
+  const retrySuppression =
+    protocol.protocolVersion === "3"
+      ? await protocol.recoveryController.before(input.name, raw, context)
+      : undefined;
+  if (retrySuppression)
+    return mapCanonicalResult(
+      retrySuppressedResult(retrySuppression),
+      input.name,
+      context,
+      protocol,
+    );
+  const parsed = input.schema.safeParse(raw);
+  if (!parsed.success)
+    return publishInvalidInput(
+      input.name,
+      raw,
+      context,
+      protocol,
+      parsed.error,
+    );
+  return executeParsedHarnessTool(input, protocol, parsed.data, context);
+}
+
+async function executeParsedHarnessTool<TSchema extends z.ZodTypeAny>(
+  input: HarnessToolDefinition<TSchema>,
+  protocol: HarnessProtocol,
+  parsed: z.infer<TSchema>,
+  context: AgentToolContext,
+) {
+  const executed = await input.execute(parsed, context);
+  if (isHarnessResult(executed))
+    return publishCanonicalResult(
+      prepareCanonicalResult(executed, input.name, parsed),
+      parsed,
+      input.name,
+      context,
+      protocol,
+    );
+  const maximumTokens = requestedOutputTokens(input.name, parsed);
+  const prepared = prepareLegacyToolResult(
+    input.name,
+    executed,
+    parsed,
+    maximumTokens,
+  );
+  return publishToolResult(
+    boundHarnessResult(prepared, maximumTokens),
+    parsed,
+    input.name,
+    context,
+    protocol,
+  );
+}
+
+function prepareLegacyToolResult(
+  tool: SemanticWorkspaceToolName,
+  result: HarnessToolResult<unknown>,
+  input: unknown,
+  maximumTokens: number | undefined,
+) {
+  return tool === "workspace_state"
+    ? compactWorkspaceStateResult(
+        result,
+        workspaceStateInclude(input),
+        workspaceStatePage(input),
+        maximumTokens,
+      )
+    : result;
+}
+
+function publishInvalidInput(
+  tool: SemanticWorkspaceToolName,
+  raw: unknown,
+  context: AgentToolContext,
+  protocol: HarnessProtocol,
+  error: z.ZodError,
+) {
+  return publishToolResult(
+    harnessError({ code: "INVALID_INPUT", message: formatSchemaError(error) }),
+    raw,
+    tool,
+    context,
+    protocol,
+  );
 }
 
 function prepareCanonicalResult(

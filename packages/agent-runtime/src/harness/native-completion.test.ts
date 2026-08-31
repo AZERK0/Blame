@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { createAgentRuntime, type AgentEvent } from "@cline/sdk";
 import { ConversationMemoryStore } from "./conversation-memory.js";
+import { environmentSpec } from "./environment-service.js";
 import {
   createNativeCompletionTool,
   nativeCompletionToolName,
@@ -163,7 +164,7 @@ test("a mutating task contract cannot complete without an effect", async () => {
   );
 });
 
-test("automatic validation runs once and model verified is not trusted", async () => {
+test("automatic validation runs the minimum proof plan and ignores model claims", async () => {
   const calls: unknown[] = [];
   const notifications: NativeCompletionNotification[] = [];
   const validationActivities: NativeValidationActivity[] = [];
@@ -175,20 +176,19 @@ test("automatic validation runs once and model verified is not trusted", async (
         toolContext(),
       );
       assert.equal(result, "Implemented.");
-      assert.equal(calls.length, 1);
+      assert.equal(calls.length, 2);
       assert.equal(notifications[0]?.summary, "Implemented.");
-      assert.equal(notifications[0]?.verified, false);
+      assert.equal(notifications[0]?.verified, true);
+      assert.equal(notifications[0]?.submission_outcome, "accepted");
       assert.equal(notifications[0]?.completion.delivery, "satisfied");
-      assert.equal(
-        notifications[0]?.completion.verification,
-        "partially_verified",
-      );
+      assert.equal(notifications[0]?.completion.verification, "verified");
       assert.deepEqual(
         validationActivities.map(({ phase }) => phase),
-        ["started", "finished"],
+        ["started", "finished", "started", "finished"],
       );
       assert.equal(validationActivities[0]?.request.tool, "run_task");
       assert.equal(validationActivities[1]?.output, passedRunResult);
+      assert.equal(validationActivities[3]?.output, passedRunResult);
     },
     {
       executor: async (request) => {
@@ -288,12 +288,10 @@ test("a corrected revision receives one new validation and then completes", asyn
         toolContext(),
       );
       assert.equal(result, "Corrected and complete.");
-      assert.equal(calls, 2);
-      assert.equal(notifications.at(-1)?.verified, false);
-      assert.equal(
-        notifications.at(-1)?.completion.verification,
-        "partially_verified",
-      );
+      assert.equal(calls, 3);
+      assert.equal(notifications.at(-1)?.verified, true);
+      assert.equal(notifications.at(-1)?.submission_outcome, "accepted");
+      assert.equal(notifications.at(-1)?.completion.verification, "verified");
     },
     {
       beforeTool: recordPendingChange,
@@ -306,7 +304,7 @@ test("a corrected revision receives one new validation and then completes", asyn
   );
 });
 
-test("infrastructure validation failure completes with a deterministic caveat", async () => {
+test("unrepairable infrastructure validation blocks terminal completion", async () => {
   const notifications: NativeCompletionNotification[] = [];
   await withCompletion(
     async ({ tool }) => {
@@ -314,8 +312,9 @@ test("infrastructure validation failure completes with a deterministic caveat", 
         { summary: "Implemented.", verified: true },
         toolContext(),
       );
-      assert.match(String(result), /Validation non confirmée/);
+      assert.match(String(result), /Soumission bloquée par le runtime/);
       assert.equal(notifications[0]?.verified, false);
+      assert.equal(notifications[0]?.submission_outcome, "blocked");
     },
     {
       beforeTool: recordPendingChange,
@@ -356,14 +355,27 @@ test("a persisted successful validation is reused after reconnection", async () 
   let calls = 0;
   await withCompletion(async ({ memory, root }) => {
     await recordPendingChange(memory, root);
-    const sourceRevisionId = (await new WorkspaceFiles(root).snapshot())
-      .revision.source_revision_id;
+    const files = new WorkspaceFiles(root);
+    const snapshot = await files.snapshot();
+    const sourceRevisionId = snapshot.revision.source_revision_id;
+    const environmentRevisionId = (await environmentSpec(files, snapshot))
+      .environment_revision_id;
     await memory.recordValidation({
+      environmentRevisionId,
       id: "run://passed",
       sourceRevisionId,
       status: "passed",
       taskId: "test",
       taskKind: "test",
+      terminal: "passed",
+    });
+    await memory.recordValidation({
+      environmentRevisionId,
+      id: "run://typecheck-passed",
+      sourceRevisionId,
+      status: "passed",
+      taskId: "typecheck",
+      taskKind: "typecheck",
       terminal: "passed",
     });
     const reconnectedTool = createNativeCompletionTool({
@@ -412,7 +424,9 @@ async function withCompletion(
   try {
     await writeFile(
       join(root, "package.json"),
-      JSON.stringify({ scripts: { test: "node --test" } }),
+      JSON.stringify({
+        scripts: { test: "node --test", typecheck: "tsc --noEmit" },
+      }),
     );
     await mkdir(join(root, "src"));
     await writeFile(

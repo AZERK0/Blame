@@ -52,6 +52,7 @@ type PreparedRunRuntime = {
 };
 
 type RunExecution = {
+  repaired: boolean;
   run: StoredRun;
   reused: boolean;
 };
@@ -116,6 +117,12 @@ export class RunService {
             ? "source_or_environment_revision"
             : "none",
         },
+        environment_repair: {
+          attempted: execution.repaired,
+          status: execution.repaired
+            ? ("recovered" as const)
+            : ("not_needed" as const),
+        },
       };
     } catch (error) {
       await this.attempts.finish(
@@ -172,7 +179,7 @@ export class RunService {
         input.idempotency_key,
         inputDigest,
       );
-      if (existing) return { run: existing, reused: true };
+      if (existing) return { repaired: false, run: existing, reused: true };
     }
     let dependencyEnvironment = runtime.dependencyEnvironment;
     let environment = runtime.environment;
@@ -237,12 +244,13 @@ export class RunService {
           snapshot,
           signal,
         );
-        return this.runUnlocked(input, snapshot, signal, true, {
+        const repaired = await this.runUnlocked(input, snapshot, signal, true, {
           catalog,
           task,
           dependencyEnvironment: restored,
           environment: restored.spec,
         });
+        return { ...repaired, repaired: true };
       }
       if (task.kind === "dependencies" && result.status === "passed") {
         dependencyEnvironment = await this.environments.persist({
@@ -401,7 +409,7 @@ export class RunService {
           : {}),
         input_digest: inputDigest,
       });
-      return { run, reused: false };
+      return { repaired: repairAttempted, run, reused: false };
     } finally {
       await overlay.cleanup();
     }
@@ -649,6 +657,10 @@ export function publicRun(
       reused: boolean;
       required_state_change: string;
     };
+    environment_repair?: {
+      attempted: boolean;
+      status: "not_needed" | "recovered";
+    };
   },
 ) {
   return {
@@ -656,6 +668,9 @@ export function publicRun(
     ...(run.run_attempt_ref ? { run_attempt_ref: run.run_attempt_ref } : {}),
     ...(run.tool_call_id ? { tool_call_id: run.tool_call_id } : {}),
     ...(run.deduplication ? { deduplication: run.deduplication } : {}),
+    ...(run.environment_repair
+      ? { environment_repair: run.environment_repair }
+      : {}),
     source_revision: run.source_revision,
     environment_spec_revision_id: run.environment_spec_revision_id,
     runtime_instance_id: run.runtime_instance_id,

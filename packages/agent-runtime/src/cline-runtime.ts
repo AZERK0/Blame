@@ -1279,9 +1279,7 @@ export class BlameAgentRuntime {
     const lifecycle = this.runLifecycles.state(sessionId);
     if (
       lifecycle &&
-      ["cancelled", "failed", "max_iterations", "succeeded"].includes(
-        lifecycle.state,
-      )
+      ["cancelled", "failed", "succeeded"].includes(lifecycle.state)
     )
       return;
     if (humanInitiated)
@@ -1444,9 +1442,7 @@ export class BlameAgentRuntime {
       this.runLifecycles.begin(input.sessionId, input.executionId);
     if (
       lifecycle?.execution_id !== input.executionId ||
-      ["cancelled", "failed", "max_iterations", "succeeded"].includes(
-        lifecycle.state,
-      )
+      ["cancelled", "failed", "succeeded"].includes(lifecycle.state)
     )
       return true;
     if (lifecycle.state === "running")
@@ -1526,9 +1522,7 @@ export class BlameAgentRuntime {
         const lifecycle = this.runLifecycles.state(input.sessionId);
         if (
           lifecycle?.execution_id !== input.executionId ||
-          ["cancelled", "failed", "max_iterations", "succeeded"].includes(
-            lifecycle.state,
-          )
+          ["cancelled", "failed", "succeeded"].includes(lifecycle.state)
         )
           return;
         const result = await this.stopCoreSession(input, 750);
@@ -1599,15 +1593,12 @@ export class BlameAgentRuntime {
     const lifecycle = this.runLifecycles.state(input.sessionId);
     if (
       lifecycle?.execution_id !== input.executionId ||
-      ["cancelled", "failed", "max_iterations", "succeeded"].includes(
-        lifecycle.state,
-      )
+      ["cancelled", "failed", "succeeded"].includes(lifecycle.state)
     )
       return;
     await this.flushContinuityToolActivity(input.sessionId);
-    const completion = this.sessionSubmittedSummaries.get(
-      input.sessionId,
-    )?.completion;
+    const notification = this.sessionSubmittedSummaries.get(input.sessionId);
+    const completion = notification?.completion;
     const terminalState = completionAwareTerminalState(
       input.terminalState,
       completion,
@@ -1615,7 +1606,7 @@ export class BlameAgentRuntime {
     const event =
       terminalState === input.terminalState
         ? input.event
-        : completionFailureEvent(input.sessionId, completion);
+        : completionFailureEvent(input.sessionId, notification);
     if (event) await this.handleSessionEvent(input.sessionId, event);
     if (terminalState !== "succeeded")
       await this.recordInterruptedMemory(input.sessionId);
@@ -6348,15 +6339,16 @@ function terminalProductMessage(status: string) {
 
 function completionFailureEvent(
   sessionId: string,
-  completion: NativeCompletionNotification["completion"] | undefined,
+  notification: NativeCompletionNotification | undefined,
 ): AgentEvent {
   return {
     type: "error",
     sessionId,
     payload: {
-      completion,
+      completion: notification?.completion,
       message:
-        "Completion was rejected because delivery or required verification failed.",
+        notification?.summary ??
+        "Completion was blocked because required evidence was unavailable.",
       recoverable: false,
       terminalStatus: "failed",
     },
@@ -6424,7 +6416,7 @@ function terminalStateFromStatus(
 ): RunTerminalState {
   const normalized = status?.replaceAll("-", "_").toLowerCase();
   if (normalized === "max_iterations" || normalized === "mistake_limit")
-    return normalized;
+    return "failed";
   if (
     normalized === "aborted" ||
     normalized === "cancelled" ||

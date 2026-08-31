@@ -35,6 +35,7 @@ export const nativeCompletionToolName = "submit_and_exit";
 
 export type NativeCompletionNotification = {
   completion: CompletionDecision;
+  submission_outcome: "accepted" | "blocked";
   summary: string;
   verified: boolean;
 };
@@ -59,8 +60,12 @@ type ValidationOutcome =
   | {
       evidence: ExistingEvidence[];
       message: string;
-      status: "repairable" | "unavailable";
+      status: "blocked" | "repair_required";
     };
+
+export class CompletionRepairRequiredError extends Error {
+  readonly outcome = "repair_required" as const;
+}
 
 export class CompletionCoordinator {
   private readonly attemptedChecks = new Set<string>();
@@ -89,8 +94,13 @@ export class CompletionCoordinator {
       [],
       this.options.taskContract,
     );
+    if (failedValidationExists(state, plan))
+      throw new CompletionRepairRequiredError(
+        "Completion refused: required verification failed for this source and environment revision. Correct the code before submitting again.",
+      );
     const outcome = await this.validate(state, plan, context);
-    if (outcome.status === "repairable") throw new Error(outcome.message);
+    if (outcome.status === "repair_required")
+      throw new CompletionRepairRequiredError(outcome.message);
     const refreshedState = await this.memory.completionState();
     const completion = await completionDecision(
       this.options.workspaceRoot,
@@ -99,20 +109,30 @@ export class CompletionCoordinator {
       this.options.taskContract,
     );
     if (completion.delivery !== "satisfied")
-      throw new Error(
+      throw new CompletionRepairRequiredError(
         `Completion refused: delivery is ${completion.delivery}. Resolve the remaining edit groups before submitting.`,
       );
-    if (completionLifecycleTerminal(completion) === "failed")
-      throw new Error(
-        "Completion refused: required verification failed. Repair the failed obligations and produce evidence on a new source revision.",
+    if (completion.verification === "failed")
+      throw new CompletionRepairRequiredError(
+        "Completion refused: required verification failed for this source and environment revision. Correct the code before submitting again.",
       );
+    const submissionOutcome =
+      completionLifecycleTerminal(completion) === "succeeded"
+        ? "accepted"
+        : "blocked";
     const verified = ["not_applicable", "verified"].includes(
       completion.verification,
     );
-    const visibleSummary = completionSummary(summary, outcome);
+    const visibleSummary = completionSummary(
+      summary,
+      outcome,
+      completion,
+      submissionOutcome,
+    );
     await this.persistCompletion(visibleSummary, context);
     await this.options.onComplete?.({
       completion,
+      submission_outcome: submissionOutcome,
       summary: visibleSummary,
       verified,
     });
@@ -126,7 +146,7 @@ export class CompletionCoordinator {
   ): Promise<ValidationOutcome> {
     if (!plan.selected_checks.length) return { evidence: [], status: "passed" };
     if (this.options.automaticValidation === false)
-      return unavailable(
+      return blockedValidation(
         "automatic validation coordination is disabled",
         unavailableCheckEvidence(plan),
       );
@@ -135,16 +155,15 @@ export class CompletionCoordinator {
       plan,
     );
     const evidence: ExistingEvidence[] = [];
-    const unavailableMessages: string[] = [];
+    const blockedMessages: string[] = [];
     for (const validation of validations) {
       const outcome = await this.validateCheck(state, validation, context);
       evidence.push(...outcome.evidence);
-      if (outcome.status === "repairable") return { ...outcome, evidence };
-      if (outcome.status === "unavailable")
-        unavailableMessages.push(outcome.message);
+      if (outcome.status === "repair_required") return { ...outcome, evidence };
+      if (outcome.status === "blocked") blockedMessages.push(outcome.message);
     }
-    if (unavailableMessages.length)
-      return unavailable(unavailableMessages.join("; "), evidence);
+    if (blockedMessages.length)
+      return blockedValidation(blockedMessages.join("; "), evidence);
     return { evidence, status: "passed" };
   }
 
@@ -158,10 +177,7 @@ export class CompletionCoordinator {
       this.attemptedChecks.has(identity) ||
       validationAlreadyAttempted(state, validation)
     )
-      return unavailable(
-        "the planned validation was already attempted for this revision",
-        [persistedValidationEvidence(state, validation)],
-      );
+      return priorValidationOutcome(state, validation);
     this.attemptedChecks.add(identity);
     if (validation.taskId.startsWith("native:parse:"))
       return this.executeNativeValidation(validation);
@@ -184,7 +200,7 @@ export class CompletionCoordinator {
         phase: "finished",
       });
       if (result.status === "error")
-        return unavailable(result.error.message, [
+        return blockedValidation(result.error.message, [
           validationEvidence(validation, "unavailable"),
         ]);
       return validationOutcome(result.data, validation);
@@ -203,7 +219,7 @@ export class CompletionCoordinator {
         }),
         phase: "finished",
       });
-      return unavailable(
+      return blockedValidation(
         error instanceof Error ? error.message : String(error),
         [validationEvidence(validation, "unavailable")],
       );
@@ -236,6 +252,7 @@ export class CompletionCoordinator {
   ) {
     return this.memory.recordValidation({
       id: evidence.evidence_ref,
+      environmentRevisionId: validation.environmentRevisionId,
       sourceRevisionId: validation.sourceRevisionId,
       status,
       taskId: validation.taskId,
@@ -259,6 +276,7 @@ export class CompletionCoordinator {
         : (stringValue(data.status) ?? "unknown");
     return this.memory.recordValidation({
       id: stringValue(data.run_ref) ?? automaticValidationId(validation),
+      environmentRevisionId: validation.environmentRevisionId,
       sourceRevisionId: validation.sourceRevisionId,
       status,
       taskId: validation.taskId,
@@ -270,6 +288,7 @@ export class CompletionCoordinator {
   private recordUnavailableValidation(validation: ResolvedValidation) {
     return this.memory.recordValidation({
       id: automaticValidationId(validation),
+      environmentRevisionId: validation.environmentRevisionId,
       sourceRevisionId: validation.sourceRevisionId,
       status: "unavailable",
       taskId: validation.taskId,
@@ -319,7 +338,7 @@ function nativeValidationOutcome(
   return {
     evidence: [evidence],
     message: `Automatic parse validation failed: ${detail}`,
-    status: "repairable",
+    status: "repair_required",
   };
 }
 
@@ -433,11 +452,11 @@ function validationOutcome(
     };
   if (value.status === "failed")
     return {
-      status: "repairable",
+      status: "repair_required",
       message: compactValidationFailure(value),
       evidence: [validationEvidence(validation, "failed", value)],
     };
-  return unavailable(
+  return blockedValidation(
     stringValue(value.stderr_summary) ??
       `validation ended with status ${String(value.status ?? "unknown")}`,
     [validationEvidence(validation, "unavailable", value)],
@@ -468,7 +487,17 @@ function validationAlreadyAttempted(
   return state.validations.some(
     (receipt) =>
       receipt.sourceRevisionId === validation.sourceRevisionId &&
+      receipt.environmentRevisionId === validation.environmentRevisionId &&
       receipt.taskId === validation.taskId,
+  );
+}
+
+function failedValidationExists(state: CompletionState, plan: EvidencePlan) {
+  return state.validations.some(
+    (receipt) =>
+      receipt.terminal === "failed" &&
+      receipt.sourceRevisionId === plan.source_revision_id &&
+      receipt.environmentRevisionId === plan.environment_revision_id,
   );
 }
 
@@ -479,11 +508,30 @@ function persistedValidationEvidence(
   const receipt = state.validations.find(
     (candidate) =>
       candidate.sourceRevisionId === validation.sourceRevisionId &&
+      candidate.environmentRevisionId === validation.environmentRevisionId &&
       candidate.taskId === validation.taskId,
   );
   return validationEvidence(
     validation,
     validationEvidenceStatus(receipt?.terminal ?? "unknown"),
+  );
+}
+
+function priorValidationOutcome(
+  state: CompletionState,
+  validation: ResolvedValidation,
+): ValidationOutcome {
+  const evidence = persistedValidationEvidence(state, validation);
+  if (evidence.status === "failed")
+    return {
+      evidence: [evidence],
+      message:
+        "The planned validation already failed for this source and environment revision. Correct the code before submitting again.",
+      status: "repair_required",
+    };
+  return blockedValidation(
+    "the planned validation was already attempted without reusable evidence for this source and environment revision",
+    [evidence],
   );
 }
 
@@ -652,14 +700,16 @@ function completionEvidence(
   return [
     ...parseEvidence,
     ...state.validations.flatMap((receipt): ExistingEvidence[] =>
-      receipt.taskId && receipt.sourceRevisionId
+      receipt.taskId &&
+      receipt.sourceRevisionId &&
+      receipt.environmentRevisionId === environmentRevisionId
         ? [
             {
               evidence_ref: receipt.id,
               check_id: receipt.taskId,
               status: validationEvidenceStatus(receipt.terminal),
               source_revision_id: receipt.sourceRevisionId,
-              environment_revision_id: environmentRevisionId,
+              environment_revision_id: receipt.environmentRevisionId,
               paths: [],
               policy_version: evidencePlannerPolicyVersion,
             },
@@ -875,20 +925,29 @@ function unique<T>(values: T[]) {
   return [...new Set(values)];
 }
 
-function unavailable(
+function blockedValidation(
   message: string,
   evidence: ExistingEvidence[] = [],
 ): ValidationOutcome {
   return {
     evidence,
-    status: "unavailable",
+    status: "blocked",
     message: compactText(message),
   };
 }
 
-function completionSummary(summary: string, outcome: ValidationOutcome) {
-  if (outcome.status !== "unavailable") return summary;
-  return `${summary.trim()}\n\nValidation non confirmée : ${outcome.message}.`;
+function completionSummary(
+  summary: string,
+  outcome: ValidationOutcome,
+  completion: CompletionDecision,
+  submissionOutcome: NativeCompletionNotification["submission_outcome"],
+) {
+  if (submissionOutcome === "accepted") return summary;
+  const detail =
+    outcome.status === "blocked"
+      ? outcome.message
+      : completion.reservations.map(({ message }) => message).join("; ");
+  return `${summary.trim()}\n\nSoumission bloquée par le runtime : ${detail || "les preuves requises ne sont pas disponibles"}.`;
 }
 
 function compactText(value: string) {

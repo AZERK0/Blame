@@ -75,9 +75,12 @@ export function deriveCompletionDecision(
 }
 
 export function completionLifecycleTerminal(decision: CompletionDecision) {
-  if (decision.delivery === "unsatisfied" || decision.verification === "failed")
-    return "failed" as const;
-  return "succeeded" as const;
+  const acceptedVerification = ["verified", "not_applicable"].includes(
+    decision.verification,
+  );
+  return decision.delivery === "satisfied" && acceptedVerification
+    ? ("succeeded" as const)
+    : ("failed" as const);
 }
 
 function deliveryStatus(input: CompletionInput): DeliveryStatus {

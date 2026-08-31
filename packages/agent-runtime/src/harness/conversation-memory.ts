@@ -51,6 +51,7 @@ export type ValidationSummary = {
   status: "failed" | "passed" | "pending" | "unknown";
   checks: Array<{
     command?: string;
+    environmentRevisionId?: string;
     id: string;
     sourceRevisionId?: string;
     status: string;
@@ -421,6 +422,7 @@ export class ConversationMemoryStore {
 
   async recordValidation(input: {
     command?: string;
+    environmentRevisionId?: string;
     id: string;
     sourceRevisionId?: string;
     status: string;
@@ -437,6 +439,9 @@ export class ConversationMemoryStore {
           status: input.status,
           updatedAt,
           ...(input.command ? { command: input.command } : {}),
+          ...(input.environmentRevisionId
+            ? { environmentRevisionId: input.environmentRevisionId }
+            : {}),
           ...(input.sourceRevisionId
             ? { sourceRevisionId: input.sourceRevisionId }
             : {}),

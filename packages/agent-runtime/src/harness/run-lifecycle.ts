@@ -7,10 +7,7 @@ import {
   type ExecutionTerminalState,
 } from "@blame/harness-core";
 
-export type RunTerminalState =
-  | ExecutionTerminalState
-  | "max_iterations"
-  | "mistake_limit";
+export type RunTerminalState = ExecutionTerminalState;
 export type RunLifecycleState = ExecutionLifecycleState;
 
 export function completionAwareTerminalState(
@@ -78,11 +75,7 @@ export class RunLifecycleRegistry {
   ) {
     const run = this.current(sessionId, executionId);
     if (!run) return false;
-    const terminal: ExecutionTerminalState =
-      state === "max_iterations" || state === "mistake_limit"
-        ? "failed"
-        : state;
-    return run.lifecycle.finish(terminal, reason, completion);
+    return run.lifecycle.finish(state, reason, completion);
   }
 
   accepts(sessionId: string, executionId: string, tokens = 0) {
@@ -117,8 +110,6 @@ export class RunLifecycleRegistry {
 }
 
 function terminalReason(state: RunTerminalState): ExecutionTerminalReason {
-  if (state === "max_iterations") return "max_iterations";
-  if (state === "mistake_limit") return "mistake_limit";
   if (state === "cancelled") return "user";
   if (state === "failed") return "code_failure";
   return "completed";

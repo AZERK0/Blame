@@ -25,6 +25,12 @@ export {
   currentWorkspaceRevisionState,
   type WorkspaceRevisionState,
 } from "./harness/workspace-revisions.js";
+export {
+  harnessBenchmarkMetrics,
+  type HarnessModelIteration,
+  type HarnessSubmissionObservation,
+} from "./harness/harness-benchmark-metrics.js";
+export type { HarnessToolObservation } from "./harness/tool-observability.js";
 export { taskComplexityBucket } from "./telemetry-cohorts.js";
 export type { TaskComplexityBucket } from "./telemetry-cohorts.js";
 export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";

@@ -303,11 +303,17 @@ test("canonical bridge results retain the requested output bound", async () => {
   assert.ok(Buffer.byteLength(JSON.stringify(result), "utf8") <= 800);
 });
 
-test("legacy max iteration reason is terminal failure, not a lifecycle state", () => {
+test("external runtime limits normalize to the single failed lifecycle state", () => {
   const lifecycles = new RunLifecycleRegistry();
   lifecycles.begin("session", "execution");
   assert.equal(
-    lifecycles.finish("session", "execution", "max_iterations"),
+    lifecycles.finish(
+      "session",
+      "execution",
+      "failed",
+      undefined,
+      "max_iterations",
+    ),
     true,
   );
   const state = lifecycles.state("session");
@@ -315,7 +321,13 @@ test("legacy max iteration reason is terminal failure, not a lifecycle state", (
   assert.equal(state?.terminal_reason, "max_iterations");
   lifecycles.begin("mistake-session", "mistake-execution");
   assert.equal(
-    lifecycles.finish("mistake-session", "mistake-execution", "mistake_limit"),
+    lifecycles.finish(
+      "mistake-session",
+      "mistake-execution",
+      "failed",
+      undefined,
+      "mistake_limit",
+    ),
     true,
   );
   assert.equal(

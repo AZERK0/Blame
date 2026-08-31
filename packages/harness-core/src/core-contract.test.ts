@@ -258,6 +258,7 @@ test("completion remains separate from lifecycle terminal state", () => {
   });
   assert.equal(decision.delivery, "satisfied");
   assert.notEqual(decision.verification, "verified");
+  assert.equal(completionLifecycleTerminal(decision), "failed");
   const failed = {
     ...decision,
     failed_obligations: ["test"],

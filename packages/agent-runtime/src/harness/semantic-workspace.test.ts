@@ -40,6 +40,8 @@ import {
   harnessV2ReplayPasses,
   type HarnessReplayEvent,
 } from "./harness-v2-benchmark.js";
+import { harnessBenchmarkMetrics } from "./harness-benchmark-metrics.js";
+import type { HarnessToolObservation } from "./tool-observability.js";
 import {
   portfolioV4ObservedTraceSummary,
   replayHarnessTraceJsonl,
@@ -53,6 +55,38 @@ import type {
 } from "./task-executor.js";
 
 const execFileAsync = promisify(execFile);
+
+test("benchmark metrics measure efficiency without enforcing runtime cutoffs", () => {
+  const tools = [
+    benchmarkObservation("inspect_code", 0),
+    benchmarkObservation("inspect_code", 20, { cacheHit: true }),
+    benchmarkObservation("edit_code", 50, { effect: "changed" }),
+    benchmarkObservation("run_task", 100, {
+      cacheHit: true,
+      environmentRepair: true,
+    }),
+    benchmarkObservation("review_change", 120, {
+      cause: "invalid_input",
+      errorSignature: "error://invalid",
+    }),
+  ];
+  const metrics = harnessBenchmarkMetrics({
+    tools,
+    model_iterations: [
+      { context_tokens: 12_000, duration_ms: 400, iteration: 1 },
+      { context_tokens: 8_000, duration_ms: 300, iteration: 2 },
+    ],
+    submissions: [{ outcome: "blocked" }, { outcome: "accepted" }],
+  });
+  assert.equal(metrics.time_before_first_mutation_ms, 50);
+  assert.equal(metrics.repeated_read_rate, 1 / 3);
+  assert.equal(metrics.tool_rejection_rate, 0.2);
+  assert.equal(metrics.identical_validations_avoided, 1);
+  assert.equal(metrics.environment_repairs, 1);
+  assert.equal(metrics.classified_failure_rate, 1);
+  assert.equal(metrics.valid_submission_rate, 0.5);
+  assert.equal(metrics.maximum_context_tokens, 12_000);
+});
 
 test("packaged native resources resolve outside Electron ASAR archives", () => {
   assert.equal(
@@ -584,6 +618,37 @@ test("tool schemas reject contradictory and unknown input before execution", asy
       false,
     );
     assert.match(JSON.stringify(invalid), /unrecognized|raw view/i);
+  });
+});
+
+test("every harness tool call records revision-bound observability", async () => {
+  await withWorkspace(async (root) => {
+    const inspect = semanticWorkspaceTools(root, {
+      protocolVersion: "3",
+    }).find((tool) => tool.name === "inspect_code");
+    assert.ok(inspect);
+    await inspect.execute(
+      {
+        target: { path: "src/service.ts" },
+        view: "unsupported-view",
+      },
+      { agentId: "test", iteration: 1, runId: "observability-run" },
+    );
+    const log = await readFile(
+      join(root, ".blame", "harness", "observability", "tool-calls.jsonl"),
+      "utf8",
+    );
+    const observation = JSON.parse(log.trim()) as Record<string, unknown>;
+    assert.equal(observation.tool, "inspect_code");
+    assert.equal(observation.target, "src/service.ts");
+    assert.equal(observation.result_cause, "invalid_input");
+    assert.match(String(observation.source_revision_id), /^src_/u);
+    assert.match(String(observation.environment_revision_id), /^env_/u);
+    assert.match(
+      String(observation.normalized_input_digest),
+      /^[a-f0-9]{64}$/u,
+    );
+    assert.equal(typeof observation.duration, "number");
   });
 });
 
@@ -2902,6 +2967,40 @@ async function withWorkspace(operation: (root: string) => Promise<void>) {
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+}
+
+function benchmarkObservation(
+  tool: string,
+  offsetMs: number,
+  options: {
+    cacheHit?: boolean;
+    cause?: HarnessToolObservation["result_cause"];
+    effect?: HarnessToolObservation["effect"];
+    environmentRepair?: boolean;
+    errorSignature?: string;
+  } = {},
+): HarnessToolObservation {
+  return {
+    cache_usage: {
+      hit: options.cacheHit ?? false,
+      kind: options.cacheHit ? "receipt" : "none",
+    },
+    duration: 10,
+    effect: options.effect ?? "observed",
+    environment_revision_id: "env_current",
+    environment_repair: options.environmentRepair ?? false,
+    error_signature: options.errorSignature ?? null,
+    evidence_produced: [],
+    input_tokens: 10,
+    normalized_input_digest:
+      tool === "inspect_code" ? "same-read" : `${tool}-input`,
+    output_tokens: 20,
+    result_cause: options.cause ?? "none",
+    source_revision_id: "src_current",
+    started_at: new Date(offsetMs).toISOString(),
+    target: "src/service.ts",
+    tool,
+  };
 }
 
 function git(cwd: string, args: string[]) {

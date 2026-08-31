@@ -1155,6 +1155,7 @@ export class SemanticWorkspace {
       }
       await this.memory.recordValidation({
         command: run.task.command,
+        environmentRevisionId: run.environment_spec_revision_id,
         id: run.run_ref,
         sourceRevisionId: run.source_revision.source_revision_id,
         status: run.status,
