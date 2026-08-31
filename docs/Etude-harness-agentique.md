@@ -2332,6 +2332,18 @@ Une mutation de dépendances déclenche maintenant le rafraîchissement de la pr
 
 La suite runtime validée après suppression des chemins legacy compte 361 scénarios : 359 réussissent, aucun n'échoue et deux scénarios provider live sont ignorés faute de credentials. Les limitations restantes sont la matrice physique multi-OS, le benchmark provider comparable à US-024 et la conservation de la lecture des artefacts v2 historiques. Aucun embedding n'est implémenté ; une évolution éventuelle restera exclusivement backend via OpenRouter.
 
+### 21.28 Durcissement post-audit de la stabilisation
+
+Le typecheck global du monorepo est de nouveau strictement vert. Les imports, paramètres et stubs inutilisés qui restaient masqués par la configuration locale d'`agent-runtime` ont été supprimés. La validation finale exécute les 12 tâches du workspace sans erreur, en plus des builds internes aux suites.
+
+La réparation d'environnement traite maintenant le cas réel observé avec Node et Next : un processus peut sortir avec le code 1 tout en signalant `MODULE_NOT_FOUND`. Avant de conclure à une erreur applicative, le runtime extrait le module exact, vérifie que son package racine est déclaré, puis le sonde dans l'environnement persistant courant. Une résolution absente ou corrompue déclenche une unique transaction interne de réparation et une relance. Le test de régression utilise réellement `exit 1 + MODULE_NOT_FOUND + dépendance déclarée` et vérifie exactement trois exécutions internes : tâche, réparation, tâche relancée. Un import vers une dépendance non déclarée reste une erreur du code et ne déclenche aucune réparation.
+
+`WorkspaceStateAuthority` est désormais utilisée dans le chemin de production par `workspace_state`, `run_task`, la complétion et le contrôleur de retry. L'autorité privilégie l'environnement persistant qui a réellement été préparé et sondé. La complétion ne crée plus une identité générique avec un gestionnaire inconnu, et le retry ne dérive plus une troisième identité du `runId`, des chemins ou des mtimes. Les preuves, la déduplication et la décision terminale consomment ainsi la même paire courante.
+
+La matérialisation persistante de `node_modules` tente un reflink copy-on-write récursif et s'appuie sur le fallback de copie du runtime lorsque le filesystem ne le supporte pas. Son manifeste mesure la stratégie, la durée et le nombre de répertoires. Une seconde préparation de la même révision réutilise l'environnement existant sans recopier l'arbre. Cette instrumentation permet de mesurer le coût sur les gros monorepos sans transformer une métrique en politique de l'agent.
+
+La campagne complète post-audit passe : Harness Core 13/13, runtime 359 réussis sur 361 avec les deux scénarios provider live ignorés, Desktop 338/338, Desktop performance 47/47 et typecheck global 12/12. Les limites de release restent inchangées : matrice physique Lima, WSL et Cloud Preview, puis run provider comparable à US-024 sur trois répétitions. Ces validations externes ne sont pas assimilées aux replays locaux.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)

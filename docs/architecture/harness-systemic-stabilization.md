@@ -10,7 +10,7 @@ Le harness possède cinq autorités. Les caches, capsules, reçus, epochs et mé
 
 | Autorité           | Implémentation principale                                                                            | Responsabilité                                                                 |
 | ------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| State Authority    | `WorkspaceFiles`, `environmentSpec`, `DependencyEnvironmentService`, `currentWorkspaceRevisionState` | Révision source, révision d'environnement, dépendances, preview et working set |
+| State Authority    | `WorkspaceStateAuthority`, `WorkspaceFiles` et `DependencyEnvironmentService`                        | Révision source, révision d'environnement, dépendances, preview et working set |
 | Lifecycle Machine  | `RunLifecycleRegistry` et lifecycle de `@blame/harness-core`                                         | Une transition par événement, interruption déterministe et terminal unique     |
 | Result Envelope    | `HarnessResult` v3 et `CanonicalResultMapper`                                                        | Transport, résultat métier, cause, révisions, preuves et politique de retry    |
 | Evidence System    | `EvidencePlanner`, reçus de validation et preuve preview                                             | Plan minimal depuis l'impact et validité sur une paire exacte de révisions     |
@@ -28,7 +28,7 @@ source_revision_id + environment_revision_id
 
 La révision source est dérivée du contenu pertinent du worktree. La révision d'environnement est dérivée des manifests et lockfiles, du gestionnaire et de sa version résolue, du profil et de la cible runtime, de la plateforme, de l'architecture et des entrées de build nécessaires. Une mutation de dépendances crée une nouvelle révision d'environnement et rend immédiatement caduques les validations, caches et preuves preview associés à l'ancienne paire.
 
-`WorkspaceRevisionState` expose en une lecture la paire courante et `dependencies_ready`. Le cache de dépendances persistant exige un manifeste contenant le digest, le gestionnaire, sa version, la plateforme, l'architecture, la cible runtime, la date et la sonde d'intégrité. Un répertoire vide n'est jamais un hit. Chaque hit refait une sonde légère.
+`WorkspaceStateAuthority` est l'autorité utilisée par `workspace_state`, `run_task`, la complétion et le contrôleur de retry. Elle expose en une lecture la paire courante et `dependencies_ready`, en privilégiant l'environnement persistant effectivement préparé et sondé. La complétion ne recalcule plus une spécification générique et le retry ne fabrique plus d'identité depuis le `runId`, les chemins ou les mtimes. Le cache de dépendances persistant exige un manifeste contenant le digest, le gestionnaire, sa version, la plateforme, l'architecture, la cible runtime, la date et la sonde d'intégrité. Un répertoire vide n'est jamais un hit. Chaque hit refait une sonde légère.
 
 ## Dépendances et réparation
 
@@ -36,7 +36,9 @@ Une tâche `dependencies` ne passe que si la sonde exécutée depuis le cwd futu
 
 L'environnement persiste pendant la story. Linux utilise le worktree et son overlay natifs. macOS utilise l'overlay dans Lima. Windows utilise l'overlay dans WSL. Cloud Preview synchronise la nouvelle source de dépendances vers la microVM, arrête les services actifs, applique l'état courant, recrée les dépendances lors du démarrage puis redémarre uniquement la sélection active.
 
-Une panne d'environnement réparable déclenche une seule réparation interne : invalidation, recréation, installation ou restauration, sonde puis relance de la validation initiale. L'agent ne reçoit la main que si une correction du code reste nécessaire. Une panne non réparable reste une cause runtime et ne peut ni valider le code ni placer la story en review.
+Une panne d'environnement réparable déclenche une seule réparation interne : invalidation, recréation, installation ou restauration, sonde puis relance de la validation initiale. La classification examine aussi un processus sorti avec le code 1 : un `MODULE_NOT_FOUND` n'est réparable que si le package racine est déclaré et si la sonde de ce module exact échoue dans l'environnement courant. Après réparation et sonde saine, un éventuel nouvel échec redevient applicatif. Un module non déclaré reste immédiatement une erreur du code. L'agent ne reçoit la main que si une correction du code reste nécessaire. Une panne non réparable reste une cause runtime et ne peut ni valider le code ni placer la story en review.
+
+La persistance de `node_modules` utilise récursivement un reflink copy-on-write lorsqu'il est supporté par le filesystem, avec copie contrôlée comme fallback natif. Le manifeste enregistre la stratégie, la durée de matérialisation et le nombre de répertoires afin de mesurer ce chemin. Une révision déjà persistée réutilise le même volume sans nouvelle matérialisation.
 
 Après `mutate_dependencies`, le pont runtime rafraîchit automatiquement toute preview active avant de rendre le contrôle. Le runtime local redémarre la sélection pour remonter les volumes de la nouvelle révision ; Cloud Preview vide la file de synchronisation, reconstruit l'environnement distant et attend le nouvel état. Le reçu `preview_refresh` vaut `ready`, `not_running` ou `failed`. Un échec est une panne d'infrastructure avec effet partiel, puisque la mutation source reste commitée.
 
@@ -114,6 +116,8 @@ Le replay déterministe comparable à Portfolio V4 conserve la baseline historiq
 | Validation identique          | nouveau processus |   reçu réutilisé | 0 nouveau processus |
 
 Ce tableau mesure le replay contractuel versionné, pas un nouveau run provider live. Les traces US-022 et US-023 restent les dernières baselines live avant cette stabilisation. Une comparaison live post-déploiement, sur la même story, le même modèle, le même effort et trois répétitions, reste nécessaire pour publier un gain de production.
+
+La campagne de non-régression post-audit exécute 13/13 contrats Harness Core, 359/359 tests runtime hors deux scénarios provider live ignorés, 338/338 tests Desktop et 47/47 tests Desktop performance. Le typecheck global passe pour les 12 tâches du workspace. Le scénario de réparation utilise un vrai `exit 1` avec `MODULE_NOT_FOUND` sur une dépendance déclarée et vérifie une seule séquence exécution, réparation, relance.
 
 ## Limites restantes
 
