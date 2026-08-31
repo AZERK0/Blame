@@ -10,7 +10,10 @@ import {
   type DependencyEnvironment,
 } from "./dependency-environment.js";
 import { stableJson } from "./change-store.js";
-import { environmentSpec } from "./environment-service.js";
+import {
+  environmentSpec,
+  type EnvironmentSpec,
+} from "./environment-service.js";
 import { sha256 } from "./protocol.js";
 import { RunStore } from "./run-store.js";
 import {
@@ -40,6 +43,18 @@ import {
 } from "./task-executor.js";
 import { WorkspaceFiles, type WorkspaceSnapshot } from "./workspace-files.js";
 import { WorkspaceOverlay } from "./workspace-overlay.js";
+
+type PreparedRunRuntime = {
+  catalog: TaskCatalogItem[];
+  task: TaskCatalogItem;
+  dependencyEnvironment?: DependencyEnvironment;
+  environment: EnvironmentSpec;
+};
+
+type RunExecution = {
+  run: StoredRun;
+  reused: boolean;
+};
 
 export class RunService {
   private readonly artifacts: ArtifactStore;
@@ -72,17 +87,35 @@ export class RunService {
     context: { sessionId?: string; toolCallId?: string } = {},
   ) {
     runTaskInputSchema.parse(input);
-    const prepared = await this.startRunAttempt(input, snapshot, context);
+    const prepared = await this.startRunAttempt(
+      input,
+      snapshot,
+      signal,
+      context,
+    );
     try {
-      const run = await this.store.exclusiveIdempotency<StoredRun>(
+      const execution = await this.store.exclusiveIdempotency<RunExecution>(
         prepared.idempotencyKey,
-        () => this.runUnlocked(prepared.effectiveInput, snapshot, signal),
+        () =>
+          this.runUnlocked(
+            prepared.effectiveInput,
+            snapshot,
+            signal,
+            false,
+            prepared.runtime,
+          ),
       );
-      await this.finishRunAttempt(prepared.attempt, run);
+      await this.finishRunAttempt(prepared.attempt, execution.run);
       return {
-        ...run,
+        ...execution.run,
         run_attempt_ref: prepared.attempt.run_attempt_ref,
         tool_call_id: prepared.toolCallId,
+        deduplication: {
+          reused: execution.reused,
+          required_state_change: execution.reused
+            ? "source_or_environment_revision"
+            : "none",
+        },
       };
     } catch (error) {
       await this.attempts.finish(
@@ -97,11 +130,13 @@ export class RunService {
   private async startRunAttempt(
     input: RunTaskInput,
     snapshot: WorkspaceSnapshot,
+    signal: AbortSignal | undefined,
     context: { sessionId?: string; toolCallId?: string },
   ) {
-    const inputDigest = sha256(stableJson(input));
+    const runtime = await this.prepareRuntime(input, snapshot, signal);
+    const inputDigest = deterministicRunDigest(input, snapshot, runtime);
     const toolCallId = context.toolCallId ?? `direct-${inputDigest}`;
-    const identity = `${context.sessionId ?? "unscoped-session"}\0${toolCallId}\0${inputDigest}`;
+    const identity = `run-task\0${inputDigest}`;
     const idempotencyKey =
       input.idempotency_key ?? `run-task:${sha256(identity)}`;
     const effectiveInput = { ...input, idempotency_key: idempotencyKey };
@@ -112,7 +147,7 @@ export class RunService {
       task: input.task,
       toolCallId,
     });
-    return { attempt, effectiveInput, idempotencyKey, toolCallId };
+    return { attempt, effectiveInput, idempotencyKey, runtime, toolCallId };
   }
 
   private finishRunAttempt(attempt: RunAttempt, run: StoredRun) {
@@ -126,35 +161,21 @@ export class RunService {
     snapshot: WorkspaceSnapshot,
     signal?: AbortSignal,
     repairAttempted = false,
-    restoredEnvironment?: DependencyEnvironment,
-  ): Promise<StoredRun> {
-    const catalog = await readTaskCatalog(this.files.root, snapshot.files);
-    const task = resolveTask(catalog, input.task);
-    assertSupportedExecution(input);
-    if (task.kind === "service")
-      throw new Error(
-        "UNSUPPORTED_CAPABILITY:Long-running services use Blame Preview lifecycle and port leases, not run_task.",
-      );
+    preparedRuntime?: PreparedRunRuntime,
+  ): Promise<RunExecution> {
+    const runtime =
+      preparedRuntime ?? (await this.prepareRuntime(input, snapshot, signal));
+    const { catalog, task } = runtime;
     const inputDigest = sha256(stableJson(input));
     if (input.idempotency_key) {
       const existing = await this.store.readByIdempotency(
         input.idempotency_key,
         inputDigest,
       );
-      if (existing) return existing;
+      if (existing) return { run: existing, reused: true };
     }
-    let dependencyEnvironment =
-      restoredEnvironment ??
-      (task.kind === "dependencies"
-        ? undefined
-        : await this.ensureDependencyEnvironment(catalog, snapshot, signal));
-    let environment =
-      dependencyEnvironment?.spec ??
-      (await environmentSpec(this.files, snapshot, {
-        packageManager: task.package_manager,
-        resolvedPackageManagerVersion:
-          task.package_manager_version ?? "unversioned",
-      }));
+    let dependencyEnvironment = runtime.dependencyEnvironment;
+    let environment = runtime.environment;
     const isolation = await this.executor.capability();
     const runtimeInstanceId = `runtime_${sha256(randomBytes(32)).slice(0, 32)}`;
     const startedAt = new Date();
@@ -216,7 +237,12 @@ export class RunService {
           snapshot,
           signal,
         );
-        return this.runUnlocked(input, snapshot, signal, true, restored);
+        return this.runUnlocked(input, snapshot, signal, true, {
+          catalog,
+          task,
+          dependencyEnvironment: restored,
+          environment: restored.spec,
+        });
       }
       if (task.kind === "dependencies" && result.status === "passed") {
         dependencyEnvironment = await this.environments.persist({
@@ -283,7 +309,7 @@ export class RunService {
       const normalized = stripAnsi(`${redactedStderr}\n${redactedStdout}`);
       const runStatus = normalizedRunStatus(result.status, normalized);
       const completedAt = new Date();
-      return this.store.write({
+      const run = await this.store.write({
         schema_version: "1.0",
         source_revision: snapshot.revision,
         environment_spec_revision_id: environment.environment_spec_revision_id,
@@ -375,6 +401,7 @@ export class RunService {
           : {}),
         input_digest: inputDigest,
       });
+      return { run, reused: false };
     } finally {
       await overlay.cleanup();
     }
@@ -402,6 +429,29 @@ export class RunService {
       return "project_allowlist" as const;
     if (declared?.network === "cache_only") return "deny" as const;
     return automaticDependencyNetworkPolicy();
+  }
+
+  private async prepareRuntime(
+    input: RunTaskInput,
+    snapshot: WorkspaceSnapshot,
+    signal?: AbortSignal,
+  ): Promise<PreparedRunRuntime> {
+    const catalog = await readTaskCatalog(this.files.root, snapshot.files);
+    const task = resolveTask(catalog, input.task);
+    assertSupportedTask(input, task);
+    const dependencyEnvironment =
+      task.kind === "dependencies"
+        ? undefined
+        : await this.ensureDependencyEnvironment(catalog, snapshot, signal);
+    const environment =
+      dependencyEnvironment?.spec ??
+      (await environmentSpec(this.files, snapshot, {
+        executionProfile: input.environment_profile,
+        packageManager: task.package_manager,
+        resolvedPackageManagerVersion:
+          task.package_manager_version ?? "unversioned",
+      }));
+    return { catalog, task, dependencyEnvironment, environment };
   }
 
   private async ensureDependencyEnvironment(
@@ -592,12 +642,20 @@ export class RunService {
 }
 
 export function publicRun(
-  run: StoredRun & { run_attempt_ref?: string; tool_call_id?: string },
+  run: StoredRun & {
+    run_attempt_ref?: string;
+    tool_call_id?: string;
+    deduplication?: {
+      reused: boolean;
+      required_state_change: string;
+    };
+  },
 ) {
   return {
     run_ref: run.run_ref,
     ...(run.run_attempt_ref ? { run_attempt_ref: run.run_attempt_ref } : {}),
     ...(run.tool_call_id ? { tool_call_id: run.tool_call_id } : {}),
+    ...(run.deduplication ? { deduplication: run.deduplication } : {}),
     source_revision: run.source_revision,
     environment_spec_revision_id: run.environment_spec_revision_id,
     runtime_instance_id: run.runtime_instance_id,
@@ -688,11 +746,34 @@ function inspectRunView(run: StoredRun, view: InspectRunInput["view"]) {
   };
 }
 
-function assertSupportedExecution(input: RunTaskInput) {
+function assertSupportedTask(input: RunTaskInput, task: TaskCatalogItem) {
+  if (task.kind === "service")
+    throw new Error(
+      "UNSUPPORTED_CAPABILITY:Long-running services use Blame Preview lifecycle and port leases, not run_task.",
+    );
   if (input.selection?.symbols?.length)
     throw new Error(
       "UNSUPPORTED_CAPABILITY:Symbol-level test selection requires the P1 compiler/LSP adapter. Select tests or files instead.",
     );
+}
+
+function deterministicRunDigest(
+  input: RunTaskInput,
+  snapshot: WorkspaceSnapshot,
+  runtime: PreparedRunRuntime,
+) {
+  return sha256(
+    stableJson({
+      task: runtime.task,
+      source_revision_id: snapshot.revision.source_revision_id,
+      environment_revision_id: runtime.environment.environment_revision_id,
+      selection: input.selection ?? null,
+      relevant_configuration: {
+        environment_profile: input.environment_profile ?? "default",
+        limits: input.limits,
+      },
+    }),
+  );
 }
 
 function ignoredLimits(input: RunTaskInput) {

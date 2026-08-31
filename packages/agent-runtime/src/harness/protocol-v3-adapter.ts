@@ -192,7 +192,7 @@ function canonicalProvenance<T>(
     environment_revision_id:
       revision?.environment_spec_revision_id ??
       context.environmentRevisionId ??
-      `env_${digest(context.environmentFingerprint ?? "unavailable")}`,
+      `env_${digest(context.environmentFingerprint ?? "unavailable").slice(0, 32)}`,
     execution_id: context.executionId,
     ...(context.toolCallId ? { tool_call_id: context.toolCallId } : {}),
     produced_at: new Date().toISOString(),
@@ -396,7 +396,7 @@ function observationKind(tool: string) {
 function projectionReason<T>(result: HarnessResult<T, unknown>) {
   if (result.outcome === "blocked") return result.issue.code;
   if (result.outcome === "cancelled")
-    return `CANCELLED_${result.cause.toUpperCase()}`;
+    return `CANCELLED_${result.cancellation_reason.toUpperCase()}`;
   return result.effect === "changed" ? "APPLIED" : "COMPLETED";
 }
 

@@ -402,13 +402,21 @@ export const jsonOperationSchema = z.discriminatedUnion("type", [
     .strict(),
 ]);
 
-export const editCodeOperationSchema = z.discriminatedUnion("operation", [
+export const editCodeOperationSchema = z.union([
   z
     .object({
       operation: z.enum(["replace", "replace_symbol"]),
       target: semanticEditTargetSchema,
       path: relativePathSchema.optional(),
       content: z.string(),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("replace_symbol"),
+      path: relativePathSchema,
+      symbol: z.string().min(1).max(1_000),
+      replacement: z.string(),
     })
     .strict(),
   z
@@ -429,6 +437,38 @@ export const editCodeOperationSchema = z.discriminatedUnion("operation", [
     .object({
       operation: z.enum(["delete", "delete_symbol"]),
       target: semanticEditTargetSchema,
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("delete_symbol"),
+      path: relativePathSchema,
+      symbol: z.string().min(1).max(1_000),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("insert_symbol"),
+      path: relativePathSchema,
+      symbol: z.string().min(1).max(1_000),
+      position: z.enum(["before", "after"]).default("after").optional(),
+      content: z.string(),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("ensure_import"),
+      path: relativePathSchema,
+      from: z.string().min(1).max(2_000),
+      names: z.array(z.string().min(1).max(500)).min(1).max(100),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("remove_import"),
+      path: relativePathSchema,
+      from: z.string().min(1).max(2_000),
+      names: z.array(z.string().min(1).max(500)).max(100).default([]),
     })
     .strict(),
   z
@@ -519,17 +559,29 @@ export const editCodeOperationSchema = z.discriminatedUnion("operation", [
     .strict(),
 ]);
 
+const editCodeOperationsSchema = z
+  .array(editCodeOperationSchema)
+  .min(1)
+  .max(50);
+
 export const editCodeInputSchema = z
   .object({
     atomicity: z.enum(["all", "independent_groups"]).default("all").optional(),
-    edits: z.array(editCodeOperationSchema).min(1).max(50),
+    edits: editCodeOperationsSchema.optional(),
+    operations: editCodeOperationsSchema.optional(),
     formatting: z.enum(["none", "touched_files"]).default("none").optional(),
     validation: z
       .object({ parse: z.boolean().default(true).optional() })
       .strict()
       .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine(validateEditCodeBatch);
+
+export function normalizeEditCodeInput(input: EditCodeInput) {
+  const { operations, edits, ...options } = input;
+  return { ...options, edits: edits ?? operations! };
+}
 
 export const editSymbolInputSchema = z
   .object({
@@ -561,7 +613,10 @@ export const editFilesInputSchema = z
     atomicity: z.enum(["all", "independent_groups"]).default("all").optional(),
     operations: z.array(editCodeOperationSchema).min(1).max(50),
   })
-  .strict();
+  .strict()
+  .superRefine((input, context) =>
+    validateEditOperations(input.operations, context),
+  );
 
 export const createFileInputSchema = z
   .object({ path: relativePathSchema, content: z.string() })
@@ -576,6 +631,44 @@ export const deleteFileInputSchema = z
 export const moveFileInputSchema = z
   .object({ fromPath: relativePathSchema, toPath: relativePathSchema })
   .strict();
+
+function validateEditCodeBatch(
+  input: {
+    edits?: z.infer<typeof editCodeOperationSchema>[];
+    operations?: z.infer<typeof editCodeOperationSchema>[];
+  },
+  context: z.RefinementCtx,
+) {
+  if (Boolean(input.edits) === Boolean(input.operations)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Provide exactly one of edits or operations.",
+    });
+    return;
+  }
+  validateEditOperations(input.edits ?? input.operations ?? [], context);
+}
+
+function validateEditOperations(
+  operations: z.infer<typeof editCodeOperationSchema>[],
+  context: z.RefinementCtx,
+) {
+  operations.forEach((operation, index) => {
+    const message = invalidCompositeOperation(operation);
+    if (!message) return;
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message,
+      path: [index],
+    });
+  });
+}
+
+function invalidCompositeOperation(
+  operation: z.infer<typeof editCodeOperationSchema>,
+) {
+  return undefined;
+}
 
 export const recallContextInputSchema = z
   .object({
@@ -594,7 +687,15 @@ export const recallContextInputSchema = z
 
 export const reviewChangeInputSchema = z
   .object({
-    proposal_ref: z.string().regex(/^change-proposal:\/\/[a-f0-9]{64}$/),
+    proposal_ref: z
+      .union([
+        z
+          .string()
+          .regex(/^change-proposal:\/\/[a-f0-9]{64}$/)
+          .refine((value) => !value.endsWith("0".repeat(64))),
+        z.enum(["proposal:current", "revision:current", "changeset:latest"]),
+      ])
+      .optional(),
     include: z
       .array(z.enum(["impact", "semantic_diff"]))
       .max(2)
@@ -971,6 +1072,7 @@ export type CommitProposalInput = z.infer<typeof commitProposalInputSchema>;
 export type ApplyChangeInput = z.infer<typeof applyChangeInputSchema>;
 export type EditCodeOperation = z.infer<typeof editCodeOperationSchema>;
 export type EditCodeInput = z.infer<typeof editCodeInputSchema>;
+export type NormalizedEditCodeInput = ReturnType<typeof normalizeEditCodeInput>;
 export type EditSymbolInput = z.infer<typeof editSymbolInputSchema>;
 export type EditJsonInput = z.infer<typeof editJsonInputSchema>;
 export type PatchFileInput = z.infer<typeof patchFileInputSchema>;

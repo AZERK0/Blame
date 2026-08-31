@@ -1,4 +1,5 @@
 import { ArtifactStore } from "./artifact-store.js";
+import { isBinaryFileSync } from "isbinaryfile";
 import {
   currentFileHash,
   validateProposalWriteTargets,
@@ -143,6 +144,40 @@ export class ChangeService {
       maximumTouched: 50,
       enforceParse: false,
     });
+  }
+
+  async proposeCurrentDiff(snapshot: WorkspaceSnapshot, signal?: AbortSignal) {
+    const changes = await Promise.all(
+      snapshot.changes.map((change) => this.currentDiffFile(change, signal)),
+    );
+    const identity = `current-diff:${snapshot.revision.source_revision_id}`;
+    return this.proposeRunEffects({
+      base_source_revision_id: snapshot.revision.source_revision_id,
+      idempotency_key: identity,
+      input_digest: sha256(identity),
+      changes,
+    });
+  }
+
+  private async currentDiffFile(
+    change: WorkspaceSnapshot["changes"][number],
+    signal?: AbortSignal,
+  ): Promise<PreparedFile> {
+    const baseline = await this.files.baseline(change.path, signal);
+    const current =
+      change.status === "deleted" ? null : await this.files.read(change.path);
+    const oldContent = baseline?.content ?? null;
+    const newContent = current?.content ?? null;
+    return {
+      path: change.path,
+      oldContent,
+      newContent,
+      oldHash: oldContent ? sha256(oldContent) : null,
+      newHash: newContent ? sha256(newContent) : null,
+      oldMode: baseline?.mode ?? null,
+      newMode: current?.mode ?? null,
+      binary: isBinaryFileSync(oldContent ?? newContent ?? Buffer.alloc(0)),
+    };
   }
 
   private async persistPreparedProposal(input: {

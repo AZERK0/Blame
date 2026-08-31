@@ -92,7 +92,9 @@ function normalizeResult(result: HarnessResult<unknown, unknown>) {
     ...(result.outcome === "blocked"
       ? { issue: result.issue, recovery: result.recovery }
       : {}),
-    ...(result.outcome === "cancelled" ? { cause: result.cause } : {}),
+    ...(result.outcome === "cancelled"
+      ? { cause: result.cancellation_reason }
+      : {}),
     source_revision_id: result.provenance.source_revision_id,
   };
 }

@@ -147,6 +147,21 @@ export class WorkspaceFiles {
     return sha256((await this.read(path)).content);
   }
 
+  async baseline(path: string, signal?: AbortSignal) {
+    const normalized = this.normalizePath(path);
+    const treeEntry = await this.gitOptional(
+      ["ls-tree", "HEAD", "--", normalized],
+      signal,
+    );
+    if (!treeEntry) return null;
+    const mode = Number.parseInt(treeEntry.split(/\s+/u)[0]!, 8) & 0o777;
+    const content = await this.gitBuffer(
+      ["show", `HEAD:${normalized}`],
+      signal,
+    );
+    return { content, mode };
+  }
+
   async fileRef(
     path: string,
     revision: string,
@@ -315,6 +330,16 @@ export class WorkspaceFiles {
       signal,
     });
     return stdout;
+  }
+
+  private async gitBuffer(args: string[], signal?: AbortSignal) {
+    const { stdout } = await execFileAsync("git", args, {
+      cwd: this.root,
+      encoding: null,
+      maxBuffer: 32 * 1024 * 1024,
+      signal,
+    });
+    return Buffer.isBuffer(stdout) ? stdout : Buffer.from(stdout);
   }
 
   private async gitOptional(args: string[], signal?: AbortSignal) {

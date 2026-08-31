@@ -119,7 +119,7 @@ function retryIdentity(
 }
 
 function environmentRevisionId(fingerprint: string) {
-  return `env_${sha256(fingerprint)}`;
+  return `env_${sha256(fingerprint).slice(0, 32)}`;
 }
 
 function environmentFingerprint(

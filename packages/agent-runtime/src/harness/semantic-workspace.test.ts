@@ -717,6 +717,43 @@ test("edit_code applies a semantic edit without caller revisions or precondition
   });
 });
 
+test("edit_code applies a named symbol replacement and import atomically", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root);
+    const applied = success(
+      await workspace.editCode({
+        atomicity: "all",
+        operations: [
+          {
+            operation: "ensure_import",
+            path: "src/service.ts",
+            from: "./format-helper",
+            names: ["decorateName"],
+          },
+          {
+            operation: "replace_symbol",
+            path: "src/service.ts",
+            symbol: "formatName",
+            replacement:
+              "export function formatName(value: string) { return decorateName(value.trim()); }",
+          },
+        ],
+        validation: { parse: true },
+      }),
+    );
+    assert.equal(applied.data.status, "applied");
+    if (applied.data.status !== "applied") return;
+    assert.equal(applied.data.groups?.length, 1);
+    assert.equal(applied.data.committed_revisions?.length, 1);
+    const content = await readFile(join(root, "src", "service.ts"), "utf8");
+    assert.match(
+      content,
+      /import \{ decorateName \} from "\.\/format-helper";/,
+    );
+    assert.match(content, /return decorateName\(value\.trim\(\)\)/);
+  });
+});
+
 test("edit_code automatically relocates a moved symbol", async () => {
   await withWorkspace(async (root) => {
     const workspace = new SemanticWorkspace(root);
@@ -1551,6 +1588,36 @@ test("review_change emits multi-hunk diffs and binary summaries", async () => {
   });
 });
 
+test("review_change reviews the current revision without an opaque reference", async () => {
+  await withWorkspace(async (root) => {
+    await writeFile(
+      join(root, "src", "service.ts"),
+      source.replace("value.trim()", "value.trim().toUpperCase()"),
+    );
+    const workspace = new SemanticWorkspace(root);
+    const review = success(await workspace.reviewChange({}));
+    assert.match(review.data.diff, /toUpperCase/);
+    assert.equal(review.data.stale, false);
+    assert.match(review.data.proposal_ref, /^change-proposal:\/\//u);
+    const aliasReview = success(
+      await workspace.reviewChange({ proposal_ref: "revision:current" }),
+    );
+    assert.equal(aliasReview.data.proposal_ref, review.data.proposal_ref);
+  });
+});
+
+test("review_change rejects a placeholder proposal reference", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root);
+    const result = await workspace.reviewChange({
+      proposal_ref: `change-proposal://${"0".repeat(64)}`,
+    });
+    assert.equal(result.status, "error");
+    if (result.status === "error")
+      assert.equal(result.error.code, "INVALID_INPUT");
+  });
+});
+
 test("large diffs expose truncation and an exact artifact continuation", async () => {
   await withWorkspace(async (root) => {
     const workspace = new SemanticWorkspace(root);
@@ -1622,7 +1689,12 @@ test("run_task isolates writes, captures effects, logs evidence, and is idempote
       task: { task_id: "test" },
       limits: { timeout_ms: 10_000 },
     };
-    const executed = success(await workspace.runTask(input));
+    const executed = success(
+      await workspace.runTask(input, undefined, {
+        sessionId: "deduplicated-validation",
+        toolCallId: "validation-first",
+      }),
+    );
     assert.match(executed.data.run_ref, /^run:\/\//);
     assert.match(executed.data.run_attempt_ref ?? "", /^run-attempt:\/\//);
     assert.equal(executed.data.status, "passed");
@@ -1668,8 +1740,17 @@ test("run_task isolates writes, captures effects, logs evidence, and is idempote
     assert.equal(review.data.attached_runs[0]?.run_ref, executed.data.run_ref);
     assert.equal(review.data.checks_not_run.includes("tests"), false);
 
-    const retried = success(await workspace.runTask(input));
+    const retried = success(
+      await workspace.runTask(input, undefined, {
+        sessionId: "deduplicated-validation",
+        toolCallId: "validation-second",
+      }),
+    );
     assert.equal(retried.data.run_ref, executed.data.run_ref);
+    assert.deepEqual(retried.data.deduplication, {
+      reused: true,
+      required_state_change: "source_or_environment_revision",
+    });
     assert.equal(executor.executions, 1);
     assert.equal(executor.healthChecks, 2);
 
@@ -1687,7 +1768,7 @@ test("run_task isolates writes, captures effects, logs evidence, and is idempote
     ) as { run_ref: string; status: string; tool_call_id: string };
     assert.equal(attempt.status, "passed");
     assert.equal(attempt.run_ref, executed.data.run_ref);
-    assert.match(attempt.tool_call_id, /^direct-/);
+    assert.equal(attempt.tool_call_id, "validation-first");
 
     const stored = JSON.parse(
       await readFile(
@@ -1844,6 +1925,7 @@ test("run_task persists every terminal status and recovers interrupted attempts"
       ["execution_error", "runtime_error"],
     ] as const;
     for (const [executionStatus, attemptStatus] of statuses) {
+      await writeFile(join(root, "run-status.txt"), executionStatus);
       const workspace = new SemanticWorkspace(root, {
         taskExecutor: new RecordingTaskExecutor(executionStatus),
       });
@@ -2156,7 +2238,7 @@ test("cost governor keeps low-novelty counters advisory across execution epochs"
   assert.equal(governor.before("search_code", "epoch-c"), undefined);
 });
 
-test("cost governor enforces only the terminal iteration", () => {
+test("cost telemetry never blocks tools by iteration count", () => {
   const structural = new HarnessCostGovernor(20);
   assert.equal(structural.before("create_file", "epoch", {}, 15), undefined);
   const exploration = new HarnessCostGovernor(20);
@@ -2165,7 +2247,8 @@ test("cost governor enforces only the terminal iteration", () => {
   const execution = new HarnessCostGovernor(20);
   assert.equal(execution.before("edit_code", "epoch", {}, 12), undefined);
   assert.equal(execution.before("run_task", "epoch", {}, 19), undefined);
-  assert.equal(execution.before("run_task", "epoch", {}, 20)?.status, "error");
+  assert.equal(execution.before("run_task", "epoch", {}, 20), undefined);
+  assert.equal(execution.before("run_task", "epoch", {}, 2_000), undefined);
 });
 
 test("cost governor leaves late structural mutations available", () => {
@@ -2202,7 +2285,7 @@ test("cost governor leaves late structural mutations available", () => {
   );
 });
 
-test("cost governor stops an identical request after three failures", () => {
+test("cost telemetry never blocks retries by failure count", () => {
   const governor = new HarnessCostGovernor(20);
   const input = { query: "missing" };
   for (let index = 0; index < 3; index += 1)
@@ -2215,10 +2298,7 @@ test("cost governor stops an identical request after three failures", () => {
       } as never,
       { contextEpoch: "epoch", iteration: index },
     );
-  assert.equal(
-    governor.before("inspect_code", "epoch", input, 4)?.status,
-    "error",
-  );
+  assert.equal(governor.before("inspect_code", "epoch", input, 4), undefined);
   assert.equal(
     governor.before("inspect_code", "new-epoch", input, 4),
     undefined,

@@ -1,8 +1,4 @@
-import {
-  harnessError,
-  harnessSuccess,
-  type HarnessToolResult,
-} from "./protocol.js";
+import { harnessSuccess, type HarnessToolResult } from "./protocol.js";
 import type { SemanticWorkspaceToolName } from "./semantic-executor.js";
 import { SemanticLoopDetector } from "./semantic-loop-detector.js";
 import type { RawReadProfile } from "./code-navigation-policy.js";
@@ -24,19 +20,12 @@ export type BroadReadAdmission = RawReadProfile & {
 
 type EpochState = {
   editApplied: boolean;
-  facts: string[];
   firstEditIteration?: number;
   lastMaterialProgressIteration: number;
-  lowNoveltyReads: number;
-  midpointAdvised: boolean;
   recentReadSignatures: string[];
-  target: string;
 };
 
 export class HarnessCostGovernor {
-  private readonly iterationBudget: number;
-  private readonly midpoint: number;
-  private readonly failureCounts = new Map<string, number>();
   private readonly loops?: SemanticLoopDetector;
   private readonly broadReadReservations = new Map<string, string>();
   private readonly broadReadSignatures = new Set<string>();
@@ -47,9 +36,7 @@ export class HarnessCostGovernor {
   private unavailableCapabilities = new Set<string>();
   private latestIteration = 0;
 
-  constructor(iterationBudget = 80, semanticLoops = true) {
-    this.iterationBudget = Math.max(1, iterationBudget);
-    this.midpoint = Math.max(1, Math.ceil(iterationBudget / 2));
+  constructor(_iterationBudget = 80, semanticLoops = true) {
     this.loops = semanticLoops ? new SemanticLoopDetector() : undefined;
   }
 
@@ -62,21 +49,10 @@ export class HarnessCostGovernor {
   ) {
     this.state(contextEpoch);
     this.latestIteration = Math.max(this.latestIteration, iteration);
-    const reserveBlock = this.reserveBlock(this.latestIteration);
-    if (reserveBlock) return reserveBlock;
     const absentPackage = absentPackageTarget(tool, input, this.absentPackages);
     if (absentPackage) return absentPackageReceipt(absentPackage);
     const loopDecision = this.loops?.before(tool, input);
     if (loopDecision) return loopDecision;
-    if (
-      (this.failureCounts.get(failureSignature(tool, input, contextEpoch)) ??
-        0) >= 3
-    )
-      return harnessError({
-        code: "PRECONDITION_FAILED",
-        message:
-          "This identical tool request failed three times. Stop retrying it and use the remaining turn for validation, cleanup, and the final response.",
-      });
     const state = this.taskState;
     const signature = readSignature(tool, input);
     if (
@@ -107,21 +83,11 @@ export class HarnessCostGovernor {
       result,
       context.iteration,
     );
-    this.observeFailure(tool, input, result, context.contextEpoch);
     this.observeAbsentPackages(result);
-    const enriched = annotateProgressMetrics(
+    return annotateProgressMetrics(
       annotateEpoch(result, context.contextEpoch, context.conversationId),
       this.metrics(context.iteration),
     );
-    const advice = this.advice(this.taskState, context);
-    if (!advice || enriched.status !== "success") return enriched;
-    return {
-      ...enriched,
-      diagnostics: [
-        ...(enriched.diagnostics ?? []),
-        { code: "CONTEXT_GOVERNOR", message: advice },
-      ],
-    };
   }
 
   newUserRequest() {
@@ -129,7 +95,6 @@ export class HarnessCostGovernor {
     Object.assign(this.taskState, initialState());
     this.identicalOrCoveredReads = 0;
     this.unavailableCapabilities = new Set<string>();
-    this.failureCounts.clear();
     this.absentPackages.clear();
     this.broadReadReservations.clear();
     this.broadReadSignatures.clear();
@@ -198,39 +163,11 @@ export class HarnessCostGovernor {
     if (tool === "mutate_dependencies" && result.outcome === "applied")
       removeMutatedPackages(this.absentPackages, input);
     if (!materialProgress(tool, result, state)) return;
-    this.failureCounts.clear();
     state.lastMaterialProgressIteration = iteration;
     if (isEdit(tool) && result.outcome === "applied") {
       state.firstEditIteration ??= iteration;
       state.editApplied = true;
     }
-  }
-
-  private reserveBlock(iteration: number) {
-    if (iteration >= this.iterationBudget)
-      return harnessError({
-        code: "PRECONDITION_FAILED",
-        message:
-          "The tool iteration budget is exhausted. Produce the terminal answer now without another tool call.",
-      });
-    return undefined;
-  }
-
-  private observeFailure<T>(
-    tool: SemanticWorkspaceToolName,
-    input: unknown,
-    result: HarnessToolResult<T>,
-    contextEpoch?: string,
-  ) {
-    const signature = failureSignature(tool, input, contextEpoch);
-    if (result.status === "error") {
-      this.failureCounts.set(
-        signature,
-        (this.failureCounts.get(signature) ?? 0) + 1,
-      );
-      return;
-    }
-    this.failureCounts.delete(signature);
   }
 
   private observe<T>(
@@ -242,27 +179,7 @@ export class HarnessCostGovernor {
     if (isEdit(tool)) return observeEdit(state, result);
     if (!isRead(tool) || result.status !== "success") return;
     observeReadSignature(state, tool, input);
-    state.target = targetLabel(input) ?? state.target;
-    state.facts = compactFacts(state.facts, tool, input, result);
     if (result.outcome === "skipped") this.identicalOrCoveredReads += 1;
-    if (tool !== "inspect_code") return;
-    const data = recordValue(result.data);
-    const overlap = numberValue(data.overlap_rate) ?? 0;
-    const newBytes = numberValue(data.new_bytes) ?? 0;
-    state.lowNoveltyReads =
-      overlap >= 0.8 || newBytes === 0 ? state.lowNoveltyReads + 1 : 0;
-  }
-
-  private advice(state: EpochState, context: ToolContext) {
-    if (state.lowNoveltyReads === 2)
-      return `Recent inspections added little new evidence. Known facts: ${
-        state.facts.join("; ") || "the current target is identified"
-      }. Prefer the smallest unresolved symbol or edit ${state.target} when the change is supported.`;
-    if (!state.midpointAdvised && context.iteration >= this.midpoint) {
-      state.midpointAdvised = true;
-      return "Half of the adaptive turn budget is used. A compact continuity capsule should replace inactive technical context.";
-    }
-    return undefined;
   }
 
   private state(contextEpoch = "epoch-0") {
@@ -322,7 +239,6 @@ function observeEdit<T>(state: EpochState, result: HarnessToolResult<T>) {
     return;
   }
   state.editApplied = true;
-  state.lowNoveltyReads = 0;
   state.recentReadSignatures = [];
 }
 
@@ -412,12 +328,8 @@ function broadReadDiagnostic(duplicate: boolean) {
 function initialState(): EpochState {
   return {
     editApplied: false,
-    facts: [],
     lastMaterialProgressIteration: 0,
-    lowNoveltyReads: 0,
-    midpointAdvised: false,
     recentReadSignatures: [],
-    target: "the identified target",
   };
 }
 
@@ -436,22 +348,6 @@ function materialProgress<T>(
   if (tool === "run_task" && state.editApplied)
     return result.status === "success" || !result.fatal;
   return false;
-}
-
-function compactFacts<T>(
-  current: string[],
-  tool: SemanticWorkspaceToolName,
-  input: unknown,
-  result: HarnessToolResult<T>,
-) {
-  const data = result.status === "success" ? recordValue(result.data) : {};
-  const target =
-    stringValue(data.path) ??
-    targetLabel(input) ??
-    stringValue(data.reason) ??
-    tool;
-  const fact = `${tool}: ${target} (${result.outcome})`;
-  return [...current.filter((value) => value !== fact), fact].slice(-6);
 }
 
 function readSignature(tool: SemanticWorkspaceToolName, input: unknown) {
@@ -570,35 +466,12 @@ function removeMutatedPackages(dependencies: Set<string>, input: unknown) {
   }
 }
 
-function failureSignature(
-  tool: SemanticWorkspaceToolName,
-  input: unknown,
-  contextEpoch?: string,
-) {
-  return `${contextEpoch ?? "epoch-0"}:${tool}:${JSON.stringify(input) ?? ""}`;
-}
-
-function targetLabel(input: unknown) {
-  const value = recordValue(input);
-  const target = recordValue(value.target);
-  if (typeof target.symbol_ref === "string") return "the active symbol";
-  if (typeof target.node_ref === "string") return "the active syntax node";
-  if (typeof target.path === "string") return target.path;
-  return undefined;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 function recordValue(value: unknown): Record<string, unknown> {
   return isRecord(value) ? value : {};
-}
-
-function numberValue(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : undefined;
 }
 
 function stringValue(value: unknown) {

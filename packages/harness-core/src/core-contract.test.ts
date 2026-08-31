@@ -49,6 +49,16 @@ test("completed results require proof for effects and idempotence", () => {
     provenance,
   });
   assert.equal(isHarnessResult(result), true);
+  assert.equal(result.transport_success, true);
+  assert.equal(result.domain_outcome, "completed");
+  assert.equal(result.source_revision_id, "src_current");
+  assert.equal(result.environment_revision_id, "env_current");
+  assert.equal(result.cause, null);
+  assert.deepEqual(result.retry_policy, {
+    allowed: false,
+    responsible_actor: "runtime",
+    required_state_change: "not_applicable",
+  });
   assert.equal(
     isHarnessResult({ ...result, evidence: [], provenance: {} }),
     false,
@@ -325,7 +335,9 @@ test("state authority invalidates revision-bound projections", () => {
       environment_revision_id: first.environment_revision_id,
     },
   });
-  const changed = authority.setEnvironment(environmentInput("dependencies-two"));
+  const changed = authority.setEnvironment(
+    environmentInput("dependencies-two"),
+  );
   assert.notEqual(
     changed.environment_revision_id,
     first.environment_revision_id,

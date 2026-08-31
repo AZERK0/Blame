@@ -12,6 +12,7 @@ import { ConversationMemoryStore } from "./conversation-memory.js";
 import type { HarnessToolResult, HarnessToolSuccess } from "./protocol.js";
 import { RunLifecycleRegistry } from "./run-lifecycle.js";
 import { SemanticWorkspace } from "./semantic-workspace.js";
+import { currentWorkspaceRevisionState } from "./workspace-revisions.js";
 import type {
   DependencyExecutorCapability,
   TaskExecutionInput,
@@ -215,7 +216,7 @@ test("US-021 retries transient DevTools once with current revision evidence", as
     let calls = 0;
     const tools = await previewDevtoolsMcpTools(
       {
-        previewDevtools: async () => previewTarget(),
+        previewDevtools: async () => previewTarget(root),
         previewDevtoolsCall: async () => {
           calls += 1;
           if (calls === 1) throw new Error("Target closed");
@@ -246,7 +247,7 @@ test("US-021 returns a non-terminal receipt without retrying a DevTools timeout"
     let calls = 0;
     const tools = await previewDevtoolsMcpTools(
       {
-        previewDevtools: async () => previewTarget(),
+        previewDevtools: async () => previewTarget(root),
         previewDevtoolsCall: async () => {
           calls += 1;
           throw new Error("MCP error -32001: Request timed out");
@@ -455,14 +456,22 @@ function toolContext(sourceRevisionId: string) {
   } as AgentToolContext;
 }
 
-function previewTarget() {
+async function previewTarget(root: string) {
+  const revisions = await currentWorkspaceRevisionState(root);
   return {
+    application: { status: "ready" as const, httpStatus: 200 },
     available: true,
     browserUrl: "http://127.0.0.1:9222",
     loading: false,
     mcpServer: { args: [], command: "node", name: "devtools" },
     message: "Ready",
-    reason: "PREVIEW_BROWSER_READY",
+    readiness: {
+      browser_ready: true,
+      container_ready: true,
+      application_ready: true,
+    },
+    reason: "PREVIEW_APPLICATION_READY",
+    revisions,
     status: "ready" as const,
   };
 }

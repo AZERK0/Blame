@@ -57,6 +57,21 @@ export class DependencyEnvironmentService {
     snapshot: WorkspaceSnapshot,
     task: TaskCatalogItem,
   ) {
+    const ready = await this.inspect(files, snapshot, task);
+    if (!ready) return undefined;
+    await activateDependencyEnvironment(
+      files.root,
+      ready.workspace,
+      snapshot.files,
+    );
+    return ready;
+  }
+
+  async inspect(
+    files: WorkspaceFiles,
+    snapshot: WorkspaceSnapshot,
+    task: TaskCatalogItem,
+  ) {
     const cacheRoot = await dependencyCacheRoot(
       files.root,
       snapshot.files,
@@ -76,13 +91,7 @@ export class DependencyEnvironmentService {
       snapshot.files,
     );
     if (probe.status !== "passed") return undefined;
-    const ready = { ...environment, integrity_probe: probe };
-    await activateDependencyEnvironment(
-      files.root,
-      ready.workspace,
-      snapshot.files,
-    );
-    return ready;
+    return { ...environment, integrity_probe: probe };
   }
 
   async persist(input: {

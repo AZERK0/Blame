@@ -1,3 +1,4 @@
+import type { WorkspaceRevisionState } from "@blame/agent-runtime";
 import type { PreviewLifecycleState } from "@blame/preview-contract";
 import type { PreviewDevtoolsTarget } from "../preview-browser/preview-browser-manager.ts";
 import {
@@ -31,6 +32,7 @@ export type PreviewHarnessState = PreviewDevtoolsTarget & {
     container_ready: boolean;
     application_ready: boolean;
   };
+  revisions?: WorkspaceRevisionState;
   status: PreviewHarnessStatus;
 };
 
@@ -56,9 +58,10 @@ const previewStatusMessages = {
 export function previewHarnessState(
   browser: PreviewDevtoolsTarget,
   lifecycle?: PreviewLifecycleState,
+  revisions?: WorkspaceRevisionState,
 ): PreviewHarnessState {
-  const status = previewHarnessStatus(browser, lifecycle);
-  const readiness = previewReadiness(browser, lifecycle);
+  const readiness = previewReadiness(browser, lifecycle, revisions);
+  const status = previewHarnessStatus(browser, lifecycle, readiness);
   return {
     ...browser,
     available: status === "ready",
@@ -71,6 +74,7 @@ export function previewHarnessState(
     },
     ...previewHarnessStatusMessage(status, browser, lifecycle),
     readiness,
+    ...(revisions ? { revisions } : {}),
     status,
   };
 }
@@ -92,6 +96,7 @@ export async function resolvePreviewHarnessState(
 function previewHarnessStatus(
   browser: PreviewDevtoolsTarget,
   lifecycle: PreviewLifecycleState | undefined,
+  readiness: PreviewHarnessState["readiness"],
 ): PreviewHarnessStatus {
   if (browser.application?.status === "failed") return "failed";
   if (lifecycle?.status === "error") return "failed";
@@ -102,13 +107,11 @@ function previewHarnessStatus(
   }
   if (browser.error) return "failed";
   if (lifecycle?.status === "ready") {
-    if (browser.available && browser.application?.status === "ready")
-      return "ready";
+    if (readiness.application_ready) return "ready";
     if (browser.available) return "starting";
     return browser.loading ? "starting" : "unavailable";
   }
-  if (browser.available && browser.application?.status === "ready")
-    return "ready";
+  if (readiness.application_ready) return "ready";
   if (browser.available) return "starting";
   if (browser.loading || browser.currentUrl) return "starting";
   return "stopped";
@@ -135,6 +138,7 @@ function previewHarnessStatusMessage(
 function previewReadiness(
   browser: PreviewDevtoolsTarget,
   lifecycle: PreviewLifecycleState | undefined,
+  revisions: WorkspaceRevisionState | undefined,
 ) {
   const browserReady = browser.available;
   const containerReady = lifecycle
@@ -144,7 +148,10 @@ function previewReadiness(
     browser_ready: browserReady,
     container_ready: containerReady,
     application_ready:
-      browserReady && containerReady && browser.application?.status === "ready",
+      browserReady &&
+      containerReady &&
+      revisions?.dependencies_ready !== false &&
+      browser.application?.status === "ready",
   };
 }
 

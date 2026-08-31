@@ -1,12 +1,17 @@
 import type { CoreSessionConfig } from "@cline/sdk";
 import { createMcpTools } from "@cline/sdk";
+import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js";
 import { sha256 } from "./harness/protocol.js";
-import { WorkspaceFiles } from "./harness/workspace-files.js";
 
 type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
 type ToolContext = Parameters<AgentTool["execute"]>[1];
 
 export type PreviewDevtoolsTarget = {
+  application?: {
+    status: "ready" | "failed" | "unverified";
+    httpStatus?: number;
+    diagnostic?: string;
+  };
   available: boolean;
   browserUrl: string;
   currentUrl?: string;
@@ -16,6 +21,16 @@ export type PreviewDevtoolsTarget = {
   loading: boolean;
   message: string;
   reason: string;
+  readiness?: {
+    browser_ready: boolean;
+    container_ready: boolean;
+    application_ready: boolean;
+  };
+  revisions?: {
+    source_revision_id: string;
+    environment_revision_id: string;
+    dependencies_ready: boolean;
+  };
   scope?: string;
   status: "failed" | "ready" | "starting" | "stopped" | "unavailable";
   mcpServer: {
@@ -229,7 +244,7 @@ function previewEvidenceUnavailableResult() {
     content: [
       {
         type: "text",
-        text: "Browser transport evidence is unavailable for this preview session.",
+        text: "Application readiness is unavailable for the current source and environment revisions.",
       },
     ],
     isError: false,
@@ -271,7 +286,7 @@ export function previewDevtoolsTool(
   return {
     name: "get_preview_devtools",
     description:
-      "Inspect the browser transport lifecycle of this session's Blame preview. Choose an immediate state snapshot or wait only while a preview is actively starting. Browser readiness is not application-health evidence. Stopped, failed, and unopened browser states always return immediately. When connected, use preview_devtools__take_snapshot before stronger browser assertions.",
+      "Inspect browser, container, and application readiness for this session's Blame preview. Readiness requires an exploitable HTTP response, no blocking compiler diagnostic, usable dependencies, and the current source and environment revisions. Stopped, failed, and unopened browser states return immediately.",
     inputSchema: previewDevtoolsInputSchema(),
     execute: (input: unknown, context: ToolContext) =>
       executePreviewDevtoolsTool(options, preview, input, context.signal),
@@ -320,27 +335,47 @@ async function currentPreviewEvidence(
   target: PreviewDevtoolsTarget,
 ) {
   try {
-    const revision = (await new WorkspaceFiles(preview.worktree).snapshot())
-      .revision.source_revision_id;
-    const passed = target.status === "ready" && target.available;
+    const current = await currentWorkspaceRevisionState(preview.worktree);
+    const revisionMatch = sameRevisionPair(current, target.revisions);
+    const passed =
+      target.status === "ready" &&
+      target.available &&
+      target.readiness?.application_ready === true &&
+      current.dependencies_ready &&
+      revisionMatch;
     return {
       status: passed ? ("passed" as const) : ("unavailable" as const),
-      scope: "browser_transport" as const,
-      application_health: "unverified" as const,
-      workspace_source_revision_id: revision,
-      preview_source_revision_match: "unverified" as const,
-      evidence_ref: `preview-browser-ready://${sha256(`${revision}\0${target.status}`)}`,
+      scope: "preview_application" as const,
+      application_health: target.application?.status ?? "unverified",
+      source_revision_id: current.source_revision_id,
+      environment_revision_id: current.environment_revision_id,
+      preview_revision_match: revisionMatch,
+      evidence_ref: `preview-application-ready://${sha256(
+        `${current.source_revision_id}\0${current.environment_revision_id}\0${target.status}`,
+      )}`,
     };
   } catch {
     return {
       status: "unavailable" as const,
-      scope: "browser_transport" as const,
+      scope: "preview_application" as const,
       application_health: "unverified" as const,
-      workspace_source_revision_id: undefined,
-      preview_source_revision_match: "unverified" as const,
-      evidence_ref: `preview-browser-ready://${sha256(`${preview.worktree}\0unavailable`)}`,
+      source_revision_id: undefined,
+      environment_revision_id: undefined,
+      preview_revision_match: false,
+      evidence_ref: `preview-application-ready://${sha256(`${preview.worktree}\0unavailable`)}`,
     };
   }
+}
+
+function sameRevisionPair(
+  current: Awaited<ReturnType<typeof currentWorkspaceRevisionState>>,
+  preview: PreviewDevtoolsTarget["revisions"],
+) {
+  return (
+    preview?.dependencies_ready === true &&
+    preview.source_revision_id === current.source_revision_id &&
+    preview.environment_revision_id === current.environment_revision_id
+  );
 }
 
 function previewDevtoolsInput(
@@ -368,7 +403,7 @@ function previewDevtoolsRecommendation(
   if (status === "unavailable") {
     return "Open the integrated preview browser before using DevTools.";
   }
-  return "Take a scoped DOM snapshot first. DevTools connectivity alone does not prove that the application is healthy.";
+  return "The application and its revision pair are ready. Take a scoped DOM snapshot for UI assertions.";
 }
 
 export function previewContainerLogsTool(

@@ -21,6 +21,10 @@ export {
   type AdapterConformanceScenario,
   type HarnessAdapter,
 } from "./harness/adapter-conformance.js";
+export {
+  currentWorkspaceRevisionState,
+  type WorkspaceRevisionState,
+} from "./harness/workspace-revisions.js";
 export { taskComplexityBucket } from "./telemetry-cohorts.js";
 export type { TaskComplexityBucket } from "./telemetry-cohorts.js";
 export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";

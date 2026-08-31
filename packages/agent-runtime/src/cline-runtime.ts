@@ -248,7 +248,7 @@ import type {
 
 const execFileAsync = promisify(execFile);
 const defaultSessionMaxIterations = 32;
-const defaultDevelopmentMaxIterations = 80;
+const uninterruptedSessionMaxIterations = Number.MAX_SAFE_INTEGER;
 const maxInitializationAttempts = 3;
 const maxMergeConflictResolutionAttempts = 3;
 const runtimeArtifactPaths = [".blame", ".blame-preview", ".pnpm-store"];
@@ -3626,7 +3626,7 @@ export class BlameAgentRuntime {
       tokenCounter,
     );
     const iterationBudget =
-      input.maxIterations ?? developmentMaxIterations(input);
+      input.maxIterations ?? uninterruptedSessionMaxIterations;
     const compaction = blameCompactionConfig(this.productionConfig);
     const session = await this.startSession({
       apiConnection: input.apiConnection,
@@ -5927,24 +5927,6 @@ async function earlyCompactionModelState(
   } catch {
     return undefined;
   }
-}
-
-function developmentMaxIterations(input?: StartDevelopmentSessionInput) {
-  const value = Number(process.env.BLAME_AGENT_DEVELOPMENT_MAX_ITERATIONS);
-  if (Number.isFinite(value) && value > 0) return value;
-  if (!input) return defaultDevelopmentMaxIterations;
-  if (input.feedback?.trim()) return 24;
-  const description = `${input.title}\n${input.summary}`;
-  if (
-    /\b(?:migration|redesign|architecture|monorepo|cross-cutting)\b/iu.test(
-      description,
-    )
-  )
-    return 120;
-  const attachments =
-    (input.codeSelectionAttachments?.length ?? 0) +
-    (input.fileAttachments?.length ?? 0);
-  return description.length < 800 && attachments <= 1 ? 40 : 80;
 }
 
 function adaptiveModelInactivityTimeoutMs(

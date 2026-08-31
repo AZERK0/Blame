@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js";
 
 import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
 import { ClineFreeModelLimitError, ClineNotSubscribedError } from "@cline/llms";
@@ -287,13 +288,21 @@ test("starts development sessions with native skills and private specialist cons
     createCore: async () => core as never,
     previewDevtools: async (input) => {
       if (input.waitFor === "ready") previewTargetInput = input;
+      const revisions = await currentWorkspaceRevisionState(workspace);
       return {
+        application: { status: "ready" },
         available: true,
         browserUrl: "http://127.0.0.1:9222",
         loading: false,
         mcpServer: { args: [], command: "node", name: "chrome-devtools" },
         message: "The preview is ready.",
         reason: "PREVIEW_BROWSER_READY",
+        readiness: {
+          browser_ready: true,
+          container_ready: true,
+          application_ready: true,
+        },
+        revisions,
         status: "ready",
       };
     },

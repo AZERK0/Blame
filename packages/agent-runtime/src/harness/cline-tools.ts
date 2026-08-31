@@ -293,7 +293,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "edit_code",
       description:
-        "Compatibility editor for relocatable match_ref replacements, replace_body, replace_signature, insertion, symbol deletion, and CSS declarations. The runtime automatically groups coupled paths and commits unrelated files independently. Prefer specialized edit tools when available.",
+        "Primary atomic code editor. Compose replace_symbol, insert_symbol, delete_symbol, ensure_import, remove_import, create_file, patch_file, replace_file, and edit_json in one operations batch. Named symbols use path plus symbol; existing semantic references remain accepted. The runtime resolves positions, orders imports, parses touched code, and commits atomicity=all as one revision. Ambiguous symbols return at most five candidates without writing.",
       schema: editCodeInputSchema,
       execute: (input, context) => execute("edit_code", input, context),
       retryable: false,
@@ -342,7 +342,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "review_change",
       description:
-        "Review an immutable change proposal without mutating source or running checks. Returns a bounded textual diff, semantic symbol changes, exact-revision runs, diagnostics, and missing checks. Request impact only for cross-file changes; it is computed on demand and reports heuristic coverage.",
+        "Review the current worktree diff by default or an immutable change proposal when proposal_ref is provided. proposal:current, revision:current, and changeset:latest resolve to the current diff. Returns a bounded textual diff, semantic symbol changes, exact-revision runs, diagnostics, and missing checks. Request impact only for cross-file changes; it is computed on demand and reports heuristic coverage.",
       schema: reviewChangeInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -654,9 +654,36 @@ function prepareCanonicalResult(
         )
       : projected;
   const bounded = boundHarnessResult(prepared, maximumTokens);
-  return bounded.status === "success"
-    ? { ...result, data: bounded.data }
-    : result;
+  if (bounded.status !== "success") return result;
+  return boundCanonicalData(result, prepared, bounded.data, maximumTokens);
+}
+
+function boundCanonicalData(
+  result: HarnessResult<unknown, unknown>,
+  legacy: HarnessToolResult<unknown>,
+  data: unknown,
+  maximumTokens: number | undefined,
+) {
+  if (!maximumTokens) return { ...result, data };
+  const maximumBytes = maximumTokens * 4;
+  const candidate = { ...result, data };
+  if (Buffer.byteLength(JSON.stringify(candidate), "utf8") <= maximumBytes)
+    return candidate;
+  const overhead = Buffer.byteLength(
+    JSON.stringify({ ...result, data: null }),
+    "utf8",
+  );
+  const legacyOverhead = Buffer.byteLength(
+    JSON.stringify({ ...legacy, data: null }),
+    "utf8",
+  );
+  const budget = Math.max(
+    25,
+    Math.floor((maximumBytes - overhead + legacyOverhead) / 4),
+  );
+  const reduced = boundHarnessResult(legacy, budget);
+  const reducedData = reduced.status === "success" ? reduced.data : {};
+  return { ...result, data: reducedData };
 }
 
 type SemanticWorkspaceExecutionResult =

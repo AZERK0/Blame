@@ -36,6 +36,7 @@ import { lineChanges } from "./edit-content.js";
 import { editCssDeclaration } from "./css-declaration-editor.js";
 import { EditConflictCircuit } from "./edit-conflict-circuit.js";
 import { editJsonContent } from "./json-editor.js";
+import { importTextEdit } from "./import-editor.js";
 import { languageCapability } from "./language-capabilities.js";
 import {
   PatchRecoveryConflict,
@@ -52,9 +53,11 @@ import {
 } from "./semantic-reference-resolver.js";
 import {
   editCodeInputSchema,
+  normalizeEditCodeInput,
   type ChangeOperation,
   type EditCodeInput,
   type EditCodeOperation,
+  type NormalizedEditCodeInput,
   type StoredChangeProposal,
 } from "./schemas.js";
 import { semanticSymbolDiff } from "./semantic-workspace-support.js";
@@ -199,7 +202,7 @@ type TranslatedBatch = {
 
 type PreparedEditGroup = {
   group: EditGroup;
-  input: EditCodeInput;
+  input: NormalizedEditCodeInput;
   inputDigest: string;
   receiptKey: string;
   operations: ChangeOperation[];
@@ -231,8 +234,10 @@ export class EditService {
   }
 
   async edit(input: EditCodeInput, context: EditExecutionContext = {}) {
-    editCodeInputSchema.parse(input);
-    const normalizedInput = stableJson(input);
+    const parsedInput = normalizeEditCodeInput(
+      editCodeInputSchema.parse(input),
+    );
+    const normalizedInput = stableJson(parsedInput);
     const inputDigest = sha256(normalizedInput);
     const toolCallId = context.toolCallId ?? `direct-${inputDigest}`;
     const sessionId = context.sessionId ?? this.sessionId;
@@ -243,12 +248,12 @@ export class EditService {
         inputDigest,
       );
       if (existing) return existing;
-      const result = await this.execute(input, receiptKey);
+      const result = await this.execute(parsedInput, receiptKey);
       return this.receipts.write(receiptKey, inputDigest, result);
     });
   }
 
-  private async execute(input: EditCodeInput, receiptKey: string) {
+  private async execute(input: NormalizedEditCodeInput, receiptKey: string) {
     const snapshot = await this.files.snapshot();
     const preparationSourceRevision = snapshot.revision.source_revision_id;
     const translated = await this.translate(input.edits, snapshot);
@@ -282,7 +287,7 @@ export class EditService {
   }
 
   private async prepareGroup(
-    batchInput: EditCodeInput,
+    batchInput: NormalizedEditCodeInput,
     group: EditGroup,
     translated: TranslatedBatch,
     snapshot: WorkspaceSnapshot,
@@ -413,7 +418,7 @@ export class EditService {
   }
 
   private async newSymbolReferences(
-    input: EditCodeInput,
+    input: NormalizedEditCodeInput,
     proposal: StoredChangeProposal,
     revision: string,
   ) {
@@ -462,7 +467,7 @@ export class EditService {
   }
 
   private proposeEdit(
-    input: EditCodeInput,
+    input: NormalizedEditCodeInput,
     snapshot: WorkspaceSnapshot,
     operations: ChangeOperation[],
     receiptKey: string,
@@ -526,7 +531,11 @@ export class EditService {
     for (const [index, edit] of edits.entries()) {
       try {
         assertNoManagedLockfileEdits([edit]);
-        if (hasSemanticTarget(edit)) {
+        if (hasNamedSymbolTarget(edit)) {
+          const translated = await this.translateNamedTarget(edit, snapshot);
+          resolvedTargets.push(translated.resolved);
+          operations.push(translated.operation);
+        } else if (hasSemanticTarget(edit)) {
           const translated = await this.translateTarget(edit, snapshot);
           resolvedTargets.push(translated.resolved);
           operations.push(translated.operation);
@@ -573,7 +582,68 @@ export class EditService {
     return { operation: await this.targetOperation(edit, resolved), resolved };
   }
 
+  private async translateNamedTarget(
+    edit: Extract<EditCodeOperation, { symbol: string }>,
+    snapshot: WorkspaceSnapshot,
+  ) {
+    const target = {
+      symbol_ref: await this.namedSymbolReference(
+        edit.path,
+        edit.symbol,
+        snapshot,
+      ),
+    };
+    if (edit.operation === "replace_symbol")
+      return this.translateTarget(
+        { ...edit, target, content: edit.replacement },
+        snapshot,
+      );
+    if (edit.operation === "delete_symbol")
+      return this.translateTarget({ ...edit, target }, snapshot);
+    return this.translateTarget(
+      {
+        operation:
+          edit.position === "before" ? "insert_before" : "insert_after",
+        target,
+        content: edit.content,
+      },
+      snapshot,
+    );
+  }
+
+  private async namedSymbolReference(
+    path: string,
+    name: string,
+    snapshot: WorkspaceSnapshot,
+  ) {
+    const normalizedPath = this.files.normalizePath(path);
+    const file = await this.files.read(normalizedPath);
+    const parsed = parseCode(normalizedPath, file.content);
+    const candidates = parsed.symbols.filter(
+      (symbol) => symbol.name === name || symbol.qualified_name === name,
+    );
+    const materialized = candidates.map((symbol) =>
+      materializeSymbol({
+        symbol,
+        path: normalizedPath,
+        revision: snapshot.revision.source_revision_id,
+        content: file.content,
+      }),
+    );
+    if (materialized.length === 1) return materialized[0]!.symbol_ref;
+    throw new SemanticResolutionConflict(
+      materialized.length
+        ? `The symbol name ${name} is ambiguous in ${normalizedPath}.`
+        : `The symbol ${name} was not found in ${normalizedPath}.`,
+      materialized
+        .slice(0, 5)
+        .map((symbol) => namedConflictCandidate(normalizedPath, symbol)),
+    );
+  }
+
   private async fileOperation(edit: FileEditOperation) {
+    if (hasNamedSymbolTarget(edit))
+      throw new Error("Named symbol edit was not resolved.");
     if (edit.operation === "create_file") {
       assertTextFile(edit.path, Buffer.from(edit.content));
       return {
@@ -599,7 +669,34 @@ export class EditService {
         expected_blob_hash: await this.files.blobHash(edit.path),
       };
     if (edit.operation === "edit_json") return this.jsonOperation(edit);
+    if (
+      edit.operation === "ensure_import" ||
+      edit.operation === "remove_import"
+    )
+      return this.importOperation(edit);
     return this.patchOperation(edit);
+  }
+
+  private async importOperation(
+    edit: Extract<
+      FileEditOperation,
+      { operation: "ensure_import" | "remove_import" }
+    >,
+  ) {
+    const file = await this.files.read(edit.path);
+    assertSemanticEditSupported(edit.path);
+    const source = file.content.toString("utf8");
+    const change = importTextEdit(source, edit);
+    const start = Buffer.byteLength(source.slice(0, change.start));
+    const end = Buffer.byteLength(source.slice(0, change.end));
+    return {
+      kind: "text_replace" as const,
+      path: edit.path,
+      expected_blob_hash: sha256(file.content),
+      range_utf8_bytes: [start, end] as [number, number],
+      expected_old_text: source.slice(change.start, change.end),
+      replacement: change.replacement,
+    };
   }
 
   private async replaceFileOperation(path: string, replacement: string) {
@@ -789,7 +886,7 @@ export class EditService {
   }
 }
 
-function formattingPolicy(formatting: EditCodeInput["formatting"]) {
+function formattingPolicy(formatting: NormalizedEditCodeInput["formatting"]) {
   return formatting === "touched_files"
     ? ("touched_files" as const)
     : ("none" as const);
@@ -966,6 +1063,36 @@ function hasSemanticTarget(
   edit: EditCodeOperation,
 ): edit is Extract<EditCodeOperation, { target: unknown }> {
   return "target" in edit;
+}
+
+function hasNamedSymbolTarget(
+  edit: EditCodeOperation,
+): edit is Extract<EditCodeOperation, { symbol: string }> {
+  return "symbol" in edit;
+}
+
+function namedConflictCandidate(
+  path: string,
+  symbol: {
+    symbol_ref: string;
+    kind: string;
+    qualified_name: string;
+    line_range: [number, number];
+    signature: string;
+  },
+) {
+  return {
+    referenceId: symbol.symbol_ref,
+    path,
+    symbolKind: symbol.kind,
+    qualifiedName: symbol.qualified_name,
+    line: symbol.line_range[0],
+    score: 1,
+    excerpt: symbol.signature,
+    target_ref: symbol.symbol_ref,
+    kind: symbol.kind,
+    line_range: symbol.line_range,
+  };
 }
 
 function assertSemanticEditSupported(path: string) {

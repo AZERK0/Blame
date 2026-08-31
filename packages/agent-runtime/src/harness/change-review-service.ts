@@ -65,10 +65,13 @@ export class ChangeReviewService {
   async reviewChange(input: ReviewChangeInput, signal?: AbortSignal) {
     const startedAt = Date.now();
     try {
-      reviewChangeInputSchema.parse(input);
+      const parsedInput = reviewChangeInputSchema.parse(input);
       signal?.throwIfAborted();
-      const context = await this.reviewContext(input.proposal_ref, signal);
-      const output = await this.reviewOutput(input, context, signal);
+      const context = await this.reviewContext(
+        parsedInput.proposal_ref,
+        signal,
+      );
+      const output = await this.reviewOutput(parsedInput, context, signal);
       return harnessSuccess({
         startedAt,
         revision: revisionVector(context.snapshot),
@@ -104,12 +107,14 @@ export class ChangeReviewService {
     }
   }
 
-  private async reviewContext(proposalRef: string, signal?: AbortSignal) {
-    const [proposal, receipt, proposalRuns, snapshot] = await Promise.all([
-      this.changes.readProposal(proposalRef),
-      this.changes.readReceipt(proposalRef),
-      this.runs.runsForProposal(proposalRef),
-      this.files.snapshot(signal),
+  private async reviewContext(proposalRef?: string, signal?: AbortSignal) {
+    const snapshot = await this.files.snapshot(signal);
+    const proposal = isExactProposalReference(proposalRef)
+      ? await this.changes.readProposal(proposalRef)
+      : await this.changes.proposeCurrentDiff(snapshot, signal);
+    const [receipt, proposalRuns] = await Promise.all([
+      this.changes.readReceipt(proposal.proposal_ref),
+      this.runs.runsForProposal(proposal.proposal_ref),
     ]);
     const revisionRuns = receipt
       ? await this.runs.runsForRevision(
@@ -187,6 +192,10 @@ export class ChangeReviewService {
       throw staleRevision(snapshot.revision.source_revision_id);
     return snapshot;
   }
+}
+
+function isExactProposalReference(value?: string): value is string {
+  return Boolean(value?.startsWith("change-proposal://"));
 }
 
 async function analyzeChanges(

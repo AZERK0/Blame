@@ -48,6 +48,12 @@ export type RecoveryCondition =
   | { condition: "runtime_state_change"; fingerprint: string }
   | { condition: "explicit_user_action" };
 
+export type RetryPolicy = {
+  allowed: boolean;
+  responsible_actor: "runtime" | "agent" | "user";
+  required_state_change: RecoveryCondition["condition"] | "not_applicable";
+};
+
 export type HarnessIssue<TDetails> = {
   kind: CauseKind;
   code: string;
@@ -62,9 +68,15 @@ export type HarnessResult<TData, TIssueDetails = never> =
 
 export type CompletedHarnessResult<TData> = {
   protocol_version: "3";
+  transport_success: true;
+  domain_outcome: "completed";
   outcome: "completed";
   effect: "none" | "observed" | "changed";
   satisfaction: "satisfied" | "not_applicable";
+  cause: null;
+  source_revision_id: SourceRevisionId;
+  environment_revision_id: EnvironmentRevisionId;
+  retry_policy: RetryPolicy;
   data: TData;
   evidence: EvidenceRef[];
   provenance: Provenance;
@@ -72,9 +84,15 @@ export type CompletedHarnessResult<TData> = {
 
 export type BlockedHarnessResult<TData, TIssueDetails> = {
   protocol_version: "3";
+  transport_success: true;
+  domain_outcome: "blocked";
   outcome: "blocked";
   effect: "none" | "observed" | "partial";
   satisfaction: "partially_satisfied" | "unsatisfied" | "unknown";
+  cause: CauseKind;
+  source_revision_id: SourceRevisionId;
+  environment_revision_id: EnvironmentRevisionId;
+  retry_policy: RetryPolicy;
   issue: HarnessIssue<TIssueDetails>;
   recovery: RecoveryCondition;
   data: TData;
@@ -84,10 +102,16 @@ export type BlockedHarnessResult<TData, TIssueDetails> = {
 
 export type CancelledHarnessResult<TData> = {
   protocol_version: "3";
+  transport_success: true;
+  domain_outcome: "cancelled";
   outcome: "cancelled";
   effect: "none" | "partial";
   satisfaction: "partially_satisfied" | "unknown";
-  cause: "user" | "superseded" | "shutdown" | "timeout";
+  cause: "cancelled";
+  cancellation_reason: "user" | "superseded" | "shutdown" | "timeout";
+  source_revision_id: SourceRevisionId;
+  environment_revision_id: EnvironmentRevisionId;
+  retry_policy: RetryPolicy;
   data: TData;
   evidence: EvidenceRef[];
   provenance: Provenance;
@@ -104,9 +128,15 @@ export function completedResult<TData>(input: {
   assertCompletedEvidence(input.effect, input.evidence ?? []);
   return {
     protocol_version: harnessProtocolVersion,
+    transport_success: true,
+    domain_outcome: "completed",
     outcome: "completed",
     effect: input.effect,
     satisfaction: input.satisfaction ?? "satisfied",
+    cause: null,
+    source_revision_id: input.provenance.source_revision_id,
+    environment_revision_id: input.provenance.environment_revision_id,
+    retry_policy: completedRetryPolicy,
     data: input.data,
     evidence: [...(input.evidence ?? [])],
     provenance: cloneProvenance(input.provenance),
@@ -122,11 +152,18 @@ export function blockedResult<TData, TIssueDetails>(input: {
   evidence?: EvidenceRef[];
   provenance: Provenance;
 }): BlockedHarnessResult<TData, TIssueDetails> {
+  assertCodeDependentProvenance(input.provenance);
   return {
     protocol_version: harnessProtocolVersion,
+    transport_success: true,
+    domain_outcome: "blocked",
     outcome: "blocked",
     effect: input.effect ?? "none",
     satisfaction: input.satisfaction,
+    cause: input.issue.kind,
+    source_revision_id: input.provenance.source_revision_id,
+    environment_revision_id: input.provenance.environment_revision_id,
+    retry_policy: retryPolicy(input.issue.kind, input.recovery),
     issue: { ...input.issue },
     recovery: { ...input.recovery },
     data: input.data,
@@ -139,16 +176,23 @@ export function cancelledResult<TData>(input: {
   data: TData;
   effect?: CancelledHarnessResult<TData>["effect"];
   satisfaction?: CancelledHarnessResult<TData>["satisfaction"];
-  cause: CancelledHarnessResult<TData>["cause"];
+  cause: CancelledHarnessResult<TData>["cancellation_reason"];
   evidence?: EvidenceRef[];
   provenance: Provenance;
 }): CancelledHarnessResult<TData> {
+  assertCodeDependentProvenance(input.provenance);
   return {
     protocol_version: harnessProtocolVersion,
+    transport_success: true,
+    domain_outcome: "cancelled",
     outcome: "cancelled",
     effect: input.effect ?? "none",
     satisfaction: input.satisfaction ?? "unknown",
-    cause: input.cause,
+    cause: "cancelled",
+    cancellation_reason: input.cause,
+    source_revision_id: input.provenance.source_revision_id,
+    environment_revision_id: input.provenance.environment_revision_id,
+    retry_policy: cancelledRetryPolicy,
     data: input.data,
     evidence: [...(input.evidence ?? [])],
     provenance: cloneProvenance(input.provenance),
@@ -161,6 +205,7 @@ export function isHarnessResult(
   if (!isRecord(value) || value.protocol_version !== "3") return false;
   if (!isProvenance(value.provenance) || !Array.isArray(value.evidence))
     return false;
+  if (!validEnvelope(value)) return false;
   if (value.outcome === "completed") return validCompleted(value);
   if (value.outcome === "blocked") return validBlocked(value);
   if (value.outcome === "cancelled") return validCancelled(value);
@@ -239,6 +284,7 @@ function validCompleted(value: Record<string, unknown>) {
   return (
     validEffect &&
     validSatisfaction &&
+    value.cause === null &&
     Object.hasOwn(value, "data") &&
     validEvidence(value.evidence, true) &&
     codeScopedProvenance(value.provenance)
@@ -257,6 +303,8 @@ function validBlocked(value: Record<string, unknown>) {
   return (
     validEffect &&
     validSatisfaction &&
+    causeKinds.has(String(value.cause)) &&
+    value.cause === recordValue(value.issue).kind &&
     validIssue(value.issue) &&
     validRecovery(value.recovery) &&
     validEvidence(value.evidence, false)
@@ -269,11 +317,12 @@ function validCancelled(value: Record<string, unknown>) {
     String(value.satisfaction),
   );
   const validCause = ["user", "superseded", "shutdown", "timeout"].includes(
-    String(value.cause),
+    String(value.cancellation_reason),
   );
   return (
     validEffect &&
     validSatisfaction &&
+    value.cause === "cancelled" &&
     validCause &&
     validEvidence(value.evidence, false)
   );
@@ -332,6 +381,50 @@ function codeScopedProvenance(value: unknown) {
   );
 }
 
+function validEnvelope(value: Record<string, unknown>) {
+  const provenance = value.provenance as Provenance;
+  return (
+    value.transport_success === true &&
+    value.domain_outcome === value.outcome &&
+    value.source_revision_id === provenance.source_revision_id &&
+    value.environment_revision_id === provenance.environment_revision_id &&
+    validRetryPolicy(value.retry_policy)
+  );
+}
+
+function validRetryPolicy(value: unknown) {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.allowed === "boolean" &&
+    ["runtime", "agent", "user"].includes(String(value.responsible_actor)) &&
+    [...recoveryConditions, "not_applicable"].includes(
+      String(value.required_state_change),
+    )
+  );
+}
+
+function retryPolicy(
+  cause: CauseKind,
+  recovery: RecoveryCondition,
+): RetryPolicy {
+  return {
+    allowed: recovery.condition !== "never",
+    responsible_actor: responsibleActor(cause, recovery),
+    required_state_change: recovery.condition,
+  };
+}
+
+function responsibleActor(cause: CauseKind, recovery: RecoveryCondition) {
+  if (recovery.condition === "explicit_user_action") return "user" as const;
+  if (cause === "code_error" || cause === "invalid_input")
+    return "agent" as const;
+  return "runtime" as const;
+}
+
+function recordValue(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? value : {};
+}
+
 function recoverySatisfied(prior: RetryRecord, current: RetryIdentity) {
   if (prior.recovery.condition === "never") return false;
   if (prior.recovery.condition === "explicit_user_action") return false;
@@ -387,3 +480,15 @@ const recoveryConditions = new Set<string>([
   "runtime_state_change",
   "explicit_user_action",
 ]);
+
+const completedRetryPolicy: RetryPolicy = {
+  allowed: false,
+  responsible_actor: "runtime",
+  required_state_change: "not_applicable",
+};
+
+const cancelledRetryPolicy: RetryPolicy = {
+  allowed: true,
+  responsible_actor: "user",
+  required_state_change: "explicit_user_action",
+};

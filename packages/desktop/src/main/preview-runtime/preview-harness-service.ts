@@ -1,3 +1,4 @@
+import { currentWorkspaceRevisionState } from "@blame/agent-runtime";
 import type { PreviewLifecycleState } from "@blame/preview-contract";
 import { previewSessionLifecycle } from "@blame/preview-runtime";
 import {
@@ -46,11 +47,15 @@ export class PreviewHarnessService {
   }
 
   async inspect(input: PreviewHarnessInput) {
-    const browser = await Promise.resolve(
-      this.dependencies.browserTarget({ scope: input.scope }),
-    );
-    if (browser.error) return previewHarnessState(browser);
-    return previewHarnessState(browser, await this.lifecycle(input));
+    const [browser, lifecycle, revisions] = await Promise.all([
+      Promise.resolve(
+        this.dependencies.browserTarget({ scope: input.scope }),
+      ),
+      this.lifecycle(input),
+      this.revisions(input),
+    ]);
+    if (browser.error) return previewHarnessState(browser, undefined, revisions);
+    return previewHarnessState(browser, lifecycle, revisions);
   }
 
   async target(input: PreviewHarnessInput) {
@@ -82,6 +87,11 @@ export class PreviewHarnessService {
     return result.session
       ? previewSessionLifecycle(result.session)
       : idleLifecycle();
+  }
+
+  private async revisions(input: PreviewHarnessInput) {
+    if (!input.worktree) return undefined;
+    return currentWorkspaceRevisionState(input.worktree).catch(() => undefined);
   }
 }
 
