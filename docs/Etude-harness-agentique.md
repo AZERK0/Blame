@@ -2558,6 +2558,89 @@ Les critères de sortie ne sont pas tous clos. Deux intégrations successives P7
 
 La conclusion est donc bornée : le harness est plus correct, plus simple à utiliser sur les cas isolés et deux résultats Portfolio consécutifs passent le build courant. La série hybride apporte un gain live répété ; aucune baisse statistiquement établie du p95 Portfolio, aucun taux d’erreur provider global et aucune preuve de release multi-environnement ne sont revendiqués.
 
+### 21.32 Comparatif Cline et boucle de consolidation du 1er septembre 2026
+
+#### Baseline Cline native
+
+La première étape de cette nouvelle boucle a ajouté au runner direct un mode `--harness cline`. Il conserve le transport de credentials, le modèle, l'effort de raisonnement, l'expurgation des événements, le timeout et le calcul d'usage de Blame, mais démarre le SDK avec son prompt Cline par défaut et ses outils workspace natifs. Il n'ajoute ni briefing Blame, ni outils sémantiques, ni spécialiste, ni plugin, ni `finish_task`. Le mode Blame reste la valeur par défaut. Cette capacité de comparaison a été commitée séparément sous `036a1aec`.
+
+Le run Cline et le premier run Blame ont utilisé exactement la même instruction Portfolio, le même commit initial `d4d3d1f9f41714b5ca6fce68213ea7a521c776b1`, le même modèle et le même effort, 64 itérations et 2 400 secondes. Cline a été exécuté en premier comme demandé. Les worktrees ont été recréés séparément et installés hors ligne depuis le même lockfile.
+
+| Harness | Résultat réel | Durée ; itérations ; appels | Première mutation / édition source | Tokens entrée / sortie / cache ; coût | Navigation | Éditions et échecs | Preuve et qualité |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Cline par défaut | réussi ; build indépendant passant | 548,15 s ; 25 ; 58 | dépendances à 61,72 s ; patch à 168,62 s | 1 030 354 / 25 367 / 946 176 ; 0,06620 $ | 9 appels de lecture, 33 fichiers demandés, 106 315 octets ; 4 recherches, 9 requêtes, 4 455 octets ; un doublon exact | 6 patches réussis ; 39 appels commande ; 10 appels contenaient au moins un échec | pas de révision native de preuve ; fraîcheur reconstruite par ordre des événements et hash indépendant ; fallback projets fonctionnel, mais aucune preview exécutée par l'agent |
+| Blame avant correction | terminé mais `verified: false` ; build indépendant en échec | 644,23 s ; 49 ; 78 | 154,85 / 155,18 s | 2 135 944 / 28 325 / 2 044 416 ; 0,09318 $ | 26 lectures, 51 845 octets ; 2 recherches, 269 octets ; aucun doublon | 25 appels : 23 textuels et 2 symboliques, 21 réussis et 4 bloqués ; 19 appels bloqués au total | les deux éditions symboliques visaient seulement un composant nouvellement créé ; Prisma 7 restait instancié sans adapter ; validation terminale indisponible |
+| Blame après correction formatter | terminé et vérifié ; build indépendant passant | 512,73 s ; 31 ; 47 | 85,67 / 85,97 s | 973 373 / 23 009 / 910 336 ; 0,05842 $ | 14 lectures, 16 555 octets ; 2 recherches, 949 octets ; aucun doublon | 12 appels : 9 textuels, 2 symboliques et un hybride ; 6 réussis et 6 bloqués ; un formatage déterministe journalisé ; 13 appels bloqués au total | build rattaché à `src_d1e9d26811bd93beca6af1da64f28e3a` ; remplacement symbolique réussi de `Home` existant ; preview indépendante sans carrousel faute de données |
+
+Sur cette répétition, Blame après correction est 6,5 % plus rapide que Cline, utilise 19,0 % d'appels, 5,5 % de tokens d'entrée et 11,7 % de coût en moins, et écrit le code source 82,65 secondes plus tôt. Il utilise toutefois 31 itérations contre 25 et son résultat applicatif est moins démonstratif : Cline fournit quatre projets de démonstration lorsque PostgreSQL est indisponible, tandis que le run Blame affiche seulement l'état d'erreur. Une seule paire ne prouve donc pas une supériorité générale.
+
+Cline a aussi payé des compromis absents du contrat Blame : une installation de dépendances a été conservée alors qu'une validation Prisma placée dans le même appel échouait, deux chemins internes `pnpm` ont été devinés, `prisma generate --no-engine` était invalide, et un serveur Next est resté actif après le terminal jusqu'à son arrêt externe. Ses preuves ne sont pas nativement liées à une révision source. À l'inverse, ces faiblesses transactionnelles n'annulent pas son avantage initial de simplicité : avant le correctif, Cline produisait un meilleur diff en moins de temps, d'appels, de tokens et de coût.
+
+#### Cycle formatter déterministe
+
+L'hypothèse ciblée était que le refus global des formateurs mutateurs forçait le modèle à reproduire intellectuellement un résultat déterministe. Le scénario Prisma court demandait un modèle `Project`, un repository serveur, la génération du client, puis Prisma, TypeScript et build. Les trois runs ont utilisé le même commit Portfolio, la même instruction, le même modèle, le même effort, 40 itérations et 1 200 secondes.
+
+| Run | Formatter réellement utilisé | Durée ; itérations ; appels | Première édition réussie | Tokens entrée / sortie / cache ; coût | Lectures / doublons ; recherches | Éditions ; appels bloqués | Décision |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Avant | non ; `prettier --write` refusé | 393,21 s ; 40 ; 88 | 81,05 s | 892 619 / 13 052 / 835 584 ; 0,04378 $ | 24 / 4 ; 1 | 10 textuelles, 9 réussies, une bloquée ; 22 bloqués au total | baseline : boucle de diagnostics Prettier jusqu'à l'itération 40 |
+| Après 1 | non ; Prettier et `prisma format` regroupés avec `&&` | 338,22 s ; 35 ; 74 | 110,36 s | 727 016 / 13 290 / 677 888 ; 0,03933 $ | 28 / 0 ; 4 | 10 appels, 5 réussis et 5 bloqués ; 19 bloqués au total | non causal : le nouveau chemin n'a pas été emprunté |
+| Après 2 | oui ; reçu atomique `c2` sur trois fichiers | 262,02 s ; 17 ; 52 | 99,41 s | 295 321 / 10 223 / 259 072 ; 0,02470 $ | 21 / 0 ; 3 | une édition textuelle réussie, aucun rejet ; un formatage déterministe ; 10 bloqués au total | conservé : −33,4 % de durée, −40,9 % d'appels, −66,9 % d'entrée et −43,6 % de coût contre l'avant |
+
+Le premier après ne constitue pas une preuve du correctif. Il a montré une friction supplémentaire : en cas de commande composée, le message générique « utiliser `edit_code` » orientait de nouveau vers le travail manuel. Le runtime répond désormais avec l'appel Prettier exact à isoler. Cette récupération a été commitée sous `442df36e`; le chemin atomique l'avait été sous `14675acb`.
+
+Le mécanisme n'exécute jamais `--write` sur le worktree. Il n'accepte que Prettier, un ou plusieurs chemins explicites existants, aucun glob, répertoire, option ambiguë ou opérateur shell. Chaque contenu est capturé, envoyé à Prettier par stdin avec `--stdin-filepath`, collecté en mémoire, validé par les parseurs finaux existants, puis appliqué en un seul commit Light. Une divergence entre le contenu capturé et le contenu courant bloque tout le lot. Un échec sur le dernier fichier laisse tous les fichiers inchangés. Le changement et la validation de formatage sont attachés à la nouvelle révision dans le `SessionJournal`, et la couverture des chemins touchés est invalidée. ESLint fix, Biome, Prisma format et les scripts de répertoire restent hors de ce chemin.
+
+Le contrôle indépendant du second après a exécuté `prisma validate`, `prisma generate`, Prettier check, TypeScript sans incrément, ESLint et le build Next. Tout passe. Le hash source est resté exactement `19ccfba930a411b11d82326c77dc6c5501af317ee55d37d131634d88d49e9559` avant et après ces validations.
+
+#### Transfert sur l'intégration complète
+
+Le replay complet après correction est un signal positif mais non une preuve statistique. Par rapport au Blame immédiatement précédent, il réduit la durée de 20,4 %, les itérations de 36,7 %, les appels de 39,7 %, les tokens d'entrée de 54,4 %, le cache de 55,5 % et le coût de 37,3 %. La première édition réussie passe de 155,18 à 85,97 secondes. Le formatter atomique est réellement utilisé à l'itération 26 sur sept fichiers et la validation finale appartient à la dernière révision. Il n'y a aucun événement postérieur au terminal.
+
+L'exploitation sémantique est cette fois réelle : l'agent remplace `Home` dans `apps/web/src/app/page.tsx` par symbole tout en ajoutant l'import et le composant dans le même batch hybride. Quatre autres opérations symboliques CSS sont tentées. Deux batchs CSS sont refusés parce que leurs plages se chevauchent, puis l'agent retombe sur des patches. Le taux de rejet d'édition monte à 6 sur 12, contre 4 sur 25 avant correction. Les six causes sont toutes contractuelles : ajout d'un fichier déjà existant, deux overlaps, deux contextes ambigus et un document ne respectant pas le dialecte Apply Patch. Elles ne doivent pas être confondues avec les cinq échecs de validation de code et l'indisponibilité d'environnement.
+
+Six périodes sans outil dépassent encore 30 secondes, pour 317,80 secondes cumulées et un maximum de 87,28 secondes. Elles dominent désormais davantage la durée que l'exécution des outils. Aucun coupe-circuit n'a été ajouté.
+
+Le contrôle indépendant passe pour Prisma, Prettier, TypeScript, ESLint et le build Next, sans modifier le hash source `b428a9755421235a49211f65eaea12cf03243748581b755625e8d37063520a13`. Le résumé final décrit correctement les validations exécutées, mais « interactions couvertes » désigne l'implémentation, pas une preuve interactive.
+
+Une preview navigateur indépendante, démarrée après le run, a rendu le héros et la transition sombre sans erreur console cliente. L'API a retourné 503 faute de PostgreSQL, ce qui laisse uniquement « Les projets sont momentanément indisponibles ». Aucun canvas, bouton, drag, clavier ou Maj + molette n'était alors disponible. Cette preview ne fait pas partie des preuves de l'agent et établit une insuffisance fonctionnelle du résultat. Le run Cline et le Blame précédent comportaient un jeu de projets de démonstration ; le replay après correction régresse donc sur ce point malgré son build valide.
+
+#### Tests et commandes exécutés
+
+Trois tests déterministes couvrent le nouveau formatter : application multi-fichiers et journal à la révision courante, absence totale d'écriture lorsque le dernier fichier échoue, et récupération actionnable d'une commande composée. Les tests antérieurs de refus des écritures shell, scripts de formatage de répertoire et mutations non gérées restent passants. Le runner couvre aussi la sélection `blame|cline`, le prompt Cline non enrichi et le maintien des politiques natives. La suite finale passe avec 223 tests agent runtime et 8 tests runner, ainsi que lint, typecheck et builds concernés. Le bundle runner a été reconstruit après chaque changement et son `dist` a été inspecté pour les chaînes `deterministic_format`, `--stdin-filepath` et la récupération composée.
+
+Les commandes réellement exécutées pendant cette phase incluent :
+
+```text
+git status --short
+git diff --check
+git worktree add --detach <workspace> d4d3d1f9f41714b5ca6fce68213ea7a521c776b1
+pnpm install --offline --frozen-lockfile
+pnpm --filter @blame/agent-runtime test|lint|typecheck|build
+pnpm --filter @blame/benchmark-runner test|build
+BLAME_HEADLESS_DEV=true NODE_ENV=development pnpm benchmark:agent -- run --harness cline ...
+BLAME_HEADLESS_DEV=true NODE_ENV=development pnpm benchmark:agent -- run ...
+DATABASE_URL=<URL inerte réservée à la validation> pnpm exec prisma validate|generate
+pnpm exec prettier --check <fichiers>
+pnpm exec tsc --noEmit --incremental false
+pnpm exec eslint <fichiers>
+NODE_ENV=production DATABASE_URL=<URL inerte> pnpm build
+pnpm --filter web exec next start -p 3010
+git add <fichiers du correctif>
+git commit -m <intention unique>
+```
+
+Les variables de `.env.terminal-bench` ont été chargées silencieusement avant builds et runs, jamais affichées, copiées ou commitées. Les artefacts ont été expurgés et contrôlés contre les valeurs chargées.
+
+#### Causes restantes et décision de sortie
+
+Le correctif formatter est conservé parce que son chemin a été observé en live, son effet ciblé est important, son résultat est atomique et il réutilise le commit et le journal existants au lieu d'introduire un second système transactionnel. Le premier replay après correction est explicitement exclu de la preuve causale. Aucun gain de p95, aucune généralisation multi-modèle et aucune supériorité globale sur Cline ne sont revendiqués.
+
+Deux correctifs envisagés ne sont pas implémentés dans cette boucle. Injecter automatiquement `DATABASE_URL` dans tous les builds aurait pu masquer une exigence réelle de configuration et a donc été abandonné. Autoriser directement `prisma format` ou tout codegen dans le worktree sans staging aurait violé l'atomicité recherchée.
+
+Le replay complet démontre précisément le besoin du prochain mécanisme : `prisma generate` a créé `apps/web/src/generated/` dans le worktree sans reçu de mutation. La révision et la preuve finales incluent ces fichiers, mais l'écriture elle-même n'est ni atomique ni attribuée. Une correction correcte doit exécuter le générateur dans un staging, borner et inspecter son arbre de sortie, calculer les additions, modifications et suppressions, valider ces contenus, puis effectuer un seul commit journalisé. Ce changement est plus architectural que le formatter stdout et n'a pas été improvisé dans le chemin principal.
+
+Les autres limites ouvertes sont le taux de rejet d'édition de 50 % sur le dernier Portfolio, les overlaps CSS entre insertion et remplacement d'un `@media`, six longues phases de raisonnement, l'absence de preview gérée par le runner, l'absence de données de démonstration rendant le carrousel non testable, les smoke tests WSL, Lima et Cloud Preview, et le manque de répétitions alternées sur un corpus holdout. Le harness est mieux comparé et plus efficace sur ce corpus, mais reste `frontier-capable` plutôt que `frontier-proven`.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)
