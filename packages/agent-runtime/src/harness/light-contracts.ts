@@ -1,12 +1,7 @@
 import { z } from "zod";
 
 const relativePath = z.string().trim().min(1).max(4_096);
-const focusedEditContent = z
-  .string()
-  .max(
-    10_000,
-    "Keep each edit operation below 10,000 characters and split larger work across cohesive files or successive focused edits.",
-  );
+const editContent = z.string().max(2_097_152);
 
 export const lightSearchCodeInputSchema = z
   .object({
@@ -42,7 +37,7 @@ const symbolEdit = z
       "insert_after",
       "delete",
     ]),
-    content: focusedEditContent.optional(),
+    content: editContent.optional(),
   })
   .strict()
   .superRefine((value, context) => {
@@ -54,7 +49,7 @@ const patchEdit = z
   .object({
     kind: z.literal("patch"),
     path: relativePath.optional(),
-    patch: focusedEditContent.min(1),
+    patch: editContent.min(1),
   })
   .strict();
 

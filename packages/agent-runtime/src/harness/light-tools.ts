@@ -121,7 +121,7 @@ function readCodeTool(workspace: LightWorkspacePort, capabilities: string) {
 function editCodeTool(workspace: LightWorkspacePort, capabilities: string) {
   return harnessTool({
     name: "edit_code",
-    description: `Apply one atomic batch of symbolic replacements and native Cline Apply Patch operations. Prefer symbol operations inside existing supported symbols; use focused patches for imports, raw/config files, new files, or small cross-symbol changes. Append code or CSS with insert_after on a returned editTarget instead of patching a generic delimiter. Keep every operation below 10,000 characters and split large additions across cohesive files or successive focused calls; independent operations in one call remain atomic. Multi-file Cline patches are accepted and attributed automatically. Operations share one snapshot, reject overlaps, parse only final states, and never require hashes or revisions.\n${capabilities}`,
+    description: `Apply one atomic batch of symbolic replacements and native Cline Apply Patch operations. Prefer symbol operations inside existing supported symbols; use focused patches for imports, raw/config files, new files, or small cross-symbol changes. Append code or CSS with insert_after on a returned editTarget instead of patching a generic delimiter. Independent operations in one call remain atomic. Multi-file Cline patches are accepted and attributed automatically. Operations share one snapshot, reject overlaps, parse only final states, and never require hashes or revisions.\n${capabilities}`,
     schema: lightEditCodeInputSchema,
     execute: (input, context) =>
       workspace.editCode(input, {

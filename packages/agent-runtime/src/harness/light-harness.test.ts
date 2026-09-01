@@ -154,6 +154,101 @@ for (const [path, source, query, replacement] of symbolLanguageCases)
     });
   });
 
+test("whole symbol replacement includes exported declaration wrappers", async () => {
+  const cases = [
+    {
+      path: "component.tsx",
+      replacement: "export function Home() { return <main>Home</main> }",
+      source: "export const Home = () => <main>Old</main>\n",
+      symbol: "Home",
+    },
+    {
+      path: "projects.ts",
+      replacement: "export async function listProjects() { return [] }",
+      source: "export async function listProjects() { return ['old'] }\n",
+      symbol: "listProjects",
+    },
+  ];
+  for (const item of cases)
+    await withWorkspace({ [item.path]: item.source }, async (root) => {
+      const workspace = lightWorkspace(root, `export-${item.symbol}`);
+      const alias = await symbolAlias(workspace, item.symbol);
+      const result = await workspace.editCode({
+        operations: [
+          {
+            action: "replace",
+            content: item.replacement,
+            kind: "symbol",
+            target: alias,
+          },
+        ],
+      });
+      assert.equal(result.status, "ok");
+      assert.equal(record(data(result).parse).status, "passed");
+      assert.equal(
+        await readFile(join(root, item.path), "utf8"),
+        `${item.replacement}\n`,
+      );
+    });
+});
+
+test("TypeScript validation rejects syntax missed by either parser", async () => {
+  const cases = [
+    [
+      "export const value = 1",
+      "export const export function value() { return 1 }",
+    ],
+    [
+      "export async function value() { return 1 }",
+      "export export async function value() { return 1 }",
+    ],
+  ] as const;
+  for (const [source, invalid] of cases)
+    await withWorkspace({ "invalid.ts": `${source}\n` }, async (root) => {
+      const workspace = lightWorkspace(root, `strict-parse-${source.length}`);
+      const result = await workspace.editCode({
+        operations: [
+          {
+            kind: "patch",
+            path: "invalid.ts",
+            patch: applyPatch("invalid.ts", [`-${source}`, `+${invalid}`]),
+          },
+        ],
+      });
+      assert.equal(result.status, "blocked");
+      if (result.status === "blocked")
+        assert.match(result.message, /Final parse failed/u);
+      assert.equal(
+        await readFile(join(root, "invalid.ts"), "utf8"),
+        `${source}\n`,
+      );
+    });
+});
+
+test("TSX body replacement preserves UTF-8 boundaries", async () => {
+  const source =
+    "export default function Home() { return <main>Raphaël 😀</main> }\n";
+  await withWorkspace({ "page.tsx": source }, async (root) => {
+    const workspace = lightWorkspace(root, "tsx-utf8-offsets");
+    const alias = await symbolAlias(workspace, "Home");
+    const result = await workspace.editCode({
+      operations: [
+        {
+          action: "replace_body",
+          content: "{ return <main>Élodie 😀</main> }",
+          kind: "symbol",
+          target: alias,
+        },
+      ],
+    });
+    assert.equal(result.status, "ok");
+    assert.equal(
+      await readFile(join(root, "page.tsx"), "utf8"),
+      "export default function Home() { return <main>Élodie 😀</main> }\n",
+    );
+  });
+});
+
 test("tool surface contains only the four workspace tools", async () => {
   await withWorkspace(
     { "src/app.ts": "export const value = 1\n" },
@@ -169,7 +264,7 @@ test("tool surface contains only the four workspace tools", async () => {
         "run_task",
       ]);
       const edit = tools.find(({ name }) => name === "edit_code");
-      assert.match(JSON.stringify(edit?.inputSchema), /"maxLength":10000/u);
+      assert.match(JSON.stringify(edit?.inputSchema), /"maxLength":2097152/u);
     },
   );
 });
@@ -343,30 +438,27 @@ test("CSS outlines stay compact and expose an append target", async () => {
       `.rule-${index} { background: linear-gradient(135deg, #111111, #222222); border: 1px solid #333333; color: #f5f5f5; padding: 1rem 2rem; }`,
   ).join("\n");
   const source = `:root { --accent: red; }\n${rules}\n`;
-  await withWorkspace(
-    { "styles.css": source },
-    async (root) => {
-      const workspace = lightWorkspace(root, "compact-css-outline");
-      const result = data(
-        await workspace.readCode(
-          { target: "styles.css", view: "outline" },
-          { agentId: "lead" },
-        ),
-      );
-      assert.equal(array(result.items).length, 32);
-      assert.equal(result.truncated, true);
-      assert.ok(JSON.stringify(result).length < source.length);
-      assert.ok(
-        array(result.items).every(
-          (item) => record(item).kind !== "css_custom_property",
-        ),
-      );
-      assert.equal(
-        record(array(result.editTargets).at(-1)).qualifiedName,
-        ".rule-59",
-      );
-    },
-  );
+  await withWorkspace({ "styles.css": source }, async (root) => {
+    const workspace = lightWorkspace(root, "compact-css-outline");
+    const result = data(
+      await workspace.readCode(
+        { target: "styles.css", view: "outline" },
+        { agentId: "lead" },
+      ),
+    );
+    assert.equal(array(result.items).length, 32);
+    assert.equal(result.truncated, true);
+    assert.ok(JSON.stringify(result).length < source.length);
+    assert.ok(
+      array(result.items).every(
+        (item) => record(item).kind !== "css_custom_property",
+      ),
+    );
+    assert.equal(
+      record(array(result.editTargets).at(-1)).qualifiedName,
+      ".rule-59",
+    );
+  });
 });
 
 test("read coverage survives isolated Light bridge executions", async () => {
@@ -569,6 +661,9 @@ test("run_task denies shell writes and unmanaged infrastructure", async () => {
       "git -C . add value.txt",
       "docker run postgres:17",
       "find node_modules/prisma -type f",
+      "pnpm exec prettier src --write",
+      "pnpm exec eslint src --fix",
+      "pnpm exec prisma format",
     ]) {
       const result = await workspace.tasks.run({ kind: "command", command });
       assert.equal(result.status, "blocked");
@@ -596,8 +691,8 @@ test("code navigation refuses runtime-managed dependency internals", async () =>
   );
 });
 
-test("edit payloads are bounded before execution", () => {
-  const result = lightEditCodeInputSchema.safeParse({
+test("edit payloads accept full components up to a mechanical limit", () => {
+  const accepted = lightEditCodeInputSchema.safeParse({
     operations: [
       {
         kind: "patch",
@@ -606,9 +701,17 @@ test("edit payloads are bounded before execution", () => {
       },
     ],
   });
-  assert.equal(result.success, false);
-  if (!result.success)
-    assert.match(result.error.issues[0]?.message ?? "", /cohesive files/u);
+  assert.equal(accepted.success, true);
+  const rejected = lightEditCodeInputSchema.safeParse({
+    operations: [
+      {
+        kind: "patch",
+        path: "large.css",
+        patch: "x".repeat(2_097_153),
+      },
+    ],
+  });
+  assert.equal(rejected.success, false);
 });
 
 test("run_task reuses identical inspections and rejects service scripts", async () => {
@@ -650,6 +753,28 @@ test("run_task reuses identical inspections and rejects service scripts", async 
         task: "preview",
       });
       assert.equal(preview.status, "blocked");
+    },
+  );
+});
+
+test("run_task prefers an exact build script over prebuild", async () => {
+  await withWorkspace(
+    {
+      "apps/web/package.json": JSON.stringify({
+        scripts: {
+          build: 'node -e "process.exit(0)"',
+          prebuild: 'node -e "process.exit(0)"',
+        },
+      }),
+    },
+    async (root) => {
+      const workspace = lightWorkspace(root, "exact-build-task");
+      const result = await workspace.tasks.run({
+        kind: "project",
+        packagePath: "apps/web",
+        task: "build",
+      });
+      assert.equal(result.status, "ok");
     },
   );
 });
@@ -810,6 +935,41 @@ test("CSS supports structural outline and rule body editing", async () => {
       );
     },
   );
+});
+
+test("outline ranges exclude symbols outside the requested lines", async () => {
+  const source = Array.from(
+    { length: 700 },
+    (_, index) => `.rule-${index + 1} { color: red; }`,
+  ).join("\n");
+  await withWorkspace({ "large.css": `${source}\n` }, async (root) => {
+    const workspace = lightWorkspace(root, "ranged-outline");
+    const result = data(
+      await workspace.readCode(
+        {
+          range: { endLine: 650, startLine: 330 },
+          target: "large.css",
+          view: "outline",
+        },
+        { agentId: "lead" },
+      ),
+    );
+    const items = array(result.items).map(record);
+    assert.equal(items.length, 32);
+    assert.ok(
+      items.every((item) => {
+        const [start, end] = array(item.line_range).map(Number);
+        return start >= 330 && end <= 650;
+      }),
+    );
+    assert.ok(
+      array(result.editTargets).every((target) => {
+        const match = String(record(target).qualifiedName).match(/(\d+)/u);
+        const line = Number(match?.[1]);
+        return line >= 330 && line <= 650;
+      }),
+    );
+  });
 });
 
 test("one batch combines an import patch and a symbol body replacement", async () => {
@@ -1155,6 +1315,74 @@ test("finish_task reads the session journal and emits only a natural summary", a
   );
 });
 
+test("finish_task reruns the selected build after the final edit", async () => {
+  await withWorkspace(
+    {
+      "package.json": JSON.stringify({
+        scripts: { build: "node --version", lint: "node --version" },
+      }),
+      "value.ts": "export const value = 1\n",
+    },
+    async (root) => {
+      const sessionId = "fresh-final-build";
+      const workspace = lightWorkspace(root, sessionId);
+      await workspace.editCode({
+        operations: [
+          {
+            kind: "patch",
+            path: "value.ts",
+            patch: applyPatch("value.ts", [
+              "-export const value = 1",
+              "+export const value = 2",
+            ]),
+          },
+        ],
+      });
+      assert.equal(
+        (await workspace.tasks.run({ kind: "project", task: "build" })).status,
+        "ok",
+      );
+      await workspace.editCode({
+        operations: [
+          {
+            kind: "patch",
+            path: "value.ts",
+            patch: applyPatch("value.ts", [
+              "-export const value = 2",
+              "+export const value = 3",
+            ]),
+          },
+        ],
+      });
+      await workspace.tasks.run({ kind: "project", task: "lint" });
+      const activities: string[] = [];
+      let verified = false;
+      const tool = createFinishTaskTool({
+        conversationId: sessionId,
+        onComplete: (notification) => {
+          verified = notification.verified;
+        },
+        onValidationActivity: ({ input, phase }) => {
+          if (input.kind === "project")
+            activities.push(`${phase}:${input.task}`);
+        },
+        taskContract: contract(sessionId),
+        workspaceRoot: root,
+      });
+      await tool.execute({ summary: "Updated the final value." }, {
+        sessionId,
+        toolCallId: "fresh-finish",
+      } as never);
+      assert.deepEqual(activities, ["started:build", "finished:build"]);
+      const snapshot = await new SessionJournal(
+        root,
+        sessionId,
+      ).completionSnapshot();
+      assert.equal(verified, true, JSON.stringify(snapshot));
+    },
+  );
+});
+
 test("remote finish_task forwards automatic validation activities", async () => {
   await withWorkspace(
     {
@@ -1388,6 +1616,36 @@ test("stale aliases relocate once only when identity remains unique", async () =
     );
     assert.equal(result.status, "ok");
     assert.match(await readFile(join(root, "target.ts"), "utf8"), /return 2/u);
+  });
+});
+
+test("symbol aliases remain valid across successive indexed edits", async () => {
+  const source = "export function target() { return 1 }\n";
+  await withWorkspace({ "target.ts": source }, async (root) => {
+    const workspace = lightWorkspace(root, "stable-symbol-alias");
+    const alias = await symbolAlias(workspace, "target");
+    for (const value of [2, 3]) {
+      const result = await workspace.editCode({
+        operations: [
+          {
+            action: "replace_body",
+            content: `{ return ${value} }`,
+            kind: "symbol",
+            target: alias,
+          },
+        ],
+      });
+      assert.equal(result.status, "ok");
+      assert.ok(
+        array(data(result).aliases).some(
+          (entry) => record(entry).alias === alias,
+        ),
+      );
+    }
+    assert.equal(
+      await readFile(join(root, "target.ts"), "utf8"),
+      "export function target() { return 3 }\n",
+    );
   });
 });
 

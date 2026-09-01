@@ -8,12 +8,17 @@ import {
 import {
   previewHarnessState,
   resolvePreviewHarnessState,
+  shouldStartStoppedLocalPreview,
+  type PreviewHarnessStatus,
 } from "./preview-harness-state.ts";
 export type {
   PreviewHarnessState,
   PreviewHarnessStatus,
 } from "./preview-harness-state.ts";
-import { projectPreviewLifecycleState } from "../workspace-ipc.ts";
+import {
+  controlProjectPreview,
+  projectPreviewLifecycleState,
+} from "../workspace-ipc.ts";
 import type { PreviewService } from "./preview-service.ts";
 
 export type PreviewHarnessInput = {
@@ -29,12 +34,15 @@ type PreviewHarnessDependencies = {
   browserTarget: typeof getPreviewDevtoolsTarget;
   localLifecycle: typeof projectPreviewLifecycleState;
   refreshIntervalMs: number;
+  startLocal: (worktree: string) => Promise<unknown>;
 };
 
 const defaultDependencies: PreviewHarnessDependencies = {
   browserTarget: getPreviewDevtoolsTarget,
   localLifecycle: projectPreviewLifecycleState,
   refreshIntervalMs: 500,
+  startLocal: (worktree) =>
+    controlProjectPreview({ action: "start", worktree }),
 };
 
 export class PreviewHarnessService {
@@ -58,11 +66,30 @@ export class PreviewHarnessService {
   }
 
   async target(input: PreviewHarnessInput) {
+    const initial = await this.inspect(input);
+    let started = false;
+    try {
+      started = await this.startStoppedLocalPreview(input, initial.status);
+    } catch (error) {
+      return failedPreviewStart(initial, error);
+    }
+    if (!started && initial.status !== "starting") return initial;
     return resolvePreviewHarnessState(
       () => this.inspect(input),
       input.waitFor,
       () => abortableDelay(this.dependencies.refreshIntervalMs, input.signal),
+      started ? undefined : initial,
     );
+  }
+
+  private async startStoppedLocalPreview(
+    input: PreviewHarnessInput,
+    status: PreviewHarnessStatus,
+  ) {
+    if (!input.worktree) return false;
+    if (!shouldStartStoppedLocalPreview({ ...input, status })) return false;
+    await this.dependencies.startLocal(input.worktree);
+    return true;
   }
 
   private async lifecycle(input: PreviewHarnessInput) {
@@ -92,6 +119,20 @@ export class PreviewHarnessService {
     if (!input.worktree) return undefined;
     return currentWorkspaceRevisionState(input.worktree).catch(() => undefined);
   }
+}
+
+function failedPreviewStart(
+  state: Awaited<ReturnType<PreviewHarnessService["inspect"]>>,
+  error: unknown,
+) {
+  const diagnostic = error instanceof Error ? error.message : String(error);
+  return {
+    ...state,
+    available: false,
+    message: diagnostic.slice(0, 2_000),
+    reason: "PREVIEW_START_FAILED",
+    status: "failed" as const,
+  };
 }
 
 function idleLifecycle(): PreviewLifecycleState {

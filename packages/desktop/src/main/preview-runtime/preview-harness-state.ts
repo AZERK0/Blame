@@ -83,14 +83,29 @@ export async function resolvePreviewHarnessState(
   inspect: () => Promise<PreviewHarnessState>,
   waitFor: "none" | "ready" | undefined,
   waitForRefresh: () => Promise<void>,
+  initial?: PreviewHarnessState,
 ) {
-  let state = await inspect();
+  let state = initial ?? (await inspect());
   if (waitFor !== "ready" || state.status !== "starting") return state;
   while (state.status === "starting") {
     await waitForRefresh();
     state = await inspect();
   }
   return state;
+}
+
+export function shouldStartStoppedLocalPreview(input: {
+  status: PreviewHarnessStatus;
+  waitFor?: "none" | "ready";
+  workspaceMode?: "local-container" | "cloud-mirror";
+  worktree?: string;
+}) {
+  return (
+    input.waitFor === "ready" &&
+    input.status === "stopped" &&
+    input.workspaceMode !== "cloud-mirror" &&
+    Boolean(input.worktree)
+  );
 }
 
 function previewHarnessStatus(

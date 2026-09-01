@@ -1,6 +1,14 @@
 import type { SgNode } from "@ast-grep/napi";
 
-export function componentElementBodyRange(node: SgNode, byteOffset: number) {
+type ComponentRangeContext = {
+  byteOffset: number;
+  utf8Offsets: Uint32Array;
+};
+
+export function componentElementBodyRange(
+  node: SgNode,
+  context: ComponentRangeContext,
+) {
   if (!isContainerElement(node)) return undefined;
   const children = node.children();
   const start = children.find((child) =>
@@ -16,10 +24,7 @@ export function componentElementBodyRange(node: SgNode, byteOffset: number) {
       ),
     );
   if (!start || !end) return undefined;
-  return [nodeEnd(start, byteOffset), nodeStart(end, byteOffset)] as [
-    number,
-    number,
-  ];
+  return [nodeEnd(start, context), nodeStart(end, context)] as [number, number];
 }
 
 export function componentElementName(node: SgNode) {
@@ -41,10 +46,10 @@ function isContainerElement(node: SgNode) {
   );
 }
 
-function nodeStart(node: SgNode, byteOffset: number) {
-  return byteOffset + node.range().start.index;
+function nodeStart(node: SgNode, context: ComponentRangeContext) {
+  return context.byteOffset + context.utf8Offsets[node.range().start.index]!;
 }
 
-function nodeEnd(node: SgNode, byteOffset: number) {
-  return byteOffset + node.range().end.index;
+function nodeEnd(node: SgNode, context: ComponentRangeContext) {
+  return context.byteOffset + context.utf8Offsets[node.range().end.index]!;
 }

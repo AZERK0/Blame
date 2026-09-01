@@ -289,7 +289,7 @@ export class LightTaskRunner {
     const scoped = packagePath
       ? tasks.filter((task) => packageMatches(task, packagePath))
       : tasks;
-    const candidates = scoped.filter((task) => taskMatches(task, input.task));
+    const candidates = matchingTasks(scoped, input.task);
     if (candidates.length !== 1)
       throw new TaskSelectionError(taskSelectionError(input.task, candidates));
     return candidates[0]!;
@@ -306,6 +306,7 @@ function canReuseValidation(
   validation: ReusableValidation,
   metadata: ValidationMetadata,
 ) {
+  if (metadata.taskId && validation.taskId !== metadata.taskId) return false;
   if (validation.status === "passed") return Boolean(metadata.reusePasses);
   return Boolean(
     validation.status === "failed" &&
@@ -357,12 +358,11 @@ function reusedCommandResult(
   };
 }
 
-function taskMatches(task: TaskCatalogItem, requested: string) {
-  return (
-    task.task_id === requested ||
-    task.script === requested ||
-    task.kind === requested
+function matchingTasks(tasks: TaskCatalogItem[], requested: string) {
+  const exact = tasks.filter(
+    (task) => task.task_id === requested || task.script === requested,
   );
+  return exact.length ? exact : tasks.filter((task) => task.kind === requested);
 }
 
 function packageMatches(task: TaskCatalogItem, packagePath: string) {

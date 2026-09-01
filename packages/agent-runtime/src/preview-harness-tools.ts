@@ -298,7 +298,7 @@ export function previewDevtoolsTool(
   return {
     name: "get_preview_devtools",
     description:
-      "Inspect browser, container, and application readiness for this session's Blame preview. Readiness requires an exploitable HTTP response, no blocking compiler diagnostic, usable dependencies, and the current source and environment revisions. Stopped, failed, and unopened browser states return immediately.",
+      "Inspect browser, container, and application readiness for this session's Blame preview. Readiness requires an exploitable HTTP response, no blocking compiler diagnostic, usable dependencies, and the current source and environment revisions. For a stopped local preview, waitFor=ready starts the managed runtime before waiting. Failed and unopened browser states return immediately.",
     inputSchema: previewDevtoolsInputSchema(),
     execute: (input: unknown, context: ToolContext) =>
       executePreviewDevtoolsTool(options, preview, input, context.signal),
@@ -314,7 +314,7 @@ function previewDevtoolsInputSchema() {
         enum: ["none", "ready"],
         default: "none",
         description:
-          "Use none to return the current state immediately. Use ready to wait while the preview is actively starting; stopped or failed states still return immediately.",
+          "Use none to return the current state immediately. Use ready to start a stopped local managed preview and wait while it is starting; failed states return immediately.",
       },
     },
     additionalProperties: false,
@@ -409,7 +409,7 @@ function previewDevtoolsRecommendation(
     return "Call again with waitFor=ready only if blocking for startup is useful; otherwise continue other work.";
   }
   if (status === "stopped")
-    return "The managed preview is stopped. Continue with local validation; do not start a replacement server, database, or container.";
+    return "The managed preview is stopped. Call once with waitFor=ready when visual evidence matters; do not start a replacement server, database, or container.";
   if (status === "failed") {
     return "Inspect managed preview logs once if useful, then continue with local validation. Do not create replacement infrastructure or alter dependencies to repair preview state.";
   }

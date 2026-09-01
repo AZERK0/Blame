@@ -72,20 +72,13 @@ export class LightAliasRegistry {
     revision: string,
   ) {
     const materialized = materializeSymbol({ symbol, path, revision, content });
-    const existing = this.exactSymbol(path, content, symbol);
-    if (existing) return { alias: existing.alias, materialized };
+    const existing = this.reusableSymbol(path, content, symbol);
+    if (existing) {
+      this.updateSymbol(existing.alias, path, content, symbol);
+      return { alias: existing.alias, materialized };
+    }
     const alias = this.nextAlias();
-    this.aliases.set(alias, {
-      alias,
-      end: symbol.range_utf8_bytes[1],
-      fileHash: sha256(content),
-      kind: "symbol",
-      language: semanticLanguageName(path),
-      path,
-      qualifiedName: symbol.qualified_name,
-      symbolKind: symbol.kind,
-      start: symbol.range_utf8_bytes[0],
-    });
+    this.updateSymbol(alias, path, content, symbol);
     return { alias, materialized };
   }
 
@@ -136,11 +129,6 @@ export class LightAliasRegistry {
     this.sequence = Math.max(0, ...entries.map(aliasSequence));
   }
 
-  invalidatePath(path: string) {
-    for (const [alias, entry] of this.aliases)
-      if (entry.path === path) this.aliases.delete(alias);
-  }
-
   async resolveSymbol(target: string, files: WorkspaceFiles, revision: string) {
     const entry = this.aliases.get(target);
     if (entry) return this.resolveAlias(entry, files, revision);
@@ -164,6 +152,7 @@ export class LightAliasRegistry {
     );
     if (candidates.length !== 1)
       throw resolutionConflict(entry.qualifiedName, candidates);
+    this.updateSymbol(entry.alias, entry.path, content, candidates[0]!);
     return resolved(entry.path, content, candidates[0]!, revision, entry.alias);
   }
 
@@ -202,6 +191,46 @@ export class LightAliasRegistry {
         sameRange(symbol, entry),
     );
   }
+
+  private reusableSymbol(path: string, content: Buffer, symbol: ParsedSymbol) {
+    const exact = this.exactSymbol(path, content, symbol);
+    if (exact) return exact;
+    const matches = [...this.aliases.values()].filter(
+      (entry): entry is SymbolAlias =>
+        entry.kind === "symbol" &&
+        entry.path === path &&
+        sameIdentity(symbol, entry),
+    );
+    return matches.length === 1 ? matches[0] : undefined;
+  }
+
+  private updateSymbol(
+    alias: string,
+    path: string,
+    content: Buffer,
+    symbol: ParsedSymbol,
+  ) {
+    this.aliases.set(alias, symbolAlias(alias, path, content, symbol));
+  }
+}
+
+function symbolAlias(
+  alias: string,
+  path: string,
+  content: Buffer,
+  symbol: ParsedSymbol,
+): SymbolAlias {
+  return {
+    alias,
+    end: symbol.range_utf8_bytes[1],
+    fileHash: sha256(content),
+    kind: "symbol",
+    language: semanticLanguageName(path),
+    path,
+    qualifiedName: symbol.qualified_name,
+    symbolKind: symbol.kind,
+    start: symbol.range_utf8_bytes[0],
+  };
 }
 
 function aliasSequence(entry: LightAlias) {

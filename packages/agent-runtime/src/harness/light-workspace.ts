@@ -77,6 +77,18 @@ type ReadContext = Partial<AgentToolContext>;
 const maximumRawCharacters = 64_000;
 const maximumOutlineItems = 32;
 
+function outlineRangeCandidates(
+  symbols: ParsedSymbol[],
+  range?: LightReadCodeInput["range"],
+) {
+  const candidates = outlineCandidates(symbols);
+  if (!range) return candidates;
+  return candidates.filter(
+    ({ line_range: [start, end] }) =>
+      start <= range.endLine && end >= range.startLine,
+  );
+}
+
 export class LightWorkspace {
   readonly edits: LightEditService;
   readonly tasks: LightTaskRunner;
@@ -388,7 +400,13 @@ export class LightWorkspace {
     const source = file.content.toString("utf8");
     const view = routedView(input, path, source.length);
     if (view === "outline")
-      return await this.readOutlinePath(path, file.content, revision, context);
+      return await this.readOutlinePath(
+        path,
+        file.content,
+        revision,
+        context,
+        input.range,
+      );
     if (view === "range")
       return await this.readLineRange(
         path,
@@ -411,6 +429,7 @@ export class LightWorkspace {
     content: Buffer,
     revision: string,
     context: ReadContext,
+    range?: LightReadCodeInput["range"],
   ) {
     const parsed = parseCode(path, content);
     if (parsed.supported)
@@ -420,6 +439,7 @@ export class LightWorkspace {
         parsed.symbols,
         revision,
         context,
+        range,
       );
     return await this.raw(
       path,
@@ -464,17 +484,18 @@ export class LightWorkspace {
     symbols: ParsedSymbol[],
     revision: string,
     context: ReadContext,
+    range?: LightReadCodeInput["range"],
   ): Promise<LightToolResult<unknown>> {
-    const candidates = outlineCandidates(symbols);
-    const selected = candidates.slice(0, maximumOutlineItems);
-    if (!selected.length) return emptyOutline(path);
-    const editTargets = this.registerEditTargets(path, content, revision);
-    const coverage = await this.registerCoverage(
+    const projection = await this.prepareOutline(
       path,
       content,
-      selected.map(signatureRange),
+      symbols,
+      revision,
       context,
+      range,
     );
+    if (!projection) return emptyOutline(path);
+    const { candidates, coverage, editTargets, selected } = projection;
     if (coverage.covered)
       return alreadyCoveredResult(
         path,
@@ -497,6 +518,35 @@ export class LightWorkspace {
       coverage.receipt,
       editTargets,
     );
+  }
+
+  private async prepareOutline(
+    path: string,
+    content: Buffer,
+    symbols: ParsedSymbol[],
+    revision: string,
+    context: ReadContext,
+    range?: LightReadCodeInput["range"],
+  ) {
+    const candidates = outlineRangeCandidates(symbols, range);
+    const selected = candidates.slice(0, maximumOutlineItems);
+    if (!selected.length) return undefined;
+    const interval = range
+      ? lineByteRange(content, range.startLine, range.endLine)
+      : undefined;
+    const editTargets = this.registerEditTargets(
+      path,
+      content,
+      revision,
+      interval ? [interval] : undefined,
+    );
+    const coverage = await this.registerCoverage(
+      path,
+      content,
+      selected.map(signatureRange),
+      context,
+    );
+    return { candidates, coverage, editTargets, selected };
   }
 
   private outlineItems(

@@ -17,6 +17,7 @@ export function blockedCommandReason(command: string) {
   if (
     filesystemMutation.test(normalized) ||
     inPlaceMutation.test(normalized) ||
+    formatterMutation.test(normalized) ||
     packageManagerMutation.test(normalized) ||
     writesThroughInterpreter(normalized)
   )
@@ -40,6 +41,8 @@ const filesystemMutation =
   /(?:^|[;&|]\s*|\s)(?:cp|mv|rm|install|mkdir|rmdir|touch|truncate|tee|dd|rsync|ln|chmod|chown|printf|patch)(?:\s|$)/u;
 const inPlaceMutation =
   /(?:^|[;&|]\s*|\s)(?:apply_patch|perl\s+-\S*i\S*|sed\s+-\S*i\S*)(?:\s|$)/u;
+const formatterMutation =
+  /\b(?:prettier|biome)\b[^;&|\n]*\s--write(?:\s|$)|\beslint\b[^;&|\n]*\s--fix(?:\s|$)|\bprisma\s+format(?:\s|$)/u;
 const packageManagerMutation =
   /(?:^|[;&|]\s*|\s)(?:(?:npm|pnpm|yarn|bun)\s+(?:add|ci|install|link|remove|uninstall|unlink|update|upgrade)|npx(?:\s|$)|bunx(?:\s|$)|(?:pnpm|yarn)\s+dlx(?:\s|$))/u;
 const elevatedOrRemoteScript =

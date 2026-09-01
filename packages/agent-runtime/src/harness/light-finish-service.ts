@@ -86,8 +86,9 @@ export class LightFinishService {
     const verified = hasPassingValidation(
       current.validations,
       current.changedPaths,
+      validation.taskId,
     );
-    const unavailable = validation === "unavailable" || !verified;
+    const unavailable = validation.outcome === "unavailable" || !verified;
     const decision = completionDecision(
       current.sourceRevisionId,
       verified,
@@ -108,17 +109,15 @@ export class LightFinishService {
     state: Awaited<ReturnType<SessionJournal["completionSnapshot"]>>,
     context: AgentToolContext,
   ) {
-    if (
-      !state.changedPaths.length ||
-      hasPassingValidation(state.validations, state.changedPaths)
-    )
-      return "reused" as const;
     const input = await this.validationInput(state.changedPaths);
-    if (!input) return "unavailable" as const;
+    if (!input) return { outcome: "unavailable" as const };
+    if (hasPassingValidation(state.validations, state.changedPaths, input.task))
+      return { outcome: "reused" as const, taskId: input.task };
     const result = await this.runValidation(input, context);
-    if (result.status === "ok") return "passed" as const;
+    if (result.status === "ok")
+      return { outcome: "passed" as const, taskId: input.task };
     if (result.category === "code") throw new Error(result.message);
-    return "unavailable" as const;
+    return { outcome: "unavailable" as const, taskId: input.task };
   }
 
   private async validationInput(
@@ -191,7 +190,7 @@ function selectValidationTask(
   tasks: Awaited<ReturnType<typeof readTaskCatalog>>,
   paths: string[],
 ) {
-  const priorities = ["test", "typecheck", "lint", "build"];
+  const priorities = ["build", "test", "typecheck", "lint"];
   return tasks
     .filter(({ kind }) => priorities.includes(kind))
     .map((task) => ({
@@ -216,11 +215,14 @@ function hasPassingValidation(
     ReturnType<SessionJournal["completionSnapshot"]>
   >["validations"],
   changedPaths: string[],
+  taskId?: string,
 ) {
+  if (!taskId) return false;
   return validations.some(
-    ({ paths, status, terminal }) =>
+    ({ paths, status, taskId: validationTaskId, terminal }) =>
       status === "passed" &&
       terminal === "passed" &&
+      validationTaskId === taskId &&
       changedPaths.every((path) => paths.includes(path)),
   );
 }

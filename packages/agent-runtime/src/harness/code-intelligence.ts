@@ -67,6 +67,7 @@ export type ParsedTree = {
   byteOffset: number;
   lineOffset: number;
   root: SgNode;
+  utf8Offsets: Uint32Array;
 };
 
 export type ParsedNode = ParsedTree & { node: SgNode };
@@ -119,7 +120,7 @@ export function syntaxBoundaryRange(
     .sort((left, right) => nodeSize(left) - nodeSize(right))[0];
   if (!candidate) return target;
   const node = outerInsertionNode(candidate.node);
-  return byteRange(node, candidate.byteOffset);
+  return byteRange(node, candidate);
 }
 
 function boundaryCandidate(
@@ -128,7 +129,7 @@ function boundaryCandidate(
 ): ParsedNode | undefined {
   let selected: SgNode | undefined;
   walk(tree.root, (node) => {
-    const range = byteRange(node, tree.byteOffset);
+    const range = byteRange(node, tree);
     if (range[0] > target[0] || range[1] < target[1]) return;
     if (!selected || node.text().length < selected.text().length)
       selected = node;
@@ -152,7 +153,7 @@ function isSyntaxContainer(kind: string) {
 }
 
 function nodeSize(node: ParsedNode) {
-  const range = byteRange(node.node, node.byteOffset);
+  const range = byteRange(node.node, node);
   return range[1] - range[0];
 }
 
@@ -178,11 +179,13 @@ export function materializeSymbol(input: {
   ordinal?: number;
 }): CodeSymbol {
   const { symbol } = input;
-  const { byteOffset, lineOffset, node, root, ...publicSymbol } = symbol;
+  const { byteOffset, lineOffset, node, root, utf8Offsets, ...publicSymbol } =
+    symbol;
   void byteOffset;
   void lineOffset;
   void node;
   void root;
+  void utf8Offsets;
   return publicSymbol;
 }
 
@@ -190,18 +193,18 @@ export function symbolEditRange(
   symbol: ParsedSymbol,
   view: "body" | "signature" | "symbol",
 ) {
-  const range = byteRange(symbol.node, symbol.byteOffset);
+  const range = byteRange(symbol.node, symbol);
   if (view === "symbol") return range;
-  const elementBody = componentElementBodyRange(symbol.node, symbol.byteOffset);
+  const elementBody = componentElementBodyRange(symbol.node, symbol);
   if (view === "body" && elementBody) return elementBody;
   if (view === "signature" && elementBody)
     return [range[0], elementBody[0]] as [number, number];
   const body = bodyNode(symbol.node);
-  if (view === "body") return body ? byteRange(body, symbol.byteOffset) : range;
-  return [
-    range[0],
-    body ? byteRange(body, symbol.byteOffset)[0] : range[1],
-  ] as [number, number];
+  if (view === "body") return body ? byteRange(body, symbol) : range;
+  return [range[0], body ? byteRange(body, symbol)[0] : range[1]] as [
+    number,
+    number,
+  ];
 }
 
 export function outlineSymbol(
@@ -302,6 +305,7 @@ function parseSourceUnit(
     byteOffset,
     lineOffset,
     root: parse(language.lang, source).root(),
+    utf8Offsets: sourceUtf8Offsets(source),
     source,
   };
 }
@@ -359,9 +363,9 @@ function symbolFromNode(
     kind,
     name,
     qualified_name: qualifiedName(kind, containers, name),
-    signature: signature(node, source, tree.byteOffset),
+    signature: signature(node, source, tree),
     ...(visibility(node) ? { visibility: visibility(node) } : {}),
-    range_utf8_bytes: byteRange(node, tree.byteOffset),
+    range_utf8_bytes: byteRange(node, tree),
     line_range: lineRange(node, tree.lineOffset),
   };
 }
@@ -442,12 +446,11 @@ function isFunctionVariable(node: SgNode) {
   );
 }
 
-function signature(node: SgNode, source: Buffer, byteOffset: number) {
-  const range = byteRange(node, byteOffset);
+function signature(node: SgNode, source: Buffer, tree: ParsedTree) {
+  const range = byteRange(node, tree);
   const body = bodyNode(node);
-  const elementBody = componentElementBodyRange(node, byteOffset);
-  const end =
-    elementBody?.[0] ?? (body ? byteRange(body, byteOffset)[0] : range[1]);
+  const elementBody = componentElementBodyRange(node, tree);
+  const end = elementBody?.[0] ?? (body ? byteRange(body, tree)[0] : range[1]);
   return compact(
     source.subarray(range[0], end).toString("utf8").trimEnd(),
     500,
@@ -548,11 +551,31 @@ function walk(node: SgNode, visit: (node: SgNode) => void) {
   for (const child of node.children()) walk(child, visit);
 }
 
-function byteRange(node: SgNode, byteOffset = 0): [number, number] {
+function byteRange(node: SgNode, tree: ParsedTree): [number, number] {
   return [
-    byteOffset + node.range().start.index,
-    byteOffset + node.range().end.index,
+    tree.byteOffset + tree.utf8Offsets[node.range().start.index]!,
+    tree.byteOffset + tree.utf8Offsets[node.range().end.index]!,
   ];
+}
+
+function sourceUtf8Offsets(source: string) {
+  const offsets = new Uint32Array(source.length + 1);
+  let byteOffset = 0;
+  for (let index = 0; index < source.length; index += 1) {
+    offsets[index] = byteOffset;
+    const codePoint = source.codePointAt(index)!;
+    if (codePoint > 0xffff) offsets[++index] = byteOffset;
+    byteOffset += utf8CodePointWidth(codePoint);
+  }
+  offsets[source.length] = byteOffset;
+  return offsets;
+}
+
+function utf8CodePointWidth(codePoint: number) {
+  if (codePoint <= 0x7f) return 1;
+  if (codePoint <= 0x7ff) return 2;
+  if (codePoint <= 0xffff) return 3;
+  return 4;
 }
 
 function lineRange(node: SgNode, lineOffset = 0): [number, number] {

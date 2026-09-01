@@ -179,7 +179,9 @@ export class SessionJournal {
     const changes = [...new Set(current.map(({ change }) => change))].map(
       publicChange,
     );
-    const validations = await this.currentValidationEvents();
+    const validations = await this.currentValidationEvents(
+      snapshot.revision.source_revision_id,
+    );
     return {
       changedPaths: current.map(({ path }) => path),
       changes,
@@ -228,10 +230,13 @@ export class SessionJournal {
     );
   }
 
-  private async currentValidationEvents() {
+  private async currentValidationEvents(sourceRevisionId: string) {
     const current = await Promise.all(
       this.validations.map(async (validation) =>
-        (await this.allFilesCurrent(validation.files)) ? validation : undefined,
+        validation.sourceRevisionId === sourceRevisionId &&
+        (await this.allFilesCurrent(validation.files))
+          ? validation
+          : undefined,
       ),
     );
     return current.filter((validation): validation is JournalValidation =>
@@ -304,6 +309,7 @@ function publicValidation(validation: JournalValidation) {
     id: validation.id,
     paths: [...validation.paths],
     recovery: validation.recovery,
+    sourceRevisionId: validation.sourceRevisionId,
     status: validation.status,
     taskId: validation.taskId,
     taskKind: validation.taskKind,

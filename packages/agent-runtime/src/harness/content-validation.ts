@@ -99,19 +99,28 @@ function validateTypeScript(input: { content: Buffer; path: string }) {
   const parsed = source as ts.SourceFile & {
     parseDiagnostics: readonly ts.DiagnosticWithLocation[];
   };
-  const diagnostics = parsed.parseDiagnostics.slice(0, 20).map((diagnostic) => {
-    const message = ts.flattenDiagnosticMessageText(
-      diagnostic.messageText,
-      "\n",
-    );
-    if (diagnostic.start === undefined) return message;
-    const position = source.getLineAndCharacterOfPosition(diagnostic.start);
-    return `${position.line + 1}:${position.character + 1} ${message}`;
-  });
+  const typescriptDiagnostics = parsed.parseDiagnostics
+    .slice(0, 20)
+    .map((diagnostic) => {
+      const message = ts.flattenDiagnosticMessageText(
+        diagnostic.messageText,
+        "\n",
+      );
+      if (diagnostic.start === undefined) return message;
+      const position = source.getLineAndCharacterOfPosition(diagnostic.start);
+      return `${position.line + 1}:${position.character + 1} ${message}`;
+    });
+  const semantic = parseCode(input.path, input.content);
+  const semanticDiagnostics = semantic.supported
+    ? semantic.errorCount
+      ? [`ast-grep reported ${semantic.errorCount} syntax error(s).`]
+      : []
+    : ["ast-grep syntax validation is unavailable."];
+  const diagnostics = [...typescriptDiagnostics, ...semanticDiagnostics];
   return validation(
     input.path,
     diagnostics.length ? "failed" : "passed",
-    "typescript",
+    "typescript+ast-grep",
     diagnostics,
   );
 }

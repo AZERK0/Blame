@@ -38,7 +38,7 @@ type PlannedFile = {
 
 type FinalFile = PlannedFile & {
   content: Buffer | null;
-  parse: LightParseStatus;
+  parse: LightParseResult;
 };
 
 type LightParseStatus =
@@ -47,6 +47,11 @@ type LightParseStatus =
   | "unsupported"
   | "unavailable"
   | "degraded_preexisting_errors";
+
+type LightParseResult = {
+  diagnostics: string[];
+  status: LightParseStatus;
+};
 
 type EditContext = {
   sessionId?: string;
@@ -80,7 +85,7 @@ export class LightEditService {
       const snapshot = await this.files.snapshot();
       const plans = await this.plan(input, snapshot);
       const finalFiles = await this.finalize(plans);
-      const invalid = finalFiles.find(({ parse }) => parse === "failed");
+      const invalid = finalFiles.find(({ parse }) => parse.status === "failed");
       if (invalid) return invalidParseResult(invalid);
       void context;
       const result: LightCommitResult | LightEditFailure = await this.commit(
@@ -255,7 +260,6 @@ export class LightEditService {
       qualifiedName: string;
     }> = [];
     for (const path of paths) {
-      this.aliases.invalidatePath(path);
       const content = (await optionalFile(this.files, path))?.content;
       if (!content) continue;
       for (const symbol of parseCode(path, content).symbols.slice(0, 8)) {
@@ -354,14 +358,8 @@ function wholeSymbolReplacement(
   range: [number, number],
 ): Replacement {
   return {
-    start:
-      operation.action === "replace"
-        ? resolved.symbol.range_utf8_bytes[0]
-        : range[0],
-    end:
-      operation.action === "replace"
-        ? resolved.symbol.range_utf8_bytes[1]
-        : range[1],
+    start: range[0],
+    end: range[1],
     replacement: operation.action === "delete" ? "" : (operation.content ?? ""),
   };
 }
@@ -425,17 +423,26 @@ async function finalParseStatus(
   path: string,
   before: Buffer | null,
   after: Buffer | null,
-): Promise<LightParseStatus> {
-  if (!after) return "unsupported";
-  const validation = await validateContent({
-    content: after,
-    externalValidation: path.endsWith(".prisma") ? "unsupported" : "enabled",
-    path,
-    workspaceRoot,
-  });
-  if (validation.status === "passed") return "passed";
-  if (validation.status === "unsupported") return unsupportedStatus(path);
-  return failedOrDegraded(path, before, after, validation);
+): Promise<LightParseResult> {
+  if (!after) return { diagnostics: [], status: "unsupported" };
+  const validation = await validateFinalContent(workspaceRoot, path, after);
+  if (validation.status === "passed")
+    return { diagnostics: [], status: "passed" };
+  if (validation.status === "unsupported")
+    return {
+      diagnostics: validation.diagnostics,
+      status: unsupportedStatus(path),
+    };
+  return {
+    diagnostics: validation.diagnostics,
+    status: await failedOrDegraded(
+      workspaceRoot,
+      path,
+      before,
+      after,
+      validation,
+    ),
+  };
 }
 
 function unsupportedStatus(path: string): LightParseStatus {
@@ -444,25 +451,49 @@ function unsupportedStatus(path: string): LightParseStatus {
     : "unsupported";
 }
 
-function failedOrDegraded(
+async function failedOrDegraded(
+  workspaceRoot: string,
   path: string,
   before: Buffer | null,
   after: Buffer,
   validation: ContentValidation,
-): LightParseStatus {
+): Promise<LightParseStatus> {
   if (!before || validation.status !== "failed") return "failed";
+  const previousValidation = await validateFinalContent(
+    workspaceRoot,
+    path,
+    before,
+  );
+  if (previousValidation.status !== "failed") return "failed";
   const previous = parseCode(path, before);
   const current = parseCode(path, after);
-  return previous.supported && current.errorCount <= previous.errorCount
+  const errorsDidNotIncrease =
+    current.errorCount <= previous.errorCount &&
+    validation.diagnostics.length <= previousValidation.diagnostics.length;
+  return previous.supported && errorsDidNotIncrease
     ? "degraded_preexisting_errors"
     : "failed";
 }
 
+function validateFinalContent(
+  workspaceRoot: string,
+  path: string,
+  content: Buffer,
+) {
+  return validateContent({
+    content,
+    externalValidation: path.endsWith(".prisma") ? "unsupported" : "enabled",
+    path,
+    workspaceRoot,
+  });
+}
+
 function invalidParseResult(file: FinalFile): LightToolResult<unknown> {
+  const diagnostic = file.parse.diagnostics[0];
   return {
     status: "blocked",
     category: "code",
-    message: `Final parse failed for ${file.path}; no files were written.`,
+    message: `Final parse failed for ${file.path}; no files were written.${diagnostic ? ` ${diagnostic}` : ""}`,
     recovery: "Correct the final syntax and submit one new atomic batch.",
   };
 }
@@ -525,7 +556,7 @@ function isLightFailure(
 }
 
 function parseSummary(files: FinalFile[]) {
-  const statuses = files.map(({ parse }) => parse);
+  const statuses = files.map(({ parse }) => parse.status);
   const priority: LightParseStatus[] = [
     "failed",
     "unavailable",
@@ -536,7 +567,11 @@ function parseSummary(files: FinalFile[]) {
   return {
     status:
       priority.find((status) => statuses.includes(status)) ?? "unsupported",
-    files: files.map(({ path, parse }) => ({ path, status: parse })),
+    files: files.map(({ path, parse }) => ({
+      path,
+      status: parse.status,
+      ...(parse.diagnostics.length ? { diagnostics: parse.diagnostics } : {}),
+    })),
   };
 }
 

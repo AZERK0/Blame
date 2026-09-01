@@ -2434,6 +2434,26 @@ Le proxy DB confirme enfin une incohérence terminale distincte : l’activité 
 
 Les contrôles locaux après correction passent : 65 scénarios Light Harness sur 65 et 198 scénarios agent runtime sur 198, ainsi que build, typecheck, ESLint et payload autonome. Le test du contrat Cline vérifie que `maxLength: 10000` est réellement présent dans le schéma d’`edit_code` transmis au provider, donc avant la génération du payload. Le refactor extrait le routage pur dans `light-navigation.ts` et ramène `light-workspace.ts` de 998 à 940 lignes ; il ne réintroduit ni état concurrent, ni gouverneur cognitif, ni second chemin de production. Le typecheck et ESLint de l’API passent également, ainsi que les quatre tests unitaires du lifecycle ; le test fonctionnel ciblé reste non exécuté localement faute de base de test joignable, le proxy de développement n’ayant volontairement pas été exposé à une suite qui tronque ses tables.
 
+#### Retour US-030 et assainissement des invariants symboliques
+
+Le run US-030 est allé au bout en 24 min 54 s. La première édition est arrivée vers cinq minutes, avec 17 lectures et 19 recherches contre respectivement 33 et 26 sur US-029. Les insertions CSS symboliques, le build, le lint, Prisma et la migration ont fonctionné. Cette amélioration de navigation ne suffit cependant pas : 21 appels `edit_code` ont produit six rejets, les 43 itérations ont cumulé 2,44 millions de tokens d’entrée pour 2,11 $, et 13 min 54 s ont encore été passées en raisonnement. Les correctifs ci-dessous traitent les défauts déterministes de la trace ; ils ne constituent pas une preuve de baisse live des tokens.
+
+Le défaut prioritaire combinait deux erreurs indépendantes. Le remplacement `replace` utilisait la plage interne du symbole alors que les insertions utilisaient déjà sa frontière syntaxique. Une variable exportée conservait donc `export const` devant une fonction de remplacement, et une fonction exportée pouvait conserver son premier `export`. De plus, les index renvoyés par ast-grep sont des positions UTF-16, alors que le runtime les appliquait directement à des `Buffer` UTF-8. Un caractère tel que celui de `Raphaël` décalait la fin d’un body TSX et laissait une accolade résiduelle. Toutes les plages AST passent désormais par une table déterministe UTF-16 vers UTF-8, et le remplacement complet cible l’enveloppe syntaxique incluant la déclaration exportée.
+
+La validation TypeScript exige maintenant l’accord du parseur TypeScript et d’ast-grep. Ce double contrôle est nécessaire car TypeScript détecte `export const export function` mais accepte au parse seul `export export async function`, tandis qu’ast-grep présente le comportement inverse sur ces deux formes. Un état final n’est déclaré dégradé qu’après validation du contenu antérieur par le même chemin strict ; un fichier valide devenu invalide ne peut donc plus être annoncé `parse: passed` ni être écrit. Le diagnostic du parseur fautif est renvoyé dans le blocage atomique.
+
+Les autres récupérations artificielles observées sont supprimées à leur source :
+
+- un alias symbolique relocalisé est mis à jour avec le nouveau hash et la nouvelle plage, et la réindexation réutilise son identité au lieu de l’invalider ;
+- un outline demandé sur une plage filtre et tronque uniquement les symboles qui chevauchent cette plage, et ses cibles d’édition sont calculées dans le même intervalle ;
+- une correspondance exacte de tâche ou de script gagne avant le fallback par kind, de sorte que `build` n’est plus ambigu avec `prebuild` ;
+- la limite sémantique de 10 000 caractères, invalidée par US-030 après le rejet coûteux d’un composant valide, est retirée. Le schéma conserve seulement une borne de transport de 2 MiB par opération ;
+- les validations terminales doivent appartenir à la révision source courante et à la tâche sélectionnée. Un reçu `lint` ne peut plus satisfaire ou mettre en cache un `build`, et `finish_task` privilégie le build disponible après les dernières éditions ;
+- les écritures indirectes de formateurs via `prettier --write`, `eslint --fix`, `biome --write` et `prisma format` sont refusées par `run_task`, afin que toute mutation reste journalisée par `edit_code` ;
+- `get_preview_devtools` avec `waitFor=ready` démarre une preview locale gérée lorsqu’elle est arrêtée. Le prompt demande cet appel unique après une modification UI finale, sans autoriser de serveur, base ou conteneur manuel.
+
+Les régressions déterministes reproduisent les deux déclarations exportées invalides, un `replace_body` TSX avec accents et emoji, deux éditions successives par le même alias, un outline CSS borné aux lignes 330–650, la sélection `build` face à `prebuild`, l’acceptation d’un payload supérieur à 10 000 caractères et la relance du build après une édition plus récente. La suite agent runtime passe 205 scénarios sur 205, dont 72 scénarios Light Harness. La suite desktop passe 339 scénarios sur 339, dont huit scénarios ciblés sur le harness preview. Les typechecks agent runtime et desktop ainsi que le test du payload autonome passent. Un run US-031 comparable reste requis pour mesurer le taux d’échec d’édition, le temps avant première mutation, la part symbolique et les tokens cumulés.
+
 #### Mesures déterministes de la livraison du 31 août 2026
 
 Les mesures suivantes ont été exécutées localement le 31 août 2026 :

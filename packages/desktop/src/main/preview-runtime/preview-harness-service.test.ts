@@ -5,7 +5,38 @@ import type { PreviewDevtoolsTarget } from "../preview-browser/preview-browser-m
 import {
   previewHarnessState,
   resolvePreviewHarnessState,
+  shouldStartStoppedLocalPreview,
 } from "./preview-harness-state.ts";
+
+test("ready requests startup for a stopped local managed preview", () => {
+  assert.equal(
+    shouldStartStoppedLocalPreview({
+      status: "stopped",
+      waitFor: "ready",
+      workspaceMode: "local-container",
+      worktree: "/workspace",
+    }),
+    true,
+  );
+  assert.equal(
+    shouldStartStoppedLocalPreview({
+      status: "stopped",
+      waitFor: "none",
+      workspaceMode: "local-container",
+      worktree: "/workspace",
+    }),
+    false,
+  );
+  assert.equal(
+    shouldStartStoppedLocalPreview({
+      status: "stopped",
+      waitFor: "ready",
+      workspaceMode: "cloud-mirror",
+      worktree: "/workspace",
+    }),
+    false,
+  );
+});
 
 test("stopped previews return immediately even when ready was requested", async () => {
   let refreshes = 0;
