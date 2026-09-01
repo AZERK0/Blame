@@ -1362,6 +1362,72 @@ test("one batch combines an import patch and a whole exported replacement", asyn
   });
 });
 
+test("one batch inserts before and replaces the adjacent symbol", async () => {
+  const source = [
+    "export type Invoice = { id: string };",
+    "",
+    "export type InvoiceSummary = { total: number };",
+    "",
+  ].join("\n");
+  await withWorkspace({ "src/invoice.ts": source }, async (root) => {
+    const workspace = lightWorkspace(root, "hybrid-adjacent");
+    const result = await workspace.editCode({
+      operations: [
+        {
+          kind: "symbol",
+          target: "src/invoice.ts#InvoiceSummary",
+          action: "replace",
+          content:
+            "export type InvoiceSummary = { discountTier: DiscountTier; total: number };",
+        },
+        {
+          kind: "patch",
+          path: "src/invoice.ts",
+          patch: applyPatch("src/invoice.ts", [
+            " export type Invoice = { id: string };",
+            '+export type DiscountTier = "none" | "standard" | "premium";',
+          ]),
+        },
+      ],
+    });
+    assert.equal(result.status, "ok");
+    assert.equal(
+      await readFile(join(root, "src/invoice.ts"), "utf8"),
+      [
+        "export type Invoice = { id: string };",
+        'export type DiscountTier = "none" | "standard" | "premium";',
+        "",
+        "export type InvoiceSummary = { discountTier: DiscountTier; total: number };",
+        "",
+      ].join("\n"),
+    );
+  });
+});
+
+test("line-based patch planning preserves UTF-8 character boundaries", async () => {
+  const source = 'export const label = "😀";\n';
+  await withWorkspace({ "src/label.ts": source }, async (root) => {
+    const workspace = lightWorkspace(root, "patch-utf8");
+    const result = await workspace.editCode({
+      operations: [
+        {
+          kind: "patch",
+          path: "src/label.ts",
+          patch: applyPatch("src/label.ts", [
+            '-export const label = "😀";',
+            '+export const label = "😃";',
+          ]),
+        },
+      ],
+    });
+    assert.equal(result.status, "ok");
+    assert.equal(
+      await readFile(join(root, "src/label.ts"), "utf8"),
+      'export const label = "😃";\n',
+    );
+  });
+});
+
 test("HTML supports outline and structural body replacement", async () => {
   await withWorkspace(
     { "index.html": '<main id="app"><p>Hello</p></main>\n' },

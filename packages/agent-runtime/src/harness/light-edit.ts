@@ -497,31 +497,38 @@ function assertCompatibleMutations(file: PlannedFile) {
       `File creation or deletion cannot overlap another edit in ${file.path}.`,
     );
   const ordered = [...file.replacements].sort(
-    (left, right) => left.start - right.start,
+    (left, right) => left.start - right.start || right.end - left.end,
   );
   for (let index = 1; index < ordered.length; index += 1) {
     const previous = ordered[index - 1]!;
     const current = ordered[index]!;
-    if (current.start < previous.end || sameInsertion(previous, current))
+    if (replacementsOverlap(previous, current))
       throw new Error(
         `Edit operations overlap in ${file.path}: ${previous.source} conflicts with ${current.source}. Replace their common parent once, or split the edits and re-read after the first commit.`,
       );
   }
 }
 
-function sameInsertion(left: Replacement, right: Replacement) {
-  return (
-    left.start === left.end &&
-    right.start === right.end &&
-    left.start === right.start
-  );
+function replacementsOverlap(left: Replacement, right: Replacement) {
+  if (isInsertion(left) && isInsertion(right)) return left.start === right.start;
+  if (isInsertion(left)) return insertionInside(left.start, right);
+  if (isInsertion(right)) return insertionInside(right.start, left);
+  return left.start < right.end && right.start < left.end;
+}
+
+function isInsertion(replacement: Replacement) {
+  return replacement.start === replacement.end;
+}
+
+function insertionInside(offset: number, replacement: Replacement) {
+  return offset > replacement.start && offset < replacement.end;
 }
 
 function applyPlan(plan: PlannedFile) {
   if (plan.mutation === "delete") return null;
   let content = plan.initial ?? Buffer.alloc(0);
   const descending = [...plan.replacements].sort(
-    (left, right) => right.start - left.start,
+    (left, right) => right.start - left.start || right.end - left.end,
   );
   for (const replacement of descending)
     content = Buffer.concat([

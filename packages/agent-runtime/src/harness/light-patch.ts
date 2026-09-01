@@ -1,6 +1,6 @@
 import { computePatchChanges, PatchActionType } from "@cline/sdk";
 import type { PatchFileChange } from "@cline/sdk";
-import { diffChars } from "diff";
+import { diffLines } from "diff";
 
 export type LightPatchReplacement = {
   end: number;
@@ -252,9 +252,9 @@ function changedRanges(before: string, after: string) {
   }> = [];
   let cursor = 0;
   let pending: { end: number; replacement: string; start: number } | undefined;
-  for (const part of diffChars(before, after)) {
+  for (const part of diffLines(before, after)) {
     if (!part.added && !part.removed) {
-      if (pending) replacements.push(pending);
+      if (pending) replacements.push(minimalReplacement(before, pending));
       pending = undefined;
       cursor += part.value.length;
       continue;
@@ -265,10 +265,48 @@ function changedRanges(before: string, after: string) {
       pending.end = cursor;
     } else pending.replacement += part.value;
   }
-  if (pending) replacements.push(pending);
+  if (pending) replacements.push(minimalReplacement(before, pending));
   return mergeWhitespaceSeparated(before, replacements).map((replacement) =>
     byteReplacement(before, replacement),
   );
+}
+
+function minimalReplacement(
+  source: string,
+  replacement: { end: number; replacement: string; start: number },
+) {
+  let { end, replacement: value, start } = replacement;
+  while (start < end && value) {
+    const sourceCharacter = characterAt(source, start);
+    const replacementCharacter = characterAt(value, 0);
+    if (sourceCharacter !== replacementCharacter) break;
+    start += sourceCharacter.length;
+    value = value.slice(replacementCharacter.length);
+  }
+  while (start < end && value) {
+    const sourceCharacter = characterBefore(source, end);
+    const replacementCharacter = characterBefore(value, value.length);
+    if (sourceCharacter.value !== replacementCharacter.value) break;
+    end = sourceCharacter.start;
+    value = value.slice(0, replacementCharacter.start);
+  }
+  return { end, replacement: value, start };
+}
+
+function characterAt(value: string, offset: number) {
+  return String.fromCodePoint(value.codePointAt(offset)!);
+}
+
+function characterBefore(value: string, end: number) {
+  const low = value.charCodeAt(end - 1);
+  const high = value.charCodeAt(end - 2);
+  const paired =
+    low >= 0xdc00 &&
+    low <= 0xdfff &&
+    high >= 0xd800 &&
+    high <= 0xdbff;
+  const start = paired ? end - 2 : end - 1;
+  return { start, value: value.slice(start, end) };
 }
 
 function mergeWhitespaceSeparated(
