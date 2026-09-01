@@ -132,6 +132,8 @@ export class LightTaskRunner {
   ): Promise<LightToolResult<unknown>> {
     const formatter = this.formatter.request(input.command);
     if (formatter) return this.format(formatter, input, context);
+    const formatterRecovery = this.formatter.recovery(input.command);
+    if (formatterRecovery) return blocked("input", formatterRecovery);
     const denied = blockedCommandReason(input.command);
     if (denied) return blocked("input", denied);
     try {

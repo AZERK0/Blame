@@ -871,6 +871,24 @@ test("run_task leaves every file unchanged when Prettier fails", async () => {
   );
 });
 
+test("run_task explains how to separate a combined Prettier mutation", async () => {
+  await withWorkspace({ "value.ts": "const value=1\n" }, async (root) => {
+    const workspace = lightWorkspace(root, "formatter-recovery");
+    const result = await workspace.tasks.run({
+      kind: "command",
+      command: "pnpm exec prettier --write value.ts && pnpm exec prisma format",
+    });
+    assert.equal(result.status, "blocked");
+    if (result.status !== "blocked") return;
+    assert.equal(result.category, "input");
+    assert.match(result.message, /Submit .*prettier --write.* alone/u);
+    assert.equal(
+      await readFile(join(root, "value.ts"), "utf8"),
+      "const value=1\n",
+    );
+  });
+});
+
 test("code navigation refuses runtime-managed dependency internals", async () => {
   await withWorkspace(
     {

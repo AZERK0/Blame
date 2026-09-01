@@ -35,6 +35,11 @@ export class DeterministicFormatter {
     return formatterCommand(command);
   }
 
+  recovery(command: string) {
+    if (!/\bprettier\b[^\n]*\s--write(?:\s|$)/u.test(command)) return undefined;
+    return "This request combines or ambiguously scopes Prettier. Submit `pnpm exec prettier --write <explicit existing files>` alone; it will be applied as one atomic journaled edit.";
+  }
+
   async format(request: FormatterCommand, cwd: string, signal?: AbortSignal) {
     const paths = await this.resolvePaths(request.paths, cwd);
     const replacements: FormattedFileReplacement[] = [];
