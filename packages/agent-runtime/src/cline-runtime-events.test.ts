@@ -578,7 +578,7 @@ test("announces write auto-approval before starting the agent", async () => {
   }
 });
 
-test("uses native Cline compaction without a parallel projection", async () => {
+test("uses native Cline compaction with structural context projection", async () => {
   const workspace = await mkdtemp(join(tmpdir(), "blame-live-compaction-"));
   const fixture = developmentCompactionFixture("true");
   try {
@@ -596,7 +596,11 @@ test("uses native Cline compaction without a parallel projection", async () => {
     });
     assert.equal(fixture.start()?.config.compaction?.enabled, true);
     assert.equal(fixture.start()?.config.compaction?.compact, undefined);
-    assert.equal(fixture.start()?.config.extensions, undefined);
+    assert.equal(fixture.start()?.config.extensions?.length, 1);
+    assert.equal(
+      fixture.start()?.config.extensions?.[0]?.name,
+      "blame-context-projection",
+    );
   } finally {
     await fixture.restore();
     await rm(workspace, { force: true, recursive: true });

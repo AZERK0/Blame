@@ -26,7 +26,11 @@ export class BenchmarkMetricsCollector {
   private readonly inputTokens: number[] = [];
   private readonly spans: ToolSpan[] = [];
   private readonly toolsByName = new Map<string, BenchmarkNamedToolMetrics>();
+  private readonly compositionCategories = new Map<string, number>();
+  private composedBytes = 0;
+  private composedRequests = 0;
   private compactions = 0;
+  private duplicateBytes = 0;
   private deduplicatedReads = 0;
   private editAttempts = 0;
   private editBlocked = 0;
@@ -34,11 +38,18 @@ export class BenchmarkMetricsCollector {
   private firstEditAttemptAt: number | undefined;
   private firstEditSuccessAt: number | undefined;
   private hybridCalls = 0;
+  private latestComposedBytes = 0;
+  private latestDuplicateBytes = 0;
+  private latestProjectedBytesSaved = 0;
+  private maximumComposedBytes = 0;
   private navigationBytes = 0;
   private patchOperations = 0;
+  private projectedBytesSaved = 0;
   private readCalls = 0;
   private searchCalls = 0;
   private symbolOperations = 0;
+  private staleReadReplacements = 0;
+  private successfulEditReplacements = 0;
 
   record(event: AgentEvent, recordedAt = Date.now()) {
     if (event.type === "usage") return this.recordUsage(event);
@@ -71,9 +82,41 @@ export class BenchmarkMetricsCollector {
     const payload = recordValue(event.payload);
     const kind = stringValue(payload.kind) ?? stringValue(payload.reason) ?? "";
     const message = stringValue(payload.message) ?? "";
+    if (kind === "context_composed") this.recordComposition(payload.metrics);
     if (kind.includes("compaction") && payload.phase === "completed")
       this.compactions += 1;
     else if (message.endsWith("compacted")) this.compactions += 1;
+  }
+
+  private recordComposition(value: unknown) {
+    const metrics = recordValue(value);
+    const composedBytes = numberValue(metrics.composedBytes) ?? 0;
+    const duplicateBytes = numberValue(metrics.duplicateBytes) ?? 0;
+    const projectedBytesSaved = numberValue(metrics.projectedBytesSaved) ?? 0;
+    this.composedRequests += 1;
+    this.composedBytes += composedBytes;
+    this.duplicateBytes += duplicateBytes;
+    this.projectedBytesSaved += projectedBytesSaved;
+    this.latestComposedBytes = composedBytes;
+    this.latestDuplicateBytes = duplicateBytes;
+    this.latestProjectedBytesSaved = projectedBytesSaved;
+    this.maximumComposedBytes = Math.max(this.maximumComposedBytes, composedBytes);
+    this.staleReadReplacements += numberValue(metrics.staleReadsReplaced) ?? 0;
+    this.successfulEditReplacements +=
+      numberValue(metrics.successfulEditsReplaced) ?? 0;
+    this.recordCompositionCategories(metrics.categories);
+  }
+
+  private recordCompositionCategories(value: unknown) {
+    const categories = recordValue(value);
+    for (const [category, bytes] of Object.entries(categories)) {
+      const amount = numberValue(bytes);
+      if (amount === undefined) continue;
+      this.compositionCategories.set(
+        category,
+        (this.compositionCategories.get(category) ?? 0) + amount,
+      );
+    }
   }
 
   private recordTool(event: AgentEvent, recordedAt: number) {
@@ -196,11 +239,28 @@ export class BenchmarkMetricsCollector {
     const totalInput = this.inputTokens.reduce((sum, value) => sum + value, 0);
     return {
       averageInputTokens: roundedAverage(totalInput, this.inputTokens.length),
+      composition: this.compositionMetrics(),
       compactions: this.compactions,
       maximumInputTokens: Math.max(0, ...this.inputTokens),
       modelRequests: this.inputTokens.length,
       toolPayloadBytes: tools.inputBytes + tools.outputBytes,
       toolPayloadReplayExposureBytes: this.replayExposureBytes(),
+    };
+  }
+
+  private compositionMetrics() {
+    return {
+      categoryBytes: Object.fromEntries(this.compositionCategories),
+      composedBytes: this.composedBytes,
+      duplicateBytes: this.duplicateBytes,
+      latestComposedBytes: this.latestComposedBytes,
+      latestDuplicateBytes: this.latestDuplicateBytes,
+      latestProjectedBytesSaved: this.latestProjectedBytesSaved,
+      maximumComposedBytes: this.maximumComposedBytes,
+      projectedBytesSaved: this.projectedBytesSaved,
+      requests: this.composedRequests,
+      staleReadReplacements: this.staleReadReplacements,
+      successfulEditReplacements: this.successfulEditReplacements,
     };
   }
 

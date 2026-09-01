@@ -61,11 +61,26 @@ export type BenchmarkMetrics = {
 
 export type BenchmarkContextMetrics = {
   averageInputTokens: number;
+  composition: BenchmarkContextCompositionMetrics;
   compactions: number;
   maximumInputTokens: number;
   modelRequests: number;
   toolPayloadBytes: number;
   toolPayloadReplayExposureBytes: number;
+};
+
+export type BenchmarkContextCompositionMetrics = {
+  categoryBytes: Record<string, number>;
+  composedBytes: number;
+  duplicateBytes: number;
+  latestComposedBytes: number;
+  latestDuplicateBytes: number;
+  latestProjectedBytesSaved: number;
+  maximumComposedBytes: number;
+  projectedBytesSaved: number;
+  requests: number;
+  staleReadReplacements: number;
+  successfulEditReplacements: number;
 };
 
 export type BenchmarkEditingMetrics = {

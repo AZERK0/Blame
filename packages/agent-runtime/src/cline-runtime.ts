@@ -152,6 +152,7 @@ import {
 import { AgentTelemetry } from "./agent-telemetry.js";
 import { BlameUserInstructionServices } from "./user-instruction-services.js";
 import { taskComplexityBucket } from "./telemetry-cohorts.js";
+import { createContextProjectionExtension } from "./context-projection.js";
 import {
   previewContainerLogsTool,
   previewDevtoolsMcpTools,
@@ -844,6 +845,25 @@ export class BlameAgentRuntime {
         input.systemPrompt ?? loadPrompt("default-agent-system");
       const compactionConfig =
         input.compaction ?? blameCompactionConfig(this.productionConfig);
+      const contextProjectionExtension =
+        input.nativeCompletion && compactionConfig.enabled !== false
+          ? createContextProjectionExtension({
+              emit: (metrics) =>
+                this.events?.emit(
+                  this.withExecutionId(sessionId, {
+                    type: "notice",
+                    sessionId,
+                    payload: {
+                      kind: "context_composed",
+                      metrics,
+                      phase: "completed",
+                    },
+                  }),
+                ),
+              systemPrompt,
+              tools: extraTools,
+            })
+          : undefined;
       const startInput = {
         ...(autoSendPrompt
           ? {
@@ -884,6 +904,9 @@ export class BlameAgentRuntime {
               input.disableMcpSettingsTools ??
               this.productionConfig.disableMcpSettingsTools,
             ...(pluginPaths ? { pluginPaths } : {}),
+            ...(contextProjectionExtension
+              ? { extensions: [contextProjectionExtension] }
+              : {}),
             compaction: compactionConfig,
             enableTools: true,
             enableSpawnAgent: input.enableSpawnAgent ?? false,

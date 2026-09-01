@@ -22,10 +22,6 @@ export type ProductionConfig = {
   compactionEnabled?: boolean;
   compactionPreserveRecentTokens?: number;
   compactionStrategy?: "agentic" | "basic";
-  compactionTargetRatio?: number;
-  compactionOverflowTargetRatio?: number;
-  compactionTriggerRatio?: number;
-  compactionWarningRatio?: number;
   configExtensions?: AgentRuntimeConfigExtension[];
   disableMcpSettingsTools?: boolean;
   maxInputTokens?: number;
@@ -146,22 +142,6 @@ export function loadProductionConfig(
       env.BLAME_AGENT_COMPACTION_PRESERVE_RECENT_TOKENS,
     ),
     compactionStrategy: compactionStrategy(env.BLAME_AGENT_COMPACTION_STRATEGY),
-    compactionTargetRatio: boundedRatio(
-      env.BLAME_AGENT_COMPACTION_TARGET_RATIO,
-      0.4,
-    ),
-    compactionOverflowTargetRatio: boundedRatio(
-      env.BLAME_AGENT_COMPACTION_OVERFLOW_TARGET_RATIO,
-      0.35,
-    ),
-    compactionTriggerRatio: boundedRatio(
-      env.BLAME_AGENT_COMPACTION_TRIGGER_RATIO,
-      0.7,
-    ),
-    compactionWarningRatio: boundedRatio(
-      env.BLAME_AGENT_COMPACTION_WARNING_RATIO,
-      0.55,
-    ),
     configExtensions: configExtensions(env.BLAME_AGENT_CONFIG_EXTENSIONS),
     disableMcpSettingsTools: !booleanValue(
       env.BLAME_AGENT_MCP_SETTINGS_TOOLS_ENABLED,
@@ -422,12 +402,6 @@ function positiveNumber(value: string | undefined, fallback?: number) {
   if (!value) return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function boundedRatio(value: string | undefined, fallback: number) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 0.1 || parsed > 0.9) return fallback;
-  return parsed;
 }
 
 function booleanValue(value: string | undefined, fallback: boolean) {

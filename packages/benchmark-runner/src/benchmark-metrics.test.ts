@@ -97,6 +97,22 @@ test("records rejected Cline patches as failed editing attempts", () => {
   assert.equal(metrics.tools.failedCalls, 1);
 });
 
+test("aggregates provider context composition notices", () => {
+  const collector = new BenchmarkMetricsCollector();
+  collector.record(compositionEvent(1, 900, 100, 20));
+  collector.record(compositionEvent(2, 1_100, 150, 30));
+  const composition = collector.summary(new Date(0), new Date(1)).context
+    .composition;
+  assert.equal(composition.requests, 2);
+  assert.equal(composition.composedBytes, 2_000);
+  assert.equal(composition.maximumComposedBytes, 1_100);
+  assert.equal(composition.latestProjectedBytesSaved, 150);
+  assert.equal(composition.duplicateBytes, 50);
+  assert.equal(composition.categoryBytes["tool_input.edit_code"], 500);
+  assert.equal(composition.staleReadReplacements, 2);
+  assert.equal(composition.successfulEditReplacements, 4);
+});
+
 function usageEvent(inputTokens: number): AgentEvent {
   return { type: "usage", payload: { usage: { inputTokens } } };
 }
@@ -135,6 +151,30 @@ function finishedTool(
       output,
       phase: "finished",
       toolCall: { id: tool, input, name: tool },
+    },
+  };
+}
+
+function compositionEvent(
+  requestIndex: number,
+  composedBytes: number,
+  projectedBytesSaved: number,
+  duplicateBytes: number,
+): AgentEvent {
+  return {
+    type: "notice",
+    payload: {
+      kind: "context_composed",
+      metrics: {
+        categories: { "tool_input.edit_code": 250 },
+        composedBytes,
+        duplicateBytes,
+        projectedBytesSaved,
+        requestIndex,
+        staleReadsReplaced: 1,
+        successfulEditsReplaced: 2,
+      },
+      phase: "completed",
     },
   };
 }
