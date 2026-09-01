@@ -49,6 +49,12 @@ test("publishes content-free provider context measurements", async () => {
     } as never,
     {} as never,
   );
+  await build?.(
+    projectionMessages().map((message, index) => ({
+      ...message,
+      id: `message-${index}`,
+    })) as Message[],
+  );
   await build?.(projectionMessages());
   await build?.(projectionMessages());
   assert.equal(emitted.length, 2);

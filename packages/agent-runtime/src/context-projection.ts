@@ -74,8 +74,10 @@ export function createContextProjectionExtension(
           const projection = projectProviderContext(
             messages,
             options,
-            ++requestIndex,
+            requestIndex + 1,
           );
+          if (!providerReadyMessages(messages)) return projection.messages;
+          requestIndex += 1;
           options.emit(projection.metrics);
           return projection.messages;
         },
@@ -403,4 +405,10 @@ function measurableToolDefinition(value: unknown) {
     inputSchema: tool?.inputSchema,
     name: stringValue(tool?.name),
   };
+}
+
+function providerReadyMessages(messages: Message[]) {
+  return messages.every((message) =>
+    Object.keys(message).every((key) => key === "content" || key === "role"),
+  );
 }
