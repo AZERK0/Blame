@@ -409,6 +409,43 @@ test("small raw reads deduplicate by emitted bytes without invalidating other fi
   );
 });
 
+test("a raw read stays contiguous after a symbol read partially covers the file", async () => {
+  const source = `type ProjectCardProps = {
+  title: string;
+};
+
+const artist = "Raphaël 🚀";
+
+export function ProjectCard({ title }: ProjectCardProps) {
+  return <h2>{title}</h2>;
+}
+`;
+  await withWorkspace({ "ProjectCard.tsx": source }, async (root) => {
+    const workspace = lightWorkspace(root, "partial-raw-coverage");
+    const context = { agentId: "lead" };
+    await workspace.readCode(
+      { target: "ProjectCard.tsx#ProjectCardProps", view: "symbol" },
+      context,
+    );
+    const raw = data(
+      await workspace.readCode(
+        { target: "ProjectCard.tsx", view: "raw" },
+        context,
+      ),
+    );
+    assert.equal(raw.content, source);
+    assert.equal(
+      data(
+        await workspace.readCode(
+          { target: "ProjectCard.tsx", view: "raw" },
+          context,
+        ),
+      ).status,
+      "already_in_context",
+    );
+  });
+});
+
 test("a lexical alias promotes to its enclosing editable symbol", async () => {
   await withWorkspace(
     { "target.ts": "export function target() { return 1 }\n" },

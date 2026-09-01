@@ -722,10 +722,10 @@ export class LightWorkspace {
         path,
         editTargets,
       );
-    return uncoveredContentResult(
+    return contentResult(
       path,
       content,
-      coverage.uncovered,
+      intervals,
       view,
       coverage.receipt,
       fallbackReason,
@@ -866,7 +866,7 @@ function symbolProjectedContent(
   };
 }
 
-function uncoveredContentResult(
+function contentResult(
   path: string,
   content: Buffer,
   intervals: ByteInterval[],
