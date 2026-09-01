@@ -2736,6 +2736,73 @@ git commit -m <intention unique>
 
 Les credentials runner ont été chargés silencieusement depuis `.env.terminal-bench`, sans affichage, copie ni modification. Les limites ouvertes restent importantes : une seule intégration a suivi ce correctif, son terminal n'est pas vérifié, le chemin symbolique n'y est pas choisi, quatre rejets de patch subsistent, le codegen Prisma n'est pas journalisé, drag et Maj + molette ne sont pas prouvés, et aucun smoke test WSL, Lima ou Cloud Preview n'a été exécuté. Les holdouts établissent un gain ciblé et le transfert Portfolio fournit un signal positif de démarrage, pas une preuve de niveau frontier.
 
+### 21.34 Projection du contexte provider et suppression des répétitions prouvées
+
+#### Hypothèse et mesure réelle
+
+La réduction du nombre de lectures ne mesure pas à elle seule la dilution du contexte. Une lecture renvoyée une fois peut être rejouée dans toutes les requêtes provider suivantes, comme le payload complet d'une édition déjà acceptée ou la sortie d'une validation. Cette boucle a donc instrumenté la composition réellement remise au provider plutôt qu'un proxy dérivé du nombre d'événements.
+
+L'extension officielle Cline `messageBuilders` produit maintenant une vue provider sans modifier le transcript canonique. Un événement `context_composed`, expurgé de tout contenu, mesure à chaque requête : octets du prompt système, définitions d'outils, messages, catégories d'entrées et sorties d'outils, raisonnement, texte utilisateur et assistant, blocs strictement dupliqués, taille avant et après projection, et nombres de remplacements. La mesure n'est émise que pour le second passage provider-ready de Cline ; le passage interne de préparation de compaction n'est plus compté une seconde fois.
+
+Sur la dernière requête du second run final, les 30 525 octets composés se répartissent en 9 572 octets de prompt système, 6 494 octets de définitions d'outils et 14 459 octets de messages. Le contexte permanent représente donc 52,6 % de la requête. Dans les messages, les principales catégories sont les résultats de validation à 4 004 octets, les résultats de lecture à 3 818, le texte utilisateur à 2 317, les résultats d'édition à 1 715 et les entrées d'édition à 1 142. Le compteur de blocs strictement identiques vaut zéro : le problème observé est le replay cumulatif de blocs historiques différents, pas la présence de copies byte-identiques dans une même requête.
+
+#### Projection conservée
+
+Deux transformations seulement sont appliquées, car leur redondance peut être établie sans interprétation du modèle :
+
+- l'entrée volumineuse d'une édition réussie devient un reçu structuré lorsqu'une édition réussie plus récente existe ; l'édition réussie la plus récente et toutes les tentatives échouées restent intégrales pour conserver le contexte de correction ;
+- une ancienne lecture n'est remplacée qu'après une édition du même chemin et une nouvelle lecture réussie de ce chemin postérieure à cette édition. Une lecture simplement antérieure à une écriture reste disponible tant qu'aucune lecture fraîche ne l'a réellement supersédée.
+
+La première version compactait toute lecture antérieure à une édition. Deux replays ont alors terminé avec des diffs valides, mais ont produit respectivement 2 et 3 rejets d'édition, contre zéro sur les deux baselines, avec 69 847 et 78 364 tokens d'entrée. Le premier rejet du premier run précédait toute projection et relevait de la variance du modèle ; les rejets postérieurs du second ne permettaient plus d'exclure une perte de contexte. Cette variante agressive a été abandonnée. La règle de supersession ci-dessus est le correctif conservé.
+
+Les anciens ratios `warning`, `trigger`, `target` et `overflow` ont aussi été retirés de la configuration Blame : ils étaient parsés mais jamais transmis au SDK et donnaient l'illusion d'un contrôle inexistant. Les seuls réglages exposés sont désormais ceux effectivement consommés par Cline : activation, stratégie et nombre de tokens récents préservés. Un test long appelle directement `createContextCompactionPrepareTurn` du SDK et exige une notice native `auto_compaction` terminée. C'est un test déterministe du contrat Cline, pas un replay provider live.
+
+#### Comparaison live ciblée
+
+Les quatre runs retenus partent du commit de fixture `9c98cdf5f30a1f46f3753acb0810f505a3988451`, avec la même instruction en deux étapes, le même provider, modèle, effort, budget de 32 itérations et timeout de 600 secondes. Les deux baselines utilisent le runner construit au commit `c2c3ff54`. Les deux candidats finaux utilisent le runtime comprenant la projection resserrée et la correction hybride. Chaque workspace a été recréé par clone depuis la même révision.
+
+| Run | Durée ; requêtes ; appels | Tokens entrée / sortie / cache ; coût | Première tentative / réussite | Navigation | Éditions | Projection cumulée | Résultat réel |
+| --- | --- | --- | ---: | --- | --- | ---: | --- |
+| Avant 1 | 64,67 s ; 7 ; 11 | 44 095 / 2 749 / 32 768 ; 0,00622 $ | 39,35 / 39,61 s | 4 lectures, 3 641 octets | 2/2, aucun rejet | 0 | vérifié ; tests et typecheck passent |
+| Avant 2 | 51,31 s ; 6 ; 8 | 35 732 / 2 085 / 26 112 ; 0,00495 $ | 35,41 / 35,65 s | 3 lectures, 3 244 octets | 2/2, aucun rejet | 0 | vérifié ; tests et typecheck passent |
+| Après final 1 | 46,87 s ; 6 ; 8 | 34 360 / 1 975 / 19 456 ; 0,00574 $ | 31,90 / 32,04 s | 3 lectures, 3 244 octets | 2/2, aucun rejet | 4 742 octets | vérifié ; tests et typecheck indépendants passent |
+| Après final 2 | 46,19 s ; 6 ; 8 | 34 504 / 1 960 / 24 064 ; 0,00492 $ | 31,57 / 31,71 s | 3 lectures, 3 244 octets | 2/2, aucun rejet | 5 160 octets | vérifié ; tests et typecheck indépendants passent |
+
+En moyenne, la variante finale réduit la durée de 19,8 %, les requêtes de 7,7 %, les appels d'outils de 15,8 %, les tokens d'entrée de 13,7 %, les tokens de sortie de 18,6 %, le cache lu de 26,1 % et le temps avant première réussite de 15,3 %. Le coût baisse de 4,5 %. Les 4 951 octets projetés en moins par run sont un effet mécanique mesuré par comparaison du même transcript avant et après projection. Les variations de tokens et de durée restent partiellement stochastiques et ne sont pas attribuées intégralement à ces octets.
+
+Aucune compaction native n'a été déclenchée dans ces runs : la requête maximale d'environ 30,5 kB reste très loin de la fenêtre déclarée de 922 000 tokens. Le test long prouve que le chemin natif fonctionne lorsque son seuil est atteint, mais ces replays prouvent seulement la projection pré-provider. Les deux runs finaux ont zéro événement après `done`; leur terminal cite exactement la dernière révision, après le second test et le typecheck. Les deux diffs indépendants satisfont la demande, passent `git diff --check`, les trois tests et le typecheck.
+
+#### Faux overlap hybride découvert pendant la boucle
+
+Un run intermédiaire a choisi un batch réellement hybride : insertion du type `DiscountTier` avant `InvoiceSummary`, puis remplacement symbolique de `InvoiceSummary`. Le harness l'a refusé avant la première réussite avec un faux overlap. `diffChars` avait aligné le préfixe commun `export type` de l'insertion avec la déclaration suivante et fabriqué plusieurs petites plages internes au symbole.
+
+Le planificateur calcule désormais d'abord les changements par lignes, puis réduit les bords communs à des points de code Unicode complets. Deux remplacements non vides doivent toujours être disjoints et deux insertions au même offset restent interdites, mais une insertion exactement à la frontière d'un remplacement est maintenant composée dans un ordre déterministe. Les vrais overlaps internes restent bloqués. Le payload observé est couvert par un test déterministe d'insertion adjacente et remplacement symbolique ; un second test protège les frontières UTF-8. Les deux replays live finaux ont choisi des patches purs, donc aucune réussite hybride provider n'est revendiquée pour ce correctif précis.
+
+#### Tests, commandes et limites
+
+Les tests ajoutés couvrent la projection des anciennes entrées d'édition, la conservation d'une lecture jusqu'à sa supersession effective, l'émission unique et expurgée des métriques provider-ready, la compaction native Cline sur contexte long, le batch hybride adjacent et les frontières UTF-8. Les builds concernés ont précédé chaque replay. Après les runs, les suites finales passent avec 232 tests runtime et 13 tests runner, ainsi que lint, typecheck et builds concernés.
+
+Les principales commandes réellement exécutées sont :
+
+```text
+git status --short --branch
+git diff --check
+pnpm --filter @blame/agent-runtime test|lint|typecheck|build
+pnpm --filter @blame/benchmark-runner test|lint|typecheck|build
+pnpm --filter @blame/agent-runtime exec node --test --test-name-pattern=...
+git clone <fixture locale> <workspace jetable>
+git checkout 9c98cdf5f30a1f46f3753acb0810f505a3988451
+BLAME_HEADLESS_DEV=true NODE_ENV=development pnpm benchmark:agent -- run ... --max-iterations 32 --timeout-seconds 600
+npm test
+npm run typecheck
+git add <fichiers du correctif>
+git commit -m <intention unique>
+```
+
+Les credentials ont été chargés silencieusement depuis `.env.terminal-bench` avant chaque build et run. Ils n'ont été ni affichés, ni copiés, ni modifiés. La baseline Cline par défaut et les holdouts sémantiques restent ceux de la section 21.32 ; ils n'ont pas été rejoués artificiellement pour cette correction.
+
+Les limites restent explicites. Les deux replays finaux utilisent des patches et ne constituent pas une nouvelle preuve live du chemin symbolique, déjà démontré par les holdouts A et B. La compaction native n'a pas été atteinte par un provider live. Le prompt système et les schémas d'outils représentent encore plus de la moitié de la dernière requête et deviennent la prochaine cible mesurable, à condition de supprimer des redondances démontrées plutôt que des capacités. Ce scénario backend ne possède pas de preview visuelle applicable. Le codegen Prisma journalisé, la preview interactive, WSL, Lima et Cloud Preview restent hors de cette boucle ciblée.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)
