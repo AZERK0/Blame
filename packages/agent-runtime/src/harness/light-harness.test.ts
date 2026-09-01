@@ -710,6 +710,25 @@ test("run_task denies shell writes and unmanaged infrastructure", async () => {
   });
 });
 
+test("run_task denies mutating formatter project scripts", async () => {
+  const scripts = {
+    format: "prettier --write .",
+    "lint:fix": "eslint . --fix",
+    "prisma:format": "prisma format",
+  };
+  await withWorkspace(
+    { "package.json": JSON.stringify({ scripts }) },
+    async (root) => {
+      const workspace = lightWorkspace(root, "project-command-policy");
+      for (const task of Object.keys(scripts)) {
+        const result = await workspace.tasks.run({ kind: "project", task });
+        assert.equal(result.status, "blocked");
+        if (result.status === "blocked") assert.equal(result.category, "input");
+      }
+    },
+  );
+});
+
 test("code navigation refuses runtime-managed dependency internals", async () => {
   await withWorkspace(
     {

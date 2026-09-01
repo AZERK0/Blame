@@ -21,7 +21,7 @@ export function blockedCommandReason(command: string) {
     packageManagerMutation.test(normalized) ||
     writesThroughInterpreter(normalized)
   )
-    return "Filesystem writes must use edit_code or the dependency operation.";
+    return filesystemWriteReason;
   if (mutatingRedirection(normalized))
     return "Shell redirection cannot write files; use edit_code.";
   if (deniedGitCommand(normalized))
@@ -30,6 +30,15 @@ export function blockedCommandReason(command: string) {
     return "The command is denied by the shell safety policy.";
   return undefined;
 }
+
+export function blockedProjectTaskReason(command: string) {
+  return formatterMutation.test(command.toLocaleLowerCase())
+    ? filesystemWriteReason
+    : undefined;
+}
+
+const filesystemWriteReason =
+  "Filesystem writes must use edit_code or the dependency operation.";
 
 const dependencyInternals =
   /(?:^|[\s'"`])(?:\.\/)?[^\s'"`]*node_modules(?:\/|\b)/u;

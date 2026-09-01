@@ -1,7 +1,10 @@
 import { execa } from "execa";
 import { redactSecuritySecrets } from "../security-secret-redaction.js";
 import { EnvironmentAdapter } from "./environment-adapter.js";
-import { blockedCommandReason } from "./command-policy.js";
+import {
+  blockedCommandReason,
+  blockedProjectTaskReason,
+} from "./command-policy.js";
 import type { LightRunTaskInput, LightToolResult } from "./light-contracts.js";
 import {
   dependencyManifestSections,
@@ -81,6 +84,8 @@ export class LightTaskRunner {
     try {
       const task = await this.resolveProjectTask(input);
       if (task.kind === "service") return managedServiceResult(task.task_id);
+      const denied = blockedProjectTaskReason(task.command);
+      if (denied) return blocked("input", denied);
       return await this.executeProjectTask(task, context);
     } catch (error) {
       const category =
