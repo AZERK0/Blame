@@ -19,6 +19,8 @@ type ActiveTool = {
   tool: string;
 };
 
+const clineEditTools = new Set(["apply_patch", "editor"]);
+
 export class BenchmarkMetricsCollector {
   private readonly activeTools = new Map<string, ActiveTool>();
   private readonly inputTokens: number[] = [];
@@ -77,11 +79,17 @@ export class BenchmarkMetricsCollector {
   private recordTool(event: AgentEvent, recordedAt: number) {
     const payload = recordValue(event.payload);
     const call = recordValue(payload.toolCall);
-    const tool = stringValue(payload.toolName) ?? stringValue(call.name) ?? "unknown";
+    const tool =
+      stringValue(payload.toolName) ?? stringValue(call.name) ?? "unknown";
     const id = stringValue(payload.toolCallId) ?? stringValue(call.id) ?? tool;
     if (payload.phase === "started")
-      this.activeTools.set(id, { input: call.input, startedAt: recordedAt, tool });
-    if (payload.phase === "finished") this.finishTool(id, tool, call.input, payload, recordedAt);
+      this.activeTools.set(id, {
+        input: call.input,
+        startedAt: recordedAt,
+        tool,
+      });
+    if (payload.phase === "finished")
+      this.finishTool(id, tool, call.input, payload, recordedAt);
   }
 
   private finishTool(
@@ -133,9 +141,13 @@ export class BenchmarkMetricsCollector {
     finishedAt: number,
   ) {
     if (tool === "edit_code")
-      this.recordEdit(input, output, startedAt, finishedAt);
-    if (tool === "read_code") this.recordRead(output);
-    if (tool === "search_code") this.recordSearch(output);
+      this.recordEdit(input, output, startedAt, finishedAt, "blame");
+    if (clineEditTools.has(tool))
+      this.recordEdit(input, output, startedAt, finishedAt, "cline");
+    if (tool === "read_code" || tool === "read_files")
+      this.recordRead(tool, input, output);
+    if (tool === "search_code" || tool === "search_codebase")
+      this.recordSearch(tool, input, output);
   }
 
   private recordEdit(
@@ -143,30 +155,40 @@ export class BenchmarkMetricsCollector {
     output: unknown,
     startedAt: number,
     finishedAt: number,
+    harness: "blame" | "cline",
   ) {
     this.editAttempts += 1;
     this.firstEditAttemptAt ??= startedAt;
-    const operations = arrayValue(recordValue(input).operations).map(recordValue);
+    const operations =
+      harness === "blame"
+        ? arrayValue(recordValue(input).operations).map(recordValue)
+        : [{ kind: "patch" }];
     const kinds = new Set(operations.map(({ kind }) => kind));
-    this.symbolOperations += operations.filter(({ kind }) => kind === "symbol").length;
-    this.patchOperations += operations.filter(({ kind }) => kind === "patch").length;
+    this.symbolOperations += operations.filter(
+      ({ kind }) => kind === "symbol",
+    ).length;
+    this.patchOperations += operations.filter(
+      ({ kind }) => kind === "patch",
+    ).length;
     if (kinds.has("symbol") && kinds.has("patch")) this.hybridCalls += 1;
-    const result = recordValue(output);
-    if (result.status === "blocked") this.editBlocked += 1;
-    if (result.status !== "ok" || recordValue(result.data).changed !== true) return;
+    if (editRejected(output)) this.editBlocked += 1;
+    if (!editSucceeded(output, harness)) return;
     this.editSuccesses += 1;
     this.firstEditSuccessAt ??= finishedAt;
   }
 
-  private recordRead(output: unknown) {
-    this.readCalls += 1;
+  private recordRead(tool: string, input: unknown, output: unknown) {
+    const requestedFiles = arrayValue(recordValue(input).files).length;
+    this.readCalls += tool === "read_files" ? Math.max(1, requestedFiles) : 1;
     const data = recordValue(recordValue(output).data);
     if (data.status === "already_in_context") this.deduplicatedReads += 1;
     this.navigationBytes += serializedBytes(output);
   }
 
-  private recordSearch(output: unknown) {
-    this.searchCalls += 1;
+  private recordSearch(tool: string, input: unknown, output: unknown) {
+    const requestedQueries = arrayValue(recordValue(input).queries).length;
+    this.searchCalls +=
+      tool === "search_codebase" ? Math.max(1, requestedQueries) : 1;
     this.navigationBytes += serializedBytes(output);
   }
 
@@ -187,13 +209,15 @@ export class BenchmarkMetricsCollector {
     return this.spans.reduce(
       (total, span) =>
         total +
-        (span.inputBytes + span.outputBytes) * Math.max(0, requests - span.usageCount),
+        (span.inputBytes + span.outputBytes) *
+          Math.max(0, requests - span.usageCount),
       0,
     );
   }
 
   private attributeReplayExposure() {
-    for (const metric of this.toolsByName.values()) metric.replayExposureBytes = 0;
+    for (const metric of this.toolsByName.values())
+      metric.replayExposureBytes = 0;
     const requests = this.inputTokens.length;
     for (const span of this.spans) {
       const metric = this.toolsByName.get(span.tool);
@@ -243,7 +267,30 @@ function updateToolMetric(
   metric.inputBytes += inputBytes;
   metric.outputBytes += outputBytes;
   if (result.status === "blocked") metric.blockedCalls += 1;
-  if (payload.success === false || result.isError === true) metric.failedCalls += 1;
+  if (payload.success === false || outputFailed(output))
+    metric.failedCalls += 1;
+}
+
+function editRejected(output: unknown) {
+  const result = recordValue(output);
+  return result.status === "blocked" || outputFailed(output);
+}
+
+function editSucceeded(output: unknown, harness: "blame" | "cline") {
+  const result = recordValue(output);
+  if (harness === "blame")
+    return result.status === "ok" && recordValue(result.data).changed === true;
+  return result.success === true;
+}
+
+function outputFailed(output: unknown): boolean {
+  if (Array.isArray(output)) return output.some((item) => outputFailed(item));
+  const result = recordValue(output);
+  return (
+    result.status === "failed" ||
+    result.isError === true ||
+    result.success === false
+  );
 }
 
 function totalToolMetrics(tools: Record<string, BenchmarkNamedToolMetrics>) {
@@ -261,7 +308,11 @@ function totalToolMetrics(tools: Record<string, BenchmarkNamedToolMetrics>) {
 
 function toolFreeGaps(spans: ToolSpan[], startedAt: Date, finishedAt: Date) {
   const intervals = mergedIntervals(spans);
-  const gaps = intervalGaps(intervals, startedAt.getTime(), finishedAt.getTime());
+  const gaps = intervalGaps(
+    intervals,
+    startedAt.getTime(),
+    finishedAt.getTime(),
+  );
   const longGaps = gaps.filter((duration) => duration > 30_000);
   return {
     countOverThirtySeconds: longGaps.length,
@@ -279,7 +330,11 @@ function mergedIntervals(spans: ToolSpan[]) {
   return merged;
 }
 
-function mergeInterval(intervals: Array<[number, number]>, start: number, end: number) {
+function mergeInterval(
+  intervals: Array<[number, number]>,
+  start: number,
+  end: number,
+) {
   const previous = intervals.at(-1);
   if (!previous || start > previous[1]) intervals.push([start, end]);
   else previous[1] = Math.max(previous[1], end);
@@ -339,5 +394,7 @@ function stringValue(value: unknown) {
 }
 
 function numberValue(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
 }

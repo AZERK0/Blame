@@ -25,10 +25,16 @@ test("attributes model context and tool payload exposure", () => {
 test("separates navigation deduplication and blocked edits", () => {
   const collector = new BenchmarkMetricsCollector();
   collector.record(
-    finishedTool("read_code", { status: "ok", data: { status: "already_in_context" } }),
+    finishedTool("read_code", {
+      status: "ok",
+      data: { status: "already_in_context" },
+    }),
     1_000,
   );
-  collector.record(finishedTool("search_code", { status: "ok", data: {} }), 2_000);
+  collector.record(
+    finishedTool("search_code", { status: "ok", data: {} }),
+    2_000,
+  );
   collector.record(finishedTool("edit_code", { status: "blocked" }), 3_000);
   const metrics = collector.summary(new Date(0), new Date(4_000));
   assert.equal(metrics.navigation.readCalls, 1);
@@ -38,6 +44,59 @@ test("separates navigation deduplication and blocked edits", () => {
   assert.equal(metrics.tools.blockedCalls, 1);
 });
 
+test("measures Cline batched reads, searches, and patches", () => {
+  const collector = new BenchmarkMetricsCollector();
+  collector.record(
+    finishedTool(
+      "read_files",
+      [{ query: "a.ts", result: "source", success: true }],
+      { files: [{ path: "a.ts" }, { path: "b.ts" }] },
+    ),
+    1_000,
+  );
+  collector.record(
+    finishedTool(
+      "search_codebase",
+      [{ query: "name", result: "match", success: true }],
+      { queries: ["name", "reference", "test"] },
+    ),
+    2_000,
+  );
+  collector.record(
+    finishedTool("apply_patch", {
+      query: "apply_patch",
+      result: "applied",
+      success: true,
+    }),
+    3_000,
+  );
+  const metrics = collector.summary(new Date(0), new Date(4_000));
+  assert.equal(metrics.navigation.readCalls, 2);
+  assert.equal(metrics.navigation.searchCalls, 3);
+  assert.equal(metrics.editing.attempts, 1);
+  assert.equal(metrics.editing.patchOperations, 1);
+  assert.equal(metrics.editing.successful, 1);
+  assert.equal(metrics.editing.firstAttemptMs, 3_000);
+  assert.equal(metrics.editing.firstSuccessMs, 3_000);
+});
+
+test("records rejected Cline patches as failed editing attempts", () => {
+  const collector = new BenchmarkMetricsCollector();
+  collector.record(
+    finishedTool("apply_patch", {
+      query: "apply_patch",
+      result: "context not found",
+      success: false,
+    }),
+    1_000,
+  );
+  const metrics = collector.summary(new Date(0), new Date(2_000));
+  assert.equal(metrics.editing.attempts, 1);
+  assert.equal(metrics.editing.blocked, 1);
+  assert.equal(metrics.editing.successful, 0);
+  assert.equal(metrics.tools.failedCalls, 1);
+});
+
 function usageEvent(inputTokens: number): AgentEvent {
   return { type: "usage", payload: { usage: { inputTokens } } };
 }
@@ -45,7 +104,12 @@ function usageEvent(inputTokens: number): AgentEvent {
 function toolEvent(phase: "finished" | "started"): AgentEvent {
   const input = {
     operations: [
-      { action: "replace_body", content: "return 2", kind: "symbol", target: "s1" },
+      {
+        action: "replace_body",
+        content: "return 2",
+        kind: "symbol",
+        target: "s1",
+      },
     ],
   };
   return {
@@ -60,13 +124,17 @@ function toolEvent(phase: "finished" | "started"): AgentEvent {
   };
 }
 
-function finishedTool(tool: string, output: unknown): AgentEvent {
+function finishedTool(
+  tool: string,
+  output: unknown,
+  input: unknown = {},
+): AgentEvent {
   return {
     type: "tool",
     payload: {
       output,
       phase: "finished",
-      toolCall: { id: tool, input: {}, name: tool },
+      toolCall: { id: tool, input, name: tool },
     },
   };
 }
