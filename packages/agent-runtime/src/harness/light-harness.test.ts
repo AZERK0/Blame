@@ -835,6 +835,28 @@ test("run_task prefers an exact build script over prebuild", async () => {
   );
 });
 
+test("run_task prefers an exact task id over nested scripts with the same name", async () => {
+  await withWorkspace(
+    {
+      "package.json": JSON.stringify({
+        scripts: { build: 'node -e "process.exit(0)"' },
+      }),
+      "apps/web/package.json": JSON.stringify({
+        name: "web",
+        scripts: { build: 'node -e "process.exit(1)"' },
+      }),
+    },
+    async (root) => {
+      const workspace = lightWorkspace(root, "exact-root-build-task");
+      const result = await workspace.tasks.run({
+        kind: "project",
+        task: "build",
+      });
+      assert.equal(result.status, "ok");
+    },
+  );
+});
+
 test("run_task reuse survives isolated Light bridge executions", async () => {
   await withWorkspace({ "package.json": "{}\n" }, async (root) => {
     const request = {

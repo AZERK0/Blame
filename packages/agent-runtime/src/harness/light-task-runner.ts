@@ -364,10 +364,12 @@ function reusedCommandResult(
 }
 
 function matchingTasks(tasks: TaskCatalogItem[], requested: string) {
-  const exact = tasks.filter(
-    (task) => task.task_id === requested || task.script === requested,
-  );
-  return exact.length ? exact : tasks.filter((task) => task.kind === requested);
+  const identified = tasks.filter((task) => task.task_id === requested);
+  if (identified.length) return identified;
+  const scripted = tasks.filter((task) => task.script === requested);
+  return scripted.length
+    ? scripted
+    : tasks.filter((task) => task.kind === requested);
 }
 
 function packageMatches(task: TaskCatalogItem, packagePath: string) {
