@@ -26,7 +26,7 @@ export function splitLightPatch(
   patch: string,
   requestedPath?: string,
 ): LightPatchOperation[] {
-  const lines = patch.trimEnd().split(/\r?\n/u);
+  const lines = normalizedPatchLines(patch, requestedPath);
   assertPatchEnvelope(lines);
   const headers = patchHeaders(lines);
   if (!headers.length) throw new Error("Patch contains no file operation.");
@@ -45,17 +45,88 @@ export function splitLightPatch(
   });
 }
 
+function normalizedPatchLines(patch: string, requestedPath?: string) {
+  let lines = patch.trimEnd().split(/\r?\n/u);
+  if (hasBareFileEnvelope(lines)) lines = ["*** Begin Patch", ...lines];
+  if (requestedPath && hasLeadingUpdateHunk(lines)) {
+    assertSingleLinePath(requestedPath);
+    lines.splice(1, 0, `*** Update File: ${requestedPath}`);
+  } else if (requestedPath && hasLeadingAddBody(lines)) {
+    assertSingleLinePath(requestedPath);
+    lines.splice(1, 0, `*** Add File: ${requestedPath}`);
+  }
+  return lines;
+}
+
+function hasBareFileEnvelope(lines: string[]) {
+  return (
+    /^\*\*\* (?:Add|Delete|Update) File:\s*.+$/u.test(lines[0] ?? "") &&
+    lines.at(-1) === "*** End Patch"
+  );
+}
+
+function hasLeadingUpdateHunk(lines: string[]) {
+  if (lines[0] !== "*** Begin Patch" || lines.at(-1) !== "*** End Patch")
+    return false;
+  const firstContent = lines.findIndex(
+    (line, index) => index > 0 && line.trim().length > 0,
+  );
+  const firstHeader = patchHeaders(lines)[0]?.index ?? lines.length - 1;
+  return (
+    firstContent > 0 &&
+    firstContent < firstHeader &&
+    lines[firstContent]?.startsWith("@@")
+  );
+}
+
+function hasLeadingAddBody(lines: string[]) {
+  if (lines[0] !== "*** Begin Patch" || lines.at(-1) !== "*** End Patch")
+    return false;
+  const firstHeader = patchHeaders(lines)[0]?.index ?? lines.length - 1;
+  const leadingBody = lines.slice(1, firstHeader);
+  return (
+    leadingBody.length > 0 && leadingBody.every((line) => line.startsWith("+"))
+  );
+}
+
+function assertSingleLinePath(path: string) {
+  if (/[\r\n]/u.test(path)) throw new Error("Patch path must be one line.");
+}
+
 export async function planLightPatch(
   workspaceRoot: string,
   path: string,
   source: string | undefined,
   patch: string,
 ) {
-  const parsed = parseClinePatchShape(patch);
+  const parsed = normalizedMissingTargetAddition(
+    parseClinePatchShape(patch),
+    source,
+  );
   assertExactUniqueContexts(source, parsed);
   const normalized = normalizedPatch(parsed, path);
   const change = await computeSingleChange(normalized, workspaceRoot);
   return patchPlanFromChange(change, source);
+}
+
+function normalizedMissingTargetAddition(
+  parsed: ParsedPatch,
+  source: string | undefined,
+): ParsedPatch {
+  if (
+    source !== undefined ||
+    parsed.mode !== "update" ||
+    parsed.hunks.length === 0 ||
+    parsed.hunks.some(
+      (hunk) => hunk.length === 0 || hunk.some((line) => !line.startsWith("+")),
+    )
+  )
+    return parsed;
+  return {
+    ...parsed,
+    lines: parsed.lines.filter((line) => !line.startsWith("@@")),
+    mode: "add",
+  };
 }
 
 async function computeSingleChange(patch: string, workspaceRoot: string) {
@@ -174,12 +245,16 @@ function normalizedPatch(parsed: ParsedPatch, path: string) {
 }
 
 function changedRanges(before: string, after: string) {
-  const replacements: LightPatchReplacement[] = [];
+  const replacements: Array<{
+    end: number;
+    replacement: string;
+    start: number;
+  }> = [];
   let cursor = 0;
   let pending: { end: number; replacement: string; start: number } | undefined;
   for (const part of diffChars(before, after)) {
     if (!part.added && !part.removed) {
-      if (pending) replacements.push(byteReplacement(before, pending));
+      if (pending) replacements.push(pending);
       pending = undefined;
       cursor += part.value.length;
       continue;
@@ -190,8 +265,26 @@ function changedRanges(before: string, after: string) {
       pending.end = cursor;
     } else pending.replacement += part.value;
   }
-  if (pending) replacements.push(byteReplacement(before, pending));
-  return replacements;
+  if (pending) replacements.push(pending);
+  return mergeWhitespaceSeparated(before, replacements).map((replacement) =>
+    byteReplacement(before, replacement),
+  );
+}
+
+function mergeWhitespaceSeparated(
+  source: string,
+  replacements: Array<{ end: number; replacement: string; start: number }>,
+) {
+  const merged: typeof replacements = [];
+  for (const current of replacements) {
+    const previous = merged.at(-1);
+    const gap = previous ? source.slice(previous.end, current.start) : "";
+    if (previous && /^\s+$/u.test(gap)) {
+      previous.end = current.end;
+      previous.replacement += gap + current.replacement;
+    } else merged.push({ ...current });
+  }
+  return merged;
 }
 
 function byteReplacement(

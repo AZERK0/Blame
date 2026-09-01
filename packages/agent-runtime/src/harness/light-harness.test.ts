@@ -1064,6 +1064,38 @@ test("one batch combines an import patch and a symbol body replacement", async (
   });
 });
 
+test("one batch combines an import patch and a whole exported replacement", async () => {
+  const source =
+    'import Image from "next/image";\n\nexport default function Home() {\n  return <main />;\n}\n';
+  await withWorkspace({ "src/app.tsx": source }, async (root) => {
+    const workspace = lightWorkspace(root, "hybrid-whole-symbol");
+    const result = await workspace.editCode({
+      operations: [
+        {
+          kind: "symbol",
+          target: "src/app.tsx#Home",
+          action: "replace",
+          content:
+            "export default function Home() {\n  return <main><section /></main>;\n}",
+        },
+        {
+          kind: "patch",
+          path: "src/app.tsx",
+          patch: applyPatch("src/app.tsx", [
+            ' import Image from "next/image";',
+            '+import { Section } from "./section";',
+          ]),
+        },
+      ],
+    });
+    assert.equal(result.status, "ok");
+    assert.equal(
+      await readFile(join(root, "src/app.tsx"), "utf8"),
+      'import Image from "next/image";\nimport { Section } from "./section";\n\nexport default function Home() {\n  return <main><section /></main>;\n}\n',
+    );
+  });
+});
+
 test("HTML supports outline and structural body replacement", async () => {
   await withWorkspace(
     { "index.html": '<main id="app"><p>Hello</p></main>\n' },
@@ -1552,6 +1584,138 @@ test("one native Cline patch edits multiple files atomically", async () => {
       );
     },
   );
+});
+
+test("a path-addressed update patch may omit its redundant file header", async () => {
+  await withWorkspace({ "a.ts": "export const a = 1\n" }, async (root) => {
+    const workspace = lightWorkspace(root, "implicit-update-header");
+    const result = await workspace.editCode({
+      operations: [
+        {
+          kind: "patch",
+          path: "a.ts",
+          patch: [
+            "*** Begin Patch",
+            "@@",
+            "-export const a = 1",
+            "+export const a = 2",
+            "*** End Patch",
+          ].join("\n"),
+        },
+      ],
+    });
+    assert.equal(result.status, "ok");
+    assert.equal(
+      await readFile(join(root, "a.ts"), "utf8"),
+      "export const a = 2\n",
+    );
+  });
+});
+
+test("a leading implicit update composes with explicit file operations", async () => {
+  await withWorkspace({ "a.ts": "export const a = 1\n" }, async (root) => {
+    const workspace = lightWorkspace(root, "implicit-update-multi-file");
+    const result = await workspace.editCode({
+      operations: [
+        {
+          kind: "patch",
+          path: "a.ts",
+          patch: [
+            "*** Begin Patch",
+            "@@",
+            "-export const a = 1",
+            "+export const a = 2",
+            "*** Add File: b.ts",
+            "+export const b = 3",
+            "*** End Patch",
+          ].join("\n"),
+        },
+      ],
+    });
+    assert.equal(result.status, "ok");
+    assert.equal(
+      await readFile(join(root, "a.ts"), "utf8"),
+      "export const a = 2\n",
+    );
+    assert.equal(
+      await readFile(join(root, "b.ts"), "utf8"),
+      "export const b = 3",
+    );
+  });
+});
+
+test("an explicit file patch may omit only its opening envelope", async () => {
+  await withWorkspace({}, async (root) => {
+    const workspace = lightWorkspace(root, "implicit-opening-envelope");
+    const result = await workspace.editCode({
+      operations: [
+        {
+          kind: "patch",
+          path: "a.ts",
+          patch: [
+            "*** Add File: a.ts",
+            "+export const a = 1",
+            "*** End Patch",
+          ].join("\n"),
+        },
+      ],
+    });
+    assert.equal(result.status, "ok");
+    assert.equal(
+      await readFile(join(root, "a.ts"), "utf8"),
+      "export const a = 1",
+    );
+  });
+});
+
+test("a path-addressed added file may omit its redundant file header", async () => {
+  await withWorkspace({}, async (root) => {
+    const workspace = lightWorkspace(root, "implicit-add-header");
+    const result = await workspace.editCode({
+      operations: [
+        {
+          kind: "patch",
+          path: "a.ts",
+          patch: [
+            "*** Begin Patch",
+            "+export const a = 1",
+            "*** End Patch",
+          ].join("\n"),
+        },
+      ],
+    });
+    assert.equal(result.status, "ok");
+    assert.equal(
+      await readFile(join(root, "a.ts"), "utf8"),
+      "export const a = 1",
+    );
+  });
+});
+
+test("a pure addition update to a missing target becomes a file addition", async () => {
+  await withWorkspace({}, async (root) => {
+    const workspace = lightWorkspace(root, "missing-update-addition");
+    const result = await workspace.editCode({
+      operations: [
+        {
+          kind: "patch",
+          path: "a.ts",
+          patch: [
+            "*** Begin Patch",
+            "*** Update File: a.ts",
+            "@@",
+            "+export const a = 1",
+            "*** End Patch",
+          ].join("\n"),
+        },
+      ],
+    });
+    assert.equal(result.status, "ok");
+    assert.equal(
+      await readFile(join(root, "a.ts"), "utf8"),
+      "export const a = 1",
+    );
+  });
 });
 
 test("overlaps and final parse failures leave every file unchanged", async () => {
