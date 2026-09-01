@@ -611,14 +611,25 @@ export class LightWorkspace {
     const visible = symbols.filter((symbol) =>
       uncovered.some((range) => rangesOverlap(range, signatureRange(symbol))),
     );
-    return visible.map((symbol) => {
+    const registered = symbols.map((symbol) => {
       const { alias, materialized } = this.aliases.registerSymbol(
         path,
         content,
         symbol,
         revision,
       );
-      return { alias, ...outlineSymbol(materialized) };
+      return { alias, materialized, symbol };
+    });
+    return registered.flatMap(({ alias, materialized, symbol }) => {
+      if (!visible.includes(symbol)) return [];
+      const parent = enclosingOutlineTarget(symbol, registered);
+      return [
+        {
+          alias,
+          ...outlineSymbol(materialized),
+          ...(parent ? { containedBy: parent.alias } : {}),
+        },
+      ];
     });
   }
 
@@ -826,6 +837,27 @@ export class LightWorkspace {
     await this.journal.recordCoverage(this.coverage.snapshot());
     return result;
   }
+}
+
+function enclosingOutlineTarget(
+  symbol: ParsedSymbol,
+  candidates: Array<{ alias: string; symbol: ParsedSymbol }>,
+) {
+  return candidates
+    .filter(
+      ({ symbol: candidate }) =>
+        candidate !== symbol &&
+        candidate.range_utf8_bytes[0] <= symbol.range_utf8_bytes[0] &&
+        candidate.range_utf8_bytes[1] >= symbol.range_utf8_bytes[1],
+    )
+    .sort(
+      (left, right) =>
+        byteLength(left.symbol) - byteLength(right.symbol),
+    )[0];
+}
+
+function byteLength(symbol: ParsedSymbol) {
+  return symbol.range_utf8_bytes[1] - symbol.range_utf8_bytes[0];
 }
 
 function emptyOutline(path: string): LightToolResult<unknown> {

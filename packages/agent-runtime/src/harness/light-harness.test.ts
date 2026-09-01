@@ -1207,6 +1207,29 @@ test("CSS supports structural outline and rule body editing", async () => {
   );
 });
 
+test("nested CSS outline targets identify their containing target", async () => {
+  const source = [
+    "@media (max-width: 600px) {",
+    "  .projects { color: blue; }",
+    "  .card { display: none; }",
+    "}",
+    "",
+  ].join("\n");
+  await withWorkspace({ "nested.css": source }, async (root) => {
+    const workspace = lightWorkspace(root, "nested-css-targets");
+    const outline = data(
+      await workspace.readCode(
+        { target: "nested.css", view: "outline" },
+        { agentId: "lead" },
+      ),
+    );
+    const items = array(outline.items).map(record);
+    const media = items.find((item) => item.kind === "css_media");
+    const project = items.find((item) => item.qualified_name === "@media(max-width: 600px)::.projects");
+    assert.equal(project?.containedBy, media?.alias);
+  });
+});
+
 test("outline ranges exclude symbols outside the requested lines", async () => {
   const source = Array.from(
     { length: 700 },
@@ -2006,6 +2029,10 @@ test("overlaps and final parse failures leave every file unchanged", async () =>
       { sessionId: "atomic", toolCallId: "overlap" },
     );
     assert.equal(overlap.status, "blocked");
+    if (overlap.status === "blocked") {
+      assert.match(overlap.message, /replace s\d+ conflicts with delete s\d+/u);
+      assert.match(overlap.message, /split the edits and re-read/u);
+    }
     const invalid = await workspace.edits.edit(
       {
         operations: [
@@ -2121,6 +2148,8 @@ test("symbol aliases remain valid across successive indexed edits", async () => 
         ],
       });
       assert.equal(result.status, "ok");
+      assert.equal(data(result).diff, undefined);
+      assert.match(String(data(result).sourceRevisionId), /^src_/u);
       assert.ok(
         array(data(result).aliases).some(
           (entry) => record(entry).alias === alias,
@@ -2131,6 +2160,36 @@ test("symbol aliases remain valid across successive indexed edits", async () => 
       await readFile(join(root, "target.ts"), "utf8"),
       "export function target() { return 3 }\n",
     );
+  });
+});
+
+test("edit receipts omit echoed diffs and unrelated aliases", async () => {
+  const source = [
+    "export function target() { return 1 }",
+    "export function unrelated() { return 9 }",
+    "",
+  ].join("\n");
+  await withWorkspace({ "target.ts": source }, async (root) => {
+    const workspace = lightWorkspace(root, "compact-edit-receipt");
+    const target = await symbolAlias(workspace, "target");
+    await symbolAlias(workspace, "unrelated");
+    const result = await workspace.editCode({
+      operations: [
+        {
+          action: "replace_body",
+          content: "{ return 2 }",
+          kind: "symbol",
+          target,
+        },
+      ],
+    });
+    const receipt = data(result);
+    assert.equal(receipt.diff, undefined);
+    assert.deepEqual(
+      array(receipt.aliases).map((entry) => record(entry).alias),
+      [target],
+    );
+    assert.match(String(receipt.sourceRevisionId), /^src_/u);
   });
 });
 

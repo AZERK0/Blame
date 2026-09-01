@@ -1,4 +1,3 @@
-import { createTwoFilesPatch } from "diff";
 import {
   parseCode,
   symbolEditRange,
@@ -13,6 +12,7 @@ import { capabilityForPath, parseAvailability } from "./light-capabilities.js";
 import {
   LightAliasRegistry,
   SymbolResolutionError,
+  type LightAlias,
   type ResolvedLightSymbol,
 } from "./light-aliases.js";
 import { planLightPatch, splitLightPatch } from "./light-patch.js";
@@ -25,7 +25,12 @@ import type { SessionJournal } from "./session-journal.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
 import { symbolsTouchedByPatch } from "./patch-symbol-attribution.js";
 
-type Replacement = { end: number; replacement: string; start: number };
+type Replacement = {
+  end: number;
+  replacement: string;
+  source: string;
+  start: number;
+};
 
 type PlannedFile = {
   fileMode?: number;
@@ -125,6 +130,7 @@ export class LightEditService {
         start: 0,
         end: plan.initial.byteLength,
         replacement: replacement.content,
+        source: `formatter ${path}`,
       });
       plans.push(plan);
     }
@@ -294,13 +300,24 @@ export class LightEditService {
       symbols: [...new Set(files.flatMap(({ symbols }) => symbols))],
       parse: parse.status === "passed" ? "passed" : "not_supported",
     });
-    const aliases = await this.refreshAliases(paths);
+    const aliases = await this.refreshAliases(
+      paths,
+      new Set(files.flatMap(({ symbols }) => symbols)),
+    );
     await this.journal.recordAliases(this.aliases.entries());
-    return appliedEditResult(receipt, files, aliases, parse, snapshot);
+    return appliedEditResult(
+      receipt,
+      result.sourceRevisionId,
+      files,
+      aliases,
+      parse,
+      snapshot,
+    );
   }
 
-  private async refreshAliases(paths: string[]) {
+  private async refreshAliases(paths: string[], touched: Set<string>) {
     const snapshot = await this.files.snapshot();
+    const existing = this.aliases.entries();
     const output: Array<{
       alias: string;
       path: string;
@@ -309,18 +326,47 @@ export class LightEditService {
     for (const path of paths) {
       const content = (await optionalFile(this.files, path))?.content;
       if (!content) continue;
-      for (const symbol of parseCode(path, content).symbols.slice(0, 8)) {
+      const symbols = parseCode(path, content).symbols;
+      for (const symbol of symbols) {
+        const aliases = matchingAliases(existing, path, symbol);
+        if (!aliases.length && !touched.has(symbol.qualified_name)) continue;
         const { alias } = this.aliases.registerSymbol(
           path,
           content,
           symbol,
           snapshot.revision.source_revision_id,
         );
-        output.push({ alias, path, qualifiedName: symbol.qualified_name });
+        if (touched.has(symbol.qualified_name))
+          output.push({ alias, path, qualifiedName: symbol.qualified_name });
       }
     }
-    return output;
+    return uniqueAliasReceipts(output);
   }
+}
+
+function matchingAliases(
+  aliases: LightAlias[],
+  path: string,
+  symbol: ReturnType<typeof parseCode>["symbols"][number],
+) {
+  return aliases.filter(
+    (entry) =>
+      entry.kind === "symbol" &&
+      entry.path === path &&
+      entry.qualifiedName === symbol.qualified_name &&
+      entry.symbolKind === symbol.kind,
+  );
+}
+
+function uniqueAliasReceipts(
+  aliases: Array<{ alias: string; path: string; qualifiedName: string }>,
+) {
+  const seen = new Set<string>();
+  return aliases.filter(({ alias }) => {
+    if (seen.has(alias)) return false;
+    seen.add(alias);
+    return true;
+  });
 }
 
 function applyPatchPlan(
@@ -331,7 +377,12 @@ function applyPatchPlan(
   if (patch.mode === "add") {
     if (file.initial) throw new Error(`${path} already exists.`);
     file.mutation = "add";
-    file.replacements.push({ start: 0, end: 0, replacement: patch.content });
+    file.replacements.push({
+      start: 0,
+      end: 0,
+      replacement: patch.content,
+      source: `add ${path}`,
+    });
     return;
   }
   if (patch.mode === "delete") {
@@ -339,11 +390,17 @@ function applyPatchPlan(
     file.mutation = "delete";
     return;
   }
-  file.replacements.push(...patch.replacements);
+  file.replacements.push(
+    ...patch.replacements.map((replacement) => ({
+      ...replacement,
+      source: `patch ${path}`,
+    })),
+  );
 }
 
 function appliedEditResult(
   receipt: string,
+  sourceRevisionId: string,
   files: FinalFile[],
   aliases: Array<{ alias: string; path: string; qualifiedName: string }>,
   parse: ReturnType<typeof parseSummary>,
@@ -355,10 +412,10 @@ function appliedEditResult(
     data: {
       changed: true,
       changes: files.map(fileChange),
-      aliases,
+      ...(aliases.length ? { aliases } : {}),
       parse,
-      diff: compactDiff(files),
       basedOn: snapshot.git ? "worktree" : "filesystem",
+      sourceRevisionId,
     },
   };
 }
@@ -370,44 +427,52 @@ function symbolReplacement(
     { kind: "symbol" }
   >,
 ): Replacement {
+  const replacement = operation.content ?? "";
+  const source = `${operation.action} ${operation.target}`;
   if (operation.action === "replace_body")
-    return symbolBodyReplacement(resolved, operation.content);
+    return symbolBodyReplacement(resolved, replacement, source);
   const range = syntaxBoundaryRange(
     resolved.path,
     resolved.content,
     resolved.symbol.range_utf8_bytes,
   );
   if (operation.action === "insert_before")
-    return insertionReplacement(range[0], operation.content);
+    return insertionReplacement(range[0], replacement, source);
   if (operation.action === "insert_after")
-    return insertionReplacement(range[1], operation.content);
-  return wholeSymbolReplacement(resolved, operation, range);
+    return insertionReplacement(range[1], replacement, source);
+  return wholeSymbolReplacement(operation, range, source);
 }
 
 function symbolBodyReplacement(
   resolved: ResolvedLightSymbol,
-  content?: string,
+  replacement: string,
+  source: string,
 ): Replacement {
   const [start, end] = symbolEditRange(resolved.symbol, "body");
-  return { start, end, replacement: content ?? "" };
+  return { start, end, replacement, source };
 }
 
-function insertionReplacement(offset: number, content?: string): Replacement {
-  return { start: offset, end: offset, replacement: content ?? "" };
+function insertionReplacement(
+  offset: number,
+  replacement: string,
+  source: string,
+): Replacement {
+  return { start: offset, end: offset, replacement, source };
 }
 
 function wholeSymbolReplacement(
-  resolved: ResolvedLightSymbol,
   operation: Extract<
     LightEditCodeInput["operations"][number],
     { kind: "symbol" }
   >,
   range: [number, number],
+  source: string,
 ): Replacement {
   return {
     start: range[0],
     end: range[1],
     replacement: operation.action === "delete" ? "" : (operation.content ?? ""),
+    source,
   };
 }
 
@@ -438,7 +503,9 @@ function assertCompatibleMutations(file: PlannedFile) {
     const previous = ordered[index - 1]!;
     const current = ordered[index]!;
     if (current.start < previous.end || sameInsertion(previous, current))
-      throw new Error(`Edit operations overlap in ${file.path}.`);
+      throw new Error(
+        `Edit operations overlap in ${file.path}: ${previous.source} conflicts with ${current.source}. Replace their common parent once, or split the edits and re-read after the first commit.`,
+      );
   }
 }
 
@@ -631,23 +698,6 @@ function fileChange(file: FinalFile) {
     deletions: lineCount(before) - commonLineCount(before, after),
     ...(file.symbols.length ? { symbols: [...new Set(file.symbols)] } : {}),
   };
-}
-
-function compactDiff(files: FinalFile[]) {
-  const diff = files
-    .map((file) =>
-      createTwoFilesPatch(
-        `a/${file.path}`,
-        `b/${file.path}`,
-        file.initial?.toString("utf8") ?? "",
-        file.content?.toString("utf8") ?? "",
-        undefined,
-        undefined,
-        { context: 3 },
-      ),
-    )
-    .join("\n");
-  return diff.length > 8_000 ? `${diff.slice(0, 8_000)}\n…` : diff;
 }
 
 function commonLineCount(left: string, right: string) {

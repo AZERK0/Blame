@@ -303,7 +303,20 @@ function intervalEditTargets(
       intervals.some((range) => overlaps(symbol.range_utf8_bytes, range)),
     )
     .sort((left, right) => symbolSize(left) - symbolSize(right));
-  return uniqueSymbols([...containing.slice(0, 1), ...overlapping]).slice(0, 3);
+  const ranked = uniqueSymbols([...containing.slice(0, 1), ...overlapping]);
+  return nonOverlappingSymbols(ranked).slice(0, 3);
+}
+
+function nonOverlappingSymbols(symbols: ParsedSymbol[]) {
+  const selected: ParsedSymbol[] = [];
+  for (const symbol of symbols)
+    if (
+      !selected.some((candidate) =>
+        overlaps(candidate.range_utf8_bytes, symbol.range_utf8_bytes),
+      )
+    )
+      selected.push(symbol);
+  return selected;
 }
 
 function appendSymbol(symbols: ParsedSymbol[]) {
