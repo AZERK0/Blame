@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -658,7 +665,7 @@ test("run_task accepts an absolute cwd inside the workspace", async () => {
     assert.equal(result.status, "ok");
     const escaped = await workspace.tasks.run({
       kind: "command",
-      command: "node -e \"process.stdout.write(process.cwd())\"",
+      command: 'node -e "process.stdout.write(process.cwd())"',
       cwd: tmpdir(),
     });
     assert.equal(escaped.status, "blocked");
@@ -803,6 +810,63 @@ test("run_task denies mutating formatter project scripts", async () => {
         assert.equal(result.status, "blocked");
         if (result.status === "blocked") assert.equal(result.category, "input");
       }
+    },
+  );
+});
+
+test("run_task applies explicit Prettier files as one journaled edit", async () => {
+  await withFormatterWorkspace(
+    {
+      "first.ts": "export const first={value:1}\n",
+      "second.ts": "export const second={value:2}\n",
+    },
+    async (root) => {
+      const sessionId = "deterministic-formatter";
+      const workspace = lightWorkspace(root, sessionId);
+      const result = await workspace.tasks.run({
+        kind: "command",
+        command: "pnpm exec prettier --write first.ts second.ts",
+      });
+      assert.equal(result.status, "ok");
+      assert.equal(record(data(result)).mutation, "deterministic_format");
+      assert.equal(
+        await readFile(join(root, "first.ts"), "utf8"),
+        "export const first = { value: 1 };\n",
+      );
+      assert.equal(
+        await readFile(join(root, "second.ts"), "utf8"),
+        "export const second = { value: 2 };\n",
+      );
+      const completion = await new SessionJournal(
+        root,
+        sessionId,
+      ).completionSnapshot();
+      assert.deepEqual(completion.changedPaths.sort(), [
+        "first.ts",
+        "second.ts",
+      ]);
+      assert.equal(completion.validations.at(-1)?.taskKind, "lint");
+      assert.equal(
+        completion.validations.at(-1)?.sourceRevisionId,
+        completion.sourceRevisionId,
+      );
+    },
+  );
+});
+
+test("run_task leaves every file unchanged when Prettier fails", async () => {
+  const original = "export const first={value:1}\n";
+  await withFormatterWorkspace(
+    { "first.ts": original, "invalid.ts": "INVALID\n" },
+    async (root) => {
+      const workspace = lightWorkspace(root, "formatter-rollback");
+      const result = await workspace.tasks.run({
+        kind: "command",
+        command: "pnpm exec prettier first.ts invalid.ts --write",
+      });
+      assert.equal(result.status, "blocked");
+      if (result.status === "blocked") assert.equal(result.category, "code");
+      assert.equal(await readFile(join(root, "first.ts"), "utf8"), original);
     },
   );
 });
@@ -1609,7 +1673,7 @@ test("finish_task reuses a current unavailable build result", async () => {
       "package.json": JSON.stringify({
         scripts: {
           build:
-            'node -e "console.error(\'Missing environment variable: DATABASE_URL\');process.exit(1)"',
+            "node -e \"console.error('Missing environment variable: DATABASE_URL');process.exit(1)\"",
         },
       }),
       "value.ts": "export const value = 1\n",
@@ -2111,6 +2175,36 @@ function multiFilePatch(operations: string[][]) {
 function restoreEnvironment(name: string, value: string | undefined) {
   if (value === undefined) delete process.env[name];
   else process.env[name] = value;
+}
+
+async function withFormatterWorkspace(
+  files: Record<string, string>,
+  run: (root: string) => Promise<void>,
+) {
+  const formatter = [
+    "#!/usr/bin/env node",
+    'let source = "";',
+    'process.stdin.setEncoding("utf8");',
+    'process.stdin.on("data", (chunk) => { source += chunk; });',
+    'process.stdin.on("end", () => {',
+    '  if (source.includes("INVALID")) process.exit(2);',
+    '  const output = source.replace(/const (\\w+)=\\{value:(\\d+)\\}/gu, "const $1 = { value: $2 };");',
+    "  process.stdout.write(output);",
+    "});",
+  ].join("\n");
+  await withWorkspace(
+    {
+      "package.json": JSON.stringify({
+        devDependencies: { prettier: "3.0.0" },
+      }),
+      "node_modules/.bin/prettier": formatter,
+      ...files,
+    },
+    async (root) => {
+      await chmod(join(root, "node_modules/.bin/prettier"), 0o755);
+      await run(root);
+    },
+  );
 }
 
 async function withWorkspace(

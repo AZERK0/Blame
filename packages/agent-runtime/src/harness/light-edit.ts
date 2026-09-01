@@ -63,6 +63,12 @@ type LightEditOptions = {
   journal: SessionJournal;
 };
 
+export type FormattedFileReplacement = {
+  before: Buffer;
+  content: string;
+  path: string;
+};
+
 export class LightEditService {
   private readonly aliases: LightAliasRegistry;
   private readonly commits: LightCommitService;
@@ -84,19 +90,60 @@ export class LightEditService {
     try {
       const snapshot = await this.files.snapshot();
       const plans = await this.plan(input, snapshot);
-      const finalFiles = await this.finalize(plans);
-      const invalid = finalFiles.find(({ parse }) => parse.status === "failed");
-      if (invalid) return invalidParseResult(invalid);
       void context;
-      const result: LightCommitResult | LightEditFailure = await this.commit(
-        finalFiles,
-        snapshot,
-      ).catch(commitFailure);
-      if (isLightFailure(result)) return result;
-      return await this.mapResult(result, finalFiles, snapshot);
+      return await this.applyPlans(plans, snapshot);
     } catch (error) {
       return editFailure(error);
     }
+  }
+
+  async replaceFiles(
+    replacements: FormattedFileReplacement[],
+    context: EditContext = {},
+  ): Promise<LightToolResult<unknown>> {
+    try {
+      if (!replacements.length || replacements.length > 50)
+        throw new Error("Formatter batch must contain between 1 and 50 files.");
+      const snapshot = await this.files.snapshot();
+      const plans = await this.replacementPlans(replacements);
+      void context;
+      return await this.applyPlans(plans, snapshot);
+    } catch (error) {
+      return editFailure(error);
+    }
+  }
+
+  private async replacementPlans(replacements: FormattedFileReplacement[]) {
+    const plans: PlannedFile[] = [];
+    for (const replacement of replacements) {
+      const path = this.files.normalizePath(replacement.path);
+      const plan = await this.filePlan(new Map(), path);
+      if (!plan.initial) throw new Error(`${path} does not exist.`);
+      if (!plan.initial.equals(replacement.before))
+        throw new LightCommitConflict(`File changed before commit: ${path}.`);
+      plan.replacements.push({
+        start: 0,
+        end: plan.initial.byteLength,
+        replacement: replacement.content,
+      });
+      plans.push(plan);
+    }
+    return plans;
+  }
+
+  private async applyPlans(
+    plans: PlannedFile[],
+    snapshot: WorkspaceSnapshot,
+  ): Promise<LightToolResult<unknown>> {
+    const finalFiles = await this.finalize(plans);
+    const invalid = finalFiles.find(({ parse }) => parse.status === "failed");
+    if (invalid) return invalidParseResult(invalid);
+    const result: LightCommitResult | LightEditFailure = await this.commit(
+      finalFiles,
+      snapshot,
+    ).catch(commitFailure);
+    if (isLightFailure(result)) return result;
+    return this.mapResult(result, finalFiles, snapshot);
   }
 
   private async plan(input: LightEditCodeInput, snapshot: WorkspaceSnapshot) {

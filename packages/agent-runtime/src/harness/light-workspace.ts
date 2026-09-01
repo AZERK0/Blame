@@ -108,6 +108,7 @@ export class LightWorkspace {
       journal: this.journal,
     });
     this.tasks = new LightTaskRunner({
+      edits: this.edits,
       files: this.files,
       journal: this.journal,
       refreshPreviewDependencies: options.refreshPreviewDependencies,
@@ -131,7 +132,18 @@ export class LightWorkspace {
 
   async runTask(input: LightRunTaskInput, context: AgentToolContext) {
     await this.ready;
-    return this.tasks.run(input, context);
+    const result = await this.tasks.run(input, context);
+    if (result.status !== "ok") return result;
+    const paths = arrayValue(recordValue(result.data).paths).flatMap(
+      (value) => {
+        const path = stringValue(value);
+        return path ? [path] : [];
+      },
+    );
+    for (const path of paths) this.coverage.invalidatePath(path);
+    if (paths.length)
+      await this.journal.recordCoverage(this.coverage.snapshot());
+    return result;
   }
 
   async searchCode(

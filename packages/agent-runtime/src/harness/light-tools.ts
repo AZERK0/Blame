@@ -135,7 +135,7 @@ function runTaskTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "run_task",
     description:
-      "Run a known finite project validation or read-only bounded command, or add/remove dependencies through the detected package manager. Identical validations at the same source revision are reused. Filesystem writes, dev servers, databases, containers, background processes, and manual preview infrastructure are denied. Returns compact successful output or a complete bounded failure diagnostic with code/environment classification.",
+      "Run a known finite project validation or read-only bounded command, add/remove dependencies through the detected package manager, or apply Prettier atomically to explicit existing file paths with `pnpm exec prettier --write <files>`. Identical validations at the same source revision are reused. Other filesystem writes, directory-wide formatters, dev servers, databases, containers, background processes, and manual preview infrastructure are denied. Returns compact successful output or a complete bounded failure diagnostic with code/environment classification.",
     schema: lightRunTaskInputSchema,
     execute: (input, context) => workspace.runTask(input, context),
   });

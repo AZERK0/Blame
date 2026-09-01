@@ -5,12 +5,18 @@ import {
   blockedCommandReason,
   blockedProjectTaskReason,
 } from "./command-policy.js";
+import {
+  DeterministicFormatter,
+  DeterministicFormatterError,
+  type FormatterCommand,
+} from "./deterministic-formatter.js";
 import type { LightRunTaskInput, LightToolResult } from "./light-contracts.js";
 import {
   dependencyManifestSections,
   LightDependencyService,
 } from "./light-dependencies.js";
 import { boundedDiagnostic } from "./light-diagnostic.js";
+import type { LightEditService } from "./light-edit.js";
 import type { SessionJournal } from "./session-journal.js";
 import {
   readTaskCatalog,
@@ -27,6 +33,7 @@ type RunnerContext = {
 };
 
 type LightTaskRunnerOptions = {
+  edits?: Pick<LightEditService, "replaceFiles">;
   files: WorkspaceFiles;
   journal: SessionJournal;
   refreshPreviewDependencies?: () => Promise<unknown>;
@@ -57,7 +64,9 @@ const reusableProjectTaskKinds = new Set<TaskCatalogItem["kind"]>([
 ]);
 
 export class LightTaskRunner {
+  private readonly edits?: Pick<LightEditService, "replaceFiles">;
   private readonly environment: EnvironmentAdapter;
+  private readonly formatter: DeterministicFormatter;
   private readonly dependencies: LightDependencyService;
   private readonly files: WorkspaceFiles;
   private readonly journal: SessionJournal;
@@ -65,9 +74,11 @@ export class LightTaskRunner {
   private dependencyReceiptSequence = 0;
 
   constructor(options: LightTaskRunnerOptions) {
+    this.edits = options.edits;
     this.files = options.files;
     this.journal = options.journal;
     this.environment = new EnvironmentAdapter(options.files);
+    this.formatter = new DeterministicFormatter(options.files);
     this.dependencies = new LightDependencyService(options.files);
     this.refreshPreviewDependencies = options.refreshPreviewDependencies;
   }
@@ -119,6 +130,8 @@ export class LightTaskRunner {
     input: Extract<LightRunTaskInput, { kind: "command" }>,
     context: RunnerContext,
   ): Promise<LightToolResult<unknown>> {
+    const formatter = this.formatter.request(input.command);
+    if (formatter) return this.format(formatter, input, context);
     const denied = blockedCommandReason(input.command);
     if (denied) return blocked("input", denied);
     try {
@@ -138,6 +151,56 @@ export class LightTaskRunner {
     } catch (error) {
       return blocked("environment", errorMessage(error));
     }
+  }
+
+  private async format(
+    request: FormatterCommand,
+    input: Extract<LightRunTaskInput, { kind: "command" }>,
+    context: RunnerContext,
+  ): Promise<LightToolResult<unknown>> {
+    if (!this.edits)
+      return blocked(
+        "environment",
+        "Deterministic formatting is unavailable in this execution context.",
+      );
+    try {
+      return await this.applyFormatter(this.edits, request, input.cwd, context);
+    } catch (error) {
+      if (error instanceof DeterministicFormatterError)
+        return blocked(error.category, error.message);
+      return blocked("environment", errorMessage(error));
+    }
+  }
+
+  private async applyFormatter(
+    edits: Pick<LightEditService, "replaceFiles">,
+    request: FormatterCommand,
+    cwdInput: string | undefined,
+    context: RunnerContext,
+  ) {
+    const cwd = await this.environment.cwd(cwdInput);
+    const replacements = await this.formatter.format(
+      request,
+      cwd,
+      context.signal,
+    );
+    const result = await edits.replaceFiles(replacements, context);
+    if (result.status !== "ok") return result;
+    const paths = replacements.map(({ path }) => path);
+    await this.recordFormatterValidation(paths);
+    return formattedResult(result, paths);
+  }
+
+  private async recordFormatterValidation(paths: string[]) {
+    const sourceRevisionId = (await this.files.snapshot()).revision
+      .source_revision_id;
+    await this.journal.recordValidation({
+      command: `prettier --check ${paths.join(" ")}`,
+      paths,
+      sourceRevisionId,
+      status: "passed",
+      taskKind: "lint",
+    });
   }
 
   private async dependency(
@@ -564,6 +627,21 @@ function passedCommandResult(
       exitCode,
       output: boundedDiagnostic(output, "", 4_000),
       environment,
+    },
+  };
+}
+
+function formattedResult(
+  result: Extract<LightToolResult<unknown>, { status: "ok" }>,
+  paths: string[],
+): LightToolResult<unknown> {
+  return {
+    ...result,
+    data: {
+      ...record(result.data),
+      mutation: "deterministic_format",
+      formatter: "prettier",
+      paths,
     },
   };
 }
