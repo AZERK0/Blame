@@ -900,6 +900,12 @@ export class BlameAgentRuntime {
       } as const;
       this.sessionStartInputs.set(sessionId, startInput);
       await this.captureSessionQualityBaseline(sessionId);
+      if (input.autoApproveWriteTools) {
+        this.emitSessionNotice(
+          sessionId,
+          "Development session write tools auto-approved.",
+        );
+      }
       if (autoSendPrompt) {
         this.armSessionInactivityWatchdog(sessionId, executionId, cline);
         this.agentTelemetry.startModelRequest(sessionId);
@@ -946,12 +952,6 @@ export class BlameAgentRuntime {
         ...startContext(input),
         logFile: sessionLogFile,
       });
-      if (input.autoApproveWriteTools) {
-        this.emitSessionNotice(
-          session.sessionId,
-          "Development session write tools auto-approved.",
-        );
-      }
       await this.logSession(session.sessionId, "session subscribed");
       this.emitSessionNotice(
         session.sessionId,
@@ -1008,12 +1008,6 @@ export class BlameAgentRuntime {
       ...startContext(input),
       logFile: sessionLogFile,
     });
-    if (input.autoApproveWriteTools) {
-      this.emitSessionNotice(
-        sessionId,
-        "Development session write tools auto-approved.",
-      );
-    }
     const failure = resultFailureMessage(session.result);
     if (
       failure &&

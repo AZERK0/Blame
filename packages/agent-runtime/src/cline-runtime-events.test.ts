@@ -481,6 +481,54 @@ test("does not install a harness read governor around optional tools", async () 
   }
 });
 
+test("announces write auto-approval before starting the agent", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "blame-start-notice-"));
+  const originalFetch = globalThis.fetch;
+  const order: string[] = [];
+  const core = {
+    async dispose() {},
+    async list() {
+      return [];
+    },
+    async start(input: ClineCoreStartInput) {
+      order.push("start");
+      return { result: { status: "done" }, sessionId: input.config.sessionId! };
+    },
+    async subscribe() {
+      return () => undefined;
+    },
+  };
+  globalThis.fetch = async () => providerCredentialResponse();
+  const runtime = new BlameAgentRuntime(
+    {
+      emit: (event) => {
+        const message = (event.payload as { message?: string }).message;
+        if (message === "Development session write tools auto-approved.")
+          order.push("notice");
+      },
+    },
+    { createCore: async () => core as never },
+  );
+
+  try {
+    await runtime.sessions.startDevelopment({
+      apiConnection: { url: "https://api.example" },
+      cwd: workspace,
+      modelId: "model",
+      providerId: "provider",
+      summary: "Change the greeting",
+      title: "Greeting",
+      workspaceRoot: workspace,
+    });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    assert.deepEqual(order, ["notice", "start"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await runtime.shutdown();
+    await rm(workspace, { force: true, recursive: true });
+  }
+});
+
 test("uses native Cline compaction without a parallel projection", async () => {
   const workspace = await mkdtemp(join(tmpdir(), "blame-live-compaction-"));
   const fixture = developmentCompactionFixture("true");
