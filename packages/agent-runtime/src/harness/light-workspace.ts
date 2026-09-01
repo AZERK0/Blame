@@ -76,6 +76,7 @@ type ReadContext = Partial<AgentToolContext>;
 
 const maximumRawCharacters = 64_000;
 const maximumOutlineItems = 32;
+const maximumDirectoryEntries = 64;
 
 function outlineRangeCandidates(
   symbols: ParsedSymbol[],
@@ -168,6 +169,12 @@ export class LightWorkspace {
       const special = this.specialReadResult(input.target);
       if (special) return special;
       const snapshot = await this.files.snapshot();
+      const directory = await this.directoryReadResult(
+        input,
+        snapshot.files,
+        context,
+      );
+      if (directory) return directory;
       return await this.readWorkspaceTarget(
         input,
         snapshot.revision.source_revision_id,
@@ -233,6 +240,39 @@ export class LightWorkspace {
         data: { changes: this.journal.currentChanges() },
       };
     return undefined;
+  }
+
+  private async directoryReadResult(
+    input: LightReadCodeInput,
+    files: string[],
+    context: ReadContext,
+  ): Promise<LightToolResult<unknown> | undefined> {
+    if (this.aliases.get(input.target) || qualifiedTarget(input.target))
+      return undefined;
+    const path = this.files.normalizePath(input.target);
+    assertMutableWorkspacePath(path);
+    if (!(await this.files.pathProfile(path)).directory) return undefined;
+    const entries = directoryEntries(path, files);
+    const content = Buffer.from(JSON.stringify(entries));
+    const coverage = await this.registerCoverage(
+      `${path}/`,
+      content,
+      [[0, content.byteLength]],
+      context,
+    );
+    if (coverage.covered)
+      return alreadyCoveredResult(path, "directory", coverage.receipt);
+    return {
+      status: "ok",
+      receipt: coverage.receipt,
+      data: {
+        candidateCount: entries.length,
+        entries: entries.slice(0, maximumDirectoryEntries),
+        path,
+        truncated: entries.length > maximumDirectoryEntries,
+        view: "directory",
+      },
+    };
   }
 
   private async readWorkspaceTarget(
@@ -783,9 +823,28 @@ function emptyOutline(path: string): LightToolResult<unknown> {
   };
 }
 
+function directoryEntries(path: string, files: string[]) {
+  const prefix = path === "." ? "" : `${path}/`;
+  const entries = new Map<string, "directory" | "file">();
+  for (const file of files) {
+    if (!file.startsWith(prefix)) continue;
+    const [name, ...descendants] = file.slice(prefix.length).split("/");
+    if (!name) continue;
+    const child = `${prefix}${name}`;
+    entries.set(child, descendants.length ? "directory" : "file");
+  }
+  return [...entries]
+    .map(([target, kind]) => ({ kind, target }))
+    .sort(
+      (left, right) =>
+        left.kind.localeCompare(right.kind) ||
+        left.target.localeCompare(right.target),
+    );
+}
+
 function alreadyCoveredResult(
   path: string,
-  view: "outline" | "range" | "raw" | "symbol",
+  view: "directory" | "outline" | "range" | "raw" | "symbol",
   receipt: string,
   target = path,
   editTargets: EditTarget[] = [],

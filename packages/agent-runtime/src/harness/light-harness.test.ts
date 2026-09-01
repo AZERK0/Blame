@@ -984,6 +984,38 @@ test("raw formats fall back in the same read call", async () => {
   );
 });
 
+test("directory reads return one bounded level instead of a tool error", async () => {
+  await withWorkspace(
+    {
+      "apps/web/src/app/page.tsx": "export default function Page() {}\n",
+      "apps/web/src/components/card.tsx": "export function Card() {}\n",
+      "apps/web/src/index.ts": "export const value = 1\n",
+    },
+    async (root) => {
+      const workspace = lightWorkspace(root, "directory-read");
+      const result = data(
+        await workspace.readCode(
+          { target: "apps/web/src", view: "outline" },
+          { agentId: "lead" },
+        ),
+      );
+      assert.equal(result.view, "directory");
+      assert.deepEqual(result.entries, [
+        { kind: "directory", target: "apps/web/src/app" },
+        { kind: "directory", target: "apps/web/src/components" },
+        { kind: "file", target: "apps/web/src/index.ts" },
+      ]);
+      const repeated = data(
+        await workspace.readCode(
+          { target: "apps/web/src", view: "outline" },
+          { agentId: "lead" },
+        ),
+      );
+      assert.equal(repeated.status, "already_in_context");
+    },
+  );
+});
+
 test("CSS supports structural outline and rule body editing", async () => {
   await withWorkspace(
     { "styles.css": ".card { color: red; }\n" },

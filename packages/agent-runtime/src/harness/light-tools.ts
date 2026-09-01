@@ -112,7 +112,7 @@ function searchCodeTool(workspace: LightWorkspacePort) {
 function readCodeTool(workspace: LightWorkspacePort, capabilities: string) {
   return harnessTool({
     name: "read_code",
-    description: `Read a path, sN alias, path#qualifiedName, @changes, or @capabilities. Omit view normally: auto reads small files raw and routes large supported files to compact outlines. Raw and already_in_context results include concrete editTargets when structural symbols overlap the read. Requesting symbol for a lexical alias promotes its enclosing symbol. Explicit raw is intended only for small or non-structural files; generated outputs and node_modules are unavailable. Unsupported symbolic views fall back to raw in this call.\n${capabilities}`,
+    description: `Read a file, a compact bounded directory listing, an sN alias, path#qualifiedName, @changes, or @capabilities. Omit view normally: auto reads small files raw and routes large supported files to compact outlines. Raw and already_in_context results include concrete editTargets when structural symbols overlap the read. Requesting symbol for a lexical alias promotes its enclosing symbol. Explicit raw is intended only for small or non-structural files; generated outputs and node_modules are unavailable. Unsupported symbolic views fall back to raw in this call.\n${capabilities}`,
     schema: lightReadCodeInputSchema,
     execute: (input, context) => workspace.readCode(input, context),
   });
