@@ -2641,6 +2641,101 @@ Le replay complet démontre précisément le besoin du prochain mécanisme : `pr
 
 Les autres limites ouvertes sont le taux de rejet d'édition de 50 % sur le dernier Portfolio, les overlaps CSS entre insertion et remplacement d'un `@media`, six longues phases de raisonnement, l'absence de preview gérée par le runner, l'absence de données de démonstration rendant le carrousel non testable, les smoke tests WSL, Lima et Cloud Preview, et le manque de répétitions alternées sur un corpus holdout. Le harness est mieux comparé et plus efficace sur ce corpus, mais reste `frontier-capable` plutôt que `frontier-proven`.
 
+### 21.33 Profilage du contexte et consolidation sémantique du 1er septembre 2026
+
+#### Hypothèses, protocole et instrumentation
+
+Cette boucle a cherché à expliquer pourquoi les lectures et écritures sémantiques ne réduisaient pas davantage les tokens d'entrée. Le point de départ n'était pas un taux brut d'opérations symboliques, trompeur pour les imports, créations de fichiers, Prisma et CSS, mais quatre contributions séparées : contexte permanent, réponses de navigation, reçus d'édition rejoués et comportement de sélection du modèle.
+
+Le runner calcule désormais, en streaming et sans conserver de prompt provider, le nombre de requêtes modèle, l'entrée moyenne et maximale, les octets sérialisés des entrées/sorties d'outils et un proxy d'exposition au replay. Il mesure également la première tentative et la première réussite d'édition, les lectures, recherches, déduplications, opérations symboliques, textuelles et hybrides, les appels bloqués et les périodes sans outil supérieures à trente secondes. Le proxy de replay multiplie les octets d'un résultat par le nombre de requêtes ultérieures qui peuvent le revoir ; ce n'est pas une attribution exacte de tokens provider. Cette instrumentation a été ajoutée sous `f27a452d`.
+
+Le calcul reconnaît maintenant aussi les primitives Cline natives. Un `read_files` compte les fichiers réellement demandés, `search_codebase` compte ses requêtes et `apply_patch` ou `editor` compte comme tentative d'édition. Le replay déterministe des événements Cline retrouve ainsi cinq lectures, trois recherches et un patch réussi à 30,91 s sur A, puis quatre lectures, trois recherches et un patch à 32,27 s sur B. Les anciens résultats qui affichaient zéro lecture et zéro édition Cline étaient un défaut de mesure, corrigé sous `8bc4dac3` ; aucune donnée provider n'a été rejouée pour cette correction.
+
+Les comparaisons ciblées utilisent toutes le commit de fixture `9c98cdf5f30a1f46f3753acb0810f505a3988451`, les mêmes valeurs de provider, modèle et effort, 64 itérations et 2 400 secondes. A et B expriment le même changement de remise avec deux formulations distinctes. L'ordre a été alterné pour le baseline Cline : Blame puis Cline sur A, Cline puis Blame sur B. Les worktrees d'après ont été recréés depuis le même commit. Une tentative Blame A pointant par erreur vers un chemin de worktree relatif et donc vide a été interrompue, conservée comme artefact invalide et exclue de toutes les mesures.
+
+#### Cycle 1 : reçus d'édition compacts
+
+Le résultat d'une édition réussie répétait jusqu'à 8 000 caractères de diff et tous les alias rebased, alors que le modèle connaissait déjà son propre payload. Le runtime renvoie maintenant uniquement les changements structurés, le statut de parse, la nouvelle révision et les alias effectivement touchés. Les autres alias sont toujours rebased en interne mais ne sont plus projetés. Les erreurs d'overlap nomment les deux opérations en conflit et l'outline indique `containedBy` pour les cibles imbriquées. Le correctif est `e6b91523`.
+
+Un replay déterministe des trois mêmes payloads d'édition réduit les réponses sérialisées de 6 674 à 1 485 octets, soit −77,8 %, avec exactement le même diff final. Le run live associé donne le signal suivant, mais sa trajectoire modèle diffère et ne constitue donc pas une attribution causale complète :
+
+| Variante | Durée | Requêtes ; appels | Tokens entrée / sortie / cache ; coût | Éditions | Première édition |
+| --- | ---: | ---: | --- | --- | ---: |
+| Avant reçu compact | 84,77 s | 7 ; 12 | 53 406 / 3 648 / 38 912 ; 0,00805 $ | 3 patches réussis ; 6 674 octets de réponses d'édition | 37,98 / 38,18 s |
+| Après reçu compact | 56,28 s | 4 ; 8 | 24 174 / 2 527 / 14 848 ; 0,00519 $ | un patch réussi ; 1 008 octets de réponse | 46,64 / 46,91 s |
+
+La durée, les tokens et les appels baissent, mais la première édition régresse de 8,73 s. Seule la réduction de taille du replay exact est démontrée comme effet mécanique du correctif.
+
+#### Cycle 2 : briefing auto-routé et contrat non répété
+
+Les événements des premiers holdouts ont montré que la sortie de navigation Blame était de taille comparable au lot Cline, mais que Blame relisait huit cibles et démarrait chaque requête avec environ 1 900 tokens de plus. Deux causes déterministes ont été isolées :
+
+- le briefing exposait d'abord un symbole puis le chemin brut du même fichier ; sur un petit fichier que `read_code` aurait automatiquement lu en raw avec ses `editTargets`, ce ciblage symbolique provoquait une seconde lecture pour récupérer les symboles voisins ;
+- la liste complète des extensions symboliques et structurelles était répétée dans le briefing, la description de `read_code` et celle de `edit_code`.
+
+Le briefing utilise maintenant exactement une cible par chemin et appelle le même routeur que `read_code` : un petit fichier reste raw, un grand fichier supporté peut recevoir une cible symbolique. `Key files` est renommé `Config inventory` pour ne plus présenter les manifests comme des cibles métier, et les scripts sont exposés comme identifiants directement utilisables par `run_task`. Les descriptions d'outils ne répètent plus la matrice d'extensions ; elle reste disponible une fois dans le briefing et via `@capabilities`. Le prompt précise seulement qu'un manifeste ne doit pas être relu pour découvrir un identifiant déjà listé. Ce correctif est `2a996da5`.
+
+| Scénario | Harness | Durée | Tokens entrée / sortie / cache ; coût | Requêtes ; appels | Navigation | Première tentative / réussite | Édition |
+| --- | --- | ---: | --- | ---: | --- | ---: | --- |
+| A avant | Blame | 29,45 s | 28 826 / 993 / 20 992 ; 0,00318 $ | 5 ; 11 | 8 lectures, 0 recherche, 5 348 octets | 22,06 / 22,30 s | un hybride, aucun rejet |
+| A baseline | Cline | 43,16 s | 23 164 / 1 883 / 13 312 ; 0,00450 $ | 5 ; 9 | 5 lectures, 3 recherches, 5 493 octets | 30,91 / 30,93 s | un patch, aucun rejet |
+| A après | Blame | 24,71 s | 20 250 / 872 / 12 800 ; 0,00279 $ | 4 ; 6 | 3 lectures, 0 recherche, 3 244 octets | 17,77 / 18,05 s | un hybride, aucun rejet |
+| B avant | Blame | 28,85 s | 34 883 / 992 / 25 088 ; 0,00365 $ | 6 ; 11 | 8 lectures, 0 recherche, 6 054 octets | 22,19 / 22,44 s | un hybride, aucun rejet |
+| B baseline | Cline | 43,87 s | 21 743 / 1 938 / 13 312 ; 0,00428 $ | 5 ; 7 | 4 lectures, 3 recherches, 5 065 octets | 32,27 / 32,29 s | un patch, aucun rejet |
+| B après | Blame | 29,23 s | 21 199 / 1 104 / 12 800 ; 0,00326 $ | 4 ; 7 | 3 lectures, 1 recherche, 4 317 octets | 22,50 / 22,78 s | un hybride, aucun rejet |
+
+Par rapport au Blame avant, A réduit les tokens d'entrée de 29,8 %, les appels de 45,5 % et les lectures de 62,5 % ; B réduit respectivement de 39,2 %, 36,4 % et 62,5 %. La première réussite avance de 4,26 s sur A et reste pratiquement stable sur B. Les deux après passent sous Cline en tokens d'entrée : −12,6 % sur A et −2,5 % sur B. Tous les diffs satisfont la tâche, et tests, typecheck et `git diff --check` passent indépendamment dans les six worktrees.
+
+Ces deux holdouts démontrent également l'applicabilité du chemin sémantique : une lecture raw courte fournit les alias, puis les deux runs Blame après exécutent chacun un batch hybride composé du remplacement symbolique de `calculateDiscount` et du patch ciblé du test. Il n'y a aucun retry ni fallback textuel du symbole.
+
+#### Transfert Portfolio et preuve visuelle indépendante
+
+Un contrôle d'intégration a repris l'instruction Portfolio et le commit initial `d4d3d1f9f41714b5ca6fce68213ea7a521c776b1` utilisés dans la phase précédente. Le run précédent est fourni comme contexte, pas comme paire randomisée suffisante pour une preuve statistique.
+
+| Run Blame | Statut terminal | Durée ; requêtes ; appels | Première tentative / réussite | Tokens entrée / sortie / cache ; coût | Navigation | Éditions | Périodes sans outil |
+| --- | --- | --- | ---: | --- | --- | --- | --- |
+| Portfolio précédent | vérifié | 512,73 s ; 31 ; 47 | 85,67 / 85,97 s | 973 373 / 23 009 / 910 336 ; 0,05842 $ | 14 lectures, 2 recherches | 12 appels, 6 réussis et 6 bloqués ; symbole et hybride observés | 6, 317,80 s cumulées, max 87,28 s |
+| Briefing auto-routé | non vérifié, validation environnementale indisponible | 383,00 s ; 33 ; 51 | 74,18 / 74,44 s | 687 645 / 16 020 / 642 048 ; 0,04118 $ | 9 lectures, 4 recherches | 14 appels, 9 réussis, 4 bloqués et un no-op ; uniquement patches | 3, 141,61 s cumulées, max 54,43 s |
+
+Le second run réduit la durée de 25,3 %, les tokens d'entrée de 29,4 %, le coût de 29,5 % et avance la première édition de 11,53 s. Il augmente cependant les appels de 8,5 %, ne choisit aucune édition symbolique et perd la preuve terminale. Ses quatre rejets sont contractuels : un `Add File` sur `page.tsx` existant, deux contextes ambigus et un contexte absent. Les réponses demandent de relire l'outline, d'utiliser un alias ou d'ajouter une ligne unique ; l'agent récupère à chaque fois. Les onze tâches bloquées regroupent de vraies erreurs Prisma/build/format, l'absence de `DATABASE_URL`, le refus attendu d'une commande mutatrice non journalisée et les builds terminaux indisponibles. Aucun événement n'apparaît après `done`.
+
+Sous une URL PostgreSQL inerte fournie uniquement à la validation indépendante, Prisma validate et generate, TypeScript, ESLint et le build Next passent. Cette preuve n'appartient pas au run agent. Une preview indépendante rend la transition sombre et trois projets fallback dans le canvas. Sans base joignable, l'API échoue honnêtement et le fallback reste interactif. Le bouton suivant fait passer le compteur de `01 / 03` à `02 / 03`, puis `ArrowRight` à `03 / 03`, sans erreur console cliente. Le drag et Maj + molette n'ont pas réagi à l'automatisation du navigateur et restent donc non prouvés.
+
+La validation indépendante expose aussi le trou de codegen déjà identifié : `prisma generate` crée neuf fichiers sous `src/generated/prisma` hors journal, après quoi `prettier --check .` échoue sur ces sorties. Le résumé du run dit correctement que son propre format check a passé avant cette génération et que le build était bloqué par l'environnement, mais il ne constitue pas une preuve fraîche d'un workspace généré et formaté.
+
+#### Décisions, tests, commandes et limites
+
+Les reçus compacts et le briefing auto-routé sont conservés. Ils suppriment des octets et des lectures dont la redondance est certaine, réutilisent les mécanismes existants et obtiennent un gain reproductible sur deux formulations indépendantes. Une projection spéciale des anciens reçus d'écriture après acquittement est abandonnée : après compaction, l'exposition replay de `edit_code` n'est que de 2 526 à 2 798 octets sur les holdouts, sans compaction de conversation. Une nouvelle couche de projection serait disproportionnée.
+
+Les `Add File` sur fichier existant et patches ambigus ne sont pas normalisés automatiquement. Transformer une addition en remplacement entier ou choisir arbitrairement une occurrence n'est pas une intention certaine et dégraderait l'atomicité. Le codegen générique n'est pas ajouté dans cette boucle : il exige toujours un staging, un arbre de sortie borné, un diff incluant suppressions et renommages, une validation puis un commit unique. Le formatter stdout de la section précédente ne suffit pas à garantir ces propriétés.
+
+Trois tests runtime supplémentaires couvrent le reçu compact et ses alias pertinents, les cibles CSS imbriquées et le routage unique des petites cibles de briefing ; le scénario d'overlap existant vérifie maintenant la récupération actionnable et les scénarios d'alias stable restent passants. Quatre tests runner couvrent les contributions de contexte, la déduplication/navigation, les lots Cline et le rejet d'un patch Cline. La suite finale passe avec 227 tests agent runtime et 12 tests runner, ainsi que lint, typecheck et builds concernés.
+
+Les principales commandes réellement exécutées sont :
+
+```text
+git status --short
+git diff --check
+git worktree add --detach <workspace> <revision exacte>
+pnpm --dir <workspace> install --offline --frozen-lockfile
+pnpm --filter @blame/agent-runtime test|lint|typecheck|build
+pnpm --filter @blame/benchmark-runner test|lint|typecheck|build
+BLAME_HEADLESS_DEV=true NODE_ENV=development pnpm benchmark:agent -- run --harness blame|cline ... --max-iterations 64 --timeout-seconds 2400
+node --input-type=module <recalcul déterministe des événements Cline>
+pnpm test
+pnpm typecheck
+pnpm exec prisma validate|generate
+pnpm exec prettier --check ...
+pnpm exec tsc --noEmit --incremental false
+pnpm exec eslint ...
+NODE_ENV=production pnpm build
+pnpm exec next start -H 127.0.0.1 -p <port isolé>
+git add <fichiers du correctif>
+git commit -m <intention unique>
+```
+
+Les credentials runner ont été chargés silencieusement depuis `.env.terminal-bench`, sans affichage, copie ni modification. Les limites ouvertes restent importantes : une seule intégration a suivi ce correctif, son terminal n'est pas vérifié, le chemin symbolique n'y est pas choisi, quatre rejets de patch subsistent, le codegen Prisma n'est pas journalisé, drag et Maj + molette ne sont pas prouvés, et aucun smoke test WSL, Lima ou Cloud Preview n'a été exécuté. Les holdouts établissent un gain ciblé et le transfert Portfolio fournit un signal positif de démarrage, pas une preuve de niveau frontier.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)
