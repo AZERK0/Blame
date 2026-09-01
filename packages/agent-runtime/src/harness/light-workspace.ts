@@ -1,6 +1,5 @@
 import type { AgentToolContext } from "@cline/sdk";
 import {
-  materializeSymbol,
   outlineSymbol,
   parseCode,
   symbolEditRange,
@@ -12,7 +11,6 @@ import {
   type ResolvedLightSymbol,
 } from "./light-aliases.js";
 import {
-  capabilityForPath,
   lightCapabilityDescription,
   runtimeCapabilityRegistry,
 } from "./light-capabilities.js";
@@ -25,6 +23,36 @@ import type {
   LightToolResult,
 } from "./light-contracts.js";
 import { LightEditService } from "./light-edit.js";
+import {
+  autoSearchResult,
+  autoSymbolCandidates,
+  editTargetSymbols,
+  enclosingSymbol,
+  firstTermIndex,
+  lexicalQuery,
+  lineRange,
+  matchedTerm,
+  outlineCandidates,
+  pathMatches,
+  qualifiedTarget,
+  rankedTextMatches,
+  recordValue,
+  routedView,
+  scopedCandidates,
+  searchMode,
+  searchSymbolResult,
+  searchTerms,
+  sourceLine,
+  stringValue,
+  symbolicPath,
+  symbolEditTarget,
+  symbolMatches,
+  symbolSearchResult,
+  textSearchResult,
+  uniqueSearchResults,
+  type EditTarget,
+  type SearchMode,
+} from "./light-navigation.js";
 import { LightTaskRunner } from "./light-task-runner.js";
 import {
   searchWithRipgrep,
@@ -46,9 +74,8 @@ type LightWorkspaceOptions = {
 
 type ReadContext = Partial<AgentToolContext>;
 
-const smallFileCharacters = 8_000;
 const maximumRawCharacters = 64_000;
-type SearchMode = "references" | "symbol" | "text";
+const maximumOutlineItems = 32;
 
 export class LightWorkspace {
   readonly edits: LightEditService;
@@ -129,7 +156,7 @@ export class LightWorkspace {
       const special = this.specialReadResult(input.target);
       if (special) return special;
       const snapshot = await this.files.snapshot();
-      return this.readWorkspaceTarget(
+      return await this.readWorkspaceTarget(
         input,
         snapshot.revision.source_revision_id,
         context,
@@ -164,7 +191,13 @@ export class LightWorkspace {
         await this.symbolSearch(input.query, candidates, revision, signal),
         candidates,
       );
-    const text = await this.textSearch(input.query, candidates, signal);
+    const text = await this.textSearch(
+      input.query,
+      candidates,
+      revision,
+      input.mode !== "text",
+      signal,
+    );
     if (mode !== "symbol") return textSearchResult(mode, text, candidates);
     const symbolCandidates = autoSymbolCandidates(
       text,
@@ -196,11 +229,18 @@ export class LightWorkspace {
     context: ReadContext,
   ) {
     const alias = this.aliases.get(input.target);
-    if (alias?.kind === "range") return this.readRangeAlias(alias, context);
     const result =
-      alias?.kind === "symbol" || qualifiedTarget(input.target)
-        ? await this.readSymbol(input.target, revision, context)
-        : await this.readPath(input, revision, context);
+      alias?.kind === "path"
+        ? await this.readPath(
+            { ...input, target: alias.path },
+            revision,
+            context,
+          )
+        : alias?.kind === "range"
+          ? await this.readRangeAlias(alias, input, revision, context)
+          : alias?.kind === "symbol" || qualifiedTarget(input.target)
+            ? await this.readSymbol(input.target, revision, context)
+            : await this.readPath(input, revision, context);
     return this.persistAliases(result);
   }
 
@@ -235,8 +275,11 @@ export class LightWorkspace {
   private async textSearch(
     query: string,
     candidates: string[],
+    revision: string,
+    promoteSymbols: boolean,
     signal?: AbortSignal,
   ) {
+    const paths = this.pathSearch(query, candidates);
     const searched = await searchWithRipgrep({
       candidates,
       maximum: 32,
@@ -244,13 +287,54 @@ export class LightWorkspace {
       root: this.files.root,
       signal,
     });
-    if (!searched.available) return this.nodeTextSearch(query, candidates);
+    if (!searched.available)
+      return uniqueSearchResults([
+        ...paths,
+        ...(await this.nodeTextSearch(query, candidates)),
+      ]).slice(0, 8);
     const matches = rankedTextMatches(searched.items, query).slice(0, 8);
-    return Promise.all(matches.map((match) => this.textMatch(match)));
+    const content = await Promise.all(
+      matches.map((match) => this.textMatch(match, revision, promoteSymbols)),
+    );
+    return uniqueSearchResults([...paths, ...content]).slice(0, 8);
   }
 
-  private async textMatch(match: LexicalSearchMatch) {
+  private pathSearch(query: string, candidates: string[]) {
+    return pathMatches(query, candidates).map((path) => ({
+      alias: this.aliases.registerPath(path),
+      kind: "path",
+      path,
+      reason: "path_name",
+      target: path,
+    }));
+  }
+
+  private async textMatch(
+    match: LexicalSearchMatch,
+    revision: string,
+    promoteSymbols: boolean,
+  ) {
     const content = (await this.files.read(match.path)).content;
+    const symbol = promoteSymbols
+      ? enclosingSymbol(
+          parseCode(match.path, content).symbols,
+          match.range_utf8_bytes,
+        )
+      : undefined;
+    if (symbol) {
+      const { alias, materialized } = this.aliases.registerSymbol(
+        match.path,
+        content,
+        symbol,
+        revision,
+      );
+      return searchSymbolResult(
+        alias,
+        match.path,
+        materialized,
+        "lexical_symbol",
+      );
+    }
     const alias = this.aliases.registerRange(
       match.path,
       content,
@@ -306,10 +390,17 @@ export class LightWorkspace {
     if (view === "outline")
       return await this.readOutlinePath(path, file.content, revision, context);
     if (view === "range")
-      return await this.readLineRange(path, file.content, input, context);
+      return await this.readLineRange(
+        path,
+        file.content,
+        input,
+        revision,
+        context,
+      );
     return await this.raw(
       path,
       file.content,
+      revision,
       context,
       view === "symbol" ? "symbol_target_missing" : undefined,
     );
@@ -330,13 +421,20 @@ export class LightWorkspace {
         revision,
         context,
       );
-    return await this.raw(path, content, context, "symbol_view_unavailable");
+    return await this.raw(
+      path,
+      content,
+      revision,
+      context,
+      "symbol_view_unavailable",
+    );
   }
 
   private async readLineRange(
     path: string,
     content: Buffer,
     input: LightReadCodeInput,
+    revision: string,
     context: ReadContext,
   ) {
     if (!input.range) throw new Error("range is required for the range view.");
@@ -345,7 +443,19 @@ export class LightWorkspace {
       input.range.startLine,
       input.range.endLine,
     );
-    return await this.coveredContent(path, content, [range], context, "range");
+    const editTargets = this.registerEditTargets(path, content, revision, [
+      range,
+    ]);
+    return await this.coveredContent(
+      path,
+      content,
+      [range],
+      context,
+      "range",
+      undefined,
+      false,
+      editTargets,
+    );
   }
 
   private async outline(
@@ -355,8 +465,10 @@ export class LightWorkspace {
     revision: string,
     context: ReadContext,
   ): Promise<LightToolResult<unknown>> {
-    const selected = symbols.slice(0, 80);
+    const candidates = outlineCandidates(symbols);
+    const selected = candidates.slice(0, maximumOutlineItems);
     if (!selected.length) return emptyOutline(path);
+    const editTargets = this.registerEditTargets(path, content, revision);
     const coverage = await this.registerCoverage(
       path,
       content,
@@ -364,7 +476,13 @@ export class LightWorkspace {
       context,
     );
     if (coverage.covered)
-      return alreadyCoveredResult(path, "outline", coverage.receipt);
+      return alreadyCoveredResult(
+        path,
+        "outline",
+        coverage.receipt,
+        path,
+        editTargets,
+      );
     const items = this.outlineItems(
       path,
       content,
@@ -372,7 +490,13 @@ export class LightWorkspace {
       revision,
       coverage.uncovered,
     );
-    return outlineResult(path, items, symbols.length, coverage.receipt);
+    return outlineResult(
+      path,
+      items,
+      candidates.length,
+      coverage.receipt,
+      editTargets,
+    );
   }
 
   private outlineItems(
@@ -401,11 +525,22 @@ export class LightWorkspace {
     revision: string,
     context: ReadContext,
   ): Promise<LightToolResult<unknown>> {
-    const resolved = await this.aliases.resolveSymbol(
+    const candidate = await this.aliases.resolveSymbol(
       target,
       this.files,
       revision,
     );
+    const registered = this.aliases.registerSymbol(
+      candidate.path,
+      candidate.content,
+      candidate.symbol,
+      revision,
+    );
+    const resolved = {
+      ...candidate,
+      alias: registered.alias,
+      materialized: registered.materialized,
+    };
     const { signature, body, imports, coverage } = await this.symbolProjection(
       resolved,
       context,
@@ -415,7 +550,8 @@ export class LightWorkspace {
         resolved.path,
         "symbol",
         coverage.receipt,
-        target,
+        resolved.alias,
+        [symbolEditTarget(resolved)],
       );
     return symbolContentResult(
       resolved,
@@ -448,6 +584,8 @@ export class LightWorkspace {
       NonNullable<ReturnType<LightAliasRegistry["get"]>>,
       { kind: "range" }
     >,
+    input: LightReadCodeInput,
+    revision: string,
     context: ReadContext,
   ) {
     const content = (await this.files.read(alias.path)).content;
@@ -455,22 +593,49 @@ export class LightWorkspace {
       throw new Error(
         `${alias.alias} is stale and cannot be relocated as text.`,
       );
+    if (input.view === "symbol") {
+      const symbol = enclosingSymbol(parseCode(alias.path, content).symbols, [
+        alias.start,
+        alias.end,
+      ]);
+      if (symbol) {
+        const registered = this.aliases.registerSymbol(
+          alias.path,
+          content,
+          symbol,
+          revision,
+        );
+        return this.readSymbol(registered.alias, revision, context);
+      }
+    }
+    const intervals: ByteInterval[] = [[alias.start, alias.end]];
+    const editTargets = this.registerEditTargets(
+      alias.path,
+      content,
+      revision,
+      intervals,
+    );
     return await this.coveredContent(
       alias.path,
       content,
-      [[alias.start, alias.end]],
+      intervals,
       context,
       "range",
+      undefined,
+      false,
+      editTargets,
     );
   }
 
   private async raw(
     path: string,
     content: Buffer,
+    revision: string,
     context: ReadContext,
     fallbackReason?: string,
   ) {
     const end = Math.min(content.byteLength, maximumRawCharacters);
+    const editTargets = this.registerEditTargets(path, content, revision);
     return await this.coveredContent(
       path,
       content,
@@ -479,6 +644,7 @@ export class LightWorkspace {
       "raw",
       fallbackReason,
       content.byteLength > end,
+      editTargets,
     );
   }
 
@@ -490,6 +656,7 @@ export class LightWorkspace {
     view: "range" | "raw",
     fallbackReason?: string,
     truncated = false,
+    editTargets: EditTarget[] = [],
   ): Promise<LightToolResult<unknown>> {
     const coverage = await this.registerCoverage(
       path,
@@ -498,7 +665,13 @@ export class LightWorkspace {
       context,
     );
     if (coverage.covered)
-      return alreadyCoveredResult(path, view, coverage.receipt);
+      return alreadyCoveredResult(
+        path,
+        view,
+        coverage.receipt,
+        path,
+        editTargets,
+      );
     return uncoveredContentResult(
       path,
       content,
@@ -507,7 +680,28 @@ export class LightWorkspace {
       coverage.receipt,
       fallbackReason,
       truncated,
+      editTargets,
     );
+  }
+
+  private registerEditTargets(
+    path: string,
+    content: Buffer,
+    revision: string,
+    intervals?: ByteInterval[],
+  ) {
+    if (content.byteLength > 2 * 1024 * 1024) return [];
+    const parsed = parseCode(path, content);
+    if (!parsed.supported) return [];
+    return editTargetSymbols(parsed.symbols, intervals).map((symbol) => {
+      const { alias, materialized } = this.aliases.registerSymbol(
+        path,
+        content,
+        symbol,
+        revision,
+      );
+      return { alias, qualifiedName: materialized.qualified_name };
+    });
   }
 
   private async registerCoverage(
@@ -544,10 +738,17 @@ function alreadyCoveredResult(
   view: "outline" | "range" | "raw" | "symbol",
   receipt: string,
   target = path,
+  editTargets: EditTarget[] = [],
 ): LightToolResult<unknown> {
   return {
     status: "ok",
-    data: { status: "already_in_context", target, path, view },
+    data: {
+      status: "already_in_context",
+      target,
+      path,
+      view,
+      ...(editTargets.length ? { editTargets } : {}),
+    },
     receipt,
   };
 }
@@ -557,11 +758,18 @@ function outlineResult(
   items: unknown[],
   total: number,
   receipt: string,
+  editTargets: EditTarget[],
 ): LightToolResult<unknown> {
   return {
     status: "ok",
     receipt,
-    data: { path, view: "outline", items, truncated: total > items.length },
+    data: {
+      path,
+      view: "outline",
+      items,
+      editTargets,
+      truncated: total > items.length,
+    },
   };
 }
 
@@ -580,6 +788,7 @@ function symbolContentResult(
       path: resolved.path,
       view: "symbol",
       alias: resolved.alias,
+      editTarget: resolved.alias,
       kind: resolved.materialized.kind,
       qualifiedName: resolved.materialized.qualified_name,
       ...symbolProjectedContent(resolved, signature, body, imports, uncovered),
@@ -615,6 +824,7 @@ function uncoveredContentResult(
   receipt: string,
   fallbackReason?: string,
   truncated = false,
+  editTargets: EditTarget[] = [],
 ): LightToolResult<unknown> {
   const segments = intervals.map(([start, end]) => ({
     range: [start, end],
@@ -629,6 +839,7 @@ function uncoveredContentResult(
       path,
       view,
       ...(fallbackReason ? { fallbackReason } : {}),
+      ...(editTargets.length ? { editTargets } : {}),
       ...projected,
       truncated,
     },
@@ -657,244 +868,6 @@ function capabilitiesResult(): LightToolResult<unknown> {
   };
 }
 
-function searchMode(input: LightSearchCodeInput): SearchMode {
-  if (input.mode === "references") return "references";
-  if (input.mode && input.mode !== "auto") return input.mode;
-  return /^[\p{L}_$][\p{L}\p{N}_$.-]*$/u.test(input.query) ? "symbol" : "text";
-}
-
-function symbolSearchResult(results: unknown[], candidates: string[]) {
-  return searchResult("symbol", "syntax", results, candidates);
-}
-
-function textSearchResult(
-  mode: Exclude<SearchMode, "symbol">,
-  results: unknown[],
-  candidates: string[],
-) {
-  const engine = mode === "references" ? "lexical_fallback" : "ripgrep";
-  return searchResult(mode, engine, results, candidates);
-}
-
-function autoSearchResult(
-  symbols: unknown[],
-  text: unknown[],
-  candidates: string[],
-) {
-  const results = uniqueSearchResults([...symbols.slice(0, 4), ...text]);
-  return searchResult(
-    "auto",
-    "syntax_and_ripgrep",
-    results.slice(0, 8),
-    candidates,
-  );
-}
-
-function searchResult(
-  mode: string,
-  engine: string,
-  results: unknown[],
-  candidates: string[],
-): LightToolResult<unknown> {
-  return {
-    status: "ok",
-    data: {
-      mode,
-      engine,
-      results,
-      candidateCount: candidates.length,
-      ...(results.length
-        ? {}
-        : { guidance: "No match in the selected scope." }),
-    },
-  };
-}
-
-function uniqueSearchResults(results: unknown[]) {
-  const seen = new Set<string>();
-  return results.filter((value) => {
-    const result = recordValue(value);
-    const key = `${result.path}:${result.qualifiedName ?? result.lines}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function autoSymbolCandidates(
-  textResults: unknown[],
-  candidates: string[],
-  query: string,
-) {
-  const matchingPaths = new Set(
-    textResults.flatMap((value) => {
-      const path = stringValue(recordValue(value).path);
-      return path ? [path] : [];
-    }),
-  );
-  if (matchingPaths.size)
-    return candidates.filter((path) => matchingPaths.has(path));
-  return query.includes(".") ? candidates : [];
-}
-
-function scopedCandidates(
-  files: WorkspaceFiles,
-  paths: string[],
-  scope?: string | string[],
-) {
-  const values = typeof scope === "string" ? [scope] : scope;
-  if (!values?.length) return paths;
-  const matchers = values.map((value) => scopeMatcher(files, value));
-  return paths.filter((path) => matchers.some((matches) => matches(path)));
-}
-
-function scopeMatcher(files: WorkspaceFiles, value: string) {
-  const portable = safeScopePattern(value);
-  if (/[?*]/u.test(portable)) {
-    const expression = globExpression(portable);
-    return (path: string) => expression.test(path);
-  }
-  const root = files.normalizePath(portable);
-  if (root === ".") return () => true;
-  return (path: string) => path === root || path.startsWith(`${root}/`);
-}
-
-function safeScopePattern(value: string) {
-  const portable = value.trim().replaceAll("\\", "/").replace(/^\.\//u, "");
-  if (!portable || portable.startsWith("/") || /^[A-Za-z]:\//u.test(portable))
-    throw new Error("Search scopes must be workspace-relative paths or globs.");
-  if (portable.split("/").includes(".."))
-    throw new Error("Search scope escapes the workspace root.");
-  return portable;
-}
-
-function globExpression(pattern: string) {
-  let source = "^";
-  for (let index = 0; index < pattern.length; index += 1) {
-    const character = pattern[index]!;
-    if (character === "*" && pattern[index + 1] === "*") {
-      const followedBySlash = pattern[index + 2] === "/";
-      source += followedBySlash ? "(?:.*/)?" : ".*";
-      index += followedBySlash ? 2 : 1;
-    } else if (character === "*") source += "[^/]*";
-    else if (character === "?") source += "[^/]";
-    else source += escapeRegex(character);
-  }
-  return new RegExp(`${source}$`, "u");
-}
-
-function lexicalQuery(query: string) {
-  const terms = searchTerms(query);
-  if (terms.length < 2) return { pattern: query };
-  return { pattern: terms.map(escapeRegex).join("|"), regex: true };
-}
-
-function searchTerms(query: string) {
-  return [
-    ...new Set(
-      (
-        query
-          .normalize("NFKC")
-          .toLocaleLowerCase()
-          .match(/[\p{L}\p{N}_$@./-]+/gu) ?? []
-      ).filter(Boolean),
-    ),
-  ].slice(0, 12);
-}
-
-function rankedTextMatches(matches: LexicalSearchMatch[], query: string) {
-  const terms = searchTerms(query);
-  const unique = new Map<string, LexicalSearchMatch>();
-  for (const match of matches) {
-    const key = `${match.path}:${match.line_range.join(":")}:${match.excerpt}`;
-    if (!unique.has(key)) unique.set(key, match);
-  }
-  return [...unique.values()].sort((left, right) => {
-    const score = textMatchScore(right, terms) - textMatchScore(left, terms);
-    return score || left.path.localeCompare(right.path);
-  });
-}
-
-function textMatchScore(match: LexicalSearchMatch, terms: string[]) {
-  const path = match.path.toLocaleLowerCase();
-  const content = `${path}\n${match.excerpt.toLocaleLowerCase()}`;
-  const coverage = terms.filter((term) => content.includes(term)).length;
-  const pathCoverage = terms.filter((term) => path.includes(term)).length;
-  return coverage * 100 + pathCoverage * 20;
-}
-
-function firstTermIndex(source: string, terms: string[], query: string) {
-  const normalized = source.toLocaleLowerCase();
-  const needles = terms.length ? terms : [query.toLocaleLowerCase()];
-  return needles.reduce((best, needle) => {
-    const index = normalized.indexOf(needle);
-    return index >= 0 && (best < 0 || index < best) ? index : best;
-  }, -1);
-}
-
-function matchedTerm(
-  source: string,
-  index: number,
-  terms: string[],
-  query: string,
-) {
-  const normalized = source.toLocaleLowerCase();
-  const needles = terms.length ? terms : [query.toLocaleLowerCase()];
-  const needle = needles.find((candidate) =>
-    normalized.startsWith(candidate, index),
-  );
-  return source.slice(index, index + (needle ?? query).length);
-}
-
-function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-}
-
-function symbolicPath(path: string) {
-  const capability = capabilityForPath(path);
-  return Boolean(capability?.loaded && capability.level !== "raw");
-}
-
-function symbolMatches(symbol: ParsedSymbol, query: string) {
-  return (
-    symbol.name.toLocaleLowerCase().includes(query) ||
-    symbol.qualified_name.toLocaleLowerCase().includes(query)
-  );
-}
-
-function searchSymbolResult(
-  alias: string,
-  path: string,
-  symbol: ReturnType<typeof materializeSymbol>,
-) {
-  return {
-    alias,
-    path,
-    lines: symbol.line_range,
-    kind: symbol.kind,
-    qualifiedName: symbol.qualified_name,
-    signature: symbol.signature,
-    reason: "symbol_name",
-  };
-}
-
-function qualifiedTarget(value: string) {
-  return value.includes("#") && !value.startsWith("#");
-}
-
-function routedView(
-  input: LightReadCodeInput,
-  path: string,
-  characters: number,
-) {
-  if (input.view && input.view !== "auto") return input.view;
-  if (characters <= smallFileCharacters) return "raw" as const;
-  const capability = capabilityForPath(path);
-  return capability?.loaded && capability.level !== "raw"
-    ? ("outline" as const)
-    : ("raw" as const);
-}
-
 function lineByteRange(
   content: Buffer,
   startLine: number,
@@ -908,27 +881,6 @@ function lineByteRange(
     lines.slice(0, Math.min(endLine, lines.length)).join(""),
   );
   return [start, end];
-}
-
-function lineRange(content: Buffer, range: [number, number]): [number, number] {
-  const start = content
-    .subarray(0, range[0])
-    .toString("utf8")
-    .split("\n").length;
-  const count = content
-    .subarray(...range)
-    .toString("utf8")
-    .split("\n").length;
-  return [start, start + count - 1];
-}
-
-function sourceLine(source: string, index: number) {
-  const start = source.lastIndexOf("\n", index - 1) + 1;
-  const end = source.indexOf("\n", index);
-  return source
-    .slice(start, end < 0 ? source.length : end)
-    .trim()
-    .slice(0, 500);
 }
 
 function shortImportBlock(source: string) {
@@ -983,16 +935,6 @@ function inputBlocked(error: unknown): LightToolResult<unknown> {
   };
 }
 
-function recordValue(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
 function arrayValue(value: unknown) {
   return Array.isArray(value) ? value : [];
-}
-
-function stringValue(value: unknown) {
-  return typeof value === "string" && value.trim() ? value : undefined;
 }

@@ -222,6 +222,7 @@ export default class QuickChatsService {
       if (persistence === undefined) return run
       const update = await this.agentRunUpdateInput(quickChat, run, input, transaction)
       run.merge(monotonicAgentRunUpdate(run, { ...update, ...persistence }))
+      await closeTerminalQuickChatRunActivities(run, transaction)
       await run.save()
       return run
     })
@@ -246,8 +247,9 @@ export default class QuickChatsService {
         await persistAlreadyTerminalQuickChatRun(run, persistence, transaction)
         return
       }
-      const activities = await this.preparedFinalActivities(quickChat, run, input, transaction)
+      const activities = await this.preparedFinalActivities(quickChat, run, input)
       run.merge(finalQuickChatRunUpdate(input, activities, persistence))
+      await closeTerminalQuickChatRunActivities(run, transaction)
       await run.save()
       quickChat.useTransaction(transaction)
       quickChat.merge(finalQuickChatUpdate(run, input))
@@ -374,8 +376,7 @@ export default class QuickChatsService {
   private async preparedFinalActivities(
     quickChat: QuickChat,
     run: QuickChatAgentRun,
-    input: FinalizeQuickChatAgentRunInput,
-    transaction: TransactionClientContract
+    input: FinalizeQuickChatAgentRunInput
   ) {
     const prepared = await Promise.all(
       input.activities.map((activity) =>
@@ -383,11 +384,7 @@ export default class QuickChatsService {
       )
     )
     const activities = prepared.reduce(upsertActivity, run.activities ?? [])
-    const finalActivities = finalResponseActivities(run, activities, input.finalResponse)
-    await Promise.all(
-      finalActivities.map((activity) => persistQuickChatRunActivity(run.id, activity, transaction))
-    )
-    return finalActivities
+    return finalResponseActivities(run, activities, input.finalResponse)
   }
 }
 
@@ -396,13 +393,22 @@ async function persistAlreadyTerminalQuickChatRun(
   persistence: NonNullable<ReturnType<typeof agentRunPersistenceUpdate>>,
   transaction: TransactionClientContract
 ) {
-  const activities = await persistTerminalQuickChatRunActivities(
-    run.id,
-    run.activities ?? [],
-    transaction
-  )
-  run.merge({ ...persistence, activities })
+  run.merge(persistence)
+  await closeTerminalQuickChatRunActivities(run, transaction)
   await run.save()
+}
+
+async function closeTerminalQuickChatRunActivities(
+  run: QuickChatAgentRun,
+  transaction: TransactionClientContract
+) {
+  if (!terminalStatus(run.status)) return
+  const completedAt = run.completedAt ?? DateTime.now()
+  const activities = await persistTerminalQuickChatRunActivities(run.id, run.activities ?? [], {
+    client: transaction,
+    completedAt: completedAt.toISO() ?? undefined,
+  })
+  run.merge({ activities: activities.reduce(upsertActivity, []), completedAt })
 }
 
 function finalQuickChatRunUpdate(
@@ -443,13 +449,12 @@ function finalResponseActivities(
   activities: UserStoryAgentActivity[],
   response: string | null | undefined
 ) {
-  const terminalActivities = terminalAgentRunActivities(activities)
   const finalResponse = response?.trim()
-  if (!finalResponse || terminalActivities.some((activity) => activity.kind === 'message')) {
-    return terminalActivities
+  if (!finalResponse || activities.some((activity) => activity.kind === 'message')) {
+    return activities
   }
   return [
-    ...terminalActivities,
+    ...activities,
     {
       createdAt: (run.completedAt ?? DateTime.now()).toISO() ?? new Date().toISOString(),
       detail: finalResponse,

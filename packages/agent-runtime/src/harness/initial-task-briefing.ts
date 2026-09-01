@@ -47,6 +47,7 @@ async function localBriefing(input: InitialTaskBriefingInput) {
     keyFiles: briefingKeyFiles(snapshot.files),
     manager: dependencyTask?.package_manager,
     managerAvailability: await packageManagerAvailability(dependencyTask),
+    environment: await runtimeEnvironmentSummary(files, snapshot.files),
     packages,
     projectMap: projectMap(snapshot.files),
     snapshot,
@@ -56,6 +57,7 @@ async function localBriefing(input: InitialTaskBriefingInput) {
 
 type BriefingFacts = {
   candidates: string[];
+  environment?: string;
   keyFiles: string[];
   manager?: string;
   managerAvailability: string;
@@ -87,6 +89,7 @@ function briefingLines(input: BriefingFacts) {
     `Key files: ${input.keyFiles.join(", ") || "none detected"}.`,
     `Packages: ${packageDescription(input.packages)}.`,
     `Package manager: ${input.manager ?? "not detected"}; ${input.managerAvailability}.`,
+    ...(input.environment ? [`Runtime variables: ${input.environment}.`] : []),
     `Scripts: ${scripts || "none detected"}.`,
     `Git: ${git}.`,
     lightCapabilityDescription(),
@@ -96,6 +99,43 @@ function briefingLines(input: BriefingFacts) {
     "Navigation excludes generated outputs and node_modules; use run_task diagnostics for dependency or generated-client state. Preview services and databases are managed by Blame and must not be started manually.",
   ];
 }
+
+async function runtimeEnvironmentSummary(
+  files: WorkspaceFiles,
+  paths: string[],
+) {
+  const sources = await Promise.all(
+    paths
+      .filter(environmentReferencePath)
+      .slice(0, 20)
+      .map((path) => environmentNames(files, path)),
+  );
+  const names = [...new Set(sources.flat())].sort().slice(0, 12);
+  if (!names.length) return undefined;
+  return `${names.join(", ")} referenced; values stay hidden. A missing value is an environment blocker and must not be replaced by a source or localhost fallback`;
+}
+
+function environmentReferencePath(path: string) {
+  return (
+    path.endsWith(".env.example") ||
+    /(?:^|\/)prisma\.config\.[cm]?[jt]s$/u.test(path) ||
+    path.endsWith("schema.prisma")
+  );
+}
+
+async function environmentNames(files: WorkspaceFiles, path: string) {
+  try {
+    const source = (await files.read(path)).content.toString("utf8");
+    return [...source.matchAll(databaseEnvironmentName)].map(
+      (match) => match[1]!,
+    );
+  } catch {
+    return [];
+  }
+}
+
+const databaseEnvironmentName =
+  /\b((?:DATABASE_URL|DB_[A-Z0-9_]+|MYSQL_[A-Z0-9_]+|POSTGRES(?:QL)?_[A-Z0-9_]+|MONGO(?:DB)?_[A-Z0-9_]+|REDIS_[A-Z0-9_]+))\b/gu;
 
 async function briefingTargets(
   files: WorkspaceFiles,

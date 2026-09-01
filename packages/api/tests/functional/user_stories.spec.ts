@@ -1,6 +1,7 @@
 import Project from '#models/project'
 import PreviewSession from '#models/preview_session'
 import PreviewWorkspaceArtifact from '#models/preview_workspace_artifact'
+import { persistUserStoryRunActivity, userStoryRunActivity } from '#services/agent_run_activity_log'
 import { workspaceArtifactObjectStorage } from '#services/workspace_artifacts/workspace_artifact_object_storage'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { DateTime } from 'luxon'
@@ -775,6 +776,14 @@ test.group('user stories', (group) => {
       status: 'running',
       title: 'Reasoning',
     }
+    const toolActivity = {
+      createdAt: new Date().toISOString(),
+      detail: 'Running the final build',
+      id: 'tool-call-final-build',
+      kind: 'tool' as const,
+      status: 'running' as const,
+      title: 'run_task',
+    }
 
     const activityResponse = await client
       .patch(`/api/v1/projects/user-stories/${story.data.id}/agent-runs/${run.id}`)
@@ -786,6 +795,7 @@ test.group('user stories', (group) => {
       .loginAs(user)
       .json({ agentActivity: reasoningActivity })
     storyActivityResponse.assertStatus(200)
+    await persistUserStoryRunActivity(run.id, toolActivity)
 
     const discardedResponse = await client
       .patch(`/api/v1/projects/user-stories/${story.data.id}`)
@@ -803,6 +813,12 @@ test.group('user stories', (group) => {
       cancelled?.activities?.find(({ id }) => id === 'reasoning-36-1')?.status,
       'completed'
     )
+    assert.equal(
+      cancelled?.activities?.find(({ id }) => id === 'tool-call-final-build')?.status,
+      'failed'
+    )
+    const persistedToolActivity = await userStoryRunActivity(run.id, toolActivity.id)
+    assert.equal(persistedToolActivity?.status, 'failed')
     assert.equal(
       discarded.data.agentActivities?.find(({ id }) => id === 'reasoning-36-1')?.status,
       'completed'

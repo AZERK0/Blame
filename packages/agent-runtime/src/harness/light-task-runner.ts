@@ -416,6 +416,9 @@ async function commandFailureAssessment(
   output: string,
   files: WorkspaceFiles,
 ): Promise<FailureAssessment> {
+  const missingEnvironment = missingEnvironmentVariables(output);
+  if (missingEnvironment.length)
+    return environmentVariableFailure(missingEnvironment);
   const missing = missingDependencyNames(output);
   if (missing.length) {
     const declared = await declaredDependencies(files);
@@ -432,6 +435,21 @@ function environmentDiagnostic(output: string) {
   );
 }
 
+function missingEnvironmentVariables(output: string) {
+  const expressions = [
+    /Cannot resolve environment variable:\s*([A-Z][A-Z0-9_]*)/giu,
+    /Environment variable not found:\s*([A-Z][A-Z0-9_]*)/giu,
+    /Missing environment variable:\s*([A-Z][A-Z0-9_]*)/giu,
+  ];
+  return [
+    ...new Set(
+      expressions.flatMap((expression) =>
+        [...output.matchAll(expression)].map((match) => match[1]!),
+      ),
+    ),
+  ];
+}
+
 function missingDependencyNames(output: string) {
   const expressions = [
     /Cannot find (?:module|package)\s+['"`]([^'"`]+)['"`]/giu,
@@ -446,6 +464,8 @@ function missingDependencyNames(output: string) {
 }
 
 function dependencyName(value: string) {
+  const installed = installedDependencyName(value);
+  if (installed) return installed;
   if (
     !value ||
     value.startsWith(".") ||
@@ -455,6 +475,16 @@ function dependencyName(value: string) {
     return undefined;
   const segments = value.split("/");
   return value.startsWith("@") ? segments.slice(0, 2).join("/") : segments[0];
+}
+
+function installedDependencyName(value: string) {
+  const portable = value.replaceAll("\\", "/");
+  const installed = portable.split("/node_modules/").at(-1);
+  if (!installed || installed === portable) return undefined;
+  const segments = installed.split("/");
+  return installed.startsWith("@")
+    ? segments.slice(0, 2).join("/")
+    : segments[0];
 }
 
 async function declaredDependencies(files: WorkspaceFiles) {
@@ -493,6 +523,13 @@ function environmentDependencyFailure(): FailureAssessment {
     category: "environment",
     recovery:
       "Use the dependency operation once if the declared installation is incomplete; do not edit manifests or copy files through the shell.",
+  };
+}
+
+function environmentVariableFailure(names: string[]): FailureAssessment {
+  return {
+    category: "environment",
+    recovery: `Required runtime variable${names.length > 1 ? "s" : ""} ${names.join(", ")} ${names.length > 1 ? "are" : "is"} unavailable. Keep configuration environment-based; do not add credentials, localhost URLs, or source fallbacks. Continue with validations that do not require these values and report this validation unavailable.`,
   };
 }
 

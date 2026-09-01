@@ -367,6 +367,10 @@ export function assertMutableWorkspacePath(path: string) {
   const normalized = path.replaceAll("\\", "/");
   const segments = normalized.toLowerCase().split("/");
   const basename = segments.at(-1) ?? "";
+  if (segments.includes("node_modules"))
+    throw new Error(
+      "Dependency internals are runtime-managed and excluded from code navigation and edits.",
+    );
   if (
     segments.includes(".blame") ||
     segments.includes(".code-review-graph") ||

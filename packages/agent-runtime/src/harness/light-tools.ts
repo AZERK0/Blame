@@ -103,7 +103,7 @@ function searchCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "search_code",
     description:
-      "Find code by text, symbol, or references. Auto combines syntax and lexical matches for identifiers; multi-term queries match useful terms instead of requiring an exact phrase. Scope accepts paths or *, **, and ? globs. Returns at most eight short results with sN aliases.",
+      "Find workspace source by path, text, symbol, or references. Auto promotes lexical hits inside supported symbols to editable sN aliases; multi-term queries match useful terms instead of requiring an exact phrase. Scope accepts paths and *, **, ?, or {a,b} globs. Generated outputs and node_modules are unavailable by design. Returns at most eight short results.",
     schema: lightSearchCodeInputSchema,
     execute: (input, context) => workspace.searchCode(input, context.signal),
   });
@@ -112,7 +112,7 @@ function searchCodeTool(workspace: LightWorkspacePort) {
 function readCodeTool(workspace: LightWorkspacePort, capabilities: string) {
   return harnessTool({
     name: "read_code",
-    description: `Read a path, sN alias, path#qualifiedName, @changes, or @capabilities. Omit view normally: auto reads small files raw and routes large supported files to outlines; use returned aliases or qualified targets for symbol bodies. Explicit raw is intended only for small or non-structural files. Unsupported symbolic views fall back to raw in this call.\n${capabilities}`,
+    description: `Read a path, sN alias, path#qualifiedName, @changes, or @capabilities. Omit view normally: auto reads small files raw and routes large supported files to compact outlines. Raw and already_in_context results include concrete editTargets when structural symbols overlap the read. Requesting symbol for a lexical alias promotes its enclosing symbol. Explicit raw is intended only for small or non-structural files; generated outputs and node_modules are unavailable. Unsupported symbolic views fall back to raw in this call.\n${capabilities}`,
     schema: lightReadCodeInputSchema,
     execute: (input, context) => workspace.readCode(input, context),
   });
@@ -121,7 +121,7 @@ function readCodeTool(workspace: LightWorkspacePort, capabilities: string) {
 function editCodeTool(workspace: LightWorkspacePort, capabilities: string) {
   return harnessTool({
     name: "edit_code",
-    description: `Apply one atomic batch of symbolic replacements and native Cline Apply Patch operations. Prefer symbol operations inside existing supported symbols; use focused patches for imports, raw/config files, new files, or small cross-symbol changes. Multi-file patches are accepted and their touched symbols are attributed automatically. Operations share one snapshot, reject overlaps, parse only final states, and never require hashes or revisions.\n${capabilities}`,
+    description: `Apply one atomic batch of symbolic replacements and native Cline Apply Patch operations. Prefer symbol operations inside existing supported symbols; use focused patches for imports, raw/config files, new files, or small cross-symbol changes. Append code or CSS with insert_after on a returned editTarget instead of patching a generic delimiter. Keep every operation below 10,000 characters and split large additions across cohesive files or successive focused calls; independent operations in one call remain atomic. Multi-file Cline patches are accepted and attributed automatically. Operations share one snapshot, reject overlaps, parse only final states, and never require hashes or revisions.\n${capabilities}`,
     schema: lightEditCodeInputSchema,
     execute: (input, context) =>
       workspace.editCode(input, {

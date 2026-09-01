@@ -2,7 +2,10 @@ import {
   agentRunPersistenceUpdate,
   assertAgentRunStatusTransition,
 } from '#services/agent_run_persistence'
-import { terminalAgentRunActivities } from '#services/agent_run_activity_log'
+import {
+  reconcileTerminalAgentRunActivities,
+  terminalAgentRunActivities,
+} from '#services/agent_run_activity_log'
 import { test } from '@japa/runner'
 
 test.group('agent run persistence', () => {
@@ -47,6 +50,23 @@ test.group('agent run persistence', () => {
         { id: 'reasoning-36-1', status: 'completed', updatedAt: completedAt },
         { id: 'tool-64', status: 'failed', updatedAt: completedAt },
         { id: 'message-1', status: 'completed', updatedAt: undefined },
+      ]
+    )
+  })
+
+  test('closes activities found only in the normalized log', ({ assert }) => {
+    const completedAt = '2026-08-31T23:55:58.000Z'
+    const activities = reconcileTerminalAgentRunActivities(
+      [activity('reasoning-36-1', 'reasoning')],
+      [activity('tool-call-final-build', 'tool')],
+      completedAt
+    )
+
+    assert.deepEqual(
+      activities.map(({ id, status, updatedAt }) => ({ id, status, updatedAt })),
+      [
+        { id: 'reasoning-36-1', status: 'completed', updatedAt: completedAt },
+        { id: 'tool-call-final-build', status: 'failed', updatedAt: completedAt },
       ]
     )
   })

@@ -29,7 +29,13 @@ type RangeAlias = {
   start: number;
 };
 
-export type LightAlias = SymbolAlias | RangeAlias;
+type PathAlias = {
+  alias: string;
+  kind: "path";
+  path: string;
+};
+
+export type LightAlias = SymbolAlias | RangeAlias | PathAlias;
 
 export type ResolvedLightSymbol = {
   alias?: string;
@@ -66,6 +72,8 @@ export class LightAliasRegistry {
     revision: string,
   ) {
     const materialized = materializeSymbol({ symbol, path, revision, content });
+    const existing = this.exactSymbol(path, content, symbol);
+    if (existing) return { alias: existing.alias, materialized };
     const alias = this.nextAlias();
     this.aliases.set(alias, {
       alias,
@@ -81,12 +89,32 @@ export class LightAliasRegistry {
     return { alias, materialized };
   }
 
+  registerPath(path: string) {
+    const existing = [...this.aliases.values()].find(
+      (entry) => entry.kind === "path" && entry.path === path,
+    );
+    if (existing) return existing.alias;
+    const alias = this.nextAlias();
+    this.aliases.set(alias, { alias, kind: "path", path });
+    return alias;
+  }
+
   registerRange(path: string, content: Buffer, range: [number, number]) {
+    const fileHash = sha256(content);
+    const existing = [...this.aliases.values()].find(
+      (entry) =>
+        entry.kind === "range" &&
+        entry.path === path &&
+        entry.fileHash === fileHash &&
+        entry.start === range[0] &&
+        entry.end === range[1],
+    );
+    if (existing) return existing.alias;
     const alias = this.nextAlias();
     this.aliases.set(alias, {
       alias,
       end: range[1],
-      fileHash: sha256(content),
+      fileHash,
       kind: "range",
       path,
       start: range[0],
@@ -126,7 +154,7 @@ export class LightAliasRegistry {
   ): Promise<ResolvedLightSymbol> {
     if (entry.kind !== "symbol")
       throw new SymbolResolutionError(
-        `${entry.alias} is a text match, not a symbol.`,
+        `${entry.alias} is a ${entry.kind} target, not a symbol.`,
       );
     const content = (await files.read(entry.path)).content;
     const parsed = parseCode(entry.path, content);
@@ -162,6 +190,17 @@ export class LightAliasRegistry {
 
   private nextAlias() {
     return `s${++this.sequence}`;
+  }
+
+  private exactSymbol(path: string, content: Buffer, symbol: ParsedSymbol) {
+    const fileHash = sha256(content);
+    return [...this.aliases.values()].find(
+      (entry): entry is SymbolAlias =>
+        entry.kind === "symbol" &&
+        entry.path === path &&
+        entry.fileHash === fileHash &&
+        sameRange(symbol, entry),
+    );
   }
 }
 

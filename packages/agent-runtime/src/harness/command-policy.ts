@@ -8,6 +8,8 @@ export const blockedCommandParts = [
 
 export function blockedCommandReason(command: string) {
   const normalized = command.toLocaleLowerCase();
+  if (dependencyInternals.test(normalized))
+    return "Dependency internals are excluded from inspection. Use project manifests, declared types, and validation diagnostics.";
   if (managedInfrastructure.test(normalized))
     return "Managed preview infrastructure cannot be started from run_task.";
   if (longRunningProcess.test(normalized) || backgroundProcess.test(normalized))
@@ -28,6 +30,8 @@ export function blockedCommandReason(command: string) {
   return undefined;
 }
 
+const dependencyInternals =
+  /(?:^|[\s'"`])(?:\.\/)?[^\s'"`]*node_modules(?:\/|\b)/u;
 const managedInfrastructure =
   /(?:^|[;&|]\s*|\s)(?:docker|docker-compose|nerdctl|podman|postgres|pg_ctl|createdb|initdb)(?:\s|$)/u;
 const longRunningProcess =

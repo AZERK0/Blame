@@ -242,6 +242,7 @@ export default class UserStoriesService {
       if (persistence === undefined) return run
       const update = await this.agentRunUpdateInput(story, run, input, transaction)
       run.merge(monotonicAgentRunUpdate(run, { ...update, ...persistence }))
+      await closeTerminalStoryRunActivities(run, transaction)
       await run.save()
       return run
     })
@@ -400,10 +401,8 @@ export default class UserStoriesService {
     }
     const activities = await this.preparedRunActivities(story, run, input.activities)
     const finalActivities = finalResponseActivities(run, activities, input.finalResponse)
-    await Promise.all(
-      finalActivities.map((activity) => persistUserStoryRunActivity(run.id, activity, transaction))
-    )
     run.merge({ ...finalAgentRunUpdate(run, input, finalActivities), ...persistence })
+    await closeTerminalStoryRunActivities(run, transaction)
     await run.save()
     if (story.activeAgentRunId !== run.id) return
     story.merge(finalAgentRunStoryUpdate(run, input))
@@ -462,12 +461,8 @@ async function persistAlreadyTerminalStoryRun(
   persistence: NonNullable<ReturnType<typeof agentRunPersistenceUpdate>>,
   transaction: TransactionClientContract
 ) {
-  const activities = await persistTerminalUserStoryRunActivities(
-    run.id,
-    run.activities ?? [],
-    transaction
-  )
-  run.merge({ ...persistence, activities })
+  run.merge(persistence)
+  await closeTerminalStoryRunActivities(run, transaction)
   await run.save()
   if (story.activeAgentRunId !== run.id) return
   story.merge(finalAgentRunStoryUpdate(run, input))
@@ -576,14 +571,25 @@ async function cancelActiveAgentRun(
   const terminal = terminalStatus(run.status)
   const completedAt = run.completedAt ?? DateTime.now()
   const completedAtIso = completedAt.toISO() ?? undefined
-  const activities = terminalAgentRunActivities(run.activities ?? [], completedAtIso)
-  await persistTerminalUserStoryRunActivities(run.id, activities, transaction)
   story.agentActivities = terminalAgentRunActivities(story.agentActivities ?? [], completedAtIso)
   run.merge({
-    activities,
     ...(terminal ? {} : { status: 'cancelled' as const, completedAt }),
   })
+  await closeTerminalStoryRunActivities(run, transaction)
   await run.save()
+}
+
+async function closeTerminalStoryRunActivities(
+  run: UserStoryAgentRun,
+  transaction: TransactionClientContract
+) {
+  if (!terminalStatus(run.status)) return
+  const completedAt = run.completedAt ?? DateTime.now()
+  const activities = await persistTerminalUserStoryRunActivities(run.id, run.activities ?? [], {
+    client: transaction,
+    completedAt: completedAt.toISO() ?? undefined,
+  })
+  run.merge({ activities: activities.reduce(upsertActivity, []), completedAt })
 }
 
 function agentRunAttributes(storyId: string, input: CreateUserStoryAgentRunInput) {
@@ -650,9 +656,7 @@ function finalResponseActivities(
   updates: UserStoryAgentActivity[],
   response: string | null | undefined
 ) {
-  const activities = terminalAgentRunActivities(
-    updates.reduce(upsertActivity, run.activities ?? [])
-  )
+  const activities = updates.reduce(upsertActivity, run.activities ?? [])
   const finalResponse = response?.trim()
   if (!finalResponse || activities.some((activity) => activity.kind === 'message')) {
     return activities

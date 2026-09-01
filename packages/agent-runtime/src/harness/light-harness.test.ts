@@ -8,6 +8,7 @@ import {
   lightCapabilityDescription,
 } from "./light-capabilities.js";
 import { LightCommitService } from "./light-commit.js";
+import { lightEditCodeInputSchema } from "./light-contracts.js";
 import type { LightToolResult } from "./light-contracts.js";
 import { alignDependencyPackages } from "./light-dependencies.js";
 import { executeLightWorkspaceRequest } from "./light-executor.js";
@@ -157,15 +158,18 @@ test("tool surface contains only the four workspace tools", async () => {
   await withWorkspace(
     { "src/app.ts": "export const value = 1\n" },
     async (root) => {
-      const names = lightSemanticHarnessTools(root, {
+      const tools = lightSemanticHarnessTools(root, {
         taskContract: contract("surface"),
-      }).map(({ name }) => name);
+      });
+      const names = tools.map(({ name }) => name);
       assert.deepEqual(names, [
         "search_code",
         "read_code",
         "edit_code",
         "run_task",
       ]);
+      const edit = tools.find(({ name }) => name === "edit_code");
+      assert.match(JSON.stringify(edit?.inputSchema), /"maxLength":10000/u);
     },
   );
 });
@@ -221,6 +225,42 @@ test("auto search combines lexical matches and supports multi-term glob scopes",
           String(record(value).path).endsWith("package.json"),
         ),
       );
+      const path = data(
+        await workspace.searchCode({
+          query: "package.json",
+          scope: "*",
+          mode: "text",
+        }),
+      );
+      const pathResult = record(array(path.results)[0]);
+      assert.equal(pathResult.path, "package.json");
+      assert.equal(
+        data(
+          await workspace.readCode(
+            { target: String(pathResult.alias) },
+            { agentId: "lead" },
+          ),
+        ).path,
+        "package.json",
+      );
+      const braces = data(
+        await workspace.searchCode({
+          query: "scripts",
+          scope: "**/*.{ts,tsx}",
+        }),
+      );
+      assert.ok(
+        array(braces.results).some(
+          (value) => record(value).path === "src/scripts.ts",
+        ),
+      );
+      const excluded = await workspace.searchCode({
+        query: "scripts",
+        scope: "node_modules/**/*",
+      });
+      assert.equal(excluded.status, "blocked");
+      if (excluded.status === "blocked")
+        assert.equal(excluded.category, "input");
     },
   );
 });
@@ -231,15 +271,20 @@ test("small raw reads deduplicate by emitted bytes without invalidating other fi
     async (root) => {
       const workspace = lightWorkspace(root, "coverage");
       const context = { agentId: "lead" };
-      assert.equal(
-        data(await workspace.readCode({ target: "a.ts" }, context)).view,
-        "raw",
-      );
+      const first = data(await workspace.readCode({ target: "a.ts" }, context));
+      assert.equal(first.view, "raw");
+      const firstTarget = record(array(first.editTargets)[0]);
+      assert.equal(firstTarget.qualifiedName, "a");
       await workspace.readCode({ target: "b.ts" }, context);
-      assert.equal(
-        data(await workspace.readCode({ target: "a.ts" }, context)).status,
-        "already_in_context",
+      const repeated = data(
+        await workspace.readCode({ target: "a.ts" }, context),
       );
+      assert.equal(repeated.status, "already_in_context");
+      assert.equal(
+        record(array(repeated.editTargets)[0]).alias,
+        firstTarget.alias,
+      );
+      assert.ok(JSON.stringify(repeated).length < 400);
       await workspace.edits.edit(
         {
           operations: [
@@ -264,6 +309,61 @@ test("small raw reads deduplicate by emitted bytes without invalidating other fi
           data(await workspace.readCode({ target: "a.ts" }, context)).content,
         ),
         /a = 3/u,
+      );
+    },
+  );
+});
+
+test("a lexical alias promotes to its enclosing editable symbol", async () => {
+  await withWorkspace(
+    { "target.ts": "export function target() { return 1 }\n" },
+    async (root) => {
+      const workspace = lightWorkspace(root, "lexical-symbol");
+      const search = data(
+        await workspace.searchCode({ query: "return 1", mode: "text" }),
+      );
+      const alias = String(record(array(search.results)[0]).alias);
+      const result = data(
+        await workspace.readCode(
+          { target: alias, view: "symbol" },
+          { agentId: "lead" },
+        ),
+      );
+      assert.equal(result.view, "symbol");
+      assert.equal(result.qualifiedName, "target");
+      assert.ok(result.editTarget);
+    },
+  );
+});
+
+test("CSS outlines stay compact and expose an append target", async () => {
+  const rules = Array.from(
+    { length: 60 },
+    (_, index) =>
+      `.rule-${index} { background: linear-gradient(135deg, #111111, #222222); border: 1px solid #333333; color: #f5f5f5; padding: 1rem 2rem; }`,
+  ).join("\n");
+  const source = `:root { --accent: red; }\n${rules}\n`;
+  await withWorkspace(
+    { "styles.css": source },
+    async (root) => {
+      const workspace = lightWorkspace(root, "compact-css-outline");
+      const result = data(
+        await workspace.readCode(
+          { target: "styles.css", view: "outline" },
+          { agentId: "lead" },
+        ),
+      );
+      assert.equal(array(result.items).length, 32);
+      assert.equal(result.truncated, true);
+      assert.ok(JSON.stringify(result).length < source.length);
+      assert.ok(
+        array(result.items).every(
+          (item) => record(item).kind !== "css_custom_property",
+        ),
+      );
+      assert.equal(
+        record(array(result.editTargets).at(-1)).qualifiedName,
+        ".rule-59",
       );
     },
   );
@@ -330,6 +430,7 @@ test("the briefing exposes package topology, key files, and stack versions", asy
       }),
       "packages/api/src/server.ts": "export const server = true\n",
       "prisma/schema.prisma": "model User {\n  id Int @id\n}\n",
+      ".env.example": "DATABASE_URL=postgresql://localhost/example\n",
       "tsconfig.json": "{}\n",
     },
     async (root) => {
@@ -340,9 +441,14 @@ test("the briefing exposes package topology, key files, and stack versions", asy
           objective: "Update the API server",
         },
       });
-      assert.match(briefing ?? "", /Project map: packages \(/u);
+      assert.match(briefing ?? "", /Project map: .*packages \(/u);
       assert.match(briefing ?? "", /prisma\/schema\.prisma/u);
       assert.match(briefing ?? "", /@prisma\/client@7\.9\.1/u);
+      assert.match(
+        briefing ?? "",
+        /Runtime variables: DATABASE_URL referenced/u,
+      );
+      assert.match(briefing ?? "", /must not be replaced/u);
       assert.match(briefing ?? "", /scripts build,test/u);
       assert.match(briefing ?? "", /packages\/api\/src\/server\.ts#server/u);
       assert.doesNotMatch(briefing ?? "", /scripts dev/u);
@@ -399,6 +505,37 @@ test("run_task classifies a missing declared dependency as environment", async (
   });
 });
 
+test("run_task recognizes installed dependency paths as environment", async () => {
+  const manifest = JSON.stringify({ devDependencies: { prisma: "7.9.1" } });
+  await withWorkspace({ "package.json": manifest }, async (root) => {
+    const workspace = lightWorkspace(root, "dependency-path-diagnostic");
+    const result = await workspace.tasks.run({
+      kind: "command",
+      command:
+        "node -e \"const path = process.cwd() + '/' + ['node', 'modules'].join('_') + '/prisma/build/index.js'; console.error(\\\"Cannot find module '\\\" + path + \\\"'\\\"); process.exit(1)\"",
+    });
+    assert.equal(result.status, "blocked");
+    if (result.status === "blocked")
+      assert.equal(result.category, "environment");
+  });
+});
+
+test("run_task treats missing Prisma variables as environment", async () => {
+  await withWorkspace({ "package.json": "{}\n" }, async (root) => {
+    const workspace = lightWorkspace(root, "prisma-environment-diagnostic");
+    const result = await workspace.tasks.run({
+      kind: "command",
+      command:
+        "node -e \"console.error('PrismaConfigEnvError: Cannot resolve environment variable: DATABASE_URL.'); process.exit(1)\"",
+    });
+    assert.equal(result.status, "blocked");
+    if (result.status !== "blocked") return;
+    assert.equal(result.category, "environment");
+    assert.match(result.recovery ?? "", /do not add credentials/u);
+    assert.match(result.recovery ?? "", /localhost URLs/u);
+  });
+});
+
 test("run_task classifies infrastructure and storage failures as environment", async () => {
   await withWorkspace({ "package.json": "{}\n" }, async (root) => {
     const workspace = lightWorkspace(root, "environment-diagnostics");
@@ -431,6 +568,7 @@ test("run_task denies shell writes and unmanaged infrastructure", async () => {
       "git add value.txt",
       "git -C . add value.txt",
       "docker run postgres:17",
+      "find node_modules/prisma -type f",
     ]) {
       const result = await workspace.tasks.run({ kind: "command", command });
       assert.equal(result.status, "blocked");
@@ -438,6 +576,39 @@ test("run_task denies shell writes and unmanaged infrastructure", async () => {
     }
     assert.equal(await readFile(join(root, "value.txt"), "utf8"), "safe\n");
   });
+});
+
+test("code navigation refuses runtime-managed dependency internals", async () => {
+  await withWorkspace(
+    {
+      "node_modules/example/index.js": "export const internal = true\n",
+      "package.json": "{}\n",
+    },
+    async (root) => {
+      const workspace = lightWorkspace(root, "dependency-navigation");
+      const result = await workspace.readCode(
+        { target: "node_modules/example/index.js" },
+        { agentId: "lead" },
+      );
+      assert.equal(result.status, "blocked");
+      if (result.status === "blocked") assert.equal(result.category, "input");
+    },
+  );
+});
+
+test("edit payloads are bounded before execution", () => {
+  const result = lightEditCodeInputSchema.safeParse({
+    operations: [
+      {
+        kind: "patch",
+        path: "large.css",
+        patch: "x".repeat(10_001),
+      },
+    ],
+  });
+  assert.equal(result.success, false);
+  if (!result.success)
+    assert.match(result.error.issues[0]?.message ?? "", /cohesive files/u);
 });
 
 test("run_task reuses identical inspections and rejects service scripts", async () => {

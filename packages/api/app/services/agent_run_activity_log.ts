@@ -3,6 +3,11 @@ import type { UserStoryAgentActivity } from '#models/user_story'
 import UserStoryAgentRunActivity from '#models/user_story_agent_run_activity'
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 
+type TerminalActivityPersistenceOptions = {
+  client?: TransactionClientContract
+  completedAt?: string
+}
+
 export async function persistUserStoryRunActivity(
   runId: string,
   activity: UserStoryAgentActivity,
@@ -83,33 +88,92 @@ export function terminalAgentRunActivities(
   })
 }
 
-export function persistTerminalUserStoryRunActivities(
+export function reconcileTerminalAgentRunActivities(
+  activities: UserStoryAgentActivity[],
+  persisted: UserStoryAgentActivity[],
+  completedAt = new Date().toISOString()
+) {
+  return terminalAgentRunActivities(mergeActivities(activities, persisted), completedAt)
+}
+
+export async function persistTerminalUserStoryRunActivities(
   runId: string,
   activities: UserStoryAgentActivity[],
-  client?: TransactionClientContract
+  options: TerminalActivityPersistenceOptions = {}
 ) {
-  return persistTerminalActivities(activities, (activity) =>
-    persistUserStoryRunActivity(runId, activity, client)
+  const persisted = await persistedUserStoryRunActivities(runId, options.client)
+  const terminalActivities = reconcileTerminalAgentRunActivities(
+    activities,
+    persisted,
+    options.completedAt
+  )
+  return persistActivities(terminalActivities, (activity) =>
+    persistUserStoryRunActivity(runId, activity, options.client)
   )
 }
 
-export function persistTerminalQuickChatRunActivities(
+export async function persistTerminalQuickChatRunActivities(
   runId: string,
   activities: UserStoryAgentActivity[],
-  client?: TransactionClientContract
+  options: TerminalActivityPersistenceOptions = {}
 ) {
-  return persistTerminalActivities(activities, (activity) =>
-    persistQuickChatRunActivity(runId, activity, client)
+  const persisted = await persistedQuickChatRunActivities(runId, options.client)
+  const terminalActivities = reconcileTerminalAgentRunActivities(
+    activities,
+    persisted,
+    options.completedAt
+  )
+  return persistActivities(terminalActivities, (activity) =>
+    persistQuickChatRunActivity(runId, activity, options.client)
   )
 }
 
-async function persistTerminalActivities(
+async function persistActivities(
   activities: UserStoryAgentActivity[],
   persist: (activity: UserStoryAgentActivity) => Promise<unknown>
 ) {
-  const terminalActivities = terminalAgentRunActivities(activities)
-  await Promise.all(terminalActivities.map(persist))
-  return terminalActivities
+  await Promise.all(activities.map(persist))
+  return activities
+}
+
+async function persistedUserStoryRunActivities(runId: string, client?: TransactionClientContract) {
+  const records = await UserStoryAgentRunActivity.query({ client })
+    .where('runId', runId)
+    .orderBy('createdAt', 'asc')
+    .orderBy('id', 'asc')
+  return records.flatMap((record) => (record.activity ? [record.activity] : []))
+}
+
+async function persistedQuickChatRunActivities(runId: string, client?: TransactionClientContract) {
+  const records = await QuickChatAgentRunActivity.query({ client })
+    .where('runId', runId)
+    .orderBy('createdAt', 'asc')
+    .orderBy('id', 'asc')
+  return records.flatMap((record) => (record.activity ? [record.activity] : []))
+}
+
+function mergeActivities(
+  activities: UserStoryAgentActivity[],
+  persisted: UserStoryAgentActivity[]
+) {
+  const merged = [...activities, ...persisted].reduce((result, activity) => {
+    const existing = result.get(activity.id)
+    if (!existing || isNewerActivity(existing, activity)) result.set(activity.id, activity)
+    return result
+  }, new Map<string, UserStoryAgentActivity>())
+  return [...merged.values()]
+}
+
+function isNewerActivity(existing: UserStoryAgentActivity, candidate: UserStoryAgentActivity) {
+  const existingTimestamp = activityTimestamp(existing)
+  const candidateTimestamp = activityTimestamp(candidate)
+  if (candidateTimestamp !== existingTimestamp) return candidateTimestamp > existingTimestamp
+  return existing.status === 'running' || candidate.status !== 'running'
+}
+
+function activityTimestamp(activity: UserStoryAgentActivity) {
+  const timestamp = Date.parse(activity.updatedAt ?? activity.createdAt)
+  return Number.isNaN(timestamp) ? 0 : timestamp
 }
 
 function terminalActivityStatus(kind: UserStoryAgentActivity['kind']) {

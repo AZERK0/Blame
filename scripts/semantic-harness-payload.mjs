@@ -37,6 +37,7 @@ const payloadHarnessFiles = new Set([
   "light-executor.js",
   "light-finish-service.js",
   "light-identity.js",
+  "light-navigation.js",
   "light-patch.js",
   "light-task-runner.js",
   "light-workspace.js",
