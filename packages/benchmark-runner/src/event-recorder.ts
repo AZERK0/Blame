@@ -1,0 +1,53 @@
+import { createWriteStream, type WriteStream } from "node:fs";
+import type { AgentEvent } from "@blame/agent-runtime";
+import type { BenchmarkEventRecorder } from "./contracts.js";
+
+const secretKey = /^(?:access|apiKey|authorization|headers|refresh|token)$/i;
+
+export class JsonlEventRecorder implements BenchmarkEventRecorder {
+  private error: Error | undefined;
+  private readonly stream: WriteStream;
+  eventCount = 0;
+  toolEventCount = 0;
+
+  constructor(path: string) {
+    this.stream = createWriteStream(path, { encoding: "utf8" });
+    this.stream.on("error", (error) => {
+      this.error = error;
+    });
+  }
+
+  record(event: AgentEvent) {
+    this.eventCount += 1;
+    if (event.type === "tool") this.toolEventCount += 1;
+    const entry = {
+      event: sanitizeValue(event),
+      kind: "agent_event",
+      recordedAt: new Date().toISOString(),
+      schemaVersion: 1,
+    };
+    this.stream.write(`${JSON.stringify(entry)}\n`);
+  }
+
+  close() {
+    return new Promise<void>((resolve, reject) => {
+      if (this.error) {
+        reject(this.error);
+        return;
+      }
+      this.stream.once("error", reject);
+      this.stream.end(resolve);
+    });
+  }
+}
+
+export function sanitizeValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sanitizeValue);
+  if (!value || typeof value !== "object") return value;
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (key === "raw") continue;
+    sanitized[key] = secretKey.test(key) ? "[REDACTED]" : sanitizeValue(entry);
+  }
+  return sanitized;
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@blame/benchmark-runner",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "bin": {
+    "blame-headless": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint .",
+    "start": "node dist/cli.js",
+    "test": "pnpm build && node --test dist/*.test.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@blame/agent-runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/node": "^24.12.0",
+    "eslint": "^9.39.4",
+    "globals": "^16.5.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.57.1"
+  }
+}
