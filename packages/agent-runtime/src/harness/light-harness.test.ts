@@ -1584,6 +1584,57 @@ test("finish_task reruns the selected build after the final edit", async () => {
   );
 });
 
+test("finish_task reuses a current unavailable build result", async () => {
+  await withWorkspace(
+    {
+      "package.json": JSON.stringify({
+        scripts: {
+          build:
+            'node -e "console.error(\'Missing environment variable: DATABASE_URL\');process.exit(1)"',
+        },
+      }),
+      "value.ts": "export const value = 1\n",
+    },
+    async (root) => {
+      const sessionId = "unavailable-final-build";
+      const workspace = lightWorkspace(root, sessionId);
+      await workspace.editCode({
+        operations: [
+          {
+            kind: "patch",
+            path: "value.ts",
+            patch: applyPatch("value.ts", [
+              "-export const value = 1",
+              "+export const value = 2",
+            ]),
+          },
+        ],
+      });
+      const validation = await workspace.tasks.run({
+        kind: "project",
+        task: "build",
+      });
+      assert.equal(validation.status, "blocked");
+      if (validation.status === "blocked")
+        assert.equal(validation.category, "environment");
+      let validationActivities = 0;
+      const tool = createFinishTaskTool({
+        conversationId: sessionId,
+        onValidationActivity: () => {
+          validationActivities += 1;
+        },
+        taskContract: contract(sessionId),
+        workspaceRoot: root,
+      });
+      await tool.execute({ summary: "Updated with validation unavailable." }, {
+        sessionId,
+        toolCallId: "unavailable-finish",
+      } as never);
+      assert.equal(validationActivities, 0);
+    },
+  );
+});
+
 test("remote finish_task forwards automatic validation activities", async () => {
   await withWorkspace(
     {

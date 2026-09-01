@@ -113,6 +113,10 @@ export class LightFinishService {
     if (!input) return { outcome: "unavailable" as const };
     if (hasPassingValidation(state.validations, state.changedPaths, input.task))
       return { outcome: "reused" as const, taskId: input.task };
+    if (
+      hasUnavailableValidation(state.validations, state.changedPaths, input.task)
+    )
+      return { outcome: "unavailable" as const, taskId: input.task };
     const result = await this.runValidation(input, context);
     if (result.status === "ok")
       return { outcome: "passed" as const, taskId: input.task };
@@ -222,6 +226,23 @@ function hasPassingValidation(
     ({ paths, status, taskId: validationTaskId, terminal }) =>
       status === "passed" &&
       terminal === "passed" &&
+      validationTaskId === taskId &&
+      changedPaths.every((path) => paths.includes(path)),
+  );
+}
+
+function hasUnavailableValidation(
+  validations: Awaited<
+    ReturnType<SessionJournal["completionSnapshot"]>
+  >["validations"],
+  changedPaths: string[],
+  taskId: string,
+) {
+  return validations.some(
+    ({ category, paths, status, taskId: validationTaskId, terminal }) =>
+      category === "environment" &&
+      status === "failed" &&
+      terminal === "failed" &&
       validationTaskId === taskId &&
       changedPaths.every((path) => paths.includes(path)),
   );
