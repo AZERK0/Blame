@@ -130,9 +130,20 @@ export class LightAliasRegistry {
   }
 
   async resolveSymbol(target: string, files: WorkspaceFiles, revision: string) {
-    const entry = this.aliases.get(target);
+    const entry = this.targetAlias(target, files);
     if (entry) return this.resolveAlias(entry, files, revision);
     return this.resolveQualifiedTarget(target, files, revision);
+  }
+
+  private targetAlias(target: string, files: WorkspaceFiles) {
+    const direct = this.aliases.get(target);
+    if (direct) return direct;
+    const separator = target.lastIndexOf("#");
+    if (separator < 1) return undefined;
+    const entry = this.aliases.get(target.slice(separator + 1));
+    if (!entry || entry.kind !== "symbol") return undefined;
+    const path = files.normalizePath(target.slice(0, separator));
+    return path === entry.path ? entry : undefined;
   }
 
   private async resolveAlias(

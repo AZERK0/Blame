@@ -498,6 +498,35 @@ test("CSS outlines stay compact and expose an append target", async () => {
   });
 });
 
+test("path-qualified symbol aliases resolve when the path matches", async () => {
+  const source = ".hero { color: red; }\n";
+  await withWorkspace({ "styles.css": source }, async (root) => {
+    const workspace = lightWorkspace(root, "qualified-symbol-alias");
+    const outline = data(
+      await workspace.readCode(
+        { target: "styles.css", view: "outline" },
+        { agentId: "lead" },
+      ),
+    );
+    const alias = String(record(array(outline.items)[0]).alias);
+    const result = await workspace.editCode({
+      operations: [
+        {
+          action: "insert_after",
+          content: "\n.projects { color: blue; }",
+          kind: "symbol",
+          target: `styles.css#${alias}`,
+        },
+      ],
+    });
+    assert.equal(result.status, "ok");
+    assert.equal(
+      await readFile(join(root, "styles.css"), "utf8"),
+      `${source}.projects { color: blue; }\n`,
+    );
+  });
+});
+
 test("read coverage survives isolated Light bridge executions", async () => {
   await withWorkspace(
     { "value.ts": "export const value = 1\n" },
