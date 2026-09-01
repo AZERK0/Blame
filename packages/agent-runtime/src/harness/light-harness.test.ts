@@ -646,6 +646,25 @@ test("run_task preserves pipeline failures and complete diagnostics", async () =
   });
 });
 
+test("run_task accepts an absolute cwd inside the workspace", async () => {
+  await withWorkspace({ "package.json": "{}\n" }, async (root) => {
+    const workspace = lightWorkspace(root, "absolute-command-cwd");
+    const command = `node -e "if(process.cwd()!==process.argv[1])process.exit(1)" ${JSON.stringify(root)}`;
+    const result = await workspace.tasks.run({
+      kind: "command",
+      command,
+      cwd: root,
+    });
+    assert.equal(result.status, "ok");
+    const escaped = await workspace.tasks.run({
+      kind: "command",
+      command: "node -e \"process.stdout.write(process.cwd())\"",
+      cwd: tmpdir(),
+    });
+    assert.equal(escaped.status, "blocked");
+  });
+});
+
 test("project tasks do not inherit the harness environment", async () => {
   const previousNodeEnvironment = process.env.NODE_ENV;
   const previousToken = process.env.BLAME_API_TOKEN;

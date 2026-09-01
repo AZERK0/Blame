@@ -1,4 +1,4 @@
-import { resolve } from "node:path";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 import type { WorkspaceFiles } from "./workspace-files.js";
 
 export class EnvironmentAdapter {
@@ -23,11 +23,20 @@ export class EnvironmentAdapter {
   }
 
   async cwd(path = ".") {
-    const normalized = this.files.normalizePath(path);
+    const normalized = this.files.normalizePath(this.workspacePath(path));
     const profile = await this.files.pathProfile(normalized);
     if (!profile.directory)
       throw new Error(`${normalized} is not a directory.`);
     return resolve(this.files.root, normalized);
+  }
+
+  private workspacePath(path: string) {
+    if (!isAbsolute(path)) return path;
+    const local = relative(this.files.root, path);
+    if (!local) return ".";
+    if (local === ".." || local.startsWith(`..${sep}`) || isAbsolute(local))
+      return path;
+    return local;
   }
 
   target() {
