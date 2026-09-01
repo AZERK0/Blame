@@ -11,7 +11,7 @@ import {
   type ContextProjectionMetrics,
 } from "./context-projection.js";
 
-test("projects acknowledged edits and reads made stale by those edits", () => {
+test("projects acknowledged edits and reads superseded after edits", () => {
   const original = projectionMessages();
   const projection = projectProviderContext(
     original,
@@ -20,15 +20,25 @@ test("projects acknowledged edits and reads made stale by those edits", () => {
   );
   const serialized = JSON.stringify(projection.messages);
   assert.doesNotMatch(serialized, /FIRST_PATCH|ORIGINAL_SOURCE/u);
-  assert.match(serialized, /LATEST_PATCH/u);
+  assert.match(serialized, /FRESH_SOURCE|LATEST_PATCH/u);
   assert.match(serialized, /FAILED_PATCH/u);
-  assert.match(serialized, /stale_after_edit/u);
+  assert.match(serialized, /superseded_after_edit/u);
   assert.match(JSON.stringify(original), /FIRST_PATCH|ORIGINAL_SOURCE/u);
   assert.equal(projection.metrics.requestIndex, 3);
   assert.equal(projection.metrics.staleReadsReplaced, 1);
   assert.equal(projection.metrics.successfulEditsReplaced, 1);
   assert.ok(projection.metrics.projectedBytesSaved > 0);
   assert.equal(projection.metrics.transcriptHash.length, 64);
+});
+
+test("preserves an edited path read until a fresh read replaces it", () => {
+  const original = projectionMessages().slice(0, 4);
+  const projection = projectProviderContext(original, {
+    systemPrompt: "system",
+    tools: [{ name: "edit_code" }],
+  });
+  assert.match(JSON.stringify(projection.messages), /ORIGINAL_SOURCE/u);
+  assert.equal(projection.metrics.staleReadsReplaced, 0);
 });
 
 test("publishes content-free provider context measurements", async () => {
@@ -134,6 +144,12 @@ function projectionMessages(): Message[] {
       ],
     }),
     successfulEditResult("edit-1", "c1", "src/a.ts", "src_1"),
+    toolUse("read-2", "read_code", { target: "src/a.ts" }),
+    toolResult("read-2", "read_code", {
+      data: { content: "FRESH_SOURCE", path: "src/a.ts" },
+      receipt: "r2",
+      status: "ok",
+    }),
     toolUse("edit-2", "edit_code", {
       operations: [{ kind: "patch", patch: "LATEST_PATCH", path: "src/b.ts" }],
     }),

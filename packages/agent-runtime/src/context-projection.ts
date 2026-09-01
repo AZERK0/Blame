@@ -54,6 +54,7 @@ type IndexedRead = {
 
 type HistoryIndex = {
   latestEditByPath: Map<string, LatestEdit>;
+  latestReadIndexByPath: Map<string, number>;
   latestSuccessfulEditId?: string;
   readById: Map<string, IndexedRead>;
   successfulEditIds: Set<string>;
@@ -149,10 +150,12 @@ function indexRead(id: string, tool: IndexedTool, history: HistoryIndex) {
   const data = recordValue(tool.result?.data);
   const path = stringValue(data?.path) ?? stringValue(tool.input.target);
   if (!path) return;
+  const resultIndex = tool.resultIndex ?? -1;
   history.readById.set(id, {
     path,
     receipt: stringValue(tool.result?.receipt),
   });
+  history.latestReadIndexByPath.set(path, resultIndex);
 }
 
 function indexEdit(tool: IndexedTool, history: HistoryIndex) {
@@ -191,9 +194,25 @@ function projectBlock(
   if (block.type !== "tool_result") return block;
   const read = history.readById.get(block.tool_use_id);
   const edit = read ? history.latestEditByPath.get(read.path) : undefined;
-  if (!read || !edit || edit.index <= index) return block;
+  const latestReadIndex = read
+    ? history.latestReadIndexByPath.get(read.path)
+    : undefined;
+  if (!read || !supersededRead(index, edit, latestReadIndex)) return block;
   stats.staleReadsReplaced += 1;
-  return staleReadResult(block, read, edit.revision);
+  return supersededReadResult(block, read, edit?.revision);
+}
+
+function supersededRead(
+  readIndex: number,
+  edit: LatestEdit | undefined,
+  latestReadIndex: number | undefined,
+) {
+  return Boolean(
+    edit &&
+      edit.index > readIndex &&
+      latestReadIndex !== undefined &&
+      latestReadIndex > edit.index,
+  );
 }
 
 function projectToolUse(
@@ -223,7 +242,7 @@ function compactEditInput(tool: IndexedTool | undefined) {
   };
 }
 
-function staleReadResult(
+function supersededReadResult(
   block: ToolResultContent,
   read: IndexedRead,
   revision?: string,
@@ -236,7 +255,7 @@ function staleReadResult(
         path: read.path,
         receipt: read.receipt,
       },
-      status: "stale_after_edit",
+      status: "superseded_after_edit",
     }),
   };
 }
@@ -353,6 +372,7 @@ function successfulResult(result: Record<string, unknown> | undefined) {
 function emptyHistoryIndex(): HistoryIndex {
   return {
     latestEditByPath: new Map(),
+    latestReadIndexByPath: new Map(),
     readById: new Map(),
     successfulEditIds: new Set(),
     tools: new Map(),
