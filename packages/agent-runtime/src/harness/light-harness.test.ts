@@ -646,6 +646,36 @@ test("run_task preserves pipeline failures and complete diagnostics", async () =
   });
 });
 
+test("project tasks do not inherit the harness environment", async () => {
+  const previousNodeEnvironment = process.env.NODE_ENV;
+  const previousToken = process.env.BLAME_API_TOKEN;
+  process.env.NODE_ENV = "development";
+  process.env.BLAME_API_TOKEN = "private-test-token";
+  try {
+    await withWorkspace(
+      {
+        "package.json": JSON.stringify({
+          scripts: {
+            build:
+              'node -e "if(process.env.NODE_ENV||process.env.BLAME_API_TOKEN)process.exit(1)"',
+          },
+        }),
+      },
+      async (root) => {
+        const workspace = lightWorkspace(root, "isolated-task-environment");
+        assert.equal(
+          (await workspace.tasks.run({ kind: "project", task: "build" }))
+            .status,
+          "ok",
+        );
+      },
+    );
+  } finally {
+    restoreEnvironment("NODE_ENV", previousNodeEnvironment);
+    restoreEnvironment("BLAME_API_TOKEN", previousToken);
+  }
+});
+
 test("run_task classifies a missing declared dependency as environment", async () => {
   const manifest = JSON.stringify({
     dependencies: { "@prisma/client": "7.9.1" },
@@ -2006,6 +2036,11 @@ function applyPatch(path: string, lines: string[]) {
 
 function multiFilePatch(operations: string[][]) {
   return ["*** Begin Patch", ...operations.flat(), "*** End Patch"].join("\n");
+}
+
+function restoreEnvironment(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
 }
 
 async function withWorkspace(

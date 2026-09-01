@@ -17,6 +17,7 @@ import {
   taskInvocation,
   type TaskCatalogItem,
 } from "./task-catalog.js";
+import { workspaceCommandEnvironment } from "./workspace-command-environment.js";
 import type { WorkspaceFiles } from "./workspace-files.js";
 
 type RunnerContext = {
@@ -393,6 +394,8 @@ function executeCommand(
     all: true,
     cancelSignal: signal,
     cwd,
+    env: workspaceCommandEnvironment(),
+    extendEnv: false,
     reject: false,
     stdin: "ignore",
     timeout: 120_000,

@@ -9,6 +9,7 @@ import { LightCommitService, type LightFileMutation } from "./light-commit.js";
 import type { LightRunTaskInput } from "./light-contracts.js";
 import { boundedDiagnostic } from "./light-diagnostic.js";
 import { readTaskCatalog } from "./task-catalog.js";
+import { workspaceCommandEnvironment } from "./workspace-command-environment.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
 
 type DependencyInput = Extract<LightRunTaskInput, { kind: "dependency" }>;
@@ -79,6 +80,8 @@ export class LightDependencyService {
       all: true,
       cancelSignal: signal,
       cwd: dirname(this.files.resolveForWrite(manifest).absolute),
+      env: workspaceCommandEnvironment(),
+      extendEnv: false,
       maxBuffer: 512 * 1024,
       reject: false,
       stdin: "ignore",

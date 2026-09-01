@@ -7,6 +7,7 @@ import { parse, type ParseError } from "jsonc-parser";
 import ts from "typescript";
 import { parseCode } from "./code-intelligence.js";
 import { languageCapability } from "./language-capabilities.js";
+import { workspaceCommandEnvironment } from "./workspace-command-environment.js";
 
 export type ValidationStatus = "passed" | "failed" | "unsupported";
 
@@ -185,6 +186,8 @@ async function executePrismaValidator(
   try {
     return await execa(executable, ["validate", "--schema", schema], {
       cwd: input.workspaceRoot,
+      env: workspaceCommandEnvironment(),
+      extendEnv: false,
       reject: false,
       timeout: 30_000,
     });
