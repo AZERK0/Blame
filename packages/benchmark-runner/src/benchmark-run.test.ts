@@ -63,6 +63,28 @@ test("aborts a session that reaches the benchmark timeout", async () => {
   assert.equal(aborted, true);
 });
 
+test("waits past recoverable agent errors for the real terminal", async () => {
+  const recorder = new MemoryRecorder();
+  const result = await runBenchmark(benchmarkConfig(), {
+    createRecorder: () => recorder,
+    createRuntime: (events) =>
+      runtimeStub({
+        start() {
+          queueMicrotask(() => {
+            events.emit({
+              type: "error",
+              payload: { message: "Validation failed", recoverable: true },
+            });
+            events.emit({ type: "done", payload: { verified: false } });
+          });
+        },
+      }),
+  });
+  assert.equal(result.status, "succeeded");
+  assert.equal(result.verified, false);
+  assert.equal(recorder.eventCount, 2);
+});
+
 function successfulRuntime(
   events: AgentRuntimeEvents,
   inputs: StartDevelopmentSessionInput[],

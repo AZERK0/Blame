@@ -91,12 +91,17 @@ function terminalObserver(recorder: BenchmarkEventRecorder) {
     events: {
       emit(event: AgentEvent) {
         recorder.record(event);
-        if (event.type === "done" || event.type === "error")
-          resolveTerminal(event);
+        if (isTerminalEvent(event)) resolveTerminal(event);
       },
     },
     promise,
   };
+}
+
+function isTerminalEvent(event: AgentEvent) {
+  if (event.type === "done") return true;
+  if (event.type !== "error") return false;
+  return recordValue(event.payload)?.recoverable !== true;
 }
 
 function waitForTerminal(
