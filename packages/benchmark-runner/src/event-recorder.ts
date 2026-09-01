@@ -1,11 +1,13 @@
 import { createWriteStream, type WriteStream } from "node:fs";
 import type { AgentEvent } from "@blame/agent-runtime";
+import { BenchmarkMetricsCollector } from "./benchmark-metrics.js";
 import type { BenchmarkEventRecorder } from "./contracts.js";
 
 const secretKey = /^(?:access|apiKey|authorization|headers|refresh|token)$/i;
 
 export class JsonlEventRecorder implements BenchmarkEventRecorder {
   private error: Error | undefined;
+  private readonly collector = new BenchmarkMetricsCollector();
   private readonly stream: WriteStream;
   eventCount = 0;
   toolEventCount = 0;
@@ -18,15 +20,21 @@ export class JsonlEventRecorder implements BenchmarkEventRecorder {
   }
 
   record(event: AgentEvent) {
+    const recordedAt = new Date();
     this.eventCount += 1;
     if (event.type === "tool") this.toolEventCount += 1;
+    this.collector.record(event, recordedAt.getTime());
     const entry = {
       event: sanitizeValue(event),
       kind: "agent_event",
-      recordedAt: new Date().toISOString(),
+      recordedAt: recordedAt.toISOString(),
       schemaVersion: 1,
     };
     this.stream.write(`${JSON.stringify(entry)}\n`);
+  }
+
+  metrics(startedAt: Date, finishedAt: Date) {
+    return this.collector.summary(startedAt, finishedAt);
   }
 
   close() {

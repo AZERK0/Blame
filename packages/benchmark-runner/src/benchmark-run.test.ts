@@ -6,6 +6,7 @@ import type {
   StartDevelopmentSessionInput,
 } from "@blame/agent-runtime";
 import { runBenchmark } from "./benchmark-run.js";
+import { BenchmarkMetricsCollector } from "./benchmark-metrics.js";
 import type {
   BenchmarkConfig,
   BenchmarkEventRecorder,
@@ -13,6 +14,7 @@ import type {
 } from "./contracts.js";
 
 class MemoryRecorder implements BenchmarkEventRecorder {
+  private readonly collector = new BenchmarkMetricsCollector();
   eventCount = 0;
   toolEventCount = 0;
   closed = false;
@@ -20,6 +22,11 @@ class MemoryRecorder implements BenchmarkEventRecorder {
   record(event: AgentEvent) {
     this.eventCount += 1;
     if (event.type === "tool") this.toolEventCount += 1;
+    this.collector.record(event);
+  }
+
+  metrics(startedAt: Date, finishedAt: Date) {
+    return this.collector.summary(startedAt, finishedAt);
   }
 
   async close() {
@@ -42,6 +49,7 @@ test("runs one development session and returns benchmark metrics", async () => {
   assert.equal(result.status, "succeeded");
   assert.equal(result.durationMs, 1_000);
   assert.equal(result.harness, "blame");
+  assert.equal(result.metrics.tools.calls, 0);
   assert.equal(result.usage?.aggregateUsage?.totalInputTokens, 12);
   assert.equal(inputs[0]?.summary, "Fix the task");
   assert.equal(recorder.closed, true);

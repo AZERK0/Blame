@@ -168,6 +168,7 @@ function benchmarkResult(input: {
     eventCount: input.recorder.eventCount,
     finishedAt: input.finishedAt.toISOString(),
     harness: input.config.harness,
+    metrics: input.recorder.metrics(input.startedAt, input.finishedAt),
     modelId: input.config.modelId,
     providerId: input.config.providerId,
     schemaVersion: 1,

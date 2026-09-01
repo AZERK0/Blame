@@ -37,6 +37,7 @@ export type BenchmarkResult = {
   eventCount: number;
   finishedAt: string;
   harness: BenchmarkHarness;
+  metrics: BenchmarkMetrics;
   modelId: string;
   providerId: string;
   schemaVersion: 1;
@@ -47,6 +48,61 @@ export type BenchmarkResult = {
   toolEventCount: number;
   usage?: AgentUsageSummary;
   verified?: boolean;
+};
+
+export type BenchmarkMetrics = {
+  context: BenchmarkContextMetrics;
+  editing: BenchmarkEditingMetrics;
+  navigation: BenchmarkNavigationMetrics;
+  toolFreeGaps: BenchmarkToolFreeGapMetrics;
+  tools: BenchmarkToolMetrics;
+  toolsByName: Record<string, BenchmarkNamedToolMetrics>;
+};
+
+export type BenchmarkContextMetrics = {
+  averageInputTokens: number;
+  compactions: number;
+  maximumInputTokens: number;
+  modelRequests: number;
+  toolPayloadBytes: number;
+  toolPayloadReplayExposureBytes: number;
+};
+
+export type BenchmarkEditingMetrics = {
+  attempts: number;
+  blocked: number;
+  firstAttemptMs?: number;
+  firstSuccessMs?: number;
+  hybridCalls: number;
+  patchOperations: number;
+  successful: number;
+  symbolOperations: number;
+};
+
+export type BenchmarkNavigationMetrics = {
+  deduplicatedReads: number;
+  readCalls: number;
+  returnedBytes: number;
+  searchCalls: number;
+};
+
+export type BenchmarkToolFreeGapMetrics = {
+  countOverThirtySeconds: number;
+  maximumMs: number;
+  totalOverThirtySecondsMs: number;
+};
+
+export type BenchmarkToolMetrics = BenchmarkNamedToolMetrics & {
+  distinctTools: number;
+};
+
+export type BenchmarkNamedToolMetrics = {
+  blockedCalls: number;
+  calls: number;
+  failedCalls: number;
+  inputBytes: number;
+  outputBytes: number;
+  replayExposureBytes: number;
 };
 
 export type BenchmarkPaths = {
@@ -71,6 +127,7 @@ export type BenchmarkEventRecorder = {
   readonly eventCount: number;
   readonly toolEventCount: number;
   close(): Promise<void>;
+  metrics(startedAt: Date, finishedAt: Date): BenchmarkMetrics;
   record(event: AgentEvent): void;
 };
 
