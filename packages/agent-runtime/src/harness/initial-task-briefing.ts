@@ -2,6 +2,7 @@ import { lightCapabilityDescription } from "./light-capabilities.js";
 import { parseCode } from "./code-intelligence.js";
 import type { LightTaskContract } from "./light-contracts.js";
 import type { LightWorkspaceExecutor } from "./light-executor.js";
+import { routedView } from "./light-navigation.js";
 import { readTaskCatalog } from "./task-catalog.js";
 import { WorkspaceFiles, languageName } from "./workspace-files.js";
 import { resolvePackageManager } from "./package-manager-runtime.js";
@@ -86,11 +87,11 @@ function briefingLines(input: BriefingFacts) {
   return [
     `Project: ${projectDescription(input.snapshot.files)}.`,
     `Project map: ${input.projectMap.join(", ") || "root only"}.`,
-    `Key files: ${input.keyFiles.join(", ") || "none detected"}.`,
+    `Config inventory: ${input.keyFiles.join(", ") || "none detected"}.`,
     `Packages: ${packageDescription(input.packages)}.`,
     `Package manager: ${input.manager ?? "not detected"}; ${input.managerAvailability}.`,
     ...(input.environment ? [`Runtime variables: ${input.environment}.`] : []),
-    `Scripts: ${scripts || "none detected"}.`,
+    `Task IDs: ${scripts || "none detected"}; pass listed IDs directly to run_task.`,
     `Git: ${git}.`,
     lightCapabilityDescription(),
     ...(input.candidates.length
@@ -146,10 +147,7 @@ async function briefingTargets(
   const symbols = await Promise.all(
     paths.map((path) => briefingSymbolTarget(files, path, terms)),
   );
-  return [
-    ...symbols.filter((value): value is string => Boolean(value)),
-    ...paths,
-  ].slice(0, 8);
+  return paths.map((path, index) => symbols[index] ?? path).slice(0, 8);
 }
 
 async function briefingSymbolTarget(
@@ -160,6 +158,11 @@ async function briefingSymbolTarget(
   try {
     if ((await files.fileSize(path)) > 512_000) return undefined;
     const content = (await files.read(path)).content;
+    if (
+      routedView({ target: path }, path, content.toString("utf8").length) ===
+      "raw"
+    )
+      return undefined;
     const symbols = parseCode(path, content)
       .symbols.map((symbol) => ({
         name: symbol.qualified_name,

@@ -10,7 +10,6 @@ import {
   type LightToolResult,
   type LightTaskContract,
 } from "./light-contracts.js";
-import { lightCapabilityDescription } from "./light-capabilities.js";
 import type {
   LightToolContext,
   LightWorkspaceExecutor,
@@ -40,8 +39,7 @@ export function lightSemanticHarnessTools(
         sessionId: options.taskContract?.session_id ?? "unscoped-session",
         taskContract: options.taskContract,
       });
-  const capabilities = lightCapabilityDescription();
-  return lightWorkspaceTools(workspace, capabilities);
+  return lightWorkspaceTools(workspace);
 }
 
 type LightWorkspacePort = Pick<
@@ -87,14 +85,11 @@ function executorInvocation(
     );
 }
 
-function lightWorkspaceTools(
-  workspace: LightWorkspacePort,
-  capabilities: string,
-) {
+function lightWorkspaceTools(workspace: LightWorkspacePort) {
   return [
     searchCodeTool(workspace),
-    readCodeTool(workspace, capabilities),
-    editCodeTool(workspace, capabilities),
+    readCodeTool(workspace),
+    editCodeTool(workspace),
     runTaskTool(workspace),
   ];
 }
@@ -109,19 +104,21 @@ function searchCodeTool(workspace: LightWorkspacePort) {
   });
 }
 
-function readCodeTool(workspace: LightWorkspacePort, capabilities: string) {
+function readCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "read_code",
-    description: `Read a file, a compact bounded directory listing, an sN alias, path#qualifiedName, @changes, or @capabilities. Omit view normally: auto reads small files raw and routes large supported files to compact outlines. Raw and already_in_context results include non-overlapping editTargets; nested outline items identify their parent with containedBy. Requesting symbol for a lexical alias promotes its enclosing symbol. Explicit raw is intended only for small or non-structural files; generated outputs and node_modules are unavailable. Unsupported symbolic views fall back to raw in this call.\n${capabilities}`,
+    description:
+      "Read a file, compact directory, sN alias, path#qualifiedName, @changes, or @capabilities. Omit view normally: small files route to raw and large supported files to outlines. Raw results include non-overlapping editTargets; nested items identify their containedBy parent. A lexical alias promotes to its enclosing symbol. Generated outputs and node_modules are unavailable; unsupported symbolic views fall back to raw.",
     schema: lightReadCodeInputSchema,
     execute: (input, context) => workspace.readCode(input, context),
   });
 }
 
-function editCodeTool(workspace: LightWorkspacePort, capabilities: string) {
+function editCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "edit_code",
-    description: `Apply one atomic batch of symbolic replacements and native Cline Apply Patch operations. Prefer symbol operations inside existing supported symbols; use focused patches for imports, raw/config files, new files, or small cross-symbol changes. Append code or CSS with insert_after on a returned editTarget instead of patching a generic delimiter. Do not replace both an outline item and an item containedBy it in one batch. Independent operations in one call remain atomic. Multi-file Cline patches are accepted and attributed automatically. Operations share one snapshot, reject overlaps, parse only final states, and never require hashes or revisions.\n${capabilities}`,
+    description:
+      "Apply one atomic batch of symbol operations and native Cline patches. Prefer symbols within existing supported targets; use focused patches for imports, raw/config files, new files, or small cross-symbol changes. Append with insert_after on an editTarget. Do not combine a parent and its containedBy child. Multi-file patches are attributed automatically. Operations share one snapshot, reject overlaps, parse final states, and need no hashes or revisions.",
     schema: lightEditCodeInputSchema,
     execute: (input, context) =>
       workspace.editCode(input, {

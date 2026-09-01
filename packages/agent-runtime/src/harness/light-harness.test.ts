@@ -272,6 +272,8 @@ test("tool surface contains only the four workspace tools", async () => {
       ]);
       const edit = tools.find(({ name }) => name === "edit_code");
       assert.match(JSON.stringify(edit?.inputSchema), /"maxLength":2097152/u);
+      for (const tool of tools)
+        assert.doesNotMatch(tool.description, /Symbol read\/edit:/u);
     },
   );
 });
@@ -593,7 +595,7 @@ test("the briefing exposes package topology, key files, and stack versions", asy
         name: "api",
         scripts: { dev: "node src/server.js" },
       }),
-      "packages/api/src/server.ts": "export const server = true\n",
+      "packages/api/src/server.ts": `export const server = true\nexport const padding = "${"x".repeat(8_100)}"\n`,
       "prisma/schema.prisma": "model User {\n  id Int @id\n}\n",
       ".env.example": "DATABASE_URL=postgresql://localhost/example\n",
       "tsconfig.json": "{}\n",
@@ -615,11 +617,36 @@ test("the briefing exposes package topology, key files, and stack versions", asy
       );
       assert.match(briefing ?? "", /must not be replaced/u);
       assert.match(briefing ?? "", /scripts build,test/u);
+      assert.match(briefing ?? "", /pass listed IDs directly to run_task/u);
       assert.match(briefing ?? "", /packages\/api\/src\/server\.ts#server/u);
       assert.doesNotMatch(briefing ?? "", /scripts dev/u);
       assert.match(briefing ?? "", /must not be started manually/u);
       assert.match(briefing ?? "", /node_modules/u);
       assert.ok((briefing?.length ?? Infinity) < 6_000);
+    },
+  );
+});
+
+test("the briefing uses one auto-routed target per small candidate", async () => {
+  await withWorkspace(
+    {
+      "src/invoice.ts":
+        "export function calculateDiscount(value: number) { return value }\n",
+      "test/invoice.test.ts": "const invoice = 1\n",
+    },
+    async (root) => {
+      const briefing = await createInitialTaskBriefing({
+        workspaceRoot: root,
+        taskContract: {
+          ...contract("briefing-small-target"),
+          objective: "Update calculateDiscount and its invoice test",
+        },
+      });
+      assert.match(
+        briefing ?? "",
+        /Likely targets: test\/invoice\.test\.ts, src\/invoice\.ts\./u,
+      );
+      assert.doesNotMatch(briefing ?? "", /#calculateDiscount|#invoice/u);
     },
   );
 });
@@ -1225,7 +1252,9 @@ test("nested CSS outline targets identify their containing target", async () => 
     );
     const items = array(outline.items).map(record);
     const media = items.find((item) => item.kind === "css_media");
-    const project = items.find((item) => item.qualified_name === "@media(max-width: 600px)::.projects");
+    const project = items.find(
+      (item) => item.qualified_name === "@media(max-width: 600px)::.projects",
+    );
     assert.equal(project?.containedBy, media?.alias);
   });
 });
