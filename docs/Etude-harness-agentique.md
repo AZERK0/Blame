@@ -2473,6 +2473,91 @@ Les prebuilds natifs sont présents dans les artefacts de dépendances, mais les
 
 Le nettoyage final ferme le gate structurel. Les primitives de commit et de dépendances sont désormais des services Light directs ; le runtime ne conserve plus les exécuteurs, protocoles, projections, mémoires, gouverneurs, stores, éditeurs spécialisés et suites de compatibilité v1/v2/v3. Après les corrections US-027, le dossier du harness passe de 89 fichiers TypeScript et 41 327 lignes dans la révision de référence à 34 fichiers et 8 521 lignes, tests compris, soit −79,4 %. Hors tests, il passe de 77 fichiers et 30 595 lignes à 33 fichiers et 7 382 lignes, soit −75,9 %. Le payload distant utilise encore le nom de binaire `blame-semantic-harness` pour compatibilité de provisioning, mais sa liste blanche n’embarque que le graphe d’exécution Light et ne dépend plus du package de contrats historique.
 
+### 21.31 Boucle headless autonome du 1er septembre 2026
+
+#### Protocole et portée de la preuve
+
+La boucle a commencé sur `main` à la révision `1e28deb1`. Le dépôt était propre ; cette révision, qui contenait déjà les corrections de remplacement exporté, de conversion UTF-16/UTF-8, d’outline borné, de limite mécanique à 2 MiB et de parse TypeScript strict, a été traitée comme la candidate fournie. Ces correctifs historiques n’ont pas été réimplémentés. Les tests existants ont notamment confirmé qu’un fichier TypeScript invalide ne peut pas produire `parse: passed`.
+
+Les credentials ont été chargés uniquement depuis `.env.terminal-bench` avec export silencieux avant chaque build ou run. Le fichier n’a été ni modifié, ni copié dans un workspace, ni ajouté à Git. Les comparaisons ont gardé les mêmes valeurs de provider, modèle et effort de raisonnement sans les consigner, ainsi que le même prompt, la même révision de fixture, 64 itérations et 2 400 secondes. Les workspaces ciblés ont été recréés depuis des commits Git explicites. Les huit runs Portfolio ont tous commencé depuis `d4d3d1f9f41714b5ca6fce68213ea7a521c776b1`.
+
+Les artefacts expurgés sont sous `.blame/benchmarks/harness-loop/runs/` et restent ignorés par Git. Une tentative ciblée de notice, exécutée par erreur depuis la révision hybride la plus récente de la fixture au lieu de sa révision symbolique, a été exclue de toute comparaison de qualité. Deux démarrages antérieurs sans appel provider et un démarrage local sans artefacts `dist` ont également été exclus. Le run Portfolio 5 est conservé comme observation de panne, mais pas comme preuve de performance : la partition disposait d’octets libres et n’avait plus d’inodes, ce qui a produit `ENOSPC`.
+
+#### Cycles avant/après et décisions
+
+| Hypothèse | Avant | Correctif minimal | Après | Décision |
+| --- | --- | --- | --- | --- |
+| Une lecture raw partiellement couverte par un symbole est dédupliquée à tort | 69,37 s, 12 itérations, 15 appels, première édition à 48,77 s, 66 468 tokens d’entrée, 4 éditions dont 2 bloquées | La couverture raw exige désormais une plage contiguë réellement émise | 21,43 s, 5 itérations, 6 appels, première édition à 13,94 s, 24 256 tokens d’entrée, une édition réussie | Conservé, `3fa15934` |
+| Un script de formatage peut écrire hors journal | Portfolio 1 : `format` a modifié trois fois `next.config.ts` sans reçu ; diff non vérifiable | Refus des tâches projet et commandes `prettier --write`, `eslint --fix` et `prisma format` | Portfolio 2 : aucune écriture de formateur ; tous les chemins source finaux sont couverts par des reçus | Conservé sur invariant d’atomicité, `25d58438` ; la baisse de durée d’un seul run n’est pas causale |
+| Le dialecte Apply Patch natif et non ambigu est rejeté pour des enveloppes redondantes manquantes | Deux répétitions : moyenne 63,05 s, 12,5 appels, 63 290 tokens d’entrée, 0,00621 $, 2,5 rejets d’édition | Normalisation des headers omis, première opération implicite, ajout pur et fragments séparés, sans fuzz | Deux répétitions : moyenne 46,81 s, 9 appels, 43 560 tokens d’entrée, 0,00464 $, un rejet | Conservé : −25,8 % de durée, −28,0 % d’appels, −31,2 % d’entrée et −25,2 % de coût, `c12b06aa` |
+| `build` reste ambigu lorsqu’un identifiant de tâche imbriqué porte le même nom | 20,13 s, 6 appels ; le mauvais candidat est sélectionné et le résultat est faux | Priorité à l’identifiant exact avant script exact puis kind | 13,95 s, 3 appels ; valeur et build exacts vérifiés | Conservé pour correction fonctionnelle, `3f469f95` |
+| Lire un dossier produit une erreur et force des recherches de remplacement | 48,50 s, 11 appels, première édition à 30,80 s, 47 703 tokens d’entrée, une recherche | Listing trié d’un niveau, borné à 64 entrées, avec couverture et déduplication | 37,58 s, 10 appels, première édition à 18,78 s, 37 352 tokens d’entrée, aucune recherche | Conservé, `f34410e6` ; les 2 072 octets utiles du listing remplacent 1 680 octets de réponses de contournement |
+| Le runner traite une erreur agent récupérable comme terminale | Portfolio 4 s’arrête au premier échec récupérable de `finish_task` | Seules les erreurs non récupérables terminent le runner | Le test attend le vrai `done` ; les runs suivants poursuivent les corrections | Conservé sur test déterministe, `68ba30ba` |
+| Un alias `path#sN` sûr est rejeté après réindexation | Échec observé une fois sur Portfolio 4 | Résolution de `sN` seulement si le chemin qualifiant correspond exactement | Test de relocalisation qualifiée passant ; aucun élargissement inter-fichier | Conservé, `acbdbc43` |
+| Les validations héritent du `NODE_ENV=development` et des variables privées du runner | Sur le diff exact de Portfolio 5, `next build` échoue avec l’avertissement `NODE_ENV` puis le prerender de `_global-error`; le même diff avec `NODE_ENV` retiré passe | Environnement enfant reconstruit sans `NODE_ENV` ni variable `BLAME_*`, avec `extendEnv: false`, pour tâches, dépendances et Prisma | Les builds automatiques Portfolio 7 et 8 passent à la dernière révision sans avertissement | Conservé sur preuve causale du même diff, `1143ea03` |
+| `finish_task` répète une validation environnementale impossible à révision constante | Portfolio 6 exécute deux fois le même build indisponible aux itérations 33 et 34 | Réutilisation explicite d’une validation environnementale courante comme `validation_unavailable` | Test déterministe passant ; plus de relance terminale identique observée | Conservé, `085198ab` |
+| La notice d’auto-approbation est publiée après `done` | Un événement notice apparaît après le terminal sur les runs Portfolio 1, 2, 3, 5, 6 et 7 | Publication de la notice avant l’appel à `cline.start()` | Zéro événement post-terminal sur le replay ciblé et Portfolio 8 | Conservé ; correction à la source, sans filtre runner, `0aeda445` |
+| Un `cwd` absolu mais intérieur au worktree est rejeté alors que son intention est certaine | Replay exact : `blocked(environment)`, 24,61 s et 0,00284 $ | Conversion d’un chemin absolu intérieur en chemin relatif ; un chemin extérieur reste bloqué | Même replay : commande `ok` et cwd exact, 21,86 s et 0,00254 $ | Conservé pour le gain fonctionnel ; les deux builds de fixture restent volontairement en échec et les écarts de coût ne prouvent rien, `f96093eb` |
+
+La série hybride est la seule comparaison ciblée répétée deux fois de part et d’autre. Les autres écarts de durée ou de tokens à une répétition sont des signaux, pas une estimation statistique. Le correctif `cwd` a été comparé avec deux runners construits depuis les révisions avant et après, sur le même chemin absolu, le même commit de fixture, le même prompt et le même `task-id`.
+
+#### Runs d’intégration Portfolio V4
+
+Dans la colonne éditions et tâches, `ok/bloqué` compte les appels terminés. Les tokens sont séparés en entrée, sortie et cache. `Post` est le nombre d’événements persistés après le premier terminal réel.
+
+| Run | Statut réel | Durée ; itérations ; appels | Première édition réussie | Tokens entrée / sortie / cache ; coût | Navigation | Éditions ; tâches | Post | Conclusion qualité |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| P1 | terminé, non vérifié | 633,06 s ; 53 ; 81 | 69,82 s, it. 6 | 1 706 325 / 25 244 / 1 622 016 ; 0,07959 $ | 22 lectures, 4 recherches | 31 (20/11) ; 24 (13/11) | 1 | Diff fonctionnel mais mutation silencieuse par formatter |
+| P2 | terminé, non vérifié | 481,64 s ; 31 ; 49 | 152,70 s | 1 000 404 / 21 857 / 873 472 ; 0,06908 $ | 16 lectures, 6 recherches | 8 (6/2) ; 17 (5/12) | 1 | Écritures indirectes supprimées ; validations encore incomplètes |
+| P3 | terminé, non vérifié | 728,97 s ; 43 ; 80 | 269,20 s | 1 938 637 / 33 315 / 1 850 368 ; 0,09464 $ | 22 lectures, 7 recherches | 20 (13/7) ; 29 (15/14) | 1 | Directory, patch hybride, alias et build `NODE_ENV` révèlent quatre causes distinctes |
+| P4 | échec runner prématuré | 635,64 s ; 49 ; 63 | 47,43 s | 1 833 714 / 26 762 / 1 709 056 ; 0,09123 $ | 16 lectures, 2 recherches | 26 (17/9) ; 17 (5/12) | 0 | Une erreur récupérable est prise pour le terminal |
+| P5 | échec à 64 itérations | 783,93 s ; 64 ; 86 | 139,54 s | 3 043 394 / 33 326 / 2 929 664 ; 0,12133 $ | 30 lectures, 4 recherches | 26 (20/6) ; 23 (6/17) | 1 | Run contaminé par `ENOSPC`; exclu des preuves de performance |
+| P6 | terminé, validation indisponible | 509,78 s ; 34 ; 68 | 130,82 s, it. 4 | 1 253 213 / 22 279 / 1 183 232 ; 0,06440 $ | 21 lectures, 4 recherches | 12 (10/2) ; 28 (13/15) | 1 | L’isolation d’environnement permet le build manuel ; validation finale répétée |
+| P7 | terminé et vérifié | 658,27 s ; 45 ; 68 | 156,81 s, it. 7 | 1 771 802 / 29 062 / 1 679 360 ; 0,08695 $ | 20 lectures, 4 recherches | 20 (13/7) ; 23 (10/13) | 1 | Build automatique frais ; premier run pleinement vérifié |
+| P8 | terminé et vérifié | 551,21 s ; 38 ; 58 | 257,22 s, it. 11 | 1 285 626 / 24 499 / 1 214 464 ; 0,06792 $ | 19 lectures, 3 recherches | 15 (12/3) ; 20 (7/13) | 0 | Build automatique frais et lifecycle propre ; formatage encore en échec |
+
+P8 réduit par rapport à P7 la durée de 16,3 %, les appels de 14,7 %, les itérations de 15,6 %, les tokens d’entrée de 27,4 %, la sortie de 15,7 %, le cache de 27,7 % et le coût de 21,9 %. En revanche, la première édition régresse de 100,40 s. Comme l’ordre n’a pas été randomisé et que plusieurs correctifs séparent les runs, ces chiffres décrivent les observations et ne prouvent pas que chaque baisse vient du harness.
+
+P8 a renvoyé 30 323 octets sérialisés sur 19 lectures, dont 22 268 octets de contenu, et 1 514 octets sur trois recherches. Aucune lecture strictement identique n’a été demandée ; deux lectures déjà couvertes ont produit `already_in_context`. Les 15 appels d’édition comprenaient un hybride bloqué et 14 textuels, dont 12 réussis et deux bloqués. Aucun conflit ni retry automatique n’a été observé. Les trois rejets d’édition étaient un parse final TSX avec ligne et cause, un `Add File` visant un fichier existant et un contexte de patch ambigu. Les 13 tâches bloquées correspondaient à des erreurs de code réelles, une inspection interdite de dépendances, une variable Prisma absente, deux replays de build dédupliqués, un formateur mutateur refusé, un format check réellement en échec et le `cwd` absolu intérieur corrigé ensuite.
+
+Six périodes sans tool ont dépassé 30 secondes sur P8 : 95,41 s, 50,93 s, 41,24 s, 39,55 s, 38,40 s et 32,81 s. Elles précédaient principalement la génération ou la correction de gros patches. Aucune règle de type « éditer avant N tours » n’a été ajoutée : la cause amont restante n’est pas suffisamment isolée pour justifier un gouverneur.
+
+Le build terminal P8 est attaché à `src_a6ddafcf865635d31a133041a1bbf14e`, exactement la révision annoncée par la completion. Il compile Next.js, TypeScript, la page statique et `/api/projects`. Le lint et la génération Prisma ont réussi à des révisions antérieures ; le résumé final les décrit comme exécutés avec succès mais ne dit pas qu’ils sont frais. `format:check` échoue honnêtement sur huit fichiers, dont des fichiers touchés et `next.config.ts` préexistant. Une validation Prisma indépendante, exécutée après le run avec une URL PostgreSQL factice non joignable, confirme uniquement que le schéma final est valide ; ce n’est pas une preuve produite par l’agent.
+
+Le headless n’a produit aucune preuve visuelle. Une vérification indépendante dans le navigateur local a rendu la transition et la section sombre Three.js, constaté le fallback après une réponse API 503 attendue sans base, activé le projet Météor par bouton puis Écho par `ArrowRight`. Le drag et Maj + molette n’ont pas été automatisés. Cette inspection ne doit donc pas être attribuée à P8 et ne couvre pas toute l’interaction.
+
+#### Causes racines, tests et commandes
+
+Les causes racines démontrées sont toutes mécaniques : couverture raw non contiguë, mutations de formatters hors journal, enveloppes Apply Patch redondantes imposées, résolution par sous-chaîne des tâches, absence de listing de dossier, terminal runner trop large, alias qualifié non reconnu, fuite de l’environnement du runner, répétition d’une preuve indisponible, notice publiée après le terminal et rejet d’un cwd intérieur. Les erreurs de code de P8 — type Three.js, configuration Prisma 7, adapter PostgreSQL manquant et initialisation Prisma — appartiennent au code produit, pas au harness. `ENOSPC` appartient à l’infrastructure. L’instruction Portfolio n’était pas ambiguë ; la fixture cwd avait en revanche un build volontairement non satisfiable pour isoler la commande et ne sert pas de score applicatif.
+
+Seize tests de non-régression ont été ajoutés : quinze dans l’agent runtime et un dans le runner. Ils couvrent la lecture contiguë, l’alias qualifié, le cwd intérieur et l’évasion extérieure, l’isolation d’environnement, les formateurs, la sélection exacte de tâche, le listing de dossier, le batch import plus symbole exporté, la réutilisation d’une validation indisponible, cinq formes normalisées de patch, l’ordre de la notice de démarrage et l’attente après erreur récupérable. La suite finale compte 220 tests runtime et 6 tests runner, tous passants. ESLint, typecheck et builds des packages concernés passent également. Deux échecs transitoires `ENOTEMPTY` de nettoyage ont disparu lors du replay identique et ne sont pas présentés comme des corrections produit.
+
+Les familles de commandes réellement exécutées sont les suivantes :
+
+```text
+git status --short
+git diff --check
+git worktree add --detach <workspace> <revision>
+pnpm --dir <workspace> install --offline --frozen-lockfile
+pnpm --filter @blame/agent-runtime test|lint|typecheck|build
+pnpm --filter @blame/benchmark-runner test|lint|typecheck|build
+pnpm --filter @blame/benchmark-runner... build
+BLAME_HEADLESS_DEV=true NODE_ENV=development pnpm benchmark:agent -- run ... --max-iterations 64 --timeout-seconds 2400
+env -u NODE_ENV pnpm --filter web build
+DATABASE_URL=<valeur factice> pnpm --filter web exec prisma validate
+pnpm --filter web dev --hostname 127.0.0.1 --port <port isolé>
+git add <fichiers du correctif>
+git commit -m <intention unique>
+```
+
+#### Correctifs écartés et limites ouvertes
+
+Les mécanismes suivants ont été explicitement écartés : quota de lectures, obligation de muter avant une itération, retry automatique aveugle, nouvelle mémoire parallèle, plafond sémantique à 10 000 caractères, exécution des formateurs mutateurs, filtrage aval des événements post-terminaux et blocage général de `prisma generate`. Ils auraient soit masqué la cause, soit supprimé une capacité légitime. Le run de notice sur la mauvaise révision et les tendances de performance de P5 ont été abandonnés comme preuves.
+
+Les critères de sortie ne sont pas tous clos. Deux intégrations successives P7 et P8 sont vérifiées, mais P7 précède la correction de lifecycle et possède encore un événement post-terminal ; un seul run d’intégration est entièrement propre après cette correction. L’échantillon hybride répété confirme une tendance ciblée, pas une tendance Portfolio randomisée. P8 conserve 16 appels bloqués, six longues phases sans tool, un temps avant première édition de 4 min 17 s, aucune édition symbolique réussie, un formatage final imparfait et aucune preuve automatisée du drag ou de Maj + molette. Les écritures légitimes de génération Prisma ne sont pas encore journalisées comme mutations source. Résoudre proprement la preview headless et la journalisation du code généré demanderait un changement architectural plus risqué que les correctifs locaux de cette boucle.
+
+La conclusion est donc bornée : le harness est plus correct, plus simple à utiliser sur les cas isolés et deux résultats Portfolio consécutifs passent le build courant. La série hybride apporte un gain live répété ; aucune baisse statistiquement établie du p95 Portfolio, aucun taux d’erreur provider global et aucune preuve de release multi-environnement ne sont revendiqués.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)
