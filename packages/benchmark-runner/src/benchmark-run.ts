@@ -1,4 +1,8 @@
-import { BlameAgentRuntime, type AgentEvent } from "@blame/agent-runtime";
+import {
+  BlameAgentRuntime,
+  createClineBaselineRuntime,
+  type AgentEvent,
+} from "@blame/agent-runtime";
 import type {
   BenchmarkConfig,
   BenchmarkEventRecorder,
@@ -18,7 +22,7 @@ export async function runBenchmark(
   const startedAt = (dependencies.now ?? currentDate)();
   const recorder = dependencies.createRecorder();
   const terminal = terminalObserver(recorder);
-  const runtime = dependencies.createRuntime(terminal.events);
+  const runtime = dependencies.createRuntime(terminal.events, config.harness);
   let outcome;
   try {
     outcome = await executeSession(
@@ -63,8 +67,13 @@ async function executeSession(
   return { failure, sessionId, terminalEvent, usage };
 }
 
-export function runtimeFactory(events: { emit(event: AgentEvent): void }) {
-  return new BlameAgentRuntime(events);
+export function runtimeFactory(
+  events: { emit(event: AgentEvent): void },
+  harness: BenchmarkConfig["harness"],
+) {
+  return harness === "cline"
+    ? createClineBaselineRuntime(events)
+    : new BlameAgentRuntime(events);
 }
 
 function sessionInput(config: BenchmarkConfig): BenchmarkSessionInput {
@@ -158,6 +167,7 @@ function benchmarkResult(input: {
     error: resultError(input.failure, input.terminalEvent),
     eventCount: input.recorder.eventCount,
     finishedAt: input.finishedAt.toISOString(),
+    harness: input.config.harness,
     modelId: input.config.modelId,
     providerId: input.config.providerId,
     schemaVersion: 1,

@@ -52,6 +52,7 @@ function benchmarkConfig(
     apiUrl: requiredEnvironment(environment, "BLAME_API_URL"),
     apiToken: requiredEnvironment(environment, "BLAME_API_TOKEN"),
     credentialLabel: optionalEnvironment(environment, "BLAME_CREDENTIAL_LABEL"),
+    harness: harnessValue(options.get("harness")),
     instruction,
     maxIterations: positiveInteger(
       options.get("max-iterations") ?? environment.BLAME_MAX_ITERATIONS,
@@ -70,6 +71,12 @@ function benchmarkConfig(
       ) * 1_000,
     workspaceRoot: resolve(cwd, options.get("workspace") ?? cwd),
   };
+}
+
+function harnessValue(value: string | undefined) {
+  if (value === undefined || value === "blame") return "blame" as const;
+  if (value === "cline") return "cline" as const;
+  throw new HeadlessConfigurationError(`Invalid harness: ${value}.`);
 }
 
 function benchmarkPaths(options: Map<string, string>, cwd: string) {

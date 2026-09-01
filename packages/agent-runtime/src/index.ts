@@ -1,4 +1,7 @@
-export { BlameAgentRuntime } from "./cline-runtime.js";
+export {
+  BlameAgentRuntime,
+  createClineBaselineRuntime,
+} from "./cline-runtime.js";
 export type {
   LightWorkspaceExecutionRequest,
   LightWorkspaceExecutor,

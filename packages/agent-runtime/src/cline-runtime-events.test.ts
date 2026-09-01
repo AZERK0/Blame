@@ -21,6 +21,7 @@ import {
   buildDevelopmentSystemPrompt,
   BlameAgentRuntime,
   backendKey,
+  clineDefaultToolPolicies,
   clineErrorMetadata,
   coreBackendOptions,
   developmentUserInput,
@@ -55,6 +56,54 @@ test("exposes actionable metadata for typed Cline account errors", () => {
 test("uses the local backend when no workspace backend is provided", () => {
   assert.equal(backendKey(), "local");
   assert.deepEqual(coreBackendOptions(), { backendMode: "local" });
+});
+
+test("starts a Cline baseline without Blame harness tools", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "cline-baseline-runtime-"));
+  const originalFetch = globalThis.fetch;
+  let capturedStart: ClineCoreStartInput | undefined;
+  const core = {
+    async dispose() {},
+    async list() {
+      return [];
+    },
+    async start(input: ClineCoreStartInput) {
+      capturedStart = input;
+      return { result: { status: "done" }, sessionId: input.config.sessionId! };
+    },
+    async subscribe() {
+      return () => undefined;
+    },
+  };
+  globalThis.fetch = async () => providerCredentialResponse();
+  const runtime = new BlameAgentRuntime(undefined, {
+    createCore: async () => core as never,
+    developmentHarness: "cline",
+  });
+
+  try {
+    await runtime.sessions.startDevelopment({
+      apiConnection: { url: "https://api.example" },
+      cwd: workspace,
+      modelId: "model",
+      providerId: "provider",
+      summary: "Change the greeting",
+      title: "Ignored benchmark label",
+      workspaceRoot: workspace,
+    });
+    assert.equal(capturedStart?.prompt, "Change the greeting");
+    assert.match(capturedStart?.config.systemPrompt ?? "", /You are Cline/u);
+    assert.equal(capturedStart?.config.extraTools, undefined);
+    assert.deepEqual(capturedStart?.localRuntime?.configExtensions, []);
+    assert.deepEqual(
+      capturedStart?.toolPolicies,
+      clineDefaultToolPolicies(),
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    await runtime.shutdown();
+    await rm(workspace, { force: true, recursive: true });
+  }
 });
 
 test("tags session events with their execution identity", () => {

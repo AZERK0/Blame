@@ -11,6 +11,7 @@ export type BenchmarkConfig = {
   apiUrl: string;
   apiToken: string;
   credentialLabel?: string;
+  harness: BenchmarkHarness;
   instruction: string;
   maxIterations: number;
   modelId: string;
@@ -20,6 +21,8 @@ export type BenchmarkConfig = {
   timeoutMs: number;
   workspaceRoot: string;
 };
+
+export type BenchmarkHarness = "blame" | "cline";
 
 export type BenchmarkStatus =
   | "cancelled"
@@ -33,6 +36,7 @@ export type BenchmarkResult = {
   error?: string;
   eventCount: number;
   finishedAt: string;
+  harness: BenchmarkHarness;
   modelId: string;
   providerId: string;
   schemaVersion: 1;
@@ -60,6 +64,7 @@ export type BenchmarkRuntime = {
 
 export type BenchmarkRuntimeFactory = (
   events: AgentRuntimeEvents,
+  harness: BenchmarkHarness,
 ) => BenchmarkRuntime;
 
 export type BenchmarkEventRecorder = {

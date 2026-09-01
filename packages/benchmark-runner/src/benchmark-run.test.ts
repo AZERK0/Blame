@@ -41,6 +41,7 @@ test("runs one development session and returns benchmark metrics", async () => {
   });
   assert.equal(result.status, "succeeded");
   assert.equal(result.durationMs, 1_000);
+  assert.equal(result.harness, "blame");
   assert.equal(result.usage?.aggregateUsage?.totalInputTokens, 12);
   assert.equal(inputs[0]?.summary, "Fix the task");
   assert.equal(recorder.closed, true);
@@ -135,6 +136,7 @@ function benchmarkConfig(): BenchmarkConfig {
   return {
     apiToken: "token",
     apiUrl: "https://api.example.test",
+    harness: "blame",
     instruction: "Fix the task",
     maxIterations: 64,
     modelId: "model",

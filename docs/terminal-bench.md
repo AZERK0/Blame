@@ -66,4 +66,6 @@ pnpm benchmark:agent -- run \
 
 The direct run also requires `BLAME_API_URL`, `BLAME_API_TOKEN`, `BLAME_PROVIDER_ID`, and `BLAME_MODEL_ID`.
 
+Pass `--harness cline` to run the same instruction through the default Cline system prompt and native workspace tools. This comparison mode keeps Blame's credential transport, redacted event recording, model configuration, timeout, and usage reporting, but does not add the Blame briefing, semantic tools, specialist, plugins, or completion contract. The default is `--harness blame`.
+
 Exit code `0` means the agent reached a successful terminal event. Exit code `1` means a runtime or agent failure, `2` means invalid configuration, `124` means timeout, and `130` means cancellation.

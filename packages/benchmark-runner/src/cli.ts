@@ -23,6 +23,7 @@ Options:
   --workspace <path>
   --task-id <id>
   --events <path>
+  --harness <blame|cline>
   --result <path>
   --max-iterations <count>
   --timeout-seconds <seconds>`;

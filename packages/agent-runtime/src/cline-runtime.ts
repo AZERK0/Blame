@@ -277,6 +277,7 @@ type PendingApproval = {
 };
 
 type RuntimeStartSessionInput = StartSessionInput & {
+  clineDefaultTools?: boolean;
   compaction?: CoreCompactionConfig;
   enableAgentTeams?: boolean;
   enableBuiltInSkills?: boolean;
@@ -364,6 +365,7 @@ type DevelopmentPromptInput = Pick<
 
 type RuntimeOptions = PreviewToolRuntimeOptions & {
   createCore?(backend?: AgentBackendConfig): Promise<ClineCore>;
+  developmentHarness?: "blame" | "cline";
   openExternalUrl?(url: string): void;
   git?(cwd: string, args: string[]): Promise<string>;
   lightWorkspace?: LightWorkspaceExecutor;
@@ -428,6 +430,7 @@ export class BlameAgentRuntime {
   private sessionApiConnections = new Map<string, ApiConnection>();
   private sessionStartInputs = new Map<string, ClineCoreStartInput>();
   private sessionQualityBaselines = new Map<string, string>();
+  private clineDefaultSessions = new Set<string>();
   private sessionEventSignatures = new Map<string, Map<string, number>>();
   private sessionExecutionIds = new Map<string, string>();
   private sessionToolInputs = new Map<string, unknown>();
@@ -738,10 +741,9 @@ export class BlameAgentRuntime {
         this.autoApprovedWriteToolSessions.add(sessionId);
       }
       const autoSendPrompt = input.autoSendPrompt !== false;
-      const pluginPaths = runtimePluginPaths(
-        this.productionConfig,
-        input.pluginPaths,
-      );
+      const pluginPaths = input.clineDefaultTools
+        ? undefined
+        : runtimePluginPaths(this.productionConfig, input.pluginPaths);
       const skillPluginPaths = [
         ...(input.enableBuiltInSkills ? [blameNativePluginPath()] : []),
         ...(pluginPaths ?? []),
@@ -791,29 +793,33 @@ export class BlameAgentRuntime {
             })
           : undefined;
       const previewContext = previewRuntimeContext(input);
-      const previewMcpTools = await previewDevtoolsMcpTools(
-        this.options,
-        previewContext,
-        productionLogger,
-      );
-      const standardTools = runtimeTools(
-        this.options,
-        input.workspaceRoot,
-        previewContext,
-        taskContract,
-        lightExecutor,
-        input.nativeCompletion
-          ? {
-              conversationId: sessionId,
-              onComplete: (notification) =>
-                this.recordNativeCompletion(sessionId, notification),
-              onValidationActivity: (activity) =>
-                this.publishNativeValidationActivity(sessionId, activity),
-            }
-          : undefined,
-        previewMcpTools,
-        initialTaskBriefing,
-      );
+      const previewMcpTools = input.clineDefaultTools
+        ? []
+        : await previewDevtoolsMcpTools(
+            this.options,
+            previewContext,
+            productionLogger,
+          );
+      const standardTools = input.clineDefaultTools
+        ? undefined
+        : runtimeTools(
+            this.options,
+            input.workspaceRoot,
+            previewContext,
+            taskContract,
+            lightExecutor,
+            input.nativeCompletion
+              ? {
+                  conversationId: sessionId,
+                  onComplete: (notification) =>
+                    this.recordNativeCompletion(sessionId, notification),
+                  onValidationActivity: (activity) =>
+                    this.publishNativeValidationActivity(sessionId, activity),
+                }
+              : undefined,
+            previewMcpTools,
+            initialTaskBriefing,
+          );
       const specialistTool = input.enableSpecialistConsult
         ? runtimeConsultSpecialistTool({
             credential: resolvedCredential,
@@ -893,12 +899,15 @@ export class BlameAgentRuntime {
         },
         interactive: !autoSendPrompt,
         source: "blame-desktop",
-        toolPolicies: toolPolicies(
-          !!input.autoApproveWriteTools,
-          previewMcpTools.map(({ name }) => name),
-        ),
+        toolPolicies: input.clineDefaultTools
+          ? clineDefaultToolPolicies()
+          : toolPolicies(
+              !!input.autoApproveWriteTools,
+              previewMcpTools.map(({ name }) => name),
+            ),
       } as const;
       this.sessionStartInputs.set(sessionId, startInput);
+      if (input.clineDefaultTools) this.clineDefaultSessions.add(sessionId);
       await this.captureSessionQualityBaseline(sessionId);
       if (input.autoApproveWriteTools) {
         this.emitSessionNotice(
@@ -3001,6 +3010,7 @@ export class BlameAgentRuntime {
     const lifecycle = this.runLifecycles.state(sessionId);
     const terminationActive = lifecycle?.state === "cancelling";
     this.autoApprovedWriteToolSessions.delete(sessionId);
+    this.clineDefaultSessions.delete(sessionId);
     this.sessionContexts.delete(sessionId);
     this.sessionEventSignatures.delete(sessionId);
     if (!terminationActive) this.sessionExecutionIds.delete(sessionId);
@@ -3132,7 +3142,11 @@ export class BlameAgentRuntime {
     request: ToolApprovalRequest,
   ): Promise<ToolApprovalResult> | ToolApprovalResult {
     const toolName = request.toolName ?? request.name ?? "unknown";
-    const blockedReason = blockedToolReason(toolName, request.input);
+    const clineDefault =
+      request.sessionId && this.clineDefaultSessions.has(request.sessionId);
+    const blockedReason = clineDefault
+      ? undefined
+      : blockedToolReason(toolName, request.input);
     if (blockedReason) {
       if (request.sessionId)
         this.emitSessionError(request.sessionId, blockedReason);
@@ -3370,6 +3384,9 @@ export class BlameAgentRuntime {
   }
 
   private async startDevelopmentSession(input: StartDevelopmentSessionInput) {
+    if (this.options.developmentHarness === "cline") {
+      return this.startClineDevelopmentSession(input);
+    }
     const attachedSession = this.attachedSession(input.resumeSessionId);
     if (attachedSession) {
       this.sessionApiConnections.set(
@@ -3433,6 +3450,28 @@ export class BlameAgentRuntime {
     });
     this.sessionApiConnections.set(session.sessionId, input.apiConnection);
     return session;
+  }
+
+  private async startClineDevelopmentSession(
+    input: StartDevelopmentSessionInput,
+  ) {
+    return this.startSession({
+      apiConnection: input.apiConnection,
+      autoSendPrompt: input.autoSendPrompt !== false,
+      checkpointEnabled: input.checkpointEnabled,
+      clineDefaultTools: true,
+      configExtensions: [],
+      credentialLabel: input.credentialLabel,
+      cwd: input.cwd,
+      maxIterations: input.maxIterations,
+      mode: "act",
+      modelId: input.modelId,
+      prompt: input.summary,
+      providerId: input.providerId,
+      reasoningEffort: input.reasoningEffort,
+      systemPrompt: await clineDefaultSystemPrompt(input),
+      workspaceRoot: input.workspaceRoot,
+    });
   }
 
   private attachmentDirectory(sessionId: string) {
@@ -3748,6 +3787,17 @@ function toolPolicies(
     ...readTools.map((name) => [name, { autoApprove: true }]),
     ...additionalAutoApprovedTools.map((name) => [name, { autoApprove: true }]),
     ...writeTools.map((name) => [name, { autoApprove: autoApproveWriteTools }]),
+  ]);
+}
+
+export function clineDefaultToolPolicies() {
+  return Object.fromEntries([
+    ["*", { autoApprove: true }],
+    ...legacyDirectWorkspaceTools.map((name) => [
+      name,
+      { enabled: true, autoApprove: true },
+    ]),
+    ["ask_question", { enabled: false, autoApprove: false }],
   ]);
 }
 
@@ -4600,6 +4650,24 @@ export async function buildDevelopmentSystemPrompt(
     WORKSPACE_NAME: basename(input.workspaceRoot),
     WORKSPACE_ROOT: input.workspaceRoot,
   });
+}
+
+async function clineDefaultSystemPrompt(
+  input: StartDevelopmentSessionInput,
+) {
+  return getClineDefaultSystemPrompt({
+    ide: "Cline",
+    metadata: await buildWorkspaceMetadata(input.cwd),
+    mode: "act",
+    platform: process.platform,
+    providerId: input.providerId,
+    workspaceName: basename(input.workspaceRoot),
+    workspaceRoot: input.workspaceRoot,
+  });
+}
+
+export function createClineBaselineRuntime(events?: AgentRuntimeEvents) {
+  return new BlameAgentRuntime(events, { developmentHarness: "cline" });
 }
 
 export function blameNativePluginPath() {
