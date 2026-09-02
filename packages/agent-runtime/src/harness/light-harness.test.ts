@@ -301,32 +301,6 @@ test("tool surface contains only the four workspace tools", async () => {
   );
 });
 
-test("read_code batches bounded targets and deduplicates repeated requests", async () => {
-  await withWorkspace(
-    {
-      "a.ts": "export const a = 1\n",
-      "b.ts": "export const b = 2\n",
-    },
-    async (root) => {
-      const read = lightSemanticHarnessTools(root, {
-        taskContract: contract("batch-read"),
-      }).find(({ name }) => name === "read_code");
-      assert.ok(read);
-      const result = await read.execute({ target: ["a.ts", "b.ts", "a.ts"] }, {
-        agentId: "lead",
-      } as never);
-      assert.equal(result.status, "ok");
-      const batch = data(result as LightToolResult<unknown>);
-      assert.equal(batch.requested, 3);
-      assert.equal(batch.returned, 2);
-      assert.deepEqual(
-        array(batch.results).map((item) => record(item).target),
-        ["a.ts", "b.ts"],
-      );
-    },
-  );
-});
-
 test("auto search combines lexical matches and supports multi-term glob scopes", async () => {
   await withWorkspace(
     {

@@ -80,34 +80,6 @@ test("measures Cline batched reads, searches, and patches", () => {
   assert.equal(metrics.editing.firstSuccessMs, 3_000);
 });
 
-test("measures Blame batched and deduplicated reads by target", () => {
-  const collector = new BenchmarkMetricsCollector();
-  collector.record(
-    finishedTool(
-      "read_code",
-      {
-        status: "ok",
-        data: {
-          results: [
-            { result: { status: "ok", data: { path: "a.ts" } } },
-            {
-              result: {
-                status: "ok",
-                data: { path: "b.ts", status: "already_in_context" },
-              },
-            },
-          ],
-        },
-      },
-      { target: ["a.ts", "b.ts"] },
-    ),
-  );
-  const metrics = collector.summary(new Date(0), new Date(1));
-  assert.equal(metrics.navigation.readCalls, 2);
-  assert.equal(metrics.navigation.deduplicatedReads, 1);
-  assert.equal(metrics.toolsByName.read_code?.calls, 1);
-});
-
 test("records rejected Cline patches as failed editing attempts", () => {
   const collector = new BenchmarkMetricsCollector();
   collector.record(

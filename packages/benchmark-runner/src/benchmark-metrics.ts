@@ -243,13 +243,9 @@ export class BenchmarkMetricsCollector {
 
   private recordRead(tool: string, input: unknown, output: unknown) {
     const requestedFiles = arrayValue(recordValue(input).files).length;
-    const requestedTargets = arrayValue(recordValue(input).target).length;
-    this.readCalls +=
-      tool === "read_files"
-        ? Math.max(1, requestedFiles)
-        : Math.max(1, requestedTargets);
+    this.readCalls += tool === "read_files" ? Math.max(1, requestedFiles) : 1;
     const data = recordValue(recordValue(output).data);
-    this.deduplicatedReads += deduplicatedReadCount(data);
+    if (data.status === "already_in_context") this.deduplicatedReads += 1;
     this.navigationBytes += serializedBytes(output);
   }
 
@@ -345,14 +341,6 @@ export class BenchmarkMetricsCollector {
       searchCalls: this.searchCalls,
     };
   }
-}
-
-function deduplicatedReadCount(data: Record<string, unknown>) {
-  if (data.status === "already_in_context") return 1;
-  return arrayValue(data.results).filter((item) => {
-    const result = recordValue(recordValue(item).result);
-    return recordValue(result.data).status === "already_in_context";
-  }).length;
 }
 
 function updateToolMetric(

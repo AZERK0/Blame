@@ -108,7 +108,7 @@ function readCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "read_code",
     description:
-      "Read one target or up to eight independent targets in one call: file, compact directory, sN alias, path#qualifiedName, @changes, or @capabilities. Omit view for automatic raw/outline routing. Results expose editTargets and containedBy relationships; unsupported symbolic views fall back to raw. Generated outputs and node_modules are excluded.",
+      "Read a file, compact directory, sN alias, path#qualifiedName, @changes, or @capabilities. Omit view for automatic raw/outline routing. Results expose editTargets and containedBy relationships; unsupported symbolic views fall back to raw. Generated outputs and node_modules are excluded.",
     schema: lightReadCodeInputSchema,
     execute: (input, context) => workspace.readCode(input, context),
   });

@@ -59,7 +59,7 @@ type HistoryIndex = {
   latestSourceRevision?: string;
   latestEditByPath: Map<string, LatestEdit>;
   latestReadIndexByPath: Map<string, number>;
-  readById: Map<string, IndexedRead[]>;
+  readById: Map<string, IndexedRead>;
   successfulEditIds: Set<string>;
   tools: Map<string, IndexedTool>;
   validations: ValidationProof[];
@@ -159,11 +159,10 @@ function finalizeHistoryIndex(history: HistoryIndex) {
 
 function indexRead(id: string, tool: IndexedTool, history: HistoryIndex) {
   const resultIndex = tool.resultIndex ?? -1;
-  const reads = indexedReads(tool);
-  if (!reads.length) return;
-  history.readById.set(id, reads);
-  for (const read of reads)
-    history.latestReadIndexByPath.set(read.path, resultIndex);
+  const read = indexedRead(tool);
+  if (!read) return;
+  history.readById.set(id, read);
+  history.latestReadIndexByPath.set(read.path, resultIndex);
 }
 
 function indexEdit(id: string, tool: IndexedTool, history: HistoryIndex) {
@@ -234,14 +233,10 @@ function projectBlock(
 ): ContentBlock {
   if (block.type === "tool_use") return projectToolUse(block, history, stats);
   if (block.type !== "tool_result") return block;
-  const reads = history.readById.get(block.tool_use_id);
-  if (
-    !reads?.length ||
-    !reads.every((read) => supersededRead(index, read, history))
-  )
-    return block;
-  stats.staleReadsReplaced += reads.length;
-  return supersededReadResult(block, reads);
+  const read = history.readById.get(block.tool_use_id);
+  if (!read || !supersededRead(index, read, history)) return block;
+  stats.staleReadsReplaced += 1;
+  return supersededReadResult(block, read);
 }
 
 function supersededRead(
@@ -324,13 +319,14 @@ function compactEditInput(tool: IndexedTool | undefined) {
 
 function supersededReadResult(
   block: ToolResultContent,
-  reads: IndexedRead[],
+  read: IndexedRead,
 ): ToolResultContent {
   return {
     ...block,
     content: JSON.stringify({
       data: {
-        reads: reads.map(({ path, receipt }) => ({ path, receipt })),
+        path: read.path,
+        receipt: read.receipt,
       },
       status: "superseded_after_edit",
     }),
@@ -513,20 +509,12 @@ function stringArray(value: unknown) {
   );
 }
 
-function indexedReads(tool: IndexedTool) {
-  if (!successfulResult(tool.result)) return [];
+function indexedRead(tool: IndexedTool) {
+  if (!successfulResult(tool.result)) return undefined;
   const data = recordValue(tool.result?.data);
   const directPath = stringValue(data?.path) ?? stringValue(tool.input.target);
-  if (directPath)
-    return [{ path: directPath, receipt: stringValue(tool.result?.receipt) }];
-  return arrayValue(data?.results).flatMap((value) => {
-    const item = recordValue(value);
-    const result = recordValue(item?.result);
-    if (!successfulResult(result)) return [];
-    const path =
-      stringValue(recordValue(result?.data)?.path) ?? stringValue(item?.target);
-    return path ? [{ path, receipt: stringValue(result?.receipt) }] : [];
-  });
+  if (!directPath) return undefined;
+  return { path: directPath, receipt: stringValue(tool.result?.receipt) };
 }
 
 function measurableToolDefinition(value: unknown) {
