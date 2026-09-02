@@ -106,8 +106,8 @@ async function checkLargeNavigation(workspace) {
 async function checkLargeCreate(workspace) {
   const source = await sourceFile(workspace, "src/project-seed.ts");
   const seeds = source.slice(source.indexOf("PROJECT_SEEDS"));
-  const identifiers = source.match(/project-\d{3}/gu) ?? [];
-  const titles = source.match(/Project \d{3}/gu) ?? [];
+  const identifiers = fieldValues(source, "id", /project-\d{3}/u);
+  const titles = fieldValues(source, "title", /Project \d{3}/u);
   return [
     check("large file", Buffer.byteLength(source) > 10_000),
     check("seed type", /export\s+type\s+ProjectSeed/u.test(source)),
@@ -124,6 +124,13 @@ async function checkLargeCreate(workspace) {
         (seeds.match(/status:\s*["']published["']/gu) ?? []).length === 120,
     ),
   ];
+}
+
+function fieldValues(source, field, pattern) {
+  const matches = source.matchAll(
+    new RegExp(`\\b${field}:\\s*["'](${pattern.source})["']`, "gu"),
+  );
+  return [...matches].map((match) => match[1]);
 }
 
 async function checkTaskSelection(workspace) {

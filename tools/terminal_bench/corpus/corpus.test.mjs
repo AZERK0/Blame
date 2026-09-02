@@ -9,6 +9,7 @@ import {
   readManifest,
 } from "./corpus-utils.mjs";
 import { scoreRun } from "./score-run.mjs";
+import { scenarioChecks } from "./scenario-checks.mjs";
 
 test("defines ten unique scored scenarios", async () => {
   const manifest = await readManifest();
@@ -58,6 +59,23 @@ test("materializes and scores an isolated workspace", async () => {
     const score = await scoreRun(runDirectory, workspace, scenario);
     assert.equal(score.qualityScore, 100);
     assert.deepEqual(score.changedPaths, ["src/project-label.ts"]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("large creation scoring counts fields instead of prose occurrences", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-large-score-"));
+  try {
+    await mkdir(join(root, "src"));
+    const entries = Array.from({ length: 120 }, (_, index) => {
+      const sequence = String(index + 1).padStart(3, "0");
+      return `{ id: "project-${sequence}", title: "Project ${sequence}", status: "published", description: "Project ${sequence} is published in the catalogue with additional readable detail." }`;
+    });
+    const source = `export type ProjectSeed = { id: string; title: string; status: "published"; description: string };\nexport const PROJECT_SEEDS: ProjectSeed[] = [\n${entries.join(",\n")}\n];\n`;
+    await writeFile(join(root, "src/project-seed.ts"), source, "utf8");
+    const checks = await scenarioChecks("large-create", root);
+    assert.ok(checks.every(({ passed }) => passed));
   } finally {
     await rm(root, { recursive: true, force: true });
   }
