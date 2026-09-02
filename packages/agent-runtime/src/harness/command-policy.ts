@@ -86,7 +86,25 @@ function deniedGitCommand(command: string) {
 }
 
 function mutatingRedirection(command: string) {
-  return [...command.matchAll(/(?:^|[\s;|&])\d*>{1,2}\s*([^\s;|&]+)/gu)].some(
-    ([, target]) => target !== "/dev/null" && !target?.startsWith("&"),
-  );
+  const shellSource = withoutHereDocumentBodies(command);
+  return [
+    ...shellSource.matchAll(/(?:^|[\s;|&])\d*>{1,2}\s*([^\s;|&]+)/gu),
+  ].some(([, target]) => target !== "/dev/null" && !target?.startsWith("&"));
+}
+
+function withoutHereDocumentBodies(command: string) {
+  const output: string[] = [];
+  let delimiter: string | undefined;
+  for (const line of command.split("\n")) {
+    if (delimiter) {
+      if (line.trim() === delimiter) {
+        output.push(line);
+        delimiter = undefined;
+      }
+      continue;
+    }
+    output.push(line);
+    delimiter = line.match(/<<-?\s*["']?([a-z_][a-z0-9_]*)["']?/iu)?.[1];
+  }
+  return output.join("\n");
 }

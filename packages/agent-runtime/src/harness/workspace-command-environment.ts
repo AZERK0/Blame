@@ -4,6 +4,7 @@ const pnpmOnlyNpmConfiguration = new Set([
   "npm_config__jsr_registry",
   "npm_config_catalog",
   "npm_config_globalconfig",
+  "npm_config_npm_globalconfig",
   "npm_config_overrides",
   "npm_config_verify_deps_before_run",
 ]);
