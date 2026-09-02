@@ -51,9 +51,14 @@ type McpConnection = {
   artifacts: string;
   client: Client;
   close(): Promise<void>;
+  page?: { id: number; url: string };
   tools: PreviewDevtoolsMcpTool[];
   workspace?: string;
 };
+
+type CreateMcpConnection = (
+  input: PreviewDevtoolsMcpContext,
+) => Promise<McpConnection>;
 
 type PendingConnection = {
   abortController: AbortController;
@@ -94,20 +99,30 @@ const artifactOutputPathArguments = new Map<string, readonly string[]>([
 const catalogTools = toolCatalog.tools as PreviewDevtoolsMcpTool[];
 const catalogToolNames = new Set(catalogTools.map(({ name }) => name));
 const maximumStagedUploadBytes = 20 * 1024 * 1024;
+const previewMcpCallTimeoutMs = 15_000;
 const require = createRequire(import.meta.url);
 
 export class PreviewDevtoolsMcpService {
   private readonly connections = new Map<string, PendingConnection>();
+  private readonly createConnection: CreateMcpConnection;
+
+  constructor(createConnection: CreateMcpConnection = createMcpConnection) {
+    this.createConnection = createConnection;
+  }
 
   listTools() {
     return Promise.resolve(catalogTools);
   }
 
   async call(input: PreviewDevtoolsMcpCall) {
+    input.signal?.throwIfAborted();
     if (!catalogToolNames.has(input.toolName)) {
       throw unavailableToolError(input.toolName);
     }
-    const connection = await this.connection(input);
+    const connection = await waitForConnection(
+      this.connection(input),
+      input.signal,
+    );
     const tool = connection.tools.find(({ name }) => name === input.toolName);
     if (!tool || hiddenPageTools.has(tool.name)) {
       throw unavailableToolError(input.toolName);
@@ -115,7 +130,22 @@ export class PreviewDevtoolsMcpService {
     try {
       return await callPreviewTool(connection, tool, input);
     } catch (error) {
-      this.disposeScope(input.scope);
+      if (!input.signal?.aborted && mcpConnectionUnavailable(error)) {
+        this.disposeScope(input.scope);
+      }
+      throw error;
+    }
+  }
+
+  async prepare(input: PreviewDevtoolsMcpContext & { currentUrl: string }) {
+    try {
+      const connection = await waitForConnection(
+        this.connection(input),
+        input.signal,
+      );
+      await previewPageId(connection, input.currentUrl, input.signal);
+    } catch (error) {
+      if (!input.signal?.aborted) this.disposeScope(input.scope);
       throw error;
     }
   }
@@ -150,11 +180,10 @@ export class PreviewDevtoolsMcpService {
         .catch(() => undefined);
     }
     const abortController = new AbortController();
-    const signal = combinedSignal(input.signal, abortController.signal);
-    const connection = createMcpConnection({
+    const connection = this.createConnection({
       ...input,
       scope,
-      signal,
+      signal: abortController.signal,
       worktree,
     });
     const pending = { abortController, connection, worktree };
@@ -175,15 +204,29 @@ async function callPreviewTool(
   const argumentsValue = await previewToolArguments(connection, tool, input);
   if (pageScoped(tool)) {
     argumentsValue.pageId = await previewPageId(
-      connection.client,
+      connection,
       input.currentUrl,
       input.signal,
     );
   }
-  return connection.client.callTool(
-    { arguments: argumentsValue, name: tool.name },
-    undefined,
-    { signal: input.signal, timeout: 15_000 },
+  const result = await callMcpTool(
+    connection.client,
+    tool.name,
+    argumentsValue,
+    input.signal,
+  );
+  if (!pageScoped(tool) || !stalePageResult(result)) return result;
+  connection.page = undefined;
+  argumentsValue.pageId = await previewPageId(
+    connection,
+    input.currentUrl,
+    input.signal,
+  );
+  return callMcpTool(
+    connection.client,
+    tool.name,
+    argumentsValue,
+    input.signal,
   );
 }
 
@@ -410,8 +453,16 @@ async function createMcpConnection(input: PreviewDevtoolsMcpContext) {
   const client = previewMcpClient(workspace, artifacts);
   const transport = previewMcpTransport(input.browserUrl, artifacts);
   try {
-    await client.connect(transport, { signal: input.signal, timeout: 120_000 });
-    const tools = (await client.listTools({}, { signal: input.signal })).tools;
+    await client.connect(transport, {
+      signal: input.signal,
+      timeout: previewMcpCallTimeoutMs,
+    });
+    const tools = (
+      await client.listTools(
+        {},
+        { signal: input.signal, timeout: previewMcpCallTimeoutMs },
+      )
+    ).tools;
     return {
       artifacts,
       client,
@@ -466,13 +517,6 @@ async function closeMcpConnection(client: Client, artifacts: string) {
   ]);
 }
 
-function combinedSignal(
-  external: AbortSignal | undefined,
-  internal: AbortSignal,
-) {
-  return external ? AbortSignal.any([external, internal]) : internal;
-}
-
 function previewMcpEnvironment() {
   return Object.fromEntries(
     Object.entries({
@@ -514,16 +558,83 @@ function schemaProperties(schema: Record<string, unknown>) {
 }
 
 async function previewPageId(
-  client: Client,
+  connection: McpConnection,
   currentUrl: string,
   signal?: AbortSignal,
 ) {
-  const result = await client.callTool(
-    { arguments: {}, name: "list_pages" },
-    undefined,
-    { signal, timeout: 15_000 },
+  if (
+    connection.page &&
+    samePreviewUrl(connection.page.url, currentUrl, true)
+  ) {
+    return connection.page.id;
+  }
+  const result = await callMcpTool(connection.client, "list_pages", {}, signal);
+  const id = scopedPreviewPageId(structuredPages(result), currentUrl);
+  connection.page = { id, url: currentUrl };
+  return id;
+}
+
+async function callMcpTool(
+  client: Client,
+  name: string,
+  argumentsValue: Record<string, unknown>,
+  signal?: AbortSignal,
+) {
+  try {
+    return await client.callTool(
+      { arguments: argumentsValue, name },
+      undefined,
+      { signal, timeout: previewMcpCallTimeoutMs },
+    );
+  } catch (error) {
+    throw new Error(`Preview DevTools ${name} failed: ${errorMessage(error)}`, {
+      cause: error,
+    });
+  }
+}
+
+function stalePageResult(result: unknown) {
+  if (!result || typeof result !== "object") return false;
+  const value = result as { content?: unknown; isError?: unknown };
+  if (value.isError !== true || !Array.isArray(value.content)) return false;
+  return value.content.some(
+    (entry) =>
+      entry &&
+      typeof entry === "object" &&
+      "text" in entry &&
+      /no page found|page has been closed/iu.test(String(entry.text)),
   );
-  return scopedPreviewPageId(structuredPages(result), currentUrl);
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function mcpConnectionUnavailable(error: unknown) {
+  let current = error;
+  for (let depth = 0; depth < 3 && current instanceof Error; depth += 1) {
+    if (
+      /(?:connection|transport|channel) (?:closed|disconnected)|not connected|server (?:closed|disconnected|terminated)/iu.test(
+        current.message,
+      )
+    ) {
+      return true;
+    }
+    current = current.cause;
+  }
+  return false;
+}
+
+function waitForConnection<T>(value: Promise<T>, signal?: AbortSignal) {
+  if (!signal) return value;
+  signal.throwIfAborted();
+  return new Promise<T>((resolveValue, rejectValue) => {
+    const aborted = () => rejectValue(signal.reason);
+    signal.addEventListener("abort", aborted, { once: true });
+    value.then(resolveValue, rejectValue).finally(() => {
+      signal.removeEventListener("abort", aborted);
+    });
+  });
 }
 
 export function scopedPreviewPageId(

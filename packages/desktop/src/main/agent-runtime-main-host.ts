@@ -4,6 +4,7 @@ import { shell } from "electron";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { AgentHostMethod } from "./agent-runtime-process-protocol.ts";
+import { reloadPreviewBrowserForScope } from "./preview-browser-ipc.ts";
 import {
   previewDevtoolsMcpService,
   type PreviewDevtoolsMcpService,
@@ -105,6 +106,7 @@ async function refreshPreviewDependencies(
       const local = await refreshProjectPreviewDependencies(worktree);
       if (local.status === "not_running") return local;
     }
+    reloadPreviewBrowserForScope({ scope: String(request.scope ?? "") });
     const state = await harness.target({
       ...request,
       signal,
@@ -155,8 +157,28 @@ async function previewDevtoolsTarget(
   const target = await harness.target({ ...request, signal } as never);
   if (!target.available) {
     devtools.disposeScope(String(request.scope ?? ""));
+  } else {
+    preparePreviewDevtools(request, target, devtools);
   }
   return target;
+}
+
+function preparePreviewDevtools(
+  request: Record<string, unknown>,
+  target: Awaited<ReturnType<PreviewHarnessService["target"]>>,
+  devtools: PreviewDevtoolsMcpService,
+) {
+  const scope = String(request.scope ?? "").trim();
+  const worktree = String(request.worktree ?? "").trim();
+  if (!scope || !worktree || !target.currentUrl) return;
+  void devtools
+    .prepare({
+      browserUrl: target.browserUrl,
+      currentUrl: target.currentUrl,
+      scope,
+      worktree,
+    })
+    .catch(() => undefined);
 }
 
 async function previewContainerLogs(

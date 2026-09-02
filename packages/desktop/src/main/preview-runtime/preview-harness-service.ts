@@ -2,7 +2,7 @@ import { currentWorkspaceRevisionState } from "@blame/agent-runtime";
 import type { PreviewLifecycleState } from "@blame/preview-contract";
 import { previewSessionLifecycle } from "@blame/preview-runtime";
 import {
-  getPreviewDevtoolsTarget,
+  inspectPreviewDevtoolsTarget,
   type PreviewDevtoolsTarget,
 } from "../preview-browser-ipc.ts";
 import {
@@ -31,16 +31,20 @@ export type PreviewHarnessInput = {
 };
 
 type PreviewHarnessDependencies = {
-  browserTarget: typeof getPreviewDevtoolsTarget;
+  browserTarget: (input: {
+    scope?: string;
+  }) => Promise<PreviewDevtoolsTarget> | PreviewDevtoolsTarget;
   localLifecycle: typeof projectPreviewLifecycleState;
   refreshIntervalMs: number;
+  readinessTimeoutMs: number;
   startLocal: (worktree: string) => Promise<unknown>;
 };
 
 const defaultDependencies: PreviewHarnessDependencies = {
-  browserTarget: getPreviewDevtoolsTarget,
+  browserTarget: inspectPreviewDevtoolsTarget,
   localLifecycle: projectPreviewLifecycleState,
   refreshIntervalMs: 500,
+  readinessTimeoutMs: 30_000,
   startLocal: (worktree) =>
     controlProjectPreview({ action: "start", worktree }),
 };
@@ -79,6 +83,7 @@ export class PreviewHarnessService {
       input.waitFor,
       () => abortableDelay(this.dependencies.refreshIntervalMs, input.signal),
       started ? undefined : initial,
+      { timeoutMs: this.dependencies.readinessTimeoutMs },
     );
   }
 

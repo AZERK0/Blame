@@ -2968,6 +2968,49 @@ Un appel provider live du spécialiste de réparation a ensuite été exécuté 
 
 La réconciliation à chaud est actuellement appliquée au runtime `local-container`; une preview `cloud-mirror` renvoie explicitement `unavailable` plutôt que de recréer implicitement une session distante. La promotion post-merge et la réparation structurée restent communes. Il faut encore un scénario local propre qui applique réellement la topologie PostgreSQL et vérifie la preview, puis un mécanisme explicite de remplacement de plan Cloud Preview, avant de présenter ce chemin comme validé de bout en bout.
 
+### 21.40 Consolidation de la preview après Portfolio-V4 US-033
+
+L'audit de la dernière exécution Portfolio-V4, US-033, confirme que la preview n'était pas simplement absente. Le premier `get_preview_devtools` a répondu prêt en 219 ms. Après les mutations de dépendances, un appel `waitFor=ready` a ensuite attendu 1 606,662 secondes, soit 26 min 46,7 s, avant de répondre ; un autre a attendu 262,766 secondes, soit 4 min 22,8 s. Entre ces deux appels, une attente a encore duré 9,444 secondes. Le refresh manuel observé par l'utilisateur déclenchait `did-finish-load`, seule source qui recalculait l'état applicatif, et débloquait donc momentanément la boucle.
+
+Les huit appels Google DevTools suivants ont tous rendu `PREVIEW_DEVTOOLS_TRANSIENT_FAILURE` : trois snapshots, trois lectures de console et deux screenshots. Leur durée est comprise entre 15,631 et 15,907 secondes, exactement à la frontière du timeout client. Chaque échec détruisait la connexion ; l'appel suivant recréait le serveur, refaisait `list_pages`, puis rencontrait la même limite. Le signal court du premier appel possédait en plus la connexion pourtant destinée à persister. Ces défauts sont du harness. L'absence finale de `DATABASE_URL` dans le runtime US-033 reste, elle, un défaut de topologie applicative distinct déjà traité par la section 21.39.
+
+Le correctif conservé comporte un seul cycle de readiness et une seule connexion MCP scoped. Une inspection active exécute une sonde HTTP depuis le `WebContentsView`, bornée à cinq secondes et partagée entre appels concurrents ; HMR n'a donc plus besoin de produire un nouveau `did-finish-load`. Après une actualisation des dépendances, la vue scoped est explicitement rechargée et son ancienne preuve invalidée avant l'attente. `waitFor=ready` rend maintenant la main après 30 secondes avec `PREVIEW_READINESS_TIMEOUT`, au lieu de consommer le budget global de l'agent.
+
+La connexion Chrome DevTools MCP est préchauffée dès que `get_preview_devtools` observe une application exploitable. Sa durée de vie dépend uniquement du scope de preview, plus du signal de l'appel qui l'a créée. Le `pageId` résolu est mémorisé tant que l'URL reste la même ; un identifiant réellement périmé provoque une seule nouvelle résolution certaine. Un timeout d'outil conserve la connexion, tandis qu'une fermeture explicite du transport la recrée au prochain appel. Le timeout MCP interne de 15 secondes précède désormais l'enveloppe outil de 20 secondes, de sorte que le résultat nomme l'étape fautive, par exemple `list_pages` ou `take_snapshot`, au lieu d'un timeout générique de l'enveloppe.
+
+| Mesure                                              |                            US-033 avant |               Vérification après |
+| --------------------------------------------------- | --------------------------------------: | -------------------------------: |
+| Attente readiness la plus longue                    |                             1 606,662 s |     plafond déterministe de 30 s |
+| Appels snapshot / console / screenshot exploitables |                                   0 / 8 | 4 / 4 sur le smoke Electron réel |
+| Préparation MCP                                     | non mesurée, répétée après chaque échec |                 366 ms, une fois |
+| Console après préparation                           |               timeout à 15,762–15,906 s |                             2 ms |
+| Screenshot après préparation                        |               timeout à 15,795–15,907 s |                            99 ms |
+| Snapshot réutilisant la connexion                   |               timeout à 15,631–15,673 s |                            10 ms |
+
+Le smoke après correctif a lancé l'application Blame de développement avec son vrai endpoint Electron CDP sur `127.0.0.1:9222`, puis a utilisé `PreviewDevtoolsMcpService` et `chrome-devtools-mcp@1.8.0` avec les arguments de production. La préparation, la console, le screenshot WebP et deux snapshots ont réussi. L'abandon explicite du signal du premier snapshot n'a pas fermé la connexion : les trois appels suivants ont réutilisé le même serveur et le même `pageId`. Un second contrôle direct du serveur Google a mesuré 281 ms de connexion, 280 ms pour `list_pages`, 43 ms pour le snapshot, 1 ms pour la console et 93 ms pour le screenshot.
+
+Cette validation ne constitue pas un replay après correctif de la preview Portfolio US-033 : la story avait été rejetée et sa vue de preview n'était plus ouverte au moment du smoke. Elle prouve le transport réel Blame/Electron/Google MCP et les invariants de connexion corrigés. Le chargement Portfolio, la console, le rendu, le clavier, le drag et Maj + molette doivent encore être rejoués ensemble sur une nouvelle story active avant de qualifier la preuve frontend de bout en bout.
+
+Les tests déterministes ajoutés couvrent la classification HTTP et des diagnostics de compilation, le timeout d'un renderer muet, l'échéance de readiness, la préparation et la réutilisation du routage scoped, la survie de la connexion après la fin du premier signal, la distinction entre timeout d'outil et transport fermé, et le rebase unique d'un `pageId` périmé. Les suites passent avec 243 tests runtime et 348 tests desktop, ainsi que les typechecks des deux packages. Le check global de budget de lignes continue de signaler des dépassements historiques ; aucun nouveau fichier de cette boucle ne dépasse le seuil.
+
+Les principales commandes réellement exécutées sont :
+
+```text
+git status --short --branch
+rg ... <log US-033 et sources preview>
+pnpm --filter @blame/agent-runtime test|typecheck
+pnpm --filter @blame/desktop test|typecheck|build
+pnpm exec turbo run dev --filter=@blame/api --filter=@blame/desktop
+curl http://127.0.0.1:9222/json/list
+node ... chrome-devtools-mcp@1.8.0 ... list_pages|take_snapshot|list_console_messages|take_screenshot
+node --experimental-strip-types ... PreviewDevtoolsMcpService.prepare|call
+pnpm exec prettier --check ...
+node scripts/check-line-budgets.mjs
+git diff --check
+```
+
+Les choix d'intégration suivent la [référence officielle des outils Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp/blob/main/docs/tool-reference.md), notamment la préférence pour `take_snapshot` en automatisation, et le [routage officiel par `pageId`](https://github.com/ChromeDevTools/chrome-devtools-mcp/blob/main/README.md). Le timeout `-32001` après navigation est également documenté en amont dans [chrome-devtools-mcp#2459](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/2459) ; il s'agit d'un risque voisin de stabilisation de page, pas de la cause démontrée des connexions détruites dans US-033.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)

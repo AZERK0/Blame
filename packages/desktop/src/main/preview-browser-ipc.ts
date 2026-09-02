@@ -8,13 +8,19 @@ import {
   createPreviewBrowser,
   destroyPreviewBrowser,
   getPreviewDevtoolsTarget,
+  inspectPreviewDevtoolsTarget,
   loadPreviewBrowser,
   reloadPreviewBrowser,
+  reloadPreviewBrowserForScope,
   setPreviewBrowserBounds,
   setPreviewBrowserDevtoolsScope,
 } from "./preview-browser/preview-browser-manager";
 
-export { getPreviewDevtoolsTarget };
+export {
+  getPreviewDevtoolsTarget,
+  inspectPreviewDevtoolsTarget,
+  reloadPreviewBrowserForScope,
+};
 export {
   destroyAllPreviewBrowsers,
   enablePreviewDevtools,

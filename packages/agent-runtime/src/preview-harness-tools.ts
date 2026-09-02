@@ -152,7 +152,7 @@ export async function previewDevtoolsMcpTools(
       provider: previewMcpProvider(options, preview),
       retryable: false,
       serverName: "preview-devtools",
-      timeoutMs: 15_000,
+      timeoutMs: 20_000,
     });
   } catch (error) {
     logger.log("Preview DevTools MCP tools unavailable", {
@@ -309,8 +309,9 @@ export function previewDevtoolsTool(
   return {
     name: "get_preview_devtools",
     description:
-      "Inspect browser, container, and application readiness for this session's Blame preview. Readiness requires an exploitable HTTP response, no blocking compiler diagnostic, usable dependencies, and the current source and environment revisions. For a stopped local preview, waitFor=ready starts the managed runtime before waiting. Failed and unopened browser states return immediately.",
+      "Inspect browser, container, and application readiness for this session's Blame preview. Readiness requires an exploitable HTTP response, no blocking compiler diagnostic, usable dependencies, and the current source and environment revisions. For a stopped local preview, waitFor=ready starts the managed runtime and waits at most 30 seconds. Failed and unopened browser states return immediately.",
     inputSchema: previewDevtoolsInputSchema(),
+    timeoutMs: 35_000,
     execute: (input: unknown, context: ToolContext) =>
       executePreviewDevtoolsTool(options, preview, input, context.signal),
   };
@@ -343,7 +344,7 @@ function previewDevtoolsInputSchema() {
         enum: ["none", "ready"],
         default: "none",
         description:
-          "Use none to return the current state immediately. Use ready to start a stopped local managed preview and wait while it is starting; failed states return immediately.",
+          "Use none to return the current state immediately. Use ready to start a stopped local managed preview and wait up to 30 seconds; failed states return immediately.",
       },
     },
     additionalProperties: false,

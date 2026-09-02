@@ -84,14 +84,31 @@ export async function resolvePreviewHarnessState(
   waitFor: "none" | "ready" | undefined,
   waitForRefresh: () => Promise<void>,
   initial?: PreviewHarnessState,
+  options: { now?: () => number; timeoutMs?: number } = {},
 ) {
   let state = initial ?? (await inspect());
   if (waitFor !== "ready" || state.status !== "starting") return state;
+  const now = options.now ?? Date.now;
+  const expiresAt = now() + (options.timeoutMs ?? 30_000);
   while (state.status === "starting") {
+    if (now() >= expiresAt) return previewReadinessTimedOut(state);
     await waitForRefresh();
     state = await inspect();
   }
   return state;
+}
+
+function previewReadinessTimedOut(
+  state: PreviewHarnessState,
+): PreviewHarnessState {
+  return {
+    ...state,
+    available: false,
+    message:
+      "The preview did not become application-ready within 30 seconds. Continue with other validation or inspect preview logs.",
+    reason: "PREVIEW_READINESS_TIMEOUT",
+    status: "unavailable",
+  };
 }
 
 export function shouldStartStoppedLocalPreview(input: {

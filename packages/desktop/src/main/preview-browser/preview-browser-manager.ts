@@ -15,6 +15,7 @@ import type {
 import { attachPreviewRequestTelemetry } from "./preview-request-telemetry";
 import { keepsManagedPreviewBridge } from "./preview-navigation-policy";
 import { previewDevtoolsMcpArgs } from "./preview-devtools-config";
+import { probePreviewApplication } from "./preview-application-probe";
 import {
   type PreviewBrowserState,
   type PreviewBrowserStateUpdate,
@@ -29,6 +30,7 @@ type PreviewBrowserRecord = {
   view: WebContentsView;
   visible: boolean;
   loadTimeout?: NodeJS.Timeout;
+  applicationProbe?: Promise<void>;
   bridge?: PreviewNetworkBridge;
   ownerClosed: () => void;
 };
@@ -47,6 +49,7 @@ type PreviewDevtoolsTargetInput = {
 
 const previews = new Map<string, PreviewBrowserRecord>();
 const previewLoadTimeoutMs = 30_000;
+const previewApplicationProbeTimeoutMs = 5_000;
 const hiddenPreviewFrameRate = 1;
 const visiblePreviewFrameRate = 30;
 const previewDevtoolsPort =
@@ -88,6 +91,18 @@ export function getPreviewDevtoolsTarget(
     target,
     scope,
   );
+}
+
+export async function inspectPreviewDevtoolsTarget(
+  input: PreviewDevtoolsTargetInput = {},
+) {
+  const scope = normalizedPreviewDevtoolsScope(input.scope);
+  const target = previewDevtoolsTargetForScope(scope);
+  const record = target ? previews.get(target.id) : undefined;
+  if (record && previewDevtoolsTargetReady(target)) {
+    await refreshApplicationState(record);
+  }
+  return getPreviewDevtoolsTarget(input);
 }
 
 function previewDevtoolsTarget(
@@ -277,8 +292,20 @@ export function reloadPreviewBrowser(input: { id: string }) {
   const record = previews.get(input.id);
   if (!record) return false;
   startPreviewLoadTimeout(record, record.view.webContents.getURL());
+  sendPreviewBrowserState(record, {
+    application: null,
+    error: null,
+    loading: true,
+  });
   record.view.webContents.reload();
   return true;
+}
+
+export function reloadPreviewBrowserForScope(input: { scope?: string }) {
+  const scope = normalizedPreviewDevtoolsScope(input.scope);
+  const target = previewDevtoolsTargetForScope(scope);
+  if (!target) return false;
+  return reloadPreviewBrowser({ id: target.id });
 }
 
 export function destroyPreviewBrowser(id: string) {
@@ -354,7 +381,7 @@ function attachPreviewBrowserEvents(record: PreviewBrowserRecord) {
   });
   record.view.webContents.on("did-finish-load", () => {
     clearPreviewLoadTimeout(record);
-    void updateApplicationState(record);
+    void refreshApplicationState(record);
   });
   record.view.webContents.on("did-navigate", (_event, url) =>
     sendPreviewBrowserState(record, { error: null, loading: false, url }),
@@ -389,47 +416,26 @@ function attachPreviewBrowserEvents(record: PreviewBrowserRecord) {
   });
 }
 
-async function updateApplicationState(record: PreviewBrowserRecord) {
-  try {
-    const application = await record.view.webContents.executeJavaScript(
-      `fetch(location.href,{cache:"no-store"}).then(async response=>({httpStatus:response.status,text:(await response.text()).slice(0,2000)}))`,
-      true,
-    );
-    sendPreviewBrowserState(record, {
-      application: classifyApplicationState(application),
-      error: null,
-      loading: false,
-    });
-  } catch (error) {
-    sendPreviewBrowserState(record, {
-      application: {
-        status: "failed",
-        diagnostic: error instanceof Error ? error.message : String(error),
-      },
-      loading: false,
-    });
-  }
+function refreshApplicationState(record: PreviewBrowserRecord) {
+  if (record.applicationProbe) return record.applicationProbe;
+  const probe = updateApplicationState(record).finally(() => {
+    if (record.applicationProbe === probe) record.applicationProbe = undefined;
+  });
+  record.applicationProbe = probe;
+  return probe;
 }
 
-function classifyApplicationState(value: unknown) {
-  const result = value as { httpStatus?: unknown; text?: unknown };
-  const httpStatus =
-    typeof result?.httpStatus === "number" ? result.httpStatus : undefined;
-  const text = typeof result?.text === "string" ? result.text : "";
-  const compilerDiagnostic = text.match(
-    /(?:failed to compile|module not found|build error|internal server error)[\s\S]{0,1000}/iu,
-  )?.[0];
-  const failed =
-    !httpStatus || httpStatus >= 500 || Boolean(compilerDiagnostic);
-  return {
-    status: failed ? ("failed" as const) : ("ready" as const),
-    ...(httpStatus ? { httpStatus } : {}),
-    ...(compilerDiagnostic
-      ? { diagnostic: compilerDiagnostic }
-      : failed
-        ? { diagnostic: `Preview returned HTTP ${httpStatus ?? "unknown"}.` }
-        : {}),
-  };
+async function updateApplicationState(record: PreviewBrowserRecord) {
+  const application = await probePreviewApplication(
+    (source) => record.view.webContents.executeJavaScript(source, true),
+    previewApplicationProbeTimeoutMs,
+  );
+  if (record.view.webContents.isDestroyed()) return;
+  sendPreviewBrowserState(record, {
+    application,
+    ...(application.status === "ready" ? { error: null } : {}),
+    loading: false,
+  });
 }
 
 function startPreviewLoadTimeout(record: PreviewBrowserRecord, url: string) {

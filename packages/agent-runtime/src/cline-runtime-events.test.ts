@@ -439,6 +439,19 @@ test("starts development sessions with native skills and private specialist cons
       capturedStart.toolPolicies?.preview_devtools__take_snapshot,
       { autoApprove: true },
     );
+    assert.equal(
+      capturedStart.config.extraTools?.find(
+        (tool: { name: string }) => tool.name === "get_preview_devtools",
+      )?.timeoutMs,
+      35_000,
+    );
+    assert.equal(
+      capturedStart.config.extraTools?.find(
+        (tool: { name: string }) =>
+          tool.name === "preview_devtools__take_snapshot",
+      )?.timeoutMs,
+      20_000,
+    );
     const previewContext = { signal: new AbortController().signal } as never;
     const previewState = await capturedStart.config.extraTools
       ?.find((tool: { name: string }) => tool.name === "get_preview_devtools")

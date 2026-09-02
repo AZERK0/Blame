@@ -129,6 +129,27 @@ test("none returns the current starting state without refreshing", async () => {
   assert.equal(refreshes, 0);
 });
 
+test("ready bounds a preview that never becomes application-ready", async () => {
+  let now = 0;
+  let refreshes = 0;
+  const state = await resolvePreviewHarnessState(
+    async () =>
+      previewHarnessState(browserTarget(false, true), startingLifecycle()),
+    "ready",
+    async () => {
+      now += 500;
+      refreshes += 1;
+    },
+    undefined,
+    { now: () => now, timeoutMs: 1_000 },
+  );
+
+  assert.equal(state.status, "unavailable");
+  assert.equal(state.reason, "PREVIEW_READINESS_TIMEOUT");
+  assert.equal(state.available, false);
+  assert.equal(refreshes, 2);
+});
+
 test("ready runtime without a browser view is immediately unavailable", async () => {
   let refreshes = 0;
 
