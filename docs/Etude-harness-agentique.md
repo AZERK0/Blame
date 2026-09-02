@@ -3209,6 +3209,111 @@ git diff --check
 
 Les variables requises ont été importées depuis `.env.terminal-bench` sans afficher leurs valeurs. `pnpm check:line-budgets` reste rouge sur des dépassements déjà présents, notamment `agent-telemetry.ts`, `cline-runtime.ts`, `light-workspace.ts` et plusieurs fichiers app/desktop ; aucun n'a été créé par cette boucle. Les tests, lint, typecheck, builds et `git diff --check` concernés passent.
 
+### 21.43 Holdout d'intelligence sur quinze tâches supplémentaires
+
+#### Protocole
+
+Quinze scénarios ont été ajoutés puis figés dans le commit `cfd5d9c8` avant le premier appel provider. Ils ne reprennent pas les transformations exactes ayant servi aux corrections du harness. Le corpus couvre des bornes semi-ouvertes, un refactor monétaire, une matrice de permissions, l'accessibilité TSX, un reducer résistant aux réponses obsolètes, un cache asynchrone concurrent, la traversée de chemins, une relation Prisma, `prefers-reduced-motion`, `noUncheckedIndexedAccess`, un contrat de slug inter-fichiers, un parseur CSV, une pagination stable, l'idempotence de webhooks et une migration PostgreSQL.
+
+Les contrôles comportementaux ne sont pas copiés dans le workspace de l'agent. Ils exécutent notamment les cas adjacents et invalides, les matrices complètes, les courses de promesses, l'éviction après rejet, le repeuplement après `clear`, les traversées encodées, les diacritiques, les guillemets CSV échappés, les égalités de tri, la non-mutation et le retry après webhook échoué. Le typecheck, les chemins modifiés, le statut terminal et le formatage sont mesurés séparément. Le barème historique reste inchangé : le formatage est un diagnostic additionnel et ne réécrit pas le score après observation.
+
+Les runs utilisent GPT-5.6 Luna avec le même effort et les mêmes variables chargées depuis `.env.terminal-bench` sans exposer leurs valeurs. Chaque workspace est recréé depuis sa fixture déterministe. Il s'agit de quinze appels provider live indépendants, pas de replays déterministes.
+
+#### Résultats
+
+| Scénario | Score | Format | Durée | Tokens entrée | Outils | Lectures | Symboles | Rejets |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| async-cache | 100 | oui | 34,6 s | 11 816 | 3 | 1 | 0 | 0 |
+| csv-parser | 100 | oui | 28,3 s | 11 252 | 3 | 1 | 1 | 0 |
+| filter-accessibility | 100 | oui | 16,4 s | 11 426 | 3 | 1 | 1 | 0 |
+| money-refactor | 100 | non | 24,5 s | 14 215 | 4 | 2 | 3 | 0 |
+| motion-accessibility | 100 | oui | 18,4 s | 11 326 | 4 | 1 | 0 | 0 |
+| permission-matrix | 100 | oui | 24,5 s | 19 466 | 4 | 1 | 1 | 0 |
+| prisma-category | 100 | oui | 20,9 s | 12 925 | 5 | 3 | 0 | 0 |
+| slug-contract | 100 | non | 31,0 s | 15 226 | 5 | 2 | 2 | 0 |
+| stable-pagination | 100 | oui | 32,2 s | 15 079 | 5 | 1 | 1 | 0 |
+| stale-save-reducer | 100 | oui | 31,0 s | 12 127 | 3 | 1 | 1 | 0 |
+| status-migration | 100 | oui | 52,4 s | 22 150 | 9 | 5 | 4 | 1 |
+| storage-traversal | 100 | non | 80,2 s | 14 885 | 5 | 2 | 1 | 0 |
+| strict-indexing | 100 | oui | 20,6 s | 12 135 | 5 | 3 | 0 | 0 |
+| webhook-idempotency | 100 | non | 49,1 s | 11 777 | 4 | 1 | 3 | 0 |
+| window-boundaries | 100 | oui | 14,3 s | 10 878 | 3 | 1 | 1 | 0 |
+
+Les quinze tâches réussissent leurs contrôles fonctionnels, leur compilation indépendante, leur scope et leur terminal, soit 15/15 à 100/100 après correction d'un faux négatif du scorer. Elles totalisent 478,43 secondes, 206 683 tokens d'entrée, 18 787 tokens de sortie, 96 768 tokens de cache lus et 0,04646 $. La moyenne est de 31,90 secondes, 13 779 tokens d'entrée, 1 252 tokens de sortie et 0,00310 $ par tâche.
+
+Le harness effectue 67 requêtes modèle et 65 appels d'outils, dont 4 recherches et 26 lectures renvoyant 15 234 octets. La première tentative d'édition arrive en moyenne à 20,99 secondes et la première réussite à 21,90 secondes ; les médianes sont respectivement 17,47 et 17,72 secondes. Seize tentatives produisent quinze éditions réussies et un batch bloqué. Les métriques comptent 19 opérations symboliques, 8 patchs et 2 batchs hybrides sur les tentatives. Aucun appel n'échoue au niveau harness ou infrastructure.
+
+Deux périodes sans outil dépassent 30 secondes : 43,11 secondes sur la normalisation de chemin et 31,47 secondes sur le webhook concurrent. Elles précèdent des implémentations correctes au premier essai et ne sont associées à aucun rejet ou diagnostic manquant. Le run de permissions charge une skill native, ce qui ajoute environ 5,7 Ko de résultat outil et explique une partie de ses 19 466 tokens. Cette consultation peut être discutable en efficience, mais le corpus ne démontre pas qu'elle dégrade la trajectoire ; la capacité n'est donc pas retirée.
+
+Le contexte composé ne contient aucun octet identifié comme dupliqué. Six anciennes lectures et quatre éditions déjà observées sont projetées hors contexte, pour 6 270 octets économisés. Les payloads restent sous le seuil de projection après validation. Les dix-sept preuves structurées portent une révision ; la dernière preuve de chaque run correspond exactement à la révision terminale. Les quinze messages finaux décrivent fidèlement le diff et les validations. Aucun événement ne suit un terminal.
+
+#### Comparaison avec les dix scénarios précédents
+
+Cette comparaison porte sur des tâches différentes et ne constitue pas une paire causale, mais elle permet de vérifier qu'un corpus plus logique et concurrent ne provoque pas d'effondrement d'efficience.
+
+| Moyenne par tâche | Corpus précédent, 10 | Holdout intelligence, 15 |
+| --- | ---: | ---: |
+| Score | 100 | 100 |
+| Durée | 32,09 s | 31,90 s |
+| Première édition réussie | 24,55 s | 21,90 s |
+| Tokens entrée | 13 677 | 13 779 |
+| Tokens sortie | 1 250 | 1 252 |
+| Coût | 0,00309 $ | 0,00310 $ |
+| Appels d'outils | 4,20 | 4,33 |
+| Lectures | 1,60 | 1,73 |
+| Formatage conforme | 7/10 | 11/15 |
+
+Les moyennes sont pratiquement stables alors que le holdout exige davantage de raisonnement d'état et de concurrence. Sur les vingt-cinq scénarios cumulés, les vingt-cinq résultats fonctionnels et compilations passent. Cela constitue un signal sérieux que la réduction de contexte n'a pas diminué l'intelligence observable. Une exécution unique par tâche mesure toutefois la largeur, pas la variance provider.
+
+#### Causes racines et correctifs issus du holdout
+
+Le score initial de `filter-accessibility` était 77 parce que le contrôle exigeait un `aria-label`, alors que le texte visible exact « Featured only » constitue déjà le nom accessible du bouton. Le code produit satisfaisait la demande. Le scorer accepte maintenant les deux mécanismes et possède un test de non-régression. Le même artefact rescorré atteint 100 ; aucun run n'a été remplacé.
+
+L'unique édition bloquée concernait la migration. Luna avait placé le contenu complet du nouveau fichier SQL dans une opération `patch` adressée par `path`, sans enveloppe `*** Add File`. Le fichier n'existait pas et l'intention était certaine, mais le runtime rejetait tout le batch atomique. Le runtime normalise maintenant seulement le contenu brut adressé vers un chemin absent en ajout de fichier natif. Il ne convertit jamais ce contenu si le chemin existe et conserve l'atomicité et la validation finale. Deux tests déterministes couvrent la création et l'absence d'écrasement.
+
+Le replay provider de la migration utilise exactement la même révision initiale `374985d...`, instruction, modèle, effort et budget. Il reste à 100, passe de 52,41 à 43,68 secondes et ne contient aucun rejet, mais Luna a cette fois envoyé une enveloppe valide de sa propre initiative. La baisse live et l'absence de rejet ne sont donc pas attribuées causalement au normaliseur ; le test déterministe du payload fautif constitue la preuve du correctif.
+
+| Migration | Avant | Replay après |
+| --- | ---: | ---: |
+| Score | 100 | 100 |
+| Durée | 52,41 s | 43,68 s |
+| Tokens entrée | 22 150 | 27 803 |
+| Appels d'outils | 9 | 12 |
+| Lectures | 5 | 6 |
+| Éditions bloquées | 1 | 0 |
+
+Le replay illustre aussi pourquoi la réussite ou la durée d'un run isolé ne suffit pas : malgré une durée inférieure, il consomme davantage de tokens et d'outils à cause de recherches supplémentaires. Le correctif est conservé pour son contrat déterministe et son faible coût de schéma, pas pour revendiquer un gain stochastique.
+
+#### Qualité et limites
+
+Onze diffs sur quinze passent `prettier --check`. Les quatre autres sont fonctionnellement corrects mais comportent des lignes inutilement compactées, un espace terminal ou une ligne vide surnuméraire. Le taux du corpus précédent était 7/10 avec le même contrôle. Cette hygiène insuffisante ne démontre pas une perte d'intelligence liée à la compaction, mais montre que l'agent n'utilise pas encore systématiquement le mutateur Prettier journalisé. Aucun formatage automatique n'est imposé ici, car la fixture ne déclare ni configuration ni script Prettier ; un futur scénario doit rendre cette convention explicite avant d'en faire un critère de score.
+
+Les deux tâches UI vérifient le source, l'accessibilité déclarative et le typecheck. Aucune preview réelle, capture, interaction clavier, drag ou molette n'est disponible dans ce corpus et aucune validation visuelle n'est revendiquée. Le holdout n'a pas été exécuté avec Cline et ne mesure donc pas un avantage relatif sur ces quinze tâches. Il manque enfin des répétitions alternées d'un sous-ensemble difficile pour estimer la variance.
+
+Les commandes principales réellement exécutées sont :
+
+```text
+git status --short --branch
+pnpm exec tsc --noEmit -p tools/terminal_bench/corpus/fixture/tsconfig.json
+pnpm test:benchmark-corpus
+pnpm --filter @blame/agent-runtime test
+pnpm --filter @blame/agent-runtime typecheck
+pnpm --filter @blame/agent-runtime lint
+pnpm --filter @blame/agent-runtime build
+pnpm --filter @blame/benchmark-runner test
+pnpm --filter @blame/benchmark-runner typecheck
+pnpm --filter @blame/benchmark-runner lint
+pnpm --filter @blame/benchmark-runner build
+BLAME_HEADLESS_DEV=true NODE_ENV=development pnpm benchmark:corpus -- --label luna-intelligence-holdout-1 --harness blame --scenarios <15 holdouts>
+pnpm benchmark:corpus:rescore -- --campaign .blame/benchmarks/corpus/luna-intelligence-holdout-1
+pnpm benchmark:corpus:report -- --campaign .blame/benchmarks/corpus/luna-intelligence-holdout-1
+BLAME_HEADLESS_DEV=true NODE_ENV=development pnpm benchmark:corpus -- --label luna-intelligence-status-normalized-1 --harness blame --scenarios status-migration
+pnpm check:line-budgets
+git diff --check
+```
+
+Le runtime contient maintenant 254 tests, le runner 13 et le corpus 7, tous passants. `pnpm check:line-budgets` reste rouge uniquement sur les dépassements globaux déjà recensés ; `light-edit.ts` reste dans la zone de revue mais sous son seuil bloquant. Les artefacts provider complets restent sous `.blame/benchmarks/corpus/` et ne sont pas commités.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)
