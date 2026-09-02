@@ -84,6 +84,7 @@ test("materializes and scores an isolated workspace", async () => {
     );
     const score = await scoreRun(runDirectory, workspace, scenario);
     assert.equal(score.qualityScore, 100);
+    assert.equal(score.formattingPassed, true);
     assert.deepEqual(score.changedPaths, ["src/project-label.ts"]);
   } finally {
     await rm(root, { recursive: true, force: true });

@@ -14,6 +14,7 @@ export async function scoreRun(runDirectory, workspace, scenario) {
     (path) => !scenario.allowedPaths.includes(path),
   );
   const validationPassed = validateTypes(workspace);
+  const formattingPassed = validateFormatting(workspace, paths);
   const functionalScore = ratioScore(checks, 70);
   const qualityScore =
     functionalScore +
@@ -27,6 +28,7 @@ export async function scoreRun(runDirectory, workspace, scenario) {
     paths,
     unexpectedPaths,
     validationPassed,
+    formattingPassed,
     functionalScore,
     qualityScore,
   );
@@ -45,6 +47,7 @@ function runScore(
   paths,
   unexpectedPaths,
   validationPassed,
+  formattingPassed,
   functionalScore,
   qualityScore,
 ) {
@@ -56,6 +59,7 @@ function runScore(
     checks,
     harnessChecks,
     validationPassed,
+    formattingPassed,
     changedPaths: paths,
     unexpectedPaths,
     status: result.status,
@@ -80,6 +84,19 @@ function usageMetrics(usage) {
 function validateTypes(workspace) {
   const executable = join(workspace, "node_modules/.bin/tsc");
   const result = spawnSync(executable, ["--noEmit"], {
+    cwd: workspace,
+    encoding: "utf8",
+  });
+  return result.status === 0;
+}
+
+function validateFormatting(workspace, paths) {
+  const supportedPaths = paths.filter((path) =>
+    /\.(?:css|json|js|jsx|md|ts|tsx)$/u.test(path),
+  );
+  if (!supportedPaths.length) return true;
+  const executable = join(workspace, "node_modules/.bin/prettier");
+  const result = spawnSync(executable, ["--check", ...supportedPaths], {
     cwd: workspace,
     encoding: "utf8",
   });
