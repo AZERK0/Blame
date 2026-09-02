@@ -107,6 +107,22 @@ test("large creation scoring counts fields instead of prose occurrences", async 
   }
 });
 
+test("accepts visible button text as an accessible name", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-a11y-score-"));
+  try {
+    await mkdir(join(root, "src"));
+    await writeFile(
+      join(root, "src/ProjectFilter.tsx"),
+      '<label htmlFor="project-search">Search projects</label><input id="project-search" type="search" /><button type="button" aria-pressed={featuredOnly}>Featured only</button><span aria-live="polite">Results</span>',
+      "utf8",
+    );
+    const checks = await scenarioChecks("filter-accessibility", root);
+    assert.ok(checks.every(({ passed }) => passed));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 function successfulResult() {
   return {
     durationMs: 1_000,

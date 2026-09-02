@@ -295,7 +295,7 @@ function editorPermissions(allowed) {
 async function checkFilterAccessibility(workspace) {
   const source = await sourceFile(workspace, "src/ProjectFilter.tsx");
   const input = source.match(/<input\b[^>]*>/u)?.[0] ?? "";
-  const button = source.match(/<button\b[^>]*>/u)?.[0] ?? "";
+  const button = source.match(/<button\b[^>]*>[\s\S]*?<\/button>/u)?.[0] ?? "";
   return [
     check(
       "associated search label",
@@ -309,7 +309,8 @@ async function checkFilterAccessibility(workspace) {
       "pressed filter button",
       /\btype=["']button["']/u.test(button) &&
         /\baria-pressed=\{featuredOnly\}/u.test(button) &&
-        /\baria-label=["']Featured only["']/u.test(button),
+        (/\baria-label=["']Featured only["']/u.test(button) ||
+          />\s*Featured only\s*<\/button>/u.test(button)),
     ),
     check(
       "polite result status",
