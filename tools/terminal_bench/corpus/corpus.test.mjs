@@ -28,6 +28,17 @@ test("accepts the pnpm argument separator", () => {
   assert.equal(options.get("label"), "baseline");
 });
 
+test("materializes the same scenario at one reproducible revision", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-revision-"));
+  try {
+    const first = await prepareWorkspace(join(root, "first"), "tsx-hybrid");
+    const second = await prepareWorkspace(join(root, "second"), "tsx-hybrid");
+    assert.equal(first, second);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("materializes and scores an isolated workspace", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-corpus-"));
   try {

@@ -64,8 +64,12 @@ export function runProcess(command, args, cwd, environment = process.env) {
   });
 }
 
-export function commandOutput(command, args, cwd) {
-  const result = spawnSync(command, args, { cwd, encoding: "utf8" });
+export function commandOutput(command, args, cwd, environment = process.env) {
+  const result = spawnSync(command, args, {
+    cwd,
+    encoding: "utf8",
+    env: environment,
+  });
   if (result.status !== 0)
     throw new Error(result.stderr || `${command} failed.`);
   return result.stdout;
@@ -114,8 +118,14 @@ function initializeRepository(workspace) {
     workspace,
   );
   commandOutput("git", ["add", "."], workspace);
-  commandOutput("git", ["commit", "-m", "fixture baseline"], workspace);
+  commandOutput("git", ["commit", "-m", "fixture baseline"], workspace, {
+    ...process.env,
+    GIT_AUTHOR_DATE: fixtureCommitDate,
+    GIT_COMMITTER_DATE: fixtureCommitDate,
+  });
 }
+
+const fixtureCommitDate = "2000-01-01T00:00:00Z";
 
 function projectRegistry() {
   const entries = Array.from({ length: 180 }, (_, index) =>
