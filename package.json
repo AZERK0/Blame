@@ -43,6 +43,7 @@
     "benchmark:agent:bundle": "node scripts/headless-benchmark-payload.mjs",
     "benchmark:corpus": "node tools/terminal_bench/corpus/run-corpus.mjs",
     "benchmark:corpus:report": "node tools/terminal_bench/corpus/report-corpus.mjs",
+    "benchmark:corpus:rescore": "node tools/terminal_bench/corpus/rescore-corpus.mjs",
     "benchmark:preview-runtime": "node --experimental-strip-types scripts/benchmark-preview-runtime.mjs"
   },
   "devDependencies": {

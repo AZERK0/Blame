@@ -31,18 +31,18 @@ Options:
 async function main() {
   const argumentsList = commandArguments();
   if (argumentsList.includes("--help") || argumentsList.includes("-h")) {
-    process.stdout.write(`${helpText}\n`);
+    await writeOutput(process.stdout, `${helpText}\n`);
     return 0;
   }
   if (argumentsList.includes("--version")) {
-    process.stdout.write(`${await runnerVersion()}\n`);
+    await writeOutput(process.stdout, `${await runnerVersion()}\n`);
     return 0;
   }
   const controller = benchmarkAbortController();
   try {
     return await executeBenchmark(argumentsList, controller.signal);
   } catch (error) {
-    process.stderr.write(`${errorMessage(error)}\n`);
+    await writeOutput(process.stderr, `${errorMessage(error)}\n`);
     return error instanceof HeadlessConfigurationError ? 2 : 1;
   }
 }
@@ -77,7 +77,7 @@ async function executeBenchmark(argumentsList: string[], signal: AbortSignal) {
     signal,
   });
   await writeResult(parsed.paths.resultPath, result);
-  process.stdout.write(`${JSON.stringify(result)}\n`);
+  await writeOutput(process.stdout, `${JSON.stringify(result)}\n`);
   return resultExitCode(result);
 }
 
@@ -114,4 +114,10 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
-process.exitCode = await main();
+function writeOutput(stream: NodeJS.WriteStream, value: string) {
+  return new Promise<void>((resolve, reject) => {
+    stream.write(value, (error) => (error ? reject(error) : resolve()));
+  });
+}
+
+process.exit(await main());

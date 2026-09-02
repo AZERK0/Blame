@@ -1,16 +1,15 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { changedPaths } from "./corpus-utils.mjs";
-import { scenarioChecks } from "./scenario-checks.mjs";
+import { changedPaths, isProductPath } from "./corpus-utils.mjs";
+import { scenarioChecks, scenarioHarnessChecks } from "./scenario-checks.mjs";
 
 export async function scoreRun(runDirectory, workspace, scenario) {
   const result = await readJson(join(runDirectory, "result.json"));
   const events = await readEvents(join(runDirectory, "events.jsonl"));
-  const checks = await scenarioChecks(scenario.id, workspace, result, events);
-  const paths = changedPaths(workspace).filter(
-    (path) => path !== "node_modules",
-  );
+  const checks = await scenarioChecks(scenario.id, workspace);
+  const harnessChecks = scenarioHarnessChecks(scenario.id, result, events);
+  const paths = changedPaths(workspace).filter(isProductPath);
   const unexpectedPaths = paths.filter(
     (path) => !scenario.allowedPaths.includes(path),
   );
@@ -24,6 +23,7 @@ export async function scoreRun(runDirectory, workspace, scenario) {
   const score = runScore(
     result,
     checks,
+    harnessChecks,
     paths,
     unexpectedPaths,
     validationPassed,
@@ -41,6 +41,7 @@ export async function scoreRun(runDirectory, workspace, scenario) {
 function runScore(
   result,
   checks,
+  harnessChecks,
   paths,
   unexpectedPaths,
   validationPassed,
@@ -53,6 +54,7 @@ function runScore(
     qualityScore,
     functionalScore,
     checks,
+    harnessChecks,
     validationPassed,
     changedPaths: paths,
     unexpectedPaths,

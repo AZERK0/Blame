@@ -53,12 +53,13 @@ export function runProcess(command, args, cwd, environment = process.env) {
       env: environment,
       stdio: ["ignore", "pipe", "pipe"],
     });
-    let standardError = "";
+    let standardErrorBytes = 0;
+    child.stdout.resume();
     child.stderr.on("data", (chunk) => {
-      standardError += chunk;
+      standardErrorBytes += chunk.length;
     });
     child.on("close", (code, signal) =>
-      resolveRun({ code, signal, standardError }),
+      resolveRun({ code, signal, standardErrorBytes }),
     );
   });
 }
@@ -83,12 +84,21 @@ export function changedPaths(workspace) {
 }
 
 export function workspaceDiff(workspace) {
-  spawnSync("git", ["add", "-N", "."], { cwd: workspace, encoding: "utf8" });
+  const paths = changedPaths(workspace).filter(isProductPath);
+  if (!paths.length) return "";
+  spawnSync("git", ["add", "-N", "--", ...paths], {
+    cwd: workspace,
+    encoding: "utf8",
+  });
   return commandOutput(
     "git",
-    ["diff", "--binary", "HEAD", "--", "."],
+    ["diff", "--binary", "HEAD", "--", ...paths],
     workspace,
   );
+}
+
+export function isProductPath(path) {
+  return path !== "node_modules" && !path.startsWith(".blame/");
 }
 
 function initializeRepository(workspace) {

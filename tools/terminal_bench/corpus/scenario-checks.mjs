@@ -1,9 +1,13 @@
 import { readFile } from "node:fs/promises";
 
-export async function scenarioChecks(id, workspace, result, events) {
+export async function scenarioChecks(id, workspace) {
   const checks = await checkFunctions[id]?.(workspace);
   if (!checks) throw new Error(`Unknown scenario ${id}.`);
-  return [...checks, ...traceChecks(id, result, events)];
+  return checks;
+}
+
+export function scenarioHarnessChecks(id, result, events) {
+  return traceChecks(id, result, events);
 }
 
 const checkFunctions = {
@@ -97,6 +101,7 @@ async function checkLargeNavigation(workspace) {
 
 async function checkLargeCreate(workspace) {
   const source = await sourceFile(workspace, "src/project-seed.ts");
+  const seeds = source.slice(source.indexOf("PROJECT_SEEDS"));
   const identifiers = source.match(/project-\d{3}/gu) ?? [];
   const titles = source.match(/Project \d{3}/gu) ?? [];
   return [
@@ -112,7 +117,7 @@ async function checkLargeCreate(workspace) {
     check(
       "120 titles and statuses",
       titles.length === 120 &&
-        (source.match(/status:\s*["']published["']/gu) ?? []).length === 120,
+        (seeds.match(/status:\s*["']published["']/gu) ?? []).length === 120,
     ),
   ];
 }

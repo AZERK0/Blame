@@ -44,6 +44,8 @@ test("materializes and scores an isolated workspace", async () => {
       "export function formatProjectLabel(name: string) {\n  return `Project · ${name.trim()}`;\n}\n",
       "utf8",
     );
+    await mkdir(join(workspace, ".blame/logs"), { recursive: true });
+    await writeFile(join(workspace, ".blame/logs/runtime.log"), "internal\n");
     await writeFile(join(runDirectory, "events.jsonl"), "", {
       encoding: "utf8",
       flag: "a",
