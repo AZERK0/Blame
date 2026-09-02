@@ -44,12 +44,13 @@ type PreviewBrowserBounds = {
 
 type PreviewBrowserCaptureSize = "full" | "thumbnail";
 type PreviewDevtoolsTargetInput = {
+  probeApplication?: boolean;
   scope?: string;
 };
 
 const previews = new Map<string, PreviewBrowserRecord>();
 const previewLoadTimeoutMs = 30_000;
-const previewApplicationProbeTimeoutMs = 5_000;
+const previewApplicationProbeTimeoutMs = 2_000;
 const hiddenPreviewFrameRate = 1;
 const visiblePreviewFrameRate = 30;
 const previewDevtoolsPort =
@@ -99,7 +100,11 @@ export async function inspectPreviewDevtoolsTarget(
   const scope = normalizedPreviewDevtoolsScope(input.scope);
   const target = previewDevtoolsTargetForScope(scope);
   const record = target ? previews.get(target.id) : undefined;
-  if (record && previewDevtoolsTargetReady(target)) {
+  if (
+    input.probeApplication !== false &&
+    record &&
+    previewDevtoolsTargetReady(target)
+  ) {
     await refreshApplicationState(record);
   }
   return getPreviewDevtoolsTarget(input);

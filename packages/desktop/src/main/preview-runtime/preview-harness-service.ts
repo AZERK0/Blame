@@ -8,6 +8,7 @@ import {
 import {
   previewHarnessState,
   resolvePreviewHarnessState,
+  shouldProbePreviewApplication,
   shouldStartStoppedLocalPreview,
   type PreviewHarnessStatus,
 } from "./preview-harness-state.ts";
@@ -32,19 +33,20 @@ export type PreviewHarnessInput = {
 
 type PreviewHarnessDependencies = {
   browserTarget: (input: {
+    probeApplication?: boolean;
     scope?: string;
   }) => Promise<PreviewDevtoolsTarget> | PreviewDevtoolsTarget;
+  applicationReadinessTimeoutMs: number;
   localLifecycle: typeof projectPreviewLifecycleState;
   refreshIntervalMs: number;
-  readinessTimeoutMs: number;
   startLocal: (worktree: string) => Promise<unknown>;
 };
 
 const defaultDependencies: PreviewHarnessDependencies = {
+  applicationReadinessTimeoutMs: 2_000,
   browserTarget: inspectPreviewDevtoolsTarget,
   localLifecycle: projectPreviewLifecycleState,
   refreshIntervalMs: 500,
-  readinessTimeoutMs: 30_000,
   startLocal: (worktree) =>
     controlProjectPreview({ action: "start", worktree }),
 };
@@ -59,11 +61,14 @@ export class PreviewHarnessService {
   }
 
   async inspect(input: PreviewHarnessInput) {
-    const [browser, lifecycle, revisions] = await Promise.all([
-      Promise.resolve(this.dependencies.browserTarget({ scope: input.scope })),
+    const [lifecycle, revisions] = await Promise.all([
       this.lifecycle(input),
       this.revisions(input),
     ]);
+    const browser = await this.dependencies.browserTarget({
+      probeApplication: shouldProbePreviewApplication(lifecycle),
+      scope: input.scope,
+    });
     if (browser.error)
       return previewHarnessState(browser, undefined, revisions);
     return previewHarnessState(browser, lifecycle, revisions);
@@ -83,7 +88,9 @@ export class PreviewHarnessService {
       input.waitFor,
       () => abortableDelay(this.dependencies.refreshIntervalMs, input.signal),
       started ? undefined : initial,
-      { timeoutMs: this.dependencies.readinessTimeoutMs },
+      {
+        applicationTimeoutMs: this.dependencies.applicationReadinessTimeoutMs,
+      },
     );
   }
 

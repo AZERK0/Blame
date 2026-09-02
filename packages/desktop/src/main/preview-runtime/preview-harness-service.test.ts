@@ -5,6 +5,7 @@ import type { PreviewDevtoolsTarget } from "../preview-browser/preview-browser-m
 import {
   previewHarnessState,
   resolvePreviewHarnessState,
+  shouldProbePreviewApplication,
   shouldStartStoppedLocalPreview,
 } from "./preview-harness-state.ts";
 
@@ -93,6 +94,28 @@ test("HTTP 500 preview diagnostics fail without a readiness wait", async () => {
   assert.equal(refreshes, 0);
 });
 
+test("an application probe failure remains transient during startup", () => {
+  const state = previewHarnessState(
+    {
+      ...browserTarget(true),
+      application: {
+        status: "failed",
+        diagnostic: "Preview application probe timed out.",
+      },
+    },
+    startingLifecycle(),
+  );
+
+  assert.equal(state.status, "starting");
+  assert.equal(state.reason, "PREVIEW_STARTING");
+});
+
+test("application probing starts only after the runtime is ready", () => {
+  assert.equal(shouldProbePreviewApplication(startingLifecycle()), false);
+  assert.equal(shouldProbePreviewApplication(readyLifecycle()), true);
+  assert.equal(shouldProbePreviewApplication(failedLifecycle()), true);
+});
+
 test("ready waits only while the preview is actively starting", async () => {
   let browserInspections = 0;
   let lifecycleInspections = 0;
@@ -113,6 +136,45 @@ test("ready waits only while the preview is actively starting", async () => {
   assert.equal(state.readiness.application_ready, true);
 });
 
+test("startup may exceed the running application readiness budget", async () => {
+  let inspections = 0;
+  let now = 0;
+  const state = await resolvePreviewHarnessState(
+    async () =>
+      ++inspections > 3
+        ? previewHarnessState(browserTarget(true), readyLifecycle())
+        : previewHarnessState(browserTarget(false, true), startingLifecycle()),
+    "ready",
+    async () => {
+      now += 10 * 60_000;
+    },
+    undefined,
+    { applicationTimeoutMs: 2_000, now: () => now },
+  );
+
+  assert.equal(state.status, "ready");
+  assert.equal(now, 30 * 60_000);
+});
+
+test("an explicit startup failure returns immediately", async () => {
+  let inspections = 0;
+  let refreshes = 0;
+  const state = await resolvePreviewHarnessState(
+    async () =>
+      ++inspections > 1
+        ? previewHarnessState(browserTarget(), failedLifecycle())
+        : previewHarnessState(browserTarget(false, true), startingLifecycle()),
+    "ready",
+    async () => {
+      refreshes += 1;
+    },
+  );
+
+  assert.equal(state.status, "failed");
+  assert.equal(state.reason, "PREVIEW_FAILED");
+  assert.equal(refreshes, 1);
+});
+
 test("none returns the current starting state without refreshing", async () => {
   let refreshes = 0;
 
@@ -129,23 +191,23 @@ test("none returns the current starting state without refreshing", async () => {
   assert.equal(refreshes, 0);
 });
 
-test("ready bounds a preview that never becomes application-ready", async () => {
+test("ready bounds a running preview that never becomes application-ready", async () => {
   let now = 0;
   let refreshes = 0;
   const state = await resolvePreviewHarnessState(
     async () =>
-      previewHarnessState(browserTarget(false, true), startingLifecycle()),
+      previewHarnessState(browserTarget(false, true), readyLifecycle()),
     "ready",
     async () => {
       now += 500;
       refreshes += 1;
     },
     undefined,
-    { now: () => now, timeoutMs: 1_000 },
+    { applicationTimeoutMs: 1_000, now: () => now },
   );
 
   assert.equal(state.status, "unavailable");
-  assert.equal(state.reason, "PREVIEW_READINESS_TIMEOUT");
+  assert.equal(state.reason, "PREVIEW_APPLICATION_TIMEOUT");
   assert.equal(state.available, false);
   assert.equal(refreshes, 2);
 });
@@ -199,6 +261,15 @@ function startingLifecycle(): PreviewLifecycleState {
     phase: "starting",
     since: new Date().toISOString(),
     status: "pending",
+  };
+}
+
+function failedLifecycle(): PreviewLifecycleState {
+  return {
+    failure: { message: "Preview startup failed" },
+    phase: "failed",
+    since: new Date().toISOString(),
+    status: "error",
   };
 }
 

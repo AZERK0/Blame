@@ -443,7 +443,7 @@ test("starts development sessions with native skills and private specialist cons
       capturedStart.config.extraTools?.find(
         (tool: { name: string }) => tool.name === "get_preview_devtools",
       )?.timeoutMs,
-      35_000,
+      undefined,
     );
     assert.equal(
       capturedStart.config.extraTools?.find(

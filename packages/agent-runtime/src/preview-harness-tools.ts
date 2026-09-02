@@ -309,9 +309,8 @@ export function previewDevtoolsTool(
   return {
     name: "get_preview_devtools",
     description:
-      "Inspect browser, container, and application readiness for this session's Blame preview. Readiness requires an exploitable HTTP response, no blocking compiler diagnostic, usable dependencies, and the current source and environment revisions. For a stopped local preview, waitFor=ready starts the managed runtime and waits at most 30 seconds. Failed and unopened browser states return immediately.",
+      "Inspect browser, container, and application readiness for this session's Blame preview. Readiness requires an exploitable HTTP response, no blocking compiler diagnostic, usable dependencies, and the current source and environment revisions. For a stopped or starting local preview, waitFor=ready follows managed startup until it succeeds or reports an explicit failure. Once running, application readiness is bounded to 2 seconds. Failed and unopened browser states return immediately.",
     inputSchema: previewDevtoolsInputSchema(),
-    timeoutMs: 35_000,
     execute: (input: unknown, context: ToolContext) =>
       executePreviewDevtoolsTool(options, preview, input, context.signal),
   };
@@ -344,7 +343,7 @@ function previewDevtoolsInputSchema() {
         enum: ["none", "ready"],
         default: "none",
         description:
-          "Use none to return the current state immediately. Use ready to start a stopped local managed preview and wait up to 30 seconds; failed states return immediately.",
+          "Use none to return the current state immediately. Use ready to start or follow a managed preview until startup succeeds or explicitly fails; the running application's readiness probe is limited to 2 seconds.",
       },
     },
     additionalProperties: false,

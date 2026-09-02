@@ -84,29 +84,62 @@ export async function resolvePreviewHarnessState(
   waitFor: "none" | "ready" | undefined,
   waitForRefresh: () => Promise<void>,
   initial?: PreviewHarnessState,
-  options: { now?: () => number; timeoutMs?: number } = {},
+  options: PreviewReadinessOptions = {},
 ) {
   let state = initial ?? (await inspect());
   if (waitFor !== "ready" || state.status !== "starting") return state;
   const now = options.now ?? Date.now;
-  const expiresAt = now() + (options.timeoutMs ?? 30_000);
+  let deadline = previewApplicationDeadline(state, now(), options);
   while (state.status === "starting") {
-    if (now() >= expiresAt) return previewReadinessTimedOut(state);
+    if (deadline && now() >= deadline.expiresAt) {
+      return previewReadinessTimedOut(state, deadline);
+    }
     await waitForRefresh();
     state = await inspect();
+    if (state.status !== "starting") break;
+    const nextDeadline = previewApplicationDeadline(state, now(), options);
+    if (!deadline || !nextDeadline) deadline = nextDeadline;
   }
   return state;
 }
 
+type PreviewReadinessOptions = {
+  applicationTimeoutMs?: number;
+  now?: () => number;
+};
+
+type PreviewWaitDeadline = {
+  expiresAt: number;
+  timeoutMs: number;
+};
+
+function previewApplicationDeadline(
+  state: PreviewHarnessState,
+  now: number,
+  options: PreviewReadinessOptions,
+): PreviewWaitDeadline | undefined {
+  if (previewStartupPending(state)) return undefined;
+  const timeoutMs = options.applicationTimeoutMs ?? 2_000;
+  return {
+    expiresAt: now + timeoutMs,
+    timeoutMs,
+  };
+}
+
+function previewStartupPending(state: PreviewHarnessState) {
+  return state.lifecycle?.status === "pending";
+}
+
 function previewReadinessTimedOut(
   state: PreviewHarnessState,
+  deadline: PreviewWaitDeadline,
 ): PreviewHarnessState {
+  const seconds = deadline.timeoutMs / 1_000;
   return {
     ...state,
     available: false,
-    message:
-      "The preview did not become application-ready within 30 seconds. Continue with other validation or inspect preview logs.",
-    reason: "PREVIEW_READINESS_TIMEOUT",
+    message: `The running preview did not become application-ready within ${seconds} seconds. Inspect preview logs.`,
+    reason: "PREVIEW_APPLICATION_TIMEOUT",
     status: "unavailable",
   };
 }
@@ -125,18 +158,24 @@ export function shouldStartStoppedLocalPreview(input: {
   );
 }
 
+export function shouldProbePreviewApplication(
+  lifecycle: PreviewLifecycleState | undefined,
+) {
+  return lifecycle?.status !== "pending";
+}
+
 function previewHarnessStatus(
   browser: PreviewDevtoolsTarget,
   lifecycle: PreviewLifecycleState | undefined,
   readiness: PreviewHarnessState["readiness"],
 ): PreviewHarnessStatus {
-  if (browser.application?.status === "failed") return "failed";
   if (lifecycle?.status === "error") return "failed";
   if (lifecycle?.status === "idle") return "stopped";
   if (lifecycle?.status === "pending") {
     if (previewStopping(lifecycle.phase)) return "stopped";
     return browser.error ? "failed" : "starting";
   }
+  if (browser.application?.status === "failed") return "failed";
   if (browser.error) return "failed";
   if (lifecycle?.status === "ready") {
     if (readiness.application_ready) return "ready";
