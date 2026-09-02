@@ -34,12 +34,15 @@
     "test:download-storage": "node --test scripts/download-object-storage.test.mjs",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test && node --test scripts/semantic-harness-payload.test.mjs",
+    "test:benchmark-corpus": "node --test tools/terminal_bench/corpus/corpus.test.mjs",
     "test:semantic-harness-payload": "node --test scripts/semantic-harness-payload.test.mjs",
     "verify:runtime:macos": "node scripts/macos-runtime-image.mjs verify",
     "check:line-budgets": "node scripts/check-line-budgets.mjs",
     "licenses:extract": "node scripts/extract-open-source-projects.mjs",
     "benchmark:agent": "node packages/benchmark-runner/dist/cli.js",
     "benchmark:agent:bundle": "node scripts/headless-benchmark-payload.mjs",
+    "benchmark:corpus": "node tools/terminal_bench/corpus/run-corpus.mjs",
+    "benchmark:corpus:report": "node tools/terminal_bench/corpus/report-corpus.mjs",
     "benchmark:preview-runtime": "node --experimental-strip-types scripts/benchmark-preview-runtime.mjs"
   },
   "devDependencies": {

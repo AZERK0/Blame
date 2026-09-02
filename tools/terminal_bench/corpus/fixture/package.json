@@ -1,0 +1,9 @@
+{
+  "name": "blame-terminal-bench-corpus",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  }
+}

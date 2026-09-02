@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "symbol-function",
+      "instruction": "instructions/01-symbol-function.md",
+      "allowedPaths": ["src/project-label.ts"],
+      "maxIterations": 12,
+      "timeoutSeconds": 300
+    },
+    {
+      "id": "tsx-hybrid",
+      "instruction": "instructions/02-tsx-hybrid.md",
+      "allowedPaths": ["src/ProjectCard.tsx"],
+      "maxIterations": 16,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "css-media",
+      "instruction": "instructions/03-css-media.md",
+      "allowedPaths": ["src/styles.css"],
+      "maxIterations": 14,
+      "timeoutSeconds": 300
+    },
+    {
+      "id": "symbol-rebase",
+      "instruction": "instructions/04-symbol-rebase.md",
+      "allowedPaths": ["src/pricing.ts"],
+      "maxIterations": 18,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "large-navigation",
+      "instruction": "instructions/05-large-navigation.md",
+      "allowedPaths": ["src/project-registry.ts"],
+      "maxIterations": 14,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "large-create",
+      "instruction": "instructions/06-large-create.md",
+      "allowedPaths": ["src/project-seed.ts"],
+      "maxIterations": 20,
+      "timeoutSeconds": 480
+    },
+    {
+      "id": "task-selection",
+      "instruction": "instructions/07-task-selection.md",
+      "allowedPaths": ["src/project-label.ts"],
+      "maxIterations": 12,
+      "timeoutSeconds": 300
+    },
+    {
+      "id": "proof-freshness",
+      "instruction": "instructions/08-proof-freshness.md",
+      "allowedPaths": ["src/project-label.ts", "src/styles.css"],
+      "maxIterations": 18,
+      "timeoutSeconds": 420
+    },
+    {
+      "id": "read-deduplication",
+      "instruction": "instructions/09-read-deduplication.md",
+      "allowedPaths": ["src/api/projects.ts"],
+      "maxIterations": 16,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "backend-cross-file",
+      "instruction": "instructions/10-backend-cross-file.md",
+      "allowedPaths": ["prisma/schema.prisma", "src/api/projects.ts"],
+      "maxIterations": 22,
+      "timeoutSeconds": 480
+    }
+  ]
+}
