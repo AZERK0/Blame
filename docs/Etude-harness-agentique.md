@@ -2866,6 +2866,31 @@ DATABASE_URL=<URL PostgreSQL locale inerte> pnpm --filter web exec next dev -p <
 
 Les previews ont été exécutées hors du run agent, dans un navigateur headless, sur les quatre diffs. Le bouton ou le clavier a été vérifié sur les deux frontends qui rendaient correctement. Le drag et Maj + molette n'ont pas produit de changement observable dans cette automatisation et restent explicitement non prouvés. Aucun smoke test WSL, Lima ou Cloud Preview n'a été exécuté. Cette matrice démontre que Blame compacte mieux chaque requête et sait maintenant utiliser le chemin symbolique, mais qu'il boucle davantage et peut encore produire un faux succès visuel ; le qualificatif `frontier-proven` reste injustifié.
 
+### 21.36 Projection par chemin sans perte d'une édition courante
+
+Le premier cycle post-comparaison Cline a isolé une perte d'information dans la projection provider. Le runtime conservait le payload de la dernière édition réussie de toute la session, puis compactait toutes les précédentes. Une édition de `styles.css` pouvait donc faire disparaître le contenu tout juste écrit dans `projects.ts` alors que ce fichier n'avait été ni relu ni remplacé. Les traces Portfolio de la section 21.35 contiennent ce motif : après une autre mutation, le modèle reformule une édition TSX contre un état supposé et récupère par rejet, recherche et nouveau patch.
+
+La projection conserve désormais la dernière édition courante de chaque chemin jusqu'à ce qu'une lecture fraîche l'observe ou qu'une édition ultérieure du même chemin la remplace. Les éditions réellement acquittées restent compactées. Sur le replay déterministe des seuls événements d'outils Portfolio, la nouvelle règle retient trois payloads encore utiles de plus par run. Le transcript final augmente seulement de 705 octets sur la paire 1 et de 822 octets sur la paire 2, tout en supprimant encore respectivement 23 502 et 39 074 octets redondants. Ce replay démontre la mécanique de projection, pas une amélioration provider live.
+
+Un scénario headless provider live distinct a ensuite imposé trois éditions atomiques A → B → A sans relecture de A. La fixture part du commit `49d95ddf96d66b44bdce5c77db83a2df0ee8023d`. Le modèle, l'effort, l'instruction, la révision, le budget de 16 itérations et le timeout de 600 secondes sont identiques. La baseline utilise le runner au commit `579fcec4`; le candidat ne diffère que par la projection par chemin.
+
+| Mesure | Avant | Après |
+| --- | ---: | ---: |
+| Résultat réel | satisfait, typecheck et build | satisfait, typecheck et build |
+| Durée | 32,28 s | 26,55 s |
+| Requêtes modèle | 7 | 6 |
+| Appels d'outils | 8 | 7 |
+| Éditions réussies / bloquées | 3 / 1 | 3 / 0 |
+| Tokens entrée / sortie / cache | 32 146 / 1 009 / 21 504 | 27 165 / 747 / 15 360 |
+| Coût | 0,00377 $ | 0,00356 $ |
+| Première tentative / réussite | 9,55 / 9,79 s | 13,49 / 13,76 s |
+| Exposition cumulée des payloads d'outils | 13 559 octets | 9 921 octets |
+| Événements après terminal | 0 | 0 |
+
+La causalité du retry est observable. La baseline remplace correctement `projectResponse`, modifie un autre fichier, puis oublie la forme complète de sa première édition et tente un `replace_body` sans délimiteurs ; le parse atomique le refuse. Le candidat conserve cette édition encore courante et remplace le symbole complet du premier coup. Les deux diffs finaux satisfont la même intention et les validations indépendantes passent ; la variante exacte de placement du fallback diffère sans changer le comportement. Le temps avant première édition régresse de 3,94 secondes sur cette paire unique et n'est pas attribué au correctif. Les baisses de durée et de tokens sont cohérentes avec le tour supprimé, mais une exécution provider ne constitue pas une preuve statistique.
+
+Un pilote antérieur est explicitement exclu des mesures : la fixture JSONC historique contenait une virgule finale que son propre validateur refusait déjà. Il a servi à corriger le scénario, pas à sélectionner le résultat. Les deux tests déterministes ajoutés couvrent la conservation indépendante de deux chemins et la compaction immédiate après lecture fraîche. Les suites finales passent avec 234 tests runtime et 13 tests runner, ainsi que lint, typecheck et builds concernés. La preview visuelle n'est pas applicable à ce scénario mécanique.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)

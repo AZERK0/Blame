@@ -41,6 +41,46 @@ test("preserves an edited path read until a fresh read replaces it", () => {
   assert.equal(projection.metrics.staleReadsReplaced, 0);
 });
 
+test("preserves current edits independently until their paths are observed", () => {
+  const messages = [
+    toolUse("edit-a", "edit_code", editInput("src/a.ts", "CURRENT_A")),
+    successfulEditResult("edit-a", "c1", "src/a.ts", "src_1"),
+    toolUse("edit-b", "edit_code", editInput("src/b.ts", "CURRENT_B")),
+    successfulEditResult("edit-b", "c2", "src/b.ts", "src_2"),
+  ];
+  const projection = projectProviderContext(messages, {
+    systemPrompt: "system",
+    tools: [{ name: "edit_code" }],
+  });
+  const serialized = JSON.stringify(projection.messages);
+  assert.match(serialized, /CURRENT_A/u);
+  assert.match(serialized, /CURRENT_B/u);
+  assert.equal(projection.metrics.successfulEditsReplaced, 0);
+});
+
+test("compacts an edit after a fresh read while retaining another path", () => {
+  const messages = [
+    toolUse("edit-a", "edit_code", editInput("src/a.ts", "OBSERVED_A")),
+    successfulEditResult("edit-a", "c1", "src/a.ts", "src_1"),
+    toolUse("read-a", "read_code", { target: "src/a.ts" }),
+    toolResult("read-a", "read_code", {
+      data: { content: "CURRENT_A", path: "src/a.ts" },
+      status: "ok",
+    }),
+    toolUse("edit-b", "edit_code", editInput("src/b.ts", "CURRENT_B")),
+    successfulEditResult("edit-b", "c2", "src/b.ts", "src_2"),
+  ];
+  const projection = projectProviderContext(messages, {
+    systemPrompt: "system",
+    tools: [{ name: "edit_code" }],
+  });
+  const serialized = JSON.stringify(projection.messages);
+  assert.doesNotMatch(serialized, /OBSERVED_A/u);
+  assert.match(serialized, /CURRENT_A/u);
+  assert.match(serialized, /CURRENT_B/u);
+  assert.equal(projection.metrics.successfulEditsReplaced, 1);
+});
+
 test("publishes content-free provider context measurements", async () => {
   const emitted: ContextProjectionMetrics[] = [];
   const extension = createContextProjectionExtension({
@@ -172,6 +212,10 @@ function successfulEditResult(
     receipt,
     status: "ok",
   });
+}
+
+function editInput(path: string, content: string) {
+  return { operations: [{ kind: "patch", patch: content, path }] };
 }
 
 function toolUse(id: string, name: string, input: Record<string, unknown>): Message {

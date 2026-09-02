@@ -43,6 +43,7 @@ type IndexedTool = {
 };
 
 type LatestEdit = {
+  id: string;
   index: number;
   revision?: string;
 };
@@ -55,7 +56,6 @@ type IndexedRead = {
 type HistoryIndex = {
   latestEditByPath: Map<string, LatestEdit>;
   latestReadIndexByPath: Map<string, number>;
-  latestSuccessfulEditId?: string;
   readById: Map<string, IndexedRead>;
   successfulEditIds: Set<string>;
   tools: Map<string, IndexedTool>;
@@ -134,15 +134,11 @@ function indexToolResult(
 }
 
 function finalizeHistoryIndex(history: HistoryIndex) {
-  let latestSuccessfulEditIndex = -1;
   for (const [id, tool] of history.tools) {
     if (tool.name === "read_code") indexRead(id, tool, history);
     if (tool.name !== "edit_code" || !successfulResult(tool.result)) continue;
     history.successfulEditIds.add(id);
-    indexEdit(tool, history);
-    if ((tool.resultIndex ?? -1) <= latestSuccessfulEditIndex) continue;
-    latestSuccessfulEditIndex = tool.resultIndex ?? -1;
-    history.latestSuccessfulEditId = id;
+    indexEdit(id, tool, history);
   }
 }
 
@@ -158,13 +154,13 @@ function indexRead(id: string, tool: IndexedTool, history: HistoryIndex) {
   history.latestReadIndexByPath.set(path, resultIndex);
 }
 
-function indexEdit(tool: IndexedTool, history: HistoryIndex) {
+function indexEdit(id: string, tool: IndexedTool, history: HistoryIndex) {
   const data = recordValue(tool.result?.data);
   const revision = stringValue(data?.sourceRevisionId);
   const index = tool.resultIndex ?? -1;
   for (const change of arrayValue(data?.changes).map(recordValue)) {
     const path = stringValue(change?.path);
-    if (path) history.latestEditByPath.set(path, { index, revision });
+    if (path) history.latestEditByPath.set(path, { id, index, revision });
   }
 }
 
@@ -221,22 +217,37 @@ function projectToolUse(
   stats: ProjectionStats,
 ): ToolUseContent {
   if (!history.successfulEditIds.has(block.id)) return block;
-  if (history.latestSuccessfulEditId === block.id) return block;
+  if (unobservedCurrentEdit(block.id, history)) return block;
   stats.successfulEditsReplaced += 1;
   const tool = history.tools.get(block.id);
   return { ...block, input: compactEditInput(tool) };
+}
+
+function unobservedCurrentEdit(id: string, history: HistoryIndex) {
+  const tool = history.tools.get(id);
+  const paths = changedPaths(tool);
+  return paths.some((path) => {
+    const edit = history.latestEditByPath.get(path);
+    const readIndex = history.latestReadIndexByPath.get(path);
+    return edit?.id === id && (readIndex === undefined || readIndex <= edit.index);
+  });
+}
+
+function changedPaths(tool: IndexedTool | undefined) {
+  const data = recordValue(tool?.result?.data);
+  return arrayValue(data?.changes)
+    .map(recordValue)
+    .flatMap((change) => {
+      const path = stringValue(change?.path);
+      return path ? [path] : [];
+    });
 }
 
 function compactEditInput(tool: IndexedTool | undefined) {
   const data = recordValue(tool?.result?.data);
   return {
     acknowledged: true,
-    changedPaths: arrayValue(data?.changes)
-      .map(recordValue)
-      .flatMap((change) => {
-        const path = stringValue(change?.path);
-        return path ? [path] : [];
-      }),
+    changedPaths: changedPaths(tool),
     receipt: stringValue(tool?.result?.receipt),
     sourceRevisionId: stringValue(data?.sourceRevisionId),
   };
