@@ -75,12 +75,18 @@ export type BenchmarkContextCompositionMetrics = {
   duplicateBytes: number;
   latestComposedBytes: number;
   latestDuplicateBytes: number;
+  latestMessageBytes: number;
   latestProjectedBytesSaved: number;
+  latestSystemPromptBytes: number;
+  latestToolDefinitionBytes: number;
   maximumComposedBytes: number;
+  messageBytes: number;
   projectedBytesSaved: number;
   requests: number;
   staleReadReplacements: number;
   successfulEditReplacements: number;
+  systemPromptBytes: number;
+  toolDefinitionBytes: number;
 };
 
 export type BenchmarkEditingMetrics = {

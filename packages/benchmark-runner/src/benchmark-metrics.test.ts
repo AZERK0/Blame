@@ -108,6 +108,12 @@ test("aggregates provider context composition notices", () => {
   assert.equal(composition.maximumComposedBytes, 1_100);
   assert.equal(composition.latestProjectedBytesSaved, 150);
   assert.equal(composition.duplicateBytes, 50);
+  assert.equal(composition.messageBytes, 1_100);
+  assert.equal(composition.systemPromptBytes, 600);
+  assert.equal(composition.toolDefinitionBytes, 300);
+  assert.equal(composition.latestMessageBytes, 600);
+  assert.equal(composition.latestSystemPromptBytes, 300);
+  assert.equal(composition.latestToolDefinitionBytes, 150);
   assert.equal(composition.categoryBytes["tool_input.edit_code"], 500);
   assert.equal(composition.staleReadReplacements, 2);
   assert.equal(composition.successfulEditReplacements, 4);
@@ -169,10 +175,13 @@ function compositionEvent(
         categories: { "tool_input.edit_code": 250 },
         composedBytes,
         duplicateBytes,
+        messageBytes: requestIndex === 1 ? 500 : 600,
         projectedBytesSaved,
         requestIndex,
         staleReadsReplaced: 1,
         successfulEditsReplaced: 2,
+        systemPromptBytes: 300,
+        toolDefinitionBytes: 150,
       },
       phase: "completed",
     },

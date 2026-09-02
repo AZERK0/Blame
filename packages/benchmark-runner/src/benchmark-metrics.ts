@@ -40,8 +40,12 @@ export class BenchmarkMetricsCollector {
   private hybridCalls = 0;
   private latestComposedBytes = 0;
   private latestDuplicateBytes = 0;
+  private latestMessageBytes = 0;
   private latestProjectedBytesSaved = 0;
+  private latestSystemPromptBytes = 0;
+  private latestToolDefinitionBytes = 0;
   private maximumComposedBytes = 0;
+  private messageBytes = 0;
   private navigationBytes = 0;
   private patchOperations = 0;
   private projectedBytesSaved = 0;
@@ -50,6 +54,8 @@ export class BenchmarkMetricsCollector {
   private symbolOperations = 0;
   private staleReadReplacements = 0;
   private successfulEditReplacements = 0;
+  private systemPromptBytes = 0;
+  private toolDefinitionBytes = 0;
 
   record(event: AgentEvent, recordedAt = Date.now()) {
     if (event.type === "usage") return this.recordUsage(event);
@@ -92,14 +98,24 @@ export class BenchmarkMetricsCollector {
     const metrics = recordValue(value);
     const composedBytes = numberValue(metrics.composedBytes) ?? 0;
     const duplicateBytes = numberValue(metrics.duplicateBytes) ?? 0;
+    const messageBytes = numberValue(metrics.messageBytes) ?? 0;
     const projectedBytesSaved = numberValue(metrics.projectedBytesSaved) ?? 0;
+    const systemPromptBytes = numberValue(metrics.systemPromptBytes) ?? 0;
+    const toolDefinitionBytes =
+      numberValue(metrics.toolDefinitionBytes) ?? 0;
     this.composedRequests += 1;
     this.composedBytes += composedBytes;
     this.duplicateBytes += duplicateBytes;
+    this.messageBytes += messageBytes;
     this.projectedBytesSaved += projectedBytesSaved;
+    this.systemPromptBytes += systemPromptBytes;
+    this.toolDefinitionBytes += toolDefinitionBytes;
     this.latestComposedBytes = composedBytes;
     this.latestDuplicateBytes = duplicateBytes;
+    this.latestMessageBytes = messageBytes;
     this.latestProjectedBytesSaved = projectedBytesSaved;
+    this.latestSystemPromptBytes = systemPromptBytes;
+    this.latestToolDefinitionBytes = toolDefinitionBytes;
     this.maximumComposedBytes = Math.max(this.maximumComposedBytes, composedBytes);
     this.staleReadReplacements += numberValue(metrics.staleReadsReplaced) ?? 0;
     this.successfulEditReplacements +=
@@ -255,12 +271,18 @@ export class BenchmarkMetricsCollector {
       duplicateBytes: this.duplicateBytes,
       latestComposedBytes: this.latestComposedBytes,
       latestDuplicateBytes: this.latestDuplicateBytes,
+      latestMessageBytes: this.latestMessageBytes,
       latestProjectedBytesSaved: this.latestProjectedBytesSaved,
+      latestSystemPromptBytes: this.latestSystemPromptBytes,
+      latestToolDefinitionBytes: this.latestToolDefinitionBytes,
       maximumComposedBytes: this.maximumComposedBytes,
+      messageBytes: this.messageBytes,
       projectedBytesSaved: this.projectedBytesSaved,
       requests: this.composedRequests,
       staleReadReplacements: this.staleReadReplacements,
       successfulEditReplacements: this.successfulEditReplacements,
+      systemPromptBytes: this.systemPromptBytes,
+      toolDefinitionBytes: this.toolDefinitionBytes,
     };
   }
 
