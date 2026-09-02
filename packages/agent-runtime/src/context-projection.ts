@@ -19,6 +19,7 @@ export type ContextProjectionMetrics = {
   requestIndex: number;
   staleReadsReplaced: number;
   successfulEditsReplaced: number;
+  validatedEditsReplaced: number;
   systemPromptBytes: number;
   toolDefinitionBytes: number;
   transcriptHash: string;
@@ -33,6 +34,7 @@ type ContextProjectionOptions = {
 type ProjectionStats = {
   staleReadsReplaced: number;
   successfulEditsReplaced: number;
+  validatedEditsReplaced: number;
 };
 
 type IndexedTool = {
@@ -54,12 +56,22 @@ type IndexedRead = {
 };
 
 type HistoryIndex = {
+  latestSourceRevision?: string;
   latestEditByPath: Map<string, LatestEdit>;
   latestReadIndexByPath: Map<string, number>;
-  readById: Map<string, IndexedRead>;
+  readById: Map<string, IndexedRead[]>;
   successfulEditIds: Set<string>;
   tools: Map<string, IndexedTool>;
+  validations: ValidationProof[];
 };
+
+type ValidationProof = {
+  index: number;
+  paths: Set<string>;
+  revision: string;
+};
+
+const minimumValidatedEditBytes = 4_096;
 
 export function createContextProjectionExtension(
   options: ContextProjectionOptions,
@@ -136,22 +148,22 @@ function indexToolResult(
 function finalizeHistoryIndex(history: HistoryIndex) {
   for (const [id, tool] of history.tools) {
     if (tool.name === "read_code") indexRead(id, tool, history);
-    if (tool.name !== "edit_code" || !successfulResult(tool.result)) continue;
-    history.successfulEditIds.add(id);
-    indexEdit(id, tool, history);
+    if (tool.name === "edit_code" && successfulResult(tool.result)) {
+      history.successfulEditIds.add(id);
+      indexEdit(id, tool, history);
+    }
+    indexSourceRevision(tool, history);
+    if (tool.name === "run_task") indexValidation(tool, history);
   }
 }
 
 function indexRead(id: string, tool: IndexedTool, history: HistoryIndex) {
-  const data = recordValue(tool.result?.data);
-  const path = stringValue(data?.path) ?? stringValue(tool.input.target);
-  if (!path) return;
   const resultIndex = tool.resultIndex ?? -1;
-  history.readById.set(id, {
-    path,
-    receipt: stringValue(tool.result?.receipt),
-  });
-  history.latestReadIndexByPath.set(path, resultIndex);
+  const reads = indexedReads(tool);
+  if (!reads.length) return;
+  history.readById.set(id, reads);
+  for (const read of reads)
+    history.latestReadIndexByPath.set(read.path, resultIndex);
 }
 
 function indexEdit(id: string, tool: IndexedTool, history: HistoryIndex) {
@@ -162,6 +174,40 @@ function indexEdit(id: string, tool: IndexedTool, history: HistoryIndex) {
     const path = stringValue(change?.path);
     if (path) history.latestEditByPath.set(path, { id, index, revision });
   }
+}
+
+function indexSourceRevision(tool: IndexedTool, history: HistoryIndex) {
+  if (!successfulResult(tool.result)) return;
+  const data = recordValue(tool.result?.data);
+  const validation = recordValue(data?.validation);
+  const revision =
+    stringValue(data?.sourceRevisionId) ??
+    stringValue(validation?.sourceRevisionId);
+  if (revision) history.latestSourceRevision = revision;
+}
+
+function indexValidation(tool: IndexedTool, history: HistoryIndex) {
+  const validation = recordValue(recordValue(tool.result?.data)?.validation);
+  const revision = stringValue(validation?.sourceRevisionId);
+  const paths = stringArray(validation?.paths);
+  if (
+    validation?.status !== "passed" ||
+    !trustedValidationKind(validation?.taskKind) ||
+    !revision ||
+    !paths.length
+  )
+    return;
+  history.validations.push({
+    index: tool.resultIndex ?? -1,
+    paths: new Set(paths),
+    revision,
+  });
+}
+
+function trustedValidationKind(value: unknown) {
+  return ["build", "dependencies", "lint", "test", "typecheck"].includes(
+    String(value),
+  );
 }
 
 function projectMessage(
@@ -188,26 +234,28 @@ function projectBlock(
 ): ContentBlock {
   if (block.type === "tool_use") return projectToolUse(block, history, stats);
   if (block.type !== "tool_result") return block;
-  const read = history.readById.get(block.tool_use_id);
-  const edit = read ? history.latestEditByPath.get(read.path) : undefined;
-  const latestReadIndex = read
-    ? history.latestReadIndexByPath.get(read.path)
-    : undefined;
-  if (!read || !supersededRead(index, edit, latestReadIndex)) return block;
-  stats.staleReadsReplaced += 1;
-  return supersededReadResult(block, read, edit?.revision);
+  const reads = history.readById.get(block.tool_use_id);
+  if (
+    !reads?.length ||
+    !reads.every((read) => supersededRead(index, read, history))
+  )
+    return block;
+  stats.staleReadsReplaced += reads.length;
+  return supersededReadResult(block, reads);
 }
 
 function supersededRead(
   readIndex: number,
-  edit: LatestEdit | undefined,
-  latestReadIndex: number | undefined,
+  read: IndexedRead,
+  history: HistoryIndex,
 ) {
+  const edit = history.latestEditByPath.get(read.path);
+  const latestReadIndex = history.latestReadIndexByPath.get(read.path);
   return Boolean(
     edit &&
-      edit.index > readIndex &&
-      latestReadIndex !== undefined &&
-      latestReadIndex > edit.index,
+    edit.index > readIndex &&
+    latestReadIndex !== undefined &&
+    latestReadIndex > edit.index,
   );
 }
 
@@ -217,10 +265,29 @@ function projectToolUse(
   stats: ProjectionStats,
 ): ToolUseContent {
   if (!history.successfulEditIds.has(block.id)) return block;
-  if (unobservedCurrentEdit(block.id, history)) return block;
+  const validated = validatedCurrentEdit(block.id, history);
+  if (unobservedCurrentEdit(block.id, history) && !validated) return block;
   stats.successfulEditsReplaced += 1;
+  if (validated) stats.validatedEditsReplaced += 1;
   const tool = history.tools.get(block.id);
   return { ...block, input: compactEditInput(tool) };
+}
+
+function validatedCurrentEdit(id: string, history: HistoryIndex) {
+  const tool = history.tools.get(id);
+  const paths = changedPaths(tool);
+  if (
+    !paths.length ||
+    !history.latestSourceRevision ||
+    serializedBytes(tool?.input) < minimumValidatedEditBytes
+  )
+    return false;
+  return history.validations.some(
+    (validation) =>
+      validation.index > (tool?.resultIndex ?? -1) &&
+      validation.revision === history.latestSourceRevision &&
+      paths.every((path) => validation.paths.has(path)),
+  );
 }
 
 function unobservedCurrentEdit(id: string, history: HistoryIndex) {
@@ -229,7 +296,9 @@ function unobservedCurrentEdit(id: string, history: HistoryIndex) {
   return paths.some((path) => {
     const edit = history.latestEditByPath.get(path);
     const readIndex = history.latestReadIndexByPath.get(path);
-    return edit?.id === id && (readIndex === undefined || readIndex <= edit.index);
+    return (
+      edit?.id === id && (readIndex === undefined || readIndex <= edit.index)
+    );
   });
 }
 
@@ -255,16 +324,13 @@ function compactEditInput(tool: IndexedTool | undefined) {
 
 function supersededReadResult(
   block: ToolResultContent,
-  read: IndexedRead,
-  revision?: string,
+  reads: IndexedRead[],
 ): ToolResultContent {
   return {
     ...block,
     content: JSON.stringify({
       data: {
-        latestRevision: revision,
-        path: read.path,
-        receipt: read.receipt,
+        reads: reads.map(({ path, receipt }) => ({ path, receipt })),
       },
       status: "superseded_after_edit",
     }),
@@ -294,6 +360,7 @@ function contextMetrics(
     requestIndex,
     staleReadsReplaced: stats.staleReadsReplaced,
     successfulEditsReplaced: stats.successfulEditsReplaced,
+    validatedEditsReplaced: stats.validatedEditsReplaced,
     systemPromptBytes,
     toolDefinitionBytes,
     transcriptHash: hashValue(projected),
@@ -305,7 +372,11 @@ function contextCategories(messages: Message[]) {
   const toolNames = toolNamesById(messages);
   for (const message of messages) {
     if (typeof message.content === "string")
-      addCategory(categories, `${message.role}_text`, utf8Bytes(message.content));
+      addCategory(
+        categories,
+        `${message.role}_text`,
+        utf8Bytes(message.content),
+      );
     else
       for (const block of message.content)
         addCategory(
@@ -389,11 +460,16 @@ function emptyHistoryIndex(): HistoryIndex {
     readById: new Map(),
     successfulEditIds: new Set(),
     tools: new Map(),
+    validations: [],
   };
 }
 
 function emptyProjectionStats(): ProjectionStats {
-  return { staleReadsReplaced: 0, successfulEditsReplaced: 0 };
+  return {
+    staleReadsReplaced: 0,
+    successfulEditsReplaced: 0,
+    validatedEditsReplaced: 0,
+  };
 }
 
 function addCategory(
@@ -429,6 +505,28 @@ function arrayValue(value: unknown) {
 
 function stringValue(value: unknown) {
   return typeof value === "string" ? value : undefined;
+}
+
+function stringArray(value: unknown) {
+  return arrayValue(value).flatMap((item) =>
+    typeof item === "string" ? [item] : [],
+  );
+}
+
+function indexedReads(tool: IndexedTool) {
+  if (!successfulResult(tool.result)) return [];
+  const data = recordValue(tool.result?.data);
+  const directPath = stringValue(data?.path) ?? stringValue(tool.input.target);
+  if (directPath)
+    return [{ path: directPath, receipt: stringValue(tool.result?.receipt) }];
+  return arrayValue(data?.results).flatMap((value) => {
+    const item = recordValue(value);
+    const result = recordValue(item?.result);
+    if (!successfulResult(result)) return [];
+    const path =
+      stringValue(recordValue(result?.data)?.path) ?? stringValue(item?.target);
+    return path ? [{ path, receipt: stringValue(result?.receipt) }] : [];
+  });
 }
 
 function measurableToolDefinition(value: unknown) {

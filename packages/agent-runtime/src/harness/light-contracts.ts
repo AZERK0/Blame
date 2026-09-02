@@ -13,7 +13,10 @@ export const lightSearchCodeInputSchema = z
 
 export const lightReadCodeInputSchema = z
   .object({
-    target: z.string().trim().min(1).max(4_096),
+    target: z.union([
+      z.string().trim().min(1).max(4_096),
+      z.array(z.string().trim().min(1).max(4_096)).min(1).max(8),
+    ]),
     view: z.enum(["auto", "raw", "outline", "symbol", "range"]).optional(),
     range: z
       .object({
@@ -93,6 +96,9 @@ export const finishTaskInputSchema = z
 
 export type LightSearchCodeInput = z.infer<typeof lightSearchCodeInputSchema>;
 export type LightReadCodeInput = z.infer<typeof lightReadCodeInputSchema>;
+export type SingleLightReadCodeInput = Omit<LightReadCodeInput, "target"> & {
+  target: string;
+};
 export type LightEditCodeInput = z.infer<typeof lightEditCodeInputSchema>;
 export type LightRunTaskInput = z.infer<typeof lightRunTaskInputSchema>;
 

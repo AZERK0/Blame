@@ -223,6 +223,7 @@ export type StartDevelopmentSessionInput = {
   checkpointEnabled?: boolean;
   configExtensions?: AgentRuntimeConfigExtension[];
   disableMcpSettingsTools?: boolean;
+  enableSpecialistConsult?: boolean;
   maxIterations?: number;
   pluginPaths?: string[];
   title: string;

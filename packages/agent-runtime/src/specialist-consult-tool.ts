@@ -49,9 +49,7 @@ export function createConsultSpecialistTool(
   return createTool<unknown, unknown>({
     name: "consult_specialist",
     description: [
-      "Consult one private, read-only Blame specialist for a focused advisory analysis.",
-      "Use only when the user or lead explicitly requests a specialist, and at most one unless the request names more. The lead remains the sole implementer.",
-      "Available specialists:",
+      "Consult one private read-only adviser only when explicitly requested. The lead implements and verifies. Available:",
       ...blameSpecialistAgentMetadata.map(
         (agent) => `${agent.id} (${agent.name}): ${agent.routing}`,
       ),

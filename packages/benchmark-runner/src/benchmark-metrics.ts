@@ -54,6 +54,7 @@ export class BenchmarkMetricsCollector {
   private symbolOperations = 0;
   private staleReadReplacements = 0;
   private successfulEditReplacements = 0;
+  private validatedEditReplacements = 0;
   private systemPromptBytes = 0;
   private toolDefinitionBytes = 0;
 
@@ -122,6 +123,8 @@ export class BenchmarkMetricsCollector {
     this.staleReadReplacements += numberValue(metrics.staleReadsReplaced) ?? 0;
     this.successfulEditReplacements +=
       numberValue(metrics.successfulEditsReplaced) ?? 0;
+    this.validatedEditReplacements +=
+      numberValue(metrics.validatedEditsReplaced) ?? 0;
     this.recordCompositionCategories(metrics.categories);
   }
 
@@ -240,9 +243,13 @@ export class BenchmarkMetricsCollector {
 
   private recordRead(tool: string, input: unknown, output: unknown) {
     const requestedFiles = arrayValue(recordValue(input).files).length;
-    this.readCalls += tool === "read_files" ? Math.max(1, requestedFiles) : 1;
+    const requestedTargets = arrayValue(recordValue(input).target).length;
+    this.readCalls +=
+      tool === "read_files"
+        ? Math.max(1, requestedFiles)
+        : Math.max(1, requestedTargets);
     const data = recordValue(recordValue(output).data);
-    if (data.status === "already_in_context") this.deduplicatedReads += 1;
+    this.deduplicatedReads += deduplicatedReadCount(data);
     this.navigationBytes += serializedBytes(output);
   }
 
@@ -283,6 +290,7 @@ export class BenchmarkMetricsCollector {
       requests: this.composedRequests,
       staleReadReplacements: this.staleReadReplacements,
       successfulEditReplacements: this.successfulEditReplacements,
+      validatedEditReplacements: this.validatedEditReplacements,
       systemPromptBytes: this.systemPromptBytes,
       toolDefinitionBytes: this.toolDefinitionBytes,
     };
@@ -337,6 +345,14 @@ export class BenchmarkMetricsCollector {
       searchCalls: this.searchCalls,
     };
   }
+}
+
+function deduplicatedReadCount(data: Record<string, unknown>) {
+  if (data.status === "already_in_context") return 1;
+  return arrayValue(data.results).filter((item) => {
+    const result = recordValue(recordValue(item).result);
+    return recordValue(result.data).status === "already_in_context";
+  }).length;
 }
 
 function updateToolMetric(

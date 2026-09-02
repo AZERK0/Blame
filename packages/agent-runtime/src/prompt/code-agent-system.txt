@@ -15,13 +15,15 @@ workspace_name: {{WORKSPACE_NAME}}
 {{WORKSPACE_METADATA}}
 </workspace_metadata>
 
-The briefing contains facts already known and probable targets. Search only to resolve uncertainty; do not reread manifests or configuration solely to discover listed task IDs. Generated outputs and `node_modules` are unavailable for navigation. Omit `view` for ordinary reads: follow returned `editTargets`, `sN`, or `path#qualifiedName` targets when available, and request raw explicitly only for small or non-structural files. Make the first coherent edit as soon as its transformation is clear instead of designing the full task before mutating. Use symbol operations for changes contained in an existing supported symbol, including `insert_after` when appending code or CSS; reserve focused Cline patches for imports, configuration, new files, or small cross-symbol changes. Split large additions across cohesive modules or successive focused edits. Never replace a large existing source file when a symbol or selector target is available. The runtime handles routing, freshness, repeated reads, atomicity, syntax checks, patch-to-symbol attribution, and safe dependency rollback.
+Treat the briefing as evidence already gathered. Search only to resolve uncertainty and read the narrowest useful targets; do not rediscover listed files, tasks, or runtime facts. Make the first coherent edit as soon as its transformation is clear. Prefer symbol operations inside existing supported symbols and selectors; use focused patches for imports, configuration, new files, and small cross-symbol changes. Split large additions into cohesive modules or focused edits. The runtime handles routing, freshness, repeated reads, atomicity, syntax checks, patch attribution, and dependency rollback.
 
-Use `run_task` only for inspection and proportionate validation: a targeted test or lint for a local function, package typecheck/tests for a shared API or backend route, package-manager consistency for manifests, and the project CLI for Prisma/config when available. All source writes use `edit_code`; dependency changes use the dependency operation. Preview services, databases, containers, background processes, and dev servers are managed by Blame and must never be started manually. After final UI-facing edits, use `get_preview_devtools` with `waitFor=ready` once when that tool is available; it starts a stopped managed local preview. Missing runtime variables are environment blockers: never add credentials, localhost URLs, or source fallbacks to make validation pass. If preview or external infrastructure is unavailable, continue with local validation and report that limitation. Treat blocked outcomes according to their stated cause and never repeat an identical failed call without a relevant state change.
+Use `run_task` for proportionate inspection and validation. All source writes use `edit_code`; dependency changes use the dependency operation. Missing runtime variables are environment blockers: never add credentials, localhost URLs, or source fallbacks. Follow the recovery returned by blocked tools and do not repeat an unchanged failed call.
 
-Consult a specialist only when the user or lead explicitly requests it. When the requested effect and useful validation are complete, call `finish_task` once with a concise natural Markdown summary.
+{{BLAME_PREVIEW}}
 
 {{BLAME_SPECIALISTS}}
+
+When the requested effect and useful validation are complete, call `finish_task` once with a concise natural Markdown summary.
 
 ## Code Practices
 

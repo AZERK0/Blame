@@ -301,6 +301,32 @@ test("tool surface contains only the four workspace tools", async () => {
   );
 });
 
+test("read_code batches bounded targets and deduplicates repeated requests", async () => {
+  await withWorkspace(
+    {
+      "a.ts": "export const a = 1\n",
+      "b.ts": "export const b = 2\n",
+    },
+    async (root) => {
+      const read = lightSemanticHarnessTools(root, {
+        taskContract: contract("batch-read"),
+      }).find(({ name }) => name === "read_code");
+      assert.ok(read);
+      const result = await read.execute({ target: ["a.ts", "b.ts", "a.ts"] }, {
+        agentId: "lead",
+      } as never);
+      assert.equal(result.status, "ok");
+      const batch = data(result as LightToolResult<unknown>);
+      assert.equal(batch.requested, 3);
+      assert.equal(batch.returned, 2);
+      assert.deepEqual(
+        array(batch.results).map((item) => record(item).target),
+        ["a.ts", "b.ts"],
+      );
+    },
+  );
+});
+
 test("auto search combines lexical matches and supports multi-term glob scopes", async () => {
   await withWorkspace(
     {
@@ -643,8 +669,8 @@ test("the briefing exposes package topology, key files, and stack versions", asy
       assert.match(briefing ?? "", /pass listed IDs directly to run_task/u);
       assert.match(briefing ?? "", /packages\/api\/src\/server\.ts#server/u);
       assert.doesNotMatch(briefing ?? "", /scripts dev/u);
-      assert.match(briefing ?? "", /must not be started manually/u);
-      assert.match(briefing ?? "", /node_modules/u);
+      assert.doesNotMatch(briefing ?? "", /Preview services/u);
+      assert.doesNotMatch(briefing ?? "", /node_modules/u);
       assert.ok((briefing?.length ?? Infinity) < 6_000);
     },
   );
@@ -1001,11 +1027,21 @@ test("run_task reuses identical inspections and rejects service scripts", async 
       );
       assert.equal(first.cached, undefined);
       assert.equal(second.cached, true);
-      await workspace.tasks.run({ kind: "project", task: "test" });
+      assert.equal(first.validation, undefined);
+      assert.equal(second.validation, undefined);
+      const firstValidation = data(
+        await workspace.tasks.run({ kind: "project", task: "test" }),
+      );
       const validation = data(
         await workspace.tasks.run({ kind: "project", task: "test" }),
       );
       assert.equal(validation.cached, true);
+      assert.equal(record(firstValidation.validation).status, "passed");
+      assert.equal(record(validation.validation).status, "passed");
+      assert.equal(
+        record(firstValidation.validation).sourceRevisionId,
+        record(validation.validation).sourceRevisionId,
+      );
       const service = await workspace.tasks.run({
         kind: "project",
         task: "dev",

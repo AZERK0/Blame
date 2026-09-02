@@ -98,7 +98,7 @@ function searchCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "search_code",
     description:
-      "Find workspace source by path, text, symbol, or references. Auto promotes lexical hits inside supported symbols to editable sN aliases; multi-term queries match useful terms instead of requiring an exact phrase. Scope accepts paths and *, **, ?, or {a,b} globs. Generated outputs and node_modules are unavailable by design. Returns at most eight short results.",
+      "Find source by path, text, symbol, or references. Lexical hits inside supported symbols become editable sN aliases. Multi-term queries match useful terms. Scope accepts paths and *, **, ?, or {a,b} globs. Returns up to eight short results; generated outputs and node_modules are excluded.",
     schema: lightSearchCodeInputSchema,
     execute: (input, context) => workspace.searchCode(input, context.signal),
   });
@@ -108,7 +108,7 @@ function readCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "read_code",
     description:
-      "Read a file, compact directory, sN alias, path#qualifiedName, @changes, or @capabilities. Omit view normally: small files route to raw and large supported files to outlines. Raw results include non-overlapping editTargets; nested items identify their containedBy parent. A lexical alias promotes to its enclosing symbol. Generated outputs and node_modules are unavailable; unsupported symbolic views fall back to raw.",
+      "Read one target or up to eight independent targets in one call: file, compact directory, sN alias, path#qualifiedName, @changes, or @capabilities. Omit view for automatic raw/outline routing. Results expose editTargets and containedBy relationships; unsupported symbolic views fall back to raw. Generated outputs and node_modules are excluded.",
     schema: lightReadCodeInputSchema,
     execute: (input, context) => workspace.readCode(input, context),
   });
@@ -118,7 +118,7 @@ function editCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "edit_code",
     description:
-      "Apply one atomic batch of symbol operations and native Cline patches. Prefer symbols within existing supported targets; use focused patches for imports, raw/config files, new files, or small cross-symbol changes. Append with insert_after on an editTarget. Do not combine a parent and its containedBy child. Multi-file patches are attributed automatically. Operations share one snapshot, reject overlaps, parse final states, and need no hashes or revisions.",
+      "Atomically apply symbol operations and native Cline patches. Use symbols inside existing supported targets; use focused patches for imports, raw/config files, new files, or cross-symbol changes. Append with insert_after on an editTarget. Do not combine a parent with its containedBy child. One snapshot validates overlaps and final syntax; hashes and revisions are inferred.",
     schema: lightEditCodeInputSchema,
     execute: (input, context) =>
       workspace.editCode(input, {
@@ -132,7 +132,7 @@ function runTaskTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "run_task",
     description:
-      "Run a known finite project validation or read-only bounded command, add/remove dependencies through the detected package manager, or apply Prettier atomically to explicit existing file paths with `pnpm exec prettier --write <files>`. Identical validations at the same source revision are reused. Other filesystem writes, directory-wide formatters, dev servers, databases, containers, background processes, and manual preview infrastructure are denied. Returns compact successful output or a complete bounded failure diagnostic with code/environment classification.",
+      "Run a known finite validation or bounded read-only command, add/remove dependencies through the detected package manager, or apply Prettier atomically to explicit files with `pnpm exec prettier --write <files>`. Same-revision validations are reused. Other writes and unmanaged services are denied. Returns compact output or a bounded code/environment diagnostic.",
     schema: lightRunTaskInputSchema,
     execute: (input, context) => workspace.runTask(input, context),
   });

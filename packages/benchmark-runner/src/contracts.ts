@@ -85,6 +85,7 @@ export type BenchmarkContextCompositionMetrics = {
   requests: number;
   staleReadReplacements: number;
   successfulEditReplacements: number;
+  validatedEditReplacements: number;
   systemPromptBytes: number;
   toolDefinitionBytes: number;
 };

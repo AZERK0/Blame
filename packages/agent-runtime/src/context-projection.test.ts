@@ -81,6 +81,62 @@ test("compacts an edit after a fresh read while retaining another path", () => {
   assert.equal(projection.metrics.successfulEditsReplaced, 1);
 });
 
+test("compacts a large edit after validation of the current revision", () => {
+  const largeContent = "LARGE_VALIDATED_EDIT".repeat(400);
+  const messages = [
+    toolUse("edit-a", "edit_code", editInput("src/a.ts", largeContent)),
+    successfulEditResult("edit-a", "c1", "src/a.ts", "src_1"),
+    toolUse("build", "run_task", { kind: "project", task: "build" }),
+    validationResult("build", ["src/a.ts"], "src_1"),
+  ];
+  const projection = projectProviderContext(messages, {
+    systemPrompt: "system",
+    tools: [{ name: "edit_code" }],
+  });
+  assert.doesNotMatch(
+    JSON.stringify(projection.messages),
+    /LARGE_VALIDATED_EDIT/u,
+  );
+  assert.equal(projection.metrics.successfulEditsReplaced, 1);
+  assert.equal(projection.metrics.validatedEditsReplaced, 1);
+  assert.ok(projection.metrics.projectedBytesSaved > 4_096);
+});
+
+test("preserves edits when validation is stale or partial", () => {
+  const large = "UNPROVEN_EDIT".repeat(400);
+  const messages = [
+    toolUse("edit-a", "edit_code", editInput("src/a.ts", large)),
+    successfulEditResult("edit-a", "c1", "src/a.ts", "src_1"),
+    toolUse("build", "run_task", { kind: "project", task: "build" }),
+    validationResult("build", ["src/other.ts"], "src_1"),
+    toolUse("edit-b", "edit_code", editInput("src/b.ts", "CURRENT_B")),
+    successfulEditResult("edit-b", "c2", "src/b.ts", "src_2"),
+  ];
+  const projection = projectProviderContext(messages, {
+    systemPrompt: "system",
+    tools: [{ name: "edit_code" }],
+  });
+  const serialized = JSON.stringify(projection.messages);
+  assert.match(serialized, /UNPROVEN_EDIT/u);
+  assert.match(serialized, /CURRENT_B/u);
+  assert.equal(projection.metrics.validatedEditsReplaced, 0);
+});
+
+test("preserves a small edit after validation", () => {
+  const messages = [
+    toolUse("edit-a", "edit_code", editInput("src/a.ts", "SMALL_EDIT")),
+    successfulEditResult("edit-a", "c1", "src/a.ts", "src_1"),
+    toolUse("build", "run_task", { kind: "project", task: "build" }),
+    validationResult("build", ["src/a.ts"], "src_1"),
+  ];
+  const projection = projectProviderContext(messages, {
+    systemPrompt: "system",
+    tools: [{ name: "edit_code" }],
+  });
+  assert.match(JSON.stringify(projection.messages), /SMALL_EDIT/u);
+  assert.equal(projection.metrics.validatedEditsReplaced, 0);
+});
+
 test("publishes content-free provider context measurements", async () => {
   const emitted: ContextProjectionMetrics[] = [];
   const extension = createContextProjectionExtension({
@@ -88,7 +144,9 @@ test("publishes content-free provider context measurements", async () => {
     systemPrompt: "system",
     tools: [{ description: "Edit", name: "edit_code" }],
   });
-  let build: ((messages: Message[]) => Message[] | Promise<Message[]>) | undefined;
+  let build:
+    | ((messages: Message[]) => Message[] | Promise<Message[]>)
+    | undefined;
   await extension.setup?.(
     {
       registerMessageBuilder(builder: {
@@ -114,7 +172,10 @@ test("publishes content-free provider context measurements", async () => {
 });
 
 test("executes native Cline compaction on a long context", async () => {
-  const notices: Array<{ message: string; metadata?: Record<string, unknown> }> = [];
+  const notices: Array<{
+    message: string;
+    metadata?: Record<string, unknown>;
+  }> = [];
   const prepare = nativeCompactionPrepareTurn();
   assert.ok(prepare);
   const messages = longMessages();
@@ -123,10 +184,8 @@ test("executes native Cline compaction on a long context", async () => {
     agentId: "agent",
     apiMessages: messages,
     conversationId: "conversation",
-    emitStatusNotice: (
-      message: string,
-      metadata?: Record<string, unknown>,
-    ) => notices.push({ message, metadata }),
+    emitStatusNotice: (message: string, metadata?: Record<string, unknown>) =>
+      notices.push({ message, metadata }),
     iteration: messages.length,
     messages,
     model: {
@@ -214,11 +273,33 @@ function successfulEditResult(
   });
 }
 
+function validationResult(
+  id: string,
+  paths: string[],
+  sourceRevisionId: string,
+) {
+  return toolResult(id, "run_task", {
+    data: {
+      validation: {
+        paths,
+        sourceRevisionId,
+        status: "passed",
+        taskKind: "build",
+      },
+    },
+    status: "ok",
+  });
+}
+
 function editInput(path: string, content: string) {
   return { operations: [{ kind: "patch", patch: content, path }] };
 }
 
-function toolUse(id: string, name: string, input: Record<string, unknown>): Message {
+function toolUse(
+  id: string,
+  name: string,
+  input: Record<string, unknown>,
+): Message {
   return {
     content: [{ id, input, name, type: "tool_use" }],
     role: "assistant",

@@ -97,7 +97,6 @@ function briefingLines(input: BriefingFacts) {
     ...(input.candidates.length
       ? [`Likely targets: ${input.candidates.join(", ")}.`]
       : []),
-    "Navigation excludes generated outputs and node_modules; use run_task diagnostics for dependency or generated-client state. Preview services and databases are managed by Blame and must not be started manually.",
   ];
 }
 

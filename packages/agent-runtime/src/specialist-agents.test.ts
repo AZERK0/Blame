@@ -30,8 +30,8 @@ test("keeps full specialist prompts out of lead routing guidance", () => {
   const prompt = blameSpecialistRoutingSystemPrompt();
 
   assert.match(prompt, /consult_specialist/);
-  assert.match(prompt, /private instructions internally/);
-  assert.match(prompt, /read-only and advisory/);
+  assert.match(prompt, /private, read-only advisers/);
+  assert.match(prompt, /retain implementation and verification/);
   assert.ok(Buffer.byteLength(prompt) < 600);
   assert.doesNotMatch(prompt, /<system_prompt/);
   assert.doesNotMatch(prompt, /## Specialist knowledge/);

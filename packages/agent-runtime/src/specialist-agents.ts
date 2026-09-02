@@ -1,4 +1,5 @@
 import { loadPrompt } from "./prompt-loader.js";
+import type { StartDevelopmentSessionInput } from "./types.js";
 
 export const blameSpecialistAgentIds = [
   "codebase_analyst",
@@ -22,36 +23,31 @@ const specialistAgents = [
     id: "codebase_analyst",
     name: "Codebase Analyst",
     promptName: "agents/codebase-analyst-system",
-    routing:
-      "unfamiliar codebase areas, monorepos, large features, refactors, architecture-sensitive changes, or complex bugs",
+    routing: "architecture, monorepos, large refactors, or complex bugs",
   },
   {
     id: "story_analyst",
     name: "Story Analyst",
     promptName: "agents/story-analyst-system",
-    routing:
-      "vague backlog items, missing acceptance criteria, unclear product behavior, or scope questions",
+    routing: "ambiguous behavior, acceptance criteria, or scope",
   },
   {
     id: "frontend_design",
     name: "Frontend Design Specialist",
     promptName: "agents/frontend-design-specialist-system",
-    routing:
-      "visual surface implementation such as landing pages, onboarding, login screens, empty states, dashboards, redesigns, or UI polish; never backend, API, schema, or data work merely because the feature has a visual name",
+    routing: "visual surfaces, UX, responsive behavior, or UI polish",
   },
   {
     id: "test_verification",
     name: "Test & Verification Analyst",
     promptName: "agents/test-verification-analyst-system",
-    routing:
-      "business logic, backend behavior, parsing, validation, state management, bug fixes, refactors, or final verification planning",
+    routing: "business logic, backend behavior, tests, or verification",
   },
   {
     id: "risk_review",
     name: "Risk & Review Analyst",
     promptName: "agents/risk-review-analyst-system",
-    routing:
-      "auth, permissions, migrations, secrets, filesystem, shell/runtime/container/cloud behavior, large diffs, or merge readiness",
+    routing: "auth, migrations, secrets, runtime boundaries, or merge risk",
   },
 ] as const satisfies readonly SpecialistAgent[];
 
@@ -66,9 +62,7 @@ export const blameSpecialistAgentMetadata = specialistAgents.map(
 export function blameSpecialistRoutingSystemPrompt() {
   return [
     "## Blame Specialist Consultations",
-    "Use consult_specialist only when the user or lead explicitly requests it, never automatically because work is ambiguous, risky, or failing.",
-    "Use at most one specialist unless the explicit request names more.",
-    "The tool lists available specialists and supplies their private instructions internally. They are read-only and advisory; you own implementation, verification, decisions, and communication.",
+    "Use consult_specialist only for the explicit specialist request. Use at most one unless the request names more. Specialists are private, read-only advisers; you retain implementation and verification.",
   ].join("\n");
 }
 
@@ -79,4 +73,25 @@ export function blameSpecialistAgent(id: BlameSpecialistAgentId) {
     ...agent,
     systemPrompt: loadPrompt(agent.promptName),
   };
+}
+
+export function developmentSpecialistConsultEnabled(
+  input: Pick<
+    StartDevelopmentSessionInput,
+    | "autoSendPrompt"
+    | "enableSpecialistConsult"
+    | "feedback"
+    | "summary"
+    | "title"
+  >,
+) {
+  if (input.enableSpecialistConsult !== undefined)
+    return input.enableSpecialistConsult;
+  if (input.autoSendPrompt === false) return true;
+  const request = [input.title, input.summary, input.feedback]
+    .filter(Boolean)
+    .join(" ");
+  return /\b(?:specialist|expert|reviewer)\b|(?:spécialiste|avis (?:expert|extérieur|indépendant)|seconde? avis)/iu.test(
+    request,
+  );
 }

@@ -312,7 +312,7 @@ export class LightTaskRunner {
         : await commandFailureAssessment(output, this.files);
     const validatedRevisionId = (await this.files.snapshot()).revision
       .source_revision_id;
-    await this.recordCommandValidation(
+    const validatedPaths = await this.recordCommandValidation(
       command,
       status,
       validatedRevisionId,
@@ -325,6 +325,7 @@ export class LightTaskRunner {
       result.exitCode,
       output,
       this.environment.target(),
+      validationProof(validatedRevisionId, validatedPaths, metadata),
     );
   }
 
@@ -347,6 +348,7 @@ export class LightTaskRunner {
         ? { category: failure.category, recovery: failure.recovery }
         : {}),
     });
+    return paths;
   }
 
   private async resolveProjectTask(
@@ -407,7 +409,12 @@ function reusedCommandResult(
   validation: ReusableValidation,
   environment: string,
 ): LightToolResult<unknown> {
-  if (validation.status === "passed")
+  if (validation.status === "passed") {
+    const proof = validationProof(
+      validation.sourceRevisionId,
+      validation.paths,
+      { taskId: validation.taskId, taskKind: validation.taskKind },
+    );
     return {
       status: "ok",
       receipt: validation.id,
@@ -416,8 +423,10 @@ function reusedCommandResult(
         command,
         environment,
         validatedAt: validation.timestamp,
+        ...(proof ? { validation: proof } : {}),
       },
     };
+  }
   return {
     status: "blocked",
     category: validation.category ?? "code",
@@ -621,6 +630,7 @@ function passedCommandResult(
   exitCode: number | undefined,
   output: string,
   environment: string,
+  validation: ReturnType<typeof validationProof>,
 ): LightToolResult<unknown> {
   return {
     status: "ok",
@@ -629,8 +639,31 @@ function passedCommandResult(
       exitCode,
       output: boundedDiagnostic(output, "", 4_000),
       environment,
+      ...(validation ? { validation } : {}),
     },
   };
+}
+
+function validationProof(
+  sourceRevisionId: string | undefined,
+  paths: string[],
+  metadata: ValidationMetadata,
+) {
+  if (!sourceRevisionId || !reusableValidationKind(metadata.taskKind))
+    return undefined;
+  return {
+    paths,
+    sourceRevisionId,
+    status: "passed" as const,
+    taskId: metadata.taskId,
+    taskKind: metadata.taskKind,
+  };
+}
+
+function reusableValidationKind(
+  value: string | undefined,
+): value is TaskCatalogItem["kind"] {
+  return reusableProjectTaskKinds.has(value as TaskCatalogItem["kind"]);
 }
 
 function formattedResult(

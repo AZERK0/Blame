@@ -96,7 +96,10 @@ import {
   readTools,
   writeTools,
 } from "./cline-tool-policy.js";
-import { blameSpecialistRoutingSystemPrompt } from "./specialist-agents.js";
+import {
+  blameSpecialistRoutingSystemPrompt,
+  developmentSpecialistConsultEnabled,
+} from "./specialist-agents.js";
 import { createConsultSpecialistTool } from "./specialist-consult-tool.js";
 import {
   deleteProviderCredential,
@@ -3470,6 +3473,7 @@ export class BlameAgentRuntime {
     const iterationBudget =
       input.maxIterations ?? developmentSessionMaxIterations;
     const compaction = blameCompactionConfig(this.productionConfig);
+    const enableSpecialistConsult = developmentSpecialistConsultEnabled(input);
     const session = await this.startSession({
       apiConnection: input.apiConnection,
       providerId: input.providerId,
@@ -3496,7 +3500,7 @@ export class BlameAgentRuntime {
       previewDevtoolsScope: input.previewDevtoolsScope,
       systemPrompt: await buildDevelopmentSystemPrompt(input),
       enableBuiltInSkills: true,
-      enableSpecialistConsult: true,
+      enableSpecialistConsult,
       enableSpawnAgent: false,
       enableAgentTeams: false,
       nativeCompletion: true,
@@ -4857,7 +4861,10 @@ export async function buildDevelopmentSystemPrompt(
   const practices = input.codePractices ?? [];
   return renderPrompt(loadPrompt("code-agent-system"), {
     BLAME_PRACTICES: developmentPracticePrompts(practices),
-    BLAME_SPECIALISTS: blameSpecialistRoutingSystemPrompt(),
+    BLAME_PREVIEW: developmentPreviewPrompt(input),
+    BLAME_SPECIALISTS: developmentSpecialistConsultEnabled(input)
+      ? blameSpecialistRoutingSystemPrompt()
+      : "",
     CURRENT_DATE: new Date().toISOString().slice(0, 10),
     CWD: input.cwd,
     IDE_NAME: "Blame",
@@ -4868,9 +4875,12 @@ export async function buildDevelopmentSystemPrompt(
   });
 }
 
-async function clineDefaultSystemPrompt(
-  input: StartDevelopmentSessionInput,
-) {
+function developmentPreviewPrompt(input: StartDevelopmentSessionInput) {
+  if (!input.previewDevtoolsScope) return "";
+  return "After final UI edits, use get_preview_devtools with waitFor=ready once when available. Preview services, databases, containers, and dev servers are managed by Blame and must not be started manually. If preview infrastructure is unavailable, continue with local validation and report it.";
+}
+
+async function clineDefaultSystemPrompt(input: StartDevelopmentSessionInput) {
   return getClineDefaultSystemPrompt({
     ide: "Cline",
     metadata: await buildWorkspaceMetadata(input.cwd),

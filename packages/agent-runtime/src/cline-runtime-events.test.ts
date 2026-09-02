@@ -37,6 +37,7 @@ import {
   terminalToolEvent,
   workspaceSessionIds,
 } from "./cline-runtime.js";
+import { developmentSpecialistConsultEnabled } from "./specialist-agents.js";
 
 test("exposes actionable metadata for typed Cline account errors", () => {
   assert.deepEqual(clineErrorMetadata(new ClineNotSubscribedError("cline")), {
@@ -96,10 +97,7 @@ test("starts a Cline baseline without Blame harness tools", async () => {
     assert.match(capturedStart?.config.systemPrompt ?? "", /You are Cline/u);
     assert.equal(capturedStart?.config.extraTools, undefined);
     assert.deepEqual(capturedStart?.localRuntime?.configExtensions, []);
-    assert.deepEqual(
-      capturedStart?.toolPolicies,
-      clineDefaultToolPolicies(),
-    );
+    assert.deepEqual(capturedStart?.toolPolicies, clineDefaultToolPolicies());
   } finally {
     globalThis.fetch = originalFetch;
     await runtime.shutdown();
@@ -1407,15 +1405,12 @@ test("renders the compact native Cline development prompt", async () => {
   assert.match(prompt, /^# Blame Development Agent/);
   assert.match(prompt, /<runtime_context>/);
   assert.match(prompt, /<workspace_metadata>/);
-  assert.match(prompt, /briefing contains facts already known/);
-  assert.match(prompt, /Omit `view` for ordinary reads/);
+  assert.match(prompt, /briefing as evidence already gathered/);
   assert.match(
     prompt,
-    /Use symbol operations for changes contained in an existing supported symbol/,
+    /Prefer symbol operations inside existing supported symbols/,
   );
-  assert.match(prompt, /patch-to-symbol attribution/);
-  assert.match(prompt, /Use `run_task` only for inspection/);
-  assert.match(prompt, /must never be started manually/);
+  assert.match(prompt, /Use `run_task` for proportionate inspection/);
   assert.match(prompt, /call `finish_task` once/);
   assert.doesNotMatch(prompt, /complete_turn/);
   assert.doesNotMatch(prompt, /continuity_update|change_receipt_refs/);
@@ -1424,10 +1419,9 @@ test("renders the compact native Cline development prompt", async () => {
     /workspace_state|source_revision|execution[_ ]epoch/iu,
   );
   assert.doesNotMatch(prompt, /submit_and_exit/);
-  assert.match(prompt, /## Blame Specialist Consultations/);
-  assert.match(prompt, /consult_specialist/);
-  assert.match(prompt, /only when the user or lead explicitly requests/);
-  assert.match(prompt, /private instructions internally/);
+  assert.doesNotMatch(prompt, /## Blame Specialist Consultations/);
+  assert.doesNotMatch(prompt, /consult_specialist/);
+  assert.doesNotMatch(prompt, /get_preview_devtools/);
   assert.doesNotMatch(prompt, /<system_prompt/);
   assert.doesNotMatch(prompt, /## Specialist knowledge/);
   assert.doesNotMatch(prompt, /Jobs To Be Done/);
@@ -1443,6 +1437,48 @@ test("renders the compact native Cline development prompt", async () => {
   assert.doesNotMatch(prompt, /\{\{[A-Z_]+\}\}/);
   assert.doesNotMatch(prompt, /You are Cline/);
   assert.doesNotMatch(prompt, /CLINE_RULES|CLINE_METADATA/);
+});
+
+test("enables specialists for interactive or explicit one-shot requests", () => {
+  const base = { summary: "Update the API", title: "API change" };
+  assert.equal(developmentSpecialistConsultEnabled(base), false);
+  assert.equal(
+    developmentSpecialistConsultEnabled({
+      ...base,
+      summary: "Ask a risk specialist to review the migration",
+    }),
+    true,
+  );
+  assert.equal(
+    developmentSpecialistConsultEnabled({ ...base, autoSendPrompt: false }),
+    true,
+  );
+  assert.equal(
+    developmentSpecialistConsultEnabled({
+      ...base,
+      autoSendPrompt: false,
+      enableSpecialistConsult: false,
+    }),
+    false,
+  );
+});
+
+test("includes optional guidance only for interactive scoped sessions", async () => {
+  const prompt = await buildDevelopmentSystemPrompt({
+    apiConnection: { token: "token", url: "https://example.com" },
+    autoSendPrompt: false,
+    cwd: process.cwd(),
+    modelId: "model",
+    previewDevtoolsScope: "preview-scope",
+    providerId: "provider",
+    summary: "Improve the settings experience",
+    title: "Settings polish",
+    workspaceRoot: process.cwd(),
+  });
+  assert.match(prompt, /## Blame Specialist Consultations/);
+  assert.match(prompt, /consult_specialist/);
+  assert.match(prompt, /get_preview_devtools/);
+  assert.match(prompt, /managed by Blame/);
 });
 
 test("keeps default development practices concise and actionable", async () => {

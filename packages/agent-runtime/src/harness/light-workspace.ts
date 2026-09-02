@@ -10,6 +10,7 @@ import {
   SymbolResolutionError,
   type ResolvedLightSymbol,
 } from "./light-aliases.js";
+import { batchReadCode } from "./light-batch-read.js";
 import {
   lightCapabilityDescription,
   runtimeCapabilityRegistry,
@@ -19,6 +20,7 @@ import type {
   LightReadCodeInput,
   LightRunTaskInput,
   LightSearchCodeInput,
+  SingleLightReadCodeInput,
   LightTaskContract,
   LightToolResult,
 } from "./light-contracts.js";
@@ -176,6 +178,17 @@ export class LightWorkspace {
     input: LightReadCodeInput,
     context: ReadContext,
   ): Promise<LightToolResult<unknown>> {
+    if (Array.isArray(input.target))
+      return batchReadCode(input.target, (target) =>
+        this.readCodeTarget({ ...input, target }, context),
+      );
+    return this.readCodeTarget(input as SingleLightReadCodeInput, context);
+  }
+
+  private async readCodeTarget(
+    input: SingleLightReadCodeInput,
+    context: ReadContext,
+  ): Promise<LightToolResult<unknown>> {
     try {
       await this.ready;
       const special = this.specialReadResult(input.target);
@@ -255,7 +268,7 @@ export class LightWorkspace {
   }
 
   private async directoryReadResult(
-    input: LightReadCodeInput,
+    input: SingleLightReadCodeInput,
     files: string[],
     context: ReadContext,
   ): Promise<LightToolResult<unknown> | undefined> {
@@ -288,7 +301,7 @@ export class LightWorkspace {
   }
 
   private async readWorkspaceTarget(
-    input: LightReadCodeInput,
+    input: SingleLightReadCodeInput,
     revision: string,
     context: ReadContext,
   ) {
@@ -442,7 +455,7 @@ export class LightWorkspace {
   }
 
   private async readPath(
-    input: LightReadCodeInput,
+    input: SingleLightReadCodeInput,
     revision: string,
     context: ReadContext,
   ): Promise<LightToolResult<unknown>> {
@@ -505,7 +518,7 @@ export class LightWorkspace {
   private async readLineRange(
     path: string,
     content: Buffer,
-    input: LightReadCodeInput,
+    input: SingleLightReadCodeInput,
     revision: string,
     context: ReadContext,
   ) {
@@ -851,8 +864,7 @@ function enclosingOutlineTarget(
         candidate.range_utf8_bytes[1] >= symbol.range_utf8_bytes[1],
     )
     .sort(
-      (left, right) =>
-        byteLength(left.symbol) - byteLength(right.symbol),
+      (left, right) => byteLength(left.symbol) - byteLength(right.symbol),
     )[0];
 }
 
