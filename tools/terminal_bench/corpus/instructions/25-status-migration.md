@@ -1,0 +1,3 @@
+Introduis un statut de publication persistant pour les projets.
+
+Dans `prisma/schema.prisma`, ajoute l'enum `ProjectStatus` avec `DRAFT`, `PUBLISHED`, `ARCHIVED`, puis un champ `status` non nullable sur `Project` avec `DRAFT` par défaut et un index combinant `status` et `createdAt`. Crée `prisma/migrations/20260903000000_project_status/migration.sql` avec le SQL PostgreSQL correspondant pour une base existante, incluant le type enum, la colonne non nulle avec défaut et l'index. Dans `src/api/projects.ts`, ajoute le statut au record et sérialise-le sous forme minuscule. Ne modifie aucun autre fichier et exécute le build.

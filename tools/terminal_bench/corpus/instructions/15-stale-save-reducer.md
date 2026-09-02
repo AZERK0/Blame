@@ -1,0 +1,3 @@
+Corrige `projectSaveReducer` dans `src/project-reducer.ts` pour gérer les réponses asynchrones obsolètes.
+
+`save_started` devient la requête active, passe à `saving` et efface l'ancienne erreur. Un succès ou un échec dont le `requestId` n'est plus actif doit laisser l'état inchangé. Le succès actif enregistre le titre courant dans `savedTitle`, repasse à `idle` et retire la requête active et l'erreur. L'échec actif restaure `title` depuis `savedTitle`, expose son message, passe à `error` et retire la requête active. Préserve les types publics, ne touche aucun autre fichier et exécute le build.

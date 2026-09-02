@@ -11,15 +11,30 @@ import {
 import { scoreRun } from "./score-run.mjs";
 import { scenarioChecks } from "./scenario-checks.mjs";
 
-test("defines ten unique scored scenarios", async () => {
+test("defines twenty-five unique scored scenarios", async () => {
   const manifest = await readManifest();
   const identifiers = manifest.scenarios.map(({ id }) => id);
-  assert.equal(identifiers.length, 10);
-  assert.equal(new Set(identifiers).size, 10);
+  assert.equal(identifiers.length, 25);
+  assert.equal(new Set(identifiers).size, 25);
   for (const scenario of manifest.scenarios) {
     assert.ok(scenario.allowedPaths.length > 0);
     assert.ok(scenario.maxIterations > 0);
     assert.ok(scenario.timeoutSeconds > 0);
+  }
+});
+
+test("registers deterministic checks for every scenario", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-checks-"));
+  try {
+    const workspace = join(root, "workspace");
+    await prepareWorkspace(workspace, "check-registration");
+    const manifest = await readManifest();
+    for (const scenario of manifest.scenarios) {
+      const checks = await scenarioChecks(scenario.id, workspace);
+      assert.ok(checks.length > 0, scenario.id);
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 });
 

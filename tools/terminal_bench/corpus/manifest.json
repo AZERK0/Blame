@@ -70,6 +70,115 @@
       "allowedPaths": ["prisma/schema.prisma", "src/api/projects.ts"],
       "maxIterations": 22,
       "timeoutSeconds": 480
+    },
+    {
+      "id": "window-boundaries",
+      "instruction": "instructions/11-window-boundaries.md",
+      "allowedPaths": ["src/scheduling.ts"],
+      "maxIterations": 14,
+      "timeoutSeconds": 300
+    },
+    {
+      "id": "money-refactor",
+      "instruction": "instructions/12-money-refactor.md",
+      "allowedPaths": ["src/money.ts"],
+      "maxIterations": 14,
+      "timeoutSeconds": 300
+    },
+    {
+      "id": "permission-matrix",
+      "instruction": "instructions/13-permission-matrix.md",
+      "allowedPaths": ["src/permissions.ts"],
+      "maxIterations": 16,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "filter-accessibility",
+      "instruction": "instructions/14-filter-accessibility.md",
+      "allowedPaths": ["src/ProjectFilter.tsx"],
+      "maxIterations": 16,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "stale-save-reducer",
+      "instruction": "instructions/15-stale-save-reducer.md",
+      "allowedPaths": ["src/project-reducer.ts"],
+      "maxIterations": 18,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "async-cache",
+      "instruction": "instructions/16-async-cache.md",
+      "allowedPaths": ["src/project-cache.ts"],
+      "maxIterations": 18,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "storage-traversal",
+      "instruction": "instructions/17-storage-traversal.md",
+      "allowedPaths": ["src/storage-path.ts"],
+      "maxIterations": 18,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "prisma-category",
+      "instruction": "instructions/18-prisma-category.md",
+      "allowedPaths": ["prisma/schema.prisma", "src/api/projects.ts"],
+      "maxIterations": 22,
+      "timeoutSeconds": 480
+    },
+    {
+      "id": "motion-accessibility",
+      "instruction": "instructions/19-motion-accessibility.md",
+      "allowedPaths": ["src/styles.css"],
+      "maxIterations": 14,
+      "timeoutSeconds": 300
+    },
+    {
+      "id": "strict-indexing",
+      "instruction": "instructions/20-strict-indexing.md",
+      "allowedPaths": ["tsconfig.json", "src/project-index.ts"],
+      "maxIterations": 18,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "slug-contract",
+      "instruction": "instructions/21-slug-contract.md",
+      "allowedPaths": ["src/slug.ts", "src/project-url.ts"],
+      "maxIterations": 18,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "csv-parser",
+      "instruction": "instructions/22-csv-parser.md",
+      "allowedPaths": ["src/csv.ts"],
+      "maxIterations": 18,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "stable-pagination",
+      "instruction": "instructions/23-stable-pagination.md",
+      "allowedPaths": ["src/pagination.ts"],
+      "maxIterations": 18,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "webhook-idempotency",
+      "instruction": "instructions/24-webhook-idempotency.md",
+      "allowedPaths": ["src/webhook.ts"],
+      "maxIterations": 18,
+      "timeoutSeconds": 360
+    },
+    {
+      "id": "status-migration",
+      "instruction": "instructions/25-status-migration.md",
+      "allowedPaths": [
+        "prisma/schema.prisma",
+        "prisma/migrations/20260903000000_project_status/migration.sql",
+        "src/api/projects.ts"
+      ],
+      "maxIterations": 24,
+      "timeoutSeconds": 480
     }
   ]
 }
