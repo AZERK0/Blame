@@ -1644,9 +1644,44 @@ test("ambiguous patch context is refused without fuzzy recovery", async () => {
       ],
     });
     assert.equal(result.status, "blocked");
-    if (result.status === "blocked")
+    if (result.status === "blocked") {
       assert.match(result.recovery ?? "", /Do not resend the same patch/u);
+      assert.match(result.message, /duplicate\.txt at lines 1, 2/u);
+    }
     assert.equal(await readFile(join(root, "duplicate.txt"), "utf8"), source);
+  });
+});
+
+test("mismatched patches return bounded current context", async () => {
+  const source = [
+    "export type Project = { title: string };",
+    "",
+    "export function project(title: string): Project {",
+    "  return { title };",
+    "}",
+    "",
+  ].join("\n");
+  await withWorkspace({ "project.ts": source }, async (root) => {
+    const workspace = lightWorkspace(root, "mismatched-context");
+    const result = await workspace.editCode({
+      operations: [
+        {
+          kind: "patch",
+          path: "project.ts",
+          patch: applyPatch("project.ts", [
+            "-  return { title: title.trim() };",
+            "+  const normalizedTitle = title.trim();",
+            "+  return { title: normalizedTitle };",
+          ]),
+        },
+      ],
+    });
+    assert.equal(result.status, "blocked");
+    if (result.status === "blocked") {
+      assert.match(result.message, /Closest current lines 2-6/u);
+      assert.match(result.message, /return \{ title \};/u);
+    }
+    assert.equal(await readFile(join(root, "project.ts"), "utf8"), source);
   });
 });
 

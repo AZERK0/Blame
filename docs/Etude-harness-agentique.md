@@ -2918,6 +2918,38 @@ La baseline répète deux fois le même `replace_body`, relit ensuite le fichier
 
 Une première version du normaliseur a été abandonnée : elle réussissait l'édition mais laissait les instructions à la colonne 1. Elle n'est pas incluse dans le tableau. La version conservée reproduit exactement l'indentation de la baseline finale. Les tests de non-régression couvrent les instructions TypeScript multi-lignes sans accolades, une déclaration CSS sans accolades, TSX UTF-8 déjà délimité et les éléments HTML non délimités. Les suites finales passent avec 235 tests runtime et 13 tests runner, plus lint, typecheck et builds concernés.
 
+### 21.38 Diagnostic borné des conflits de patch
+
+Les neuf contextes de patch devenus incompatibles dans la comparaison Portfolio de la section 21.35 renvoyaient seulement `Patch context does not match`. Le runtime possédait pourtant à la fois le hunk attendu et le fichier courant. Le modèle devait donc relire le fichier ou deviner sa nouvelle forme, ce qui ajoutait des tours sans rendre l'écriture plus sûre.
+
+Le rejet indique désormais le chemin et un extrait courant borné autour de la ligne la plus proche. Un contexte ambigu indique les lignes des occurrences exactes. La mutation reste strictement exacte : aucune correspondance floue n'est appliquée et les cas absents ou ambigus sont toujours refusés avant écriture. La proximité ne sert qu'au diagnostic remis au modèle.
+
+Le scénario provider live part encore du commit fixture `49d95ddf96d66b44bdce5c77db83a2df0ee8023d`. L'instruction impose d'abord un patch fondé sur une ligne obsolète, interdit les lectures et recherches, puis demande une correction exacte à partir du seul rejet avant typecheck et build. Baseline et candidat utilisent le même modèle, le même effort, la même instruction, la même révision, 10 itérations et 600 secondes. La baseline est le commit Blame `fb757739`; le candidat ajoute uniquement le diagnostic.
+
+| Mesure | Avant | Après final |
+| --- | ---: | ---: |
+| Résultat réel | échec au plafond de 10 itérations, aucun changement | satisfait, diff attendu, typecheck et build |
+| Durée | 134,39 s | 17,00 s |
+| Requêtes modèle | 10 | 4 |
+| Appels d'outils | 10 | 4 |
+| Lectures / recherches | 0 / 0 | 0 / 0 |
+| Éditions réussies / bloquées | 0 / 10 | 1 / 1 |
+| Première tentative / réussite | 6,20 s / aucune | 6,56 / 10,64 s |
+| Tokens entrée / sortie / cache | 46 838 / 6 715 / 36 352 | 17 158 / 437 / 10 752 |
+| Coût | 0,01088 $ | 0,00202 $ |
+| Exposition cumulée des payloads d'outils | 24 215 octets | 4 137 octets |
+| Événements après terminal | 0 | 0 |
+
+La baseline tente dix variantes de quoting et d'indentation sans information nouvelle. Le candidat final reçoit les lignes 5 à 9, voit la ligne courante `return { id, title };` et soumet le patch exact au tour suivant. Le fichier final passe les validations du run et des contrôles indépendants. Sur cette paire, la durée baisse de 87,3 %, les tokens d'entrée de 63,4 % et le coût de 81,4 %. Ces amplitudes mesurent volontairement une récupération isolée et ne prédisent pas à elles seules le gain Portfolio.
+
+Une première version du diagnostic est abandonnée et exclue du tableau. Elle donnait un poids maximal à une courte ponctuation telle que `};`, choisissait un extrait décalé et conduisait encore à deux rejets, un fallback symbolique et 74,59 secondes. La version conservée ignore les correspondances par inclusion trop courtes. Le test déterministe reproduit la ligne obsolète observée et exige que le rejet contienne le `return` courant ; le test d'ambiguïté vérifie les lignes candidates et l'absence d'écriture.
+
+La suite finale passe avec 236 tests runtime et 13 tests runner, ainsi que lint, typecheck et builds concernés. Le runner reconstruit contient le runtime final. Le scénario ne possède aucune validation visuelle applicable et son message terminal décrit exactement la mutation et les deux validations exécutées.
+
+La preview headless reste une limite architecturale volontairement ouverte. La preview actuelle dépend du cycle de vie desktop, d'un `WebContentsView` Electron et du service DevTools, tandis que le runner direct instancie uniquement le runtime agent sans ces dépendances. Dupliquer rapidement ce chemin dans le runner créerait deux systèmes de preuve et risquerait de déclarer une révision différente de celle affichée. La prochaine implémentation doit extraire une capacité de preview partagée et révisionnée, avec preuves distinctes de chargement, console, rendu, clavier, drag et Maj + molette. Aucun mécanisme provisoire n'a été ajouté au chemin principal.
+
+La mutation déterministe journalisée pour formatter et codegen reste également ouverte. Le diagnostic de patch, la conservation du contexte par chemin et la normalisation symbolique retirent des tours de récupération sans restreindre les choix du modèle ; ils ne remplacent pas le staging, le diff et le commit atomique nécessaires aux sorties générées.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)

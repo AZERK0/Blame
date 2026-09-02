@@ -103,7 +103,7 @@ export async function planLightPatch(
     parseClinePatchShape(patch),
     source,
   );
-  assertExactUniqueContexts(source, parsed);
+  assertExactUniqueContexts(source, parsed, path);
   const normalized = normalizedPatch(parsed, path);
   const change = await computeSingleChange(normalized, workspaceRoot);
   return patchPlanFromChange(change, source);
@@ -220,6 +220,7 @@ function patchHunks(lines: string[]) {
 function assertExactUniqueContexts(
   source: string | undefined,
   parsed: ParsedPatch,
+  path: string,
 ) {
   if (parsed.mode !== "update") return;
   if (source === undefined)
@@ -229,12 +230,85 @@ function assertExactUniqueContexts(
     if (!context) throw new Error("Update hunks require exact context.");
     const matches = lineBoundedMatches(source, context);
     if (matches.length !== 1)
-      throw new Error(
-        matches.length
-          ? "Patch context is ambiguous."
-          : "Patch context does not match.",
-      );
+      throw new Error(patchContextFailure(path, source, context, matches));
   }
+}
+
+function patchContextFailure(
+  path: string,
+  source: string,
+  expected: string,
+  matches: number[],
+) {
+  if (matches.length) {
+    const lines = matches.map((offset) => lineNumberAt(source, offset));
+    return `Patch context is ambiguous in ${path} at lines ${lines.join(", ")}.`;
+  }
+  const closest = closestCurrentContext(source, expected);
+  return [
+    `Patch context does not match in ${path}.`,
+    `Closest current lines ${closest.startLine}-${closest.endLine}:`,
+    closest.content,
+  ].join("\n");
+}
+
+function closestCurrentContext(source: string, expected: string) {
+  const sourceLines = source.split(/\r?\n/u);
+  const expectedLines = expected
+    .split(/\r?\n/u)
+    .filter((line) => line.trim())
+    .sort((left, right) => right.trim().length - left.trim().length)
+    .slice(0, 8);
+  const index = closestLineIndex(sourceLines, expectedLines);
+  const start = Math.max(0, index - 2);
+  const end = Math.min(sourceLines.length, index + 3);
+  return {
+    content: sourceLines.slice(start, end).join("\n").slice(0, 2_000),
+    startLine: start + 1,
+    endLine: end,
+  };
+}
+
+function closestLineIndex(source: string[], expected: string[]) {
+  let bestIndex = 0;
+  let bestScore = -1;
+  source.forEach((candidate, index) => {
+    const score = Math.max(
+      0,
+      ...expected.map((line) => lineSimilarity(candidate, line)),
+    );
+    if (score <= bestScore) return;
+    bestIndex = index;
+    bestScore = score;
+  });
+  return bestIndex;
+}
+
+function lineSimilarity(left: string, right: string) {
+  const candidate = left.trim().slice(0, 500);
+  const expected = right.trim().slice(0, 500);
+  if (!candidate || !expected) return 0;
+  const containment =
+    Math.min(candidate.length, expected.length) >= 12 &&
+    (candidate.includes(expected) || expected.includes(candidate))
+      ? 1_000
+      : 0;
+  const words = new Set(expected.match(/[\p{L}\p{N}_$]+/gu) ?? []);
+  const overlap = (candidate.match(/[\p{L}\p{N}_$]+/gu) ?? []).filter((word) =>
+    words.has(word),
+  ).length;
+  return containment + commonPrefixLength(candidate, expected) * 4 + overlap * 20;
+}
+
+function commonPrefixLength(left: string, right: string) {
+  const maximum = Math.min(left.length, right.length);
+  let index = 0;
+  while (index < maximum && left[index] === right[index]) index += 1;
+  return index;
+}
+
+function lineNumberAt(source: string, offset: number) {
+  return source.slice(0, offset).split("\n").length;
 }
 
 function normalizedPatch(parsed: ParsedPatch, path: string) {
