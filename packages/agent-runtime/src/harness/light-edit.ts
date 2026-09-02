@@ -449,7 +449,58 @@ function symbolBodyReplacement(
   source: string,
 ): Replacement {
   const [start, end] = symbolEditRange(resolved.symbol, "body");
-  return { start, end, replacement, source };
+  const current = resolved.content.subarray(start, end).toString("utf8");
+  const baseIndent = lineIndentBefore(resolved.content, start);
+  return {
+    start,
+    end,
+    replacement: normalizedSymbolBody(current, replacement, baseIndent),
+    source,
+  };
+}
+
+function normalizedSymbolBody(
+  current: string,
+  replacement: string,
+  baseIndent: string,
+) {
+  const currentBody = current.trim();
+  const proposedBody = replacement.trim();
+  if (!isDelimitedBody(currentBody) || isDelimitedBody(proposedBody))
+    return replacement;
+  if (!proposedBody.includes("\n")) return `{ ${proposedBody} }`;
+  const indent = existingBodyIndent(current) ?? `${baseIndent}  `;
+  return `{\n${indentedStatements(replacement, indent)}\n${baseIndent}}`;
+}
+
+function isDelimitedBody(value: string) {
+  return value.startsWith("{") && value.endsWith("}");
+}
+
+function lineIndentBefore(content: Buffer, offset: number) {
+  const prefix = content.subarray(0, offset).toString("utf8");
+  return prefix.match(/(?:^|\n)([\t ]*)[^\n]*$/u)?.[1] ?? "";
+}
+
+function existingBodyIndent(body: string) {
+  return body.match(/\n([\t ]+)\S/u)?.[1];
+}
+
+function indentedStatements(value: string, indent: string) {
+  const allLines = value.split(/\r?\n/u);
+  const start = allLines.findIndex((line) => line.trim());
+  const trailing = [...allLines]
+    .reverse()
+    .findIndex((line) => line.trim());
+  const end = allLines.length - trailing - 1;
+  const lines = allLines.slice(start, end + 1);
+  const widths = lines
+    .filter((line) => line.trim())
+    .map((line) => line.match(/^[\t ]*/u)?.[0].length ?? 0);
+  const width = Math.min(...widths);
+  return lines
+    .map((line) => (line.trim() ? `${indent}${line.slice(width)}` : ""))
+    .join("\n");
 }
 
 function insertionReplacement(

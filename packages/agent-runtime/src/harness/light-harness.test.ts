@@ -256,6 +256,29 @@ test("TSX body replacement preserves UTF-8 boundaries", async () => {
   });
 });
 
+test("delimited symbol bodies accept statement-only replacements", async () => {
+  const source = "export function label() { return 'old' }\n";
+  await withWorkspace({ "label.ts": source }, async (root) => {
+    const workspace = lightWorkspace(root, "normalized-symbol-body");
+    const alias = await symbolAlias(workspace, "label");
+    const result = await workspace.editCode({
+      operations: [
+        {
+          action: "replace_body",
+          content: "  const value = 'new';\n  return value;",
+          kind: "symbol",
+          target: alias,
+        },
+      ],
+    });
+    assert.equal(result.status, "ok");
+    assert.equal(
+      await readFile(join(root, "label.ts"), "utf8"),
+      "export function label() {\n  const value = 'new';\n  return value;\n}\n",
+    );
+  });
+});
+
 test("tool surface contains only the four workspace tools", async () => {
   await withWorkspace(
     { "src/app.ts": "export const value = 1\n" },
@@ -1219,7 +1242,7 @@ test("CSS supports structural outline and rule body editing", async () => {
         operations: [
           {
             action: "replace_body",
-            content: "{ color: blue; }",
+            content: "color: blue;",
             kind: "symbol",
             target: String(rule.alias),
           },

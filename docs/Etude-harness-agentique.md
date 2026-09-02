@@ -2889,7 +2889,34 @@ Un scénario headless provider live distinct a ensuite imposé trois éditions a
 
 La causalité du retry est observable. La baseline remplace correctement `projectResponse`, modifie un autre fichier, puis oublie la forme complète de sa première édition et tente un `replace_body` sans délimiteurs ; le parse atomique le refuse. Le candidat conserve cette édition encore courante et remplace le symbole complet du premier coup. Les deux diffs finaux satisfont la même intention et les validations indépendantes passent ; la variante exacte de placement du fallback diffère sans changer le comportement. Le temps avant première édition régresse de 3,94 secondes sur cette paire unique et n'est pas attribué au correctif. Les baisses de durée et de tokens sont cohérentes avec le tour supprimé, mais une exécution provider ne constitue pas une preuve statistique.
 
-Un pilote antérieur est explicitement exclu des mesures : la fixture JSONC historique contenait une virgule finale que son propre validateur refusait déjà. Il a servi à corriger le scénario, pas à sélectionner le résultat. Les deux tests déterministes ajoutés couvrent la conservation indépendante de deux chemins et la compaction immédiate après lecture fraîche. Les suites finales passent avec 234 tests runtime et 13 tests runner, ainsi que lint, typecheck et builds concernés. La preview visuelle n'est pas applicable à ce scénario mécanique.
+Un pilote antérieur est explicitement exclu des mesures : la fixture JSONC historique contenait une virgule finale que son propre validateur refusait déjà. Il a servi à corriger le scénario, pas à sélectionner le résultat. Les deux tests déterministes ajoutés couvrent la conservation indépendante de deux chemins et la compaction immédiate après lecture fraîche. Les suites du cycle passent avec 234 tests runtime et 13 tests runner, ainsi que lint, typecheck et builds concernés. La preview visuelle n'est pas applicable à ce scénario mécanique.
+
+### 21.37 Normalisation déterministe des corps symboliques délimités
+
+Les trois rejets de parse symboliques des runs Portfolio de la section 21.35 partagent la même cause. Le modèle utilise correctement `replace_body`, mais fournit les instructions internes sans les accolades du bloc TypeScript ou TSX courant. Le runtime remplaçait le nœud de corps complet et produisait donc transitoirement une déclaration sans bloc, refusée à juste titre par le parse atomique. La baseline ciblée de la section 21.36 reproduit aussi cette friction après avoir perdu la forme d'une édition antérieure.
+
+Le runtime détecte maintenant si la plage de corps existante est réellement délimitée par `{` et `}`. Si le contenu proposé n'est pas déjà un bloc complet, il l'enveloppe et reprend l'indentation intérieure existante, ou l'indentation de la déclaration plus un niveau. Un corps Python, HTML ou une expression non délimitée reste inchangé. Le parse du projet final reste l'autorité et aucune écriture partielle n'est admise.
+
+Le scénario provider live part de la même fixture au commit `49d95ddf96d66b44bdce5c77db83a2df0ee8023d`. La baseline est le commit Blame `1c895800`, qui comprend déjà la projection par chemin ; le candidat ajoute uniquement le normaliseur. L'instruction exige une opération sémantique `replace_body` contenant deux instructions sans accolades, puis typecheck et build. Modèle, effort, budget de 10 itérations et timeout de 600 secondes sont identiques.
+
+| Mesure | Avant | Après final |
+| --- | ---: | ---: |
+| Résultat réel | satisfait après récupération | satisfait au premier essai |
+| Diff final | fonction indentée, typecheck et build | strictement identique |
+| Durée | 57,64 s | 17,84 s |
+| Requêtes modèle | 9 | 5 |
+| Appels d'outils | 9 | 5 |
+| Lectures / octets renvoyés | 4 / 1 382 | 2 / 773 |
+| Éditions réussies / bloquées | 1 / 2 | 1 / 0 |
+| Première tentative / réussite | 9,04 / 47,74 s | 11,03 / 11,20 s |
+| Tokens entrée / sortie / cache | 40 077 / 2 246 / 28 672 | 21 368 / 384 / 14 336 |
+| Coût | 0,00555 $ | 0,00215 $ |
+| Exposition cumulée des payloads d'outils | 16 258 octets | 6 206 octets |
+| Événements après terminal | 0 | 0 |
+
+La baseline répète deux fois le même `replace_body`, relit ensuite le fichier sous deux vues et bascule vers un remplacement de symbole complet. Le candidat accepte exactement le premier payload sémantique et produit le même fichier final. La durée baisse de 69,0 %, les tokens d'entrée de 46,7 % et le coût de 61,2 % sur cette paire ; la première tentative est 1,98 seconde plus tardive et n'est pas présentée comme améliorée. Le lien entre le normaliseur et les deux rejets supprimés est déterministe, mais les amplitudes provider restent celles d'un seul avant/après.
+
+Une première version du normaliseur a été abandonnée : elle réussissait l'édition mais laissait les instructions à la colonne 1. Elle n'est pas incluse dans le tableau. La version conservée reproduit exactement l'indentation de la baseline finale. Les tests de non-régression couvrent les instructions TypeScript multi-lignes sans accolades, une déclaration CSS sans accolades, TSX UTF-8 déjà délimité et les éléments HTML non délimités. Les suites finales passent avec 235 tests runtime et 13 tests runner, plus lint, typecheck et builds concernés.
 
 ## Références complémentaires
 
