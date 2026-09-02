@@ -2803,6 +2803,69 @@ Les credentials ont été chargés silencieusement depuis `.env.terminal-bench` 
 
 Les limites restent explicites. Les deux replays finaux utilisent des patches et ne constituent pas une nouvelle preuve live du chemin symbolique, déjà démontré par les holdouts A et B. La compaction native n'a pas été atteinte par un provider live. Le prompt système et les schémas d'outils représentent encore plus de la moitié de la dernière requête et deviennent la prochaine cible mesurable, à condition de supprimer des redondances démontrées plutôt que des capacités. Ce scénario backend ne possède pas de preview visuelle applicable. Le codegen Prisma journalisé, la preview interactive, WSL, Lima et Cloud Preview restent hors de cette boucle ciblée.
 
+### 21.35 Comparaison alternée Cline / Blame du 2 septembre 2026
+
+#### Protocole courant
+
+La comparaison Portfolio de la section 21.32 était devenue périmée après les corrections de briefing, de reçus, de projection provider et de composition hybride. Une nouvelle matrice a donc été exécutée sur le runner construit au commit Blame `e465589a`, sans modifier le harness entre les quatre runs. Tous partent du commit Portfolio `d4d3d1f9f41714b5ca6fce68213ea7a521c776b1`, utilisent la même instruction d'intégration, le même provider, le même modèle, le même effort, 64 itérations et 2 400 secondes. Les worktrees sont distincts, installés hors ligne depuis le même lockfile. L'ordre est alterné : Cline puis Blame, puis Blame puis Cline.
+
+Les credentials ont été chargés silencieusement depuis `.env.terminal-bench`. Ils n'ont été ni affichés, ni copiés, ni modifiés. Cette section rapporte les runs provider live et les contrôles indépendants ; elle ne transforme pas une validation hors run en preuve native du terminal.
+
+| Run | Terminal du runner et résultat applicatif réel | Durée ; requêtes ; outils | Tokens entrée / sortie / cache ; coût | Première tentative / réussite d'édition | Navigation | Éditions et erreurs d'outils | Validation indépendante et preview |
+| --- | --- | ---: | --- | ---: | --- | --- | --- |
+| Paire 1, Cline | échec après 240 s d'inactivité ; diff partiel | 964,14 s ; 12 ; 25 | 281 913 / 24 954 / 232 960 ; 0,04439 $ | 206,78 / 206,80 s | 19 lectures, 36 506 octets ; 9 recherches | 5 patches, 4 réussis ; 9 appels en échec, 12 résultats individuels en échec | Prisma et build passent ; lint échoue sur `setState` dans un effet ; rendu soigné et clavier fonctionnel ; drag et Maj + molette non prouvés |
+| Paire 1, Blame | `succeeded`, `verified`, mais résultat visuel inutilisable | 530,51 s ; 59 ; 71 | 1 441 381 / 21 584 / 1 213 952 ; 0,09567 $ | 190,13 / 190,40 s | 27 lectures dont 8 dédupliquées, 71 303 octets ; 9 recherches | 16 appels d'édition : 7 réussis, 7 bloqués, 2 sans mutation ; 2 symboles tentés et tous deux bloqués ; 13 appels bloqués au total | Prisma, lint et build passent à la dernière révision ; aucune CSS du carrousel n'existe, le conteneur Three.js atteint environ 43 734 px de haut et la vue devient blanche ; le clavier modifie un contenu hors vue |
+| Paire 2, Blame | échec au plafond de 64 itérations ; diff partiel | 551,44 s ; 64 ; 96 | 2 003 055 / 23 037 / 1 650 688 ; 0,13113 $ | 164,88 / 165,11 s | 36 lectures dont 3 dédupliquées, 69 522 octets ; 5 recherches | 24 appels d'édition : 15 réussis, 8 bloqués, un sans mutation ; 7 opérations symboliques dont 6 réussies et 2 appels hybrides ; 25 appels bloqués au total | Prisma et lint passent ; build en échec car `@/generated/prisma/client` manque ; frontend visuellement cohérent et clavier fonctionnel ; API non livrable |
+| Paire 2, Cline | `succeeded`, mais page en erreur runtime | 571,49 s ; 28 ; 41 | 1 318 462 / 27 461 / 1 205 248 ; 0,07970 $ | 128,57 / 128,59 s | 30 lectures, 104 035 octets ; 11 recherches | 8 patches, 7 réussis ; 16 appels en échec, 41 résultats individuels en échec | Prisma, lint et build passent ; au chargement, `next/image` refuse le portrait remplacé par une URL sans dimensions et la page retourne 500 ; le résumé final annonce donc un résultat fonctionnel non vérifié |
+
+Il n'y a aucun événement après les quatre terminaux. Le succès terminal est de 1/2 pour chaque harness, mais le succès applicatif complet est de 0/2 pour chacun. Les deux diffs terminaux dits réussis échouent précisément sur ce que leur validation n'observait pas : le rendu pour Blame, le chargement runtime pour Cline. Cette matrice ne permet donc pas de déclarer un vainqueur produit.
+
+#### Comparaison d'efficience sans masquer les trajectoires
+
+La moyenne brute des deux runs donne 767,82 s pour Cline contre 540,98 s pour Blame, soit Blame 29,5 % plus rapide. Elle est dominée par le timeout d'inactivité Cline. Sur les deux terminaux réussis uniquement, Blame reste 7,2 % plus rapide, mais utilise 59 requêtes contre 28, 71 outils contre 41, 9,3 % de tokens d'entrée et 20,0 % de coût en plus. Sa première édition réussie arrive 61,82 s plus tard.
+
+La projection de contexte fonctionne pourtant localement. Sur cette même paire terminalement réussie, Blame ne renvoie que 162 185 octets de payloads d'outils contre 371 406 pour Cline, soit −56,3 %. Son exposition au replay par requête est d'environ 110 833 octets contre 195 818, soit −43,4 %, et ses tokens d'entrée par requête sont 24 430 contre 47 088, soit −48,1 %. La projection mesure 1 706 514 octets supprimés, 152 lectures périmées remplacées et 236 reçus d'édition acquittés remplacés. Aucun bloc strictement dupliqué ni compaction native n'est observé.
+
+Le gain par requête est annulé par la trajectoire : Blame effectue 2,1 fois plus de requêtes modèle sur les runs terminaux réussis. Son exposition cumulée atteint alors 6,54 Mo contre 5,48 Mo et son entrée totale dépasse Cline. Sur les quatre runs, Blame demande en moyenne 31,5 lectures contre 24,5 et renvoie pratiquement le même volume moyen, environ 70,4 ko. La prochaine priorité contexte n'est donc pas une nouvelle couche de compaction. Il faut supprimer les tours de récupération qui fabriquent du contexte supplémentaire.
+
+Le chemin symbolique est maintenant réellement emprunté, mais irrégulier. Le second Blame réussit six opérations symboliques, dont des insertions CSS bornées, un remplacement du composant et deux lots hybrides. Son frontend est le meilleur résultat Blame de la matrice. Le premier Blame tente deux remplacements symboliques, tous deux refusés par le parse final, et termine par des patches. La fonctionnalité différenciante est donc applicable en situation réelle, mais elle n'apporte pas encore une réussite de bout en bout.
+
+#### Attribution des échecs et retries
+
+Les quinze rejets d'édition Blame se répartissent en trois erreurs de syntaxe réelles, détectées atomiquement avant écriture, et douze requêtes de ciblage invalides : deux contextes ambigus, neuf contextes devenus incompatibles et une création d'un fichier existant. Les protections sont utiles ; le volume de récupération ne l'est pas. Les événements montrent des lectures fragmentées de composants tronqués et plusieurs reprises de patchs contre un texte déjà modifié.
+
+Les appels `run_task` bloqués ne doivent pas être agrégés avec ces rejets. Les six du premier Blame sont des diagnostics de code utiles : Prisma 7, build, lint et format. Les dix-sept du second comprennent treize erreurs de code ou déduplications de preuve, trois indisponibilités attendues de `DATABASE_URL` et un appel formatter mal isolé. Le dernier groupe est le seul rejet de contrat d'exécution de cette catégorie.
+
+Cline présente une friction différente et plus basse dans la pile. Le premier run contient trois lectures de chemins inexistants, deux globs fournis à un outil regex, un patch dupliquant la mise à jour du même fichier et trois fragments de protocole sérialisés comme commandes shell. Le second contient 28 fragments comme `timeout`, `recipient_name` ou `parameters` exécutés comme commandes, sur 40 résultats de commande en échec. Un patch accepté avec un fuzz factor de 1 000 a ensuite laissé un handler de molette corrompu, réparé lors de tours ultérieurs. Le schéma Cline par défaut est simple, mais il tolère ici des appels partiels et des mutations moins faciles à attribuer.
+
+Le timeout d'inactivité Cline est classé comme trajectoire modèle/provider, pas comme panne générale : les trois autres runs ont reçu des réponses et les worktrees étaient opérationnels. L'instruction n'est pas ambiguë ; les quatre trajectoires convergent vers le même modèle Prisma, l'API et un carrousel Three.js avec les interactions demandées.
+
+#### Cause racine prioritaire et suite
+
+La cause la plus importante n'est plus la taille d'une lecture. C'est l'absence d'une preuve frontend attachée au terminal. Blame a honnêtement rattaché lint, format et build à `src_e02f617b15b730a5c6f020311855f520`, mais a ensuite qualifié de cohérent un rendu jamais lancé. Cline a annoncé toutes les interactions après un build qui ne détectait pas l'erreur `next/image` au chargement. Une preview headless capable de prouver chargement, console, rendu, clavier, drag et Maj + molette aurait refusé les deux faux succès.
+
+La seconde priorité est la récupération après grosse édition : fournir une lecture bornée directement exploitable après troncature ou conflit, et rendre le ciblage d'un symbole frais plus attractif que des patches successifs. Il ne faut pas ajouter un coupe-circuit ; le second Blame montre que les tours supplémentaires viennent de diagnostics Prisma réels, de relectures fragmentées et de références de patch périmées.
+
+Le codegen Prisma journalisé reste la troisième priorité. Le second Blame avait un frontend valable mais échoue uniquement parce que le client généré n'appartient pas au résultat livré. La correction correcte reste un staging générique, un diff inspecté et un commit atomique, pas une exception Prisma dans le worktree.
+
+Les commandes réellement exécutées pendant cette comparaison incluent :
+
+```text
+git status --short --branch
+git diff --check
+pnpm --filter @blame/agent-runtime build
+pnpm --filter @blame/benchmark-runner build
+git -C /mnt/dev/web/Portfolio-V4 worktree add --detach <workspace> d4d3d1f9f41714b5ca6fce68213ea7a521c776b1
+pnpm --dir <workspace> install --offline --frozen-lockfile
+BLAME_HEADLESS_DEV=true NODE_ENV=development pnpm benchmark:agent -- run --harness cline|blame ... --max-iterations 64 --timeout-seconds 2400
+DATABASE_URL=<URL PostgreSQL locale inerte> pnpm --filter web exec prisma validate
+pnpm --filter web lint
+DATABASE_URL=<URL PostgreSQL locale inerte> pnpm --filter web build
+DATABASE_URL=<URL PostgreSQL locale inerte> pnpm --filter web exec next dev -p <port isolé>
+```
+
+Les previews ont été exécutées hors du run agent, dans un navigateur headless, sur les quatre diffs. Le bouton ou le clavier a été vérifié sur les deux frontends qui rendaient correctement. Le drag et Maj + molette n'ont pas produit de changement observable dans cette automatisation et restent explicitement non prouvés. Aucun smoke test WSL, Lima ou Cloud Preview n'a été exécuté. Cette matrice démontre que Blame compacte mieux chaque requête et sait maintenant utiliser le chemin symbolique, mais qu'il boucle davantage et peut encore produire un faux succès visuel ; le qualificatif `frontier-proven` reste injustifié.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)
