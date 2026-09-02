@@ -47,7 +47,7 @@ const managedInfrastructure =
 const longRunningProcess =
   /(?:^|[;&|]\s*|\s)(?:next\s+(?:dev|start)|vite(?:\s|$)|playwright\s+install|pnpm\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|npm\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|yarn\s+(?:dev|preview|start|serve|watch)|bun\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|nohup|kill|pkill)(?:\s|$)/u;
 const filesystemMutation =
-  /(?:^|[;&|]\s*|\s)(?:cp|mv|rm|install|mkdir|rmdir|touch|truncate|tee|dd|rsync|ln|chmod|chown|printf|patch)(?:\s|$)/u;
+  /(?:^|[;&|]\s*|\s)(?:cp|mv|rm|install|mkdir|rmdir|touch|truncate|tee|dd|rsync|ln|chmod|chown|patch)(?:\s|$)/u;
 const inPlaceMutation =
   /(?:^|[;&|]\s*|\s)(?:apply_patch|perl\s+-\S*i\S*|sed\s+-\S*i\S*)(?:\s|$)/u;
 const formatterMutation =

@@ -459,7 +459,7 @@ function executeCommand(
     all: true,
     cancelSignal: signal,
     cwd,
-    env: workspaceCommandEnvironment(),
+    env: workspaceCommandEnvironment(process.env, executable),
     extendEnv: false,
     reject: false,
     stdin: "ignore",
