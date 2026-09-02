@@ -32,6 +32,7 @@ test("keeps full specialist prompts out of lead routing guidance", () => {
   assert.match(prompt, /consult_specialist/);
   assert.match(prompt, /private instructions internally/);
   assert.match(prompt, /read-only and advisory/);
+  assert.ok(Buffer.byteLength(prompt) < 600);
   assert.doesNotMatch(prompt, /<system_prompt/);
   assert.doesNotMatch(prompt, /## Specialist knowledge/);
   assert.doesNotMatch(prompt, /Jobs To Be Done/);
@@ -98,6 +99,8 @@ test("consult_specialist resolves the private system prompt server-side", async 
   const publicSchema = JSON.stringify(tool.inputSchema);
   assert.doesNotMatch(publicSchema, /Frontend Design Specialist, an internal/);
   assert.doesNotMatch(publicSchema, /visual_system_protocol/);
+  assert.match(tool.description, /frontend_design/);
+  assert.match(tool.description, /risk_review/);
 
   const otherSpecialist = await tool.execute(
     {

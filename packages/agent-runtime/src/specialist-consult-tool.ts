@@ -50,7 +50,7 @@ export function createConsultSpecialistTool(
     name: "consult_specialist",
     description: [
       "Consult one private, read-only Blame specialist for a focused advisory analysis.",
-      "The lead agent remains the sole implementer. Use only when a second opinion materially improves the result; skip for simple work.",
+      "Use only when the user or lead explicitly requests a specialist, and at most one unless the request names more. The lead remains the sole implementer.",
       "Available specialists:",
       ...blameSpecialistAgentMetadata.map(
         (agent) => `${agent.id} (${agent.name}): ${agent.routing}`,

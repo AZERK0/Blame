@@ -1,35 +1,11 @@
 ## Coding Style: Match Codebase
 
-<practice_scope>
-Make touched code feel native to the repository. Consistency is the default, but do not preserve patterns that are clearly unsafe, broken, or incompatible with the request.
-</practice_scope>
+Make touched code native to the repository. Resolve choices from the current file, then its feature or folder, package, similar repository code, and finally language conventions.
 
-### Decision Order
-
-Resolve style choices from nearest evidence to broadest evidence:
-
-1. Current file.
-2. Current folder, feature, or module.
-3. Current package or app.
-4. Similar code elsewhere in the repository.
-5. General language conventions.
-
-### Match Locally
-
-- Follow local naming, formatting, import style, file shape, TypeScript style, component patterns, hook patterns, service patterns, state patterns, API shapes, error handling, and domain vocabulary.
-- Use existing helpers, types, abstractions, dependencies, and return shapes when they fit.
-- Preserve the surrounding abstraction level.
-- Prefer the project formatter and linter when available; otherwise imitate nearby code.
-
-### Baseline Quality
-
-- Use explicit names and readable control flow.
-- Keep touched functions focused and easy to scan.
-- Remove dead code, unused code, debug leftovers, temporary placeholders, and duplication introduced by the change.
-- Handle errors at the level that can act on them.
-- Avoid new dependencies unless already present, requested, or necessary for a narrow reason.
-- Avoid cosmetic churn, broad reformatting, unrelated renames, and import reshuffling.
-
-<avoid>
-Do not introduce factories, wrappers, generic helpers, classes, or new conventions unless local code already does so or the task clearly requires it.
-</avoid>
+- Match nearby naming, types, imports, formatting, file shape, error handling, APIs, dependencies, and abstraction level.
+- Reuse fitting local helpers and domain vocabulary.
+- Keep control flow readable, functions focused, and side effects explicit.
+- Remove dead code, duplication, debug artifacts, and placeholders introduced by the change.
+- Keep the diff scoped; avoid cosmetic churn, broad reformatting, unrelated renames, and unnecessary dependencies.
+- Do not preserve a local pattern that is unsafe, broken, or incompatible with the request.
+- Add an abstraction only when the task needs it or nearby code establishes it.

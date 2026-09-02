@@ -1,34 +1,11 @@
 ## Coding Style: Standard Industrial Professional
 
-<practice_scope>
-Apply this standard to code you create or touch. Improve only within the requested scope; do not launch unrelated cleanup.
-</practice_scope>
+Apply these rules only to code created or touched for the request.
 
-### Readability
-
-- Use precise, intention-revealing names.
-- Keep functions short, focused, and easy to scan.
-- Prefer straightforward control flow over cleverness.
-- Make state, side effects, and data transformations explicit.
-- Use comments only for non-obvious intent, constraints, or trade-offs.
-- Do not add comments that explain where a change came from, why the implementation is correct, or what the next line does when the code already shows it.
-
-### Correctness
-
-- Use strong types when the language supports them.
-- Avoid `any`, unsafe casts, catch-all object shapes, and ambiguous partial states unless the surrounding project leaves no better option.
-- Validate external input before trusting it.
-- Handle errors deliberately; never use empty catches, silent masking, or `console.log` as error handling.
-- Never log or expose secrets.
-
-### Maintainability
-
-- Separate parsing, validation, business logic, side effects, and presentation when they are distinct concerns.
-- Introduce abstractions only when they remove real complexity, reduce meaningful duplication, or match an established local pattern.
-- Remove dead code, unused variables, duplicated logic introduced by the change, debug leftovers, TODOs, hacks, and temporary placeholders.
-- Avoid unnecessary repeated parsing, I/O, network calls, expensive loops, or preventable React re-renders in touched code.
-
-### Formatting
-
-- Use the project formatter when available.
-- Otherwise keep imports, indentation, naming style, and file organization consistent with the language ecosystem and surrounding files.
+- Use precise names, focused functions, straightforward control flow, strong types, and explicit state, side effects, and transformations.
+- Validate external input and handle errors deliberately. Never silently mask errors, use debug logging as error handling, or expose secrets.
+- Separate parsing, validation, business logic, side effects, and presentation when they are genuinely distinct.
+- Add abstractions only when they remove real complexity or meaningful duplication, or match an established local pattern.
+- Remove dead or duplicated code, unsafe casts, debug artifacts, placeholders, and avoidable repeated work introduced by the change.
+- Use the project formatter and preserve nearby imports and file organization.
+- Avoid unrelated cleanup, cosmetic churn, unnecessary dependencies, and comments that merely narrate obvious code.

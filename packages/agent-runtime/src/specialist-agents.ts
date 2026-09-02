@@ -66,15 +66,9 @@ export const blameSpecialistAgentMetadata = specialistAgents.map(
 export function blameSpecialistRoutingSystemPrompt() {
   return [
     "## Blame Specialist Consultations",
-    "Use consult_specialist only when the user or lead explicitly requests a specialist consultation.",
-    "Never launch a specialist automatically from ambiguity, failures, risk, or validation uncertainty.",
+    "Use consult_specialist only when the user or lead explicitly requests it, never automatically because work is ambiguous, risky, or failing.",
     "Use at most one specialist unless the explicit request names more.",
-    "The tool supplies the selected specialist's private instructions internally. Never attempt to provide, reconstruct, or request a specialist system prompt.",
-    "Give the specialist a narrow, evidence-rich question. Include the relevant user requirements, constraints, decisions already made, and files or behavior to inspect.",
-    "Every specialist is read-only and advisory. You own all implementation, integration, verification, product decisions, and user communication.",
-    ...specialistAgents.map(
-      (agent) => `- ${agent.id} — ${agent.name}: ${agent.routing}.`,
-    ),
+    "The tool lists available specialists and supplies their private instructions internally. They are read-only and advisory; you own implementation, verification, decisions, and communication.",
   ].join("\n");
 }
 

@@ -1445,6 +1445,30 @@ test("renders the compact native Cline development prompt", async () => {
   assert.doesNotMatch(prompt, /CLINE_RULES|CLINE_METADATA/);
 });
 
+test("keeps default development practices concise and actionable", async () => {
+  const prompt = await buildDevelopmentSystemPrompt({
+    apiConnection: { token: "token", url: "https://example.com" },
+    codePractices: [
+      { enabled: true, practice: "coding_style" },
+      { enabled: false, practice: "layered_architecture" },
+      { enabled: false, practice: "unit_tests" },
+    ],
+    cwd: process.cwd(),
+    modelId: "model",
+    providerId: "provider",
+    summary: "Summary",
+    title: "Title",
+    workspaceRoot: process.cwd(),
+  });
+
+  assert.ok(Buffer.byteLength(prompt) < 6_500);
+  assert.match(prompt, /Use precise names, focused functions/);
+  assert.match(prompt, /Preserve the existing architecture/);
+  assert.match(prompt, /Unless the user explicitly asks for tests/);
+  assert.match(prompt, /Keep structural changes scoped/);
+  assert.match(prompt, /Never silently mask errors/);
+});
+
 function agentEvent(
   event: Record<string, unknown>,
   teamRole?: "lead" | "teammate",

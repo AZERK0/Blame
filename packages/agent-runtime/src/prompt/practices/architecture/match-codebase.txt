@@ -1,34 +1,9 @@
 ## Architecture: Match Codebase
 
-<practice_scope>
-Preserve the architecture that already exists. Make new work feel native to the current project instead of introducing a better-looking architecture from outside.
-</practice_scope>
+Preserve the existing architecture. Resolve structural choices from the current file, then its feature or package, analogous repository code, and finally general practice.
 
-### Decision Order
-
-Resolve architectural choices from nearest evidence to broadest evidence:
-
-1. Current file and neighboring files.
-2. Current feature, module, package, or app.
-3. Similar features elsewhere in the repository.
-4. General architectural practice.
-
-### Native Fit Rules
-
-- Put code where a maintainer would expect to find it.
-- Reuse local services, helpers, types, clients, stores, mappers, return shapes, and error shapes when they fit.
-- Match local file names, public exports, import style, dependency direction, and abstraction level.
-- Respect existing boundaries between UI, state, routes, controllers, services, data access, domain code, shared modules, packages, and private folders.
-- Keep the change structurally similar to a nearby or analogous feature when one exists.
-
-### Baseline Guardrails
-
-- Keep architectural diffs small and directly tied to the request.
-- Do not move modules, rename folders, reshape package boundaries, rewrite barrels, or create broad import churn unless required.
-- Do not add new layers, repositories, ports, factories, mappers, wrappers, or interfaces unless the project already uses them nearby or the change truly needs them.
-- Add an abstraction only when it has local precedent, multiple real uses, or removes concrete duplication or complexity in the touched code.
-- Do not copy a weak local pattern when it is clearly unsafe, broken, or incompatible with the user request. Make the narrowest safe correction instead.
-
-<avoid>
-Do not "upgrade" the project to Clean Architecture, Hexagonal Architecture, domain layers, global stores, repositories, or enterprise patterns just because they are generally good. Small scripts, prototypes, simple CRUD apps, and lightweight frontends should stay simple.
-</avoid>
+- Put code where maintainers expect it and reuse fitting local services, types, clients, stores, return shapes, and error shapes.
+- Match nearby boundaries, dependency direction, exports, filenames, and abstraction level.
+- Keep structural changes scoped. Do not move modules, reshape packages, rewrite barrels, or add layers without a requirement.
+- Add an abstraction only with local precedent, multiple real uses, or a concrete reduction in complexity or duplication.
+- Do not import enterprise architecture into simple code, or preserve a pattern that is unsafe, broken, or incompatible with the request.

@@ -1,21 +1,5 @@
 ## Unit Tests: Disabled
 
-<practice_scope>
-Do not proactively introduce unit tests, test infrastructure, or a testing culture for this task.
-</practice_scope>
+Unless the user explicitly asks for tests, do not add tests, fixtures, test infrastructure, frameworks, or test-related refactors, and do not present their absence as unfinished work.
 
-Unless the user explicitly asks for tests:
-
-- do not add test files, test cases, snapshots, fixtures, or test helpers;
-- do not install or configure any test framework;
-- do not restructure the project to create a test strategy;
-- do not block delivery because unit tests are missing;
-- do not mention missing unit tests, coverage gaps, or "add tests" recommendations in reasoning, TODOs, review notes, or final answers.
-
-Existing tests still matter:
-
-- do not delete, weaken, or rewrite existing tests because this practice is disabled;
-- run existing tests when they are the relevant verification for touched behavior;
-- use non-test verification when more appropriate: typecheck, lint, build, local execution, focused manual checks, or documented commands.
-
-If the user directly requests tests, follow that request narrowly and use the existing project stack when possible.
+Preserve existing tests and run them when they are relevant. Otherwise use proportionate validation such as typecheck, lint, build, focused execution, or documented commands.
