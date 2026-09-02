@@ -118,7 +118,7 @@ function editCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "edit_code",
     description:
-      "Atomically apply symbol operations and native Cline patches. Use symbols inside existing supported targets; use focused patches for imports, raw/config files, new files, or cross-symbol changes. Append with insert_after on an editTarget. Do not combine a parent with its containedBy child. One snapshot validates overlaps and final syntax; hashes and revisions are inferred.",
+      "Atomically apply symbol operations and native Cline patches. Use symbols inside existing supported targets; use focused patches for imports, raw/config files, new files, or cross-symbol changes. For a missing path, patch may be the complete raw file content. Append with insert_after on an editTarget. Do not combine a parent with its containedBy child. One snapshot validates overlaps and final syntax; hashes and revisions are inferred.",
     schema: lightEditCodeInputSchema,
     execute: (input, context) =>
       workspace.editCode(input, {

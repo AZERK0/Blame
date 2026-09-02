@@ -180,12 +180,28 @@ export class LightEditService {
     patch: string,
     remainingOperations: number,
   ) {
-    const operations = splitLightPatch(patch, requestedPath);
+    const normalizedPatch = await this.normalizeNewFilePatch(
+      plans,
+      requestedPath,
+      patch,
+    );
+    const operations = splitLightPatch(normalizedPatch, requestedPath);
     if (operations.length > remainingOperations)
       throw new Error("Edit batch contains too many operations.");
     for (const operation of operations)
       await this.planPatchFile(plans, operation.path, operation.patch);
     return operations.length;
+  }
+
+  private async normalizeNewFilePatch(
+    plans: Map<string, PlannedFile>,
+    requestedPath: string | undefined,
+    patch: string,
+  ) {
+    if (!requestedPath || hasClinePatchEnvelope(patch)) return patch;
+    const path = this.files.normalizePath(requestedPath);
+    if (plans.has(path) || (await optionalFile(this.files, path))) return patch;
+    return completeNewFilePatch(path, patch);
   }
 
   private async planPatchFile(
@@ -531,6 +547,25 @@ function assertSymbolEditAvailable(path: string) {
   const capability = capabilityForPath(path);
   if (capability?.loaded && capability.level !== "raw") return;
   throw new SymbolResolutionError(`Symbol editing is unavailable for ${path}.`);
+}
+
+function hasClinePatchEnvelope(patch: string) {
+  return /^\s*\*\*\* (?:Begin Patch|Add File:|Delete File:|Update File:)/u.test(
+    patch,
+  );
+}
+
+function completeNewFilePatch(path: string, content: string) {
+  const addedLines = content
+    .replaceAll("\r\n", "\n")
+    .split("\n")
+    .map((line) => `+${line}`);
+  return [
+    "*** Begin Patch",
+    `*** Add File: ${path}`,
+    ...addedLines,
+    "*** End Patch",
+  ].join("\n");
 }
 
 async function optionalFile(files: WorkspaceFiles, path: string) {

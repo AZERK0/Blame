@@ -2143,6 +2143,39 @@ test("a path-addressed added file may omit its redundant file header", async () 
   });
 });
 
+test("raw patch content creates a missing path without an envelope", async () => {
+  await withWorkspace({}, async (root) => {
+    const workspace = lightWorkspace(root, "raw-new-file");
+    const result = await workspace.editCode({
+      operations: [
+        {
+          kind: "patch",
+          path: "migration.sql",
+          patch: "CREATE TYPE status AS ENUM ('DRAFT');\n",
+        },
+      ],
+    });
+    assert.equal(result.status, "ok");
+    assert.equal(
+      await readFile(join(root, "migration.sql"), "utf8"),
+      "CREATE TYPE status AS ENUM ('DRAFT');\n",
+    );
+  });
+});
+
+test("raw patch content never replaces an existing path", async () => {
+  await withWorkspace({ "existing.txt": "old\n" }, async (root) => {
+    const workspace = lightWorkspace(root, "raw-existing-file");
+    const result = await workspace.editCode({
+      operations: [
+        { kind: "patch", path: "existing.txt", patch: "replacement\n" },
+      ],
+    });
+    assert.equal(result.status, "blocked");
+    assert.equal(await readFile(join(root, "existing.txt"), "utf8"), "old\n");
+  });
+});
+
 test("a pure addition update to a missing target becomes a file addition", async () => {
   await withWorkspace({}, async (root) => {
     const workspace = lightWorkspace(root, "missing-update-addition");
