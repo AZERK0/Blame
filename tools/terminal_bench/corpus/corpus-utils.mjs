@@ -12,10 +12,11 @@ export async function readManifest() {
 }
 
 export function parseArguments(values) {
+  const argumentsList = values[0] === "--" ? values.slice(1) : values;
   const options = new Map();
-  for (let index = 0; index < values.length; index += 2) {
-    const name = values[index];
-    const value = values[index + 1];
+  for (let index = 0; index < argumentsList.length; index += 2) {
+    const name = argumentsList[index];
+    const value = argumentsList[index + 1];
     if (!name?.startsWith("--") || !value)
       throw new Error(`Invalid option near ${name ?? "end"}.`);
     options.set(name.slice(2), value);

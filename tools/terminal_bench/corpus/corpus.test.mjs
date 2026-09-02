@@ -3,7 +3,11 @@ import test from "node:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { prepareWorkspace, readManifest } from "./corpus-utils.mjs";
+import {
+  parseArguments,
+  prepareWorkspace,
+  readManifest,
+} from "./corpus-utils.mjs";
 import { scoreRun } from "./score-run.mjs";
 
 test("defines ten unique scored scenarios", async () => {
@@ -16,6 +20,11 @@ test("defines ten unique scored scenarios", async () => {
     assert.ok(scenario.maxIterations > 0);
     assert.ok(scenario.timeoutSeconds > 0);
   }
+});
+
+test("accepts the pnpm argument separator", () => {
+  const options = parseArguments(["--", "--label", "baseline"]);
+  assert.equal(options.get("label"), "baseline");
 });
 
 test("materializes and scores an isolated workspace", async () => {
