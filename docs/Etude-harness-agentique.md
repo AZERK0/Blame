@@ -3103,6 +3103,112 @@ git diff --check
 
 Les artefacts complets restent sous `.blame/benchmarks/corpus/` et ne sont pas commités. Les résultats de cette section sont des appels provider live headless ; les tests de politique de commande, de scoring, de prompt et de révision sont déterministes. Ils ne sont ni confondus ni présentés comme équivalents.
 
+### 21.42 Projection des grosses éditions validées et exposition conditionnelle des capacités
+
+#### Hypothèses
+
+La section précédente expliquait la parité d'entrée Cline/Blame par autre chose que les lectures brutes. Deux coûts restaient rejoués à chaque requête : le payload complet d'une grosse édition déjà acceptée et des capacités optionnelles présentes même lorsqu'elles étaient inutilisables. L'hypothèse testée est qu'une édition volumineuse peut quitter le contexte provider une fois, et seulement une fois, qu'une validation structurée couvre tous ses chemins sur la révision source courante. La possibilité de corriger avant preuve doit rester intacte.
+
+Une seconde hypothèse concernait les lectures groupées. Elle prévoyait qu'un `read_code` acceptant plusieurs cibles réduirait les tours sans réduire l'information. Luna utilise toutefois déjà plusieurs appels `read_code` parallèles dans une même itération. Cette variante devait donc démontrer un choix réel du modèle avant d'être conservée.
+
+#### Correctifs conservés
+
+Les résultats de `run_task` publient maintenant une preuve structurée contenant les chemins couverts, la révision source, le statut et la tâche exacte pour `build`, `dependencies`, `lint`, `test` et `typecheck`. Une commande d'inspection telle que `pwd` ne publie aucune preuve. Le cache de validation restitue la même structure au lieu d'obliger la projection à interpréter du texte libre.
+
+La projection remplace l'entrée d'un `edit_code` supérieur à 4 096 octets par son reçu, ses chemins et sa révision uniquement si une preuve ultérieure couvre tous les chemins et correspond à la dernière révision source. Elle conserve intégralement les petites éditions, les éditions non relues et non validées, les preuves partielles et les preuves devenues anciennes. Le seuil évite de remplacer de petites transformations encore utiles par une structure presque aussi coûteuse ; il ne bloque aucune écriture.
+
+Le runner mesure séparément `validatedEditsReplaced`. Cela rend le gain attribuable sans prétendre qu'une compaction SDK s'est déclenchée : le compteur de compactions reste nul sur ce corpus.
+
+Le contexte fixe a également été réduit sans retirer de capacité aux sessions qui peuvent en avoir besoin :
+
+- `consult_specialist` reste disponible dans les conversations interactives et lorsqu'une requête one-shot demande explicitement un spécialiste, un expert, un reviewer ou un second avis ; il n'est plus envoyé à chaque petite tâche headless ;
+- les outils et consignes de preview ne sont présents que lorsqu'un scope de preview existe ;
+- la table de routage des spécialistes n'est plus répétée dans le système et dans la définition d'outil ;
+- le briefing et les descriptions d'outils ne répètent plus les mêmes règles de navigation, d'édition et de validation.
+
+Sur la configuration headless du corpus, les définitions d'outils passent de 6 515 à 4 416 octets par requête et le système d'environ 5,75 à 4,13 Ko. Le socle fixe mesuré passe ainsi d'environ 12,27 à 8,55 Ko par requête, soit -30,4 %. Les sessions interactives conservent volontairement le spécialiste : l'optimisation porte sur l'exposition inutile, pas sur l'intelligence disponible.
+
+#### Expérience ciblée sur la grosse création
+
+Les trois runs suivants partent du même commit de fixture `a1ae8a5...`, avec la même instruction, le même modèle Luna, le même effort, le même budget et le même timeout. Le contrôle propre précède le changement. Les deux répétitions suivantes contiennent la projection validée ; la première contenait encore le schéma expérimental de lecture groupée, la seconde est le runtime finalement conservé.
+
+| Mesure | Contrôle propre | Projection, répétition 1 | Projection, répétition 2 |
+| --- | ---: | ---: | ---: |
+| Score | 100 | 100 | 100 |
+| Durée | 134,08 s | 131,50 s | 166,30 s |
+| Première édition réussie | 121,26 s | 120,97 s | 154,18 s |
+| Tokens entrée | 36 749 | 16 972 | 19 494 |
+| Tokens sortie | 6 654 | 6 812 | 8 620 |
+| Cache lu | 10 752 | 3 072 | 3 072 |
+| Coût | 0,01340 $ | 0,01102 $ | 0,01369 $ |
+| Requêtes modèle | 5 | 4 | 4 |
+| Appels d'outils | 8 | 6 | 6 |
+| Lectures / octets renvoyés | 3 / 15 792 | 3 / 958 | 3 / 958 |
+| Octets projetés hors contexte | 0 | 12 483 | 26 159 |
+| Éditions validées remplacées | 0 | 1 | 1 |
+
+L'entrée moyenne des deux répétitions avec projection vaut 18 233 tokens, soit -50,4 % face au contrôle propre. La durée moyenne monte de 11,1 % et la première édition de 13,5 % : la génération initiale des 120 objets reste un temps modèle variable et n'est pas accélérée par une projection qui intervient après le build. Le gain de tokens est reproduit ; un gain de latence avant édition ne l'est pas et n'est pas revendiqué.
+
+#### Corpus complet et comparaison avec le contrôle Cline
+
+Le runtime final a ensuite rejoué les dix scénarios. Les dix hashes de fixture sont identiques à ceux de la paire stricte Cline/Blame de la section précédente. Cline n'a pas été relancé après ce changement, car son chemin par défaut n'a pas été modifié ; sa colonne est le contrôle provider live strict déjà mesuré, pas un replay déterministe contemporain.
+
+| Mesure | Cline par défaut | Blame strict précédent | Blame final |
+| --- | ---: | ---: | ---: |
+| Score / runs vérifiés | 100 / 10 | 100 / 10 | 100 / 10 |
+| Durée totale | 460,03 s | 338,05 s | 320,93 s |
+| Première tentative / réussite moyenne | 28,05 / 28,06 s | 21,79 / 21,95 s | 23,87 / 24,55 s |
+| Tokens entrée | 204 438 | 229 116 | 136 767 |
+| Tokens sortie | 18 349 | 12 077 | 12 503 |
+| Cache lu | 108 544 | 135 680 | 63 488 |
+| Coût | 0,04337 $ | 0,03589 $ | 0,03093 $ |
+| Requêtes modèle | 51 | 50 | 45 |
+| Appels d'outils | 64 | 47 | 42 |
+| Recherches / lectures | 8 / 38 | 1 / 18 | 0 / 16 |
+| Octets de navigation renvoyés | 35 835 | 23 530 | 6 569 |
+| Éditions réussies / bloquées | 12 / 0 | 12 / 0 | 12 / 1 |
+| Symboles / patchs / hybrides | 0 / 12 / 0 | 9 / 4 / 1 | 9 / 5 / 1 |
+| Appels bloqués / échoués | 0 / 0 | 2 / 0 | 1 / 0 |
+| Longues périodes sans outil | 2, soit 131,23 s | 1, soit 103,67 s | 1, soit 147,45 s |
+| Preuves structurées | 0 | 10 | 12 |
+| Événements après terminal | 0 | 0 | 0 |
+
+Face au contrôle Cline, Blame final consomme 33,1 % moins de tokens d'entrée, dure 30,2 % moins longtemps, utilise 34,4 % moins d'appels d'outils, 57,9 % moins de lectures et coûte 28,7 % moins cher. Face au Blame strict précédent, l'entrée baisse de 40,3 %, la durée de 5,1 % et le coût de 13,8 %. Ce dernier écart contient l'ancien outlier de création ; la comparaison ciblée répétée ci-dessus est l'estimation plus prudente du gain sur ce chemin.
+
+Les neuf opérations symboliques sont conservées. Les douze preuves structurées portent chacune leur révision ; sur les dix runs, la dernière preuve correspond exactement à la révision terminale. Le scénario de fraîcheur contient volontairement une première preuve devenue ancienne puis une nouvelle preuve sur la révision finale. Tous les messages finaux sont vérifiés et aucun événement ne suit le terminal.
+
+Le seul rejet d'édition est une entrée modèle TSX mal formée contenant un second bloc `Update File` vide. Le harness la refuse avec un diagnostic de contexte exact, puis Luna envoie un batch hybride valide au tour suivant. Appliquer silencieusement le fragment valide aurait omis le remplacement de corps demandé. Ce retry est classé comme erreur de sérialisation du modèle correctement détectée, pas comme limitation démontrée du contrat. Une répétition ciblée antérieure du même scénario passe sans rejet.
+
+#### Expérience abandonnée et limites
+
+La lecture groupée a été exposée pendant trois scénarios live, dont TSX et backend multi-fichiers. Elle n'a jamais été choisie : Luna a émis ses lectures en parallèle dans la même itération. Elle ajoutait 169 octets de schéma à chaque requête sans réduire les tours. Le fichier, le contrat, les métriques et les tests associés ont donc été supprimés. Cette suppression est conservée dans un commit séparé afin que l'expérience négative reste lisible.
+
+La projection ne réduit ni les tokens nécessaires à la première génération, ni le raisonnement privé, ni une sortie longue demandée par la tâche. Elle agit sur les requêtes postérieures à une preuve. Elle ne doit pas être étendue aux éditions non validées ou aux commandes arbitraires. Le corpus ne teste toujours pas une preview réelle, le drag, le clavier ou la molette et aucune preuve visuelle n'est revendiquée. Un corpus long indépendant reste nécessaire pour mesurer les gains de latence et l'effet lors d'une correction après une validation échouée.
+
+Les tests de non-régression couvrent la compaction après preuve fraîche, la conservation après preuve ancienne, partielle ou sur petite édition, la preuve structurée fraîche et mise en cache, l'absence de preuve pour une inspection, l'exposition conditionnelle des spécialistes et de la preview, ainsi que l'agrégation de `validatedEditsReplaced`. Le runtime contient 252 tests et le runner 13, tous passants. Le corpus déterministe contient 5 tests, tous passants.
+
+Les commandes principales réellement exécutées sont :
+
+```text
+git status --short --branch
+pnpm --filter @blame/agent-runtime test
+pnpm --filter @blame/agent-runtime lint
+pnpm --filter @blame/agent-runtime typecheck
+pnpm --filter @blame/agent-runtime build
+pnpm --filter @blame/benchmark-runner test
+pnpm --filter @blame/benchmark-runner lint
+pnpm --filter @blame/benchmark-runner typecheck
+pnpm --filter @blame/benchmark-runner build
+pnpm test:benchmark-corpus
+BLAME_HEADLESS_DEV=true NODE_ENV=development pnpm benchmark:corpus -- --label luna-context-optimized-1 --harness blame --scenario <scenario>
+BLAME_HEADLESS_DEV=true NODE_ENV=development pnpm benchmark:corpus -- --label luna-context-optimized-full-1 --harness blame
+pnpm benchmark:corpus:report -- --campaign <campaign>
+pnpm check:line-budgets
+git diff --check
+```
+
+Les variables requises ont été importées depuis `.env.terminal-bench` sans afficher leurs valeurs. `pnpm check:line-budgets` reste rouge sur des dépassements déjà présents, notamment `agent-telemetry.ts`, `cline-runtime.ts`, `light-workspace.ts` et plusieurs fichiers app/desktop ; aucun n'a été créé par cette boucle. Les tests, lint, typecheck, builds et `git diff --check` concernés passent.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)
