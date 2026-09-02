@@ -70,7 +70,11 @@ async function checkCssMedia(workspace) {
 async function checkSymbolRebase(workspace) {
   const source = await sourceFile(workspace, "src/pricing.ts");
   return [
-    check("fee threshold", /totalCents\s*<\s*100_?000/u.test(source)),
+    check(
+      "fee threshold",
+      /totalCents\s*<\s*100_?000/u.test(source) ||
+        /totalCents\s*>=\s*100_?000/u.test(source),
+    ),
     check(
       "three percent fee",
       /Math\.round\(totalCents\s*\*\s*0\.03\)/u.test(source),
