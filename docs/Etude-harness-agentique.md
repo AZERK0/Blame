@@ -2485,19 +2485,19 @@ Les artefacts expurgés sont sous `.blame/benchmarks/harness-loop/runs/` et rest
 
 #### Cycles avant/après et décisions
 
-| Hypothèse | Avant | Correctif minimal | Après | Décision |
-| --- | --- | --- | --- | --- |
-| Une lecture raw partiellement couverte par un symbole est dédupliquée à tort | 69,37 s, 12 itérations, 15 appels, première édition à 48,77 s, 66 468 tokens d’entrée, 4 éditions dont 2 bloquées | La couverture raw exige désormais une plage contiguë réellement émise | 21,43 s, 5 itérations, 6 appels, première édition à 13,94 s, 24 256 tokens d’entrée, une édition réussie | Conservé, `3fa15934` |
-| Un script de formatage peut écrire hors journal | Portfolio 1 : `format` a modifié trois fois `next.config.ts` sans reçu ; diff non vérifiable | Refus des tâches projet et commandes `prettier --write`, `eslint --fix` et `prisma format` | Portfolio 2 : aucune écriture de formateur ; tous les chemins source finaux sont couverts par des reçus | Conservé sur invariant d’atomicité, `25d58438` ; la baisse de durée d’un seul run n’est pas causale |
-| Le dialecte Apply Patch natif et non ambigu est rejeté pour des enveloppes redondantes manquantes | Deux répétitions : moyenne 63,05 s, 12,5 appels, 63 290 tokens d’entrée, 0,00621 $, 2,5 rejets d’édition | Normalisation des headers omis, première opération implicite, ajout pur et fragments séparés, sans fuzz | Deux répétitions : moyenne 46,81 s, 9 appels, 43 560 tokens d’entrée, 0,00464 $, un rejet | Conservé : −25,8 % de durée, −28,0 % d’appels, −31,2 % d’entrée et −25,2 % de coût, `c12b06aa` |
-| `build` reste ambigu lorsqu’un identifiant de tâche imbriqué porte le même nom | 20,13 s, 6 appels ; le mauvais candidat est sélectionné et le résultat est faux | Priorité à l’identifiant exact avant script exact puis kind | 13,95 s, 3 appels ; valeur et build exacts vérifiés | Conservé pour correction fonctionnelle, `3f469f95` |
-| Lire un dossier produit une erreur et force des recherches de remplacement | 48,50 s, 11 appels, première édition à 30,80 s, 47 703 tokens d’entrée, une recherche | Listing trié d’un niveau, borné à 64 entrées, avec couverture et déduplication | 37,58 s, 10 appels, première édition à 18,78 s, 37 352 tokens d’entrée, aucune recherche | Conservé, `f34410e6` ; les 2 072 octets utiles du listing remplacent 1 680 octets de réponses de contournement |
-| Le runner traite une erreur agent récupérable comme terminale | Portfolio 4 s’arrête au premier échec récupérable de `finish_task` | Seules les erreurs non récupérables terminent le runner | Le test attend le vrai `done` ; les runs suivants poursuivent les corrections | Conservé sur test déterministe, `68ba30ba` |
-| Un alias `path#sN` sûr est rejeté après réindexation | Échec observé une fois sur Portfolio 4 | Résolution de `sN` seulement si le chemin qualifiant correspond exactement | Test de relocalisation qualifiée passant ; aucun élargissement inter-fichier | Conservé, `acbdbc43` |
-| Les validations héritent du `NODE_ENV=development` et des variables privées du runner | Sur le diff exact de Portfolio 5, `next build` échoue avec l’avertissement `NODE_ENV` puis le prerender de `_global-error`; le même diff avec `NODE_ENV` retiré passe | Environnement enfant reconstruit sans `NODE_ENV` ni variable `BLAME_*`, avec `extendEnv: false`, pour tâches, dépendances et Prisma | Les builds automatiques Portfolio 7 et 8 passent à la dernière révision sans avertissement | Conservé sur preuve causale du même diff, `1143ea03` |
-| `finish_task` répète une validation environnementale impossible à révision constante | Portfolio 6 exécute deux fois le même build indisponible aux itérations 33 et 34 | Réutilisation explicite d’une validation environnementale courante comme `validation_unavailable` | Test déterministe passant ; plus de relance terminale identique observée | Conservé, `085198ab` |
-| La notice d’auto-approbation est publiée après `done` | Un événement notice apparaît après le terminal sur les runs Portfolio 1, 2, 3, 5, 6 et 7 | Publication de la notice avant l’appel à `cline.start()` | Zéro événement post-terminal sur le replay ciblé et Portfolio 8 | Conservé ; correction à la source, sans filtre runner, `0aeda445` |
-| Un `cwd` absolu mais intérieur au worktree est rejeté alors que son intention est certaine | Replay exact : `blocked(environment)`, 24,61 s et 0,00284 $ | Conversion d’un chemin absolu intérieur en chemin relatif ; un chemin extérieur reste bloqué | Même replay : commande `ok` et cwd exact, 21,86 s et 0,00254 $ | Conservé pour le gain fonctionnel ; les deux builds de fixture restent volontairement en échec et les écarts de coût ne prouvent rien, `f96093eb` |
+| Hypothèse                                                                                         | Avant                                                                                                                                                                 | Correctif minimal                                                                                                                   | Après                                                                                                    | Décision                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Une lecture raw partiellement couverte par un symbole est dédupliquée à tort                      | 69,37 s, 12 itérations, 15 appels, première édition à 48,77 s, 66 468 tokens d’entrée, 4 éditions dont 2 bloquées                                                     | La couverture raw exige désormais une plage contiguë réellement émise                                                               | 21,43 s, 5 itérations, 6 appels, première édition à 13,94 s, 24 256 tokens d’entrée, une édition réussie | Conservé, `3fa15934`                                                                                                                              |
+| Un script de formatage peut écrire hors journal                                                   | Portfolio 1 : `format` a modifié trois fois `next.config.ts` sans reçu ; diff non vérifiable                                                                          | Refus des tâches projet et commandes `prettier --write`, `eslint --fix` et `prisma format`                                          | Portfolio 2 : aucune écriture de formateur ; tous les chemins source finaux sont couverts par des reçus  | Conservé sur invariant d’atomicité, `25d58438` ; la baisse de durée d’un seul run n’est pas causale                                               |
+| Le dialecte Apply Patch natif et non ambigu est rejeté pour des enveloppes redondantes manquantes | Deux répétitions : moyenne 63,05 s, 12,5 appels, 63 290 tokens d’entrée, 0,00621 $, 2,5 rejets d’édition                                                              | Normalisation des headers omis, première opération implicite, ajout pur et fragments séparés, sans fuzz                             | Deux répétitions : moyenne 46,81 s, 9 appels, 43 560 tokens d’entrée, 0,00464 $, un rejet                | Conservé : −25,8 % de durée, −28,0 % d’appels, −31,2 % d’entrée et −25,2 % de coût, `c12b06aa`                                                    |
+| `build` reste ambigu lorsqu’un identifiant de tâche imbriqué porte le même nom                    | 20,13 s, 6 appels ; le mauvais candidat est sélectionné et le résultat est faux                                                                                       | Priorité à l’identifiant exact avant script exact puis kind                                                                         | 13,95 s, 3 appels ; valeur et build exacts vérifiés                                                      | Conservé pour correction fonctionnelle, `3f469f95`                                                                                                |
+| Lire un dossier produit une erreur et force des recherches de remplacement                        | 48,50 s, 11 appels, première édition à 30,80 s, 47 703 tokens d’entrée, une recherche                                                                                 | Listing trié d’un niveau, borné à 64 entrées, avec couverture et déduplication                                                      | 37,58 s, 10 appels, première édition à 18,78 s, 37 352 tokens d’entrée, aucune recherche                 | Conservé, `f34410e6` ; les 2 072 octets utiles du listing remplacent 1 680 octets de réponses de contournement                                    |
+| Le runner traite une erreur agent récupérable comme terminale                                     | Portfolio 4 s’arrête au premier échec récupérable de `finish_task`                                                                                                    | Seules les erreurs non récupérables terminent le runner                                                                             | Le test attend le vrai `done` ; les runs suivants poursuivent les corrections                            | Conservé sur test déterministe, `68ba30ba`                                                                                                        |
+| Un alias `path#sN` sûr est rejeté après réindexation                                              | Échec observé une fois sur Portfolio 4                                                                                                                                | Résolution de `sN` seulement si le chemin qualifiant correspond exactement                                                          | Test de relocalisation qualifiée passant ; aucun élargissement inter-fichier                             | Conservé, `acbdbc43`                                                                                                                              |
+| Les validations héritent du `NODE_ENV=development` et des variables privées du runner             | Sur le diff exact de Portfolio 5, `next build` échoue avec l’avertissement `NODE_ENV` puis le prerender de `_global-error`; le même diff avec `NODE_ENV` retiré passe | Environnement enfant reconstruit sans `NODE_ENV` ni variable `BLAME_*`, avec `extendEnv: false`, pour tâches, dépendances et Prisma | Les builds automatiques Portfolio 7 et 8 passent à la dernière révision sans avertissement               | Conservé sur preuve causale du même diff, `1143ea03`                                                                                              |
+| `finish_task` répète une validation environnementale impossible à révision constante              | Portfolio 6 exécute deux fois le même build indisponible aux itérations 33 et 34                                                                                      | Réutilisation explicite d’une validation environnementale courante comme `validation_unavailable`                                   | Test déterministe passant ; plus de relance terminale identique observée                                 | Conservé, `085198ab`                                                                                                                              |
+| La notice d’auto-approbation est publiée après `done`                                             | Un événement notice apparaît après le terminal sur les runs Portfolio 1, 2, 3, 5, 6 et 7                                                                              | Publication de la notice avant l’appel à `cline.start()`                                                                            | Zéro événement post-terminal sur le replay ciblé et Portfolio 8                                          | Conservé ; correction à la source, sans filtre runner, `0aeda445`                                                                                 |
+| Un `cwd` absolu mais intérieur au worktree est rejeté alors que son intention est certaine        | Replay exact : `blocked(environment)`, 24,61 s et 0,00284 $                                                                                                           | Conversion d’un chemin absolu intérieur en chemin relatif ; un chemin extérieur reste bloqué                                        | Même replay : commande `ok` et cwd exact, 21,86 s et 0,00254 $                                           | Conservé pour le gain fonctionnel ; les deux builds de fixture restent volontairement en échec et les écarts de coût ne prouvent rien, `f96093eb` |
 
 La série hybride est la seule comparaison ciblée répétée deux fois de part et d’autre. Les autres écarts de durée ou de tokens à une répétition sont des signaux, pas une estimation statistique. Le correctif `cwd` a été comparé avec deux runners construits depuis les révisions avant et après, sur le même chemin absolu, le même commit de fixture, le même prompt et le même `task-id`.
 
@@ -2505,16 +2505,16 @@ La série hybride est la seule comparaison ciblée répétée deux fois de part 
 
 Dans la colonne éditions et tâches, `ok/bloqué` compte les appels terminés. Les tokens sont séparés en entrée, sortie et cache. `Post` est le nombre d’événements persistés après le premier terminal réel.
 
-| Run | Statut réel | Durée ; itérations ; appels | Première édition réussie | Tokens entrée / sortie / cache ; coût | Navigation | Éditions ; tâches | Post | Conclusion qualité |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P1 | terminé, non vérifié | 633,06 s ; 53 ; 81 | 69,82 s, it. 6 | 1 706 325 / 25 244 / 1 622 016 ; 0,07959 $ | 22 lectures, 4 recherches | 31 (20/11) ; 24 (13/11) | 1 | Diff fonctionnel mais mutation silencieuse par formatter |
-| P2 | terminé, non vérifié | 481,64 s ; 31 ; 49 | 152,70 s | 1 000 404 / 21 857 / 873 472 ; 0,06908 $ | 16 lectures, 6 recherches | 8 (6/2) ; 17 (5/12) | 1 | Écritures indirectes supprimées ; validations encore incomplètes |
-| P3 | terminé, non vérifié | 728,97 s ; 43 ; 80 | 269,20 s | 1 938 637 / 33 315 / 1 850 368 ; 0,09464 $ | 22 lectures, 7 recherches | 20 (13/7) ; 29 (15/14) | 1 | Directory, patch hybride, alias et build `NODE_ENV` révèlent quatre causes distinctes |
-| P4 | échec runner prématuré | 635,64 s ; 49 ; 63 | 47,43 s | 1 833 714 / 26 762 / 1 709 056 ; 0,09123 $ | 16 lectures, 2 recherches | 26 (17/9) ; 17 (5/12) | 0 | Une erreur récupérable est prise pour le terminal |
-| P5 | échec à 64 itérations | 783,93 s ; 64 ; 86 | 139,54 s | 3 043 394 / 33 326 / 2 929 664 ; 0,12133 $ | 30 lectures, 4 recherches | 26 (20/6) ; 23 (6/17) | 1 | Run contaminé par `ENOSPC`; exclu des preuves de performance |
-| P6 | terminé, validation indisponible | 509,78 s ; 34 ; 68 | 130,82 s, it. 4 | 1 253 213 / 22 279 / 1 183 232 ; 0,06440 $ | 21 lectures, 4 recherches | 12 (10/2) ; 28 (13/15) | 1 | L’isolation d’environnement permet le build manuel ; validation finale répétée |
-| P7 | terminé et vérifié | 658,27 s ; 45 ; 68 | 156,81 s, it. 7 | 1 771 802 / 29 062 / 1 679 360 ; 0,08695 $ | 20 lectures, 4 recherches | 20 (13/7) ; 23 (10/13) | 1 | Build automatique frais ; premier run pleinement vérifié |
-| P8 | terminé et vérifié | 551,21 s ; 38 ; 58 | 257,22 s, it. 11 | 1 285 626 / 24 499 / 1 214 464 ; 0,06792 $ | 19 lectures, 3 recherches | 15 (12/3) ; 20 (7/13) | 0 | Build automatique frais et lifecycle propre ; formatage encore en échec |
+| Run | Statut réel                      | Durée ; itérations ; appels | Première édition réussie | Tokens entrée / sortie / cache ; coût      | Navigation                | Éditions ; tâches       | Post | Conclusion qualité                                                                    |
+| --- | -------------------------------- | --------------------------- | ------------------------ | ------------------------------------------ | ------------------------- | ----------------------- | ---- | ------------------------------------------------------------------------------------- |
+| P1  | terminé, non vérifié             | 633,06 s ; 53 ; 81          | 69,82 s, it. 6           | 1 706 325 / 25 244 / 1 622 016 ; 0,07959 $ | 22 lectures, 4 recherches | 31 (20/11) ; 24 (13/11) | 1    | Diff fonctionnel mais mutation silencieuse par formatter                              |
+| P2  | terminé, non vérifié             | 481,64 s ; 31 ; 49          | 152,70 s                 | 1 000 404 / 21 857 / 873 472 ; 0,06908 $   | 16 lectures, 6 recherches | 8 (6/2) ; 17 (5/12)     | 1    | Écritures indirectes supprimées ; validations encore incomplètes                      |
+| P3  | terminé, non vérifié             | 728,97 s ; 43 ; 80          | 269,20 s                 | 1 938 637 / 33 315 / 1 850 368 ; 0,09464 $ | 22 lectures, 7 recherches | 20 (13/7) ; 29 (15/14)  | 1    | Directory, patch hybride, alias et build `NODE_ENV` révèlent quatre causes distinctes |
+| P4  | échec runner prématuré           | 635,64 s ; 49 ; 63          | 47,43 s                  | 1 833 714 / 26 762 / 1 709 056 ; 0,09123 $ | 16 lectures, 2 recherches | 26 (17/9) ; 17 (5/12)   | 0    | Une erreur récupérable est prise pour le terminal                                     |
+| P5  | échec à 64 itérations            | 783,93 s ; 64 ; 86          | 139,54 s                 | 3 043 394 / 33 326 / 2 929 664 ; 0,12133 $ | 30 lectures, 4 recherches | 26 (20/6) ; 23 (6/17)   | 1    | Run contaminé par `ENOSPC`; exclu des preuves de performance                          |
+| P6  | terminé, validation indisponible | 509,78 s ; 34 ; 68          | 130,82 s, it. 4          | 1 253 213 / 22 279 / 1 183 232 ; 0,06440 $ | 21 lectures, 4 recherches | 12 (10/2) ; 28 (13/15)  | 1    | L’isolation d’environnement permet le build manuel ; validation finale répétée        |
+| P7  | terminé et vérifié               | 658,27 s ; 45 ; 68          | 156,81 s, it. 7          | 1 771 802 / 29 062 / 1 679 360 ; 0,08695 $ | 20 lectures, 4 recherches | 20 (13/7) ; 23 (10/13)  | 1    | Build automatique frais ; premier run pleinement vérifié                              |
+| P8  | terminé et vérifié               | 551,21 s ; 38 ; 58          | 257,22 s, it. 11         | 1 285 626 / 24 499 / 1 214 464 ; 0,06792 $ | 19 lectures, 3 recherches | 15 (12/3) ; 20 (7/13)   | 0    | Build automatique frais et lifecycle propre ; formatage encore en échec               |
 
 P8 réduit par rapport à P7 la durée de 16,3 %, les appels de 14,7 %, les itérations de 15,6 %, les tokens d’entrée de 27,4 %, la sortie de 15,7 %, le cache de 27,7 % et le coût de 21,9 %. En revanche, la première édition régresse de 100,40 s. Comme l’ordre n’a pas été randomisé et que plusieurs correctifs séparent les runs, ces chiffres décrivent les observations et ne prouvent pas que chaque baisse vient du harness.
 
@@ -2566,11 +2566,11 @@ La première étape de cette nouvelle boucle a ajouté au runner direct un mode 
 
 Le run Cline et le premier run Blame ont utilisé exactement la même instruction Portfolio, le même commit initial `d4d3d1f9f41714b5ca6fce68213ea7a521c776b1`, le même modèle et le même effort, 64 itérations et 2 400 secondes. Cline a été exécuté en premier comme demandé. Les worktrees ont été recréés séparément et installés hors ligne depuis le même lockfile.
 
-| Harness | Résultat réel | Durée ; itérations ; appels | Première mutation / édition source | Tokens entrée / sortie / cache ; coût | Navigation | Éditions et échecs | Preuve et qualité |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Cline par défaut | réussi ; build indépendant passant | 548,15 s ; 25 ; 58 | dépendances à 61,72 s ; patch à 168,62 s | 1 030 354 / 25 367 / 946 176 ; 0,06620 $ | 9 appels de lecture, 33 fichiers demandés, 106 315 octets ; 4 recherches, 9 requêtes, 4 455 octets ; un doublon exact | 6 patches réussis ; 39 appels commande ; 10 appels contenaient au moins un échec | pas de révision native de preuve ; fraîcheur reconstruite par ordre des événements et hash indépendant ; fallback projets fonctionnel, mais aucune preview exécutée par l'agent |
-| Blame avant correction | terminé mais `verified: false` ; build indépendant en échec | 644,23 s ; 49 ; 78 | 154,85 / 155,18 s | 2 135 944 / 28 325 / 2 044 416 ; 0,09318 $ | 26 lectures, 51 845 octets ; 2 recherches, 269 octets ; aucun doublon | 25 appels : 23 textuels et 2 symboliques, 21 réussis et 4 bloqués ; 19 appels bloqués au total | les deux éditions symboliques visaient seulement un composant nouvellement créé ; Prisma 7 restait instancié sans adapter ; validation terminale indisponible |
-| Blame après correction formatter | terminé et vérifié ; build indépendant passant | 512,73 s ; 31 ; 47 | 85,67 / 85,97 s | 973 373 / 23 009 / 910 336 ; 0,05842 $ | 14 lectures, 16 555 octets ; 2 recherches, 949 octets ; aucun doublon | 12 appels : 9 textuels, 2 symboliques et un hybride ; 6 réussis et 6 bloqués ; un formatage déterministe journalisé ; 13 appels bloqués au total | build rattaché à `src_d1e9d26811bd93beca6af1da64f28e3a` ; remplacement symbolique réussi de `Home` existant ; preview indépendante sans carrousel faute de données |
+| Harness                          | Résultat réel                                               | Durée ; itérations ; appels | Première mutation / édition source       | Tokens entrée / sortie / cache ; coût      | Navigation                                                                                                            | Éditions et échecs                                                                                                                               | Preuve et qualité                                                                                                                                                               |
+| -------------------------------- | ----------------------------------------------------------- | --------------------------- | ---------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cline par défaut                 | réussi ; build indépendant passant                          | 548,15 s ; 25 ; 58          | dépendances à 61,72 s ; patch à 168,62 s | 1 030 354 / 25 367 / 946 176 ; 0,06620 $   | 9 appels de lecture, 33 fichiers demandés, 106 315 octets ; 4 recherches, 9 requêtes, 4 455 octets ; un doublon exact | 6 patches réussis ; 39 appels commande ; 10 appels contenaient au moins un échec                                                                 | pas de révision native de preuve ; fraîcheur reconstruite par ordre des événements et hash indépendant ; fallback projets fonctionnel, mais aucune preview exécutée par l'agent |
+| Blame avant correction           | terminé mais `verified: false` ; build indépendant en échec | 644,23 s ; 49 ; 78          | 154,85 / 155,18 s                        | 2 135 944 / 28 325 / 2 044 416 ; 0,09318 $ | 26 lectures, 51 845 octets ; 2 recherches, 269 octets ; aucun doublon                                                 | 25 appels : 23 textuels et 2 symboliques, 21 réussis et 4 bloqués ; 19 appels bloqués au total                                                   | les deux éditions symboliques visaient seulement un composant nouvellement créé ; Prisma 7 restait instancié sans adapter ; validation terminale indisponible                   |
+| Blame après correction formatter | terminé et vérifié ; build indépendant passant              | 512,73 s ; 31 ; 47          | 85,67 / 85,97 s                          | 973 373 / 23 009 / 910 336 ; 0,05842 $     | 14 lectures, 16 555 octets ; 2 recherches, 949 octets ; aucun doublon                                                 | 12 appels : 9 textuels, 2 symboliques et un hybride ; 6 réussis et 6 bloqués ; un formatage déterministe journalisé ; 13 appels bloqués au total | build rattaché à `src_d1e9d26811bd93beca6af1da64f28e3a` ; remplacement symbolique réussi de `Home` existant ; preview indépendante sans carrousel faute de données              |
 
 Sur cette répétition, Blame après correction est 6,5 % plus rapide que Cline, utilise 19,0 % d'appels, 5,5 % de tokens d'entrée et 11,7 % de coût en moins, et écrit le code source 82,65 secondes plus tôt. Il utilise toutefois 31 itérations contre 25 et son résultat applicatif est moins démonstratif : Cline fournit quatre projets de démonstration lorsque PostgreSQL est indisponible, tandis que le run Blame affiche seulement l'état d'erreur. Une seule paire ne prouve donc pas une supériorité générale.
 
@@ -2580,11 +2580,11 @@ Cline a aussi payé des compromis absents du contrat Blame : une installation de
 
 L'hypothèse ciblée était que le refus global des formateurs mutateurs forçait le modèle à reproduire intellectuellement un résultat déterministe. Le scénario Prisma court demandait un modèle `Project`, un repository serveur, la génération du client, puis Prisma, TypeScript et build. Les trois runs ont utilisé le même commit Portfolio, la même instruction, le même modèle, le même effort, 40 itérations et 1 200 secondes.
 
-| Run | Formatter réellement utilisé | Durée ; itérations ; appels | Première édition réussie | Tokens entrée / sortie / cache ; coût | Lectures / doublons ; recherches | Éditions ; appels bloqués | Décision |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Avant | non ; `prettier --write` refusé | 393,21 s ; 40 ; 88 | 81,05 s | 892 619 / 13 052 / 835 584 ; 0,04378 $ | 24 / 4 ; 1 | 10 textuelles, 9 réussies, une bloquée ; 22 bloqués au total | baseline : boucle de diagnostics Prettier jusqu'à l'itération 40 |
-| Après 1 | non ; Prettier et `prisma format` regroupés avec `&&` | 338,22 s ; 35 ; 74 | 110,36 s | 727 016 / 13 290 / 677 888 ; 0,03933 $ | 28 / 0 ; 4 | 10 appels, 5 réussis et 5 bloqués ; 19 bloqués au total | non causal : le nouveau chemin n'a pas été emprunté |
-| Après 2 | oui ; reçu atomique `c2` sur trois fichiers | 262,02 s ; 17 ; 52 | 99,41 s | 295 321 / 10 223 / 259 072 ; 0,02470 $ | 21 / 0 ; 3 | une édition textuelle réussie, aucun rejet ; un formatage déterministe ; 10 bloqués au total | conservé : −33,4 % de durée, −40,9 % d'appels, −66,9 % d'entrée et −43,6 % de coût contre l'avant |
+| Run     | Formatter réellement utilisé                          | Durée ; itérations ; appels | Première édition réussie | Tokens entrée / sortie / cache ; coût  | Lectures / doublons ; recherches | Éditions ; appels bloqués                                                                    | Décision                                                                                          |
+| ------- | ----------------------------------------------------- | --------------------------- | ------------------------ | -------------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Avant   | non ; `prettier --write` refusé                       | 393,21 s ; 40 ; 88          | 81,05 s                  | 892 619 / 13 052 / 835 584 ; 0,04378 $ | 24 / 4 ; 1                       | 10 textuelles, 9 réussies, une bloquée ; 22 bloqués au total                                 | baseline : boucle de diagnostics Prettier jusqu'à l'itération 40                                  |
+| Après 1 | non ; Prettier et `prisma format` regroupés avec `&&` | 338,22 s ; 35 ; 74          | 110,36 s                 | 727 016 / 13 290 / 677 888 ; 0,03933 $ | 28 / 0 ; 4                       | 10 appels, 5 réussis et 5 bloqués ; 19 bloqués au total                                      | non causal : le nouveau chemin n'a pas été emprunté                                               |
+| Après 2 | oui ; reçu atomique `c2` sur trois fichiers           | 262,02 s ; 17 ; 52          | 99,41 s                  | 295 321 / 10 223 / 259 072 ; 0,02470 $ | 21 / 0 ; 3                       | une édition textuelle réussie, aucun rejet ; un formatage déterministe ; 10 bloqués au total | conservé : −33,4 % de durée, −40,9 % d'appels, −66,9 % d'entrée et −43,6 % de coût contre l'avant |
 
 Le premier après ne constitue pas une preuve du correctif. Il a montré une friction supplémentaire : en cas de commande composée, le message générique « utiliser `edit_code` » orientait de nouveau vers le travail manuel. Le runtime répond désormais avec l'appel Prettier exact à isoler. Cette récupération a été commitée sous `442df36e`; le chemin atomique l'avait été sous `14675acb`.
 
@@ -2659,10 +2659,10 @@ Le résultat d'une édition réussie répétait jusqu'à 8 000 caractères de di
 
 Un replay déterministe des trois mêmes payloads d'édition réduit les réponses sérialisées de 6 674 à 1 485 octets, soit −77,8 %, avec exactement le même diff final. Le run live associé donne le signal suivant, mais sa trajectoire modèle diffère et ne constitue donc pas une attribution causale complète :
 
-| Variante | Durée | Requêtes ; appels | Tokens entrée / sortie / cache ; coût | Éditions | Première édition |
-| --- | ---: | ---: | --- | --- | ---: |
-| Avant reçu compact | 84,77 s | 7 ; 12 | 53 406 / 3 648 / 38 912 ; 0,00805 $ | 3 patches réussis ; 6 674 octets de réponses d'édition | 37,98 / 38,18 s |
-| Après reçu compact | 56,28 s | 4 ; 8 | 24 174 / 2 527 / 14 848 ; 0,00519 $ | un patch réussi ; 1 008 octets de réponse | 46,64 / 46,91 s |
+| Variante           |   Durée | Requêtes ; appels | Tokens entrée / sortie / cache ; coût | Éditions                                               | Première édition |
+| ------------------ | ------: | ----------------: | ------------------------------------- | ------------------------------------------------------ | ---------------: |
+| Avant reçu compact | 84,77 s |            7 ; 12 | 53 406 / 3 648 / 38 912 ; 0,00805 $   | 3 patches réussis ; 6 674 octets de réponses d'édition |  37,98 / 38,18 s |
+| Après reçu compact | 56,28 s |             4 ; 8 | 24 174 / 2 527 / 14 848 ; 0,00519 $   | un patch réussi ; 1 008 octets de réponse              |  46,64 / 46,91 s |
 
 La durée, les tokens et les appels baissent, mais la première édition régresse de 8,73 s. Seule la réduction de taille du replay exact est démontrée comme effet mécanique du correctif.
 
@@ -2675,14 +2675,14 @@ Les événements des premiers holdouts ont montré que la sortie de navigation B
 
 Le briefing utilise maintenant exactement une cible par chemin et appelle le même routeur que `read_code` : un petit fichier reste raw, un grand fichier supporté peut recevoir une cible symbolique. `Key files` est renommé `Config inventory` pour ne plus présenter les manifests comme des cibles métier, et les scripts sont exposés comme identifiants directement utilisables par `run_task`. Les descriptions d'outils ne répètent plus la matrice d'extensions ; elle reste disponible une fois dans le briefing et via `@capabilities`. Le prompt précise seulement qu'un manifeste ne doit pas être relu pour découvrir un identifiant déjà listé. Ce correctif est `2a996da5`.
 
-| Scénario | Harness | Durée | Tokens entrée / sortie / cache ; coût | Requêtes ; appels | Navigation | Première tentative / réussite | Édition |
-| --- | --- | ---: | --- | ---: | --- | ---: | --- |
-| A avant | Blame | 29,45 s | 28 826 / 993 / 20 992 ; 0,00318 $ | 5 ; 11 | 8 lectures, 0 recherche, 5 348 octets | 22,06 / 22,30 s | un hybride, aucun rejet |
-| A baseline | Cline | 43,16 s | 23 164 / 1 883 / 13 312 ; 0,00450 $ | 5 ; 9 | 5 lectures, 3 recherches, 5 493 octets | 30,91 / 30,93 s | un patch, aucun rejet |
-| A après | Blame | 24,71 s | 20 250 / 872 / 12 800 ; 0,00279 $ | 4 ; 6 | 3 lectures, 0 recherche, 3 244 octets | 17,77 / 18,05 s | un hybride, aucun rejet |
-| B avant | Blame | 28,85 s | 34 883 / 992 / 25 088 ; 0,00365 $ | 6 ; 11 | 8 lectures, 0 recherche, 6 054 octets | 22,19 / 22,44 s | un hybride, aucun rejet |
-| B baseline | Cline | 43,87 s | 21 743 / 1 938 / 13 312 ; 0,00428 $ | 5 ; 7 | 4 lectures, 3 recherches, 5 065 octets | 32,27 / 32,29 s | un patch, aucun rejet |
-| B après | Blame | 29,23 s | 21 199 / 1 104 / 12 800 ; 0,00326 $ | 4 ; 7 | 3 lectures, 1 recherche, 4 317 octets | 22,50 / 22,78 s | un hybride, aucun rejet |
+| Scénario   | Harness |   Durée | Tokens entrée / sortie / cache ; coût | Requêtes ; appels | Navigation                             | Première tentative / réussite | Édition                 |
+| ---------- | ------- | ------: | ------------------------------------- | ----------------: | -------------------------------------- | ----------------------------: | ----------------------- |
+| A avant    | Blame   | 29,45 s | 28 826 / 993 / 20 992 ; 0,00318 $     |            5 ; 11 | 8 lectures, 0 recherche, 5 348 octets  |               22,06 / 22,30 s | un hybride, aucun rejet |
+| A baseline | Cline   | 43,16 s | 23 164 / 1 883 / 13 312 ; 0,00450 $   |             5 ; 9 | 5 lectures, 3 recherches, 5 493 octets |               30,91 / 30,93 s | un patch, aucun rejet   |
+| A après    | Blame   | 24,71 s | 20 250 / 872 / 12 800 ; 0,00279 $     |             4 ; 6 | 3 lectures, 0 recherche, 3 244 octets  |               17,77 / 18,05 s | un hybride, aucun rejet |
+| B avant    | Blame   | 28,85 s | 34 883 / 992 / 25 088 ; 0,00365 $     |            6 ; 11 | 8 lectures, 0 recherche, 6 054 octets  |               22,19 / 22,44 s | un hybride, aucun rejet |
+| B baseline | Cline   | 43,87 s | 21 743 / 1 938 / 13 312 ; 0,00428 $   |             5 ; 7 | 4 lectures, 3 recherches, 5 065 octets |               32,27 / 32,29 s | un patch, aucun rejet   |
+| B après    | Blame   | 29,23 s | 21 199 / 1 104 / 12 800 ; 0,00326 $   |             4 ; 7 | 3 lectures, 1 recherche, 4 317 octets  |               22,50 / 22,78 s | un hybride, aucun rejet |
 
 Par rapport au Blame avant, A réduit les tokens d'entrée de 29,8 %, les appels de 45,5 % et les lectures de 62,5 % ; B réduit respectivement de 39,2 %, 36,4 % et 62,5 %. La première réussite avance de 4,26 s sur A et reste pratiquement stable sur B. Les deux après passent sous Cline en tokens d'entrée : −12,6 % sur A et −2,5 % sur B. Tous les diffs satisfont la tâche, et tests, typecheck et `git diff --check` passent indépendamment dans les six worktrees.
 
@@ -2692,10 +2692,10 @@ Ces deux holdouts démontrent également l'applicabilité du chemin sémantique 
 
 Un contrôle d'intégration a repris l'instruction Portfolio et le commit initial `d4d3d1f9f41714b5ca6fce68213ea7a521c776b1` utilisés dans la phase précédente. Le run précédent est fourni comme contexte, pas comme paire randomisée suffisante pour une preuve statistique.
 
-| Run Blame | Statut terminal | Durée ; requêtes ; appels | Première tentative / réussite | Tokens entrée / sortie / cache ; coût | Navigation | Éditions | Périodes sans outil |
-| --- | --- | --- | ---: | --- | --- | --- | --- |
-| Portfolio précédent | vérifié | 512,73 s ; 31 ; 47 | 85,67 / 85,97 s | 973 373 / 23 009 / 910 336 ; 0,05842 $ | 14 lectures, 2 recherches | 12 appels, 6 réussis et 6 bloqués ; symbole et hybride observés | 6, 317,80 s cumulées, max 87,28 s |
-| Briefing auto-routé | non vérifié, validation environnementale indisponible | 383,00 s ; 33 ; 51 | 74,18 / 74,44 s | 687 645 / 16 020 / 642 048 ; 0,04118 $ | 9 lectures, 4 recherches | 14 appels, 9 réussis, 4 bloqués et un no-op ; uniquement patches | 3, 141,61 s cumulées, max 54,43 s |
+| Run Blame           | Statut terminal                                       | Durée ; requêtes ; appels | Première tentative / réussite | Tokens entrée / sortie / cache ; coût  | Navigation                | Éditions                                                         | Périodes sans outil               |
+| ------------------- | ----------------------------------------------------- | ------------------------- | ----------------------------: | -------------------------------------- | ------------------------- | ---------------------------------------------------------------- | --------------------------------- |
+| Portfolio précédent | vérifié                                               | 512,73 s ; 31 ; 47        |               85,67 / 85,97 s | 973 373 / 23 009 / 910 336 ; 0,05842 $ | 14 lectures, 2 recherches | 12 appels, 6 réussis et 6 bloqués ; symbole et hybride observés  | 6, 317,80 s cumulées, max 87,28 s |
+| Briefing auto-routé | non vérifié, validation environnementale indisponible | 383,00 s ; 33 ; 51        |               74,18 / 74,44 s | 687 645 / 16 020 / 642 048 ; 0,04118 $ | 9 lectures, 4 recherches  | 14 appels, 9 réussis, 4 bloqués et un no-op ; uniquement patches | 3, 141,61 s cumulées, max 54,43 s |
 
 Le second run réduit la durée de 25,3 %, les tokens d'entrée de 29,4 %, le coût de 29,5 % et avance la première édition de 11,53 s. Il augmente cependant les appels de 8,5 %, ne choisit aucune édition symbolique et perd la preuve terminale. Ses quatre rejets sont contractuels : un `Add File` sur `page.tsx` existant, deux contextes ambigus et un contexte absent. Les réponses demandent de relire l'outline, d'utiliser un alias ou d'ajouter une ligne unique ; l'agent récupère à chaque fois. Les onze tâches bloquées regroupent de vraies erreurs Prisma/build/format, l'absence de `DATABASE_URL`, le refus attendu d'une commande mutatrice non journalisée et les builds terminaux indisponibles. Aucun événement n'apparaît après `done`.
 
@@ -2761,12 +2761,12 @@ Les anciens ratios `warning`, `trigger`, `target` et `overflow` ont aussi été 
 
 Les quatre runs retenus partent du commit de fixture `9c98cdf5f30a1f46f3753acb0810f505a3988451`, avec la même instruction en deux étapes, le même provider, modèle, effort, budget de 32 itérations et timeout de 600 secondes. Les deux baselines utilisent le runner construit au commit `c2c3ff54`. Les deux candidats finaux utilisent le runtime comprenant la projection resserrée et la correction hybride. Chaque workspace a été recréé par clone depuis la même révision.
 
-| Run | Durée ; requêtes ; appels | Tokens entrée / sortie / cache ; coût | Première tentative / réussite | Navigation | Éditions | Projection cumulée | Résultat réel |
-| --- | --- | --- | ---: | --- | --- | ---: | --- |
-| Avant 1 | 64,67 s ; 7 ; 11 | 44 095 / 2 749 / 32 768 ; 0,00622 $ | 39,35 / 39,61 s | 4 lectures, 3 641 octets | 2/2, aucun rejet | 0 | vérifié ; tests et typecheck passent |
-| Avant 2 | 51,31 s ; 6 ; 8 | 35 732 / 2 085 / 26 112 ; 0,00495 $ | 35,41 / 35,65 s | 3 lectures, 3 244 octets | 2/2, aucun rejet | 0 | vérifié ; tests et typecheck passent |
-| Après final 1 | 46,87 s ; 6 ; 8 | 34 360 / 1 975 / 19 456 ; 0,00574 $ | 31,90 / 32,04 s | 3 lectures, 3 244 octets | 2/2, aucun rejet | 4 742 octets | vérifié ; tests et typecheck indépendants passent |
-| Après final 2 | 46,19 s ; 6 ; 8 | 34 504 / 1 960 / 24 064 ; 0,00492 $ | 31,57 / 31,71 s | 3 lectures, 3 244 octets | 2/2, aucun rejet | 5 160 octets | vérifié ; tests et typecheck indépendants passent |
+| Run           | Durée ; requêtes ; appels | Tokens entrée / sortie / cache ; coût | Première tentative / réussite | Navigation               | Éditions         | Projection cumulée | Résultat réel                                     |
+| ------------- | ------------------------- | ------------------------------------- | ----------------------------: | ------------------------ | ---------------- | -----------------: | ------------------------------------------------- |
+| Avant 1       | 64,67 s ; 7 ; 11          | 44 095 / 2 749 / 32 768 ; 0,00622 $   |               39,35 / 39,61 s | 4 lectures, 3 641 octets | 2/2, aucun rejet |                  0 | vérifié ; tests et typecheck passent              |
+| Avant 2       | 51,31 s ; 6 ; 8           | 35 732 / 2 085 / 26 112 ; 0,00495 $   |               35,41 / 35,65 s | 3 lectures, 3 244 octets | 2/2, aucun rejet |                  0 | vérifié ; tests et typecheck passent              |
+| Après final 1 | 46,87 s ; 6 ; 8           | 34 360 / 1 975 / 19 456 ; 0,00574 $   |               31,90 / 32,04 s | 3 lectures, 3 244 octets | 2/2, aucun rejet |       4 742 octets | vérifié ; tests et typecheck indépendants passent |
+| Après final 2 | 46,19 s ; 6 ; 8           | 34 504 / 1 960 / 24 064 ; 0,00492 $   |               31,57 / 31,71 s | 3 lectures, 3 244 octets | 2/2, aucun rejet |       5 160 octets | vérifié ; tests et typecheck indépendants passent |
 
 En moyenne, la variante finale réduit la durée de 19,8 %, les requêtes de 7,7 %, les appels d'outils de 15,8 %, les tokens d'entrée de 13,7 %, les tokens de sortie de 18,6 %, le cache lu de 26,1 % et le temps avant première réussite de 15,3 %. Le coût baisse de 4,5 %. Les 4 951 octets projetés en moins par run sont un effet mécanique mesuré par comparaison du même transcript avant et après projection. Les variations de tokens et de durée restent partiellement stochastiques et ne sont pas attribuées intégralement à ces octets.
 
@@ -2811,12 +2811,12 @@ La comparaison Portfolio de la section 21.32 était devenue périmée après les
 
 Les credentials ont été chargés silencieusement depuis `.env.terminal-bench`. Ils n'ont été ni affichés, ni copiés, ni modifiés. Cette section rapporte les runs provider live et les contrôles indépendants ; elle ne transforme pas une validation hors run en preuve native du terminal.
 
-| Run | Terminal du runner et résultat applicatif réel | Durée ; requêtes ; outils | Tokens entrée / sortie / cache ; coût | Première tentative / réussite d'édition | Navigation | Éditions et erreurs d'outils | Validation indépendante et preview |
-| --- | --- | ---: | --- | ---: | --- | --- | --- |
-| Paire 1, Cline | échec après 240 s d'inactivité ; diff partiel | 964,14 s ; 12 ; 25 | 281 913 / 24 954 / 232 960 ; 0,04439 $ | 206,78 / 206,80 s | 19 lectures, 36 506 octets ; 9 recherches | 5 patches, 4 réussis ; 9 appels en échec, 12 résultats individuels en échec | Prisma et build passent ; lint échoue sur `setState` dans un effet ; rendu soigné et clavier fonctionnel ; drag et Maj + molette non prouvés |
-| Paire 1, Blame | `succeeded`, `verified`, mais résultat visuel inutilisable | 530,51 s ; 59 ; 71 | 1 441 381 / 21 584 / 1 213 952 ; 0,09567 $ | 190,13 / 190,40 s | 27 lectures dont 8 dédupliquées, 71 303 octets ; 9 recherches | 16 appels d'édition : 7 réussis, 7 bloqués, 2 sans mutation ; 2 symboles tentés et tous deux bloqués ; 13 appels bloqués au total | Prisma, lint et build passent à la dernière révision ; aucune CSS du carrousel n'existe, le conteneur Three.js atteint environ 43 734 px de haut et la vue devient blanche ; le clavier modifie un contenu hors vue |
-| Paire 2, Blame | échec au plafond de 64 itérations ; diff partiel | 551,44 s ; 64 ; 96 | 2 003 055 / 23 037 / 1 650 688 ; 0,13113 $ | 164,88 / 165,11 s | 36 lectures dont 3 dédupliquées, 69 522 octets ; 5 recherches | 24 appels d'édition : 15 réussis, 8 bloqués, un sans mutation ; 7 opérations symboliques dont 6 réussies et 2 appels hybrides ; 25 appels bloqués au total | Prisma et lint passent ; build en échec car `@/generated/prisma/client` manque ; frontend visuellement cohérent et clavier fonctionnel ; API non livrable |
-| Paire 2, Cline | `succeeded`, mais page en erreur runtime | 571,49 s ; 28 ; 41 | 1 318 462 / 27 461 / 1 205 248 ; 0,07970 $ | 128,57 / 128,59 s | 30 lectures, 104 035 octets ; 11 recherches | 8 patches, 7 réussis ; 16 appels en échec, 41 résultats individuels en échec | Prisma, lint et build passent ; au chargement, `next/image` refuse le portrait remplacé par une URL sans dimensions et la page retourne 500 ; le résumé final annonce donc un résultat fonctionnel non vérifié |
+| Run            | Terminal du runner et résultat applicatif réel             | Durée ; requêtes ; outils | Tokens entrée / sortie / cache ; coût      | Première tentative / réussite d'édition | Navigation                                                    | Éditions et erreurs d'outils                                                                                                                               | Validation indépendante et preview                                                                                                                                                                                  |
+| -------------- | ---------------------------------------------------------- | ------------------------: | ------------------------------------------ | --------------------------------------: | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paire 1, Cline | échec après 240 s d'inactivité ; diff partiel              |        964,14 s ; 12 ; 25 | 281 913 / 24 954 / 232 960 ; 0,04439 $     |                       206,78 / 206,80 s | 19 lectures, 36 506 octets ; 9 recherches                     | 5 patches, 4 réussis ; 9 appels en échec, 12 résultats individuels en échec                                                                                | Prisma et build passent ; lint échoue sur `setState` dans un effet ; rendu soigné et clavier fonctionnel ; drag et Maj + molette non prouvés                                                                        |
+| Paire 1, Blame | `succeeded`, `verified`, mais résultat visuel inutilisable |        530,51 s ; 59 ; 71 | 1 441 381 / 21 584 / 1 213 952 ; 0,09567 $ |                       190,13 / 190,40 s | 27 lectures dont 8 dédupliquées, 71 303 octets ; 9 recherches | 16 appels d'édition : 7 réussis, 7 bloqués, 2 sans mutation ; 2 symboles tentés et tous deux bloqués ; 13 appels bloqués au total                          | Prisma, lint et build passent à la dernière révision ; aucune CSS du carrousel n'existe, le conteneur Three.js atteint environ 43 734 px de haut et la vue devient blanche ; le clavier modifie un contenu hors vue |
+| Paire 2, Blame | échec au plafond de 64 itérations ; diff partiel           |        551,44 s ; 64 ; 96 | 2 003 055 / 23 037 / 1 650 688 ; 0,13113 $ |                       164,88 / 165,11 s | 36 lectures dont 3 dédupliquées, 69 522 octets ; 5 recherches | 24 appels d'édition : 15 réussis, 8 bloqués, un sans mutation ; 7 opérations symboliques dont 6 réussies et 2 appels hybrides ; 25 appels bloqués au total | Prisma et lint passent ; build en échec car `@/generated/prisma/client` manque ; frontend visuellement cohérent et clavier fonctionnel ; API non livrable                                                           |
+| Paire 2, Cline | `succeeded`, mais page en erreur runtime                   |        571,49 s ; 28 ; 41 | 1 318 462 / 27 461 / 1 205 248 ; 0,07970 $ |                       128,57 / 128,59 s | 30 lectures, 104 035 octets ; 11 recherches                   | 8 patches, 7 réussis ; 16 appels en échec, 41 résultats individuels en échec                                                                               | Prisma, lint et build passent ; au chargement, `next/image` refuse le portrait remplacé par une URL sans dimensions et la page retourne 500 ; le résumé final annonce donc un résultat fonctionnel non vérifié      |
 
 Il n'y a aucun événement après les quatre terminaux. Le succès terminal est de 1/2 pour chaque harness, mais le succès applicatif complet est de 0/2 pour chacun. Les deux diffs terminaux dits réussis échouent précisément sur ce que leur validation n'observait pas : le rendu pour Blame, le chargement runtime pour Cline. Cette matrice ne permet donc pas de déclarer un vainqueur produit.
 
@@ -2874,18 +2874,18 @@ La projection conserve désormais la dernière édition courante de chaque chemi
 
 Un scénario headless provider live distinct a ensuite imposé trois éditions atomiques A → B → A sans relecture de A. La fixture part du commit `49d95ddf96d66b44bdce5c77db83a2df0ee8023d`. Le modèle, l'effort, l'instruction, la révision, le budget de 16 itérations et le timeout de 600 secondes sont identiques. La baseline utilise le runner au commit `579fcec4`; le candidat ne diffère que par la projection par chemin.
 
-| Mesure | Avant | Après |
-| --- | ---: | ---: |
-| Résultat réel | satisfait, typecheck et build | satisfait, typecheck et build |
-| Durée | 32,28 s | 26,55 s |
-| Requêtes modèle | 7 | 6 |
-| Appels d'outils | 8 | 7 |
-| Éditions réussies / bloquées | 3 / 1 | 3 / 0 |
-| Tokens entrée / sortie / cache | 32 146 / 1 009 / 21 504 | 27 165 / 747 / 15 360 |
-| Coût | 0,00377 $ | 0,00356 $ |
-| Première tentative / réussite | 9,55 / 9,79 s | 13,49 / 13,76 s |
-| Exposition cumulée des payloads d'outils | 13 559 octets | 9 921 octets |
-| Événements après terminal | 0 | 0 |
+| Mesure                                   |                         Avant |                         Après |
+| ---------------------------------------- | ----------------------------: | ----------------------------: |
+| Résultat réel                            | satisfait, typecheck et build | satisfait, typecheck et build |
+| Durée                                    |                       32,28 s |                       26,55 s |
+| Requêtes modèle                          |                             7 |                             6 |
+| Appels d'outils                          |                             8 |                             7 |
+| Éditions réussies / bloquées             |                         3 / 1 |                         3 / 0 |
+| Tokens entrée / sortie / cache           |       32 146 / 1 009 / 21 504 |         27 165 / 747 / 15 360 |
+| Coût                                     |                     0,00377 $ |                     0,00356 $ |
+| Première tentative / réussite            |                 9,55 / 9,79 s |               13,49 / 13,76 s |
+| Exposition cumulée des payloads d'outils |                 13 559 octets |                  9 921 octets |
+| Événements après terminal                |                             0 |                             0 |
 
 La causalité du retry est observable. La baseline remplace correctement `projectResponse`, modifie un autre fichier, puis oublie la forme complète de sa première édition et tente un `replace_body` sans délimiteurs ; le parse atomique le refuse. Le candidat conserve cette édition encore courante et remplace le symbole complet du premier coup. Les deux diffs finaux satisfont la même intention et les validations indépendantes passent ; la variante exacte de placement du fallback diffère sans changer le comportement. Le temps avant première édition régresse de 3,94 secondes sur cette paire unique et n'est pas attribué au correctif. Les baisses de durée et de tokens sont cohérentes avec le tour supprimé, mais une exécution provider ne constitue pas une preuve statistique.
 
@@ -2899,20 +2899,20 @@ Le runtime détecte maintenant si la plage de corps existante est réellement d�
 
 Le scénario provider live part de la même fixture au commit `49d95ddf96d66b44bdce5c77db83a2df0ee8023d`. La baseline est le commit Blame `1c895800`, qui comprend déjà la projection par chemin ; le candidat ajoute uniquement le normaliseur. L'instruction exige une opération sémantique `replace_body` contenant deux instructions sans accolades, puis typecheck et build. Modèle, effort, budget de 10 itérations et timeout de 600 secondes sont identiques.
 
-| Mesure | Avant | Après final |
-| --- | ---: | ---: |
-| Résultat réel | satisfait après récupération | satisfait au premier essai |
-| Diff final | fonction indentée, typecheck et build | strictement identique |
-| Durée | 57,64 s | 17,84 s |
-| Requêtes modèle | 9 | 5 |
-| Appels d'outils | 9 | 5 |
-| Lectures / octets renvoyés | 4 / 1 382 | 2 / 773 |
-| Éditions réussies / bloquées | 1 / 2 | 1 / 0 |
-| Première tentative / réussite | 9,04 / 47,74 s | 11,03 / 11,20 s |
-| Tokens entrée / sortie / cache | 40 077 / 2 246 / 28 672 | 21 368 / 384 / 14 336 |
-| Coût | 0,00555 $ | 0,00215 $ |
-| Exposition cumulée des payloads d'outils | 16 258 octets | 6 206 octets |
-| Événements après terminal | 0 | 0 |
+| Mesure                                   |                                 Avant |                Après final |
+| ---------------------------------------- | ------------------------------------: | -------------------------: |
+| Résultat réel                            |          satisfait après récupération | satisfait au premier essai |
+| Diff final                               | fonction indentée, typecheck et build |      strictement identique |
+| Durée                                    |                               57,64 s |                    17,84 s |
+| Requêtes modèle                          |                                     9 |                          5 |
+| Appels d'outils                          |                                     9 |                          5 |
+| Lectures / octets renvoyés               |                             4 / 1 382 |                    2 / 773 |
+| Éditions réussies / bloquées             |                                 1 / 2 |                      1 / 0 |
+| Première tentative / réussite            |                        9,04 / 47,74 s |            11,03 / 11,20 s |
+| Tokens entrée / sortie / cache           |               40 077 / 2 246 / 28 672 |      21 368 / 384 / 14 336 |
+| Coût                                     |                             0,00555 $ |                  0,00215 $ |
+| Exposition cumulée des payloads d'outils |                         16 258 octets |               6 206 octets |
+| Événements après terminal                |                                     0 |                          0 |
 
 La baseline répète deux fois le même `replace_body`, relit ensuite le fichier sous deux vues et bascule vers un remplacement de symbole complet. Le candidat accepte exactement le premier payload sémantique et produit le même fichier final. La durée baisse de 69,0 %, les tokens d'entrée de 46,7 % et le coût de 61,2 % sur cette paire ; la première tentative est 1,98 seconde plus tardive et n'est pas présentée comme améliorée. Le lien entre le normaliseur et les deux rejets supprimés est déterministe, mais les amplitudes provider restent celles d'un seul avant/après.
 
@@ -2926,19 +2926,19 @@ Le rejet indique désormais le chemin et un extrait courant borné autour de la 
 
 Le scénario provider live part encore du commit fixture `49d95ddf96d66b44bdce5c77db83a2df0ee8023d`. L'instruction impose d'abord un patch fondé sur une ligne obsolète, interdit les lectures et recherches, puis demande une correction exacte à partir du seul rejet avant typecheck et build. Baseline et candidat utilisent le même modèle, le même effort, la même instruction, la même révision, 10 itérations et 600 secondes. La baseline est le commit Blame `fb757739`; le candidat ajoute uniquement le diagnostic.
 
-| Mesure | Avant | Après final |
-| --- | ---: | ---: |
-| Résultat réel | échec au plafond de 10 itérations, aucun changement | satisfait, diff attendu, typecheck et build |
-| Durée | 134,39 s | 17,00 s |
-| Requêtes modèle | 10 | 4 |
-| Appels d'outils | 10 | 4 |
-| Lectures / recherches | 0 / 0 | 0 / 0 |
-| Éditions réussies / bloquées | 0 / 10 | 1 / 1 |
-| Première tentative / réussite | 6,20 s / aucune | 6,56 / 10,64 s |
-| Tokens entrée / sortie / cache | 46 838 / 6 715 / 36 352 | 17 158 / 437 / 10 752 |
-| Coût | 0,01088 $ | 0,00202 $ |
-| Exposition cumulée des payloads d'outils | 24 215 octets | 4 137 octets |
-| Événements après terminal | 0 | 0 |
+| Mesure                                   |                                               Avant |                                 Après final |
+| ---------------------------------------- | --------------------------------------------------: | ------------------------------------------: |
+| Résultat réel                            | échec au plafond de 10 itérations, aucun changement | satisfait, diff attendu, typecheck et build |
+| Durée                                    |                                            134,39 s |                                     17,00 s |
+| Requêtes modèle                          |                                                  10 |                                           4 |
+| Appels d'outils                          |                                                  10 |                                           4 |
+| Lectures / recherches                    |                                               0 / 0 |                                       0 / 0 |
+| Éditions réussies / bloquées             |                                              0 / 10 |                                       1 / 1 |
+| Première tentative / réussite            |                                     6,20 s / aucune |                              6,56 / 10,64 s |
+| Tokens entrée / sortie / cache           |                             46 838 / 6 715 / 36 352 |                       17 158 / 437 / 10 752 |
+| Coût                                     |                                           0,01088 $ |                                   0,00202 $ |
+| Exposition cumulée des payloads d'outils |                                       24 215 octets |                                4 137 octets |
+| Événements après terminal                |                                                   0 |                                           0 |
 
 La baseline tente dix variantes de quoting et d'indentation sans information nouvelle. Le candidat final reçoit les lignes 5 à 9, voit la ligne courante `return { id, title };` et soumet le patch exact au tour suivant. Le fichier final passe les validations du run et des contrôles indépendants. Sur cette paire, la durée baisse de 87,3 %, les tokens d'entrée de 63,4 % et le coût de 81,4 %. Ces amplitudes mesurent volontairement une récupération isolée et ne prédisent pas à elles seules le gain Portfolio.
 
@@ -2980,14 +2980,14 @@ L'attente est maintenant dépendante de l'état. Un runtime en `provisioning`, `
 
 La connexion Chrome DevTools MCP est préchauffée dès que `get_preview_devtools` observe une application exploitable. Sa durée de vie dépend uniquement du scope de preview, plus du signal de l'appel qui l'a créée. Le `pageId` résolu est mémorisé tant que l'URL reste la même ; un identifiant réellement périmé provoque une seule nouvelle résolution certaine. Un timeout d'outil conserve la connexion, tandis qu'une fermeture explicite du transport la recrée au prochain appel. Le timeout MCP interne de 15 secondes précède désormais l'enveloppe outil de 20 secondes, de sorte que le résultat nomme l'étape fautive, par exemple `list_pages` ou `take_snapshot`, au lieu d'un timeout générique de l'enveloppe.
 
-| Mesure                                              |                            US-033 avant |               Vérification après |
-| --------------------------------------------------- | --------------------------------------: | -------------------------------: |
+| Mesure                                              |                            US-033 avant |                                                 Vérification après |
+| --------------------------------------------------- | --------------------------------------: | -----------------------------------------------------------------: |
 | Attente readiness la plus longue                    |                             1 606,662 s | 2 s uniquement après lancement ; démarrage suivi par son lifecycle |
-| Appels snapshot / console / screenshot exploitables |                                   0 / 8 | 4 / 4 sur le smoke Electron réel |
-| Préparation MCP                                     | non mesurée, répétée après chaque échec |                 366 ms, une fois |
-| Console après préparation                           |               timeout à 15,762–15,906 s |                             2 ms |
-| Screenshot après préparation                        |               timeout à 15,795–15,907 s |                            99 ms |
-| Snapshot réutilisant la connexion                   |               timeout à 15,631–15,673 s |                            10 ms |
+| Appels snapshot / console / screenshot exploitables |                                   0 / 8 |                                   4 / 4 sur le smoke Electron réel |
+| Préparation MCP                                     | non mesurée, répétée après chaque échec |                                                   366 ms, une fois |
+| Console après préparation                           |               timeout à 15,762–15,906 s |                                                               2 ms |
+| Screenshot après préparation                        |               timeout à 15,795–15,907 s |                                                              99 ms |
+| Snapshot réutilisant la connexion                   |               timeout à 15,631–15,673 s |                                                              10 ms |
 
 Le smoke après correctif a lancé l'application Blame de développement avec son vrai endpoint Electron CDP sur `127.0.0.1:9222`, puis a utilisé `PreviewDevtoolsMcpService` et `chrome-devtools-mcp@1.8.0` avec les arguments de production. La préparation, la console, le screenshot WebP et deux snapshots ont réussi. L'abandon explicite du signal du premier snapshot n'a pas fermé la connexion : les trois appels suivants ont réutilisé le même serveur et le même `pageId`. Un second contrôle direct du serveur Google a mesuré 281 ms de connexion, 280 ms pour `list_pages`, 43 ms pour le snapshot, 1 ms pour la console et 93 ms pour le screenshot.
 
@@ -3012,6 +3012,96 @@ git diff --check
 ```
 
 Les choix d'intégration suivent la [référence officielle des outils Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp/blob/main/docs/tool-reference.md), notamment la préférence pour `take_snapshot` en automatisation, et le [routage officiel par `pageId`](https://github.com/ChromeDevTools/chrome-devtools-mcp/blob/main/README.md). Le timeout `-32001` après navigation est également documenté en amont dans [chrome-devtools-mcp#2459](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/2459) ; il s'agit d'un risque voisin de stabilisation de page, pas de la cause démontrée des connexions détruites dans US-033.
+
+### 21.41 Corpus terminal Luna, comparaison Cline et réduction du contexte fixe
+
+#### Protocole et corpus
+
+Un corpus headless versionné couvre maintenant dix transformations indépendantes : remplacement de fonction TypeScript, batch hybride TSX avec import, insertion CSS sous `@media`, rebase de symbole, navigation dans un fichier de 180 entrées, création d'un fichier de plus de 10 Ko, résolution exacte de `build`, fraîcheur de preuve après édition, lecture identique dédupliquée et changement backend Prisma/API. Chaque scénario possède une instruction, une liste fermée de chemins modifiables, un contrôle fonctionnel indépendant et un `tsc --noEmit` externe au terminal de l'agent. Le score attribue 70 points au comportement produit, 15 à la compilation, 10 au respect du scope et 5 au terminal réussi.
+
+Les workspaces sont recréés depuis la fixture et initialisés avec une date Git fixe. Deux matérialisations du même scénario doivent produire le même commit. La paire finale Cline/Blame a effectivement utilisé les dix mêmes hashes, scénario par scénario. Les premières campagnes avaient déjà des arbres et instructions identiques, mais leurs commits Git dépendaient encore de l'heure ; elles restent utiles pour observer la variance et l'effet du prompt, pas comme comparaison stricte par révision.
+
+Le provider, GPT-5.6 Luna, l'effort de raisonnement, les instructions, les budgets et les délais ont été chargés depuis `.env.terminal-bench` sans journaliser les valeurs. Aucun credential n'est copié dans les fixtures ou artefacts.
+
+#### Réduction déterministe du contexte fixe
+
+Le profil de composition a montré qu'une petite tâche recevait environ 9,5 Ko de prompt système et 6,5 Ko de définitions d'outils avant son historique. Les pratiques par défaut répétaient les mêmes règles sous plusieurs titres et la table complète des spécialistes figurait à la fois dans le système et dans `consult_specialist`. Les pratiques de style, architecture et tests ont été réécrites sous une forme plus courte qui conserve leurs décisions, et la table de routage des spécialistes ne subsiste que dans la définition de l'outil. Le système garde la règle d'appel explicite, le caractère privé et read-only et la responsabilité du lead.
+
+Le prompt du runner mesuré localement passe de 9 403 à 5 606 octets, soit -40,4 %. Sur deux campagnes provider après changement, le système réellement composé mesure environ 5,75 Ko par requête contre 9,55 Ko avant. À nombre de requêtes égal, sa contribution cumulée passe de 429 534 à 258 534 octets, soit -39,8 %. Le socle système plus outils passe d'environ 16,04 à 12,26 Ko par requête, soit -23,6 %. Les schémas des outils n'ont pas été raccourcis : leurs contraintes rendent les appels plus difficiles à mal former et leur suppression n'était pas justifiée par le corpus.
+
+Les deux campagnes complètes après réduction obtiennent 100/100 sur les dix tâches :
+
+| Mesure                 | Avant réduction |   Après 1 |   Après 2 |
+| ---------------------- | --------------: | --------: | --------: |
+| Score moyen            |             100 |       100 |       100 |
+| Durée                  |        306,51 s |  337,05 s |  336,84 s |
+| Tokens entrée          |         207 209 |   183 746 |   191 970 |
+| Tokens sortie          |          10 896 |    12 094 |    10 636 |
+| Cache lu               |         118 272 |   104 960 |   111 616 |
+| Coût                   |       0,03323 $ | 0,03237 $ | 0,03107 $ |
+| Requêtes modèle        |              45 |        45 |        48 |
+| Appels d'outils        |              41 |        39 |        43 |
+| Lectures               |              16 |        14 |        18 |
+| Opérations symboliques |               9 |         9 |         9 |
+| Appels bloqués         |               1 |         0 |         0 |
+
+La baisse d'entrée vaut 11,3 % puis 7,4 % face à cette baseline, sans perte de score ni d'usage symbolique. La durée ne baisse pas : les trois campagnes contiennent une génération de 120 objets dont le temps modèle varie de 106,9 à 140,9 secondes avant la première édition. Ce résultat prouve la réduction du contexte fixe et un gain de tokens, pas une accélération provider générale.
+
+#### Paire stricte Cline puis Blame
+
+Après fixation des commits, Cline a été exécuté avant Blame pour ne pas sélectionner l'ordre après observation. Les deux harness ont produit le résultat attendu sur les dix scénarios et les dix compilations indépendantes passent.
+
+| Mesure                                 |           Cline par défaut |              Blame compact |
+| -------------------------------------- | -------------------------: | -------------------------: |
+| Score produit                          |                    100/100 |                    100/100 |
+| Durée totale                           |                   460,03 s |                   338,05 s |
+| Première tentative / réussite moyenne  |            28,05 / 28,06 s |            21,79 / 21,95 s |
+| Tokens entrée / sortie / cache lu      | 204 438 / 18 349 / 108 544 | 229 116 / 12 077 / 135 680 |
+| Coût                                   |                  0,04337 $ |                  0,03589 $ |
+| Requêtes modèle                        |                         51 |                         50 |
+| Appels d'outils                        |                         64 |                         47 |
+| Recherches logiques / lectures         |                     8 / 38 |                     1 / 18 |
+| Octets navigation renvoyés             |                     35 835 |                     23 530 |
+| Exposition cumulée des payloads        |                    259 084 |                    236 229 |
+| Éditions réussies / bloquées           |                     12 / 0 |                     12 / 0 |
+| Opérations symboliques / patch         |                     0 / 12 |                      9 / 4 |
+| Appels bloqués / échoués               |                      0 / 0 |                      2 / 0 |
+| Périodes sans outil supérieures à 30 s |           2, soit 131,23 s |           1, soit 103,67 s |
+| Preuves terminales structurées         |                     0 / 10 |                    10 / 10 |
+| Événements après terminal              |                          0 |                          0 |
+
+Blame est 26,5 % plus rapide, effectue 26,6 % moins d'appels, 52,6 % moins de lectures, renvoie 34,3 % moins d'octets de navigation, produit 34,2 % moins de tokens de sortie et coûte 17,2 % moins cher. Il utilise réellement neuf opérations symboliques, y compris le batch TSX hybride et les rebases. La première édition réussie arrive en moyenne 21,95 secondes au lieu de 28,06 secondes.
+
+Le total d'entrée de cette paire est toutefois 12,1 % plus élevé pour Blame. Un unique scénario de création représente 77 195 tokens : Luna lit un exemple volumineux, produit le fichier, puis demande cinq validations. Hors de ce scénario, les entrées sont presque identiques, 151 921 contre 151 044, alors que Blame reste 42,7 % plus rapide et utilise 34,5 % moins d'appels. Sur les trois répétitions Blame compactes, l'entrée moyenne est 201 611 tokens ; sur les deux répétitions Cline, elle est 203 094. La conclusion honnête est donc une parité d'entrée globale avec forte variance, et non un avantage statistique encore établi.
+
+Les deux appels Blame bloqués de l'outlier ont été classés séparément. Le premier est une vraie erreur du contrôle modèle : un `grep` comptait aussi le littéral `published` du type et sortait avec le code 1. Le second est un défaut du harness : dans un heredoc Python, `size > 10000` était pris pour une redirection shell mutante. Le détecteur retire maintenant seulement les corps de heredoc pour l'analyse des redirections, tout en continuant à détecter les API d'écriture dans le script. Une variante pnpm de `npm_config_npm_globalconfig` est également retirée des tâches npm. Le replay ciblé final passe à 100/100, sans blocage, avec 36 749 tokens et une sortie de build réduite à `build` puis `tsc --noEmit`. La baisse face à l'outlier n'est pas attribuée entièrement au correctif, car Luna a choisi une autre commande ; le test déterministe constitue la preuve causale du heredoc.
+
+#### Compaction, validations et limites
+
+Ces petites tâches ne franchissent pas le seuil de compaction Cline : le compteur de compactions reste nul. La déduplication de lecture est néanmoins observée sur le scénario imposé, et la projection remplace les éditions reconnues après relecture sur les cas de rebase. Les `duplicateBytes` composés restent nuls. La baisse mesurée ici vient donc surtout du socle fixe, pas d'une revendication abusive sur un compactage qui ne s'est pas déclenché.
+
+Le principal coût restant est la répétition cumulative d'un gros exemple raw et d'un payload de création lorsque le modèle multiplie les validations. Le compacter immédiatement ferait perdre le contenu courant dont une correction peut avoir besoin ; aucun seuil ou gouverneur arbitraire n'a été ajouté. Une future expérience doit comparer une projection bornée des créations réussies avec réhydratation explicite sur erreur, sur un holdout long qui force une correction après build.
+
+Un run préliminaire a terminé sans `finish_task` malgré un diff et un build corrects ; il est resté `succeeded` sans champ `verified`. La répétition suivante et la paire stricte possèdent toutes leurs preuves structurées, mais ce contournement occasionnel du terminal natif reste à traiter en amont ou à normaliser sans créer de faux succès.
+
+Le corpus ne fournit pas de preview Electron et aucune validation visuelle n'est revendiquée. Les diffs, messages finaux, compilations et révisions terminales ont été contrôlés ; les cas UI prouvent le source et le typecheck, pas le rendu, le clavier, le drag ou la molette. La preview de la section 21.40 doit faire l'objet d'un corpus séparé attaché à une vue réelle.
+
+Les correctifs conservés sont le corpus scoré, la terminaison explicite du CLI après flush et shutdown, la normalisation de l'environnement npm, l'autorisation de `printf` stdout, la mesure séparée système/outils/messages, la réduction du prompt fixe, les commits de fixture déterministes, le scorer de champs et le traitement des heredocs. Aucune limite de tours, mémoire parallèle, retry aveugle ou raccourcissement des schémas d'outils n'a été ajouté.
+
+Les commandes principales réellement exécutées sont :
+
+```text
+git status --short --branch
+pnpm test:benchmark-corpus
+pnpm --filter @blame/agent-runtime test|typecheck|lint|build
+pnpm --filter @blame/benchmark-runner test|typecheck|lint|build
+BLAME_HEADLESS_DEV=true NODE_ENV=development pnpm benchmark:corpus -- --label <label> --harness blame|cline
+pnpm benchmark:corpus:rescore -- --campaign <campaign>
+pnpm benchmark:corpus:report -- --campaign <campaign>
+git diff --check
+```
+
+Les artefacts complets restent sous `.blame/benchmarks/corpus/` et ne sont pas commités. Les résultats de cette section sont des appels provider live headless ; les tests de politique de commande, de scoring, de prompt et de révision sont déterministes. Ils ne sont ni confondus ni présentés comme équivalents.
 
 ## Références complémentaires
 

@@ -101,8 +101,7 @@ export class BenchmarkMetricsCollector {
     const messageBytes = numberValue(metrics.messageBytes) ?? 0;
     const projectedBytesSaved = numberValue(metrics.projectedBytesSaved) ?? 0;
     const systemPromptBytes = numberValue(metrics.systemPromptBytes) ?? 0;
-    const toolDefinitionBytes =
-      numberValue(metrics.toolDefinitionBytes) ?? 0;
+    const toolDefinitionBytes = numberValue(metrics.toolDefinitionBytes) ?? 0;
     this.composedRequests += 1;
     this.composedBytes += composedBytes;
     this.duplicateBytes += duplicateBytes;
@@ -116,7 +115,10 @@ export class BenchmarkMetricsCollector {
     this.latestProjectedBytesSaved = projectedBytesSaved;
     this.latestSystemPromptBytes = systemPromptBytes;
     this.latestToolDefinitionBytes = toolDefinitionBytes;
-    this.maximumComposedBytes = Math.max(this.maximumComposedBytes, composedBytes);
+    this.maximumComposedBytes = Math.max(
+      this.maximumComposedBytes,
+      composedBytes,
+    );
     this.staleReadReplacements += numberValue(metrics.staleReadsReplaced) ?? 0;
     this.successfulEditReplacements +=
       numberValue(metrics.successfulEditsReplaced) ?? 0;
