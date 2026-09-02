@@ -20,6 +20,7 @@ export default class ProjectInitializationTransformer extends BaseTransformer<Pr
             agentModelId: this.resource.initialization.agentModelId,
             previewManifest: this.resource.initialization.previewManifest,
             runConfigurations: this.resource.initialization.runConfigurations ?? [],
+            databaseMode: this.resource.initialization.databaseMode,
             error: this.resource.initialization.error,
             repairReason: this.resource.initialization.repairReason,
             createdAt: this.resource.initialization.createdAt,

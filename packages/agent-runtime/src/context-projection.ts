@@ -354,9 +354,11 @@ function duplicateContentBytes(messages: Message[]) {
   return duplicates;
 }
 
-function contentValues(messages: Message[]) {
-  return messages.flatMap((message) =>
-    typeof message.content === "string" ? [message.content] : message.content,
+function contentValues(messages: Message[]): unknown[] {
+  return messages.flatMap<unknown>((message) =>
+    typeof message.content === "string"
+      ? [message.content]
+      : [...message.content],
   );
 }
 

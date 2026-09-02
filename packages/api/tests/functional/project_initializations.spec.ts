@@ -23,6 +23,7 @@ type InitializationBody = {
         previewService?: string | null
         scopes: string[]
       }>
+      databaseMode: 'existing' | 'compose' | null
       error: string | null
       repairReason: string | null
     } | null
@@ -64,6 +65,7 @@ test.group('project initializations', (group) => {
         previewManifest: previewManifest('high'),
         setupScript: 'echo setup',
         dockerCompose: 'services: {}',
+        databaseMode: 'compose',
         runConfigurations: [
           {
             id: 'web',
@@ -86,6 +88,7 @@ test.group('project initializations', (group) => {
     assert.notProperty(completed.data.initialization?.previewManifest ?? {}, 'version')
     assert.equal(completed.data.initialization?.runConfigurations[0]?.command, 'pnpm dev')
     assert.equal(completed.data.initialization?.runConfigurations[0]?.category, 'web')
+    assert.equal(completed.data.initialization?.databaseMode, 'compose')
     assert.deepEqual(completed.data.initialization?.runConfigurations[0]?.services, ['web'])
     assert.notProperty(completed.data.initialization ?? {}, 'setupScript')
     assert.notProperty(completed.data.initialization ?? {}, 'dockerCompose')
@@ -145,6 +148,7 @@ test.group('project initializations', (group) => {
           },
         ],
         reason: 'The previous command forwarded invalid arguments.',
+        databaseMode: 'existing',
       })
 
     response.assertStatus(200)
@@ -156,6 +160,7 @@ test.group('project initializations', (group) => {
       'The previous command forwarded invalid arguments.'
     )
     assert.equal(body.data.initialization?.previewManifest?.confidence, 'high')
+    assert.equal(body.data.initialization?.databaseMode, 'existing')
     assert.notProperty(body.data.initialization ?? {}, 'setupScript')
     assert.notProperty(body.data.initialization ?? {}, 'dockerCompose')
     assert.equal(body.data.initialization?.runConfigurations[0]?.command, 'corepack pnpm dev')

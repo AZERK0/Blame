@@ -1,6 +1,7 @@
 import type {
   AssessProjectInitializationImpactResult,
   PreviewManifest,
+  ProjectInitializationDatabaseMode,
   ProjectRunConfiguration,
   ReasoningSelection,
   RepairProjectInitializationResult,
@@ -10,6 +11,9 @@ import type { useCloudAuth } from "@/context/cloud-auth"
 import type { usePlatform } from "@/context/platform"
 import { createCloudApi } from "@/lib/cloud-api"
 import { notifyProjectInitializationUpdated } from "@/components/project-initialization/project-initialization-events"
+import { databaseModeForInitializationRepair } from "./project-initialization-database"
+import { previewRepairCandidateMatchesDiff } from "./project-initialization-database"
+import type { ProjectPreviewRepairCandidate } from "./project-initialization-database"
 
 type ImpactInput = {
   apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"]
@@ -22,6 +26,7 @@ type ImpactInput = {
   repositoryRoot: string
   baseCommit: string
   mergeCommit: string
+  previewRepairCandidate?: ProjectPreviewRepairCandidate
 }
 
 export type ProjectInitializationImpactRepairResult = {
@@ -41,13 +46,51 @@ export async function assessAndRepairProjectInitializationImpact(
   if (assessment.classification !== "initialization_update_required") {
     return { assessment }
   }
+  const candidate = await matchingPreviewRepairCandidate(input)
+  if (candidate) {
+    const repair = candidateRepairResult(candidate)
+    await persistProjectInitializationRepair(
+      input,
+      repair,
+      candidate.databaseMode
+    )
+    return { assessment, repair }
+  }
   const repair = await repairProjectInitializationImpact(
     input,
     initialization,
     assessment
   )
-  await persistProjectInitializationRepair(input, repair)
+  const databaseMode = databaseModeForInitializationRepair(
+    initialization,
+    assessment.diagnostics
+  )
+  await persistProjectInitializationRepair(input, repair, databaseMode)
   return { assessment, repair }
+}
+
+async function matchingPreviewRepairCandidate(input: ImpactInput) {
+  const candidate = input.previewRepairCandidate
+  const workspace = input.platform.workspace
+  if (!candidate || !workspace) return undefined
+  const diff = await workspace.gitDiffBetween({
+    from: candidate.sourceTree,
+    root: input.repositoryRoot,
+    to: input.mergeCommit,
+  })
+  return previewRepairCandidateMatchesDiff(diff) ? candidate : undefined
+}
+
+function candidateRepairResult(
+  candidate: ProjectPreviewRepairCandidate
+): RepairProjectInitializationResult {
+  return {
+    sessionId: candidate.repairSessionId,
+    classification: "repairable_initialization",
+    reason: candidate.reason,
+    previewManifest: candidate.previewManifest,
+    runConfigurations: candidate.runConfigurations,
+  }
 }
 
 async function currentInitialization(input: ImpactInput) {
@@ -59,6 +102,7 @@ async function currentInitialization(input: ImpactInput) {
   return {
     previewManifest: initialization.previewManifest,
     runConfigurations: initialization.runConfigurations,
+    databaseMode: initialization.databaseMode,
   }
 }
 
@@ -95,6 +139,10 @@ async function repairProjectInitializationImpact(
       "Initialization impact assessment did not include diagnostics."
     )
   }
+  const databaseMode = databaseModeForInitializationRepair(
+    initialization,
+    assessment.diagnostics
+  )
   return agent.initializations.repair({
     apiConnection: input.apiConnection,
     providerId: input.providerId,
@@ -105,21 +153,20 @@ async function repairProjectInitializationImpact(
     workspaceRoot: input.repositoryRoot,
     previewManifest: initialization.previewManifest,
     runConfigurations: initialization.runConfigurations,
+    preferences: databaseMode
+      ? { database: { mode: databaseMode } }
+      : undefined,
     diagnostics: assessment.diagnostics,
   })
 }
 
 async function persistProjectInitializationRepair(
   input: ImpactInput,
-  result: RepairProjectInitializationResult
+  result: RepairProjectInitializationResult,
+  databaseMode: ProjectInitializationDatabaseMode | undefined
 ) {
   if (result.classification !== "repairable_initialization") return
-  if (
-    !result.previewManifest ||
-    !result.setupScript ||
-    !result.dockerCompose ||
-    !result.runConfigurations
-  ) {
+  if (!result.previewManifest || !result.runConfigurations) {
     throw new Error(
       "Initialization repair agent returned incomplete artifacts."
     )
@@ -129,9 +176,8 @@ async function persistProjectInitializationRepair(
     {
       clineSessionId: result.sessionId,
       previewManifest: result.previewManifest,
-      setupScript: result.setupScript,
-      dockerCompose: result.dockerCompose,
       runConfigurations: result.runConfigurations,
+      databaseMode: databaseMode ?? null,
       reason: result.reason,
     }
   )
@@ -141,4 +187,5 @@ async function persistProjectInitializationRepair(
 type CurrentInitialization = {
   previewManifest: PreviewManifest
   runConfigurations: ProjectRunConfiguration[]
+  databaseMode: ProjectInitializationDatabaseMode | null
 }

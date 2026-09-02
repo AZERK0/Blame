@@ -93,6 +93,7 @@ export type CloudProjectInitialization = {
   agentModelId: string | null
   previewManifest: PreviewManifest | null
   runConfigurations: ProjectRunConfiguration[]
+  databaseMode: "existing" | "compose" | null
   error: string | null
   repairReason: string | null
   createdAt: string

@@ -52,6 +52,7 @@ export default class ProjectInitializationsService {
       clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
       previewManifest,
       runConfigurations,
+      databaseMode: input.databaseMode ?? null,
       error: null,
       repairReason: null,
     })
@@ -84,6 +85,7 @@ export default class ProjectInitializationsService {
       clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
       previewManifest,
       runConfigurations,
+      databaseMode: input.databaseMode ?? initialization.databaseMode,
       error: null,
       repairReason: input.reason,
     })

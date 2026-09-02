@@ -54,6 +54,12 @@ export type PreviewDependencyRefreshResult = {
   status: "failed" | "not_running" | "ready";
 };
 
+export type PreviewInitializationRepairResult = {
+  classification: string;
+  reason: string;
+  status: "applied" | "not_repairable" | "unavailable";
+};
+
 type PreviewDevtoolsToolDescriptor = {
   description?: string;
   inputSchema: Record<string, unknown>;
@@ -101,6 +107,11 @@ export type PreviewToolRuntimeOptions = {
   refreshPreviewDependencies?(
     input: PreviewDevtoolsProviderInput,
   ): Promise<PreviewDependencyRefreshResult> | PreviewDependencyRefreshResult;
+  repairPreviewInitialization?(
+    input: PreviewDevtoolsProviderInput,
+  ):
+    | Promise<PreviewInitializationRepairResult>
+    | PreviewInitializationRepairResult;
 };
 
 type PreviewToolsLogger = {
@@ -305,6 +316,24 @@ export function previewDevtoolsTool(
   };
 }
 
+export function previewInitializationRepairTool(
+  options: PreviewToolRuntimeOptions,
+  preview: PreviewRuntimeContext | undefined,
+): AgentTool | undefined {
+  if (!options.repairPreviewInitialization || !preview) return undefined;
+  return {
+    name: "repair_preview_initialization",
+    description:
+      "Reconcile this story's managed preview manifest with newly introduced runtime dependencies or services, such as a database. Use only when preview diagnostics indicate that the persisted initialization topology is obsolete. Blame diagnoses, validates, applies, and restarts the managed preview.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false,
+    },
+    execute: () => options.repairPreviewInitialization!(preview),
+  };
+}
+
 function previewDevtoolsInputSchema() {
   return {
     type: "object",
@@ -411,7 +440,7 @@ function previewDevtoolsRecommendation(
   if (status === "stopped")
     return "The managed preview is stopped. Call once with waitFor=ready when visual evidence matters; do not start a replacement server, database, or container.";
   if (status === "failed") {
-    return "Inspect managed preview logs once if useful, then continue with local validation. Do not create replacement infrastructure or alter dependencies to repair preview state.";
+    return "Inspect managed preview logs once. If project changes made the persisted runtime topology obsolete, call repair_preview_initialization; otherwise continue with local validation. Do not create replacement infrastructure manually.";
   }
   if (status === "unavailable") {
     return "Preview evidence is unavailable. Continue with local validation and report the limitation; do not start manual infrastructure.";

@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  parseProjectInitializationRepairPayload,
   parseProjectInitializationRepairResult,
+  projectInitializationRepairResultSchema,
   projectInitializationRepairPrompt,
 } from "./project-initialization-repair.js";
 import { parsePreviewManifest } from "./preview-manifest.js";
@@ -167,6 +169,117 @@ test("includes validation feedback in repair correction prompts", () => {
     },
   );
 
-  assert.match(prompt, /Your previous response was rejected by validation/);
+  assert.match(prompt, /Your previous tool input was rejected by validation/);
   assert.match(prompt, /Validation error: Manifest is invalid\./);
+  assert.match(prompt, /submit_project_initialization_repair/);
+});
+
+test("exposes a structured repair submission schema", () => {
+  assert.equal(projectInitializationRepairResultSchema.oneOf.length, 2);
+  assert.deepEqual(projectInitializationRepairResultSchema.oneOf[0].required, [
+    "classification",
+    "reason",
+    "previewManifest",
+    "runConfigurations",
+  ]);
+});
+
+test("normalizes isolated database credentials in repair payloads", () => {
+  const repair = canonicalRepair();
+  const service = repair.previewManifest.services[0]! as Record<
+    string,
+    unknown
+  >;
+  service.environment = {
+    DATABASE_URL: "postgresql://app:secret@database:5432/app",
+  };
+  const result = parseProjectInitializationRepairPayload(repair, undefined, {
+    database: { mode: "compose" },
+  });
+
+  assert.equal(
+    result.previewManifest?.services[0]?.environment?.DATABASE_URL,
+    "postgresql://app:blame@database:5432/app",
+  );
+});
+
+test("normalizes an unambiguous service role used as a probe consumer", () => {
+  const repair = canonicalRepair();
+  const manifest = repair.previewManifest as unknown as {
+    probes: Array<Record<string, unknown>>;
+  };
+  manifest.probes.push({
+    id: "web-ready",
+    from: "preview",
+    target: { service: "web", endpoint: "http" },
+    type: "http",
+  });
+
+  const result = parseProjectInitializationRepairPayload(repair);
+
+  assert.equal(result.previewManifest?.probes[0]?.from, "web");
+});
+
+test("rejects an ambiguous service role used as a probe consumer", () => {
+  const repair = canonicalRepair();
+  const manifest = repair.previewManifest as unknown as {
+    probes: Array<Record<string, unknown>>;
+    services: Array<Record<string, unknown>>;
+  };
+  manifest.services.push({
+    ...manifest.services[0],
+    id: "admin",
+  });
+  manifest.probes.push({
+    id: "web-ready",
+    from: "preview",
+    target: { service: "web", endpoint: "http" },
+    type: "http",
+  });
+
+  assert.throws(
+    () => parseProjectInitializationRepairPayload(repair),
+    /probe references unknown consumer preview/,
+  );
+});
+
+test("moves root bindings to the only application service", () => {
+  const repair = canonicalRepair();
+  const manifest = repair.previewManifest as unknown as Record<string, unknown>;
+  const services = manifest.services as Array<Record<string, unknown>>;
+  services.push({
+    id: "database",
+    kind: "dependency",
+    container: { image: "postgres:17" },
+    environment: { POSTGRES_PASSWORD: "blame" },
+    endpoints: [{ id: "postgres", protocol: "tcp", port: 5432 }],
+  });
+  manifest.bindings = [
+    {
+      target: { type: "environment", key: "DATABASE_HOST" },
+      source: { service: "database", endpoint: "postgres" },
+      exposure: "server",
+      format: "host",
+    },
+  ];
+
+  const result = parseProjectInitializationRepairPayload(repair);
+
+  assert.equal(
+    result.previewManifest?.services[0]?.bindings?.[0]?.source.service,
+    "database",
+  );
+});
+
+test("rejects root bindings when the consuming service is ambiguous", () => {
+  const repair = canonicalRepair();
+  const manifest = repair.previewManifest as unknown as Record<string, unknown>;
+  const services = manifest.services as Array<Record<string, unknown>>;
+  services.push({ ...services[0], id: "admin" });
+  manifest.bindings = [];
+
+  assert.throws(
+    () => parseProjectInitializationRepairPayload(repair),
+    /previewManifest contains unsupported field bindings/,
+  );
 });

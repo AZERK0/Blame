@@ -27,6 +27,7 @@ export const completeProjectInitializationValidator = vine.create({
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
   previewManifest: vine.any(),
   runConfigurations: vine.array(runConfiguration).maxLength(20),
+  databaseMode: vine.enum(['existing', 'compose']).nullable().optional(),
 })
 
 export const failProjectInitializationValidator = vine.create({
@@ -39,4 +40,5 @@ export const repairProjectInitializationValidator = vine.create({
   previewManifest: vine.any(),
   runConfigurations: vine.array(runConfiguration).maxLength(20),
   reason: vine.string().trim().minLength(1).maxLength(4096),
+  databaseMode: vine.enum(['existing', 'compose']).nullable().optional(),
 })

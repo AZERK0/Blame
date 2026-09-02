@@ -86,6 +86,11 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
         hostRequest(hostClient, "previewDevtoolsTools", input),
       refreshPreviewDependencies: (input) =>
         hostRequest(hostClient, "refreshPreviewDependencies", input),
+      applyPreviewInitialization: (input) =>
+        hostRequest(hostClient, "applyPreviewInitialization", {
+          ...input,
+          signal: undefined,
+        }),
       ...(process.platform === "darwin" || process.platform === "win32"
         ? {
             lightWorkspace: (

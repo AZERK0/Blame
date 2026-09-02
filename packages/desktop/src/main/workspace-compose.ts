@@ -1292,6 +1292,24 @@ export function dependencyVolumeHash(compose: string) {
     .slice(0, 12);
 }
 
+export function dependencyVolumeHashFromInputs(
+  inputs: Array<{ content: string; file: string }>,
+  compose: string,
+) {
+  if (inputs.length === 0) return dependencyVolumeHash(compose);
+  const hash = createHash("sha256");
+  const sortedInputs = [...inputs].sort((left, right) =>
+    left.file.localeCompare(right.file),
+  );
+  for (const { content, file } of sortedInputs) {
+    hash.update(file);
+    hash.update("\0");
+    hash.update(content);
+    hash.update("\0");
+  }
+  return hash.digest("hex").slice(0, 12);
+}
+
 function startsNextTopLevelSection(line: string, indent: number) {
   if (!line.trim() || line.trim().startsWith("#")) return false;
   return new RegExp(`^\\s{0,${indent}}\\S`).test(line);

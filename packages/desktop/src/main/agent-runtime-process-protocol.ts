@@ -46,6 +46,7 @@ export const agentHostMethods = [
   "previewDevtoolsTools",
   "previewContainerLogs",
   "refreshPreviewDependencies",
+  "applyPreviewInitialization",
   "lightWorkspace",
 ] as const;
 

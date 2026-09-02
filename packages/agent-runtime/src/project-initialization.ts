@@ -153,6 +153,8 @@ export const projectInitializationResultSchema = {
               },
               bindings: {
                 type: "array",
+                description:
+                  "Bindings belong inside their consuming service, never at the previewManifest root.",
                 maxItems: 50,
                 items: {
                   type: "object",
@@ -219,7 +221,11 @@ export const projectInitializationResultSchema = {
             required: ["id", "from", "target", "type"],
             properties: {
               id: { type: "string" },
-              from: { type: "string" },
+              from: {
+                type: "string",
+                description:
+                  'Use "host" or an exact service id from previewManifest.services.',
+              },
               target: {
                 type: "object",
                 additionalProperties: false,

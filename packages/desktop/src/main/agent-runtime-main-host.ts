@@ -60,10 +60,32 @@ async function handleAgentHostRequest(
   if (method === "refreshPreviewDependencies") {
     return refreshPreviewDependencies(input, signal, harness, previews);
   }
+  if (method === "applyPreviewInitialization") {
+    return applyPreviewInitialization(input);
+  }
   if (method === "lightWorkspace") {
     return agentLightWorkspace(input, signal);
   }
   throw new Error(`Unsupported agent host method: ${method}`);
+}
+
+async function applyPreviewInitialization(input: unknown) {
+  const request = recordInput(input);
+  if (request.workspaceMode === "cloud-mirror") {
+    return { status: "unavailable" as const };
+  }
+  const { applyProjectPreviewInitialization } =
+    await import("./workspace-ipc.ts");
+  await applyProjectPreviewInitialization({
+    databaseMode: request.databaseMode,
+    previewManifest: request.previewManifest,
+    reason: request.reason,
+    repairSessionId: request.repairSessionId,
+    runConfigurations: request.runConfigurations,
+    storyId: String(request.storyId ?? "preview-repair"),
+    worktree: String(request.worktree ?? ""),
+  } as never);
+  return { status: "applied" as const };
 }
 
 async function refreshPreviewDependencies(

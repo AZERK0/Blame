@@ -22,7 +22,72 @@ type GeneratedInitializationArtifacts = {
 };
 
 export function parsePreviewManifest(value: unknown): PreviewManifest {
-  return normalizePreviewManifest(parseContractPreviewManifest(value));
+  return normalizePreviewManifest(
+    parseContractPreviewManifest(
+      normalizeServiceRoleReferences(normalizeRootServiceBindings(value)),
+    ),
+  );
+}
+
+function normalizeRootServiceBindings(value: unknown) {
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value.services) ||
+    !Array.isArray(value.bindings)
+  ) {
+    return value;
+  }
+  const consumers = value.services.filter(
+    (service) => isRecord(service) && service.kind !== "dependency",
+  );
+  if (consumers.length !== 1) return value;
+  const consumer = consumers[0]!;
+  const bindings = Array.isArray(consumer.bindings)
+    ? [...consumer.bindings, ...value.bindings]
+    : value.bindings;
+  const manifest = { ...value };
+  delete manifest.bindings;
+  return {
+    ...manifest,
+    services: value.services.map((service) =>
+      service === consumer ? { ...consumer, bindings } : service,
+    ),
+  };
+}
+
+function normalizeServiceRoleReferences(value: unknown) {
+  if (!isRecord(value) || !Array.isArray(value.services)) return value;
+  const roleIds = uniqueServiceRoleIds(value.services);
+  if (!Array.isArray(value.probes) || roleIds.size === 0) return value;
+  return {
+    ...value,
+    probes: value.probes.map((probe) => normalizedProbeFrom(probe, roleIds)),
+  };
+}
+
+function uniqueServiceRoleIds(services: unknown[]) {
+  const idsByRole = new Map<string, string[]>();
+  for (const service of services) {
+    if (!isRecord(service)) continue;
+    const { id, kind } = service;
+    if (typeof id !== "string" || typeof kind !== "string") continue;
+    idsByRole.set(kind, [...(idsByRole.get(kind) ?? []), id]);
+  }
+  return new Map(
+    [...idsByRole].flatMap(([role, ids]) =>
+      ids.length === 1 ? [[role, ids[0]!] as const] : [],
+    ),
+  );
+}
+
+function normalizedProbeFrom(probe: unknown, roleIds: Map<string, string>) {
+  if (!isRecord(probe) || typeof probe.from !== "string") return probe;
+  const serviceId = roleIds.get(probe.from);
+  return serviceId ? { ...probe, from: serviceId } : probe;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
 export function generatePreviewArtifacts(

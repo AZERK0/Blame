@@ -3,6 +3,7 @@ import { DateTime } from 'luxon'
 import { parsePreviewManifest, type PreviewManifest } from '@blame/preview-contract'
 
 export type ProjectInitializationStatus = 'pending' | 'running' | 'done' | 'error'
+export type ProjectInitializationDatabaseMode = 'existing' | 'compose'
 
 type ProjectRunConfiguration = {
   id: string
@@ -69,6 +70,9 @@ export default class ProjectInitialization extends BaseModel {
     prepare: prepareRunConfigurations,
   })
   declare runConfigurations: ProjectRunConfiguration[] | null
+
+  @column()
+  declare databaseMode: ProjectInitializationDatabaseMode | null
 
   @column()
   declare error: string | null

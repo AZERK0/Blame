@@ -240,6 +240,11 @@ export function useBacklogRotation(
       codePractices: effectiveProjectCodePractices(
         projectInitialization.practices
       ),
+      projectInitialization: {
+        previewManifest: initialization.previewManifest,
+        runConfigurations: initialization.runConfigurations,
+        databaseMode: initialization.databaseMode,
+      },
       executionId,
       storyId,
     })

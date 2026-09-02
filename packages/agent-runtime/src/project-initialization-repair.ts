@@ -1,13 +1,10 @@
 import {
-  parseRunConfigurations,
-  validateProjectInitializationOutput,
+  parseProjectInitializationPayload,
+  projectInitializationResultSchema,
   type ProjectInitializationScan,
 } from "./project-initialization.js";
-import {
-  generatePreviewArtifacts,
-  parsePreviewManifest,
-} from "./preview-manifest.js";
 import type {
+  ProjectInitializationPreferences,
   ProjectInitializationRepairClassification,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
@@ -26,6 +23,41 @@ type ProjectInitializationRepairCorrection = {
   previousResult: string;
 };
 
+const repairableResultSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "classification",
+    "reason",
+    "previewManifest",
+    "runConfigurations",
+  ],
+  properties: {
+    classification: { const: "repairable_initialization" },
+    reason: { type: "string", minLength: 1 },
+    previewManifest:
+      projectInitializationResultSchema.properties.previewManifest,
+    runConfigurations:
+      projectInitializationResultSchema.properties.runConfigurations,
+  },
+} as const;
+
+const diagnosticResultSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["classification", "reason"],
+  properties: {
+    classification: {
+      enum: ["project_code_failure", "external_failure", "unknown"],
+    },
+    reason: { type: "string", minLength: 1 },
+  },
+} as const;
+
+export const projectInitializationRepairResultSchema = {
+  oneOf: [repairableResultSchema, diagnosticResultSchema],
+} as const;
+
 export function projectInitializationRepairPrompt(
   input: RepairProjectInitializationInput,
   scan: ProjectInitializationScan,
@@ -35,20 +67,29 @@ export function projectInitializationRepairPrompt(
   if (!correction) return prompt;
   return [
     prompt,
-    "Your previous response was rejected by validation.",
-    "Fix only the generated JSON output according to the validation error.",
+    "Your previous tool input was rejected by validation.",
+    "Fix only the submitted result according to the validation error.",
     "Do not broaden the diagnosis and do not read more files.",
-    "Return a complete corrected JSON object only.",
+    "Call submit_project_initialization_repair again with a complete corrected input.",
     `Validation error: ${correction.validationError}`,
-    `Previous rejected response: ${correction.previousResult.slice(0, maxCorrectionPayloadLength)}`,
+    `Previous rejected input: ${correction.previousResult.slice(0, maxCorrectionPayloadLength)}`,
   ].join("\n");
 }
 
 export function parseProjectInitializationRepairResult(
   text: string,
   scan?: ProjectInitializationScan,
+  preferences?: ProjectInitializationPreferences,
 ): Omit<RepairProjectInitializationResult, "sessionId"> {
   const parsed = JSON.parse(jsonPayload(text)) as unknown;
+  return parseProjectInitializationRepairPayload(parsed, scan, preferences);
+}
+
+export function parseProjectInitializationRepairPayload(
+  parsed: unknown,
+  scan?: ProjectInitializationScan,
+  preferences?: ProjectInitializationPreferences,
+): Omit<RepairProjectInitializationResult, "sessionId"> {
   if (!isRecord(parsed))
     throw new Error("Initialization repair result must be an object");
   const classification = classificationValue(parsed.classification);
@@ -68,25 +109,18 @@ export function parseProjectInitializationRepairResult(
       "Repairable initialization result must include a canonical previewManifest",
     );
   }
-  const previewManifest = parsePreviewManifest(parsed.previewManifest);
-  const generated = generatePreviewArtifacts(previewManifest);
-  const setupScript = generated.setupScript;
-  const dockerCompose = generated.dockerCompose;
-  const runConfigurations = parseRunConfigurations(parsed.runConfigurations);
-  validateProjectInitializationOutput(
-    setupScript,
-    dockerCompose,
-    runConfigurations,
+  const initialization = parseProjectInitializationPayload(
+    {
+      previewManifest: parsed.previewManifest,
+      runConfigurations: parsed.runConfigurations,
+    },
     scan,
-    previewManifest,
+    preferences,
   );
   return {
     classification,
     reason,
-    previewManifest,
-    setupScript,
-    dockerCompose,
-    runConfigurations,
+    ...initialization,
   };
 }
 
@@ -95,7 +129,10 @@ function repairPrompt(
   scan: ProjectInitializationScan,
 ) {
   return [
-    "Diagnose these project initialization diagnostics according to your system instructions and return strict JSON only.",
+    "Diagnose these project initialization diagnostics according to your system instructions.",
+    "Call submit_project_initialization_repair exactly once with the complete result.",
+    "Do not answer with JSON text.",
+    `Database preference: ${JSON.stringify(input.preferences ?? null)}`,
     `Current previewManifest: ${JSON.stringify(input.previewManifest)}`,
     `Current runConfigurations: ${JSON.stringify(input.runConfigurations)}`,
     `Initialization diagnostics: ${JSON.stringify(input.diagnostics)}`,

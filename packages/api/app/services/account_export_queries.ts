@@ -28,6 +28,7 @@ const projectInitializationColumns = [
   'agent_model_id',
   'preview_manifest',
   'run_configurations',
+  'database_mode',
   'error',
   'repair_reason',
   'created_at',

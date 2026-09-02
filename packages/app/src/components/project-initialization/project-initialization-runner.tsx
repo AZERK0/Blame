@@ -454,6 +454,7 @@ async function completeProjectInitialization(
     setupScript: result.setupScript,
     dockerCompose: result.dockerCompose,
     runConfigurations: result.runConfigurations,
+    databaseMode: input.preferences?.database?.mode ?? null,
   })
   notifyProjectInitializationUpdated(input.project.id)
 }

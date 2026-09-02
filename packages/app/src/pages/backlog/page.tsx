@@ -84,6 +84,10 @@ import { stopManagedCloudPreview } from "@/components/backlog/drawer/use-user-st
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import { assessAndRepairProjectInitializationImpact } from "@/pages/backlog/project-initialization-impact"
+import {
+  parseProjectPreviewRepairCandidate,
+  type ProjectPreviewRepairCandidate,
+} from "@/pages/backlog/project-initialization-database"
 import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
 import { currentReviewDiffEmpty } from "@/pages/backlog/review-diff-evidence"
 import { activeStory, inactiveStoryFields } from "./story-runtime-state"
@@ -1730,6 +1734,7 @@ type CheckInitializationImpactInput = {
   repositoryRoot: string
   baseCommit: string
   mergeCommit: string
+  previewRepairCandidate?: ProjectPreviewRepairCandidate
 }
 
 async function checkProjectInitializationImpact(
@@ -1752,6 +1757,7 @@ async function checkProjectInitializationImpact(
       repositoryRoot: input.repositoryRoot,
       baseCommit: input.baseCommit,
       mergeCommit: input.mergeCommit,
+      previewRepairCandidate: input.previewRepairCandidate,
     })
     showInitializationImpactResult(toastId, result)
   } catch (error) {
@@ -1928,12 +1934,36 @@ async function runPostMergeTasks(
   repositoryRoot: string,
   initializationImpactInput: CheckInitializationImpactInput
 ) {
+  const previewRepairCandidate = await storyPreviewRepairCandidate(
+    story,
+    platform
+  )
   await cleanupMergedStory(story, platform, repositoryRoot)
   await afterRendererPaint()
   await measurePerformanceOperation(
     "agent.transition.initialization_impact",
-    () => checkProjectInitializationImpact(initializationImpactInput)
+    () =>
+      checkProjectInitializationImpact({
+        ...initializationImpactInput,
+        previewRepairCandidate,
+      })
   )
+}
+
+async function storyPreviewRepairCandidate(
+  story: UserStory,
+  platform: ReturnType<typeof usePlatform>
+) {
+  if (!story.worktree || !platform.workspace) return undefined
+  try {
+    const content = await platform.workspace.readFile({
+      root: story.worktree,
+      path: ".blame/initialization/preview-repair.json",
+    })
+    return parseProjectPreviewRepairCandidate(content)
+  } catch {
+    return undefined
+  }
 }
 
 function replaceStoryAfterUndo(

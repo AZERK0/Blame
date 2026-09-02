@@ -40,12 +40,16 @@ For `repairable_initialization`:
 - every setup task and service must declare exactly one `container` source: a literal OCI `image` or a controlled relative project `build`
 - preview services must include an `http` or `https` endpoint with a healthcheck on that endpoint
 - endpoint identity is scoped by service; every binding and probe must name both the source service and endpoint
+- probe `from` must be `host` or an exact service id; when a service kind has one instance, Blame also accepts that kind as an unambiguous alias
 - declare typed endpoints and bindings for every topology-derived runtime address
+- put each binding inside its consuming service; never add `bindings` at the `previewManifest` root
 - declare server bindings used by SSR and framework proxy routes; a public browser binding alone cannot connect a Nuxt/Nitro server to its backend
 - add a required functional probe for each evidenced frontend-to-backend proxy boundary
 - setup work must live in `previewManifest.setup[]`
 - setup tasks may include `runAs: "root"` only for targeted cleanup or ownership repair of generated workspace artifacts such as `/workspace/.nuxt`, `/workspace/.next`, `/workspace/.vite`, or `/workspace/node_modules`
 - normal dependency installation tasks must omit `runAs` or use `runAs: "host"`
+- when the database preference is `compose`, declare an isolated dependency service for every evidenced external database, use `blame` as every password, connect through the service id, and include its data directory as a project-scoped cache
+- when the database preference is `existing`, do not declare a database service or include database credentials in the manifest
 </manifest_repair_rules>
 
 <forbidden_content>
@@ -53,9 +57,9 @@ Do not include YAML Compose, Bash setup scripts, fixed host ports, Docker checks
 </forbidden_content>
 
 <output_contract>
-Return strict JSON only with `classification` and `reason`.
+Call `submit_project_initialization_repair` exactly once with `classification` and `reason`.
 
-For `repairable_initialization`, also return complete replacement `previewManifest` plus the complete `runConfigurations` array.
+For `repairable_initialization`, also submit the complete replacement `previewManifest` plus the complete `runConfigurations` array.
 
-For every other classification, omit `previewManifest` and `runConfigurations`.
+For every other classification, omit `previewManifest` and `runConfigurations`. Do not answer with JSON text.
 </output_contract>

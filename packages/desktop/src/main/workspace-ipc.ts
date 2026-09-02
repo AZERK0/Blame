@@ -126,7 +126,7 @@ import {
   composeWithRuntimePortPlaceholders,
   composeWithoutNumericSuUser,
   composeWithAllocatedHostPorts,
-  dependencyVolumeHash,
+  dependencyVolumeHashFromInputs,
   dockerComposeWithHostFileMounts,
   dockerComposeForPreview,
   dockerComposeWithPortableWindowsPaths,
@@ -345,6 +345,16 @@ type RunProjectSetupInput = ExecutionContextInput & {
 };
 
 type PrepareProjectPreviewInput = RunProjectSetupInput;
+
+type ApplyProjectPreviewInitializationInput = {
+  databaseMode: "existing" | "compose";
+  previewManifest: PreviewManifest;
+  reason: string;
+  repairSessionId: string;
+  runConfigurations: ProjectRunConfiguration[];
+  storyId: string;
+  worktree: string;
+};
 
 type CheckHostDependenciesInput = {
   runtimeProfile?: RuntimeProfileId;
@@ -3219,9 +3229,82 @@ export async function refreshProjectPreviewDependencies(worktreeInput: string) {
   const state = await readPreviewRuntimeFileState(worktree);
   if (state.desiredStatus !== "running")
     return { status: "not_running" as const };
+  await refreshProjectDependencyArtifacts(worktree);
   previewRecoveryCircuit.reset(worktree);
   await controlProjectPreview({ action: "restart", worktree });
   return { status: "ready" as const };
+}
+
+export async function applyProjectPreviewInitialization(
+  input: ApplyProjectPreviewInitializationInput,
+) {
+  const worktree = resolveRuntimePath(input.worktree);
+  const state = await readPreviewRuntimeFileState(worktree);
+  if (state.desiredStatus === "running") {
+    await controlProjectPreview({ action: "stop", worktree });
+  }
+  await prepareProjectPreviewArtifacts({
+    executionId: `preview-repair:${input.storyId}`,
+    storyId: input.storyId,
+    worktree,
+    previewManifest: input.previewManifest,
+    runConfigurations: input.runConfigurations,
+    runConfigurationId:
+      state.desiredStatus === "running"
+        ? state.selectedConfigurationId
+        : undefined,
+    hostDependenciesChecked: true,
+    runtimeProfile: "local-container",
+  });
+  if (state.desiredStatus === "running") {
+    await controlProjectPreview({ action: "start", worktree });
+    await writeProjectPreviewRepairCandidate(worktree, input);
+  }
+}
+
+async function writeProjectPreviewRepairCandidate(
+  worktree: string,
+  input: ApplyProjectPreviewInitializationInput,
+) {
+  const sourceTree = await gitSnapshot({
+    id: `preview-repair-${input.storyId}`,
+    root: worktree,
+  });
+  await writeRuntimeJson(
+    joinWorkspacePath(
+      worktree,
+      ".blame",
+      "initialization",
+      "preview-repair.json",
+    ),
+    {
+      databaseMode: input.databaseMode,
+      previewManifest: input.previewManifest,
+      reason: input.reason,
+      repairSessionId: input.repairSessionId,
+      runConfigurations: input.runConfigurations,
+      sourceTree,
+    },
+  );
+}
+
+async function refreshProjectDependencyArtifacts(worktree: string) {
+  const [manifest, runConfigurations, state] = await Promise.all([
+    readProjectPreviewManifest(worktree),
+    readProjectRunConfigurations(worktree),
+    readPreviewRuntimeFileState(worktree),
+  ]);
+  if (!manifest) return repairProjectCompose(worktree);
+  await prepareProjectPreviewArtifacts({
+    executionId: "preview-dependency-refresh",
+    storyId: "preview-dependency-refresh",
+    worktree,
+    previewManifest: manifest,
+    runConfigurations,
+    runConfigurationId: state.selectedConfigurationId,
+    hostDependenciesChecked: true,
+    runtimeProfile: "local-container",
+  });
 }
 
 async function previewRecoveryConfigurationFingerprint(
@@ -3251,10 +3334,7 @@ async function previewRecoveryConfigurationFingerprint(
 }
 
 async function previewRecoveryFingerprintFiles(worktree: string) {
-  const paths = dependencyHashFiles.map((file) => ({
-    file,
-    path: joinWorkspacePath(worktree, file),
-  }));
+  const paths = await dependencyInputPaths(worktree);
   const contents = await readExistingRuntimeFiles(
     paths.map(({ path }) => path),
   );
@@ -4735,11 +4815,7 @@ async function dependencyVolumeHashForWorktree(
   worktree: string,
   compose: string,
 ) {
-  const hash = createHash("sha256");
-  const paths = dependencyHashFiles.map((file) => ({
-    file,
-    path: joinWorkspacePath(worktree, file),
-  }));
+  const paths = await dependencyInputPaths(worktree);
   const contents = await readExistingRuntimeFiles(
     paths.map(({ path }) => path),
   );
@@ -4747,15 +4823,31 @@ async function dependencyVolumeHashForWorktree(
     const content = contents[path];
     return typeof content === "string" ? [{ content, file }] : [];
   });
-  for (const { content, file } of foundInputs) {
+  for (const { file } of foundInputs) {
     await appendRecoveryLog(worktree, `dependency hash input: ${file}`);
-    hash.update(file);
-    hash.update("\0");
-    hash.update(content);
-    hash.update("\0");
   }
-  if (foundInputs.length === 0) return dependencyVolumeHash(compose);
-  return hash.digest("hex").slice(0, 12);
+  return dependencyVolumeHashFromInputs(foundInputs, compose);
+}
+
+async function dependencyInputPaths(worktree: string) {
+  const rootPaths = dependencyHashFiles.map((file) => ({
+    file,
+    path: joinWorkspacePath(worktree, file),
+  }));
+  const manifests = await findProjectFilesByName(worktree, "package.json");
+  const manifestPaths = manifests.map((path) => ({
+    file: relative(worktree, path).split(sep).join("/"),
+    path,
+  }));
+  return uniqueDependencyInputPaths([...rootPaths, ...manifestPaths]);
+}
+
+function uniqueDependencyInputPaths(
+  paths: Array<{ file: string; path: string }>,
+) {
+  return Array.from(
+    new Map(paths.map((input) => [input.path, input])).values(),
+  );
 }
 
 function composePreviewOrigin(compose: string) {

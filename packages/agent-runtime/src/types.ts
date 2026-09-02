@@ -239,6 +239,11 @@ export type StartDevelopmentSessionInput = {
   workspaceMode?: "local-container" | "cloud-mirror";
   previewDevtoolsScope?: string;
   codePractices?: ProjectCodePracticePreference[];
+  projectInitialization?: {
+    previewManifest: PreviewManifest;
+    runConfigurations: ProjectRunConfiguration[];
+    databaseMode?: ProjectInitializationDatabaseMode | null;
+  };
   backend?: AgentBackendConfig;
   executionId?: string;
   storyId?: string;
@@ -595,6 +600,7 @@ export type RepairProjectInitializationInput = {
   credentialLabel?: string;
   previewManifest: PreviewManifest;
   runConfigurations: ProjectRunConfiguration[];
+  preferences?: ProjectInitializationPreferences;
   diagnostics:
     | ProjectInitializationDiagnostics
     | ProjectInitializationImpactDiagnostics;

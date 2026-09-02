@@ -9,6 +9,7 @@ import {
   dockerComposeWithCorepackPnpm,
   dockerComposeWithDependencyVolumes,
   dockerComposeWithHostFileMounts,
+  dependencyVolumeHashFromInputs,
 } from "./workspace-compose.ts";
 
 test("allocates explicit localhost ports for runtime previews", async () => {
@@ -427,6 +428,25 @@ test("uses explicit dependency volume key for preview worktrees", () => {
     /"blame_node_modules_abc123abc123:\/workspace\/node_modules"/,
   );
   assert.match(result, /blame\.dependencies\.cache\.key: "abc123abc123"/);
+});
+
+test("changes dependency volume keys when a nested manifest changes", () => {
+  const compose = "services:\n  web:\n    image: node:22";
+  const before = dependencyVolumeHashFromInputs(
+    [{ content: '{"dependencies":{}}', file: "apps/web/package.json" }],
+    compose,
+  );
+  const after = dependencyVolumeHashFromInputs(
+    [
+      {
+        content: '{"dependencies":{"three":"^0.180.0"}}',
+        file: "apps/web/package.json",
+      },
+    ],
+    compose,
+  );
+
+  assert.notEqual(after, before);
 });
 
 test("replaces generated node modules volume with dependency keyed volume", () => {

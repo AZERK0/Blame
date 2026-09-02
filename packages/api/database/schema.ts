@@ -746,7 +746,7 @@ export class ProjectDeploymentSchema extends BaseModel {
 }
 
 export class ProjectInitializationSchema extends BaseModel {
-  static $columns = ['agentModelId', 'agentProviderId', 'clineSessionId', 'createdAt', 'error', 'previewManifest', 'projectId', 'repairReason', 'runConfigurations', 'status', 'step', 'updatedAt'] as const
+  static $columns = ['agentModelId', 'agentProviderId', 'clineSessionId', 'createdAt', 'databaseMode', 'error', 'previewManifest', 'projectId', 'repairReason', 'runConfigurations', 'status', 'step', 'updatedAt'] as const
   $columns = ProjectInitializationSchema.$columns
   @column()
   declare agentModelId: string | null
@@ -756,6 +756,8 @@ export class ProjectInitializationSchema extends BaseModel {
   declare clineSessionId: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
+  @column()
+  declare databaseMode: string | null
   @column()
   declare error: string | null
   @column()

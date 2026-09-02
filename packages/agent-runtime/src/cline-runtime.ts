@@ -129,8 +129,10 @@ import {
   runSecurityValidation,
 } from "./security-audit-runtime.js";
 import {
+  parseProjectInitializationRepairPayload,
   parseProjectInitializationRepairResult,
   projectInitializationRepairPrompt,
+  projectInitializationRepairResultSchema,
 } from "./project-initialization-repair.js";
 import {
   collectProjectInitializationImpactDiagnostics,
@@ -157,6 +159,7 @@ import {
   previewContainerLogsTool,
   previewDevtoolsMcpTools,
   previewDevtoolsTool,
+  previewInitializationRepairTool,
   previewRuntimeContext,
   type PreviewRuntimeContext,
   type PreviewToolRuntimeOptions,
@@ -210,8 +213,11 @@ import type {
   OAuthCredentials,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
+  PreviewManifest,
   ProjectCodePracticeKey,
   ProjectCodePracticePreference,
+  ProjectInitializationDatabaseMode,
+  ProjectRunConfiguration,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
@@ -286,6 +292,15 @@ type RuntimeStartSessionInput = StartSessionInput & {
   enableSpawnAgent?: boolean;
   nativeCompletion?: boolean;
   taskObjective?: string;
+  projectInitialization?: StartDevelopmentSessionInput["projectInitialization"];
+};
+
+type DevelopmentPreviewInitialization = NonNullable<
+  StartDevelopmentSessionInput["projectInitialization"]
+>;
+
+type DevelopmentPreviewState = {
+  initialization: DevelopmentPreviewInitialization;
 };
 
 type RuntimeSessionSummary = {
@@ -329,8 +344,8 @@ type CodePracticesAttemptOutcome =
   | { complete: false; correction: InitializationCorrection };
 
 type ProjectInitializationRepairAttempt = {
+  result: unknown;
   sessionId: string;
-  text: string;
 };
 
 type StoryMergePreparation = {
@@ -365,6 +380,17 @@ type DevelopmentPromptInput = Pick<
   Pick<SendDevelopmentSessionInput, "feedbackOnly">;
 
 type RuntimeOptions = PreviewToolRuntimeOptions & {
+  applyPreviewInitialization?(input: {
+    databaseMode: ProjectInitializationDatabaseMode;
+    reason: string;
+    repairSessionId: string;
+    previewManifest: PreviewManifest;
+    runConfigurations: ProjectRunConfiguration[];
+    scope?: string;
+    storyId?: string;
+    workspaceMode?: "local-container" | "cloud-mirror";
+    worktree: string;
+  }): Promise<{ status: "applied" | "unavailable" }>;
   createCore?(backend?: AgentBackendConfig): Promise<ClineCore>;
   developmentHarness?: "blame" | "cline";
   openExternalUrl?(url: string): void;
@@ -794,17 +820,18 @@ export class BlameAgentRuntime {
             })
           : undefined;
       const previewContext = previewRuntimeContext(input);
+      const previewOptions = this.developmentPreviewOptions(input);
       const previewMcpTools = input.clineDefaultTools
         ? []
         : await previewDevtoolsMcpTools(
-            this.options,
+            previewOptions,
             previewContext,
             productionLogger,
           );
       const standardTools = input.clineDefaultTools
         ? undefined
         : runtimeTools(
-            this.options,
+            previewOptions,
             input.workspaceRoot,
             previewContext,
             taskContract,
@@ -828,7 +855,7 @@ export class BlameAgentRuntime {
             initialTaskBriefing,
             objective: input.taskObjective ?? input.prompt,
             readOnlyTools: readOnlyRuntimeTools(
-              this.options,
+              previewOptions,
               input.workspaceRoot,
               previewContext,
               taskContract,
@@ -924,10 +951,12 @@ export class BlameAgentRuntime {
         source: "blame-desktop",
         toolPolicies: input.clineDefaultTools
           ? clineDefaultToolPolicies()
-          : toolPolicies(
-              !!input.autoApproveWriteTools,
-              previewMcpTools.map(({ name }) => name),
-            ),
+          : toolPolicies(!!input.autoApproveWriteTools, [
+              ...previewMcpTools.map(({ name }) => name),
+              ...(previewOptions.repairPreviewInitialization
+                ? ["repair_preview_initialization"]
+                : []),
+            ]),
       } as const;
       this.sessionStartInputs.set(sessionId, startInput);
       if (input.clineDefaultTools) this.clineDefaultSessions.add(sessionId);
@@ -2010,13 +2039,13 @@ export class BlameAgentRuntime {
         correction,
       );
       try {
-        return parseProjectInitializationRepairAttempt(result, scan);
+        return parseProjectInitializationRepairAttempt(result, scan, input);
       } catch (error) {
         if (attempt === maxInitializationAttempts) throw error;
         correction = this.projectInitializationRetry(
           input,
           "project_initialization_repair",
-          result.text,
+          result.result,
           error,
         );
       }
@@ -2033,20 +2062,25 @@ export class BlameAgentRuntime {
     credential: InitializationCredential,
     correction?: InitializationCorrection,
   ): Promise<ProjectInitializationRepairAttempt> {
+    const submitTool = projectInitializationRepairSubmitTool();
     const session = await this.agentTelemetry.runOperation(
       input,
       "project_initialization_repair",
       () =>
         cline.start({
           prompt: projectInitializationRepairPrompt(input, scan, correction),
-          config: initializationRepairConfig(input, credential),
+          config: initializationRepairConfig(
+            input,
+            credential,
+            submitTool.tool,
+          ),
           interactive: false,
           source: "blame-project-initialization-repair",
           toolPolicies: initializationToolPolicies(),
         }) as Promise<RuntimeClineResult>,
       credential.authMethod,
     );
-    return projectInitializationRepairAttempt(session);
+    return collectProjectInitializationRepairAttempt(session, submitTool);
   }
 
   private projectInitializationRetry(
@@ -3470,9 +3504,108 @@ export class BlameAgentRuntime {
       backend: input.backend,
       executionId: input.executionId,
       storyId: input.storyId,
+      projectInitialization: input.projectInitialization,
     });
     this.sessionApiConnections.set(session.sessionId, input.apiConnection);
     return session;
+  }
+
+  private developmentPreviewOptions(
+    input: RuntimeStartSessionInput,
+  ): RuntimeOptions {
+    if (
+      !input.projectInitialization ||
+      !this.options.applyPreviewInitialization
+    ) {
+      return this.options;
+    }
+    const state = { initialization: input.projectInitialization };
+    return {
+      ...this.options,
+      repairPreviewInitialization: (preview) =>
+        this.repairDevelopmentPreview(input, preview, state),
+    };
+  }
+
+  private async repairDevelopmentPreview(
+    input: RuntimeStartSessionInput,
+    preview: PreviewRuntimeContext,
+    state: DevelopmentPreviewState,
+  ) {
+    const repair = await this.repairProjectInitialization(
+      await this.developmentPreviewRepairInput(input, preview, state),
+    );
+    if (!repair.previewManifest || !repair.runConfigurations) {
+      return {
+        classification: repair.classification,
+        reason: repair.reason,
+        status: "not_repairable" as const,
+      };
+    }
+    const applied = await this.options.applyPreviewInitialization!({
+      ...preview,
+      databaseMode: state.initialization.databaseMode ?? "compose",
+      previewManifest: repair.previewManifest,
+      reason: repair.reason,
+      repairSessionId: repair.sessionId,
+      runConfigurations: repair.runConfigurations,
+    });
+    if (applied.status === "applied") {
+      state.initialization = {
+        ...state.initialization,
+        previewManifest: repair.previewManifest,
+        runConfigurations: repair.runConfigurations,
+      };
+    }
+    return {
+      ...applied,
+      classification: repair.classification,
+      reason: repair.reason,
+    };
+  }
+
+  private async developmentPreviewRepairInput(
+    input: RuntimeStartSessionInput,
+    preview: PreviewRuntimeContext,
+    state: DevelopmentPreviewState,
+  ): Promise<RepairProjectInitializationInput> {
+    return {
+      apiConnection: input.apiConnection,
+      providerId: input.providerId,
+      modelId: input.modelId,
+      credentialLabel: input.credentialLabel,
+      reasoningEffort: input.reasoningEffort,
+      cwd: input.cwd,
+      workspaceRoot: input.workspaceRoot,
+      previewManifest: state.initialization.previewManifest,
+      runConfigurations: state.initialization.runConfigurations,
+      preferences: {
+        database: { mode: state.initialization.databaseMode ?? "compose" },
+      },
+      diagnostics: await this.previewInitializationDiagnostics(preview),
+      backend: input.backend,
+      executionId: input.executionId,
+      storyId: input.storyId,
+    };
+  }
+
+  private async previewInitializationDiagnostics(
+    preview: PreviewRuntimeContext,
+  ) {
+    const [target, logs] = await Promise.all([
+      this.options.previewDevtools?.({ ...preview, waitFor: "none" }),
+      this.options.previewContainerLogs?.(preview),
+    ]);
+    return {
+      setupLog: "",
+      launchError:
+        target?.message ?? "Managed preview initialization is obsolete.",
+      composeConfig: "",
+      composePs: "",
+      serviceLogs: {
+        preview: JSON.stringify(logs ?? {}).slice(0, 32_000),
+      },
+    };
   }
 
   private async startClineDevelopmentSession(
@@ -3971,6 +4104,41 @@ function projectInitializationSubmitTool(): StructuredResultSubmitTool {
   return submit;
 }
 
+function projectInitializationRepairSubmitTool(): StructuredResultSubmitTool {
+  const submit: StructuredResultSubmitTool = {
+    input: undefined,
+    tool: {
+      name: "submit_project_initialization_repair",
+      description: "Submit the complete project initialization diagnosis.",
+      inputSchema: projectInitializationRepairResultSchema,
+      lifecycle: { completesRun: true },
+      execute(input: unknown) {
+        submit.input = input;
+        return { accepted: true };
+      },
+    },
+  };
+  return submit;
+}
+
+function collectProjectInitializationRepairAttempt(
+  session: RuntimeClineResult,
+  submitTool: StructuredResultSubmitTool,
+): ProjectInitializationRepairAttempt {
+  const result =
+    submitTool.input ??
+    structuredResultInputFromResult(
+      session.result,
+      "submit_project_initialization_repair",
+    ) ??
+    session.result?.text;
+  if (!result)
+    throw new Error(
+      "Project initialization repair agent did not return a result",
+    );
+  return { result, sessionId: session.sessionId };
+}
+
 async function collectProjectInitializationAttempt(
   cline: ClineCore,
   session: RuntimeClineResult,
@@ -4021,24 +4189,26 @@ function parsedCodePracticesAttempt(
   };
 }
 
-function projectInitializationRepairAttempt(
-  session: RuntimeClineResult,
-): ProjectInitializationRepairAttempt {
-  const text = session.result?.text;
-  if (!text)
-    throw new Error(
-      "Project initialization repair agent did not return a result",
-    );
-  return { sessionId: session.sessionId, text };
-}
-
 function parseProjectInitializationRepairAttempt(
   attempt: ProjectInitializationRepairAttempt,
   scan: ProjectInitializationScan,
+  input: RepairProjectInitializationInput,
 ) {
+  const repair =
+    typeof attempt.result === "string"
+      ? parseProjectInitializationRepairResult(
+          attempt.result,
+          scan,
+          input.preferences,
+        )
+      : parseProjectInitializationRepairPayload(
+          attempt.result,
+          scan,
+          input.preferences,
+        );
   return {
     sessionId: attempt.sessionId,
-    ...parseProjectInitializationRepairResult(attempt.text, scan),
+    ...repair,
   };
 }
 
@@ -4097,6 +4267,7 @@ function runtimeTools(
         ]
       : []),
     previewDevtoolsTool(options, previewContext),
+    previewInitializationRepairTool(options, previewContext),
     previewContainerLogsTool(options, previewContext),
     ...previewMcpTools,
   ].filter((tool): tool is AgentTool => Boolean(tool));
@@ -4221,45 +4392,66 @@ async function projectInitializationInputFromMessages(
 }
 
 function projectInitializationInputFromResult(result: unknown) {
+  return structuredResultInputFromResult(
+    result,
+    "submit_project_initialization",
+  );
+}
+
+function structuredResultInputFromResult(result: unknown, toolName: string) {
   const payload = asRecord(result);
   const toolCalls = Array.isArray(payload.toolCalls) ? payload.toolCalls : [];
   for (const call of toolCalls) {
     const record = asRecord(call);
-    if (record.name === "submit_project_initialization") {
+    if (record.name === toolName) {
       return record.input;
     }
   }
-  return projectInitializationInputFromMessageList(payload.messages);
+  return structuredResultInputFromMessageList(payload.messages, toolName);
 }
 
 function projectInitializationInputFromMessageList(value: unknown) {
+  return structuredResultInputFromMessageList(
+    value,
+    "submit_project_initialization",
+  );
+}
+
+function structuredResultInputFromMessageList(
+  value: unknown,
+  toolName: string,
+) {
   const messages = Array.isArray(value) ? value : asRecord(value).messages;
   if (!Array.isArray(messages)) return undefined;
   for (const message of messages) {
     const content = asRecord(message).content;
     if (!Array.isArray(content)) continue;
     for (const part of content) {
-      const input = projectInitializationInputFromMessagePart(part);
+      const input = structuredResultInputFromMessagePart(part, toolName);
       if (input) return input;
     }
   }
   return undefined;
 }
 
-function projectInitializationInputFromMessagePart(value: unknown) {
+function structuredResultInputFromMessagePart(
+  value: unknown,
+  toolName: string,
+) {
   const part = asRecord(value);
   const name =
     stringValue(part.name) ??
     stringValue(part.toolName) ??
     stringValue(asRecord(part.toolCall).name) ??
     stringValue(asRecord(part.toolCall).toolName);
-  if (name !== "submit_project_initialization") return undefined;
+  if (name !== toolName) return undefined;
   return part.input ?? asRecord(part.toolCall).input;
 }
 
 function initializationRepairConfig(
   input: RepairProjectInitializationInput,
   credential: { apiKey: string; baseUrl: string | null },
+  submitTool: AgentTool,
 ) {
   return appendProductionConfig({
     providerId: input.providerId,
@@ -4270,9 +4462,10 @@ function initializationRepairConfig(
     systemPrompt: loadPrompt("project-initialization-repair-system"),
     cwd: input.cwd,
     workspaceRoot: input.workspaceRoot,
-    enableTools: false,
+    enableTools: true,
     enableSpawnAgent: false,
     enableAgentTeams: false,
+    extraTools: [submitTool],
     maxIterations: 4,
   });
 }
@@ -5760,6 +5953,7 @@ function resultStatus(payload: Record<string, unknown>) {
 export function initializationToolPolicies() {
   return Object.fromEntries([
     ["submit_project_initialization", { autoApprove: true }],
+    ["submit_project_initialization_repair", { autoApprove: true }],
     ...legacyDirectWorkspaceTools.map((name) => [
       name,
       initializationFallbackReadTools.has(name)
