@@ -7,6 +7,10 @@ import type {
   SaveOAuthCredentialInput,
   SaveProviderCredentialInput,
 } from "./types.js";
+import type {
+  ProjectMemoryCandidate,
+  ProjectMemoryRecord,
+} from "./harness/project-memory.js";
 
 type ApiResponse<T> = {
   data: T;
@@ -89,6 +93,33 @@ export function resolveProviderCredential(
     {
       body: JSON.stringify(input),
       method: "POST",
+    },
+  );
+}
+
+export function listProjectMemories(
+  connection: ApiConnection,
+  projectId: string,
+) {
+  return request<ProjectMemoryRecord[]>(
+    connection,
+    `/projects/${encodeURIComponent(projectId)}/agent-memories`,
+    { signal: AbortSignal.timeout(1_500) },
+  );
+}
+
+export function saveProjectMemory(
+  connection: ApiConnection,
+  projectId: string,
+  candidate: ProjectMemoryCandidate,
+) {
+  return request<ProjectMemoryRecord>(
+    connection,
+    `/projects/${encodeURIComponent(projectId)}/agent-memories`,
+    {
+      body: JSON.stringify(candidate),
+      method: "POST",
+      signal: AbortSignal.timeout(1_500),
     },
   );
 }

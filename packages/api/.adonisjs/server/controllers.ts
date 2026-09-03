@@ -17,6 +17,7 @@ export const controllers = {
   PreviewEdgeInternal: () => import('#controllers/preview_edge_internal_controller'),
   PreviewSessions: () => import('#controllers/preview_sessions_controller'),
   Profile: () => import('#controllers/profile_controller'),
+  ProjectAgentMemories: () => import('#controllers/project_agent_memories_controller'),
   ProjectCodePracticeAnalyses: () => import('#controllers/project_code_practice_analyses_controller'),
   ProjectCodePractices: () => import('#controllers/project_code_practices_controller'),
   ProjectDeployments: () => import('#controllers/project_deployments_controller'),

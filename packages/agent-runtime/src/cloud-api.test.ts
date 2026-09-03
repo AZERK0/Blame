@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { listProviders } from "./cloud-api.js";
+import {
+  listProjectMemories,
+  listProviders,
+  saveProjectMemory,
+} from "./cloud-api.js";
 
 test("loads the provider catalog and recommendations only from the protected API", async () => {
   const originalFetch = globalThis.fetch;
@@ -27,6 +31,44 @@ test("loads the provider catalog and recommendations only from the protected API
     assert.deepEqual(providers.connected, ["anthropic"]);
     assert.equal(providers.recommendations.all[0]?.modelId, "claude-test");
     assert.equal(providers.credentials.length, 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("loads and stores project memory through the scoped API", async () => {
+  const originalFetch = globalThis.fetch;
+  const requests: Array<{ body?: string; method?: string; url: string }> = [];
+  globalThis.fetch = async (input, init) => {
+    requests.push({
+      body: typeof init?.body === "string" ? init.body : undefined,
+      method: init?.method,
+      url: input.toString(),
+    });
+    return jsonResponse({ data: init?.method === "POST" ? memory : [memory] });
+  };
+
+  try {
+    const connection = { url: "https://api.blame.test/api/v1" };
+    assert.equal(
+      (await listProjectMemories(connection, "project/a"))[0]?.id,
+      "memory",
+    );
+    await saveProjectMemory(connection, "project/a", memory);
+    assert.deepEqual(
+      requests.map(({ method, url }) => ({ method, url })),
+      [
+        {
+          method: undefined,
+          url: "https://api.blame.test/api/v1/projects/project%2Fa/agent-memories",
+        },
+        {
+          method: "POST",
+          url: "https://api.blame.test/api/v1/projects/project%2Fa/agent-memories",
+        },
+      ],
+    );
+    assert.match(requests[1]?.body ?? "", /carousel/u);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -73,6 +115,18 @@ const credentials = [
   credential("work", "credential-work"),
   credential("personal", "credential-personal"),
 ];
+
+const memory = {
+  createdAt: "2026-09-03T00:00:00.000Z",
+  files: [{ hash: "a".repeat(64), path: "src/carousel.ts" }],
+  fingerprint: "b".repeat(64),
+  id: "memory",
+  objective: "Improve carousel navigation",
+  projectId: "project/a",
+  sourceRevisionId: "revision",
+  summary: "Kept carousel state in its controller.",
+  symbols: ["CarouselController"],
+};
 
 function credential(label: string, id: string) {
   return {

@@ -11,6 +11,7 @@ import type {
   BenchmarkRuntime,
   BenchmarkSessionInput,
 } from "./contracts.js";
+import { ProjectMemoryFile } from "./project-memory-file.js";
 
 class BenchmarkTimeoutError extends Error {}
 class BenchmarkCancelledError extends Error {}
@@ -22,7 +23,11 @@ export async function runBenchmark(
   const startedAt = (dependencies.now ?? currentDate)();
   const recorder = dependencies.createRecorder();
   const terminal = terminalObserver(recorder);
-  const runtime = dependencies.createRuntime(terminal.events, config.harness);
+  const runtime = dependencies.createRuntime(
+    terminal.events,
+    config.harness,
+    config,
+  );
   let outcome;
   try {
     outcome = await executeSession(
@@ -70,10 +75,19 @@ async function executeSession(
 export function runtimeFactory(
   events: { emit(event: AgentEvent): void },
   harness: BenchmarkConfig["harness"],
+  config: BenchmarkConfig,
 ) {
   return harness === "cline"
     ? createClineBaselineRuntime(events)
-    : new BlameAgentRuntime(events);
+    : new BlameAgentRuntime(events, {
+        ...(config.projectMemoryFile
+          ? {
+              projectMemoryPersistence: new ProjectMemoryFile(
+                config.projectMemoryFile,
+              ),
+            }
+          : {}),
+      });
 }
 
 function sessionInput(config: BenchmarkConfig): BenchmarkSessionInput {
@@ -84,6 +98,7 @@ function sessionInput(config: BenchmarkConfig): BenchmarkSessionInput {
     maxIterations: config.maxIterations,
     modelId: config.modelId,
     providerId: config.providerId,
+    projectId: config.projectId,
     reasoningEffort: config.reasoningEffort,
     summary: config.instruction,
     title: config.taskId,

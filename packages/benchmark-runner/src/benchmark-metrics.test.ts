@@ -120,6 +120,33 @@ test("aggregates provider context composition notices", () => {
   assert.equal(composition.validatedEditReplacements, 6);
 });
 
+test("records selective project memory without its content", () => {
+  const collector = new BenchmarkMetricsCollector();
+  collector.record({
+    type: "notice",
+    payload: {
+      kind: "project_memory_selected",
+      metrics: {
+        bytes: 620,
+        candidates: 12,
+        relevant: 3,
+        selected: 2,
+        stale: 1,
+      },
+    },
+  });
+  const memory = collector.summary(new Date(0), new Date(1)).context
+    .projectMemory;
+  assert.deepEqual(memory, {
+    candidates: 12,
+    injectedBytes: 620,
+    relevant: 3,
+    requests: 1,
+    selected: 2,
+    stale: 1,
+  });
+});
+
 function usageEvent(inputTokens: number): AgentEvent {
   return { type: "usage", payload: { usage: { inputTokens } } };
 }

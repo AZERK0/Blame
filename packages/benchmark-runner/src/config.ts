@@ -60,7 +60,13 @@ function benchmarkConfig(
       "max iterations",
     ),
     modelId: requiredEnvironment(environment, "BLAME_MODEL_ID"),
+    projectMemoryFile: options.get("project-memory-file")
+      ? resolve(cwd, options.get("project-memory-file")!)
+      : undefined,
     providerId: requiredEnvironment(environment, "BLAME_PROVIDER_ID"),
+    projectId:
+      options.get("project-id")?.trim() ||
+      (options.has("project-memory-file") ? "terminal-bench" : undefined),
     reasoningEffort,
     taskId: options.get("task-id")?.trim() || "terminal-bench",
     timeoutMs:

@@ -1845,10 +1845,12 @@ test("finish_task reruns the selected build after the final edit", async () => {
       await workspace.tasks.run({ kind: "project", task: "lint" });
       const activities: string[] = [];
       let verified = false;
+      let memoryFiles: Array<{ hash: string; path: string }> | undefined;
       const tool = createFinishTaskTool({
         conversationId: sessionId,
         onComplete: (notification) => {
           verified = notification.verified;
+          memoryFiles = notification.memory?.files;
         },
         onValidationActivity: ({ input, phase }) => {
           if (input.kind === "project")
@@ -1867,6 +1869,10 @@ test("finish_task reruns the selected build after the final edit", async () => {
         sessionId,
       ).completionSnapshot();
       assert.equal(verified, true, JSON.stringify(snapshot));
+      assert.deepEqual(
+        memoryFiles?.map(({ path }) => path),
+        ["value.ts"],
+      );
     },
   );
 });
@@ -1905,8 +1911,12 @@ test("finish_task reuses a current unavailable build result", async () => {
       if (validation.status === "blocked")
         assert.equal(validation.category, "environment");
       let validationActivities = 0;
+      let memoryCreated = false;
       const tool = createFinishTaskTool({
         conversationId: sessionId,
+        onComplete: (notification) => {
+          memoryCreated = Boolean(notification.memory);
+        },
         onValidationActivity: () => {
           validationActivities += 1;
         },
@@ -1918,6 +1928,7 @@ test("finish_task reuses a current unavailable build result", async () => {
         toolCallId: "unavailable-finish",
       } as never);
       assert.equal(validationActivities, 0);
+      assert.equal(memoryCreated, false);
     },
   );
 });

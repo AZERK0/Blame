@@ -80,6 +80,11 @@ import {
 } from "./harness/light-executor.js";
 import { SessionJournal } from "./harness/session-journal.js";
 import {
+  selectProjectMemory,
+  type ProjectMemoryPersistence,
+  type ProjectMemorySelection,
+} from "./harness/project-memory.js";
+import {
   appendInitialTaskBriefing,
   createInitialTaskBriefing,
 } from "./harness/initial-task-briefing.js";
@@ -103,9 +108,11 @@ import {
 import { createConsultSpecialistTool } from "./specialist-consult-tool.js";
 import {
   deleteProviderCredential,
+  listProjectMemories,
   listProviders,
   resolveProviderCredential,
   saveOAuthCredential,
+  saveProjectMemory,
   saveProviderCredential,
 } from "./cloud-api.js";
 import {
@@ -250,6 +257,10 @@ const productionLogger = createProductionLogger();
 const blameTelemetry = getBlameTelemetry();
 const openAICompatibleProviderID = "openai-compatible";
 const runtimePrewarmSessionId = "blame-runtime-prewarm";
+const cloudProjectMemoryPersistence: ProjectMemoryPersistence = {
+  list: listProjectMemories,
+  save: saveProjectMemory,
+};
 
 type MergeConflictRuntimeInput =
   | ApproveAndMergeInput
@@ -400,6 +411,7 @@ type RuntimeOptions = PreviewToolRuntimeOptions & {
   git?(cwd: string, args: string[]): Promise<string>;
   lightWorkspace?: LightWorkspaceExecutor;
   modelInactivityTimeoutMs?: number;
+  projectMemoryPersistence?: ProjectMemoryPersistence;
 };
 
 type SessionTermination = {
@@ -469,6 +481,8 @@ export class BlameAgentRuntime {
     string,
     LightCompletionNotification
   >();
+  private sessionMemoryWrites = new Map<string, Promise<void>>();
+  private sessionDeferredTaskBriefings = new Map<string, string>();
   private sessionTerminalDrains = new Map<string, Promise<void>>();
   private sessionTerminations = new Map<
     string,
@@ -605,6 +619,8 @@ export class BlameAgentRuntime {
     this.sessionEventSignatures.clear();
     this.sessionApiConnections.clear();
     this.sessionToolSequences.clear();
+    await Promise.allSettled(this.sessionMemoryWrites.values());
+    this.sessionMemoryWrites.clear();
     await this.disposeCore();
     this.userInstructionServices.stopAll();
     this.agentTelemetry.shutdown();
@@ -702,6 +718,7 @@ export class BlameAgentRuntime {
       telemetryContext,
     );
     const startedAt = Date.now();
+    const projectMemoryPromise = this.loadProjectMemory(input);
     try {
       const credential = await resolveProviderCredential(input.apiConnection, {
         providerId: input.providerId,
@@ -814,14 +831,24 @@ export class BlameAgentRuntime {
           this.options.modelInactivityTimeoutMs,
         ),
       );
-      const initialTaskBriefing =
-        autoSendPrompt && input.nativeCompletion
-          ? await createInitialTaskBriefing({
+      const [initialTaskBriefing, projectMemory] = await Promise.all([
+        input.nativeCompletion
+          ? createInitialTaskBriefing({
               executor: lightExecutor,
               taskContract,
               workspaceRoot: input.workspaceRoot,
             })
-          : undefined;
+          : undefined,
+        projectMemoryPromise,
+      ]);
+      const taskBriefing = combinedTaskBriefing(
+        initialTaskBriefing,
+        projectMemory?.briefing,
+      );
+      if (!autoSendPrompt && taskBriefing)
+        this.sessionDeferredTaskBriefings.set(sessionId, taskBriefing);
+      if (projectMemory)
+        this.publishProjectMemoryMetrics(sessionId, projectMemory);
       const previewContext = previewRuntimeContext(input);
       const previewOptions = this.developmentPreviewOptions(input);
       const previewMcpTools = input.clineDefaultTools
@@ -843,19 +870,19 @@ export class BlameAgentRuntime {
               ? {
                   conversationId: sessionId,
                   onComplete: (notification) =>
-                    this.recordNativeCompletion(sessionId, notification),
+                    this.recordNativeCompletion(sessionId, notification, input),
                   onValidationActivity: (activity) =>
                     this.publishNativeValidationActivity(sessionId, activity),
                 }
               : undefined,
             previewMcpTools,
-            initialTaskBriefing,
+            taskBriefing,
           );
       const specialistTool = input.enableSpecialistConsult
         ? runtimeConsultSpecialistTool({
             credential: resolvedCredential,
             input,
-            initialTaskBriefing,
+            initialTaskBriefing: taskBriefing,
             objective: input.taskObjective ?? input.prompt,
             readOnlyTools: readOnlyRuntimeTools(
               previewOptions,
@@ -863,7 +890,7 @@ export class BlameAgentRuntime {
               previewContext,
               taskContract,
               lightExecutor,
-              initialTaskBriefing,
+              taskBriefing,
             ),
           })
         : undefined;
@@ -897,10 +924,7 @@ export class BlameAgentRuntime {
       const startInput = {
         ...(autoSendPrompt
           ? {
-              prompt: appendInitialTaskBriefing(
-                input.prompt,
-                initialTaskBriefing,
-              ),
+              prompt: appendInitialTaskBriefing(input.prompt, taskBriefing),
             }
           : {}),
         ...(input.initialMessages?.length
@@ -1184,12 +1208,15 @@ export class BlameAgentRuntime {
         developmentInput.prompt,
       );
     }
+    const briefing = this.sessionDeferredTaskBriefings.get(input.sessionId);
+    this.sessionDeferredTaskBriefings.delete(input.sessionId);
     return this.sendSession(
       {
         sessionId: input.sessionId,
         executionId: input.executionId,
         storyId: input.storyId,
         ...developmentInput,
+        prompt: appendInitialTaskBriefing(developmentInput.prompt, briefing),
       },
       input.feedbackOnly ? "feedback" : undefined,
     );
@@ -2931,8 +2958,61 @@ export class BlameAgentRuntime {
   private recordNativeCompletion(
     sessionId: string,
     notification: LightCompletionNotification,
+    input: RuntimeStartSessionInput,
   ) {
     this.sessionSubmittedSummaries.set(sessionId, notification);
+    if (!input.projectId || !notification.memory) return;
+    const write = this.projectMemoryPersistence()
+      .save(input.apiConnection, input.projectId, notification.memory)
+      .then(() => undefined)
+      .catch(() => undefined);
+    this.sessionMemoryWrites.set(sessionId, write);
+    void write.then(() => this.clearProjectMemoryWrite(sessionId, write));
+  }
+
+  private clearProjectMemoryWrite(sessionId: string, write: Promise<void>) {
+    if (this.sessionMemoryWrites.get(sessionId) === write)
+      this.sessionMemoryWrites.delete(sessionId);
+  }
+
+  private async loadProjectMemory(input: RuntimeStartSessionInput) {
+    if (!input.nativeCompletion || !input.projectId) return undefined;
+    try {
+      const records = await this.projectMemoryPersistence().list(
+        input.apiConnection,
+        input.projectId,
+      );
+      return selectProjectMemory({
+        objective: input.taskObjective ?? input.prompt,
+        records,
+        workspaceRoot: input.workspaceRoot,
+      });
+    } catch {
+      return undefined;
+    }
+  }
+
+  private projectMemoryPersistence() {
+    return (
+      this.options.projectMemoryPersistence ?? cloudProjectMemoryPersistence
+    );
+  }
+
+  private publishProjectMemoryMetrics(
+    sessionId: string,
+    selection: ProjectMemorySelection,
+  ) {
+    this.events?.emit(
+      this.withExecutionId(sessionId, {
+        type: "notice",
+        sessionId,
+        payload: {
+          kind: "project_memory_selected",
+          metrics: selection.metrics,
+          phase: "completed",
+        },
+      }),
+    );
   }
 
   private async recordSessionJournalTerminal(
@@ -3057,6 +3137,8 @@ export class BlameAgentRuntime {
       // Session cleanup must continue even when a provider unsubscribe fails.
     }
     this.clearSessionState(sessionId, preserveTelemetry);
+    await this.sessionMemoryWrites.get(sessionId)?.catch(() => undefined);
+    this.sessionMemoryWrites.delete(sessionId);
     const logFile = this.sessionLogFiles.get(sessionId);
     this.sessionLogFiles.delete(sessionId);
     await this.sessionLogWrites.get(sessionId)?.catch(() => undefined);
@@ -3076,6 +3158,7 @@ export class BlameAgentRuntime {
     if (!terminationActive) this.sessionExecutionIds.delete(sessionId);
     this.sessionIterations.delete(sessionId);
     this.sessionSubmittedSummaries.delete(sessionId);
+    this.sessionDeferredTaskBriefings.delete(sessionId);
     this.sessionSpawnAgentActiveCounts.delete(sessionId);
     for (const key of this.sessionToolInputs.keys()) {
       if (key.startsWith(`${sessionId}:`)) this.sessionToolInputs.delete(key);
@@ -3507,6 +3590,7 @@ export class BlameAgentRuntime {
       compaction,
       backend: input.backend,
       executionId: input.executionId,
+      projectId: input.projectId,
       storyId: input.storyId,
       projectInitialization: input.projectInitialization,
     });
@@ -4228,6 +4312,16 @@ function initializationCorrection(
     previousResult: serializedResult ?? String(previousResult),
     validationError: errorMessage(error),
   };
+}
+
+function combinedTaskBriefing(
+  initialTaskBriefing?: string,
+  projectMemoryBriefing?: string,
+) {
+  const briefing = [initialTaskBriefing, projectMemoryBriefing]
+    .filter((value): value is string => Boolean(value))
+    .join("\n");
+  return briefing || undefined;
 }
 
 function runtimeTools(

@@ -830,6 +830,7 @@ export function BacklogPage() {
         previewDevtoolsScope: storyPreviewDevtoolsScope(story.id),
         codePractices: await projectCodePractices(auth, projects),
         executionId,
+        projectId: story.projectId,
         storyId,
       })
       return { ...session, executionId, storyId }

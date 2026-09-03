@@ -319,6 +319,7 @@ async function assertOwnedRowsDeleted(ids: OwnedDataIds, assert: Assert) {
   const rows = await Promise.all([
     db.from('project_initializations').where('project_id', ids.projectId),
     db.from('project_code_practices').where('project_id', ids.projectId),
+    db.from('project_agent_memories').where('project_id', ids.projectId),
     db.from('user_stories').where('project_id', ids.projectId),
     db.from('user_story_comments').where('user_story_id', ids.storyId),
     db.from('user_story_agent_runs').where('user_story_id', ids.storyId),

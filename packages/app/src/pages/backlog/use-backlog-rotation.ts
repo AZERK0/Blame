@@ -246,6 +246,7 @@ export function useBacklogRotation(
         databaseMode: initialization.databaseMode,
       },
       executionId,
+      projectId: detailedStory.projectId,
       storyId,
     })
     void sessionPromise.catch(() => undefined)

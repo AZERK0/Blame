@@ -15,7 +15,9 @@ export type BenchmarkConfig = {
   instruction: string;
   maxIterations: number;
   modelId: string;
+  projectMemoryFile?: string;
   providerId: string;
+  projectId?: string;
   reasoningEffort?: ReasoningSelection;
   taskId: string;
   timeoutMs: number;
@@ -65,8 +67,18 @@ export type BenchmarkContextMetrics = {
   compactions: number;
   maximumInputTokens: number;
   modelRequests: number;
+  projectMemory: BenchmarkProjectMemoryMetrics;
   toolPayloadBytes: number;
   toolPayloadReplayExposureBytes: number;
+};
+
+export type BenchmarkProjectMemoryMetrics = {
+  candidates: number;
+  injectedBytes: number;
+  relevant: number;
+  requests: number;
+  selected: number;
+  stale: number;
 };
 
 export type BenchmarkContextCompositionMetrics = {
@@ -143,6 +155,7 @@ export type BenchmarkRuntime = {
 export type BenchmarkRuntimeFactory = (
   events: AgentRuntimeEvents,
   harness: BenchmarkHarness,
+  config: BenchmarkConfig,
 ) => BenchmarkRuntime;
 
 export type BenchmarkEventRecorder = {

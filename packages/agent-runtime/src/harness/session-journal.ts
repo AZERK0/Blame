@@ -20,7 +20,9 @@ export type JournalChange = {
 export type JournalCompletionSnapshot = {
   changedPaths: string[];
   changes: ReturnType<typeof publicChange>[];
+  files: JournalFileState[];
   sourceRevisionId: string;
+  symbols: string[];
   validations: ReturnType<typeof publicValidation>[];
 };
 
@@ -185,7 +187,9 @@ export class SessionJournal {
     return {
       changedPaths: current.map(({ path }) => path),
       changes,
+      files: currentFileStates(current),
       sourceRevisionId: snapshot.revision.source_revision_id,
+      symbols: [...new Set(changes.flatMap(({ symbols }) => symbols))],
       validations: validations.map(publicValidation),
     };
   }
@@ -290,6 +294,15 @@ export class SessionJournal {
       return [];
     }
   }
+}
+
+function currentFileStates(
+  entries: Array<{ change: JournalChange; path: string }>,
+) {
+  return entries.flatMap(({ change, path }) => {
+    const state = change.files.find((file) => file.path === path);
+    return state ? [{ ...state }] : [];
+  });
 }
 
 function publicChange(change: JournalChange) {

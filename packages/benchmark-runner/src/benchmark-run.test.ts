@@ -52,6 +52,7 @@ test("runs one development session and returns benchmark metrics", async () => {
   assert.equal(result.metrics.tools.calls, 0);
   assert.equal(result.usage?.aggregateUsage?.totalInputTokens, 12);
   assert.equal(inputs[0]?.summary, "Fix the task");
+  assert.equal(inputs[0]?.projectId, "project-1");
   assert.equal(recorder.closed, true);
   assert.equal(shutdown, true);
 });
@@ -149,6 +150,7 @@ function benchmarkConfig(): BenchmarkConfig {
     maxIterations: 64,
     modelId: "model",
     providerId: "provider",
+    projectId: "project-1",
     taskId: "task-1",
     timeoutMs: 1_000,
     workspaceRoot: "/workspace",

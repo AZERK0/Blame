@@ -16,6 +16,8 @@ import { previewInitializationRepairTool } from "./preview-harness-tools.js";
 import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
 import { ClineFreeModelLimitError, ClineNotSubscribedError } from "@cline/llms";
 import { SessionJournal } from "./harness/session-journal.js";
+import { sha256 } from "./harness/light-identity.js";
+import type { ProjectMemoryRecord } from "./harness/project-memory.js";
 import type { AgentEvent } from "./types.js";
 
 import {
@@ -98,6 +100,59 @@ test("starts a Cline baseline without Blame harness tools", async () => {
     assert.equal(capturedStart?.config.extraTools, undefined);
     assert.deepEqual(capturedStart?.localRuntime?.configExtensions, []);
     assert.deepEqual(capturedStart?.toolPolicies, clineDefaultToolPolicies());
+  } finally {
+    globalThis.fetch = originalFetch;
+    await runtime.shutdown();
+    await rm(workspace, { force: true, recursive: true });
+  }
+});
+
+test("injects selected project memory into the first deferred prompt", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "blame-project-memory-"));
+  const originalFetch = globalThis.fetch;
+  const source = "export const carousel = true\n";
+  let sentPrompt = "";
+  const notices: AgentEvent[] = [];
+  await writeFile(join(workspace, "carousel.ts"), source);
+  const core = deferredPromptCore((prompt) => {
+    sentPrompt = prompt;
+  });
+  globalThis.fetch = async () => providerCredentialResponse();
+  const runtime = new BlameAgentRuntime(
+    { emit: (event) => notices.push(event) },
+    {
+      createCore: async () => core as never,
+      projectMemoryPersistence: {
+        list: async () => [projectMemoryRecord(sha256(source))],
+        save: async () => projectMemoryRecord(sha256(source)),
+      },
+    },
+  );
+
+  try {
+    const session = await runtime.sessions.startDevelopment({
+      apiConnection: { url: "https://api.example" },
+      autoSendPrompt: false,
+      cwd: workspace,
+      executionId: "memory-execution",
+      modelId: "model",
+      projectId: "project",
+      providerId: "provider",
+      summary: "Improve carousel keyboard navigation",
+      title: "Carousel navigation",
+      workspaceRoot: workspace,
+    });
+    await runtime.sessions.sendDevelopment({
+      executionId: "memory-execution",
+      sessionId: session.sessionId,
+      storyId: "story",
+      summary: "Improve carousel keyboard navigation",
+      title: "Carousel navigation",
+    });
+
+    assert.match(sentPrompt, /Prior validated work/u);
+    assert.match(sentPrompt, /Kept carousel state/u);
+    assert.ok(notices.some(isProjectMemoryNotice));
   } finally {
     globalThis.fetch = originalFetch;
     await runtime.shutdown();
@@ -721,6 +776,52 @@ function providerCredentialResponse(providerId = "provider") {
       },
     }),
     { headers: { "content-type": "application/json" }, status: 200 },
+  );
+}
+
+function deferredPromptCore(capture: (prompt: string) => void) {
+  return {
+    async abort() {},
+    async dispose() {},
+    async getAccumulatedUsage() {
+      return undefined;
+    },
+    async list() {
+      return [];
+    },
+    async send(input: { prompt: string }) {
+      capture(input.prompt);
+      return { finishReason: "completed", outputText: "Completed" };
+    },
+    async start(input: ClineCoreStartInput) {
+      return { sessionId: input.config.sessionId! };
+    },
+    async stop() {},
+    async subscribe() {
+      return () => undefined;
+    },
+  };
+}
+
+function projectMemoryRecord(hash: string): ProjectMemoryRecord {
+  return {
+    createdAt: "2026-09-03T00:00:00.000Z",
+    files: [{ hash, path: "carousel.ts" }],
+    fingerprint: "a".repeat(64),
+    id: "memory",
+    objective: "Improve carousel navigation",
+    projectId: "project",
+    sourceRevisionId: "revision",
+    summary: "Kept carousel state in its controller.",
+    symbols: ["CarouselController"],
+    validationTaskId: "build",
+  };
+}
+
+function isProjectMemoryNotice(event: AgentEvent) {
+  return (
+    event.type === "notice" &&
+    (event.payload as { kind?: string }).kind === "project_memory_selected"
   );
 }
 

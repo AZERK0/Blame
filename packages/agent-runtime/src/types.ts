@@ -192,6 +192,7 @@ export type StartSessionInput = {
   credentialLabel?: string;
   backend?: AgentBackendConfig;
   executionId?: string;
+  projectId?: string;
   storyId?: string;
 };
 
@@ -247,6 +248,7 @@ export type StartDevelopmentSessionInput = {
   };
   backend?: AgentBackendConfig;
   executionId?: string;
+  projectId?: string;
   storyId?: string;
 };
 

@@ -3314,6 +3314,70 @@ git diff --check
 
 Le runtime contient maintenant 254 tests, le runner 13 et le corpus 7, tous passants. `pnpm check:line-budgets` reste rouge uniquement sur les dépassements globaux déjà recensés ; `light-edit.ts` reste dans la zone de revue mais sous son seuil bloquant. Les artefacts provider complets restent sous `.blame/benchmarks/corpus/` et ne sont pas commités.
 
+### 21.44 Mémoire projet sélective et validée
+
+#### Hypothèse et choix de conception
+
+La mémoire peut éviter de redécouvrir une décision ou une zone du projet entre deux sessions, mais une mémoire injectée systématiquement recrée précisément le problème de dilution qu'elle cherche à résoudre. Les résultats disponibles convergent vers quatre précautions : préférer des épisodes de travail complets aux traces d'actions, rendre la récupération sélective, vérifier la fraîcheur avant utilisation et traiter tout contenu mémorisé comme non fiable. MemOp rapporte un avantage des mémoires d'épisodes alors que sa mémoire au niveau action devient jusqu'à 11,82 fois plus lente et perd jusqu'à 12,5 points de réussite. L'étude contrôlée sur les fichiers `AGENTS.md` générés ne trouve pas de gain significatif et mesure davantage de coût, d'étapes et de raisonnement. Repoformer montre que beaucoup de récupérations ne sont pas utiles et qu'une politique sélective peut les omettre. LongMemEval identifie enfin la mise à jour et l'abstention comme des difficultés centrales ; MINJA et AgentPoison montrent qu'une mémoire persistante constitue aussi une surface d'injection.
+
+Le système livré ne réintroduit donc pas l'ancienne mémoire conversationnelle décrite plus haut. Il ne contient ni transcript, ni journal d'actions, ni base vectorielle, ni extraction par un appel modèle supplémentaire. Un épisode est créé seulement après `finish_task`, lorsque la tâche possède des fichiers effectivement modifiés et une validation passée sur la révision terminale. Il réutilise le résumé final déjà demandé au modèle et lui associe l'objectif, au plus 24 états de fichiers, 32 symboles et l'identité de la validation.
+
+#### Contrat runtime
+
+La récupération est projetée par `projectId` et démarre en parallèle de la résolution du credential et du briefing structurel. Les enregistrements sont scorés lexicalement contre l'objectif courant. Au plus huit candidats pertinents sont inspectés, trois peuvent être injectés et le bloc final ne peut dépasser 1 400 octets UTF-8. Un candidat n'est courant que si tous ses chemins restent dans le workspace et si chaque hash correspond exactement au contenu présent ; un fichier historiquement absent doit être encore absent. Une tâche sans terme discriminant, sans souvenir pertinent ou avec un souvenir ancien reçoit zéro octet de mémoire.
+
+Le texte injecté annonce explicitement des données historiques non fiables, jamais des instructions. Les caractères de contrôle, délimiteurs de balises, guillemets et espaces sont normalisés. La persistance cloud utilise deux routes authentifiées et bornées au projet, une empreinte déterministe, une unicité par projet et une rétention maximale de 64 épisodes. La suppression du projet efface les épisodes en cascade et l'export de compte les inclut. Une lecture ou une écriture mémoire en échec est ignorée : cette capacité ne peut ni empêcher une session, ni transformer un terminal en faux échec. La lecture possède un délai maximal de 1,5 seconde mais s'exécute en parallèle ; l'écriture terminale est asynchrone et seulement drainée à la libération du runtime.
+
+Le chemin `autoSendPrompt: false` de l'application révélait au passage que le briefing initial natif était calculé uniquement pour les sessions envoyant immédiatement leur prompt. Le runtime conserve maintenant ce briefing pour le premier `sendDevelopment`. La mémoire sélectionnée rejoint ce même premier briefing, sans répétition lors des feedbacks suivants. Ce correctif restaure du contexte structurel utile sur le chemin applicatif réel sans agrandir les tours postérieurs.
+
+#### Mesures et validation
+
+Le runner accepte `--project-id` et `--project-memory-file`. L'adaptateur fichier est réservé au benchmark longitudinal, écrit atomiquement et évite de polluer l'API réelle. Les événements enregistrent seulement les compteurs `candidates`, `relevant`, `selected`, `stale` et `bytes` ; aucun contenu mémorisé n'entre dans les artefacts de métriques.
+
+| Cas déterministe | Candidats examinés | Souvenirs injectés | Octets injectés | Résultat |
+| --- | ---: | ---: | ---: | --- |
+| objectif pertinent, hashes courants | au plus 8 | au plus 3 | au plus 1 400 | contexte historique borné |
+| objectif sans rapport | 0 pertinent | 0 | 0 | abstention |
+| au moins un fichier modifié | pertinent puis ancien | 0 | 0 | invalidation complète de l'épisode |
+| terminaison non vérifiée | 0 créé | 0 | 0 | aucune persistance |
+| chemin hors workspace | pertinent puis ancien | 0 | 0 | rejet avant lecture externe |
+
+Les tests complets passent : 260 tests runtime et 16 tests runner. Ils couvrent les bornes et la neutralisation du contenu, la sélection pertinente, l'abstention, l'invalidation par hash, les chemins dangereux, la création uniquement après preuve fraîche, l'API cloud, l'injection sur le premier prompt différé, l'idempotence et l'isolement de l'adaptateur benchmark. Les lint, typechecks et builds de `agent-runtime`, `benchmark-runner`, `api` et `app`, ainsi que le typecheck desktop, passent.
+
+Les trois assertions fonctionnelles de la nouvelle API passent sur MySQL 8.4 vierge : idempotence, isolation propriétaire et rejet d'un payload trop grand. La commande de suite finit néanmoins en erreur pendant le rollback global à cause d'une migration historique qui tente de supprimer un index encore requis par une clé étrangère. Sur la base de développement, un autre échec de cleanup provient d'une migration historique absente. La route et sa migration ont donc été exercées, mais la suite fonctionnelle API complète n'est pas déclarée verte.
+
+Un premier benchmark longitudinal GPT-5.6 Luna a été tenté sur une fixture Git figée à `69aae989c7d3facde2a0cc4e332a281cc3041aa6`. Le provider a rejeté l'authentification après 250 ms, avant événement, requête modèle, outil ou token. Il s'agit d'un échec d'infrastructure ou de credential, pas d'une observation du harness. Aucun gain live de temps, de tokens ou de réussite n'est revendiqué. La comparaison sans mémoire, puis avec un épisode issu d'une tâche précédente, reste à exécuter avec exactement cette révision, le même modèle, le même effort, la même instruction et le même budget lorsque le credential sera de nouveau accepté.
+
+Les commandes principales réellement exécutées sont :
+
+```text
+git status --short --branch
+pnpm --filter @blame/agent-runtime test
+pnpm --filter @blame/agent-runtime lint
+pnpm --filter @blame/agent-runtime typecheck
+pnpm --filter @blame/agent-runtime build
+pnpm --filter @blame/benchmark-runner test
+pnpm --filter @blame/benchmark-runner lint
+pnpm --filter @blame/benchmark-runner typecheck
+pnpm --filter @blame/benchmark-runner build
+pnpm --filter @blame/api lint
+pnpm --filter @blame/api typecheck
+pnpm --filter @blame/api build
+pnpm --filter @blame/app lint
+pnpm --filter @blame/app typecheck
+pnpm --filter @blame/app build
+pnpm --filter @blame/desktop typecheck
+BLAME_HEADLESS_DEV=true NODE_ENV=development pnpm benchmark:agent -- run --workspace <fixture> --instruction-file <seed> --project-id memory-cycle --project-memory-file <memory.json> --task-id project-memory-seed --events <events.jsonl> --result <result.json> --max-iterations 32 --timeout-seconds 900
+pnpm check:line-budgets
+git diff --check
+```
+
+Les variables requises ont été chargées depuis `.env.terminal-bench` sans afficher leurs valeurs. `pnpm check:line-budgets` reste rouge sur les dépassements globaux déjà présents, dont `cline-runtime.ts` et plusieurs fichiers app/desktop.
+
+#### Limites ouvertes
+
+Le score lexical est volontairement moins puissant qu'un embedding, mais il est déterministe, local et sans coût modèle. Il peut omettre une décision pertinente exprimée avec un vocabulaire entièrement différent ; l'abstention est préférée à l'injection approximative. L'invalidation de l'épisode entier lorsqu'un seul fichier a changé est également conservatrice. Le résumé reste produit par l'agent et peut contenir une conclusion trop vague malgré la validation du code ; son statut non fiable, sa normalisation et sa petite taille réduisent le risque sans constituer une preuve contre toute injection. Enfin, l'utilité réelle dépend de suites de tâches liées dans un même projet. Elle devra être mesurée sur un corpus longitudinal holdout avant toute augmentation de budget ou ajout d'index sémantique.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)
@@ -3327,7 +3391,12 @@ Le runtime contient maintenant 254 tests, le runner 13 et le corpus 7, tous pass
 - [CooperBench](https://arxiv.org/abs/2601.13295)
 - [GraphCoder](https://arxiv.org/abs/2406.07003)
 - [LocAgent](https://aclanthology.org/2025.acl-long.426/)
+- [LongMemEval](https://arxiv.org/abs/2410.10813)
 - [MASAI](https://arxiv.org/abs/2406.11638)
+- [MemOp](https://arxiv.org/abs/2606.05646)
+- [MINJA](https://arxiv.org/abs/2503.03704)
+- [AgentPoison](https://arxiv.org/abs/2407.12784)
+- [On the Effects of Context Files on LLM Agents in Software Engineering](https://arxiv.org/abs/2602.11988)
 - [RepoCoder](https://aclanthology.org/2023.emnlp-main.151/)
 - [Repoformer](https://proceedings.mlr.press/v235/wu24a.html)
 - [SWE-agent](https://arxiv.org/abs/2405.15793)

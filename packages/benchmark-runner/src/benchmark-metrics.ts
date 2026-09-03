@@ -49,6 +49,12 @@ export class BenchmarkMetricsCollector {
   private navigationBytes = 0;
   private patchOperations = 0;
   private projectedBytesSaved = 0;
+  private projectMemoryCandidates = 0;
+  private projectMemoryInjectedBytes = 0;
+  private projectMemoryRelevant = 0;
+  private projectMemoryRequests = 0;
+  private projectMemorySelected = 0;
+  private projectMemoryStale = 0;
   private readCalls = 0;
   private searchCalls = 0;
   private symbolOperations = 0;
@@ -90,9 +96,21 @@ export class BenchmarkMetricsCollector {
     const kind = stringValue(payload.kind) ?? stringValue(payload.reason) ?? "";
     const message = stringValue(payload.message) ?? "";
     if (kind === "context_composed") this.recordComposition(payload.metrics);
+    if (kind === "project_memory_selected")
+      this.recordProjectMemory(payload.metrics);
     if (kind.includes("compaction") && payload.phase === "completed")
       this.compactions += 1;
     else if (message.endsWith("compacted")) this.compactions += 1;
+  }
+
+  private recordProjectMemory(value: unknown) {
+    const metrics = recordValue(value);
+    this.projectMemoryRequests += 1;
+    this.projectMemoryCandidates += numberValue(metrics.candidates) ?? 0;
+    this.projectMemoryInjectedBytes += numberValue(metrics.bytes) ?? 0;
+    this.projectMemoryRelevant += numberValue(metrics.relevant) ?? 0;
+    this.projectMemorySelected += numberValue(metrics.selected) ?? 0;
+    this.projectMemoryStale += numberValue(metrics.stale) ?? 0;
   }
 
   private recordComposition(value: unknown) {
@@ -264,8 +282,20 @@ export class BenchmarkMetricsCollector {
       compactions: this.compactions,
       maximumInputTokens: Math.max(0, ...this.inputTokens),
       modelRequests: this.inputTokens.length,
+      projectMemory: this.projectMemoryMetrics(),
       toolPayloadBytes: tools.inputBytes + tools.outputBytes,
       toolPayloadReplayExposureBytes: this.replayExposureBytes(),
+    };
+  }
+
+  private projectMemoryMetrics() {
+    return {
+      candidates: this.projectMemoryCandidates,
+      injectedBytes: this.projectMemoryInjectedBytes,
+      relevant: this.projectMemoryRelevant,
+      requests: this.projectMemoryRequests,
+      selected: this.projectMemorySelected,
+      stale: this.projectMemoryStale,
     };
   }
 

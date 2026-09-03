@@ -55,6 +55,20 @@ const projectCodePracticeAnalysisColumns = [
   'created_at',
   'updated_at',
 ]
+const projectAgentMemoryColumns = [
+  'id',
+  'project_id',
+  'fingerprint',
+  'objective',
+  'summary',
+  'files',
+  'symbols',
+  'source_revision_id',
+  'story_id',
+  'validation_kind',
+  'validation_task_id',
+  'created_at',
+]
 const securityAuditColumns = [
   'id',
   'project_id',
@@ -266,6 +280,15 @@ export default class AccountExportQueries {
     return this.ownedRows(
       'project_code_practice_analyses',
       projectCodePracticeAnalysisColumns,
+      'project_id',
+      projectIds
+    )
+  }
+
+  projectAgentMemories(projectIds: string[]) {
+    return this.ownedRows(
+      'project_agent_memories',
+      projectAgentMemoryColumns,
       'project_id',
       projectIds
     )

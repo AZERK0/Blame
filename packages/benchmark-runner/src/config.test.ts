@@ -13,13 +13,7 @@ test("selects the requested benchmark harness", async () => {
       directory,
     );
     const cline = await parseBenchmarkCommand(
-      [
-        "run",
-        "--instruction-file",
-        instructionPath,
-        "--harness",
-        "cline",
-      ],
+      ["run", "--instruction-file", instructionPath, "--harness", "cline"],
       environment(),
       directory,
     );
@@ -32,18 +26,29 @@ test("rejects an unknown benchmark harness", async () => {
   await withInstruction(async (directory, instructionPath) => {
     await assert.rejects(
       parseBenchmarkCommand(
-        [
-          "run",
-          "--instruction-file",
-          instructionPath,
-          "--harness",
-          "unknown",
-        ],
+        ["run", "--instruction-file", instructionPath, "--harness", "unknown"],
         environment(),
         directory,
       ),
       /Invalid harness: unknown/u,
     );
+  });
+});
+
+test("passes an optional project identity to longitudinal runs", async () => {
+  await withInstruction(async (directory, instructionPath) => {
+    const parsed = await parseBenchmarkCommand(
+      [
+        "run",
+        "--instruction-file",
+        instructionPath,
+        "--project-id",
+        "project-1",
+      ],
+      environment(),
+      directory,
+    );
+    assert.equal(parsed.config.projectId, "project-1");
   });
 });
 

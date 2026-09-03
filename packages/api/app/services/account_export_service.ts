@@ -118,6 +118,10 @@ async function projectExport(queries: AccountExportQueries, projectIds: string[]
     ]),
     projectCodePractices: await queries.projectCodePractices(projectIds),
     projectCodePracticeAnalyses: await queries.projectCodePracticeAnalyses(projectIds),
+    projectAgentMemories: normalizeRows(await queries.projectAgentMemories(projectIds), [
+      'files',
+      'symbols',
+    ]),
     securityAudits: normalizeRows(await queries.securityAudits(projectIds), ['payload']),
   }
 }

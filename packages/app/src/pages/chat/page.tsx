@@ -897,6 +897,7 @@ function QuickChatProjectPage() {
       ),
       codePractices: await projectCodePractices(auth, projects),
       executionId: input.executionId,
+      projectId: project!.id,
     })
   }
 

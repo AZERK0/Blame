@@ -10,6 +10,7 @@ import type {
   LightToolResult,
 } from "./light-contracts.js";
 import { LightTaskRunner } from "./light-task-runner.js";
+import { createProjectMemoryCandidate } from "./project-memory.js";
 import { SessionJournal } from "./session-journal.js";
 import { readTaskCatalog } from "./task-catalog.js";
 import { WorkspaceFiles } from "./workspace-files.js";
@@ -94,7 +95,14 @@ export class LightFinishService {
       verified,
       unavailable,
     );
-    await this.recordCompletion(summary, decision, verified, unavailable);
+    await this.recordCompletion(
+      summary,
+      decision,
+      verified,
+      unavailable,
+      current,
+      validation.taskId,
+    );
     return summary;
   }
 
@@ -114,7 +122,11 @@ export class LightFinishService {
     if (hasPassingValidation(state.validations, state.changedPaths, input.task))
       return { outcome: "reused" as const, taskId: input.task };
     if (
-      hasUnavailableValidation(state.validations, state.changedPaths, input.task)
+      hasUnavailableValidation(
+        state.validations,
+        state.changedPaths,
+        input.task,
+      )
     )
       return { outcome: "unavailable" as const, taskId: input.task };
     const result = await this.runValidation(input, context);
@@ -158,16 +170,43 @@ export class LightFinishService {
     decision: CompletionDecision,
     verified: boolean,
     unavailable: boolean,
+    state: Awaited<ReturnType<SessionJournal["completionSnapshot"]>>,
+    validationTaskId?: string,
   ) {
     await this.journal.recordTerminal(
       unavailable ? "completed_with_validation_unavailable" : "completed",
       summary,
     );
+    const memory = verified
+      ? this.completionMemory(summary, state, validationTaskId)
+      : undefined;
     await this.options.onComplete?.({
       completion: decision,
+      ...(memory ? { memory } : {}),
       submission_outcome: "accepted",
       summary,
       verified,
+    });
+  }
+
+  private completionMemory(
+    summary: string,
+    state: Awaited<ReturnType<SessionJournal["completionSnapshot"]>>,
+    validationTaskId?: string,
+  ) {
+    if (!state.files.length || state.files.length > 24) return undefined;
+    const validation = state.validations.find(
+      (item) => item.taskId === validationTaskId && item.terminal === "passed",
+    );
+    return createProjectMemoryCandidate({
+      files: state.files,
+      objective: this.options.taskContract?.objective ?? "",
+      sourceRevisionId: state.sourceRevisionId,
+      storyId: this.options.taskContract?.story_id,
+      summary,
+      symbols: state.symbols,
+      validationKind: validation?.taskKind,
+      validationTaskId,
     });
   }
 }
