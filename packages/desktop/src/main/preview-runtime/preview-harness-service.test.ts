@@ -55,6 +55,39 @@ test("stopped previews return immediately even when ready was requested", async 
   assert.equal(refreshes, 0);
 });
 
+test("a hidden browser is explicitly unavailable without failing or restarting its ready runtime", async () => {
+  const browser = { ...browserTarget(true), visible: false };
+  const state = await resolvePreviewHarnessState(
+    async () => previewHarnessState(browser, readyLifecycle()),
+    "ready",
+    async () => {
+      assert.fail("A hidden browser must not wait for runtime startup");
+    },
+  );
+  assert.equal(state.status, "unavailable");
+  assert.equal(state.reason, "PREVIEW_BROWSER_HIDDEN");
+  assert.equal(state.available, false);
+  assert.deepEqual(state.readiness, {
+    browser_ready: false,
+    container_ready: true,
+    application_ready: false,
+  });
+  assert.match(state.message, /does not need to be restarted/);
+  assert.equal(
+    previewHarnessState({ ...browser, visible: true }, readyLifecycle()).status,
+    "ready",
+  );
+});
+
+test("a hidden browser does not truncate managed startup waiting", () => {
+  const state = previewHarnessState(
+    { ...browserTarget(true), visible: false },
+    startingLifecycle(),
+  );
+  assert.equal(state.status, "starting");
+  assert.equal(state.reason, "PREVIEW_STARTING");
+});
+
 test("failed previews return immediately with their failure", async () => {
   const state = previewHarnessState(browserTarget(), {
     failure: { message: "Web container exited" },

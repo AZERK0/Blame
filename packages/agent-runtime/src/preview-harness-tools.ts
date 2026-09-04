@@ -19,6 +19,7 @@ export type PreviewDevtoolsTarget = {
   id?: string;
   lifecycle?: unknown;
   loading: boolean;
+  visible?: boolean;
   message: string;
   reason: string;
   readiness?: {
@@ -293,7 +294,7 @@ export function previewDevtoolsTool(
   return {
     name: "get_preview_devtools",
     description:
-      "Inspect browser, container, and application readiness for this session's Blame preview. Readiness requires an exploitable HTTP response, no blocking compiler diagnostic, usable dependencies, and the current source and environment revisions. For a stopped or starting local preview, waitFor=ready follows managed startup until it succeeds or reports an explicit failure. Once running, application readiness is bounded to 2 seconds. Failed and unopened browser states return immediately.",
+      "Inspect browser, container, and application readiness for this session's Blame preview. Readiness requires an exploitable HTTP response, no blocking compiler diagnostic, usable dependencies, and the current source and environment revisions. For a stopped or starting local preview, waitFor=ready follows managed startup until it succeeds or reports an explicit failure. Once running, application readiness is bounded to 2 seconds. Failed, hidden, and unopened browser states return immediately.",
     inputSchema: previewDevtoolsInputSchema(),
     execute: (input: unknown, context: ToolContext) =>
       executePreviewDevtoolsTool(options, preview, input, context.signal),

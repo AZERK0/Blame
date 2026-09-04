@@ -67,6 +67,7 @@ export type PreviewDevtoolsTarget = {
   error?: string;
   id?: string;
   loading: boolean;
+  visible?: boolean;
   scope?: string;
   mcpServer: {
     args: string[];
@@ -103,6 +104,7 @@ export async function inspectPreviewDevtoolsTarget(
   if (
     input.probeApplication !== false &&
     record &&
+    record.visible &&
     previewDevtoolsTargetReady(target)
   ) {
     await refreshApplicationState(record);
@@ -123,6 +125,7 @@ function previewDevtoolsTarget(
     error: target?.error,
     id: target?.id,
     loading: target?.loading ?? false,
+    visible: target ? previews.get(target.id)?.visible : undefined,
     mcpServer: {
       args: previewDevtoolsMcpArgs(previewDevtoolsBrowserUrl),
       command: "npx",
