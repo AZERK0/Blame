@@ -1,5 +1,5 @@
 import * as React from "react"
-import { FolderIcon, SparklesIcon } from "lucide-react"
+import { FolderIcon, LoaderCircleIcon, SparklesIcon } from "lucide-react"
 
 import {
   advancedOptionLabels,
@@ -480,14 +480,7 @@ function WizardNavigation({ wizard }: { wizard: NewProjectWizard }) {
         Back
       </Button>
       {wizard.step === "summary" ? (
-        <Button
-          type="button"
-          disabled={wizard.creating || !wizard.createProjectAvailable}
-          onClick={() => void wizard.createProject()}
-        >
-          <SparklesIcon />
-          Create project
-        </Button>
+        <CreateProjectButton wizard={wizard} />
       ) : (
         <Button
           type="button"
@@ -661,4 +654,21 @@ function stepLabel(step: NewProjectStep) {
   if (step === "advanced") return "Advanced"
   if (step === "progress") return "Progress"
   return "Summary"
+}
+
+function CreateProjectButton({ wizard }: { wizard: NewProjectWizard }) {
+  return (
+    <Button
+      type="button"
+      disabled={wizard.creating || !wizard.createProjectAvailable}
+      onClick={() => void wizard.createProject()}
+    >
+      {wizard.creating ? (
+        <LoaderCircleIcon className="animate-spin motion-reduce:animate-none" />
+      ) : (
+        <SparklesIcon />
+      )}
+      {wizard.creating ? "Checking requirements…" : "Create project"}
+    </Button>
+  )
 }
