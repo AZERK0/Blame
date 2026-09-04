@@ -14,6 +14,8 @@ import {
   XIcon,
 } from "lucide-react"
 
+import { FeatureStart } from "@/components/shared/feature-start"
+import { DeploymentReadiness } from "./deploy-source"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -61,41 +63,51 @@ export function DeployEmptyState({
   onConnect(): void
 }) {
   return (
-    <div className="flex flex-1 items-center justify-center px-6 py-12">
-      <div className="flex max-w-md flex-col items-center text-center">
-        <span className="mb-5 flex size-14 items-center justify-center rounded-2xl border bg-card shadow-sm">
-          <VercelMark className="size-6" />
-        </span>
-        <h2 className="font-heading text-2xl font-semibold">
-          Deploy your site
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Publish this project with Vercel.
-        </p>
-        {error ? (
-          <Alert variant="destructive" className="mt-5 text-left">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : null}
-        <Button className="mt-6" onClick={onConnect} disabled={connecting}>
-          {connecting ? (
-            <LoaderCircleIcon className="animate-spin" />
-          ) : (
-            <VercelMark />
-          )}
-          {connecting ? "Waiting for Vercel…" : "Connect Vercel"}
-        </Button>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Deployments and usage stay in your Vercel account.
-        </p>
-      </div>
-    </div>
+    <FeatureStart
+      title="Deploy"
+      description="Publish your current workspace with Vercel."
+      heading="Take your project from local to live."
+      steps={deploymentSetupSteps}
+      footer="Deployments and usage stay in your Vercel account."
+    >
+      <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+        Connect your Vercel account, choose a destination, and publish from
+        Blame. Follow the build here and open your site when it is ready.
+      </p>
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      <ConnectVercelButton connecting={connecting} onConnect={onConnect} />
+      <p className="text-xs text-muted-foreground">
+        {connecting
+          ? "Complete the connection in your browser to continue."
+          : "Choose your account or team in the next step."}
+      </p>
+    </FeatureStart>
   )
 }
 
+const deploymentSetupSteps = [
+  {
+    title: "Connect your account",
+    description: "Link the Vercel account or team that will host your project.",
+  },
+  {
+    title: "Choose the destination",
+    description: "Use an existing Vercel project or create a new one.",
+  },
+  {
+    title: "Review and publish",
+    description:
+      "Confirm the workspace snapshot, then follow the build and public URL check.",
+  },
+]
+
 export function DeployLoading() {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-8 lg:px-6">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pt-[calc(var(--header-height)+1rem)] pb-8 lg:px-6">
       <Skeleton className="h-6 w-28" />
       <Skeleton className="h-52 w-full rounded-xl" />
       <Skeleton className="h-28 w-full rounded-xl" />
@@ -103,21 +115,7 @@ export function DeployLoading() {
   )
 }
 
-export function DeploymentCard({
-  connection,
-  deploying,
-  deployment,
-  onCancel,
-  onCopy,
-  onDeploy,
-  onLogs,
-  onManage,
-  onOpen,
-  onTarget,
-  preflight,
-  progress,
-  target,
-}: {
+type DeploymentCardProps = {
   connection: DeployConnection
   deploying: boolean
   deployment?: ProjectDeployment
@@ -131,104 +129,170 @@ export function DeploymentCard({
   preflight?: LocalDeployPreflight
   progress?: DeployProgress
   target: DeployTarget | null
-}) {
+}
+
+type ActiveDeploymentCardProps = DeploymentCardProps & { active: boolean }
+
+export function DeploymentCard(props: DeploymentCardProps) {
   const active =
-    deploying || Boolean(deployment && activeDeployment(deployment.status))
+    props.deploying ||
+    Boolean(props.deployment && activeDeployment(props.deployment.status))
+  return (
+    <Card>
+      <DeploymentHeader {...props} active={active} />
+      <CardContent className="space-y-4">
+        <DeploymentFeedback
+          deployment={props.deployment}
+          preflight={props.preflight}
+        />
+        <DeploymentContent {...props} active={active} />
+        <DeploymentActions {...props} active={active} />
+      </CardContent>
+      <DeploymentConnection
+        connection={props.connection}
+        onManage={props.onManage}
+      />
+    </Card>
+  )
+}
+
+function DeploymentHeader({
+  target,
+  deployment,
+  active,
+}: Pick<ActiveDeploymentCardProps, "target" | "deployment" | "active">) {
+  return (
+    <CardHeader className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
+          <VercelMark className="size-4" />
+        </span>
+        <div className="min-w-0">
+          <CardTitle>Production</CardTitle>
+          <p className="text-xs break-all text-muted-foreground">
+            {target?.providerProjectName ?? "New Vercel project"}
+          </p>
+        </div>
+      </div>
+      <CardAction>{deploymentBadge(deployment, active)}</CardAction>
+    </CardHeader>
+  )
+}
+
+function DeploymentFeedback({
+  preflight,
+  deployment,
+}: Pick<DeploymentCardProps, "preflight" | "deployment">) {
+  return (
+    <>
+      {preflight?.manifest.compatibility.status === "unsupported" && (
+        <CompatibilityAlert preflight={preflight} />
+      )}
+      {deployment?.status === "failed" && (
+        <Alert variant="destructive">
+          <AlertTriangleIcon />
+          <AlertTitle>Deployment failed</AlertTitle>
+          <AlertDescription>
+            {deployment.safeErrorMessage ??
+              "Vercel could not complete this deployment."}
+          </AlertDescription>
+        </Alert>
+      )}
+    </>
+  )
+}
+
+function DeploymentContent(props: ActiveDeploymentCardProps) {
+  const { deployment, progress, target, active, onCopy, onOpen, preflight } =
+    props
   const url =
     deployment?.productionUrl ??
     deployment?.deploymentUrl ??
     target?.productionUrl
-  const unsupported = preflight?.manifest.compatibility.status === "unsupported"
+  if (active)
+    return <DeploymentProgress deployment={deployment} progress={progress} />
+  if (url && deployment)
+    return (
+      <OnlineDeployment
+        deployment={deployment}
+        url={url}
+        onCopy={onCopy}
+        onOpen={onOpen}
+      />
+    )
+  return <DeploymentReadiness preflight={preflight} />
+}
+
+function DeploymentActions(props: ActiveDeploymentCardProps) {
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-lg border bg-background">
-            <VercelMark className="size-4" />
-          </span>
-          <div>
-            <CardTitle>Production</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              {target?.providerProjectName ?? "New Vercel project"}
-            </p>
-          </div>
-        </div>
-        <CardAction>{deploymentBadge(deployment, active)}</CardAction>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {unsupported ? <CompatibilityAlert preflight={preflight} /> : null}
-        {deployment?.status === "failed" ? (
-          <Alert variant="destructive">
-            <AlertTriangleIcon />
-            <AlertTitle>Deployment failed</AlertTitle>
-            <AlertDescription>
-              {deployment.safeErrorMessage ??
-                "Vercel could not complete this deployment."}
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        {active ? (
-          <DeploymentProgress deployment={deployment} progress={progress} />
-        ) : url && deployment ? (
-          <OnlineDeployment
-            deployment={deployment}
-            url={url}
-            onCopy={onCopy}
-            onOpen={onOpen}
-          />
-        ) : (
-          <div className="rounded-lg border border-dashed px-4 py-5">
-            <p className="font-medium">Not deployed</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {preflight
-                ? `${preflight.manifest.framework ?? "Automatic framework detection"} · ${preflight.manifest.rootDirectory}`
-                : "Run project initialization to detect a production target."}
-            </p>
-          </div>
-        )}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Button
-            variant="link"
-            className="h-auto px-0"
-            onClick={onTarget}
-            disabled={active}
-          >
-            Change project
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <Button
+        variant="link"
+        className="h-auto px-0 text-foreground underline decoration-muted-foreground underline-offset-4"
+        onClick={props.onTarget}
+        disabled={props.active}
+      >
+        {props.target ? "Change project" : "Choose project"}
+      </Button>
+      <div className="flex flex-wrap gap-2">
+        {props.deployment?.status === "failed" && (
+          <Button variant="outline" onClick={props.onLogs}>
+            View build logs
           </Button>
-          <div className="flex gap-2">
-            {deployment?.status === "failed" ? (
-              <Button variant="outline" onClick={onLogs}>
-                View build logs
-              </Button>
-            ) : null}
-            {deployment && activeDeployment(deployment.status) && !deploying ? (
-              <Button variant="destructive" onClick={onCancel}>
-                Cancel deployment
-              </Button>
-            ) : (
-              <Button
-                onClick={onDeploy}
-                disabled={deploying || unsupported || !preflight}
-              >
-                {deploying ? (
-                  <LoaderCircleIcon className="animate-spin" />
-                ) : null}
-                {deployment ? "Deploy update" : "Deploy to production"}
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardContent>
-      <CardFooter className="justify-between gap-3 text-xs text-muted-foreground">
-        <span>
-          Vercel {connection.scopeType === "team" ? "team" : "account"}:{" "}
-          {connection.scopeDisplayName}
-        </span>
-        <Button variant="ghost" size="xs" onClick={onManage}>
-          Manage connection <ExternalLinkIcon />
-        </Button>
-      </CardFooter>
-    </Card>
+        )}
+        <DeploymentPublishAction {...props} />
+      </div>
+    </div>
+  )
+}
+
+function DeploymentPublishAction({
+  active,
+  deploying,
+  deployment,
+  preflight,
+  onCancel,
+  onDeploy,
+}: ActiveDeploymentCardProps) {
+  if (deployment && activeDeployment(deployment.status) && !deploying)
+    return (
+      <CancelDeploymentButton deployment={deployment} onCancel={onCancel} />
+    )
+  return (
+    <Button
+      onClick={onDeploy}
+      disabled={
+        active ||
+        preflight?.manifest.compatibility.status === "unsupported" ||
+        !preflight
+      }
+    >
+      {deploying && (
+        <LoaderCircleIcon className="animate-spin motion-reduce:animate-none" />
+      )}
+      {deploying
+        ? "Preparing deployment…"
+        : deployment
+          ? "Deploy update"
+          : "Deploy to production"}
+    </Button>
+  )
+}
+
+function DeploymentConnection({
+  connection,
+  onManage,
+}: Pick<DeploymentCardProps, "connection" | "onManage">) {
+  return (
+    <CardFooter className="flex-wrap justify-between gap-3 text-xs text-muted-foreground">
+      <span className="min-w-0 break-words">
+        Vercel {connection.scopeType === "team" ? "team" : "account"}:{" "}
+        {connection.scopeDisplayName}
+      </span>
+      <Button variant="ghost" size="xs" onClick={onManage}>
+        Manage connection <ExternalLinkIcon />
+      </Button>
+    </CardFooter>
   )
 }
 
@@ -353,42 +417,29 @@ export function RecentDeployments({
   deployments: ProjectDeployment[]
   onLogs(deployment: ProjectDeployment): void
 }) {
-  if (!deployments.length) return null
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-medium">Recent deployments</h3>
         <span className="text-xs text-muted-foreground">
-          Last {Math.min(5, deployments.length)}
+          {deployments.length
+            ? `Last ${Math.min(5, deployments.length)}`
+            : "No deployments yet"}
         </span>
       </div>
-      <div className="divide-y rounded-xl border bg-card">
+      {!deployments.length && (
+        <p className="rounded-xl border px-4 py-5 text-sm text-muted-foreground">
+          Your deployment history and build logs will appear here after the
+          first run.
+        </p>
+      )}
+      <div className="divide-y rounded-xl bg-card">
         {deployments.slice(0, 5).map((deployment) => (
-          <div
+          <DeploymentHistoryRow
             key={deployment.id}
-            className="flex items-center gap-3 px-3 py-2.5 text-sm"
-          >
-            <StatusIcon deployment={deployment} />
-            <span className="w-20 font-medium">
-              {statusLabel(deployment.status)}
-            </span>
-            <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">
-              {deployment.sourceRevision.slice(0, 7)}
-              {deployment.localChangeCount ? " + local changes" : ""}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {relativeTime(deployment.createdAt)}
-            </span>
-            {deployment.status === "failed" ? (
-              <Button
-                size="xs"
-                variant="ghost"
-                onClick={() => onLogs(deployment)}
-              >
-                Logs
-              </Button>
-            ) : null}
-          </div>
+            deployment={deployment}
+            onLogs={onLogs}
+          />
         ))}
       </div>
     </section>
@@ -687,4 +738,68 @@ function relativeTime(value: string) {
   const hours = Math.round(minutes / 60)
   if (Math.abs(hours) < 24) return formatter.format(hours, "hour")
   return formatter.format(Math.round(hours / 24), "day")
+}
+
+function ConnectVercelButton({
+  connecting,
+  onConnect,
+}: {
+  connecting: boolean
+  onConnect(): void
+}) {
+  return (
+    <Button onClick={onConnect} disabled={connecting}>
+      {connecting ? (
+        <LoaderCircleIcon className="animate-spin motion-reduce:animate-none" />
+      ) : (
+        <VercelMark />
+      )}
+      {connecting ? "Waiting for Vercel…" : "Connect Vercel"}
+    </Button>
+  )
+}
+
+function DeploymentHistoryRow({
+  deployment,
+  onLogs,
+}: {
+  deployment: ProjectDeployment
+  onLogs(deployment: ProjectDeployment): void
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-3 py-3 text-sm last:border-b-0">
+      <StatusIcon deployment={deployment} />
+      <span className="w-20 font-medium">{statusLabel(deployment.status)}</span>
+      <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">
+        {deployment.sourceRevision.slice(0, 7)}
+        {deployment.localChangeCount ? " + local changes" : ""}
+      </span>
+      <span className="text-xs text-muted-foreground">
+        {relativeTime(deployment.createdAt)}
+      </span>
+      {deployment.status === "failed" ? (
+        <Button size="xs" variant="ghost" onClick={() => onLogs(deployment)}>
+          Logs
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+function CancelDeploymentButton({
+  deployment,
+  onCancel,
+}: {
+  deployment: ProjectDeployment
+  onCancel(): void
+}) {
+  return (
+    <Button
+      variant="destructive"
+      onClick={onCancel}
+      disabled={deployment.status === "canceling"}
+    >
+      {deployment.status === "canceling" ? "Canceling…" : "Cancel deployment"}
+    </Button>
+  )
 }

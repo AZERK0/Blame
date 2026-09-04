@@ -1,6 +1,8 @@
 import * as React from "react"
 import type { DeployTarget, ProjectDeployment } from "@blame/deploy-contract"
 import { toast } from "sonner"
+import { DeploymentSource } from "./deploy-source"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 import {
   BuildLogsDialog,
@@ -124,34 +126,57 @@ export function DeployPage() {
 
   return (
     <>
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 py-6 lg:px-6 lg:py-8">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-4 pt-[calc(var(--header-height)+1rem)] pb-6 lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)]">
         <div>
           <h2 className="font-heading text-xl font-semibold">Deploy</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Publish the current workspace to your Vercel account.
           </p>
         </div>
-        <DeploymentCard
-          connection={connection}
-          deploying={deploy.deploying}
-          deployment={deploy.latest}
-          onCancel={() => deploy.latest && void deploy.cancel(deploy.latest)}
-          onCopy={(url) => {
-            void navigator.clipboard.writeText(url)
-            toast.success("Production URL copied.")
-          }}
-          onDeploy={() => void prepareDeployment()}
-          onLogs={() => deploy.latest && showLogs(deploy.latest)}
-          onManage={() =>
-            deploy.openExternal("https://vercel.com/account/integrations")
-          }
-          onOpen={deploy.openExternal}
-          onTarget={() => void chooseTarget()}
-          preflight={deploy.preflight}
-          progress={deploy.progress}
-          target={deploy.target}
-        />
-        <RecentDeployments deployments={deploy.deployments} onLogs={showLogs} />
+        {deploy.error && (
+          <Alert variant="destructive">
+            <AlertDescription>{deploy.error}</AlertDescription>
+          </Alert>
+        )}
+        <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(16rem,1fr)]">
+          <div className="min-w-0 space-y-6">
+            <DeploymentCard
+              connection={connection}
+              deploying={deploy.deploying}
+              deployment={deploy.latest}
+              onCancel={() =>
+                deploy.latest && void deploy.cancel(deploy.latest)
+              }
+              onCopy={(url) => {
+                void navigator.clipboard
+                  .writeText(url)
+                  .then(() => toast.success("Production URL copied."))
+                  .catch(() =>
+                    toast.error(
+                      "Unable to copy the URL. Try opening the site instead."
+                    )
+                  )
+              }}
+              onDeploy={() => void prepareDeployment()}
+              onLogs={() => deploy.latest && showLogs(deploy.latest)}
+              onManage={() =>
+                deploy.openExternal("https://vercel.com/account/integrations")
+              }
+              onOpen={deploy.openExternal}
+              onTarget={() => void chooseTarget()}
+              preflight={deploy.preflight}
+              progress={deploy.progress}
+              target={deploy.target}
+            />
+            <RecentDeployments
+              deployments={deploy.deployments}
+              onLogs={showLogs}
+            />
+          </div>
+          <div className="min-w-0">
+            <DeploymentSource preflight={deploy.preflight} />
+          </div>
+        </div>
       </div>
       <DeployConfirmationDialog
         open={confirmOpen}
