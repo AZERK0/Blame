@@ -6092,15 +6092,17 @@ function normalizeHookEvent(
   event: Extract<CoreSessionEvent, { type: "hook" }>,
   fallbackSessionId: string,
 ): AgentEvent {
-  const type = event.payload.hookEventName === "agent_error" ? "error" : "tool";
-  const payload = asRecord(event.payload);
+  if (event.payload.hookEventName === "agent_error") {
+    return normalizedErrorEvent(
+      event.payload.sessionId ?? fallbackSessionId,
+      asRecord(event.payload),
+      event.payload,
+    );
+  }
   return {
-    type,
+    type: "tool",
     sessionId: event.payload.sessionId ?? fallbackSessionId,
-    payload:
-      type === "error"
-        ? normalizedErrorPayload(payload, event.payload)
-        : event.payload,
+    payload: event.payload,
   };
 }
 
@@ -6124,11 +6126,7 @@ export function normalizeClineAgentPayload(
   const type = stringValue(payload.type);
 
   if (type === "error") {
-    return {
-      type: "error",
-      sessionId,
-      payload: normalizedErrorPayload(payload, raw),
-    };
+    return normalizedErrorEvent(sessionId, payload, raw);
   }
 
   if (type === "content_start" || type === "content_update") {
@@ -6337,6 +6335,19 @@ function normalizedErrorPayload(
       "Agent session failed.",
     recoverable: booleanValue(payload.recoverable),
     raw,
+  };
+}
+
+function normalizedErrorEvent(
+  sessionId: string,
+  payload: Record<string, unknown>,
+  raw: unknown,
+): AgentEvent {
+  const error = normalizedErrorPayload(payload, raw);
+  return {
+    type: error.recoverable === true ? "notice" : "error",
+    sessionId,
+    payload: error,
   };
 }
 

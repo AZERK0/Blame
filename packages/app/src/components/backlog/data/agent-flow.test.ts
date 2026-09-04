@@ -8,7 +8,34 @@ import {
   agentErrorText,
   agentFlowUpdate,
   completedAgentRun,
+  terminalAgentRunEvent,
 } from "./agent-flow.ts"
+
+test("keeps recoverable diagnostics visible without ending the run or hiding its answer", () => {
+  const running = updateStory(story(), toolEvent("tool_call", "run_task", 27))
+  const notice: AgentEvent = {
+    type: "notice",
+    payload: {
+      message: "The scoped preview page is no longer available in DevTools.",
+      recoverable: true,
+      iteration: 26,
+    },
+  }
+  const update = agentFlowUpdate(running, notice)
+  assert.equal(terminalAgentRunEvent(notice), false)
+  assert.equal(update.agentFinalResponse, undefined)
+  assert.equal(update.agentSessionSummary, undefined)
+  assert.equal(update.agentActivities?.[0]?.status, "running")
+  assert.equal(update.agentActivities?.at(-1)?.title, "Recoverable agent error")
+  const completed = agentFlowUpdate(
+    { ...running, ...update },
+    {
+      type: "done",
+      payload: { text: "Final response after recovery" },
+    }
+  )
+  assert.equal(completed.agentFinalResponse, "Final response after recovery")
+})
 
 test("completes a running tool when a fallback result has no tool call id", () => {
   const started = updateStory(

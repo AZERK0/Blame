@@ -191,6 +191,8 @@ function eventActivity(
   event: AgentEvent
 ) {
   if (event.type === "error") return errorActivities(activities, event)
+  if (event.type === "notice" && eventPayload(event).recoverable === true)
+    return errorActivities(activities, event)
   if (event.type === "reasoning") return reasoningActivities(activities, event)
   if (event.type === "text") return messageActivities(activities, event)
   if (event.type === "tool") return toolActivities(activities, event)
@@ -211,11 +213,13 @@ function errorActivities(
     (activity) => activity.kind === "error" && activity.detail === detail
   )
   return upsertActivities(activities, [
-    ...closeRunningActivityInputs(activities, ["message", "reasoning", "tool"]),
+    ...(event.type === "error"
+      ? closeRunningActivityInputs(activities, ["message", "reasoning", "tool"])
+      : []),
     {
       id: existing?.id ?? nextErrorActivityId(activities, iteration),
       kind: "error",
-      title: "Agent error",
+      title: event.type === "error" ? "Agent error" : "Recoverable agent error",
       detail,
       actionUrl: safeErrorActionUrl(stringValue(payload.actionUrl)),
       errorCode: agentErrorCode(payload.code),

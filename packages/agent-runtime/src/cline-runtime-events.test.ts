@@ -1148,7 +1148,7 @@ test("keeps lead hook events", () => {
   assert.equal(shouldDisplayClineSessionEvent(hookEvent()), true);
 });
 
-test("normalizes SDK agent errors with their message and recovery state", () => {
+test("publishes recoverable SDK errors as notices rather than terminal failures", () => {
   const event = normalizeClineAgentPayload(
     {
       error: new Error("Provider unavailable"),
@@ -1160,13 +1160,97 @@ test("normalizes SDK agent errors with their message and recovery state", () => 
     "raw",
   );
 
-  assert.equal(event.type, "error");
+  assert.equal(event.type, "notice");
   assert.deepEqual(event.payload, {
     iteration: 3,
     message: "Provider unavailable",
     recoverable: true,
     raw: "raw",
   });
+});
+
+for (const type of ["error", "run-failed"]) {
+  test(`keeps fatal SDK ${type} events terminal`, () => {
+    const event = normalizeClineAgentPayload(
+      {
+        type,
+        recoverable: false,
+        error: new Error("Provider unavailable"),
+      },
+      "session",
+      "raw",
+    );
+    assert.equal(event.type, "error");
+    assert.equal(
+      (event.payload as { recoverable: boolean }).recoverable,
+      false,
+    );
+  });
+}
+
+test("continues delivering tools and the final response after a recoverable snapshot error", async () => {
+  const emitted: AgentEvent[] = [];
+  const runtime = new BlameAgentRuntime({
+    emit: (event) => emitted.push(event),
+  });
+  let listener: (event: CoreSessionEvent) => void = () => undefined;
+  let stops = 0;
+  const core = {
+    ...deferredPromptCore(() => undefined),
+    async subscribe(callback: typeof listener) {
+      listener = callback;
+      return () => undefined;
+    },
+    async stop() {
+      stops += 1;
+    },
+  };
+  const internals = runtime as unknown as {
+    subscribeCoreSession(id: string, core: unknown): Promise<void>;
+    runLifecycles: RunLifecycleRegistry;
+    sessionExecutionIds: Map<string, string>;
+    sessionTerminalDrains: Map<string, Promise<void>>;
+  };
+  await internals.subscribeCoreSession("session", core);
+  internals.runLifecycles.begin("session", "execution");
+  internals.sessionExecutionIds.set("session", "execution");
+  listener(
+    agentEvent({
+      type: "error",
+      recoverable: true,
+      error: new Error(
+        "The scoped preview page is no longer available in DevTools.",
+      ),
+    }),
+  );
+  assert.equal(stops, 0);
+  assert.equal(internals.runLifecycles.state("session")?.state, "running");
+  listener(
+    agentEvent({
+      type: "content_end",
+      contentType: "tool",
+      toolName: "run_task",
+      toolCallId: "validation",
+      output: "passed",
+    }),
+  );
+  listener(
+    agentEvent({
+      type: "done",
+      finishReason: "completed",
+      text: "Verified final response",
+    }),
+  );
+  await internals.sessionTerminalDrains.get("session");
+  assert.deepEqual(
+    emitted.map((event) => event.type),
+    ["notice", "tool", "done"],
+  );
+  assert.equal(
+    (emitted.at(-1)?.payload as { text: string }).text,
+    "Verified final response",
+  );
+  assert.equal(stops, 1);
 });
 
 test("formats failed agent results without a provider label", () => {
