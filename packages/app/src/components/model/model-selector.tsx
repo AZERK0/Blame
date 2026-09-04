@@ -1518,7 +1518,30 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
   }
 }
 
+const ModelProviderContext = React.createContext<
+  ReturnType<typeof useLocalProviderState> | undefined
+>(undefined)
+
+export function ModelProviderScope({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const state = useLocalProviderState()
+  return (
+    <ModelProviderContext.Provider value={state}>
+      {children}
+    </ModelProviderContext.Provider>
+  )
+}
+
 function useProviderState() {
+  const shared = React.useContext(ModelProviderContext)
+  const local = useLocalProviderState(!shared)
+  return shared ?? local
+}
+
+function useLocalProviderState(enabled = true) {
   const auth = useCloudAuth()
   const platform = usePlatform()
   const directory = globalModelSelectionKey
@@ -1550,11 +1573,12 @@ function useProviderState() {
   }, [agent, auth.apiConnection, auth.status])
 
   React.useEffect(() => {
+    if (!enabled) return
     const timeout = window.setTimeout(() => {
       void refresh().then(() => undefined)
     })
     return () => window.clearTimeout(timeout)
-  }, [refresh])
+  }, [enabled, refresh])
 
   return {
     apiConnection: auth.apiConnection,

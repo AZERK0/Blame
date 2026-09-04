@@ -24,6 +24,7 @@ import {
 } from "@/components/model/connect-provider-dialog"
 import {
   ModelSelector,
+  ModelProviderScope,
   ProviderMark,
   type ModelSelection,
   useModelSelection,
@@ -58,13 +59,7 @@ import { cn } from "@/lib/utils"
 import { McpSettingsPanel } from "./mcp-settings-panel"
 import { AccountPrivacyPanel } from "./account-privacy-panel"
 
-type SettingsSectionId =
-  | "general"
-  | "models"
-  | "providers"
-  | "mcp"
-  | "desktop"
-  | "account"
+type SettingsSectionId = "general" | "models" | "mcp" | "desktop" | "account"
 
 type ThemeValue = "system" | "light" | "dark"
 
@@ -89,16 +84,10 @@ const settingsSections: SettingsSection[] = [
     title: "General",
   },
   {
-    description: "Default models and agent behavior.",
+    description: "Connect your providers and choose the models Blame uses.",
     icon: BrainCircuitIcon,
     id: "models",
-    title: "AI Models",
-  },
-  {
-    description: "API keys, OAuth accounts, and provider access.",
-    icon: PlugZapIcon,
-    id: "providers",
-    title: "Providers",
+    title: "Models & Providers",
   },
   {
     description: "External tools and context for agents.",
@@ -176,13 +165,13 @@ function SettingsContent() {
   const section = settingsSections.find((item) => item.id === visibleSection)
 
   return (
-    <div className="flex h-full min-h-0 flex-col md:flex-row">
+    <div className="flex h-full min-h-0 min-w-0 flex-col md:flex-row">
       <SettingsSidebar
         accountDisabled={accountDisabled}
         activeSection={visibleSection}
         onSectionChange={setActiveSection}
       />
-      <main className="flex min-h-0 flex-1 flex-col">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col">
         <SettingsSectionHeader section={section ?? settingsSections[0]} />
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 md:px-8">
           <SettingsSectionContent section={visibleSection} />
@@ -202,7 +191,7 @@ function SettingsSidebar({
   onSectionChange(section: SettingsSectionId): void
 }) {
   return (
-    <aside className="flex shrink-0 flex-col border-b bg-muted/30 md:w-60 md:border-r md:border-b-0">
+    <aside className="flex min-w-0 shrink-0 flex-col border-b bg-muted/30 md:w-60 md:border-r md:border-b-0">
       <DialogHeader className="px-4 pt-5 pb-3 text-left">
         <DialogTitle>Settings</DialogTitle>
         <DialogDescription>Configure Blame.</DialogDescription>
@@ -267,11 +256,14 @@ function SettingsSectionHeader({ section }: { section: SettingsSection }) {
 
 function SettingsSectionContent({ section }: { section: SettingsSectionId }) {
   if (section === "general") return <GeneralSettingsPanel />
-  if (section === "providers") return <ProvidersSettingsPanel />
   if (section === "mcp") return <McpSettingsPanel />
   if (section === "desktop") return <DesktopSettingsPanel />
   if (section === "account") return <AccountSettingsPanel />
-  return <ModelsSettingsPanel />
+  return (
+    <ModelProviderScope>
+      <AiSettingsPanel />
+    </ModelProviderScope>
+  )
 }
 
 function GeneralSettingsPanel() {
@@ -327,64 +319,90 @@ function LanguagePreview() {
   )
 }
 
-function ModelsSettingsPanel() {
+function ModelPreferences() {
   return (
-    <SettingsPanel>
-      <SettingsGroup
-        title="Model preferences"
-        description="Choose the saved defaults Blame uses when it starts agent work."
-      >
-        <SettingsRow
-          title="Agent model"
-          description="Used for development sessions, backlog execution, and chat."
-        >
-          <ModelSelectorBox role="agent" />
-        </SettingsRow>
-        <SettingsRow
-          title="Alternative model"
-          description="Used for lighter tasks such as project setup and prompt optimization."
-        >
-          <ModelSelectorBox role="alternative" />
-        </SettingsRow>
-      </SettingsGroup>
-    </SettingsPanel>
+    <SettingsGroup
+      title="Default models"
+      description="Choose which model handles each type of work."
+    >
+      <ModelPreferenceRow
+        title="Agent model"
+        description="Development sessions, backlog execution, and chat."
+        role="agent"
+      />
+      <ModelPreferenceRow
+        title="Alternative model"
+        description="Project setup, security audits, and prompt optimization."
+        role="alternative"
+      />
+    </SettingsGroup>
   )
 }
 
-function ModelSelectorBox({ role }: { role: "agent" | "alternative" }) {
+function ModelPreferenceRow({
+  title,
+  description,
+  role,
+}: {
+  title: string
+  description: string
+  role: "agent" | "alternative"
+}) {
   return (
-    <div className="w-full min-w-0 sm:w-96">
-      <ModelSelector role={role} />
+    <div className="grid min-w-0 gap-3 border-b py-4 last:border-b-0 @xl:grid-cols-[minmax(0,1fr)_minmax(0,16rem)] @xl:items-center">
+      <div className="min-w-0">
+        <p className="text-sm font-medium">{title}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      </div>
+      <div className="min-w-0">
+        <ModelSelector role={role} />
+      </div>
     </div>
   )
 }
 
-function ProvidersSettingsPanel() {
+function AiSettingsPanel() {
   const selection = useModelSelection({ role: "agent" })
   const [dialog, setDialog] = React.useState<ProviderDialog>()
-  const connectedProviders = selection.allProviders.filter((provider) =>
-    selection.connectedProviderIDs.has(provider.id)
-  )
-
   return (
-    <SettingsPanel>
-      <SettingsGroup
-        title="Provider connections"
-        description="Connect accounts and choose which models stay visible in Blame."
-      >
-        <ProvidersToolbar selection={selection} setDialog={setDialog} />
-        <ProviderConnectionList
-          connectedProviders={connectedProviders}
+    <div className="@container">
+      <SettingsPanel>
+        <ProviderConnections selection={selection} setDialog={setDialog} />
+        <div className="border-t pt-5">
+          <ModelPreferences />
+        </div>
+        <ProviderDialogs
+          dialog={dialog}
           selection={selection}
           setDialog={setDialog}
         />
-      </SettingsGroup>
-      <ProviderDialogs
-        dialog={dialog}
+      </SettingsPanel>
+    </div>
+  )
+}
+
+function ProviderConnections({
+  selection,
+  setDialog,
+}: {
+  selection: ModelSelection
+  setDialog(dialog: ProviderDialog): void
+}) {
+  const connectedProviders = selection.allProviders.filter((provider) =>
+    selection.connectedProviderIDs.has(provider.id)
+  )
+  return (
+    <SettingsGroup
+      title="Provider connections"
+      description="Link an account or API key to make its models available."
+    >
+      <ProvidersToolbar selection={selection} setDialog={setDialog} />
+      <ProviderConnectionList
+        connectedProviders={connectedProviders}
         selection={selection}
         setDialog={setDialog}
       />
-    </SettingsPanel>
+    </SettingsGroup>
   )
 }
 
@@ -396,7 +414,7 @@ function ProvidersToolbar({
   setDialog(dialog: ProviderDialog): void
 }) {
   return (
-    <div className="flex flex-col gap-3 border-b py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b py-3">
       <ProviderSummary selection={selection} />
       <ProviderToolbarActions selection={selection} setDialog={setDialog} />
     </div>
@@ -453,7 +471,7 @@ function ConnectProviderButton({
       onClick={() => setDialog({ type: "providers" })}
     >
       <PlugZapIcon />
-      Connect
+      Connect provider
     </Button>
   )
 }
@@ -478,7 +496,7 @@ function RefreshProvidersButton({ selection }: { selection: ModelSelection }) {
 
 function ProviderSummary({ selection }: { selection: ModelSelection }) {
   if (!selection.serverReady) {
-    return <StatusText title="Sidecar unavailable" tone="muted" />
+    return <StatusText title="Model service unavailable" tone="muted" />
   }
 
   if (selection.loading) {
@@ -505,8 +523,12 @@ function ProviderConnectionList({
   if (!selection.serverReady)
     return <ProviderEmptyState selection={selection} />
 
+  if (selection.loading)
+    return <EmptySettingsState message="Loading provider connections…" />
   if (!connectedProviders.length) {
-    return <EmptySettingsState message="No provider connected yet." />
+    return (
+      <EmptySettingsState message="Connect your first provider to choose a default model below." />
+    )
   }
 
   return (
