@@ -45,6 +45,8 @@ export type ScannedRoutes = {
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
     'projects.projects.index': { paramsTuple?: []; params?: {} }
     'projects.projects.store': { paramsTuple?: []; params?: {} }
+    'projects.project_agent_memories.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_agent_memories.store': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practices.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practices.update': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'practice': ParamValue} }
     'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
@@ -125,6 +127,7 @@ export type ScannedRoutes = {
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
     'projects.projects.index': { paramsTuple?: []; params?: {} }
+    'projects.project_agent_memories.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practices.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.security_audits.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
@@ -164,6 +167,7 @@ export type ScannedRoutes = {
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
     'projects.projects.index': { paramsTuple?: []; params?: {} }
+    'projects.project_agent_memories.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practices.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.security_audits.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
@@ -204,6 +208,7 @@ export type ScannedRoutes = {
     'profile.account_privacy.close': { paramsTuple?: []; params?: {} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
     'projects.projects.store': { paramsTuple?: []; params?: {} }
+    'projects.project_agent_memories.store': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practice_analyses.start': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practice_analyses.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practice_analyses.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }

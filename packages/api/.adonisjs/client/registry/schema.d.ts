@@ -499,6 +499,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/projects_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'projects.project_agent_memories.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/agent-memories'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_agent_memories_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_agent_memories_controller').default['index']>>>
+    }
+  }
+  'projects.project_agent_memories.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/agent-memories'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/project_agent_memory').storeProjectAgentMemoryValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/project_agent_memory').storeProjectAgentMemoryValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_agent_memories_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_agent_memories_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'projects.project_code_practices.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/projects/:projectId/code-practices'

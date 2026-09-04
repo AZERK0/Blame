@@ -252,6 +252,18 @@ const routes = {
     tokens: [{"old":"/api/v1/projects","type":0,"val":"api","end":""},{"old":"/api/v1/projects","type":0,"val":"v1","end":""},{"old":"/api/v1/projects","type":0,"val":"projects","end":""}],
     types: placeholder as Registry['projects.projects.store']['types'],
   },
+  'projects.project_agent_memories.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/projects/:projectId/agent-memories',
+    tokens: [{"old":"/api/v1/projects/:projectId/agent-memories","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/agent-memories","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/agent-memories","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/agent-memories","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/agent-memories","type":0,"val":"agent-memories","end":""}],
+    types: placeholder as Registry['projects.project_agent_memories.index']['types'],
+  },
+  'projects.project_agent_memories.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/:projectId/agent-memories',
+    tokens: [{"old":"/api/v1/projects/:projectId/agent-memories","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/agent-memories","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/agent-memories","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/agent-memories","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/agent-memories","type":0,"val":"agent-memories","end":""}],
+    types: placeholder as Registry['projects.project_agent_memories.store']['types'],
+  },
   'projects.project_code_practices.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/projects/:projectId/code-practices',

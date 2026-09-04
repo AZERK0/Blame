@@ -86,6 +86,10 @@ export interface ApiDefinition {
       index: typeof routes['projects.projects.index']
       store: typeof routes['projects.projects.store']
     }
+    projectAgentMemories: {
+      index: typeof routes['projects.project_agent_memories.index']
+      store: typeof routes['projects.project_agent_memories.store']
+    }
     projectCodePractices: {
       index: typeof routes['projects.project_code_practices.index']
       update: typeof routes['projects.project_code_practices.update']
