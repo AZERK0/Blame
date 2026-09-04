@@ -41,6 +41,74 @@ test("preserves an edited path read until a fresh read replaces it", () => {
   assert.equal(projection.metrics.staleReadsReplaced, 0);
 });
 
+test("summarizes completed edits without teaching invalid tool arguments", () => {
+  const original = projectionMessages();
+  const before = JSON.stringify(original);
+  const { messages } = projectProviderContext(original, {
+    systemPrompt: "",
+    tools: [],
+  });
+  const blocks = messages.flatMap((message) =>
+    typeof message.content === "string" ? [] : message.content,
+  );
+  const calls = blocks.filter((block) => block.type === "tool_use");
+  const results = blocks.filter((block) => block.type === "tool_result");
+  for (const call of calls.filter((call) => call.name === "edit_code")) {
+    assert.ok(Array.isArray(call.input.operations));
+    assert.equal(call.input.acknowledged, undefined);
+  }
+  assert.deepEqual(
+    results.map((result) => result.tool_use_id),
+    calls.map((call) => call.id),
+  );
+  assert.match(JSON.stringify(messages), /Historical completed edit.*c1/u);
+  assert.equal(JSON.stringify(original), before);
+  assert.deepEqual(
+    projectProviderContext(messages, { systemPrompt: "", tools: [] }).messages,
+    messages,
+  );
+});
+
+test("preserves sibling calls, results and user instructions in a mixed batch", () => {
+  const original = projectionMessages();
+  const content = (index: number) =>
+    original[index].content as Exclude<Message["content"], string>;
+  const mixed: Message[] = [
+    { role: "assistant", content: [...content(2), ...content(6)] },
+    {
+      role: "user",
+      content: [
+        ...content(3),
+        ...content(7),
+        { type: "text", text: "Keep keyboard navigation" },
+      ],
+    },
+    original[4],
+    original[5],
+  ];
+  const { messages } = projectProviderContext(mixed, {
+    systemPrompt: "",
+    tools: [],
+  });
+  const serialized = JSON.stringify(messages);
+  assert.doesNotMatch(serialized, /FIRST_PATCH|"tool_use_id":"edit-1"/u);
+  assert.match(serialized, /LATEST_PATCH/u);
+  assert.match(serialized, /Keep keyboard navigation/u);
+  assert.match(serialized, /"tool_use_id":"edit-2"/u);
+});
+
+test("never summarizes an errored tool result even if its payload says ok", () => {
+  const original = projectionMessages();
+  const result = original[3].content as Exclude<Message["content"], string>;
+  assert.equal(result[0].type, "tool_result");
+  if (result[0].type === "tool_result") result[0].is_error = true;
+  const { messages } = projectProviderContext(original, {
+    systemPrompt: "",
+    tools: [],
+  });
+  assert.match(JSON.stringify(messages), /FIRST_PATCH/u);
+});
+
 test("preserves current edits independently until their paths are observed", () => {
   const messages = [
     toolUse("edit-a", "edit_code", editInput("src/a.ts", "CURRENT_A")),

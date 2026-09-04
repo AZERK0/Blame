@@ -106,7 +106,7 @@ export function projectProviderContext(
 ) {
   const history = indexHistory(messages);
   const stats = emptyProjectionStats();
-  const projected = messages.map((message, index) =>
+  const projected = messages.flatMap((message, index) =>
     projectMessage(message, index, history, stats),
   );
   return {
@@ -141,7 +141,7 @@ function indexToolResult(
 ) {
   const tool = history.tools.get(block.tool_use_id);
   if (!tool) return;
-  tool.result = parseToolResult(block);
+  tool.result = block.is_error ? undefined : parseToolResult(block);
   tool.resultIndex = index;
 }
 
@@ -214,15 +214,17 @@ function projectMessage(
   index: number,
   history: HistoryIndex,
   stats: ProjectionStats,
-): Message {
-  if (!Array.isArray(message.content)) return message;
+): Message[] {
+  if (!Array.isArray(message.content)) return [message];
   const source = message.content as ContentBlock[];
-  const content = source.map((block: ContentBlock) =>
+  const content = source.flatMap((block: ContentBlock) =>
     projectBlock(block, index, history, stats),
   );
-  return content.every((block, blockIndex) => block === source[blockIndex])
-    ? message
-    : { ...message, content };
+  if (!content.length) return [];
+  const unchanged =
+    content.length === source.length &&
+    content.every((block, blockIndex) => block === source[blockIndex]);
+  return [unchanged ? message : { ...message, content }];
 }
 
 function projectBlock(
@@ -230,13 +232,14 @@ function projectBlock(
   index: number,
   history: HistoryIndex,
   stats: ProjectionStats,
-): ContentBlock {
-  if (block.type === "tool_use") return projectToolUse(block, history, stats);
-  if (block.type !== "tool_result") return block;
+): ContentBlock[] {
+  if (block.type === "tool_use") return [projectToolUse(block, history, stats)];
+  if (block.type !== "tool_result") return [block];
+  if (compactableEdit(block.tool_use_id, history)) return [];
   const read = history.readById.get(block.tool_use_id);
-  if (!read || !supersededRead(index, read, history)) return block;
+  if (!read || !supersededRead(index, read, history)) return [block];
   stats.staleReadsReplaced += 1;
-  return supersededReadResult(block, read);
+  return [supersededReadResult(block, read)];
 }
 
 function supersededRead(
@@ -258,14 +261,23 @@ function projectToolUse(
   block: ToolUseContent,
   history: HistoryIndex,
   stats: ProjectionStats,
-): ToolUseContent {
-  if (!history.successfulEditIds.has(block.id)) return block;
+): ContentBlock {
+  if (!compactableEdit(block.id, history)) return block;
   const validated = validatedCurrentEdit(block.id, history);
-  if (unobservedCurrentEdit(block.id, history) && !validated) return block;
   stats.successfulEditsReplaced += 1;
   if (validated) stats.validatedEditsReplaced += 1;
   const tool = history.tools.get(block.id);
-  return { ...block, input: compactEditInput(tool) };
+  return {
+    type: "text",
+    text: `Historical completed edit (not an executable tool call): ${JSON.stringify(tool?.result)}`,
+  };
+}
+
+function compactableEdit(id: string, history: HistoryIndex) {
+  return (
+    history.successfulEditIds.has(id) &&
+    (!unobservedCurrentEdit(id, history) || validatedCurrentEdit(id, history))
+  );
 }
 
 function validatedCurrentEdit(id: string, history: HistoryIndex) {
@@ -305,16 +317,6 @@ function changedPaths(tool: IndexedTool | undefined) {
       const path = stringValue(change?.path);
       return path ? [path] : [];
     });
-}
-
-function compactEditInput(tool: IndexedTool | undefined) {
-  const data = recordValue(tool?.result?.data);
-  return {
-    acknowledged: true,
-    changedPaths: changedPaths(tool),
-    receipt: stringValue(tool?.result?.receipt),
-    sourceRevisionId: stringValue(data?.sourceRevisionId),
-  };
 }
 
 function supersededReadResult(
