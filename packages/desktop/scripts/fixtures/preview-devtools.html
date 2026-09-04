@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Preview inspection smoke</title>
+    <style>
+      body {
+        margin: 48px;
+        font: 24px system-ui;
+        background: #111827;
+        color: #f8fafc;
+      }
+      button,
+      #drop {
+        padding: 24px;
+        margin: 24px;
+        font: inherit;
+      }
+      #drop {
+        display: inline-block;
+        border: 2px solid #60a5fa;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Preview inspection smoke</h1>
+    <button id="advance" draggable="true">Advance project</button>
+    <button id="drop">Drop project here</button>
+    <p id="status">Ready</p>
+    <script>
+      window.inspection = {
+        clicks: 0,
+        keys: 0,
+        drops: 0,
+        wheels: 0,
+        frames: 0,
+      };
+      const advance = document.querySelector("#advance");
+      const drop = document.querySelector("#drop");
+      advance.addEventListener("click", () => {
+        window.inspection.clicks += 1;
+      });
+      advance.addEventListener("dragstart", (event) => {
+        event.dataTransfer.setData("text/plain", "project");
+      });
+      drop.addEventListener("dragover", (event) => {
+        event.preventDefault();
+      });
+      drop.addEventListener("drop", (event) => {
+        event.preventDefault();
+        window.inspection.drops += 1;
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowRight") window.inspection.keys += 1;
+      });
+      document.addEventListener("wheel", (event) => {
+        if (event.shiftKey) window.inspection.wheels += 1;
+      });
+      function frame() {
+        window.inspection.frames += 1;
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>
