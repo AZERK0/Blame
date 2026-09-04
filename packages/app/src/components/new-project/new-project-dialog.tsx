@@ -1,10 +1,5 @@
 import * as React from "react"
-import {
-  CheckCircle2Icon,
-  FolderIcon,
-  LoaderCircleIcon,
-  SparklesIcon,
-} from "lucide-react"
+import { FolderIcon, SparklesIcon } from "lucide-react"
 
 import {
   advancedOptionLabels,
@@ -27,6 +22,7 @@ import {
   type NewProjectStep,
   type NewProjectWizard,
 } from "@/components/new-project/use-new-project-wizard"
+import { NewProjectProgress } from "./new-project-progress"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -59,48 +55,117 @@ export function NewProjectDialog({
 }) {
   const wizard = useNewProjectWizard({ onOpenChange, open })
 
+  return <NewProjectWizardDialog wizard={wizard} open={open} />
+}
+
+export function NewProjectWizardDialog({
+  wizard,
+  open,
+}: {
+  wizard: NewProjectWizard
+  open: boolean
+}) {
   return (
     <>
-      <Dialog open={open} onOpenChange={wizard.setOpen}>
-        <DialogContent className="max-h-[88vh] overflow-hidden p-0 sm:max-w-3xl">
-          <DialogHeader className="border-b px-5 py-4">
-            <DialogTitle>New Project</DialogTitle>
-            <DialogDescription>
-              Generate a codebase ready for Blame workflows.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid min-h-0 gap-5 overflow-y-auto px-5 py-4">
-            <StepProgress wizard={wizard} />
-            <StepContent wizard={wizard} />
-          </div>
-          <WizardFooter wizard={wizard} />
-        </DialogContent>
+      <Dialog
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!wizard.creating) wizard.setOpen(nextOpen)
+        }}
+      >
+        <WizardDialogSurface wizard={wizard} />
       </Dialog>
       <HostDependenciesDialog {...wizard.hostDependenciesDialog} />
     </>
   )
 }
 
+function WizardDialogSurface({ wizard }: { wizard: NewProjectWizard }) {
+  return (
+    <DialogContent
+      className="flex max-h-[min(88svh,52rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+      showCloseButton={!wizard.creating}
+      onInteractOutside={(event) => event.preventDefault()}
+      onEscapeKeyDown={(event) => {
+        if (wizard.creating) event.preventDefault()
+      }}
+    >
+      <WizardBody wizard={wizard} />
+      <WizardFooter wizard={wizard} />
+    </DialogContent>
+  )
+}
+
+function WizardBody({ wizard }: { wizard: NewProjectWizard }) {
+  return (
+    <>
+      <DialogHeader className="shrink-0 border-b px-5 py-4 pr-12">
+        <DialogTitle>New Project</DialogTitle>
+        <DialogDescription>
+          Generate a codebase ready for Blame workflows.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto overscroll-contain px-5 py-5">
+        <StepProgress wizard={wizard} />
+        <StepContent wizard={wizard} />
+        {wizard.error && wizard.step !== "progress" && (
+          <p role="alert" className="text-sm break-words text-destructive">
+            {wizard.error}
+          </p>
+        )}
+      </div>
+    </>
+  )
+}
+
 function StepProgress({ wizard }: { wizard: NewProjectWizard }) {
   if (wizard.step === "progress") return null
-
   return (
-    <div className="grid grid-cols-4 gap-1 sm:grid-cols-9">
-      {wizard.steps.map((step, index) => (
-        <button
-          key={step}
-          type="button"
-          disabled={wizard.creating || index > wizard.currentStepIndex}
-          className={cn(
-            "h-1.5 rounded-full bg-muted transition-colors",
-            index <= wizard.currentStepIndex && "bg-primary"
-          )}
-          onClick={() => wizard.setStep(step)}
-        >
-          <span className="sr-only">{stepLabel(step)}</span>
-        </button>
-      ))}
-    </div>
+    <nav aria-label="Project creation steps">
+      <p className="text-xs text-muted-foreground">
+        Step {wizard.currentStepIndex + 1} of {wizard.steps.length} ·{" "}
+        {stepLabel(wizard.step)}
+      </p>
+      <div className="grid grid-cols-9 gap-1">
+        {wizard.steps.map((step, index) => (
+          <WizardStepMarker
+            key={step}
+            wizard={wizard}
+            step={step}
+            index={index}
+          />
+        ))}
+      </div>
+    </nav>
+  )
+}
+
+function WizardStepMarker({
+  wizard,
+  step,
+  index,
+}: {
+  wizard: NewProjectWizard
+  step: NewProjectStep
+  index: number
+}) {
+  return (
+    <button
+      type="button"
+      disabled={wizard.creating || index > wizard.currentStepIndex}
+      aria-current={step === wizard.step ? "step" : undefined}
+      className="group flex h-7 items-center rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
+      onClick={() => wizard.setStep(step)}
+    >
+      <span
+        className={cn(
+          "h-1.5 w-full rounded-full bg-muted transition-colors group-hover:bg-foreground/20",
+          index <= wizard.currentStepIndex &&
+            "bg-primary group-hover:bg-primary/80"
+        )}
+      />
+      <span className="sr-only">{stepLabel(step)}</span>
+    </button>
   )
 }
 
@@ -113,7 +178,7 @@ function StepContent({ wizard }: { wizard: NewProjectWizard }) {
   if (wizard.step === "data") return <DataStep wizard={wizard} />
   if (wizard.step === "quality") return <QualityStep wizard={wizard} />
   if (wizard.step === "advanced") return <AdvancedStep wizard={wizard} />
-  if (wizard.step === "progress") return <ProgressStep wizard={wizard} />
+  if (wizard.step === "progress") return <NewProjectProgress {...wizard} />
   return <SummaryStep wizard={wizard} />
 }
 
@@ -349,80 +414,63 @@ function SummaryStep({ wizard }: { wizard: NewProjectWizard }) {
 
   return (
     <StepFrame
-      title="Summary"
-      description="Review the project before Blame generates it."
+      title="Ready to create your project?"
+      description="Review your stack. Blame will generate the codebase, install dependencies, and verify the project."
     >
-      <div className="grid gap-2 sm:grid-cols-2">
+      <dl className="grid min-w-0 gap-x-8 sm:grid-cols-2">
         {items.map((item) => (
-          <div key={item.label} className="rounded-lg border bg-muted/30 p-3">
-            <div className="text-xs font-medium text-muted-foreground">
-              {item.label}
-            </div>
-            <div className="mt-1 text-sm font-medium">{item.value}</div>
+          <div
+            key={item.label}
+            className={cn(
+              "min-w-0 border-b py-3",
+              item.label === "Path" && "sm:col-span-2"
+            )}
+          >
+            <dt className="text-xs text-muted-foreground">{item.label}</dt>
+            <dd className="mt-1 text-sm font-medium break-all">{item.value}</dd>
           </div>
         ))}
-      </div>
+      </dl>
     </StepFrame>
   )
-}
-
-function ProgressStep({ wizard }: { wizard: NewProjectWizard }) {
-  const status = progressStatus(wizard.status)
-  return (
-    <StepFrame
-      title="Generating project"
-      description="Blame is running a dedicated AI agent to generate and verify the codebase."
-    >
-      <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
-        {wizard.creating ? (
-          <LoaderCircleIcon className="size-5 animate-spin text-primary" />
-        ) : (
-          <CheckCircle2Icon className="size-5 text-primary" />
-        )}
-        <span className="text-sm font-medium">{status}</span>
-      </div>
-      {wizard.error ? (
-        <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          {wizard.error}
-        </p>
-      ) : null}
-      <pre className="max-h-80 overflow-auto rounded-lg border bg-background p-3 text-xs">
-        {wizard.logs.length
-          ? wizard.logs.map((event) => event.data).join("")
-          : "Waiting for agent output..."}
-      </pre>
-    </StepFrame>
-  )
-}
-
-function progressStatus(status: NewProjectWizard["status"]) {
-  if (status === "preparing") return "Preparation"
-  if (status === "generating") return "AI generation"
-  if (status === "installing") return "Installing dependencies"
-  if (status === "verifying") return "Verification"
-  if (status === "error") return "Generation failed"
-  if (status === "done") return "Generation finished"
-  return "Waiting to start"
 }
 
 function WizardFooter({ wizard }: { wizard: NewProjectWizard }) {
-  if (wizard.step === "progress") {
-    return (
-      <DialogFooter className="mx-0 mb-0 gap-2 rounded-b-xl bg-muted/30 px-5 py-4">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={wizard.creating}
-          onClick={() => wizard.setStep("summary")}
-        >
-          Back to summary
-        </Button>
-      </DialogFooter>
-    )
-  }
-
   return (
-    <DialogFooter className="mx-0 mb-0 gap-2 rounded-b-xl bg-muted/30 px-5 py-4">
+    <DialogFooter className="mx-0 mb-0 shrink-0 gap-2 rounded-b-xl bg-muted/30 px-5 py-4">
+      {wizard.step === "progress" ? (
+        <ProgressFooter wizard={wizard} />
+      ) : (
+        <WizardNavigation wizard={wizard} />
+      )}
+    </DialogFooter>
+  )
+}
+
+function ProgressFooter({ wizard }: { wizard: NewProjectWizard }) {
+  if (wizard.creating)
+    return (
+      <p
+        role="status"
+        className="w-full py-1 text-center text-sm text-muted-foreground"
+      >
+        Your project will open automatically when ready.
+      </p>
+    )
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => wizard.setStep("summary")}
+    >
+      Back to summary
+    </Button>
+  )
+}
+
+function WizardNavigation({ wizard }: { wizard: NewProjectWizard }) {
+  return (
+    <>
       <Button
         type="button"
         variant="outline"
@@ -449,7 +497,7 @@ function WizardFooter({ wizard }: { wizard: NewProjectWizard }) {
           Continue
         </Button>
       )}
-    </DialogFooter>
+    </>
   )
 }
 
