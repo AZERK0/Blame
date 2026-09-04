@@ -158,27 +158,40 @@ async function previewDevtoolsTarget(
   if (!target.available) {
     devtools.disposeScope(String(request.scope ?? ""));
   } else {
-    preparePreviewDevtools(request, target, devtools);
+    return preparePreviewDevtools(request, target, devtools, signal);
   }
   return target;
 }
 
-function preparePreviewDevtools(
+async function preparePreviewDevtools(
   request: Record<string, unknown>,
   target: Awaited<ReturnType<PreviewHarnessService["target"]>>,
   devtools: PreviewDevtoolsMcpService,
+  signal: AbortSignal,
 ) {
   const scope = String(request.scope ?? "").trim();
   const worktree = String(request.worktree ?? "").trim();
-  if (!scope || !worktree || !target.currentUrl) return;
-  void devtools
-    .prepare({
+  if (!scope || !worktree || !target.currentUrl) return target;
+  try {
+    await devtools.prepare({
       browserUrl: target.browserUrl,
       currentUrl: target.currentUrl,
+      pageIdentity: target.id,
       scope,
+      signal,
       worktree,
-    })
-    .catch(() => undefined);
+    });
+    return target;
+  } catch (error) {
+    signal.throwIfAborted();
+    return {
+      ...target,
+      available: false,
+      status: "unavailable",
+      reason: "PREVIEW_DEVTOOLS_UNAVAILABLE",
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 async function previewContainerLogs(
@@ -207,6 +220,7 @@ async function previewDevtoolsCall(
     arguments: recordInput(request.arguments),
     browserUrl: preview.browserUrl,
     currentUrl: preview.currentUrl,
+    pageIdentity: preview.id,
     scope: String(request.scope ?? ""),
     signal,
     toolName: String(request.toolName ?? ""),

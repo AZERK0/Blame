@@ -408,7 +408,6 @@ test("starts development sessions with native skills and private specialist cons
     previewDevtoolsCall: async (input) => {
       previewCallCount += 1;
       previewCall = input;
-      if (previewCallCount === 1) throw new Error("ECONNRESET");
       return { content: [{ type: "text", text: "snapshot" }] };
     },
     previewDevtoolsTools: async () => [
@@ -520,7 +519,7 @@ test("starts development sessions with native skills and private specialist cons
     assert.equal(previewTargetInput?.scope, "preview-scope");
     assert.equal(previewCall?.toolName, "take_snapshot");
     assert.equal(previewCall?.scope, "preview-scope");
-    assert.equal(previewCallCount, 2);
+    assert.equal(previewCallCount, 1);
     const previewStateRecord = previewState as Record<string, unknown>;
     const previewSnapshotRecord = previewSnapshot as Record<string, unknown>;
     const previewSnapshotMetadata = previewSnapshotRecord._meta as Record<

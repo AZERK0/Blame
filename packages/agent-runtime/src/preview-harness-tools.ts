@@ -216,15 +216,7 @@ async function callPreviewTool(
     return await options.previewDevtoolsCall!(input);
   } catch (error) {
     if (!transientDevtoolsFailure(error) || signal?.aborted) throw error;
-    if (devtoolsTimeoutFailure(error))
-      return previewToolUnavailableResult(error);
-    try {
-      return await options.previewDevtoolsCall!(input);
-    } catch (retryError) {
-      if (!transientDevtoolsFailure(retryError) || signal?.aborted)
-        throw retryError;
-      return previewToolUnavailableResult(retryError);
-    }
+    return previewToolUnavailableResult(error);
   }
 }
 
@@ -278,17 +270,9 @@ function previewEvidenceUnavailableResult() {
 }
 
 function transientDevtoolsFailure(error: unknown) {
-  return retryableDevtoolsFailure(error) || devtoolsTimeoutFailure(error);
-}
-
-function retryableDevtoolsFailure(error: unknown) {
-  return /econnreset|navigation|session closed|target closed|temporar/iu.test(
+  return /econnreset|navigation|session closed|target closed|temporar|timed?\s*out|(?:connection|transport|channel) (?:closed|disconnected)|not connected|server (?:closed|disconnected|terminated)|scoped preview page is no longer available/iu.test(
     errorMessage(error),
   );
-}
-
-function devtoolsTimeoutFailure(error: unknown) {
-  return /timed?\s*out/iu.test(errorMessage(error));
 }
 
 function attachPreviewEvidence(result: unknown, evidence: unknown) {

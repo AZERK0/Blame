@@ -283,7 +283,10 @@ test("recreates a scoped connection after the transport closes", async () => {
 });
 
 function previewServiceWithClient(
-  callTool: (request: { name: string }) => Promise<unknown>,
+  callTool: (request: {
+    name: string;
+    arguments?: Record<string, unknown>;
+  }) => Promise<unknown>,
   connected?: (signal: AbortSignal | undefined) => void,
 ) {
   return new PreviewDevtoolsMcpService(async (input) => {
@@ -297,6 +300,47 @@ function previewServiceWithClient(
     };
   });
 }
+
+test("does not replay a tool that loses its page during execution", async (context) => {
+  const calls: string[] = [];
+  const service = previewServiceWithClient(async (request) => {
+    calls.push(request.name);
+    if (request.name === "list_pages") return pagesResult();
+    return {
+      isError: true,
+      content: [
+        {
+          type: "text",
+          text: "Connection closed. Most likely the page has been closed.",
+        },
+      ],
+    };
+  });
+  context.after(() => service.dispose());
+  const result = await service.call({
+    ...previewInput(),
+    toolName: "take_snapshot",
+  });
+  assert.equal((result as { isError: boolean }).isError, true);
+  assert.deepEqual(calls, ["list_pages", "take_snapshot"]);
+});
+
+test("does not retry a discovery diagnostic as an unregistered page", async (context) => {
+  let calls = 0;
+  const service = previewServiceWithClient(async () => {
+    calls += 1;
+    return {
+      isError: true,
+      content: [{ type: "text", text: "Browser authentication failed" }],
+    };
+  });
+  context.after(() => service.dispose());
+  await assert.rejects(
+    service.prepare(previewInput()),
+    /discovery failed: Browser authentication failed/,
+  );
+  assert.equal(calls, 1);
+});
 
 function previewInput() {
   return {
@@ -334,3 +378,107 @@ function schemaHasPageId(schema: Record<string, unknown>) {
 function schemaRequiresPageId(schema: Record<string, unknown>) {
   return Array.isArray(schema.required) && schema.required.includes("pageId");
 }
+
+test("waits for late page registration without executing the tool on another page", async (context) => {
+  let discoveries = 0;
+  const routed: unknown[] = [];
+  const service = previewServiceWithClient(async (request) => {
+    if (request.name === "list_pages") {
+      discoveries += 1;
+      return discoveries === 1
+        ? {
+            structuredContent: {
+              pages: [{ id: 1, url: "https://unrelated.example/" }],
+            },
+          }
+        : pagesResult();
+    }
+    routed.push(request.arguments?.pageId);
+    return { content: [] };
+  });
+  context.after(() => service.dispose());
+  await service.call({ ...previewInput(), toolName: "take_snapshot" });
+  assert.equal(discoveries, 2);
+  assert.deepEqual(routed, [7]);
+});
+
+test("a recreated browser invalidates the route even when its URL is unchanged", async (context) => {
+  let discoveries = 0;
+  const routed: unknown[] = [];
+  const service = previewServiceWithClient(async (request) => {
+    if (request.name === "list_pages") {
+      const result = pagesResult();
+      result.structuredContent.pages[0].id = ++discoveries;
+      return result;
+    }
+    routed.push(request.arguments?.pageId);
+    return { content: [] };
+  });
+  context.after(() => service.dispose());
+  await service.prepare({ ...previewInput(), pageIdentity: "old-browser" });
+  await service.call({
+    ...previewInput(),
+    pageIdentity: "new-browser",
+    toolName: "take_snapshot",
+  });
+  assert.equal(discoveries, 2);
+  assert.deepEqual(routed, [2]);
+});
+
+test("a missing page has a bounded discovery wait without destroying a healthy connection", async (context) => {
+  let registered = false;
+  let connections = 0;
+  const service = previewServiceWithClient(
+    async () =>
+      registered ? pagesResult() : { structuredContent: { pages: [] } },
+    () => {
+      connections += 1;
+    },
+  );
+  context.after(() => service.dispose());
+  const started = Date.now();
+  await assert.rejects(service.prepare(previewInput()), /no longer available/);
+  assert.ok(Date.now() - started < 3_500);
+  registered = true;
+  await service.prepare(previewInput());
+  assert.equal(connections, 1);
+});
+
+test("page discovery can be cancelled without cancelling the connection", async (context) => {
+  const cancellation = new AbortController();
+  let connectionSignal: AbortSignal | undefined;
+  const service = previewServiceWithClient(
+    async () => {
+      cancellation.abort(new Error("cancel discovery"));
+      return { structuredContent: { pages: [] } };
+    },
+    (signal) => {
+      connectionSignal = signal;
+    },
+  );
+  context.after(() => service.dispose());
+  await assert.rejects(
+    service.prepare({ ...previewInput(), signal: cancellation.signal }),
+    /abort|cancel discovery/i,
+  );
+  assert.equal(connectionSignal?.aborted, false);
+});
+
+test("changing the debugging endpoint replaces the scoped connection", async (context) => {
+  const connections: AbortSignal[] = [];
+  const service = previewServiceWithClient(
+    async () => pagesResult(),
+    (signal) => {
+      connections.push(signal!);
+    },
+  );
+  context.after(() => service.dispose());
+  await service.prepare(previewInput());
+  await service.prepare({
+    ...previewInput(),
+    browserUrl: "http://127.0.0.1:9333",
+  });
+  assert.equal(connections.length, 2);
+  assert.equal(connections[0].aborted, true);
+  assert.equal(connections[1].aborted, false);
+});

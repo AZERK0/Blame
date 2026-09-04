@@ -16,6 +16,7 @@ import {
   sep,
 } from "node:path";
 import { pathToFileURL } from "node:url";
+import { setTimeout as delay } from "node:timers/promises";
 import {
   previewDevtoolsMcpVersion,
   previewDevtoolsServerArgs,
@@ -30,6 +31,7 @@ import toolCatalog from "./preview-devtools-tool-catalog.json" with { type: "jso
 
 export type PreviewDevtoolsMcpContext = {
   browserUrl: string;
+  pageIdentity?: string;
   scope: string;
   signal?: AbortSignal;
   worktree: string;
@@ -51,7 +53,7 @@ type McpConnection = {
   artifacts: string;
   client: Client;
   close(): Promise<void>;
-  page?: { id: number; url: string };
+  page?: { id: number; url: string; identity?: string };
   tools: PreviewDevtoolsMcpTool[];
   workspace?: string;
 };
@@ -62,6 +64,7 @@ type CreateMcpConnection = (
 
 type PendingConnection = {
   abortController: AbortController;
+  browserUrl: string;
   connection: Promise<McpConnection>;
   worktree: string;
 };
@@ -100,6 +103,7 @@ const catalogTools = toolCatalog.tools as PreviewDevtoolsMcpTool[];
 const catalogToolNames = new Set(catalogTools.map(({ name }) => name));
 const maximumStagedUploadBytes = 20 * 1024 * 1024;
 const previewMcpCallTimeoutMs = 15_000;
+const previewPageDiscoveryTimeoutMs = 2_000;
 const require = createRequire(import.meta.url);
 
 export class PreviewDevtoolsMcpService {
@@ -143,9 +147,10 @@ export class PreviewDevtoolsMcpService {
         this.connection(input),
         input.signal,
       );
-      await previewPageId(connection, input.currentUrl, input.signal);
+      await previewPageId(connection, input);
     } catch (error) {
-      if (!input.signal?.aborted) this.disposeScope(input.scope);
+      if (!input.signal?.aborted && mcpConnectionUnavailable(error))
+        this.disposeScope(input.scope);
       throw error;
     }
   }
@@ -172,7 +177,11 @@ export class PreviewDevtoolsMcpService {
     const scope = requiredValue(input.scope, "scope");
     const worktree = requiredValue(input.worktree, "worktree");
     const current = this.connections.get(scope);
-    if (current?.worktree === worktree) return current.connection;
+    if (
+      current?.worktree === worktree &&
+      current.browserUrl === input.browserUrl
+    )
+      return current.connection;
     if (current) {
       current.abortController.abort();
       void current.connection
@@ -186,7 +195,12 @@ export class PreviewDevtoolsMcpService {
       signal: abortController.signal,
       worktree,
     });
-    const pending = { abortController, connection, worktree };
+    const pending = {
+      abortController,
+      browserUrl: input.browserUrl,
+      connection,
+      worktree,
+    };
     this.connections.set(scope, pending);
     void connection.catch(() => {
       if (this.connections.get(scope) === pending)
@@ -203,11 +217,7 @@ async function callPreviewTool(
 ) {
   const argumentsValue = await previewToolArguments(connection, tool, input);
   if (pageScoped(tool)) {
-    argumentsValue.pageId = await previewPageId(
-      connection,
-      input.currentUrl,
-      input.signal,
-    );
+    argumentsValue.pageId = await previewPageId(connection, input);
   }
   const result = await callMcpTool(
     connection.client,
@@ -217,11 +227,7 @@ async function callPreviewTool(
   );
   if (!pageScoped(tool) || !stalePageResult(result)) return result;
   connection.page = undefined;
-  argumentsValue.pageId = await previewPageId(
-    connection,
-    input.currentUrl,
-    input.signal,
-  );
+  argumentsValue.pageId = await previewPageId(connection, input);
   return callMcpTool(
     connection.client,
     tool.name,
@@ -559,19 +565,53 @@ function schemaProperties(schema: Record<string, unknown>) {
 
 async function previewPageId(
   connection: McpConnection,
-  currentUrl: string,
-  signal?: AbortSignal,
+  input: PreviewDevtoolsMcpContext & { currentUrl: string },
 ) {
+  input.signal?.throwIfAborted();
   if (
     connection.page &&
-    samePreviewUrl(connection.page.url, currentUrl, true)
+    connection.page.identity === input.pageIdentity &&
+    samePreviewUrl(connection.page.url, input.currentUrl, true)
   ) {
     return connection.page.id;
   }
-  const result = await callMcpTool(connection.client, "list_pages", {}, signal);
-  const id = scopedPreviewPageId(structuredPages(result), currentUrl);
-  connection.page = { id, url: currentUrl };
+  connection.page = undefined;
+  const id = await discoverPreviewPage(
+    connection.client,
+    input.currentUrl,
+    input.signal,
+  );
+  connection.page = { id, url: input.currentUrl, identity: input.pageIdentity };
   return id;
+}
+
+async function discoverPreviewPage(
+  client: Client,
+  currentUrl: string,
+  signal?: AbortSignal,
+) {
+  const deadline = Date.now() + previewPageDiscoveryTimeoutMs;
+  while (true) {
+    signal?.throwIfAborted();
+    const remaining = Math.max(1, deadline - Date.now());
+    const result = await callMcpTool(
+      client,
+      "list_pages",
+      {},
+      signal,
+      remaining,
+    );
+    const diagnostic = mcpErrorText(result);
+    if (diagnostic)
+      throw new Error(`Preview DevTools discovery failed: ${diagnostic}`);
+    const pages = structuredPages(result);
+    if (
+      matchingPreviewPages(pages, currentUrl).length ||
+      Date.now() >= deadline
+    )
+      return scopedPreviewPageId(pages, currentUrl);
+    await delay(Math.min(100, deadline - Date.now()), undefined, { signal });
+  }
 }
 
 async function callMcpTool(
@@ -579,12 +619,13 @@ async function callMcpTool(
   name: string,
   argumentsValue: Record<string, unknown>,
   signal?: AbortSignal,
+  timeout = previewMcpCallTimeoutMs,
 ) {
   try {
     return await client.callTool(
       { arguments: argumentsValue, name },
       undefined,
-      { signal, timeout: previewMcpCallTimeoutMs },
+      { signal, timeout },
     );
   } catch (error) {
     throw new Error(`Preview DevTools ${name} failed: ${errorMessage(error)}`, {
@@ -594,16 +635,20 @@ async function callMcpTool(
 }
 
 function stalePageResult(result: unknown) {
-  if (!result || typeof result !== "object") return false;
+  return mcpErrorText(result).trim() === "No page found";
+}
+
+function mcpErrorText(result: unknown) {
+  if (!result || typeof result !== "object") return "";
   const value = result as { content?: unknown; isError?: unknown };
-  if (value.isError !== true || !Array.isArray(value.content)) return false;
-  return value.content.some(
-    (entry) =>
-      entry &&
-      typeof entry === "object" &&
-      "text" in entry &&
-      /no page found|page has been closed/iu.test(String(entry.text)),
-  );
+  if (value.isError !== true || !Array.isArray(value.content)) return "";
+  return value.content
+    .map((entry) =>
+      entry && typeof entry === "object" && "text" in entry
+        ? String(entry.text)
+        : "",
+    )
+    .join("\n");
 }
 
 function errorMessage(error: unknown) {
