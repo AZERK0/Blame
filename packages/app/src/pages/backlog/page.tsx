@@ -75,6 +75,7 @@ import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpers"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { BacklogColumn } from "@/components/backlog/board/backlog-column"
+import { KanbanBoard } from "@/components/shared/kanban-board"
 import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
 import { useUserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
@@ -1442,31 +1443,29 @@ export function BacklogPage() {
           Loading user stories.
         </div>
       )}
-      <div className="-mx-6 min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-hidden px-6">
-        <div className="grid h-full min-w-500 auto-rows-[minmax(0,1fr)] grid-cols-6 gap-3 pb-3">
-          {backlogColumns.map((column) => (
-            <BacklogColumn
-              key={`${backlog.projectId ?? "no-project"}:${column.id}`}
-              column={column}
-              diffStats={storyDiffStats}
-              onAction={columnAction}
-              onCreateUserStory={openCreateDrawer}
-              onDeleteUserStory={columnDeleteStory}
-              onOpenDrawer={columnOpenDrawer}
-              onOpenWorktree={columnOpenWorktree}
-              onReject={columnRejectStory}
-              reviewDiffEmpty={reviewDiffEmpty}
-              onStopAgent={columnStopAgent}
-              onUnpauseAgent={columnUnpauseAgent}
-              queueInitializing={column.id === "ready" && queueInitializing}
-              storyCleanup={backlog.storyCleanup}
-              storySetupInitializing={backlog.storySetupInitializing}
-              storyTitleGenerating={storyTitleGenerating}
-              stories={backlog.storiesForColumn(column.id)}
-            />
-          ))}
-        </div>
-      </div>
+      <KanbanBoard className="-mx-6 px-6" gridClassName="min-w-500 grid-cols-6">
+        {backlogColumns.map((column) => (
+          <BacklogColumn
+            key={`${backlog.projectId ?? "no-project"}:${column.id}`}
+            column={column}
+            diffStats={storyDiffStats}
+            onAction={columnAction}
+            onCreateUserStory={openCreateDrawer}
+            onDeleteUserStory={columnDeleteStory}
+            onOpenDrawer={columnOpenDrawer}
+            onOpenWorktree={columnOpenWorktree}
+            onReject={columnRejectStory}
+            reviewDiffEmpty={reviewDiffEmpty}
+            onStopAgent={columnStopAgent}
+            onUnpauseAgent={columnUnpauseAgent}
+            queueInitializing={column.id === "ready" && queueInitializing}
+            storyCleanup={backlog.storyCleanup}
+            storySetupInitializing={backlog.storySetupInitializing}
+            storyTitleGenerating={storyTitleGenerating}
+            stories={backlog.storiesForColumn(column.id)}
+          />
+        ))}
+      </KanbanBoard>
       <UserStoryDrawer
         diffStats={
           drawerUserStory ? storyDiffStats(drawerUserStory) : undefined

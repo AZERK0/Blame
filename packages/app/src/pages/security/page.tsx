@@ -20,7 +20,8 @@ import { SecurityLaunchDialog } from "@/components/security/security-launch-dial
 import { SecurityRemediationDialog } from "@/components/security/security-remediation-dialog"
 import { securityFindingStory } from "@/components/security/data/security-remediation"
 import { useSecurityAudits } from "@/components/security/data/use-security-audits"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { SecurityEmptyState } from "@/components/security/security-empty-state"
+import { SecurityAuditHistory } from "@/components/security/security-audit-history"
 import { Button } from "@/components/ui/button"
 import { useCloudAuth } from "@/context/cloud-auth"
 
@@ -168,6 +169,16 @@ export function SecurityPage() {
 
   return (
     <>
+      {audit && audit.status !== "completed" && (
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 pt-[calc(var(--header-height)+1rem)] lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)]">
+          <h2 className="font-heading text-xl font-semibold">Security Audit</h2>
+          <SecurityAuditHistory
+            audit={audit}
+            audits={security.audits}
+            onSelect={setSelectedAuditId}
+          />
+        </div>
+      )}
       {!audit ? (
         <SecurityEmptyState
           error={security.error}
@@ -255,39 +266,6 @@ function auditWithCurrentBacklogLinks(
     }
   })
   return changed ? { ...audit, findings } : audit
-}
-
-function SecurityEmptyState({
-  error,
-  onRun,
-}: {
-  error?: string
-  onRun(): void
-}) {
-  return (
-    <div className="flex flex-1 items-center justify-center px-6 py-12">
-      <div className="flex max-w-md flex-col items-center text-center">
-        <span className="mb-5 flex size-14 items-center justify-center rounded-2xl border bg-card shadow-sm">
-          <ShieldCheckIcon className="size-6 text-blue-500" />
-        </span>
-        <h2 className="font-heading text-2xl font-semibold">Security Audit</h2>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Find and validate security issues across your project.
-        </p>
-        {error ? (
-          <Alert variant="destructive" className="mt-5 text-left">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : null}
-        <Button className="mt-6" onClick={onRun} disabled={Boolean(error)}>
-          Run audit
-        </Button>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Entire project · current working revision · read-only
-        </p>
-      </div>
-    </div>
-  )
 }
 
 function SecurityFailedState({
