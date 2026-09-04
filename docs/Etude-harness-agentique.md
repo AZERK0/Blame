@@ -3378,6 +3378,72 @@ Les variables requises ont été chargées depuis `.env.terminal-bench` sans aff
 
 Le score lexical est volontairement moins puissant qu'un embedding, mais il est déterministe, local et sans coût modèle. Il peut omettre une décision pertinente exprimée avec un vocabulaire entièrement différent ; l'abstention est préférée à l'injection approximative. L'invalidation de l'épisode entier lorsqu'un seul fichier a changé est également conservatrice. Le résumé reste produit par l'agent et peut contenir une conclusion trop vague malgré la validation du code ; son statut non fiable, sa normalisation et sa petite taille réduisent le risque sans constituer une preuve contre toute injection. Enfin, l'utilité réelle dépend de suites de tâches liées dans un même projet. Elle devra être mesurée sur un corpus longitudinal holdout avant toute augmentation de budget ou ajout d'index sémantique.
 
+### 21.45 Consolidation après Portfolio-V4 US-034 — 4 septembre 2026
+
+#### Observation et causes démontrées
+
+L'analyse porte sur US-034 (`01a06cb9-c96f-7c3b-bd37-e1ddd02648cb`), session locale `1788530510520_45335`, exécutée avec GPT-5.6 Sol puis abandonnée. Le transcript canonique contient 436 messages. Il ne s'agit ni du précédent corpus Luna ni d'une nouvelle comparaison Cline/Blame. Le projet Portfolio-V4 n'a pas été modifié pendant ces corrections.
+
+Trois démarrages de commentaire échouent avec `Session not found`. Le runtime arrêtait la session Core au terminal mais conservait ses références locales ; la reprise réutilisait donc une session détruite. Désormais une exécution terminée est restaurée depuis les messages persistés avant l'envoi du commentaire. Une exécution encore active est réutilisée ; une terminaison en cours ne déclenche pas une deuxième session concurrente.
+
+Le dernier run atteint réellement 64 itérations. Parmi ses 29 appels d'édition, 18 utilisent des arguments d'acquittement invalides. La projection de contexte exposait elle-même ces objets comme les arguments d'anciens appels `edit_code`. Avant le premier appel mal formé, le transcript canonique n'en contient aucun mais sa projection en contient six : la mauvaise démonstration est introduite par le harness. Les éditions compactables sont maintenant résumées en texte historique, avec leurs reçus, alias et révisions, sans conserver de faux appel exécutable ni de résultat orphelin. Les instructions utilisateur, les autres blocs du batch et le transcript canonique restent inchangés. La limite de 64 itérations n'a pas été augmentée et aucun compteur de tours sans écriture n'a été ajouté.
+
+Le « crash » autour de `preview_devtools__take_snapshot` était aussi un faux terminal applicatif : le SDK émettait une erreur récupérable, puis exécutait encore quatre appels en environ 28 secondes, dont la finalisation. L'application interprétait néanmoins toute erreur comme un terminal et masquait la suite. Les erreurs SDK explicitement récupérables deviennent des notices diagnostiques non terminales ; les erreurs fatales restent terminales. Le diagnostic reste visible dans l'activité.
+
+Le routage preview cumulait un identifiant de page mis en cache uniquement par URL et une préparation asynchrone susceptible de fermer la connexion après un échec de découverte. Le cache tient maintenant compte de l'identité du navigateur natif et de l'endpoint de debugging. La préparation est attendue et son échec est rendu explicitement. Une page tardivement enregistrée est recherchée pendant au plus deux secondes, une fois l'application prête. Une connexion saine n'est pas détruite pour une simple absence de page. Seul le refus exact `No page found`, produit avant l'exécution du tool par le MCP Google installé, autorise une nouvelle résolution et un nouvel appel. Une connexion perdue pendant une interaction ne provoque plus de retry aveugle.
+
+#### Comparaisons déterministes et smoke navigateur
+
+| Cas | Avant | Après conservé | Nature de la preuve |
+| --- | --- | --- | --- |
+| Projection des 139 premiers messages historiques | 6 faux exemples d'arguments d'édition | 0 faux exemple, 0 résultat orphelin | Replay du même préfixe canonique |
+| Octets retirés de ce même préfixe | 36 732 | 38 694 | Mesure structurelle, pas tokens provider |
+| Commentaire après completed/error/aborted | référence Core arrêtée réutilisée | session restaurée avec son historique | Trois tests de reprise et un test de terminaison en cours |
+| Erreur snapshot récupérable | UI terminale, suite masquée | diagnostic visible, outils suivants et réponse finale conservés | Tests runtime et application |
+| Recréation de page à URL identique | ancien identifiant conservé | résolution liée à l'identité du nouveau navigateur | Test déterministe et vrai MCP Google |
+| Page enregistrée tardivement | échec immédiat de découverte | découverte bornée, sans sélectionner une autre page | Test déterministe |
+| Connexion perdue pendant une interaction | nouvel appel automatique possible | un seul appel, indisponibilité explicite | Tests de non-répétition |
+| Vue native masquée | état potentiellement prêt malgré un viewport inexploitable | `PREVIEW_BROWSER_HIDDEN`, sans attente ni redémarrage | Reproduction Electron et tests d'état |
+
+Le nouveau `pnpm --filter @blame/desktop test:preview-devtools` utilise un vrai Electron 41.2.1/Chromium 146.0.7680.188 et le vrai MCP Google 1.8.0 sur une page locale jetable. Les trois recréations successives à la même URL passent : snapshot DOM, clic, flèche clavier, drag, redimensionnement, animation et capture PNG. La molette avec Maj est injectée par Electron, pas par un outil Google de molette. Les interactions sont vérifiées dans l'état de la page, et une capture a été inspectée visuellement. Les durées observées sont 1 475, 1 016 et 1 003 ms ; elles décrivent ce smoke, sans comparaison provider ni revendication de gain stochastique. Artefacts de cette exécution : `/tmp/blame-preview-smoke-drN1t5/`.
+
+#### Expériences abandonnées et limite importante
+
+La preview complètement masquée reste une limite réelle. Conserver des bounds logiques non nuls ne garantit pas un viewport Chromium non nul. Le rendu temporaire hors fenêtre a révélé une cadence proche d'une image par seconde et un viewport parfois ancien. Le rendu sous la vue principale passe les interactions mais pourrait transparaître derrière la fenêtre transparente de Blame. L'émulation de viewport permet les interactions mais la capture Google reste en timeout, même après une capture native préalable. Ces prototypes et leurs abstractions ont été retirés intégralement.
+
+Le code conservé ne prétend donc pas fournir un navigateur headless indépendant du panneau. Il expose honnêtement l'indisponibilité d'une vue masquée et évite la sonde inutile dans cet état. Le panneau doit rester affiché pour les preuves visuelles ; le runtime déjà sain n'a pas besoin de redémarrer. Le mode `test:preview-devtools --hidden` conserve une reproduction directe de la limitation native, en contournant volontairement cette déclaration de disponibilité. Il n'est pas un test vert attendu. Une solution réellement indépendante du panneau exige une décision distincte sur le cycle de vie et le rendu du navigateur, pas une nouvelle couche de retries.
+
+La [documentation Electron sur le background throttling](https://www.electronjs.org/docs/latest/api/web-contents#contentssetbackgroundthrottlingallowed) et le [correctif upstream de vue cachée #52844](https://releases.electronjs.org/pr/52844) ont été consultés. Ce dernier décrit un problème de compositor apparenté ; il n'est pas présenté comme une explication suffisante de tous les symptômes locaux ni comme un correctif livré dans notre Electron 41.2.1.
+
+#### Validations et portée
+
+Les suites complètes passent : 276 tests runtime, 361 desktop, 234 application et 16 runner. Les lint runtime/application/runner, leurs typechecks ainsi que le typecheck desktop passent. Le build desktop reconstruit ses dépendances runtime, son payload sémantique, le main, le preload et le renderer. Deux workers Electron issus du build passent également le smoke de processus agent. Le runner a été reconstruit après les modifications runtime, avec les variables obligatoires importées depuis `.env.terminal-bench` sans affichage de valeurs. Aucun test ou migration API n'a été lancé contre la base de développement. Aucun credential ni transcript complet n'est commité.
+
+Commandes principales exécutées :
+
+```text
+git status --short
+git diff --check
+pnpm --filter @blame/agent-runtime test
+pnpm --filter @blame/agent-runtime lint
+pnpm --filter @blame/agent-runtime typecheck
+pnpm --filter @blame/agent-runtime build
+pnpm --filter @blame/app test
+pnpm --filter @blame/app lint
+pnpm --filter @blame/app typecheck
+pnpm --filter @blame/desktop test
+pnpm --filter @blame/desktop typecheck
+pnpm --filter @blame/desktop build
+pnpm --filter @blame/benchmark-runner test
+pnpm --filter @blame/benchmark-runner lint
+pnpm --filter @blame/benchmark-runner typecheck
+pnpm --filter @blame/benchmark-runner build
+xvfb-run -a -s '-screen 0 1440x1000x24' pnpm --filter @blame/desktop test:preview-devtools
+xvfb-run -a pnpm --filter @blame/desktop test:agent-process
+```
+
+Aucun nouveau run provider complet Portfolio-V4 n'a été lancé. La réussite répétée d'une nouvelle user story, le respect de ses critères applicatifs, les tokens et le coût restent donc à mesurer après redémarrage avec le nouveau desktop. Les captures du smoke ne valident ni l'esthétique du carrousel Portfolio-V4 ni sa base de données. WSL, Lima et Cloud Preview ne sont pas couverts par un nouveau smoke natif dans cette passe.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)
