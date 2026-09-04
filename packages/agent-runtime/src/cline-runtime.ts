@@ -696,6 +696,13 @@ export class BlameAgentRuntime {
     if (!normalizedSessionId) return undefined;
     if (!this.sessionContexts.has(normalizedSessionId)) return undefined;
     if (!this.unsubscribers.has(normalizedSessionId)) return undefined;
+    const state = this.runLifecycles.state(normalizedSessionId)?.state;
+    if (state === "cancelling") {
+      throw new Error(
+        "The previous execution is still stopping; no new model call was made.",
+      );
+    }
+    if (state && state !== "running") return undefined;
     return { sessionId: normalizedSessionId };
   }
 

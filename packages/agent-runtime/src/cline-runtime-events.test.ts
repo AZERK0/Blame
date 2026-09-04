@@ -16,6 +16,7 @@ import { previewInitializationRepairTool } from "./preview-harness-tools.js";
 import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
 import { ClineFreeModelLimitError, ClineNotSubscribedError } from "@cline/llms";
 import { SessionJournal } from "./harness/session-journal.js";
+import { RunLifecycleRegistry } from "./harness/run-lifecycle.js";
 import { sha256 } from "./harness/light-identity.js";
 import type { ProjectMemoryRecord } from "./harness/project-memory.js";
 import type { AgentEvent } from "./types.js";
@@ -802,6 +803,106 @@ function deferredPromptCore(capture: (prompt: string) => void) {
     },
   };
 }
+
+for (const finishReason of ["completed", "error", "aborted"]) {
+  test(`restores stopped sessions after ${finishReason} before sending comments`, async () => {
+    const workspace = await mkdtemp(join(tmpdir(), "blame-session-resume-"));
+    const originalFetch = globalThis.fetch;
+    const starts: ClineCoreStartInput[] = [];
+    const history = [
+      { role: "user", content: "Keep the existing keyboard navigation" },
+    ];
+    const active = new Set<string>();
+    const core = resumableTestCore(active, starts, history, finishReason);
+    const runtime = new BlameAgentRuntime(undefined, {
+      createCore: async () => core as never,
+    });
+    globalThis.fetch = async () => providerCredentialResponse();
+    try {
+      const base = {
+        apiConnection: { url: "https://api.example" },
+        autoSendPrompt: false,
+        cwd: workspace,
+        workspaceRoot: workspace,
+        modelId: "model",
+        providerId: "provider",
+        summary: "Improve the carousel",
+        title: "Carousel",
+      };
+      const initial = await runtime.sessions.startDevelopment({
+        ...base,
+        executionId: "initial",
+      });
+      for (const executionId of ["first-comment", "second-comment"]) {
+        await runtime.sessions.sendDevelopment({
+          ...base,
+          sessionId: initial.sessionId,
+          executionId:
+            executionId === "first-comment" ? "initial" : "first-comment",
+        });
+        assert.equal(active.size, 0);
+        const resumed = await runtime.sessions.startDevelopment({
+          ...base,
+          resumeSessionId: initial.sessionId,
+          executionId,
+        });
+        assert.equal(resumed.sessionId, initial.sessionId);
+        assert.deepEqual(starts.at(-1)?.initialMessages, history);
+      }
+      assert.equal(starts.length, 3);
+    } finally {
+      globalThis.fetch = originalFetch;
+      await runtime.shutdown();
+      await rm(workspace, { recursive: true, force: true });
+    }
+  });
+}
+
+function resumableTestCore(
+  active: Set<string>,
+  starts: ClineCoreStartInput[],
+  history: unknown[],
+  finishReason: string,
+) {
+  return {
+    ...deferredPromptCore(() => undefined),
+    async readLiveMessages() {
+      return history;
+    },
+    async start(input: ClineCoreStartInput) {
+      starts.push(input);
+      active.add(input.config.sessionId!);
+      return { sessionId: input.config.sessionId! };
+    },
+    async send(input: { sessionId: string }) {
+      assert.ok(active.has(input.sessionId), "session not found");
+      return { finishReason, outputText: "Completed" };
+    },
+    async stop(sessionId: string) {
+      active.delete(sessionId);
+    },
+  };
+}
+
+test("reuses active sessions but never restores while termination is pending", () => {
+  const runtime = new BlameAgentRuntime();
+  const internals = runtime as unknown as {
+    attachedSession(id: string): { sessionId: string } | undefined;
+    runLifecycles: RunLifecycleRegistry;
+    sessionContexts: Map<string, unknown>;
+    unsubscribers: Map<string, () => void>;
+  };
+  internals.sessionContexts.set("session", {});
+  internals.unsubscribers.set("session", () => undefined);
+  internals.runLifecycles.begin("session", "execution");
+  assert.deepEqual(internals.attachedSession("session"), {
+    sessionId: "session",
+  });
+  internals.runLifecycles.stopping("session", "execution");
+  assert.throws(() => internals.attachedSession("session"), /still stopping/u);
+  internals.runLifecycles.terminationPending("session", "execution");
+  assert.throws(() => internals.attachedSession("session"), /still stopping/u);
+});
 
 function projectMemoryRecord(hash: string): ProjectMemoryRecord {
   return {
