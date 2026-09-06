@@ -74,17 +74,49 @@ function compatibleRequestInit(
   init?: RequestInit,
 ) {
   if (typeof init?.body !== "string") return init;
-  const body = compatibleJsonBody(init.body, {
-    simplifyLocalGrammar: isLocalProviderRequest(input),
-  });
+  const body = compatibleJsonBody(
+    init.body,
+    { simplifyLocalGrammar: isLocalProviderRequest(input) },
+    isResponsesRequest(input),
+  );
   return body === init.body ? init : { ...init, body };
 }
 
-function compatibleJsonBody(body: string, options: SchemaNormalizationOptions) {
+function compatibleJsonBody(
+  body: string,
+  options: SchemaNormalizationOptions,
+  responsesRequest: boolean,
+) {
   try {
-    return JSON.stringify(normalizeProviderPayload(JSON.parse(body), options));
+    const payload = normalizeProviderPayload(JSON.parse(body), options);
+    return JSON.stringify(
+      responsesRequest ? compatibleResponsesPayload(payload) : payload,
+    );
   } catch {
     return body;
+  }
+}
+
+function compatibleResponsesPayload(value: unknown) {
+  if (!isRecord(value) || !Array.isArray(value.tools)) return value;
+  return {
+    ...value,
+    tools: value.tools.map((tool) =>
+      isRecord(tool) &&
+      tool.type === "function" &&
+      typeof tool.name === "string" &&
+      tool.strict === undefined
+        ? { ...tool, strict: false }
+        : tool,
+    ),
+  };
+}
+
+function isResponsesRequest(input: Parameters<typeof fetch>[0]) {
+  try {
+    return /\/responses\/?$/.test(new URL(requestUrl(input)).pathname);
+  } catch {
+    return false;
   }
 }
 
