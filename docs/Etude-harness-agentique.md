@@ -1,13 +1,38 @@
 # Blame — Étude des outils d’un harness agentique de code
 
-**Version 1.0 — 9 août 2026**  
+**Version de travail — mise à jour du 6 septembre 2026**
+
 **Objet :** définir les primitives d’un IDE agentique qui dépassent le paradigme actuel `grep → read_file(lines) → patch → shell`, en s’appuyant sur la littérature scientifique, les systèmes existants et les contraintes propres à Blame.
 
-> **Statut normatif au 1er septembre 2026.** La section 21.30, « Light Semantic Harness », remplace les recommandations d’architecture précédentes. Les sections antérieures restent conservées comme historique des hypothèses, incidents et migrations ; leurs protocoles MVCC agent-facing, leurs multiples autorités, leurs outils séparés et leurs mécanismes de coordination ne décrivent plus le chemin normal de production.
+> **Statut normatif au 4 septembre 2026.** La section 21.30, « Light Semantic Harness », et ses corrections de la section 21.46 remplacent les recommandations d’architecture précédentes. Les sections antérieures restent conservées comme historique des hypothèses, incidents et migrations ; leurs protocoles MVCC agent-facing, leurs multiples autorités, leurs outils séparés et leurs mécanismes de coordination ne décrivent plus le chemin normal de production.
 
 ---
 
-## Résumé décisionnel
+## Résumé décisionnel actuel
+
+Le chemin de production repose sur cinq outils : `search_code`, `read_code`, `edit_code`, `run_task` et `finish_task`. L’agent choisit les observations, transformations et validations utiles. Les symboles sont une préférence lorsque leur précision réduit le travail ; les patches ciblés restent un chemin normal. Les hashes, offsets, préconditions et verrous relèvent du runtime et ne constituent pas un protocole à apprendre au modèle.
+
+La priorité est la justesse des contrats existants : préserver une modification concurrente, rattacher une validation à la source effectivement observée, conserver les échecs pertinents et ne pas retirer du contexte des portions de code encore utiles. Une demande explicative peut finir sans modifier de fichier. L’indisponibilité de la validation doit rester distincte de sa réussite.
+
+Les premiers gains de temps et de coût observés ne suffisent pas à qualifier Blame de frontier. Le réaudit du 4 septembre a reproduit des faux positifs de finalisation et du scorer. Les corrections, campagnes limitées à dix scénarios et limites restantes sont consignées en section 21.46. Les résultats historiques ci-dessous ne démontrent pas une supériorité générale, ni la validation des interfaces visuelles ou des longues tâches avec compaction. Le lot externe du 5 septembre, décrit en section 21.47, atteint 12/15 et a révélé des refus de commandes nécessaires, un coût élevé de contexte sur Cython et des limites de résolution sur SQL et la compression. La section 21.48 documente leurs corrections mécaniques, onze exécutions supplémentaires et une ablation qui conduit à alléger le prompt. Cython et les certificats s’améliorent, sans gain universel démontré sur les tâches inédites.
+
+Le contrôle Cline SDK des quinze mêmes tâches, en section 21.49, atteint 11/15 face au 12/15 historique de Blame. Blame observe −7,5 % de coût et −8,9 % de durée cumulée, mais +0,6 % d’entrée. Sur les dix tâches réussies par les deux, coût et durée sont à parité. Les deux timeouts rendent l’usage potentiellement partiel. Ce contrôle soutient des corrections ciblées ; il ne démontre ni une supériorité générale ni les performances du bundle Blame final, qui n’a pas été rejoué sur les quinze tâches.
+
+La section 21.50 livre trois corrections ciblées et conserve 25 essais en groupes de 5, 10 et 10. La version finale et Cline SDK atteignent chacun 4/5, contre 5/5 pour Blame avant. Blame observe −4,6 % de coût face au contrôle final, mais +36,7 % d'entrée et +3,8 % de durée. Les erreurs diffèrent et le premier contrôle Cline était 5/5. Ces mesures ne valident pas un progrès global de fiabilité ; les validateurs manquants, la portée des alias après lecture partielle et les refus de restauration restent prioritaires.
+
+La section 21.51 conserve trois itérations supplémentaires, soit 18 essais en groupes de 10, 4 et 4. Les corrections retenues concernent la portée des cibles, le diagnostic des modules Python manquants et l’indentation des corps Python. Le premier lot régresse de 2/5 à 1/5. Le second obtient 2/2 dans les deux bras, avec +104,3 % de coût pour la correction mesurée. Une variante de description est retirée après 1/2 contre 2/2 et +14,5 % de coût. La justesse mécanique progresse, sans gain global d’efficacité validé.
+
+La section 21.52 conserve quinze essais en groupes de 9 et 6. Les relectures, le routage, les inspections Git et le placement exact des patchs sont corrigés. Le premier groupe réduit l’entrée de 22,0 % et la durée de 13,8 %, à 2/3 réussites dans les deux bras Blame, contre 3/3 pour Cline SDK. Le second obtient 0/3 pour le témoin répété et 1/3 pour le moteur de patch corrigé : Cython passe de 5/11 à 11/11 contrôles, mais Scheme de 61/63 à 41/63. Les corrections mécaniques sont validées ; aucun gain global stable de qualité et d’efficacité n’est établi.
+
+La section 21.53 élargit la mesure du correctif de patch à dix tâches, dont huit inédites, en vingt essais sans changement de version. Les refus de patch passent de 20/42 à 13/41, mais hors Cython le taux reste à 36,36 %. Les ambiguïtés passent de 11 à 1. Les scores atteignent 7/10 puis 8/10, avec −6,1 % d’entrée, −11,0 % de coût rapporté et −8,1 % de durée runner ; les requêtes au modèle restent 212 dans chaque bras. L’unique réussite supplémentaire provient d’une trajectoire sans édition par patch. Un faux rejet syntaxique C est confirmé par le compilateur sur un candidat réel. Le gain reste concentré et ce blocage du validateur constitue une correction prioritaire, sans justifier de nouveaux mécanismes.
+
+La section 21.54 retire le faux jugement syntaxique C/C++, corrige les plages de lecture sur les alias et symboles, conserve les erreurs de transport au démarrage et supprime les échos strictement identiques de commandes dans le contexte fournisseur. Les 406 tests runtime, 16 runner et 8 adaptateur passent. Le rejeu causal d’une plage Doom réduit sa réponse de 76,8 % ; les échos retirés représentent 1,917 % d’octets de contexte sur vingt traces, sans équivalence revendiquée en tokens facturés. Le groupe figé de dix essais est pourtant défavorable : 4/5 → 3/5 réussites, +31,2 % d’entrée, +129,9 % de coût rapporté et +19,7 % de durée runner. Il conserve un refus de patch dans chaque version. Six sources primaires nourrissent l’idéation ; deux variantes sont écartées après diagnostic, sans complexifier le runtime. Les corrections mécaniques sont étayées, pas un gain global d’efficacité.
+
+La section 21.55 approfondit cette régression sans ajouter de run. Les 27 requêtes finales de Doom représentent 95,1 % du surcoût du groupe. Sur cette trajectoire, les 22 requêtes qui réécrivent un ancien résultat concentrent 93,8 % de l’entrée hors cache : leur taux de cache est de 7,85 %, contre 96,20 % sur les autres requêtes. Le rejeu avec les deux projecteurs montre les mêmes événements de réécriture ; le retrait d’écho n’en ajoute aucun. La projection rétrospective préexistante constitue le principal amplificateur identifié côté harness, sans chiffrage causal du gain récupérable. Une capture hors réseau révèle aussi un contrat d’optionalité mal explicité au fournisseur : strict est omis sur les fonctions. Son effet exact dans le backend historique n’est pas établi.
+
+La section 21.56 corrige le contrat fournisseur, la stabilité du contexte et la récupération des commandes. Le premier groupe de dix conserve 4/5 réussites par bras avec −47,5 % de coût rapporté et −18,5 % de durée. Deux suivis de quatre essais affichent cependant +62,5 % puis +51,5 % de coût ; le dernier contient un témoin POV-Ray exposé à une solution publique. Des défauts mécaniques supplémentaires sont corrigés (portée des symboles, binaires web, faux rejets d’inspection). Un gain global stable de la version finale n’est pas démontré.
+
+## Résumé décisionnel initial — historique remplacé
 
 L’hypothèse de départ est fortement soutenue dans les configurations évaluées : exposer la structure du programme peut être plus efficace que faire parcourir des plages de lignes. Le papier ACL 2026 **CODESTRUCT** remplace la lecture et l’édition textuelles par des opérations ciblant des entités AST nommées. Sur SWE-bench Verified, il rapporte pour les modèles les plus capables **+1,2 à +5,0 points de Pass@1**, **12 à 38 % de tokens d’entrée en moins** dans la plupart des configurations et **76 à 88 % d’occurrences d’erreurs du tool d’édition en moins** pour les modèles capables. Ces dernières sont des erreurs opérationnelles détectées dans les trajectoires, pas des patches sémantiquement faux. Les résultats ne sont pas uniformes : GPT-5-nano consomme environ 41 % de tokens d’entrée supplémentaires tout en réussissant beaucoup plus, et le système reste limité à des AST par fichier. ([CODESTRUCT](https://aclanthology.org/2026.acl-long.607/))
 
@@ -3443,6 +3468,294 @@ xvfb-run -a pnpm --filter @blame/desktop test:agent-process
 ```
 
 Aucun nouveau run provider complet Portfolio-V4 n'a été lancé. La réussite répétée d'une nouvelle user story, le respect de ses critères applicatifs, les tokens et le coût restent donc à mesurer après redémarrage avec le nouveau desktop. Les captures du smoke ne valident ni l'esthétique du carrousel Portfolio-V4 ni sa base de données. WSL, Lima et Cloud Preview ne sont pas couverts par un nouveau smoke natif dans cette passe.
+
+### 21.46 Réaudit, corrections et comparaison contemporaine — 4 septembre 2026
+
+Le réaudit est parti du commit `6e64b0aa0d96`, avec un worktree propre. Les contre-exemples concernaient la finalisation malgré un test rouge, les preuves rattachées à une révision postérieure à leur exécution, les aliases devenus périmés, l’annulation ignorée, la projection des lectures partielles et les faux positifs du scorer. Les reproductions et l’audit initial sont conservés localement sous `.blame/audits/frontier-2026-09-04/`.
+
+#### Corrections conservées
+
+- **Validation.** Le runtime compare les états de source avant et après une commande. Un changement pendant l’exécution interdit de présenter sa sortie comme preuve du nouvel état. Les commandes explicites sont réellement relancées ; leur résultat n’est plus mis en cache par le seul couple commande/révision. Les invocations usuelles d’un script déclaré, telles que `npm test`, rejoignent son identité de validation.
+- **Finalisation.** Un échec pertinent et courant ne peut plus être masqué par un autre build réussi. Une édition qui rend cet échec ancien oblige à relancer le check concerné. Le dernier résultat d’une même validation remplace ses anciens résultats. La couverture est attribuée conservativement au package propriétaire du fichier ; une tâche racine n’atteste plus automatiquement les autres packages. La finalisation choisit une validation par package modifié, plus les validations connues encore en échec. Elle réutilise les preuves fraîches sans demander au modèle de gérer leurs identifiants. Ce périmètre reste une approximation par package, pas une analyse des dépendances de chaque test.
+- **Édition.** Le contenu du symbole observé sert de précondition interne. Un déplacement dû à une modification voisine reste rebasable ; une modification de la cible provoque un conflit explicite. Les cibles `sN` et `path#qualifiedName` suivent cette règle. L’annulation est transmise et contrôlée avant l’écriture du lot.
+- **Interruption et lectures.** L’intention d’écriture conserve les contenus nécessaires à la restauration d’un lot interrompu. Les lecteurs du harness utilisent le verrou des écritures et voient un lot terminé. La reprise refuse d’écraser une modification externe plus récente. L’initialisation des outils devient paresseuse, supprimant les écritures de fond observées pendant le cleanup des tests. La garantie porte sur les écritures par fichier et les opérations coopérantes du harness ; les lecteurs externes au processus ne bénéficient pas d’une transaction de filesystem multi-fichiers.
+- **Commandes utiles.** Les règles portent désormais sur les commandes et redirections parsées, ce qui évite de traiter du texte cité comme une opération. Les inspections ciblées des dépendances, `git -C . status` et les comparaisons dans une chaîne sont admises ; la redirection adjacente `printf x>fichier` est reconnue. Les générateurs finis et les scripts de formatage peuvent modifier la source. Leurs changements nets sont journalisés, y compris après un échec ou une annulation, en préservant l’état sale préexistant du worktree. Ils doivent être validés ensuite. Les modifications déjà journalisées par une édition concurrente ne sont pas attribuées à nouveau à la commande. Les opérations de dépendances utilisent le même mécanisme d’observation.
+- **Contexte et contrat.** Une nouvelle lecture partielle ne remplace plus une ancienne lecture complète. Les retours au contenu initial ne constituent plus un effet livré pour les modifications dont l’état initial a été enregistré. Les demandes explicatives peuvent finir sans édition ; la contrainte explicite `source_change` reste disponible aux appelants qui l’exigent. Une validation indisponible donne une livraison non vérifiée avec réserve, sans créer de mémoire de réussite. Le prompt privilégie les symboles lorsqu’ils réduisent effectivement le travail, et le schéma de patch montre le format attendu.
+
+Le noyau reste composé des cinq mêmes outils. Aucun graphe, protocole de hashes fourni par le modèle, solveur d’obligations, dépendance logicielle supplémentaire ou système de retries n’a été ajouté. Le parseur Bash employé était déjà installé. Les scripts natifs s’exécutent avec les permissions de leur environnement : le worktree protège l’état Git, il ne constitue pas un sandbox OS. Les contrôles syntaxiques de commandes sont des restrictions d’intention, pas une preuve de confinement d’un programme arbitraire.
+
+#### Mesures réellement exécutées
+
+Cinq campagnes de dix scénarios ont été exécutées, soit **50 runs provider**. Toutes utilisent `openai-codex`, `gpt-5.6-luna`, l’effort `high`, les mêmes instructions et budgets par scénario. Les dix révisions Git initiales correspondent exactement entre les cinq campagnes. Le dist est resté figé à l’intérieur de chaque campagne. Aucun modèle frontier différent, nouvelle tâche Portfolio, base applicative ou preview visuelle n’a été exécuté dans cette passe.
+
+| Version | Succès | Score corpus | Secondes | Tokens entrée | Tokens sortie | Coût rapporté ($) | Outils | Format |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Avant corrections | 10/10 | 100/100 | 313.577 | 146,027 | 10,647 | 0.03248932 | 46 | 7/10 |
+| Itération 1 | 10/10 | 100/100 | 347.639 | 151,025 | 11,339 | 0.03376636 | 45 | 6/10 |
+| Itération 2 | 10/10 | 100/100 | 323.845 | 166,747 | 10,915 | 0.03594116 | 50 | 7/10 |
+| Contrôle Cline | 10/10 | 100/100 | 546.964 | 249,077 | 22,369 | 0.05195932 | 63 | 8/10 |
+| Itération 3 conservée | 10/10 | 100/100 | 271.452 | 138,324 | 9,047 | 0.02736984 | 44 | 6/10 |
+
+L’itération finale observe **13.4 % de temps, 5.3 % de tokens d’entrée et 15.8 % de coût en moins** que le Blame de départ. Face au contrôle Cline contemporain, les écarts observés sont **50.4 %, 44.5 % et 47.3 %** respectivement. Les prix sont les coûts rapportés par le provider/runner, sans vérification de facture.
+
+Les deux versions intermédiaires sont conservées : elles ont coûté davantage que le Blame initial. L’itération 1 corrigeait les principales préconditions, la couverture et la projection ; l’itération 2 ajoutait la reprise, la sérialisation des lectures et le traitement des échecs devenus anciens ; l’itération 3 ouvrait l’exécution finie avec observation des effets et clarifiait le prompt et le patch. Il n’y a qu’un passage par version, sans alternance aléatoire ni ablation de chaque modification. Le cache provider et les trajectoires du modèle ont varié. Ces écarts ne sont donc ni une estimation robuste de gain moyen, ni une attribution causale à un correctif particulier.
+
+Sur la création volumineuse, le dernier modèle a choisi une création par contenu brut avec `edit_code`, malgré la disponibilité du générateur. Le gain live de cette tâche ne doit pas être attribué à une génération shell qui n’a pas eu lieu. Le chemin générateur est exercé par les tests déterministes. Le formatage strict reste inférieur dans le dernier lot Blame : 6/10 contre 8/10 pour Cline. Le score 100/100 du corpus ne comprend pas ce critère, ni une inspection visuelle. Le champ `verified` est propre à Blame et n’est pas émis par le contrôle Cline ; son absence n’est pas un échec de Cline.
+
+Les campagnes se trouvent sous `.blame/benchmarks/corpus/` : `frontier-before-20260904`, `frontier-after-1-20260904`, `frontier-after-2-20260904`, `frontier-cline-control-20260904` et `frontier-after-3-20260904`. Chaque scénario conserve événements, résultat, diff et révision de fixture. Les nouvelles campagnes conservent aussi le patch du harness, ses nouveaux fichiers et un digest du dist. L’effort, le modèle et les budgets sont inscrits dans les résultats récents. Les sources ont reçu, après le dernier run, uniquement le rangement d’un import, la suppression d’un export inutilisé et la clarification d’un message de refus ; ces retouches n’affectent pas les comportements mesurés.
+
+#### Fiabilité du banc et validations
+
+Le runner refuse désormais une campagne de plus de dix scénarios. Il récupère l’usage après timeout/annulation lorsque la session le permet. Une valeur d’usage manquante reste inconnue ; elle n’est plus agrégée comme un zéro favorable. Les checks de fonction, de frais, de sélection, de titre vide et de données générées exécutent le code produit. Le contre-exemple d’un `return` correct inaccessible derrière `return "WRONG"` est rejeté. Le contrôle de fraîcheur confronte l’ordre des événements, leurs révisions et les chemins couverts, au lieu de se limiter au booléen terminal. Les quatre premières campagnes ont été rescorrées avec les mêmes oracles que la dernière ; les scores originaux restent archivés. Certains contrôles CSS, TSX et Prisma demeurent structurels.
+
+Les validations passent : **298 tests runtime, 361 tests desktop, 16 tests runner et 10 tests du corpus**. Les builds/typechecks runtime et runner, le typecheck desktop et les lints runtime/runner ont été exécutés. Les scénarios déterministes supplémentaires couvrent notamment les conflits de cible, les lectures partielles, la fraîcheur, les deux packages, l’annulation avant écriture, la restauration d’une intention interrompue, la conservation d’une modification externe, l’attente des lecteurs, les commandes de génération et leurs effets après échec/annulation. Le test de restauration simule une interruption persistée ; il ne constitue pas une campagne de crash système ou de coupure de courant.
+
+#### Verdict et priorités restantes
+
+**Le noyau est plus cohérent et ses défauts reproduits les plus graves sont corrigés. Le dernier lot est meilleur que le contrôle classique sur les trois mesures visées, à score de corpus égal. Le statut frontier reste à démontrer.**
+
+1. **P1 — étendre la preuve comparative.** Répéter et alterner les runs avec un modèle frontier, des tâches plus difficiles, plusieurs langages, une compaction réelle et une reprise. Une tâche UI intégrée doit avoir des interactions et un rendu vérifiés. Ne pas élargir la mémoire ou la compaction avant cette mesure.
+2. **P1 — compléter navigation et validation native.** La recherche reste plafonnée sans continuation complète ; le catalogue automatique et la couverture de validation restent centrés sur les manifests Node. Les commandes natives sont exécutables, mais leur simple succès ne devient pas automatiquement une validation reconnue par la finalisation. La lecture symbolique multi-langage est conservée, sans nouvelle preuve live multi-langage ici.
+3. **P1 — terminer les garanties de lifecycle.** La preview indépendante du panneau reste ouverte. La reprise des lots doit aussi être éprouvée par arrêts de processus et interruptions à chaque frontière, notamment entre écriture du lot et accusé dans le journal de session. Les scripts arbitraires ne reçoivent pas une atomicité globale : leurs effets partiels sont conservés et rendus observables. Le confinement et la fraîcheur des dépendances/services doivent rester des responsabilités explicites de l’environnement d’exécution.
+4. **P2 — retirer le passif documenté.** Le résumé décisionnel actuel remplace désormais le résumé historique ; les anciens protocoles restent identifiés comme historique. Leur suppression dans le code demande une vérification de leurs autres consommateurs, sans réécriture générale de `cline-runtime.ts`.
+
+### 21.47 Quinze tâches externes Terminal-Bench — 5 septembre 2026
+
+Les 89 tâches du dépôt officiel Terminal-Bench 2 ont été téléchargées au commit `2fd12b88aafdd04a52c298e3940bcb189f9766d6`. Quinze tâches distinctes ont été sélectionnées avant exécution, puis évaluées en deux groupes de dix et cinq, avec Harbor 0.22.0, Docker et le même bundle Blame figé. Le modèle reste `openai-codex/gpt-5.6-luna`, effort `high`, avec une limite de 64 itérations et 900 secondes par tâche. Les tâches, vérificateurs et solutions n’ont pas été modifiés. Ce sous-ensemble manuel n’est pas un score du benchmark complet.
+
+Le résultat officiel est **12/15 (80 %) : 9/10 puis 3/5**. Les trois échecs sont conservés :
+
+- `build-cython-ext` passe dix contrôles sur onze, mais le dépôt Git demandé manque. Le harness refuse une inspection contenant `git --version` ; l’agent utilise ensuite une archive. La politique refuse également le clone attendu. Cette restriction contribue à un écart explicite au contrat malgré la réussite fonctionnelle.
+- `query-optimize` produit exactement le bon résultat mais manque le seuil de performance : médiane de 0,524733 s contre 0,479487 s pour la référence optimisée, avec une tolérance de 5 %. Cinq contrôles sur six passent.
+- `write-compressor` atteint les 900 secondes sans livrer `data.comp`. Les traces montrent des erreurs d’algorithme et de compilation, des détours liés aux outils et de longues phases sans outil. Aucun contrôle apparié ne permet d’isoler leur contribution respective.
+
+Les compteurs disponibles totalisent **3 502 909 tokens d’entrée, dont 3 001 344 en cache, 154 895 tokens de sortie et 0,34621388 $ rapportés**. Le cache est inclus dans l’entrée. Les compteurs Blame du run interrompu ont été récupérés dans son artefact final malgré leur absence dans l’agrégat Harbor ; le dernier appel interrompu peut rester incomplètement comptabilisé. Les durées cumulées du runner atteignent 3 608,322 secondes, avec plusieurs conteneurs actifs simultanément. Aucun gain face à Cline n’est déduit de ce lot, faute de contrôle apparié.
+
+Cython concentre 2,40 millions de tokens d’entrée et 16 éditions refusées sur 24 tentatives. Les réponses de lecture représentent environ 7,8 Mo cumulés dans les requêtes successives. Les quinze tâches n’ont déclenché aucune compaction. Les 104 résultats d’outil `blocked` sur 303 appels comprennent des refus de contrat, des erreurs de code et des problèmes d’environnement : ils ne sont pas tous des défauts du harness. Les refus génériques de commandes locales, les chemins absolus pourtant intérieurs au workspace, le catalogue de dépendances/validation centré sur Node et la répétition des grandes lectures restent les priorités étayées par ces runs.
+
+Le [rapport détaillé](terminal-bench-2026-09-05.md) donne les quinze résultats, les paramètres, l’analyse des trois échecs et les références aux artefacts locaux. Les empreintes des 142 fichiers de tâches sélectionnés, du bundle et des sources du harness sont vérifiées. Le premier lancement a échoué avant tout appel modèle à cause du chemin d’import Python ; le même groupe a été relancé avec `PYTHONPATH` corrigé. Aucun échec métier n’a été relancé.
+
+### 21.48 Corrections mécaniques, transfert et ablation du prompt — 5 septembre 2026
+
+La passe suivante applique les corrections issues des traces : chemins absolus internes normalisés, commandes locales finies et clone Git accessibles, ancres de patch exactes, validations Cargo/Go/pytest déclarées, frontières des packages natifs et récupération de l’usage après interruption. Le contexte conserve les fragments uniques et retire seulement les lectures dont le remplacement est prouvé. Un test borné a aussi révélé une boucle du SDK sur un hunk mal formé ; l’entrée est maintenant normalisée avant cet appel. Aucun outil supplémentaire ni hash à fournir par le modèle n’est introduit.
+
+Onze exécutions sont conservées en groupes de trois, cinq, un, un et un, au même commit Terminal-Bench, avec Harbor 0.22.0 et Luna `high`. Trois tâches inédites servent au contrôle contemporain et deux tâches connues au diagnostic. Les vérificateurs et instructions de tâche restent inchangés ; aucune solution oracle n’est injectée.
+
+- **Cython réussit désormais** : 1 396 544 tokens d’entrée contre 2 399 734, soit −41,8 %, et 0,06190408 $ rapportés contre 0,09857480 $. Le dépôt réel est cloné. Les appels passent de 101 à 85 ; 22 résultats bloqués subsistent, dont des diagnostics de compilation légitimes.
+- **Les certificats restent réussis** : 10 240 tokens d’entrée contre 104 351, trois appels contre 21 et aucun refus. Ce gain ciblé ne suffit pas à une revendication générale.
+- **Le premier groupe inédit régresse de 2/3 à 1/3**. ELF échoue toujours et consomme davantage. La migration COBOL reste correcte avec neuf refus de moins. Python s’arrête avant édition pour inactivité du modèle, puis échoue de la même manière lors d’une reprise inchangée.
+
+Un nouveau contrôle avec l’ancien bundle réussit Python en 54,7 secondes. Une ablation du bundle corrigé retire ensuite uniquement deux nouvelles phrases générales sur les algorithmes et la performance ; elle réussit en 47,8 secondes. Le prompt final conserve cet allègement. On ne classe donc pas les deux échecs comme une panne d’infrastructure indépendante du harness, et on ne les remplace pas dans le score principal. Une seule ablation réussie ne prouve pas une causalité statistique robuste ; le mécanisme interne du silence reste inconnu.
+
+318 tests runtime, 16 tests du runner et cinq tests de l’adaptateur passent, avec des validations réelles pytest, Go et Cargo. Les 51 fichiers des cinq tâches conservent leurs empreintes. Le bundle principal mesuré, la variante de prompt et le bundle final sont archivés séparément : le correctif du hunk mal formé et l’annotation des usages interrompus sont vérifiés sans prétendre qu’ils ont été évalués par les premiers runs.
+
+Le verdict reste critique : la précision mécanique s’améliore et deux gains ciblés sont nets, mais **aucune réduction générale des tokens ni qualification frontier n’est établie**. La répétition des lectures partiellement recouvertes reste coûteuse ; le rejeu des quinze anciennes traces ne montre pas de gain supplémentaire du nouveau retrait conservateur sur Cython. La priorité est maintenant une comparaison avec un modèle plus fort et un contrôle Cline apparié, puis une réduction de contexte dont la couverture est prouvée. Les erreurs algorithmiques SQL, compression et ELF ne sont pas déclarées résolues.
+
+Le [rapport complet](/mnt/dev/web/Blame/docs/harness-corrections-2026-09-05.md) donne tous les essais, les sources officielles utilisées, les ablations et les références aux artefacts. Les résultats défavorables et l’usage partiel des deux générations interrompues y restent visibles.
+
+### 21.49 Contrôle Cline SDK des quinze tâches Terminal-Bench
+
+Quinze nouvelles tentatives Cline sont exécutées en groupes de dix puis cinq, sans relance ni modification du runtime pendant la campagne. Elles utilisent le bundle historique des quinze runs Blame, SHA-256 `28b74777137ff8e24d869c8c411428d5fd059a82be0207c91e1ae2d3abe77af1`, le même modèle Luna, effort `high`, 64 itérations et 900 secondes. Le contrôle active le prompt et les outils de `@cline/sdk` 0.0.81 dans le runner commun ; ce n’est pas une installation distincte du CLI ou de l’extension Cline.
+
+| Mesure | Blame historique | Cline SDK |
+| --- | ---: | ---: |
+| Réussites officielles | 12/15 | 11/15 |
+| Tokens d’entrée, cache inclus | 3 502 909 | 3 481 294 |
+| Tokens de sortie | 154 895 | 175 688 |
+| Coût rapporté ($) | 0,34621388 | 0,37439960 |
+| Durée cumulée du runner (s) | 3 608,322 | 3 959,636 |
+| Appels d’outils | 303 | 278 |
+
+Blame réussit seul l’annulation asynchrone et la récupération WAL ; Cline réussit seul Cython. SQL échoue sur le seuil de performance dans les deux cas malgré des résultats exacts. La compression atteint le timeout des deux côtés sans produire `data.comp` ; les derniers agrégats observés sont conservés, mais leur dernière génération peut être incomplètement comptabilisée.
+
+Sur les dix tâches réussies par les deux, Blame consomme 568 684 tokens d’entrée contre 635 144 (−10,5 %), mais son coût est supérieur de 0,2 % et sa durée de 1,3 % : **l’efficacité à réussite commune est à parité dans cette mesure**. Les écarts globaux de −7,5 % de coût et −8,9 % de durée incluent des trajectoires échouées et ne suffisent pas à conclure à un gain général. Cython concentre 68,5 % des entrées historiques Blame. Aucun cas n’est retiré du bilan principal et aucun succès corrigé ultérieur n’y remplace une ancienne ligne.
+
+Les quinze instructions transmises sont identiques entre les deux campagnes. Les 142 fichiers amont et le bundle restent inchangés ; Harbor retire seulement la même ligne blanche initiale de l’instruction SQL dans les deux colonnes. Cline utilise deux conteneurs simultanés, contre trois dans le premier groupe Blame et deux dans le second. Les images reprennent les références amont, sans comparaison par digest avec les images historiques supprimées. Aucune compaction n’est observée. Ces limites, l’absence de répétitions et le contrôle historique empêchent de qualifier le harness de frontier ou d’extrapoler ce score au bundle Blame final.
+
+Le [rapport comparatif complet](/mnt/dev/web/Blame/docs/cline-comparison-terminal-bench-2026-09-05.md) donne les quinze paires, les échecs, les reprises corrigées séparées et les artefacts sous `.blame/benchmarks/terminal-bench-cline-20260905/`. Huit tests de l’adaptateur Harbor passent, dont trois nouveaux sur le sélecteur de harness. Le runtime n’a pas été modifié pour cette comparaison.
+
+### 21.50 Trois corrections limitées et deux contrôles contemporains — 5 septembre 2026
+
+Le runtime fournit désormais des voisinages candidats en cas de patch ambigu, des sorties concises pour les validations connues réussies et encore fraîches, et une projection des lectures partiellement recouvertes qui conserve le texte unique. Les sorties longues de validation restent consultables par `run_task` via un fichier `outputLog`. Les inspections générales, les échecs et les checks devenus obsolètes gardent leur comportement précédent. Le prompt, les cinq outils et leurs entrées restent inchangés ; aucune dépendance ni approbation supplémentaire n'est ajoutée.
+
+La première correction des ambiguïtés reste insuffisante : certains voisinages sont identiques. Elle est complétée par une ancre précédente unique, tirée du fichier et directement utilisable avec `@@`. Le matching et l'atomicité ne changent pas. Les tests vérifient sa résolution sur deux longs blocs identiques sans lecture supplémentaire.
+
+Cinq tâches sont retenues avant les résultats : Cython, modernisation Python, correction de vulnérabilité, puis deux tâches inédites au départ, compilation de pMARS et interpréteur Scheme. Le groupe avant comprend cinq runs ; chaque comparaison comprend cinq Blame et cinq Cline SDK. Les 25 essais restent conservés, sans remplacer les tâches après un échec. Modèle Luna, effort `high`, 64 itérations, limite du runner de 900 secondes et deux conteneurs simultanés. Le contrôle utilise Cline SDK 0.0.81 et le même bundle que Blame dans chaque groupe, pas une installation distincte de l'extension ou du CLI.
+
+| Mesure | Blame avant | Blame final | Cline final |
+|---|---:|---:|---:|
+| Réussites officielles | 5/5 | 4/5 | 4/5 |
+| Entrée, cache inclus | 4 270 429 | 3 700 331 | 2 707 526 |
+| Sortie | 58 832 | 53 272 | 57 168 |
+| Coût rapporté ($) | 0,21707972 | 0,18817948 | 0,19723000 |
+| Durée cumulée du runner (s) | 1 598,747 | 1 399,832 | 1 348,725 |
+| Appels outils | 247 | 240 | 140 |
+
+V1 obtient 4/5 pour Blame et 5/5 pour Cline, avec 0,21824088 $ et 0,12429232 $ respectivement. Blame atteint la limite d'itérations sur Cython et son paquet installé présente une erreur d'indentation. Cette tentative reste conservée et son usage est marqué potentiellement partiel. Dans la version finale, Cython passe 10 contrôles officiels sur 11 mais les tests du dépôt gardent un échec. L'agent ne les a pas lancés : pytest manquait, et ce diagnostic a été classé à tort comme erreur de code. Le contrôle Cline final échoue sur deux cas Scheme de closures en évaluation imbriquée, après avoir réussi cette tâche au premier passage.
+
+Le coût final de Blame baisse de 13,3 % face au point de départ, mais le score descend de 5/5 à 4/5. Face au contrôle final, Blame coûte 4,6 % de moins tout en consommant 36,7 % d'entrée et 3,8 % de durée supplémentaires. Les tâches échouées diffèrent. Les trois tâches réussies dans tous les bras finaux ne suffisent pas à généraliser ; la variation du contrôle Cline montre la fragilité d'une tentative par version.
+
+Le rejeu des mêmes historiques d'outils mesure seulement 0,034 % d'octets retirés en plus sur le lot avant et 0,031 % sur le lot final. Ce ne sont pas des économies de tokens facturés. Les ambiguïtés Cython passent de 6 avant à 14 en V1 puis 10 dans la version finale ; les ancres sont disponibles, mais le modèle ne les utilise pas systématiquement. Une validation avec journal complet et sortie courte est exercée dans chaque lot comparatif Blame. Le gain marginal de déduplication reste faible ici.
+
+Les 329 tests runtime, 16 tests du runner et 8 tests de l'adaptateur passent, ainsi que le lint runtime. Les 178 fichiers amont, les instructions rendues des cinq bras, les bundles et les digests d'images sont vérifiés. Aucune compaction n'est observée. Le verdict reste défavorable à une qualification frontier : priorité au diagnostic récupérable des validateurs manquants, à la portée des alias lors des lectures de méthodes, puis aux refus de mutations ordinaires dans les dépôts isolés. Ces corrections doivent rester en amont, sans ajouter un protocole ou un verrou de finalisation.
+
+Le [rapport complet des trois améliorations](/mnt/dev/web/Blame/docs/harness-three-improvements-2026-09-05.md) contient les paires, le contrôle V1 conservé, les limites et les références de code. Les artefacts et les trois bundles sont sous `.blame/benchmarks/terminal-bench-three-20260905/`.
+
+### 21.51. Boucle itérative : corrections mécaniques et variante non retenue
+
+Le cycle du 5 septembre privilégie des causes reproduites et conserve toutes ses tentatives. Le modèle reste `openai-codex/gpt-5.6-luna`, effort `high`, avec 64 itérations, 900 secondes et deux conteneurs concurrents. Les groupes comportent 10, 4 et 4 essais ; quatre tâches étaient inédites au début de leur groupe. Aucun résultat n’est présenté comme un score sur tout Terminal-Bench ni comme un nouveau contrôle Cline.
+
+La première correction évite qu’une lecture couvrant plusieurs méthodes expose uniquement la classe entière. La seconde distingue un module Python impossible à lancer d’une erreur d’import dans le code et propose une récupération appropriée. Le premier lot passe pourtant de 2/5 à 1/5. Sur les quatre paires avec usage complet, l’entrée augmente de 46,4 % et le coût de 35,0 %. Le contrôle du filtre HTML est interrompu avant tout appel d’outil ; son usage est inconnu, pas nul.
+
+L’analyse du run Cython montre alors un autre défaut du runtime : le corps Python remplacé conserve son indentation initiale et reçoit celle du modèle, doublant l’indentation de la première instruction. Le parseur annonçait malgré cela une syntaxe valide. La version V2 corrige la frontière du corps en lecture et en édition, puis ajuste les instructions à l’indentation du fichier sans modifier les lignes internes des chaînes multilignes. Les tests exécutent réellement les fragments Python et couvrent aussi tabulations, CRLF, classes et corps initialement sur une ligne. Aucun contrôle aval ni protocole supplémentaire n’est ajouté au modèle.
+
+Le second lot compare V1 et V2 sur Cython et une tâche numérique inédite. Les deux bras réussissent 2/2, mais V2 observe +60,2 % d’entrée, +104,3 % de coût et +34,7 % de durée. Ses onze remplacements de corps Python sont mécaniquement valides ; plusieurs réécritures sont ensuite reprises. La correction de justesse ne prouve pas une amélioration de l’efficacité.
+
+Une dernière ablation modifie uniquement la description d’edit_code, pour autoriser explicitement les patchs locaux dans les symboles et préciser la portée de replace_body. Sur deux tentatives Cython par variante, V2 réussit 2/2 et V3 1/2. V3 consomme 3,1 % d’entrée en moins, mais coûte 14,5 % de plus. Cette variante est retirée ; la source et le bundle par défaut reviennent exactement à V2. Les quatre bundles et tous les essais restent conservés.
+
+La version retenue passe 345 tests runtime, 16 tests du runner et 8 tests de l’adaptateur. Les snapshots finaux, 49 fichiers de tâches, les instructions rendues et les 18 résultats sont vérifiés. Les défauts restants incluent l’attente de huit minutes après une erreur de transport déjà signalée, les refus de serveurs temporaires avec renvoi vers une preview absente, le routage raw/range et la distinction entre tests du dépôt et artefact installé. La consigne d’édition trop prescriptive reste à réexaminer, mais sa reformulation testée n’est pas validée par ce lot. Aucun gain global de vitesse, de coût ou d’intelligence n’est revendiqué.
+
+Le [rapport détaillé de la boucle](/mnt/dev/web/Blame/docs/harness-iterative-cycle-2026-09-05.md) contient les trois comparaisons, les causes constatées, les limites et la décision de conservation. Les artefacts reproductibles sont sous `.blame/benchmarks/terminal-bench-cycle-20260905/`.
+
+### 21.52. Réduire les détours de lecture et les faux refus de patch
+
+Le cycle du 6 septembre traite les causes du nombre élevé de requêtes observé face à Cline. Les relectures explicites restituent le code, les anciennes copies couvertes étant retirées par la projection fournisseur existante. Une plage explicite est honorée avec raw, auto ou une vue omise ; un outline de symbole renvoie ses déclarations contenues. git blame et git annotate deviennent des inspections autorisées. Le prompt et l’outil d’édition autorisent un patch ciblé dans un symbole et précisent la portée du remplacement de corps. Aucun outil ni protocole n’est ajouté.
+
+Le premier groupe comporte neuf essais : trois tâches, trois bras, une tentative par bras. Cython et Scheme sont déjà connus ; adaptive-rejection-sampler est inédit ici au début du groupe. Tous utilisent Luna high, 64 itérations, 900 secondes et deux conteneurs concurrents. Cline correspond au SDK 0.0.81 dans le runner commun.
+
+| Mesure | Avant | Premier candidat | Cline SDK |
+|---|---:|---:|---:|
+| Réussites officielles | 2/3 | 2/3 | 3/3 |
+| Requêtes comptabilisées | 120 | 97 | 86 |
+| Entrée, cache inclus | 3 756 002 | 2 929 427 | 4 178 415 observés, partiels |
+| Coût rapporté ($) | 0,18792184 | 0,18530020 | 0,22431156 observés, partiels |
+| Durée runner (s) | 1 327,023 | 1 143,269 | 1 948,301 |
+
+La baisse d’entrée de 22,0 % et de durée de 13,8 % à score Blame identique constitue un signal sur ce lot. Elle se concentre sur Scheme. R utilise moins d’entrée mais davantage de temps et de coût ; Cython reste un échec. Cline passe officiellement Scheme mais expire côté runner : son usage partiel interdit un ratio global exact. Les deux arrêts Blame à maxIterations restent failed, mais leurs 64 requêtes et 64 relevés réconciliés permettent de considérer leur usage complet.
+
+Le run Cython révèle un refus mécanique : plusieurs blocs répétés ont un placement complet unique, mais le runtime exigeait l’unicité de chaque bloc isolé. Le correctif compare les placements complets les plus précoces et les plus tardifs. Il accepte leur coïncidence, conserve le refus des vraies ambiguïtés et l’atomicité, détecte les contextes qui se chevauchent et préserve les fichiers uniformément CRLF. Aucun contenu spécifique aux tâches n’entre dans le harness.
+
+Le second groupe comprend six essais, premier candidat répété contre moteur de patch corrigé sur les mêmes trois tâches. Les scores sont 0/3 et 1/3. Cython passe de 5/11 à 11/11 contrôles, de 15 à 6 appels d’édition et de 9 à 1 blocage ; le refus restant correspond à un contexte réellement incorrect. L’entrée baisse de 0,9 %, la durée de 5,4 % et le coût de 27,4 % sur cette paire, avec des profils de cache différents.
+
+Scheme termine plus vite mais passe seulement 41/63 cas contre 61/63 : une partie des nombres est affichée comme booléens. R échoue notamment sur une signature imposée par le vérificateur et non précisée dans la consigne ; le témoin expire aussi avant le résultat final du runner. Son usage reste partiel. Les paires complètes Cython/Scheme observent −50,5 % d’entrée et −42,9 % de durée, sans démontrer une amélioration globale de qualité. Le même bundle témoin obtenait 2/3 au premier groupe : cette variation empêche une conclusion causale forte.
+
+La source finale ajoute une correction locale de diagnostic : l’ancre proposée doit sélectionner la ligne annoncée. Cette dernière révision passe les tests mais n’est pas rejouée dans un troisième groupe. Les 365 tests runtime, 16 runner et 8 adaptateur passent, ainsi que le lint. Les 156 fichiers amont, quinze résultats Harbor, instructions et digests sont vérifiés ; le résultat runner manquant est conservé comme absence, pas reconstruit. Les quatre bundles restent archivés et le bundle final est installé localement.
+
+Le verdict reste limité : les frictions mécaniques diminuent, surtout sur Cython ; un gain stable de vitesse, tokens et qualité n’est pas démontré. Le lifecycle après erreur de transport, les capacités de services et de nettoyage temporaires, et la fidélité des validations à l’artefact livré restent distincts de ces corrections. Le [rapport complet](/mnt/dev/web/Blame/docs/harness-efficiency-corrections-2026-09-06.md) distingue les deux groupes, les usages partiels, les échecs et les empreintes exactes ; les artefacts sont sous `.blame/benchmarks/terminal-bench-efficiency-20260906/`.
+
+### 21.53. Mesure élargie des refus de patch sur dix tâches
+
+Vingt essais sont enregistrés avant les résultats, en deux groupes de dix : dix tâches, deux versions, une tentative par bras. Huit tâches n’avaient pas été exécutées dans les campagnes archivées ; Cython et fix-code-vulnerability servent de témoins connus. Les deux bundles utilisent Luna high, 64 itérations, 900 secondes et deux conteneurs au maximum. Leur seule différence de production est light-patch.ts, incluant le diagnostic final de la section précédente. Aucun bras Cline ni changement de code pendant cette mesure.
+
+| Mesure cumulée | Avant le correctif de patch | Après |
+|---|---:|---:|
+| Réussites officielles | 7/10 | 8/10 |
+| Refus / appels terminés contenant uniquement des patchs | 20/42 | 13/41 |
+| Taux de refus de patch | 47,62 % | 31,71 % |
+| Refus / appels terminés, toutes éditions | 24/53 | 15/56 |
+| Requêtes au modèle | 212 | 212 |
+| Entrée, cache inclus | 7 168 286 | 6 731 179 |
+| Sortie | 107 991 | 103 788 |
+| Coût rapporté ($) | 0,58211104 | 0,51821564 |
+| Durée runner (s) | 2 838,695 | 2 607,364 |
+
+L’entrée baisse de 6,1 %, le coût de 11,0 % et la durée de 8,1 %. Ces écarts restent descriptifs : une tentative par bras ne sépare pas entièrement les effets du correctif et les variations de trajectoire. Les huit tâches inédites donnent 8/21 puis 12/33 refus, soit 38,10 % puis 36,36 %. Hors Cython, le taux est exactement identique, 8/22 puis 12/33, soit 36,36 %. Les appels sans patch restent dans les consommations et les scores, mais n’offrent pas de taux de refus comparable.
+
+Les ambiguïtés de contexte passent de 11 à 1, tous types d’édition confondus. Les refus de patch Cython passent de 12/20 à 1/8, ceux de MIPS de 5/12 à 2/11, tandis que portfolio passe de 3/4 à 10/14. Ce dernier cas réussit dans les deux bras mais consomme davantage de requêtes et de temps. Le premier candidat C rejeté du bras après, qui utilise Py_BEGIN_ALLOW_THREADS et Py_END_ALLOW_THREADS, a été reconstruit séparément : le parseur annonce deux erreurs nouvelles, mais cc -fsyntax-only accepte le fichier exact avec les options du projet et les véritables en-têtes Python et NumPy. Ce faux refus du harness est confirmé ; il ne prouve pas la justesse fonctionnelle du candidat ni que les autres diagnostics syntaxiques sont tous faux.
+
+La réussite supplémentaire vient de llm-inference-batching-scheduler : le plan avant dépasse un plafond de coût, le plan après passe sans aucun appel edit_code. largest-eigenval passe les dix-huit contrôles de justesse mais manque plusieurs seuils de vitesse dans les deux bras. MIPS épuise les 64 itérations dans les deux versions et ne produit pas l’image requise au contrôle officiel. Ses deux usages sont complets après réconciliation des 64 requêtes et 64 relevés, sans modifier le statut failed. Les vingt résultats runner sont présents ; aucune compaction n’est observée.
+
+Les 104 fichiers amont, les configurations, les instructions, les bundles et les digests d’images sont vérifiés. Le collecteur concorde avec les compteurs runtime sur 31 résultats, dont les vingt nouveaux. Le filtre matériel exclut avant lancement trois images dépassant 500 Mio compressés ; cet échantillon raisonné ne représente pas toutes les applications ni tout Terminal-Bench. Le verdict reste limité : moins d’ambiguïtés observées, mais une amélioration concentrée et un validateur C qui bloque au moins une édition valide. Cette friction générale est prioritaire ; aucun mécanisme supplémentaire ni correctif propre à une tâche n’est ajouté pendant la mesure.
+
+Le [rapport détaillé](/mnt/dev/web/Blame/docs/harness-patch-sample-2026-09-06.md) conserve les dix paires, les sous-ensembles, les diagnostics et la preuve du faux refus. Les artefacts sont sous `.blame/benchmarks/terminal-bench-patch-sample-20260906/`.
+
+### 21.54. Corriger l’autorité des validations et supprimer du travail exact
+
+Le faux refus C du lot précédent conduit à une correction de contrat : la validation locale C/C++ devient unsupported, tandis que le parseur reste disponible pour la navigation. La compilation avec les paramètres du projet fait autorité. L’édition réelle est rejouée sur son état initial ; elle produit exactement le fichier candidat de 4 625 octets dont la compilation syntaxique avait été vérifiée. Les tests couvrent d’autres macros, C++, les en-têtes, les éditions par symbole et patch, un candidat réellement invalide rejeté par le compilateur et la conservation de l’atomicité aux côtés d’une erreur TypeScript certaine. Une indisponibilité de validation n’est pas enregistrée comme une réussite.
+
+Les plages explicites sont aussi honorées pour les cibles symboliques et les alias textuels, avec numéros absolus dans le fichier et couverture limitée aux octets livrés. Le vrai appel Doom sur les lignes 1565–1625, rejoué après reconstruction des onze éditions précédentes, passe de 9 776 à 2 266 octets de réponse. La projection fournisseur retire en outre data.command uniquement lorsqu’il est strictement identique à la commande de l’appel conservé. Les contenus multimédias et erreurs restent intacts ; une revue indépendante a fait ajouter le contrôle des tableaux de contenu. Les 221 échos des vingt archives représentent 1 054 465 octets cumulés sur 424 contextes, soit 1,917 %. La reconstruction est exacte ; aucun gain de tokens facturés n’en est déduit.
+
+Le lifecycle de transport est corrigé sans nouveau timeout : les sessions non interactives détruites par le SDK ne sont plus considérées comme reprenables. Leur erreur terminale est propagée immédiatement. La reprise existante reste unique sur une session interactive. L’erreur riche reçue par événement est conservée lorsque le résultat du SDK est vide ou générique ; un résultat explicite garde la priorité. Contrairement à une hypothèse précédente, le log réel montre que start avait rendu la main. Son détail n’était pas enregistré ; la correction repose sur les deux reproductions et le contrat du SDK, sans inventer le retour historique exact.
+
+La passe de recherche examine SWE-agent, mini-SWE-agent, Pi, Aider, The Complexity Trap et CODESTRUCT. Elle privilégie la suppression d’observations redondantes et d’allers-retours sans décision nouvelle. Une recherche renvoyant directement un petit corps éditable possède déjà des antériorités. Sa variante stricte est écartée ici : parmi 45 recherches, deux seulement affichent un résultat unique, aucune n’offre une séquence admissible certifiée. Leurs réponses ne prouvent pas non plus l’exhaustivité amont. Cette décision n’invalide pas l’idée sur un corpus applicatif plus riche.
+
+Les pistes restantes sont la normalisation d’une enveloppe d’édition unique sans ambiguïté et la stabilité de la projection vis-à-vis du cache. L’attribution commune des mêmes octets lus par différents outils a aussi été examinée : aucun doublon strict entre read_code et run_task parmi 365 payloads entiers d’au moins 256 octets sur les vingt archives. Les huit répétitions au sein d’un même outil ne démontrent aucun bénéfice supplémentaire. Cette variante est donc écartée pour ce corpus ; les chevauchements partiels ne sont pas mesurés. Les hypothèses ne justifient ni nouvelle mémoire, ni interpréteur universel de shell, ni critique LLM permanent.
+
+Les 406 tests runtime, 16 runner et 8 adaptateur passent, ainsi que le lint runtime. Un groupe A/B de dix essais est enregistré sur portfolio-optimization, make-doom-for-mips, headless-terminal, build-pov-ray et fix-code-vulnerability ; POV-Ray est inédit, les autres tâches sont connues. Les versions restent figées, avec Luna high, 64 itérations, 900 secondes, deux conteneurs au maximum et aucune relance après échec. Il n’inclut pas de bras Cline contemporain.
+
+| Mesure cumulée | Avant | Après |
+|---|---:|---:|
+| Réussites officielles | 4/5 | 3/5 |
+| Exécutions terminées avec succès côté runtime | 5/5 | 4/5 |
+| Refus / appels terminés contenant uniquement des patchs | 1/10 | 1/11 |
+| Requêtes au modèle | 88 | 118 |
+| Entrée, cache inclus | 3 107 622 | 4 076 315 |
+| Sortie | 37 192 | 42 201 |
+| Tokens lus depuis le cache | 2 785 280 | 2 705 408 |
+| Coût rapporté ($) | 0,16480440 | 0,37893076 |
+| Durée runner cumulée (s) | 1 013,813 | 1 213,558 |
+
+Le résultat global se dégrade : +31,2 % d’entrée, +129,9 % de coût et +19,7 % de durée, avec une réussite en moins. La baisse arithmétique du taux de refus de patch de 10,0 % à 9,1 % vient uniquement du dénominateur : un refus dans chaque bras, correspondant dans les deux cas à un contexte absent. Aucun faux refus C n’est reproduit par ces nouvelles trajectoires ; sa correction repose sur le rejeu exact et les tests généraux.
+
+Doom échoue dans les deux bras faute d’image dans le délai du vérificateur. Le témoin termine normalement après 37 requêtes ; le candidat atteint la limite de 64 et reste failed. Ses 64 requêtes et 64 relevés d’usage se réconcilient, comme ceux des neuf autres exécutions : aucun usage n’est partiel dans ce groupe. La réussite perdue sur POV-Ray provient d’une extraction qui omet notamment file_id.diz : le candidat construit bien la version 2.2 et passe le rendu, mais échoue au troisième contrôle. Aucun refus du harness n’empêchait l’extraction complète. Le choix de l’agent est établi ; son attribution causale aux changements du harness ne l’est pas.
+
+Les profils de cache divergent, avec 89,6 % puis 66,4 % de l’entrée lue depuis le cache. Les historiques différents empêchent d’imputer cette baisse à la seule projection. Aucune compaction et aucune panne de transport n’interviennent. Sans portfolio, sous-ensemble prévu avant résultats, le score reste défavorable, 3/4 → 2/4. Sans Doom, analyse de sensibilité ajoutée après observation, le coût devient presque identique mais le score baisse encore de 4/4 à 3/4 : cette exclusion ne valide pas un gain à qualité constante.
+
+Les dix résultats, 54 fichiers de tâches, instructions, configurations, sources et bundles sont vérifiés ; les digests d’image concordent entre les deux bras de chaque tâche. Le bundle corrigé reste installé localement sur ses preuves de justesse. Le verdict demeure négatif sur l’objectif global : cinq paires choisies, une tentative par version et quatre changements simultanés ne démontrent pas un harness plus efficace ou frontier. Les priorités sont désormais une mesure du contexte réellement sérialisé et de sa stabilité, puis des comparaisons séparant les changements sur des usages applicatifs appropriés. Aucun mécanisme supplémentaire n’est promu pour compenser ce résultat.
+
+Le [rapport de corrections et d’idéation](/mnt/dev/web/Blame/docs/harness-ideation-corrections-2026-09-06.md) contient les preuves et la comparaison ; la [note de recherche](/mnt/dev/web/Blame/docs/harness-research-notes-2026-09-06.md) détaille les sources primaires et les critères de promotion. Les artefacts sont sous `.blame/benchmarks/terminal-bench-ideation-20260906/`, avec les rejeux de contexte sous `.blame/benchmarks/harness-ideation-20260906/context/`.
+
+### 21.55. Diagnostic de la régression : trajectoire longue et cache fragile
+
+Les dix essais précédents sont réanalysés sans modification de production ni nouvel appel modèle. Les 206 requêtes, leurs usages et les 378 appels outils se réconcilient. Les requêtes 38–64 de Doom après représentent 0,20367728 $, soit 95,1 % du surcoût global de 0,21412636 $. Le témoin avait conclu à la requête 37 sans image ; le candidat poursuit des problèmes de VM, de chargeur ELF et de libc jusqu’à sa limite. Ce travail supplémentaire reste un échec officiel, sans preuve de qualité supérieure.
+
+Le rejeu d’historiques d’outils identiques avec les deux modules figés révèle 3 requêtes réécrivant un ancien résultat dans la trajectoire Doom avant, contre 22 dans la trajectoire après. Les identifiants réécrits sont identiques quel que soit le projecteur utilisé : le retrait d’écho n’ajoute aucune réécriture rétroactive. Les compteurs de transformations concordent avec les journaux sur les 206 requêtes. Le regroupement des messages étant synthétique et les métadonnées de raisonnement incomplètes, aucune reconstitution exacte des corps HTTP ni du transcriptHash historique n’est revendiquée.
+
+| Doom après | Requêtes | Part de l’entrée servie du cache | Entrée hors cache |
+|---|---:|---:|---:|
+| Avec réécriture d’un ancien résultat | 22 | 7,85 % | 1 129 290 |
+| Sans réécriture d’un ancien résultat | 42 | 96,20 % | 74 088 |
+
+Les réécritures concentrent 93,8 % des tokens hors cache de cette tâche. La projection préexistante raccourcit notamment une ancienne lecture complète de vm.js à mesure que l’agent relit différentes plages, modifiant répétitivement un préfixe déjà envoyé. Le mécanisme et les compteurs convergent vers un amplificateur de coût côté harness. Ils ne démontrent pas combien une autre cadence de projection économiserait réellement ; cela exige une ablation et une mesure fournisseur. Le contexte moyen du groupe diminue pourtant de 2,2 %, illustrant qu’un volume plus petit ne suffit pas à réduire le coût.
+
+La durée supplémentaire de 199,745 secondes se décompose en 169,461 secondes d’intervalle entre composition du contexte et relevé d’usage, 29,838 secondes d’exécution d’outils et 0,446 seconde restante. L’intervalle modèle comprend réseau, envoi et génération : il n’est pas assimilé à du temps GPU. Aucune compaction ni erreur de transport n’intervient.
+
+La réussite perdue de POV-Ray reste liée à l’extraction qui omet file_id.diz. La liste partielle de l’archive avait été choisie avec head ; le projecteur ne supprime pas cette observation. Un diagnostic du harness transforme néanmoins la sortie 141 du pipe en erreur du projet et donne une récupération trop prescriptive. Cette friction est établie, son rôle causal dans l’omission ne l’est pas. Sur fix-code-vulnerability, le candidat observe la suppression des contrôles dès la première requête mais attend la dixième pour éditer, contre la cinquième avant ; aucune nouvelle erreur de patch ne force cette exploration prolongée.
+
+Les 105 lectures des deux bras fournissent toutes une plage, parfois 1–1 sur une lecture symbolique. Une capture entièrement hors réseau du SDK trouve required:[target] dans le schéma mais aucun champ strict sur la fonction transmise. Le réglage strictJsonSchema:false ne fixe pas ce champ. La documentation Responses permet une normalisation stricte lorsque strict est omis ; le traitement effectif du backend openai-codex historique reste inconnu. Il faut vérifier le contrat transmis avant d’imputer les arguments factices au modèle.
+
+Les priorités deviennent la vérification de l’optionalité au niveau fournisseur, une ablation de la projection rétrospective préservant les observations nouvelles et la fraîcheur, puis la suppression des consignes de récupération non justifiées par le diagnostic. Aucun de ces changements n’est livré pendant cette analyse. Le [rapport de diagnostic](/mnt/dev/web/Blame/docs/harness-regression-diagnosis-2026-09-06.md) conserve les calculs, sources officielles, limites et artefacts reproductibles.
+
+### 21.56. Contrat explicite, contexte stable et correction de portée des symboles
+
+Le diagnostic précédent conduit à trois corrections sans nouvel outil ni résumé LLM : `strict:false` explicite au niveau HTTP des fonctions Responses, maintien des blocs déjà envoyés jusqu’à un remplacement réel du contexte canonique, et récupération factuelle des commandes arbitraires. Les préviews de compaction et les envois utilisent la même présentation ; les dernières observations restent immédiatement visibles. Le runtime distingue les échecs de commande sans diagnostic établi des validations de projet reconnues.
+
+Un groupe contemporain de dix essais, cinq tâches connues avec une tentative par version, compare le bundle précédent au candidat figé. Modèle, effort, limites et vérificateurs restent identiques. Tous les usages sont complets et réconciliés, y compris les deux échecs Doom à 64 requêtes.
+
+| Mesure | Témoin | Candidat |
+|---|---:|---:|
+| Réussites officielles | 4/5 | 4/5 |
+| Requêtes | 153 | 117 |
+| Entrée cache inclus | 8 083 656 | 5 856 302 |
+| Sortie | 60 850 | 49 231 |
+| Entrée hors cache | 1 107 144 | 285 742 |
+| Coût rapporté ($) | 0,43397904 | 0,22763680 |
+| Durée runner cumulée (s) | 1 641,849 | 1 338,790 |
+| Patchs rejetés/terminés, appels patch uniquement | 11/23 | 0/12 |
+
+L’entrée baisse de 27,6 %, la sortie de 19,1 %, le coût rapporté de 47,5 % et la durée de 18,5 %, à réussite égale. Les quatre tâches réussies consomment chacune moins dans le candidat ; Doom échoue encore dans les deux bras. Ce résultat positif sur un groupe diagnostique n’est ni une supériorité universelle ni une comparaison Cline contemporaine.
+
+L’optionalité est réellement utilisée : 45/64 lectures du candidat omettent range, contre 0/90 pour le témoin. Dans le témoin, le rejeu identifie 19 requêtes réécrivant d’anciens résultats ; elles servent 27,2 % de leur entrée du cache, contre 96,0 % pour les autres. Le candidat ne présente aucune réécriture historique dans le même contrôle et atteint 95,1 % de cache global. Les corps HTTP complets ne sont pas reconstruits ; cette corrélation ne chiffre pas un effet causal isolé. Sur un historique fixé, la stabilité conserve davantage d’octets, alors que les trajectoires live plus courtes réduisent ici l’entrée totale.
+
+La revue révèle un défaut supplémentaire commun aux deux versions : une suppression de matherr, correctement localisée aux octets 1277–1568, remonte à la racine C et vide les 1 763 octets du fichier. Les rejets de patch suivants sont en partie des conséquences de cette suppression trop large. Un fichier C vide restant syntaxiquement admissible, le bon correctif porte sur l’étendue calculée avant l’édition. La remontée s’arrête désormais avant la racine du parseur et aux conteneurs préprocesseur, en conservant les wrappers des exports, décorateurs et templates. Un compteur de lignes vides incohérent, responsable d’additions négatives dans les reçus, est aussi corrigé.
+
+La version complémentaire passe 472 tests runtime, dont 40 cas de portée sur dix fixtures multilangages et cinq cas de compteurs de lignes. Sa mesure distincte sur quatre essais supplémentaires, POV-Ray et portfolio, donne 1/2→2/2 réussites mais +78,3 % d’entrée, +62,5 % de coût et +3,5 % de durée. Les essais POV-Ray n’utilisent aucune opération symbolique : le score ne mesure pas ce correctif. Les traces révèlent une autre cause du surcoût : six archives binaires sont décodées en texte par l’exécuteur web SDK, ajoutant 769 118 octets de JSON à deux résultats d’outil, avant toute édition. Une correction de l’admission des contenus web est donc engagée, avec rejeu figé et nouvelle comparaison séparée. Le lecteur JSONL est également corrigé pour conserver les séparateurs Unicode présents dans les chaînes ; les quatorze essais sont réconciliés sans modification des données brutes. Le [rapport complet et les artefacts figés](/mnt/dev/web/Blame/docs/harness-cache-corrections-2026-09-06.md) distinguent les résultats live, les reproductions exactes, les usages complets et les limites SDK de compaction.
+
+Le troisième groupe de quatre essais conserve 2/2 réussites par bras, mais affiche 1 002 176→2 217 062 tokens d’entrée, 0,06000160→0,09089800 $ et 560,976→582,084 secondes. Le nouveau filtre binaire n’est pas exercé : le candidat POV-Ray effectue davantage de recherches web textuelles. Le témoin consulte explicitement une trajectoire, la solution, les tests et une image de référence publics ; son score reste dans les résultats, mais cette paire est contaminée. Le contrôle borné des 18 essais ne retrouve cette exposition explicite que dans ce témoin.
+
+La dernière revue trouve deux faux rejets amont : l’énumération des signaux par `kill -l/-L` et la lecture des références par `git ls-remote`. Le rejeu des six rejets de politique observés admet désormais les quatre appels consultatifs et conserve les deux autres rejets. La description web est également clarifiée pour attribuer l’analyse à l’agent, sans promettre une extraction automatique absente du runtime. Ces derniers changements sont validés séparément après les essais live ; ils ne permettent pas de réétiqueter les bundles déjà mesurés ni d’annoncer une absence de régression globale.
+
+La version finale `69cf` passe 513 tests et devient le bundle par défaut. Deux essais contrôlés distincts de Terminal-Bench, sur un ZIP inerte et un JSON UTF-8 inédits, exercent réellement la correction web : même réponse correcte, un appel web groupé par bras, 13 892→5 519 tokens d’entrée, 0,00304192→0,00131692 $ et 20,397→12,397 secondes. Ce gain ciblé ne remplace pas la mesure d’autonomie sur tâches libres. Les deux derniers ajustements (inspection des commandes et description honnête du web) ne sont pas réattribués aux bundles Terminal-Bench antérieurs. Le bilan reste une amélioration mécanique prouvée avec une efficacité globale encore variable, sans nouveau bras Cline.
 
 ## Références complémentaires
 
