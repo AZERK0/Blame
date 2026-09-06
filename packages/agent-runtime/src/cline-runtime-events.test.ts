@@ -99,6 +99,8 @@ test("starts a Cline baseline without Blame harness tools", async () => {
     assert.equal(capturedStart?.prompt, "Change the greeting");
     assert.match(capturedStart?.config.systemPrompt ?? "", /You are Cline/u);
     assert.equal(capturedStart?.config.extraTools, undefined);
+    assert.equal(capturedStart?.capabilities?.toolExecutors?.webFetch, undefined);
+    assert.equal(capturedStart?.localRuntime?.hooks?.beforeModel, undefined);
     assert.deepEqual(capturedStart?.localRuntime?.configExtensions, []);
     assert.deepEqual(capturedStart?.toolPolicies, clineDefaultToolPolicies());
   } finally {
@@ -433,6 +435,8 @@ test("starts development sessions with native skills and private specialist cons
     });
 
     assert.ok(capturedStart);
+    assert.equal(typeof capturedStart.capabilities?.toolExecutors?.webFetch, "function");
+    assert.equal(typeof capturedStart.localRuntime?.hooks?.beforeModel, "function");
     assert.equal(capturedStart.config.maxIterations, 64);
     assert.equal(capturedStart.config.enableSpawnAgent, false);
     assert.ok(capturedStart.localRuntime?.configExtensions?.includes("skills"));

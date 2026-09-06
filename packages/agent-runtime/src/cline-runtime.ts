@@ -89,6 +89,7 @@ import {
   createInitialTaskBriefing,
 } from "./harness/initial-task-briefing.js";
 import { sha256 } from "./harness/light-identity.js";
+import { createTextWebFetchExecutor, describeTextWebFetch } from "./web-fetch.js";
 import {
   RunLifecycleRegistry,
   completionAwareTerminalState,
@@ -929,6 +930,9 @@ export class BlameAgentRuntime {
             })
           : undefined;
       const startInput = {
+        ...(!input.clineDefaultTools
+          ? { capabilities: { toolExecutors: { webFetch: createTextWebFetchExecutor() } } }
+          : {}),
         ...(autoSendPrompt
           ? {
               prompt: appendInitialTaskBriefing(input.prompt, taskBriefing),
@@ -977,6 +981,7 @@ export class BlameAgentRuntime {
           }),
         },
         localRuntime: {
+          ...(!input.clineDefaultTools ? { hooks: { beforeModel: describeTextWebFetch } } : {}),
           ...(configExtensions ? { configExtensions } : {}),
           ...(userInstructionService ? { userInstructionService } : {}),
           ...(pluginPaths ? { pluginPaths } : {}),
