@@ -50,11 +50,13 @@ class BlameAgent(BaseInstalledAgent):
 
     @override
     def populate_context_post_run(self, context: AgentContext) -> None:
-        result_path = self.logs_dir / "result.json"
-        if not result_path.is_file():
+        result = read_json_object(self.logs_dir / "result.json")
+        usage = (result.get("usage") or {}).get("aggregateUsage") or {}
+        fallback = not usage
+        if fallback:
+            usage = usage_from_events(self.logs_dir / "events.jsonl")
+        if not usage and not result:
             return
-        result = json.loads(result_path.read_text())
-        usage = result.get("usage", {}).get("aggregateUsage") or {}
         context.n_input_tokens = usage.get("totalInputTokens")
         context.n_output_tokens = usage.get("totalOutputTokens")
         context.n_cache_tokens = usage.get("totalCacheReadTokens")
@@ -63,6 +65,8 @@ class BlameAgent(BaseInstalledAgent):
             "blame_status": result.get("status"),
             "blame_session_id": result.get("sessionId"),
             "blame_tool_events": result.get("toolEventCount"),
+            "blame_usage_source": "events" if fallback else "result",
+            "blame_usage_partial": fallback or result.get("status") != "succeeded",
         }
 
     def _bundle_path(self) -> Path:
@@ -128,15 +132,52 @@ class BlameAgent(BaseInstalledAgent):
     def _run_command(self, instruction_path: str) -> str:
         logs = self.environment_logs_dir
         task_id = self.session_id or "terminal-bench"
+        harness = self._get_env("BLAME_BENCHMARK_HARNESS") or "blame"
+        if harness not in {"blame", "cline"}:
+            raise ValueError(f"Unsupported benchmark harness: {harness}")
         return (
             "workspace=$(pwd -P); "
             "blame-headless run "
+            f"--harness {harness} "
             '--workspace "$workspace" '
             f"--instruction-file {shlex.quote(instruction_path)} "
             f"--task-id {shlex.quote(task_id)} "
             f"--events {shlex.quote((logs / 'events.jsonl').as_posix())} "
             f"--result {shlex.quote((logs / 'result.json').as_posix())}"
         )
+
+
+def read_json_object(path: Path) -> dict:
+    try:
+        value = json.loads(path.read_text())
+        return value if isinstance(value, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def usage_from_events(path: Path) -> dict:
+    if not path.is_file():
+        return {}
+    usages = []
+    for line in path.read_text().split("\n"):
+        try:
+            event = json.loads(line).get("event", {})
+        except json.JSONDecodeError:
+            continue
+        if event.get("type") == "usage":
+            usages.append((event.get("payload") or {}).get("usage") or {})
+    if not usages:
+        return {}
+    fields = {"totalInputTokens": "inputTokens", "totalOutputTokens": "outputTokens",
+              "totalCacheReadTokens": "cacheReadTokens", "totalCost": "cost"}
+    return {total: observed_total(usages, field) for total, field in fields.items()}
+
+
+def observed_total(usages: list[dict], field: str) -> int | float | None:
+    values = [usage.get(field) for usage in usages]
+    if any(not isinstance(value, (int, float)) or isinstance(value, bool) for value in values):
+        return None
+    return sum(values)
 
 
 def node_install_command() -> str:

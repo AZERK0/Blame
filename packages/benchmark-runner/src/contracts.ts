@@ -33,6 +33,9 @@ export type BenchmarkStatus =
   | "timed_out";
 
 export type BenchmarkResult = {
+  reasoningEffort?: ReasoningSelection;
+  maxIterations: number;
+  timeoutMs: number;
   completion?: unknown;
   durationMs: number;
   error?: string;

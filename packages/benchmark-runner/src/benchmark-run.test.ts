@@ -71,6 +71,7 @@ test("aborts a session that reaches the benchmark timeout", async () => {
   );
   assert.equal(result.status, "timed_out");
   assert.equal(aborted, true);
+  assert.equal(result.usage?.aggregateUsage?.totalInputTokens, 12);
 });
 
 test("waits past recoverable agent errors for the real terminal", async () => {

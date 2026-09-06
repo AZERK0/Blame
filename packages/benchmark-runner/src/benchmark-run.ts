@@ -64,10 +64,12 @@ async function executeSession(
     sessionId = (await runtime.sessions.startDevelopment(sessionInput(config)))
       .sessionId;
     terminalEvent = await waitForTerminal(terminal, config.timeoutMs, signal);
-    usage = await runtime.sessions.usage(sessionId).catch(() => undefined);
   } catch (error) {
     failure = error;
     await abortSession(runtime, sessionId);
+  } finally {
+    if (sessionId)
+      usage = await runtime.sessions.usage(sessionId).catch(() => undefined);
   }
   return { failure, sessionId, terminalEvent, usage };
 }
@@ -186,6 +188,9 @@ function benchmarkResult(input: {
     metrics: input.recorder.metrics(input.startedAt, input.finishedAt),
     modelId: input.config.modelId,
     providerId: input.config.providerId,
+    reasoningEffort: input.config.reasoningEffort,
+    maxIterations: input.config.maxIterations,
+    timeoutMs: input.config.timeoutMs,
     schemaVersion: 1,
     sessionId: input.sessionId,
     startedAt: input.startedAt.toISOString(),
