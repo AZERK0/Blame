@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { projectReadOverlap } from "./read-overlap-projection.js";
 import type {
   AgentPlugin,
   ContentBlock,
@@ -37,6 +38,14 @@ type ProjectionStats = {
   validatedEditsReplaced: number;
 };
 
+type ProjectionEntry = {
+  source: Message;
+  messages: Message[];
+  stats: ProjectionStats;
+};
+
+type ProjectionPrefix = { entries: ProjectionEntry[]; tail?: ProjectionEntry };
+
 type IndexedTool = {
   input: Record<string, unknown>;
   name: string;
@@ -51,6 +60,10 @@ type LatestEdit = {
 };
 
 type IndexedRead = {
+  data: Record<string, unknown>;
+  fragments: string[];
+  projectedData?: Record<string, unknown>;
+  superseded?: boolean;
   path: string;
   receipt?: string;
 };
@@ -63,6 +76,7 @@ type HistoryIndex = {
   successfulEditIds: Set<string>;
   tools: Map<string, IndexedTool>;
   validations: ValidationProof[];
+  preservedToolUseIds: Set<string>;
 };
 
 type ValidationProof = {
@@ -76,27 +90,99 @@ const minimumValidatedEditBytes = 4_096;
 export function createContextProjectionExtension(
   options: ContextProjectionOptions,
 ): AgentPlugin {
-  let requestIndex = 0;
   return {
     name: "blame-context-projection",
     manifest: { capabilities: ["messageBuilders"] },
     setup(api: ContextExtensionApi) {
-      api.registerMessageBuilder({
-        name: "blame-provider-context-projection",
-        build(messages: Message[]) {
-          const projection = projectProviderContext(
-            messages,
-            options,
-            requestIndex + 1,
-          );
-          if (!providerReadyMessages(messages)) return projection.messages;
-          requestIndex += 1;
-          options.emit(projection.metrics);
-          return projection.messages;
-        },
-      });
+      api.registerMessageBuilder(stableContextMessageBuilder(options));
     },
   };
+}
+
+function stableContextMessageBuilder(options: ContextProjectionOptions) {
+  let requestIndex = 0;
+  let committed: ProjectionEntry[] = [];
+  return {
+    name: "blame-provider-context-projection",
+    build(messages: Message[]) {
+      const ready = providerReadyMessages(messages);
+      const canonical = providerMessageView(messages);
+      const entries = stableProjectionEntries(canonical, committed);
+      const projected = entries.flatMap((entry) => entry.messages);
+      if (!ready) return structuredClone(projected);
+      committed = entries;
+      requestIndex += 1;
+      options.emit(contextMetrics(canonical, projected, options, projectionStats(entries), requestIndex));
+      return structuredClone(projected);
+    },
+  };
+}
+
+function stableProjectionEntries(messages: Message[], committed: ProjectionEntry[]) {
+  const prefix = extendingProjectionPrefix(messages, committed);
+  if (prefix.entries.length === messages.length) return prefix.entries;
+  const history = indexHistory(messages);
+  for (const entry of [...prefix.entries, ...(prefix.tail ? [prefix.tail] : [])])
+    for (const id of toolNamesById(entry.messages).keys()) history.preservedToolUseIds.add(id);
+  return messages.map((message, index) => prefix.entries[index] ??
+    projectNewEntry(message, index, history, index === prefix.entries.length ? prefix.tail : undefined));
+}
+
+function extendingProjectionPrefix(messages: Message[], entries: ProjectionEntry[]): ProjectionPrefix {
+  if (messages.length < entries.length) return { entries: [] };
+  for (let index = 0; index < entries.length; index += 1) {
+    const previous = entries[index]!;
+    const current = messages[index]!;
+    if (JSON.stringify(current) === JSON.stringify(previous.source)) continue;
+    if (index === entries.length - 1 && appendedContent(previous.source, current))
+      return { entries: entries.slice(0, index), tail: previous };
+    return { entries: [] };
+  }
+  return { entries };
+}
+
+function appendedContent(previous: Message, current: Message) {
+  return previous.role === current.role && Array.isArray(previous.content) &&
+    Array.isArray(current.content) && current.content.length > previous.content.length &&
+    JSON.stringify(current.content.slice(0, previous.content.length)) === JSON.stringify(previous.content);
+}
+
+function projectNewEntry(message: Message, index: number, history: HistoryIndex, tail?: ProjectionEntry): ProjectionEntry {
+  const stats = tail ? { ...tail.stats } : emptyProjectionStats();
+  const suffix = tail ? { ...message, content: (message.content as ContentBlock[]).slice(tail.source.content.length) } : message;
+  const projected = projectMessage(suffix, index, history, stats);
+  const messages = tail ? appendProjectedContent(tail.messages, projected) : projected;
+  return { source: structuredClone(message), messages: structuredClone(messages), stats };
+}
+
+function appendProjectedContent(previous: Message[], current: Message[]) {
+  if (!previous.length) return current;
+  if (!current.length) return previous;
+  return [{ ...previous[0]!, content: [
+    ...(previous[0]!.content as ContentBlock[]), ...(current[0]!.content as ContentBlock[]),
+  ] }];
+}
+
+function projectionStats(entries: ProjectionEntry[]) {
+  const total = emptyProjectionStats();
+  for (const { stats } of entries)
+    for (const key of Object.keys(total) as Array<keyof ProjectionStats>) total[key] += stats[key];
+  return total;
+}
+
+function providerMessageView(messages: Message[]) {
+  const projected: Message[] = [];
+  for (const { role, content } of messages) {
+    const previous = projected.at(-1);
+    if (role === "user" && previous?.role === "user" && toolResultContent(content) && content.length > 0 && toolResultContent(previous.content))
+      previous.content = [...previous.content, ...content];
+    else projected.push({ role, content });
+  }
+  return projected;
+}
+
+function toolResultContent(content: Message["content"]): content is ToolResultContent[] {
+  return Array.isArray(content) && content.every((block) => block.type === "tool_result");
 }
 
 export function projectProviderContext(
@@ -146,7 +232,10 @@ function indexToolResult(
 }
 
 function finalizeHistoryIndex(history: HistoryIndex) {
-  for (const [id, tool] of history.tools) {
+  const ordered = [...history.tools].sort(
+    (left, right) => (left[1].resultIndex ?? -1) - (right[1].resultIndex ?? -1),
+  );
+  for (const [id, tool] of ordered) {
     if (tool.name === "read_code") indexRead(id, tool, history);
     if (tool.name === "edit_code" && successfulResult(tool.result)) {
       history.successfulEditIds.add(id);
@@ -155,14 +244,48 @@ function finalizeHistoryIndex(history: HistoryIndex) {
     indexSourceRevision(tool, history);
     if (tool.name === "run_task") indexValidation(tool, history);
   }
+  projectOverlappingReads(history);
+}
+
+function projectOverlappingReads(history: HistoryIndex) {
+  const retainedByPath = new Map<string, string[]>();
+  for (const read of [...history.readById.values()].reverse()) {
+    if (read.superseded) continue;
+    const references = retainedByPath.get(read.path) ?? [];
+    if (!references.length) {
+      retainedByPath.set(read.path, read.fragments);
+      continue;
+    }
+    const projection = projectReadOverlap(read.data, references);
+    if (projection.changed) read.projectedData = projection.data;
+    retainedByPath.set(read.path, [...references, ...projection.retained]);
+  }
 }
 
 function indexRead(id: string, tool: IndexedTool, history: HistoryIndex) {
   const resultIndex = tool.resultIndex ?? -1;
   const read = indexedRead(tool);
   if (!read) return;
+  for (const previous of history.readById.values()) {
+    if (previous.path === read.path && readSupersedes(previous, read, tool))
+      previous.superseded = true;
+  }
   history.readById.set(id, read);
-  history.latestReadIndexByPath.set(read.path, resultIndex);
+  if (completeRead(tool))
+    history.latestReadIndexByPath.set(read.path, resultIndex);
+}
+
+function completeRead(tool: IndexedTool) {
+  const data = recordValue(tool.result?.data);
+  if (typeof data?.complete === "boolean") return data.complete;
+  return (
+    typeof data?.content === "string" &&
+    data.truncated !== true &&
+    !tool.input.range &&
+    !["range", "outline", "symbol"].includes(
+      String(data.view ?? tool.input.view),
+    )
+  );
 }
 
 function indexEdit(id: string, tool: IndexedTool, history: HistoryIndex) {
@@ -236,10 +359,27 @@ function projectBlock(
   if (block.type === "tool_use") return [projectToolUse(block, history, stats)];
   if (block.type !== "tool_result") return [block];
   if (compactableEdit(block.tool_use_id, history)) return [];
+  const tool = history.tools.get(block.tool_use_id);
+  if (tool?.name === "run_task") return [projectCommandResult(block, tool)];
   const read = history.readById.get(block.tool_use_id);
+  if (read?.projectedData) return [partiallySupersededReadResult(block, read)];
   if (!read || !supersededRead(index, read, history)) return [block];
   stats.staleReadsReplaced += 1;
   return [supersededReadResult(block, read)];
+}
+
+function projectCommandResult(block: ToolResultContent, tool: IndexedTool): ToolResultContent {
+  if (typeof block.content !== "string" || block.is_error) return block;
+  const result = parseToolResult(block);
+  const data = recordValue(result?.data);
+  if (typeof tool.input.command !== "string" || data?.command !== tool.input.command)
+    return block;
+  const projectedData = { ...data };
+  delete projectedData.command;
+  return {
+    ...block,
+    content: JSON.stringify({ ...result, data: projectedData }),
+  };
 }
 
 function supersededRead(
@@ -247,13 +387,37 @@ function supersededRead(
   read: IndexedRead,
   history: HistoryIndex,
 ) {
-  const edit = history.latestEditByPath.get(read.path);
-  const latestReadIndex = history.latestReadIndexByPath.get(read.path);
-  return Boolean(
-    edit &&
-    edit.index > readIndex &&
-    latestReadIndex !== undefined &&
-    latestReadIndex > edit.index,
+  return (
+    read.superseded ||
+    (history.latestReadIndexByPath.get(read.path) ?? -1) > readIndex
+  );
+}
+
+function readSupersedes(
+  previous: IndexedRead,
+  current: IndexedRead,
+  tool: IndexedTool,
+) {
+  if (completeRead(tool)) return true;
+  return (
+    previous.fragments.length > 0 &&
+    previous.fragments.every((fragment) =>
+      current.fragments.some((replacement) => replacement.includes(fragment)),
+    )
+  );
+}
+
+function readFragments(data: Record<string, unknown>) {
+  return [
+    data.content,
+    data.signature,
+    data.body,
+    data.imports,
+    ...arrayValue(data.segments).map(
+      (segment) => recordValue(segment)?.content,
+    ),
+  ].flatMap((value) =>
+    typeof value === "string" && value.length ? [value] : [],
   );
 }
 
@@ -275,6 +439,7 @@ function projectToolUse(
 
 function compactableEdit(id: string, history: HistoryIndex) {
   return (
+    !history.preservedToolUseIds.has(id) &&
     history.successfulEditIds.has(id) &&
     (!unobservedCurrentEdit(id, history) || validatedCurrentEdit(id, history))
   );
@@ -327,12 +492,37 @@ function supersededReadResult(
     ...block,
     content: JSON.stringify({
       data: {
+        ...readMetadata(read.data),
         path: read.path,
         receipt: read.receipt,
       },
-      status: "superseded_after_edit",
+      status: "superseded_by_later_read",
     }),
   };
+}
+
+function partiallySupersededReadResult(block: ToolResultContent, read: IndexedRead): ToolResultContent {
+  return {
+    ...block,
+    content: JSON.stringify({
+      data: read.projectedData,
+      receipt: read.receipt,
+      status: "partially_superseded_by_later_read",
+    }),
+  };
+}
+
+function readMetadata(data: Record<string, unknown>) {
+  const contentKeys = new Set([
+    "content",
+    "signature",
+    "body",
+    "imports",
+    "segments",
+  ]);
+  return Object.fromEntries(
+    Object.entries(data).filter(([key]) => !contentKeys.has(key)),
+  );
 }
 
 function contextMetrics(
@@ -432,16 +622,9 @@ function contentValues(messages: Message[]): unknown[] {
 }
 
 function parseToolResult(block: ToolResultContent) {
-  const text =
-    typeof block.content === "string"
-      ? block.content
-      : block.content
-          .flatMap((entry: ContentBlock) =>
-            entry.type === "text" ? [entry.text] : [],
-          )
-          .join("\n");
+  if (typeof block.content !== "string") return undefined;
   try {
-    return recordValue(JSON.parse(text));
+    return recordValue(JSON.parse(block.content));
   } catch {
     return undefined;
   }
@@ -459,6 +642,7 @@ function emptyHistoryIndex(): HistoryIndex {
     successfulEditIds: new Set(),
     tools: new Map(),
     validations: [],
+    preservedToolUseIds: new Set(),
   };
 }
 
@@ -515,8 +699,13 @@ function indexedRead(tool: IndexedTool) {
   if (!successfulResult(tool.result)) return undefined;
   const data = recordValue(tool.result?.data);
   const directPath = stringValue(data?.path) ?? stringValue(tool.input.target);
-  if (!directPath) return undefined;
-  return { path: directPath, receipt: stringValue(tool.result?.receipt) };
+  if (!directPath || !data) return undefined;
+  return {
+    data,
+    fragments: readFragments(data),
+    path: directPath,
+    receipt: stringValue(tool.result?.receipt),
+  };
 }
 
 function measurableToolDefinition(value: unknown) {
