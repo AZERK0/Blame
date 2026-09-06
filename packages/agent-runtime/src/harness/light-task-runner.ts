@@ -1,10 +1,9 @@
 import { execa } from "execa";
+import { relative } from "node:path";
 import { redactSecuritySecrets } from "../security-secret-redaction.js";
 import { EnvironmentAdapter } from "./environment-adapter.js";
-import {
-  blockedCommandReason,
-  blockedProjectTaskReason,
-} from "./command-policy.js";
+import { blockedCommandReason } from "./command-policy.js";
+import { observeCommand } from "./command-changes.js";
 import {
   DeterministicFormatter,
   DeterministicFormatterError,
@@ -24,7 +23,9 @@ import {
   type TaskCatalogItem,
 } from "./task-catalog.js";
 import { workspaceCommandEnvironment } from "./workspace-command-environment.js";
-import type { WorkspaceFiles } from "./workspace-files.js";
+import { validationScopePaths } from "./validation-scope.js";
+import { validationOutput, type ValidationOutput } from "./validation-output.js";
+import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
 
 type RunnerContext = {
   sessionId?: string;
@@ -40,28 +41,16 @@ type LightTaskRunnerOptions = {
 };
 
 type ValidationMetadata = {
-  reuseFailures?: boolean;
-  reusePasses?: boolean;
+  cwd?: string;
+  sourceRevisionId?: string;
   taskId?: string;
   taskKind?: string;
 };
 
 type FailureAssessment = {
-  category: "code" | "environment";
+  category: "code" | "command" | "environment";
   recovery: string;
 };
-
-type ReusableValidation = NonNullable<
-  Awaited<ReturnType<SessionJournal["reusableValidation"]>>
->;
-
-const reusableProjectTaskKinds = new Set<TaskCatalogItem["kind"]>([
-  "build",
-  "dependencies",
-  "lint",
-  "test",
-  "typecheck",
-]);
 
 export class LightTaskRunner {
   private readonly edits?: Pick<LightEditService, "replaceFiles">;
@@ -71,7 +60,6 @@ export class LightTaskRunner {
   private readonly files: WorkspaceFiles;
   private readonly journal: SessionJournal;
   private readonly refreshPreviewDependencies?: () => Promise<unknown>;
-  private dependencyReceiptSequence = 0;
 
   constructor(options: LightTaskRunnerOptions) {
     this.edits = options.edits;
@@ -96,8 +84,6 @@ export class LightTaskRunner {
     try {
       const task = await this.resolveProjectTask(input);
       if (task.kind === "service") return managedServiceResult(task.task_id);
-      const denied = blockedProjectTaskReason(task.command);
-      if (denied) return blocked("input", denied);
       return await this.executeProjectTask(task, context);
     } catch (error) {
       const category =
@@ -119,7 +105,7 @@ export class LightTaskRunner {
       task.command,
       context,
       {
-        reusePasses: reusableProjectTask(task),
+        cwd: task.cwd,
         taskId: task.task_id,
         taskKind: task.kind,
       },
@@ -145,10 +131,7 @@ export class LightTaskRunner {
         cwd,
         input.command,
         context,
-        {
-          reuseFailures: true,
-          reusePasses: reusableInspection(input.command),
-        },
+        { cwd: input.cwd ?? "." },
       );
     } catch (error) {
       return blocked("environment", errorMessage(error));
@@ -210,7 +193,9 @@ export class LightTaskRunner {
     context: RunnerContext,
   ): Promise<LightToolResult<unknown>> {
     try {
-      const result = await this.dependencies.mutate(input, context.signal);
+      const before = await this.files.snapshot(context.signal);
+      const { result } = await observeCommand(this.files, this.journal, before,
+        () => this.dependencies.mutate(input, context.signal));
       if (result.status === "blocked")
         return blocked(result.category, result.message);
       return this.appliedDependency(input, result.changedPaths, result.output);
@@ -229,20 +214,18 @@ export class LightTaskRunner {
         status: "ok",
         data: { changed: false, output: boundedDiagnostic(output, "", 4_000) },
       };
-    const receipt = `d${++this.dependencyReceiptSequence}`;
     const sourceRevisionId = (await this.files.snapshot()).revision
       .source_revision_id;
-    await this.recordDependency(input, paths, receipt, sourceRevisionId);
+    await this.recordDependency(input, paths, sourceRevisionId);
     const preview = await this.refreshPreviewDependencies?.();
     const data = {
       changed: true,
       paths,
       output: boundedDiagnostic(output, "", 4_000),
     };
-    if (preview === undefined) return { status: "ok", receipt, data };
+    if (preview === undefined) return { status: "ok", data };
     return {
       status: "ok",
-      receipt,
       data: { ...data, preview },
     };
   }
@@ -250,16 +233,8 @@ export class LightTaskRunner {
   private async recordDependency(
     input: Extract<LightRunTaskInput, { kind: "dependency" }>,
     paths: string[],
-    receipt: string,
     sourceRevisionId: string,
   ) {
-    await this.journal.recordChange({
-      parse: "not_supported",
-      paths,
-      receipt,
-      sourceRevisionId,
-      symbols: [],
-    });
     await this.journal.recordValidation({
       command: `${input.action} ${input.packages.join(" ")}`,
       paths,
@@ -278,29 +253,52 @@ export class LightTaskRunner {
     context: RunnerContext,
     metadata: ValidationMetadata = {},
   ): Promise<LightToolResult<unknown>> {
-    const reused = await this.reusedResult(command, metadata);
-    if (reused) return reused;
-    const result = await executeCommand(executable, args, cwd, context.signal);
-    return this.recordedResult(command, result, metadata);
+    context.signal?.throwIfAborted();
+    const snapshot = await this.files.snapshot(context.signal);
+    const directory =
+      relative(this.files.root, cwd).replaceAll("\\", "/") || ".";
+    const validation = metadata.taskId
+      ? metadata
+      : await this.commandValidation(command, directory, snapshot.files);
+    const { result, after, changedPaths } = await observeCommand(this.files, this.journal,
+      snapshot, () => executeCommand(executable, args, cwd, context.signal));
+    return this.recordedResult(
+      command,
+      result,
+      {
+        ...metadata,
+        ...validation,
+        cwd: directory,
+        sourceRevisionId: snapshot.revision.source_revision_id,
+      },
+      after,
+      changedPaths,
+    );
   }
 
-  private async reusedResult(command: string, metadata: ValidationMetadata) {
-    if (!metadata.reusePasses && !metadata.reuseFailures) return undefined;
-    const sourceRevisionId = (await this.files.snapshot()).revision
-      .source_revision_id;
-    const candidate = await this.journal.reusableValidation(
-      command,
-      sourceRevisionId,
+  private async commandValidation(
+    command: string,
+    cwd: string,
+    files: string[],
+  ): Promise<ValidationMetadata> {
+    const tasks = await readTaskCatalog(this.files.root, files);
+    const task = tasks.find(
+      (item) =>
+        item.cwd === cwd &&
+        isValidationKind(item.kind) &&
+        (command === item.command ||
+          command === `${item.package_manager} run ${item.script}` ||
+          command === `${item.package_manager} ${item.script}`),
     );
-    if (!candidate || !canReuseValidation(candidate, metadata))
-      return undefined;
-    return reusedCommandResult(command, candidate, this.environment.target());
+    return task ? { taskId: task.task_id, taskKind: task.kind } : {};
   }
 
   private async recordedResult(
     command: string,
     result: Awaited<ReturnType<typeof executeCommand>>,
     metadata: ValidationMetadata,
+    snapshot: WorkspaceSnapshot,
+    changedPaths: string[],
   ): Promise<LightToolResult<unknown>> {
     const output = redactedOutput(
       result.all ?? `${result.stdout}\n${result.stderr}`,
@@ -309,38 +307,62 @@ export class LightTaskRunner {
     const failure =
       result.exitCode === 0
         ? undefined
-        : await commandFailureAssessment(output, this.files);
-    const validatedRevisionId = (await this.files.snapshot()).revision
-      .source_revision_id;
+        : await commandFailureAssessment(output, this.files, metadata.taskKind);
+    const validatedRevisionId = snapshot.revision.source_revision_id;
+    if (validatedRevisionId !== metadata.sourceRevisionId) {
+      if (failure && isValidationKind(metadata.taskKind))
+        await this.recordCommandValidation(
+          command,
+          "failed",
+          snapshot,
+          metadata,
+          failure,
+        );
+      return sourceChangedDuringValidation(
+        result.exitCode,
+        output,
+        failure,
+        changedPaths,
+      );
+    }
     const validatedPaths = await this.recordCommandValidation(
       command,
       status,
-      validatedRevisionId,
+      snapshot,
       metadata,
       failure,
     );
     if (failure) return failedCommandResult(result.exitCode, output, failure);
+    const validation = validationProof(validatedRevisionId, validatedPaths, metadata);
     return passedCommandResult(
       command,
       result.exitCode,
-      output,
+      validation
+        ? await validationOutput(this.files.root, output)
+        : { output: boundedDiagnostic(output, "", 4_000) },
       this.environment.target(),
-      validationProof(validatedRevisionId, validatedPaths, metadata),
+      validation,
     );
   }
 
   private async recordCommandValidation(
     command: string,
     status: "failed" | "passed",
-    sourceRevisionId: string,
+    snapshot: WorkspaceSnapshot,
     metadata: ValidationMetadata,
     failure?: FailureAssessment,
   ) {
-    const paths = await this.journal.currentChangedPaths();
+    const paths = validationScopePaths(
+      await this.journal.currentChangedPaths(),
+      snapshot.files,
+      metadata.cwd ?? ".",
+    );
     await this.journal.recordValidation({
       command,
+      cwd: metadata.cwd,
       paths,
-      sourceRevisionId,
+      sourceRevisionId:
+        metadata.sourceRevisionId ?? snapshot.revision.source_revision_id,
       status,
       taskId: metadata.taskId,
       taskKind: metadata.taskKind,
@@ -371,31 +393,6 @@ export class LightTaskRunner {
 
 class TaskSelectionError extends Error {}
 
-function reusableProjectTask(task: TaskCatalogItem) {
-  return reusableProjectTaskKinds.has(task.kind);
-}
-
-function canReuseValidation(
-  validation: ReusableValidation,
-  metadata: ValidationMetadata,
-) {
-  if (metadata.taskId && validation.taskId !== metadata.taskId) return false;
-  if (validation.status === "passed") return Boolean(metadata.reusePasses);
-  return Boolean(
-    validation.status === "failed" &&
-    validation.category !== "environment" &&
-    (metadata.reusePasses || metadata.reuseFailures),
-  );
-}
-
-function reusableInspection(command: string) {
-  if (/^\s*pwd\s*$/u.test(command)) return true;
-  if (/[;&|\n]/u.test(command)) return false;
-  return /^\s*git\s+(?:branch\s+--show-current|diff|log|rev-parse|show|status)\b/u.test(
-    command,
-  );
-}
-
 function managedServiceResult(taskId: string): LightToolResult<unknown> {
   return blocked(
     "environment",
@@ -404,37 +401,26 @@ function managedServiceResult(taskId: string): LightToolResult<unknown> {
   );
 }
 
-function reusedCommandResult(
-  command: string,
-  validation: ReusableValidation,
-  environment: string,
+function sourceChangedDuringValidation(
+  exitCode: number | undefined,
+  output: string,
+  failure?: FailureAssessment,
+  changedPaths: string[] = [],
 ): LightToolResult<unknown> {
-  if (validation.status === "passed") {
-    const proof = validationProof(
-      validation.sourceRevisionId,
-      validation.paths,
-      { taskId: validation.taskId, taskKind: validation.taskKind },
-    );
-    return {
-      status: "ok",
-      receipt: validation.id,
-      data: {
-        cached: true,
-        command,
-        environment,
-        validatedAt: validation.timestamp,
-        ...(proof ? { validation: proof } : {}),
-      },
-    };
-  }
+  if (failure) return failedCommandResult(exitCode, output, failure);
   return {
-    status: "blocked",
-    category: validation.category ?? "code",
-    message:
-      "The identical command already failed at this source revision; it was not executed again.",
-    recovery:
-      validation.recovery ??
-      "Change the relevant source or environment before requesting this validation again.",
+    status: "ok",
+    data: {
+      changed: changedPaths.length > 0,
+      paths: changedPaths,
+      exitCode,
+      output: boundedDiagnostic(output, "", 4_000),
+      validation: {
+        status: "stale",
+        reason:
+          "Source changed during execution; run a check on the resulting code to verify it.",
+      },
+    },
   };
 }
 
@@ -499,10 +485,13 @@ function failedCommandResult(
 async function commandFailureAssessment(
   output: string,
   files: WorkspaceFiles,
+  taskKind?: string,
 ): Promise<FailureAssessment> {
   const missingEnvironment = missingEnvironmentVariables(output);
   if (missingEnvironment.length)
     return environmentVariableFailure(missingEnvironment);
+  const missingEntryModule = missingPythonEntryModule(output);
+  if (missingEntryModule) return pythonEntryModuleFailure(missingEntryModule);
   const missing = missingDependencyNames(output);
   if (missing.length) {
     const declared = await declaredDependencies(files);
@@ -510,7 +499,22 @@ async function commandFailureAssessment(
       return environmentDependencyFailure();
     return codeFailure();
   }
-  return environmentDiagnostic(output) ? environmentFailure() : codeFailure();
+  if (environmentDiagnostic(output)) return environmentFailure();
+  return isValidationKind(taskKind) ? codeFailure() : commandFailure();
+}
+
+function missingPythonEntryModule(output: string) {
+  if (/Traceback \(most recent call last\):/u.test(output)) return undefined;
+  return /(?:^|\n)[^\r\n]*\bpython(?:\d+(?:\.\d+)*)?(?:\.exe)?: No module named ([\w.]+)\s*$/u.exec(
+    output,
+  )?.[1];
+}
+
+function pythonEntryModuleFailure(module: string): FailureAssessment {
+  return {
+    category: "environment",
+    recovery: `Python cannot start module ${module} in this interpreter. Check the project environment and module name; install the required tool with the project's package manager if needed, then rerun the command.`,
+  };
 }
 
 function environmentDiagnostic(output: string) {
@@ -621,14 +625,22 @@ function environmentFailure(): FailureAssessment {
   return {
     category: "environment",
     recovery:
-      "Do not retry unchanged, alter dependencies, or start replacement databases, containers, or servers. Continue with available local validation; finish_task can report this validation unavailable.",
+      "Inspect the reported environment problem and recover the required tool, path, or service through the available project operations before retrying.",
+  };
+}
+
+function commandFailure(): FailureAssessment {
+  return {
+    category: "command",
+    recovery:
+      "Inspect the command output and adjust the command or its prerequisites before retrying.",
   };
 }
 
 function passedCommandResult(
   command: string,
   exitCode: number | undefined,
-  output: string,
+  output: ValidationOutput,
   environment: string,
   validation: ReturnType<typeof validationProof>,
 ): LightToolResult<unknown> {
@@ -637,7 +649,7 @@ function passedCommandResult(
     data: {
       command,
       exitCode,
-      output: boundedDiagnostic(output, "", 4_000),
+      ...output,
       environment,
       ...(validation ? { validation } : {}),
     },
@@ -649,7 +661,7 @@ function validationProof(
   paths: string[],
   metadata: ValidationMetadata,
 ) {
-  if (!sourceRevisionId || !reusableValidationKind(metadata.taskKind))
+  if (!sourceRevisionId || !isValidationKind(metadata.taskKind))
     return undefined;
   return {
     paths,
@@ -660,10 +672,10 @@ function validationProof(
   };
 }
 
-function reusableValidationKind(
+function isValidationKind(
   value: string | undefined,
 ): value is TaskCatalogItem["kind"] {
-  return reusableProjectTaskKinds.has(value as TaskCatalogItem["kind"]);
+  return ["build", "test", "typecheck", "lint"].includes(value ?? "");
 }
 
 function formattedResult(

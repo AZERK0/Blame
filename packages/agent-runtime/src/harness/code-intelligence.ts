@@ -140,7 +140,7 @@ function boundaryCandidate(
 function outerInsertionNode(initial: SgNode) {
   let node = initial;
   for (let parent = node.parent(); parent; parent = node.parent()) {
-    if (isSyntaxContainer(String(parent.kind()))) break;
+    if (!parent.parent() || isSyntaxContainer(String(parent.kind()))) break;
     node = parent;
   }
   return node;
@@ -148,7 +148,9 @@ function outerInsertionNode(initial: SgNode) {
 
 function isSyntaxContainer(kind: string) {
   return (
-    syntaxContainerKinds.has(kind) || /(?:^|_)(?:body|block|list)$/u.test(kind)
+    syntaxContainerKinds.has(kind) ||
+    kind.startsWith("preproc_") ||
+    /(?:^|_)(?:body|block|list)$/u.test(kind)
   );
 }
 

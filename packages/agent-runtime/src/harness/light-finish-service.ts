@@ -10,10 +10,12 @@ import type {
   LightToolResult,
 } from "./light-contracts.js";
 import { LightTaskRunner } from "./light-task-runner.js";
+import { LightCommitService } from "./light-commit.js";
 import { createProjectMemoryCandidate } from "./project-memory.js";
 import { SessionJournal } from "./session-journal.js";
 import { readTaskCatalog } from "./task-catalog.js";
 import { WorkspaceFiles } from "./workspace-files.js";
+import { validationScopePaths } from "./validation-scope.js";
 
 export type LocalFinishOptions = {
   conversationId: string;
@@ -80,20 +82,23 @@ export class LightFinishService {
   }
 
   async finish(summary: string, context: AgentToolContext) {
-    const initial = await this.journal.completionSnapshot();
+    const initial = await this.completionSnapshot();
     this.assertDelivered(initial.changedPaths);
+    assertNoFailedValidation(initial);
     const validation = await this.validateIfNeeded(initial, context);
-    const current = await this.journal.completionSnapshot();
+    const current = await this.completionSnapshot();
+    assertNoFailedValidation(current);
     const verified = hasPassingValidation(
       current.validations,
       current.changedPaths,
-      validation.taskId,
+      validation.taskIds,
     );
-    const unavailable = validation.outcome === "unavailable" || !verified;
+    const unavailable = current.changedPaths.length > 0 && !verified;
     const decision = completionDecision(
       current.sourceRevisionId,
       verified,
       unavailable,
+      current.changedPaths.length === 0,
     );
     await this.recordCompletion(
       summary,
@@ -101,9 +106,15 @@ export class LightFinishService {
       verified,
       unavailable,
       current,
-      validation.taskId,
+      validation.taskIds?.length === 1 ? validation.taskIds[0] : undefined,
     );
     return summary;
+  }
+
+  private completionSnapshot() {
+    return new LightCommitService(this.files).exclusive(() =>
+      this.journal.completionSnapshot(),
+    );
   }
 
   private assertDelivered(changedPaths: string[]) {
@@ -117,32 +128,54 @@ export class LightFinishService {
     state: Awaited<ReturnType<SessionJournal["completionSnapshot"]>>,
     context: AgentToolContext,
   ) {
-    const input = await this.validationInput(state.changedPaths);
-    if (!input) return { outcome: "unavailable" as const };
-    if (hasPassingValidation(state.validations, state.changedPaths, input.task))
-      return { outcome: "reused" as const, taskId: input.task };
-    if (
-      hasUnavailableValidation(
-        state.validations,
-        state.changedPaths,
-        input.task,
+    if (!state.changedPaths.length)
+      return { outcome: "not_applicable" as const };
+    const inputs = await this.validationInputs(state.changedPaths);
+    for (const { input, paths } of inputs) {
+      if (hasPassingValidation(state.validations, paths, [input.task]))
+        continue;
+      if (hasUnavailableValidation(state.validations, paths, input.task))
+        continue;
+      const result = await this.runValidation(input, context);
+      if (result.status === "blocked" && result.category === "code")
+        throw new Error(result.message);
+      if (
+        result.status === "ok" &&
+        recordValue(recordValue(result.data).validation).status === "stale"
       )
-    )
-      return { outcome: "unavailable" as const, taskId: input.task };
-    const result = await this.runValidation(input, context);
-    if (result.status === "ok")
-      return { outcome: "passed" as const, taskId: input.task };
-    if (result.category === "code") throw new Error(result.message);
-    return { outcome: "unavailable" as const, taskId: input.task };
+        throw new Error(
+          "Source changed during final validation. Review the changes and validate again.",
+        );
+    }
+    return {
+      outcome: "checked" as const,
+      taskIds: inputs.map(({ input }) => input.task),
+    };
   }
 
-  private async validationInput(
-    changedPaths: string[],
-  ): Promise<Extract<LightRunTaskInput, { kind: "project" }> | undefined> {
+  private async validationInputs(changedPaths: string[]) {
     const snapshot = await this.files.snapshot();
     const catalog = await readTaskCatalog(this.files.root, snapshot.files);
-    const task = selectValidationTask(catalog, changedPaths);
-    return task ? { kind: "project", task: task.task_id } : undefined;
+    const scopes = [...new Set(catalog.map(({ cwd }) => cwd))];
+    const failedTasks = latestFailedTasks(this.journal.currentValidations());
+    return scopes.flatMap((cwd) => {
+      const paths = validationScopePaths(changedPaths, snapshot.files, cwd);
+      if (!paths.length) return [];
+      const task = paths.length
+        ? selectValidationTask(
+            catalog.filter((item) => item.cwd === cwd),
+            paths,
+          )
+        : undefined;
+      const required = catalog.filter(
+        (item) => item.cwd === cwd && failedTasks.has(item.task_id),
+      );
+      if (task && !required.includes(task)) required.push(task);
+      return required.map((item) => ({
+        input: { kind: "project" as const, task: item.task_id },
+        paths,
+      }));
+    });
   }
 
   private async runValidation(
@@ -177,9 +210,10 @@ export class LightFinishService {
       unavailable ? "completed_with_validation_unavailable" : "completed",
       summary,
     );
-    const memory = verified
-      ? this.completionMemory(summary, state, validationTaskId)
-      : undefined;
+    const memory =
+      verified && validationTaskId
+        ? this.completionMemory(summary, state, validationTaskId)
+        : undefined;
     await this.options.onComplete?.({
       completion: decision,
       ...(memory ? { memory } : {}),
@@ -258,16 +292,20 @@ function hasPassingValidation(
     ReturnType<SessionJournal["completionSnapshot"]>
   >["validations"],
   changedPaths: string[],
-  taskId?: string,
+  taskIds?: string[],
 ) {
-  if (!taskId) return false;
-  return validations.some(
-    ({ paths, status, taskId: validationTaskId, terminal }) =>
-      status === "passed" &&
-      terminal === "passed" &&
-      validationTaskId === taskId &&
-      changedPaths.every((path) => paths.includes(path)),
+  if (!taskIds?.length || !changedPaths.length) return false;
+  const paths = new Set(
+    validations
+      .filter(
+        (validation) =>
+          validation.status === "passed" &&
+          validation.terminal === "passed" &&
+          taskIds.includes(validation.taskId ?? ""),
+      )
+      .flatMap((validation) => validation.paths),
   );
+  return changedPaths.every((path) => paths.has(path));
 }
 
 function hasUnavailableValidation(
@@ -291,25 +329,70 @@ function completionDecision(
   sourceRevisionId: string,
   verified: boolean,
   unavailable: boolean,
+  nonMutating: boolean,
 ): CompletionDecision {
   return {
     source_revision_id:
       sourceRevisionId as CompletionDecision["source_revision_id"],
     delivery: "satisfied",
-    verification: verified ? "verified" : "not_applicable",
+    verification: verified
+      ? "verified"
+      : nonMutating
+        ? "not_applicable"
+        : "unverified",
     satisfied_obligations: verified ? ["validation"] : [],
     missing_obligations: [],
     failed_obligations: [],
-    reservations: unavailable
-      ? [
-          {
-            code: "VALIDATION_UNAVAILABLE",
-            message: "No current project validation was available.",
-            obligation_ids: [],
-          },
-        ]
-      : [],
+    reservations:
+      unavailable && !nonMutating
+        ? [
+            {
+              code: "VALIDATION_UNAVAILABLE",
+              message: "No current project validation was available.",
+              obligation_ids: [],
+            },
+          ]
+        : [],
   };
+}
+
+function assertNoFailedValidation(
+  state: Awaited<ReturnType<SessionJournal["completionSnapshot"]>>,
+) {
+  const failed = state.validations.filter(
+    (validation) =>
+      validation.terminal === "failed" &&
+      validation.category === "code" &&
+      validation.paths.some((path) => state.changedPaths.includes(path)) &&
+      ["build", "test", "typecheck", "lint"].includes(
+        validation.taskKind ?? "",
+      ),
+  );
+  if (failed.length)
+    throw new Error(
+      `Current validation is still failing: ${failed.map((item) => item.taskId ?? item.command).join(", ")}. Resolve it and run the relevant check before finishing.`,
+    );
+}
+
+function latestFailedTasks(
+  validations: ReturnType<SessionJournal["currentValidations"]>,
+) {
+  const latest = new Map(
+    validations.map((validation) => [validation.taskId, validation]),
+  );
+  return new Set(
+    [...latest.values()]
+      .filter(
+        (validation) =>
+          validation.taskId &&
+          validation.terminal === "failed" &&
+          validation.category === "code" &&
+          ["build", "test", "typecheck", "lint"].includes(
+            validation.taskKind ?? "",
+          ),
+      )
+      .map((validation) => validation.taskId!),
+  );
 }
 
 function blockedFinish(message: string): LightToolResult<unknown> {

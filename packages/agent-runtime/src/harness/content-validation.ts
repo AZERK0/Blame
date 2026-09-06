@@ -82,6 +82,10 @@ function validateJson(input: { content: Buffer; path: string }) {
 function validateSemantic(input: { content: Buffer; path: string }) {
   const parsed = parseCode(input.path, input.content);
   if (!parsed.supported) return validation(input.path, "unsupported", null, []);
+  if (["c", "cpp"].includes(parsed.language))
+    return validation(input.path, "unsupported", "ast-grep", [
+      "C/C++ syntax requires the project compiler and preprocessing configuration.",
+    ]);
   const status = parsed.errorCount ? "failed" : "passed";
   const diagnostics = parsed.errorCount
     ? [`Parser reported ${parsed.errorCount} syntax error(s).`]

@@ -15,6 +15,14 @@ export function completionAwareTerminalState(
   completion: CompletionDecision | undefined,
 ): RunTerminalState {
   if (requested !== "succeeded" || !completion) return requested;
+  if (
+    completion.delivery === "satisfied" &&
+    completion.verification === "unverified" &&
+    completion.reservations.some(
+      ({ code }) => code === "VALIDATION_UNAVAILABLE",
+    )
+  )
+    return "succeeded";
   return completionLifecycleTerminal(completion);
 }
 

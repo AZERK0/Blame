@@ -1,4 +1,5 @@
 import type { AgentToolContext } from "@cline/sdk";
+import { pythonBodyRange } from "./python-body.js";
 import {
   outlineSymbol,
   parseCode,
@@ -11,6 +12,7 @@ import {
   type ResolvedLightSymbol,
 } from "./light-aliases.js";
 import {
+  capabilityForPath,
   lightCapabilityDescription,
   runtimeCapabilityRegistry,
 } from "./light-capabilities.js";
@@ -23,6 +25,7 @@ import type {
   LightToolResult,
 } from "./light-contracts.js";
 import { LightEditService } from "./light-edit.js";
+import { LightCommitService } from "./light-commit.js";
 import {
   autoSearchResult,
   autoSymbolCandidates,
@@ -37,6 +40,7 @@ import {
   qualifiedTarget,
   rankedTextMatches,
   recordValue,
+  requestedLineRange,
   routedView,
   scopedCandidates,
   searchMode,
@@ -45,7 +49,6 @@ import {
   sourceLine,
   stringValue,
   symbolicPath,
-  symbolEditTarget,
   symbolMatches,
   symbolSearchResult,
   textSearchResult,
@@ -97,12 +100,15 @@ export class LightWorkspace {
   private readonly coverage = new ReadCoverage();
   private readonly files: WorkspaceFiles;
   private readonly journal: SessionJournal;
-  private readonly ready: Promise<void>;
+  private initialization?: Promise<void>;
+  private readonly options: LightWorkspaceOptions;
+  private readonly commits: LightCommitService;
 
   constructor(workspaceRoot: string, options: LightWorkspaceOptions) {
     this.files = new WorkspaceFiles(workspaceRoot);
+    this.commits = new LightCommitService(this.files);
     this.journal = new SessionJournal(workspaceRoot, options.sessionId);
-    this.ready = this.initializeJournal(options);
+    this.options = options;
     this.edits = new LightEditService(this.aliases, {
       files: this.files,
       journal: this.journal,
@@ -115,9 +121,17 @@ export class LightWorkspace {
     });
   }
 
+  private get ready() {
+    return (this.initialization ??= this.initializeJournal(this.options));
+  }
+
   async editCode(
     input: LightEditCodeInput,
-    context: { sessionId?: string; toolCallId?: string } = {},
+    context: {
+      sessionId?: string;
+      toolCallId?: string;
+      signal?: AbortSignal;
+    } = {},
   ) {
     await this.ready;
     const result = await this.edits.edit(input, context);
@@ -152,24 +166,32 @@ export class LightWorkspace {
   ): Promise<LightToolResult<unknown>> {
     try {
       await this.ready;
-      const snapshot = await this.files.snapshot(signal);
-      const candidates = scopedCandidates(
-        this.files,
-        snapshot.files,
-        input.scope,
+      return await this.commits.exclusive(() =>
+        this.searchCurrentWorkspace(input, signal),
       );
-      const mode = searchMode(input);
-      const result = await this.searchResult(
-        input,
-        mode,
-        candidates,
-        snapshot.revision.source_revision_id,
-        signal,
-      );
-      return this.persistAliases(result);
     } catch (error) {
       return inputBlocked(error);
     }
+  }
+
+  private async searchCurrentWorkspace(
+    input: LightSearchCodeInput,
+    signal?: AbortSignal,
+  ) {
+    const snapshot = await this.files.snapshot(signal);
+    const candidates = scopedCandidates(
+      this.files,
+      snapshot.files,
+      input.scope,
+    );
+    const result = await this.searchResult(
+      input,
+      searchMode(input),
+      candidates,
+      snapshot.revision.source_revision_id,
+      signal,
+    );
+    return this.persistAliases(result);
   }
 
   async readCode(
@@ -178,27 +200,39 @@ export class LightWorkspace {
   ): Promise<LightToolResult<unknown>> {
     try {
       await this.ready;
-      const special = this.specialReadResult(input.target);
-      if (special) return special;
-      const snapshot = await this.files.snapshot();
-      const directory = await this.directoryReadResult(
-        input,
-        snapshot.files,
-        context,
-      );
-      if (directory) return directory;
-      return await this.readWorkspaceTarget(
-        input,
-        snapshot.revision.source_revision_id,
-        context,
+      return await this.commits.exclusive(() =>
+        this.readCurrentWorkspace(input, context),
       );
     } catch (error) {
       return inputBlocked(error);
     }
   }
 
+  private async readCurrentWorkspace(
+    input: LightReadCodeInput,
+    context: ReadContext,
+  ) {
+    context.signal?.throwIfAborted();
+    const special = this.specialReadResult(input.target);
+    if (special) return special;
+    const snapshot = await this.files.snapshot(context.signal);
+    const directory = await this.directoryReadResult(
+      input,
+      snapshot.files,
+      context,
+    );
+    return (
+      directory ??
+      this.readWorkspaceTarget(
+        input,
+        snapshot.revision.source_revision_id,
+        context,
+      )
+    );
+  }
+
   private async initializeJournal(options: LightWorkspaceOptions) {
-    await this.journal.hydrate();
+    await this.commits.exclusive(() => this.journal.hydrate());
     this.aliases.hydrate(this.journal.currentAliases());
     this.coverage.hydrate(this.journal.currentCoverage());
     const objective = options.taskContract?.objective;
@@ -273,7 +307,7 @@ export class LightWorkspace {
       context,
     );
     if (coverage.covered)
-      return alreadyCoveredResult(path, "directory", coverage.receipt);
+      return coveredDirectoryResult(path, coverage.receipt);
     return {
       status: "ok",
       receipt: coverage.receipt,
@@ -303,7 +337,7 @@ export class LightWorkspace {
         : alias?.kind === "range"
           ? await this.readRangeAlias(alias, input, revision, context)
           : alias?.kind === "symbol" || qualifiedTarget(input.target)
-            ? await this.readSymbol(input.target, revision, context)
+            ? await this.readSymbol(input.target, revision, context, input)
             : await this.readPath(input, revision, context);
     return this.persistAliases(result);
   }
@@ -548,21 +582,7 @@ export class LightWorkspace {
     );
     if (!projection) return emptyOutline(path);
     const { candidates, coverage, editTargets, selected } = projection;
-    if (coverage.covered)
-      return alreadyCoveredResult(
-        path,
-        "outline",
-        coverage.receipt,
-        path,
-        editTargets,
-      );
-    const items = this.outlineItems(
-      path,
-      content,
-      selected,
-      revision,
-      coverage.uncovered,
-    );
+    const items = this.outlineItems(path, content, selected, revision);
     return outlineResult(
       path,
       items,
@@ -606,11 +626,7 @@ export class LightWorkspace {
     content: Buffer,
     symbols: ParsedSymbol[],
     revision: string,
-    uncovered: ByteInterval[],
   ) {
-    const visible = symbols.filter((symbol) =>
-      uncovered.some((range) => rangesOverlap(range, signatureRange(symbol))),
-    );
     const registered = symbols.map((symbol) => {
       const { alias, materialized } = this.aliases.registerSymbol(
         path,
@@ -620,16 +636,13 @@ export class LightWorkspace {
       );
       return { alias, materialized, symbol };
     });
-    return registered.flatMap(({ alias, materialized, symbol }) => {
-      if (!visible.includes(symbol)) return [];
+    return registered.map(({ alias, materialized, symbol }) => {
       const parent = enclosingOutlineTarget(symbol, registered);
-      return [
-        {
-          alias,
-          ...outlineSymbol(materialized),
-          ...(parent ? { containedBy: parent.alias } : {}),
-        },
-      ];
+      return {
+        alias,
+        ...outlineSymbol(materialized),
+        ...(parent ? { containedBy: parent.alias } : {}),
+      };
     });
   }
 
@@ -637,7 +650,28 @@ export class LightWorkspace {
     target: string,
     revision: string,
     context: ReadContext,
+    input: LightReadCodeInput = { target },
   ): Promise<LightToolResult<unknown>> {
+    const resolved = await this.resolveReadSymbol(target, revision);
+    if (requestedLineRange(input))
+      return this.readLineRange(resolved.path, resolved.content, input, revision, context);
+    if (input.view === "outline")
+      return this.symbolOutline(resolved, revision, context);
+    const { signature, body, imports, coverage } = await this.symbolProjection(
+      resolved,
+      context,
+    );
+    return symbolContentResult(
+      resolved,
+      signature,
+      body,
+      imports,
+      [signature, body, ...coverage.uncovered],
+      coverage.receipt,
+    );
+  }
+
+  private async resolveReadSymbol(target: string, revision: string) {
     const candidate = await this.aliases.resolveSymbol(
       target,
       this.files,
@@ -649,30 +683,30 @@ export class LightWorkspace {
       candidate.symbol,
       revision,
     );
-    const resolved = {
+    return {
       ...candidate,
       alias: registered.alias,
       materialized: registered.materialized,
     };
-    const { signature, body, imports, coverage } = await this.symbolProjection(
-      resolved,
-      context,
+  }
+
+  private async symbolOutline(
+    resolved: ResolvedLightSymbol,
+    revision: string,
+    context: ReadContext,
+  ) {
+    const [start, end] = resolved.symbol.range_utf8_bytes;
+    const symbols = parseCode(resolved.path, resolved.content).symbols.filter(
+      ({ range_utf8_bytes: range }) => range[0] >= start && range[1] <= end,
     );
-    if (coverage.covered)
-      return alreadyCoveredResult(
-        resolved.path,
-        "symbol",
-        coverage.receipt,
-        resolved.alias,
-        [symbolEditTarget(resolved)],
-      );
-    return symbolContentResult(
-      resolved,
-      signature,
-      body,
-      imports,
-      coverage.uncovered,
-      coverage.receipt,
+    const [startLine, endLine] = resolved.symbol.line_range;
+    return this.outline(
+      resolved.path,
+      resolved.content,
+      symbols,
+      revision,
+      context,
+      { startLine, endLine },
     );
   }
 
@@ -681,7 +715,11 @@ export class LightWorkspace {
     context: ReadContext,
   ) {
     const signature = symbolEditRange(resolved.symbol, "signature");
-    const body = symbolEditRange(resolved.symbol, "body");
+    const range = symbolEditRange(resolved.symbol, "body");
+    const body =
+      capabilityForPath(resolved.path)?.language === "python"
+        ? pythonBodyRange(resolved.content, range)
+        : range;
     const imports = shortImportBlock(resolved.content.toString("utf8"));
     const coverage = await this.registerCoverage(
       resolved.path,
@@ -706,6 +744,8 @@ export class LightWorkspace {
       throw new Error(
         `${alias.alias} is stale and cannot be relocated as text.`,
       );
+    if (requestedLineRange(input))
+      return this.readLineRange(alias.path, content, input, revision, context);
     if (input.view === "symbol") {
       const symbol = enclosingSymbol(parseCode(alias.path, content).symbols, [
         alias.start,
@@ -777,14 +817,6 @@ export class LightWorkspace {
       intervals,
       context,
     );
-    if (coverage.covered)
-      return alreadyCoveredResult(
-        path,
-        view,
-        coverage.receipt,
-        path,
-        editTargets,
-      );
     return contentResult(
       path,
       content,
@@ -885,21 +917,17 @@ function directoryEntries(path: string, files: string[]) {
     );
 }
 
-function alreadyCoveredResult(
+function coveredDirectoryResult(
   path: string,
-  view: "directory" | "outline" | "range" | "raw" | "symbol",
   receipt: string,
-  target = path,
-  editTargets: EditTarget[] = [],
 ): LightToolResult<unknown> {
   return {
     status: "ok",
     data: {
       status: "already_in_context",
-      target,
+      target: path,
       path,
-      view,
-      ...(editTargets.length ? { editTargets } : {}),
+      view: "directory",
     },
     receipt,
   };
@@ -990,6 +1018,10 @@ function contentResult(
     data: {
       path,
       view,
+      complete:
+        intervals.length === 1 &&
+        intervals[0]![0] === 0 &&
+        intervals[0]![1] === content.byteLength,
       ...(fallbackReason ? { fallbackReason } : {}),
       ...(editTargets.length ? { editTargets } : {}),
       ...projected,

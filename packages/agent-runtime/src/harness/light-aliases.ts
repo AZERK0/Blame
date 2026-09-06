@@ -10,6 +10,7 @@ import type { WorkspaceFiles } from "./workspace-files.js";
 
 type SymbolAlias = {
   alias: string;
+  contentHash?: string;
   end: number;
   fileHash: string;
   kind: "symbol";
@@ -129,9 +130,14 @@ export class LightAliasRegistry {
     this.sequence = Math.max(0, ...entries.map(aliasSequence));
   }
 
-  async resolveSymbol(target: string, files: WorkspaceFiles, revision: string) {
+  async resolveSymbol(
+    target: string,
+    files: WorkspaceFiles,
+    revision: string,
+    forEdit = false,
+  ) {
     const entry = this.targetAlias(target, files);
-    if (entry) return this.resolveAlias(entry, files, revision);
+    if (entry) return this.resolveAlias(entry, files, revision, forEdit);
     return this.resolveQualifiedTarget(target, files, revision);
   }
 
@@ -140,16 +146,24 @@ export class LightAliasRegistry {
     if (direct) return direct;
     const separator = target.lastIndexOf("#");
     if (separator < 1) return undefined;
-    const entry = this.aliases.get(target.slice(separator + 1));
-    if (!entry || entry.kind !== "symbol") return undefined;
     const path = files.normalizePath(target.slice(0, separator));
-    return path === entry.path ? entry : undefined;
+    const name = target.slice(separator + 1);
+    const entry = this.aliases.get(name);
+    if (entry?.kind === "symbol" && entry.path === path) return entry;
+    const matching = [...this.aliases.values()].filter(
+      (alias) =>
+        alias.kind === "symbol" &&
+        alias.path === path &&
+        alias.qualifiedName === name,
+    );
+    return matching.length === 1 ? matching[0] : undefined;
   }
 
   private async resolveAlias(
     entry: LightAlias,
     files: WorkspaceFiles,
     revision: string,
+    forEdit: boolean,
   ): Promise<ResolvedLightSymbol> {
     if (entry.kind !== "symbol")
       throw new SymbolResolutionError(
@@ -163,6 +177,7 @@ export class LightAliasRegistry {
     );
     if (candidates.length !== 1)
       throw resolutionConflict(entry.qualifiedName, candidates);
+    if (forEdit && !exact) assertObservedSymbol(entry, content, candidates[0]!);
     this.updateSymbol(entry.alias, entry.path, content, candidates[0]!);
     return resolved(entry.path, content, candidates[0]!, revision, entry.alias);
   }
@@ -233,6 +248,7 @@ function symbolAlias(
 ): SymbolAlias {
   return {
     alias,
+    contentHash: symbolContentHash(content, symbol),
     end: symbol.range_utf8_bytes[1],
     fileHash: sha256(content),
     kind: "symbol",
@@ -242,6 +258,22 @@ function symbolAlias(
     symbolKind: symbol.kind,
     start: symbol.range_utf8_bytes[0],
   };
+}
+
+function symbolContentHash(content: Buffer, symbol: ParsedSymbol) {
+  return sha256(content.subarray(...symbol.range_utf8_bytes));
+}
+
+function assertObservedSymbol(
+  entry: SymbolAlias,
+  content: Buffer,
+  symbol: ParsedSymbol,
+) {
+  if (entry.contentHash === symbolContentHash(content, symbol)) return;
+  const current = content.subarray(...symbol.range_utf8_bytes).toString("utf8");
+  throw new SymbolResolutionError(
+    `Symbol ${entry.qualifiedName} changed since it was observed. Read ${entry.alias} to refresh before editing. Current target:\n${current.slice(0, 4_000)}`,
+  );
 }
 
 function aliasSequence(entry: LightAlias) {

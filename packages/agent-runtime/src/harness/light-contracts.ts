@@ -49,7 +49,11 @@ const patchEdit = z
   .object({
     kind: z.literal("patch"),
     path: relativePath.optional(),
-    patch: editContent.min(1),
+    patch: editContent
+      .min(1)
+      .describe(
+        "For an existing file: *** Begin Patch\n*** Update File: file.ts\n@@\n-old line\n+new line\n*** End Patch. For a new path, complete raw content is also accepted.",
+      ),
   })
   .strict();
 
@@ -79,7 +83,11 @@ export const lightRunTaskInputSchema = z.discriminatedUnion("kind", [
     .strict(),
   z
     .object({
-      kind: z.literal("dependency"),
+      kind: z
+        .literal("dependency")
+        .describe(
+          "Node package.json dependencies only; use command for other package managers.",
+        ),
       action: z.enum(["add", "remove"]),
       packages: z.array(z.string().trim().min(1).max(300)).min(1).max(50),
       packagePath: relativePath.optional(),
@@ -108,7 +116,7 @@ export type LightToolResult<T> =
   | { status: "ok"; data: T; receipt?: string }
   | {
       status: "blocked";
-      category: "input" | "code" | "environment" | "external";
+      category: "input" | "code" | "command" | "environment" | "external";
       message: string;
       recovery?: string;
       diagnosticId?: string;

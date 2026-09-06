@@ -18,6 +18,13 @@ const ignoredDirectories = new Set([
   ".code-review-graph",
   ".git",
   ".next",
+  ".venv",
+  "venv",
+  "__pycache__",
+  ".pytest_cache",
+  ".mypy_cache",
+  ".ruff_cache",
+  "target",
   ".turbo",
   ".vercel",
   "build",
@@ -37,6 +44,7 @@ export type WorkspaceSnapshot = {
   branch?: string;
   changes: WorkspaceChange[];
   files: string[];
+  fileStates: Array<{ hash: string; path: string }>;
   git: boolean;
   revision: SourceRevisionRef;
 };
@@ -70,6 +78,7 @@ export class WorkspaceFiles {
       ...(branch ? { branch } : {}),
       changes: state.changes,
       files,
+      fileStates: state.fileStates,
       git,
       revision,
     };
@@ -81,14 +90,21 @@ export class WorkspaceFiles {
     signal?: AbortSignal,
   ) {
     const entries: string[] = [];
+    const fileStates: WorkspaceSnapshot["fileStates"] = [];
     const changes: WorkspaceChange[] = [];
     for (const path of paths.sort()) {
       signal?.throwIfAborted();
       const state = await this.pathState(path);
       entries.push(`${path}\0${state.digest}\0${state.kind}`);
+      fileStates.push({
+        path,
+        hash:
+          state.contentHash ??
+          (state.kind === "gone" ? "absent" : state.digest),
+      });
       changes.push({ path, status: changeStatus(state.kind, baseCommit) });
     }
-    return { changes, entries };
+    return { changes, entries, fileStates };
   }
 
   private async markUntracked(
@@ -187,10 +203,8 @@ export class WorkspaceFiles {
 
   normalizePath(path: string) {
     if (typeof path !== "string" || !path.trim() || path.includes("\0"))
-      throw new Error("A non-empty workspace-relative path is required.");
+      throw new Error("A non-empty workspace path is required.");
     const portable = path.replaceAll("\\", "/").replace(/^\.\//, "");
-    if (isAbsolute(portable))
-      throw new Error("Absolute paths are not allowed.");
     const absolute = resolve(this.root, portable);
     const local = relative(this.root, absolute);
     if (!local || local === ".") return ".";
@@ -230,12 +244,11 @@ export class WorkspaceFiles {
       }
       if (!info.isFile())
         return { digest: sha256("non-file"), kind: "other" as const };
+      const content = await readFile(absolute);
       return {
+        contentHash: sha256(content),
         digest: sha256(
-          Buffer.concat([
-            Buffer.from(`${info.mode & 0o777}\0`),
-            await readFile(absolute),
-          ]),
+          Buffer.concat([Buffer.from(`${info.mode & 0o777}\0`), content]),
         ),
         kind: "file" as const,
       };
@@ -352,11 +365,10 @@ export function languageName(path: string) {
 function isHarnessSourcePath(path: string) {
   const normalized = path.replaceAll("\\", "/");
   const segments = normalized.split("/");
-  const first = segments[0];
   const basename = segments.at(-1)?.toLowerCase() ?? "";
   return (
     Boolean(path) &&
-    !ignoredDirectories.has(first) &&
+    !segments.some((segment) => ignoredDirectories.has(segment)) &&
     !segments.includes(".ssh") &&
     !(basename.startsWith(".env") && basename !== ".env.example") &&
     ![".npmrc", "id_rsa", "id_ed25519", "known_hosts"].includes(basename)

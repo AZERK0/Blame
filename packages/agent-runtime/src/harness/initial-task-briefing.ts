@@ -266,7 +266,7 @@ async function remoteBriefing(input: InitialTaskBriefingInput) {
 async function packageManagerAvailability(
   task: Awaited<ReturnType<typeof readTaskCatalog>>[number] | undefined,
 ) {
-  if (!task) return "not detected";
+  if (!task?.package_manager) return "not detected";
   try {
     const manager = await resolvePackageManager({
       name: task.package_manager,

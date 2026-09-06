@@ -24,6 +24,8 @@ import {
 import type { SessionJournal } from "./session-journal.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
 import { symbolsTouchedByPatch } from "./patch-symbol-attribution.js";
+import { sha256 } from "./light-identity.js";
+import { pythonBodyRange, pythonBodyReplacement } from "./python-body.js";
 
 type Replacement = {
   end: number;
@@ -61,6 +63,7 @@ type LightParseResult = {
 type EditContext = {
   sessionId?: string;
   toolCallId?: string;
+  signal?: AbortSignal;
 };
 
 type LightEditOptions = {
@@ -93,10 +96,9 @@ export class LightEditService {
     context: EditContext = {},
   ): Promise<LightToolResult<unknown>> {
     try {
-      const snapshot = await this.files.snapshot();
+      const snapshot = await this.files.snapshot(context.signal);
       const plans = await this.plan(input, snapshot);
-      void context;
-      return await this.applyPlans(plans, snapshot);
+      return await this.applyPlans(plans, snapshot, context.signal);
     } catch (error) {
       return editFailure(error);
     }
@@ -109,10 +111,9 @@ export class LightEditService {
     try {
       if (!replacements.length || replacements.length > 50)
         throw new Error("Formatter batch must contain between 1 and 50 files.");
-      const snapshot = await this.files.snapshot();
+      const snapshot = await this.files.snapshot(context.signal);
       const plans = await this.replacementPlans(replacements);
-      void context;
-      return await this.applyPlans(plans, snapshot);
+      return await this.applyPlans(plans, snapshot, context.signal);
     } catch (error) {
       return editFailure(error);
     }
@@ -140,6 +141,7 @@ export class LightEditService {
   private async applyPlans(
     plans: PlannedFile[],
     snapshot: WorkspaceSnapshot,
+    signal?: AbortSignal,
   ): Promise<LightToolResult<unknown>> {
     const finalFiles = await this.finalize(plans);
     const invalid = finalFiles.find(({ parse }) => parse.status === "failed");
@@ -147,6 +149,7 @@ export class LightEditService {
     const result: LightCommitResult | LightEditFailure = await this.commit(
       finalFiles,
       snapshot,
+      signal,
     ).catch(commitFailure);
     if (isLightFailure(result)) return result;
     return this.mapResult(result, finalFiles, snapshot);
@@ -234,6 +237,7 @@ export class LightEditService {
       operation.target,
       this.files,
       snapshot.revision.source_revision_id,
+      true,
     );
     assertSymbolEditAvailable(resolved.path);
     const file = await this.filePlan(plans, resolved.path, resolved.content);
@@ -276,7 +280,11 @@ export class LightEditService {
     );
   }
 
-  private commit(files: FinalFile[], snapshot: WorkspaceSnapshot) {
+  private commit(
+    files: FinalFile[],
+    snapshot: WorkspaceSnapshot,
+    signal?: AbortSignal,
+  ) {
     return this.commits.commit(
       files.map((file) => ({
         after: file.content,
@@ -285,6 +293,7 @@ export class LightEditService {
         path: file.path,
       })),
       snapshot.revision.source_revision_id,
+      signal,
     );
   }
 
@@ -310,6 +319,10 @@ export class LightEditService {
     const paths = result.changedPaths;
     const parse = parseSummary(files);
     await this.journal.recordChange({
+      beforeFiles: files.map((file) => ({
+        path: file.path,
+        hash: file.initial ? sha256(file.initial) : "absent",
+      })),
       paths,
       receipt,
       sourceRevisionId: result.sourceRevisionId,
@@ -464,7 +477,15 @@ function symbolBodyReplacement(
   replacement: string,
   source: string,
 ): Replacement {
-  const [start, end] = symbolEditRange(resolved.symbol, "body");
+  const range = symbolEditRange(resolved.symbol, "body");
+  if (capabilityForPath(resolved.path)?.language === "python") {
+    const [start, end] = pythonBodyRange(resolved.content, range);
+    return {
+      start, end, source,
+      replacement: pythonBodyReplacement(resolved.content, [start, end], replacement),
+    };
+  }
+  const [start, end] = range;
   const current = resolved.content.subarray(start, end).toString("utf8");
   const baseIndent = lineIndentBefore(resolved.content, start);
   return {
@@ -505,9 +526,7 @@ function existingBodyIndent(body: string) {
 function indentedStatements(value: string, indent: string) {
   const allLines = value.split(/\r?\n/u);
   const start = allLines.findIndex((line) => line.trim());
-  const trailing = [...allLines]
-    .reverse()
-    .findIndex((line) => line.trim());
+  const trailing = [...allLines].reverse().findIndex((line) => line.trim());
   const end = allLines.length - trailing - 1;
   const lines = allLines.slice(start, end + 1);
   const widths = lines
@@ -596,7 +615,8 @@ function assertCompatibleMutations(file: PlannedFile) {
 }
 
 function replacementsOverlap(left: Replacement, right: Replacement) {
-  if (isInsertion(left) && isInsertion(right)) return left.start === right.start;
+  if (isInsertion(left) && isInsertion(right))
+    return left.start === right.start;
   if (isInsertion(left)) return insertionInside(left.start, right);
   if (isInsertion(right)) return insertionInside(right.start, left);
   return left.start < right.end && right.start < left.end;
@@ -783,22 +803,23 @@ function parseSummary(files: FinalFile[]) {
 }
 
 function fileChange(file: FinalFile) {
-  const before = file.initial?.toString("utf8") ?? "";
-  const after = file.content?.toString("utf8") ?? "";
+  const before = sourceLines(file.initial?.toString("utf8") ?? "");
+  const after = sourceLines(file.content?.toString("utf8") ?? "");
+  const common = commonLineCount(before, after);
   return {
     path: file.path,
-    additions: lineCount(after) - commonLineCount(before, after),
-    deletions: lineCount(before) - commonLineCount(before, after),
+    additions: after.length - common,
+    deletions: before.length - common,
     ...(file.symbols.length ? { symbols: [...new Set(file.symbols)] } : {}),
   };
 }
 
-function commonLineCount(left: string, right: string) {
+function commonLineCount(left: string[], right: string[]) {
   const rightCounts = new Map<string, number>();
-  for (const line of right.split("\n"))
+  for (const line of right)
     rightCounts.set(line, (rightCounts.get(line) ?? 0) + 1);
   let count = 0;
-  for (const line of left.split("\n")) {
+  for (const line of left) {
     const available = rightCounts.get(line) ?? 0;
     if (!available) continue;
     count += 1;
@@ -807,8 +828,11 @@ function commonLineCount(left: string, right: string) {
   return count;
 }
 
-function lineCount(value: string) {
-  return value ? value.split("\n").length : 0;
+function sourceLines(value: string) {
+  if (!value) return [];
+  const lines = value.split("\n");
+  if (lines.at(-1) === "") lines.pop();
+  return lines;
 }
 
 function errorMessage(error: unknown) {

@@ -108,7 +108,7 @@ function readCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "read_code",
     description:
-      "Read a file, compact directory, sN alias, path#qualifiedName, @changes, or @capabilities. Omit view for automatic raw/outline routing. Results expose editTargets and containedBy relationships; unsupported symbolic views fall back to raw. Generated outputs and node_modules are excluded.",
+      "Read a file, compact directory, sN alias, path#qualifiedName, @changes, or @capabilities. A line range selects those lines; otherwise omit view for automatic raw/outline routing. Symbol outlines list contained declarations. Results expose editTargets and containedBy relationships. Generated outputs and node_modules are excluded.",
     schema: lightReadCodeInputSchema,
     execute: (input, context) => workspace.readCode(input, context),
   });
@@ -118,12 +118,13 @@ function editCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "edit_code",
     description:
-      "Atomically apply symbol operations and native Cline patches. Use symbols inside existing supported targets; use focused patches for imports, raw/config files, new files, or cross-symbol changes. For a missing path, patch may be the complete raw file content. Append with insert_after on an editTarget. Do not combine a parent with its containedBy child. One snapshot validates overlaps and final syntax; hashes and revisions are inferred.",
+      "Atomically apply symbol operations or focused Cline patches, including inside symbols. Choose the smaller precise edit: replace_body replaces the entire body. Disambiguate repeated patch text with unique context or an @@ anchor. A missing path accepts complete raw content. Do not combine a parent with its containedBy child. The runtime handles freshness, overlaps, and supported syntax checks.",
     schema: lightEditCodeInputSchema,
     execute: (input, context) =>
       workspace.editCode(input, {
         sessionId: context.sessionId,
         toolCallId: context.toolCallId,
+        signal: context.signal,
       }),
   });
 }
@@ -132,7 +133,7 @@ function runTaskTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "run_task",
     description:
-      "Run a known finite validation or bounded read-only command, add/remove dependencies through the detected package manager, or apply Prettier atomically to explicit files with `pnpm exec prettier --write <files>`. Same-revision validations are reused. Other writes and unmanaged services are denied. Returns compact output or a bounded code/environment diagnostic.",
+      "Run finite project tasks, inspections, generators, or formatters. Source changes are journaled and require a subsequent check. Explicit calls execute; finish_task reuses fresh validation. Use the dependency operation for Node packages, native commands for other ecosystems, and the managed preview for services. Prettier on explicit files uses atomic edits. Returns bounded output and code/environment diagnostics; use run_task to inspect outputLog when returned.",
     schema: lightRunTaskInputSchema,
     execute: (input, context) => workspace.runTask(input, context),
   });

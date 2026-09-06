@@ -1,5 +1,4 @@
 import { materializeSymbol, type ParsedSymbol } from "./code-intelligence.js";
-import type { ResolvedLightSymbol } from "./light-aliases.js";
 import { capabilityForPath } from "./light-capabilities.js";
 import type {
   LightReadCodeInput,
@@ -127,7 +126,7 @@ export function scopedCandidates(
 }
 
 function scopeMatcher(files: WorkspaceFiles, value: string) {
-  const portable = safeScopePattern(value);
+  const portable = safeScopePattern(files.normalizePath(value.trim()));
   const matchers = expandBracePatterns(portable).map((pattern) =>
     singleScopeMatcher(files, pattern),
   );
@@ -295,15 +294,21 @@ function intervalEditTargets(
   symbols: ParsedSymbol[],
   intervals: ByteInterval[],
 ) {
-  const containing = symbols
-    .filter((symbol) => intervals.every((range) => contains(symbol, range)))
-    .sort((left, right) => symbolSize(left) - symbolSize(right));
   const overlapping = symbols
     .filter((symbol) =>
       intervals.some((range) => overlaps(symbol.range_utf8_bytes, range)),
     )
     .sort((left, right) => symbolSize(left) - symbolSize(right));
-  const ranked = uniqueSymbols([...containing.slice(0, 1), ...overlapping]);
+  const fullyRead = overlapping
+    .filter((symbol) =>
+      intervals.some(
+        ([start, end]) =>
+          start <= symbol.range_utf8_bytes[0] &&
+          end >= symbol.range_utf8_bytes[1],
+      ),
+    )
+    .sort((left, right) => symbolSize(right) - symbolSize(left));
+  const ranked = uniqueSymbols([...fullyRead, ...overlapping]);
   return nonOverlappingSymbols(ranked).slice(0, 3);
 }
 
@@ -334,13 +339,6 @@ function uniqueSymbols(symbols: Array<ParsedSymbol | undefined>) {
     seen.add(key);
     return true;
   });
-}
-
-function contains(symbol: ParsedSymbol, range: ByteInterval) {
-  return (
-    symbol.range_utf8_bytes[0] <= range[0] &&
-    symbol.range_utf8_bytes[1] >= range[1]
-  );
 }
 
 function overlaps(left: ByteInterval, right: ByteInterval) {
@@ -375,15 +373,6 @@ export function searchSymbolResult(
   };
 }
 
-export function symbolEditTarget(
-  resolved: ResolvedLightSymbol & { alias: string },
-) {
-  return {
-    alias: resolved.alias,
-    qualifiedName: resolved.materialized.qualified_name,
-  };
-}
-
 export function qualifiedTarget(value: string) {
   return value.includes("#") && !value.startsWith("#");
 }
@@ -393,12 +382,19 @@ export function routedView(
   path: string,
   characters: number,
 ) {
+  if (requestedLineRange(input)) return "range" as const;
   if (input.view && input.view !== "auto") return input.view;
   if (characters <= smallFileCharacters) return "raw" as const;
   const capability = capabilityForPath(path);
   return capability?.loaded && capability.level !== "raw"
     ? ("outline" as const)
     : ("raw" as const);
+}
+
+export function requestedLineRange(input: LightReadCodeInput) {
+  return input.view === "range" || Boolean(
+    input.range && (!input.view || ["auto", "raw"].includes(input.view)),
+  );
 }
 
 export function lineRange(

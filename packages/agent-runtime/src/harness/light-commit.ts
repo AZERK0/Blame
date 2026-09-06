@@ -1,7 +1,8 @@
-import { mkdir, rm } from "node:fs/promises";
+import { mkdir, readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { lock } from "proper-lockfile";
 import writeFileAtomic from "write-file-atomic";
+import { z } from "zod";
 import { sha256 } from "./light-identity.js";
 import type { WorkspaceFiles } from "./workspace-files.js";
 
@@ -22,20 +23,30 @@ export class LightCommitConflict extends Error {}
 export class LightCommitService {
   private readonly files: WorkspaceFiles;
   private readonly lockDirectory: string;
+  private readonly pendingFile: string;
 
   constructor(files: WorkspaceFiles) {
     this.files = files;
     this.lockDirectory = join(files.root, ".blame", "harness", "light-write");
+    this.pendingFile = join(this.lockDirectory, "pending.json");
   }
 
-  async commit(mutations: LightFileMutation[], expectedRevision: string) {
-    return this.exclusive(() => this.commitLocked(mutations, expectedRevision));
+  async commit(
+    mutations: LightFileMutation[],
+    expectedRevision: string,
+    signal?: AbortSignal,
+  ) {
+    signal?.throwIfAborted();
+    return this.exclusive(() =>
+      this.commitLocked(mutations, expectedRevision, signal),
+    );
   }
 
   async exclusive<T>(operation: () => Promise<T>) {
     await mkdir(this.lockDirectory, { recursive: true, mode: 0o700 });
     const release = await lock(this.lockDirectory, lockOptions);
     try {
+      await this.recoverInterruptedWrite();
       return await operation();
     } finally {
       await release();
@@ -47,13 +58,41 @@ export class LightCommitService {
       await writeMutation(this.files, mutation, "before");
   }
 
+  private async recoverInterruptedWrite() {
+    const source = await readFile(this.pendingFile, "utf8").catch((error) => {
+      if (errorCode(error) === "ENOENT") return undefined;
+      throw error;
+    });
+    if (!source) return;
+    const mutations = pendingMutationsSchema
+      .parse(JSON.parse(source))
+      .map(decodeMutation);
+    for (const mutation of mutations) {
+      const current = contentHash(
+        await optionalContent(this.files, mutation.path),
+      );
+      if (
+        ![contentHash(mutation.before), contentHash(mutation.after)].includes(
+          current,
+        )
+      )
+        throw new LightCommitConflict(
+          `Interrupted edit conflicts with a newer change in ${mutation.path}; automatic recovery preserved the worktree.`,
+        );
+    }
+    await this.restoreFiles(mutations);
+    await rm(this.pendingFile);
+  }
+
   private async commitLocked(
     mutations: LightFileMutation[],
     expectedRevision: string,
+    signal?: AbortSignal,
   ): Promise<LightCommitResult> {
     await this.assertRevision(expectedRevision);
     const changed = mutations.filter(mutationChangesContent);
     await Promise.all(changed.map((mutation) => this.verifyMutation(mutation)));
+    signal?.throwIfAborted();
     await this.applyAll(changed);
     const snapshot = await this.files.snapshot();
     return {
@@ -81,6 +120,12 @@ export class LightCommitService {
   }
 
   private async applyAll(mutations: LightFileMutation[]) {
+    if (!mutations.length) return;
+    await writeFileAtomic(
+      this.pendingFile,
+      JSON.stringify(mutations.map(encodeMutation)),
+      { fsync: true, mode: 0o600 },
+    );
     const applied: LightFileMutation[] = [];
     try {
       for (const mutation of mutations) {
@@ -88,8 +133,16 @@ export class LightCommitService {
         await writeMutation(this.files, mutation, "after");
       }
     } catch (error) {
-      await rollbackAll(this.files, applied, error);
+      await this.restoreFiles(applied).catch((rollbackError) => {
+        throw new AggregateError(
+          [error, rollbackError],
+          "Edit rollback failed; recovery is pending.",
+        );
+      });
+      await rm(this.pendingFile);
+      throw error;
     }
+    await rm(this.pendingFile);
   }
 }
 
@@ -100,19 +153,35 @@ const lockOptions = {
   update: 10_000,
 };
 
-async function rollbackAll(
-  files: WorkspaceFiles,
-  applied: LightFileMutation[],
-  cause: unknown,
-): Promise<never> {
-  const failures: unknown[] = [];
-  for (const mutation of [...applied].reverse())
-    await writeMutation(files, mutation, "before").catch((error) =>
-      failures.push(error),
-    );
-  if (failures.length)
-    throw new AggregateError([cause, ...failures], "Edit rollback failed.");
-  throw cause;
+const pendingMutationsSchema = z.array(
+  z
+    .object({
+      after: z.string().nullable(),
+      before: z.string().nullable(),
+      mode: z.number().int().optional(),
+      path: z.string().min(1),
+    })
+    .strict(),
+);
+
+function encodeMutation(mutation: LightFileMutation) {
+  return {
+    ...mutation,
+    after: mutation.after?.toString("base64") ?? null,
+    before: mutation.before?.toString("base64") ?? null,
+  };
+}
+
+function decodeMutation(
+  mutation: z.infer<typeof pendingMutationsSchema>[number],
+): LightFileMutation {
+  return {
+    ...mutation,
+    after:
+      mutation.after === null ? null : Buffer.from(mutation.after, "base64"),
+    before:
+      mutation.before === null ? null : Buffer.from(mutation.before, "base64"),
+  };
 }
 
 async function writeMutation(

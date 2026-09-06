@@ -8,6 +8,7 @@ import type { ReadCoverageState } from "./read-coverage.js";
 export type JournalFileState = { hash: string; path: string };
 
 export type JournalChange = {
+  beforeFiles?: JournalFileState[];
   files: JournalFileState[];
   parse: "failed" | "not_supported" | "passed";
   paths: string[];
@@ -27,8 +28,9 @@ export type JournalCompletionSnapshot = {
 };
 
 export type JournalValidation = {
-  category?: "code" | "environment";
+  category?: "code" | "command" | "environment";
   command?: string;
+  cwd?: string;
   files: JournalFileState[];
   id: string;
   paths: string[];
@@ -155,20 +157,6 @@ export class SessionJournal {
     return this.validations.map(publicValidation);
   }
 
-  async reusableValidation(command: string, sourceRevisionId: string) {
-    const candidates = [...this.validations].reverse();
-    for (const validation of candidates) {
-      if (
-        validation.command !== command ||
-        validation.sourceRevisionId !== sourceRevisionId ||
-        !(await this.allFilesCurrent(validation.files))
-      )
-        continue;
-      return publicValidation(validation);
-    }
-    return undefined;
-  }
-
   async currentChangedPaths() {
     await this.hydrate();
     return (await this.currentChangesByPath()).map(({ path }) => path);
@@ -219,11 +207,18 @@ export class SessionJournal {
 
   private async currentChangesByPath() {
     const latest = new Map<string, JournalChange>();
+    const initial = new Map<string, string>();
     for (const change of this.changes)
-      for (const path of change.paths) latest.set(path, change);
+      for (const path of change.paths) {
+        const before = change.beforeFiles?.find((file) => file.path === path);
+        if (!latest.has(path) && before) initial.set(path, before.hash);
+        latest.set(path, change);
+      }
     const entries = [...latest].map(([path, change]) => ({ path, change }));
     const current = await Promise.all(
       entries.map(async (entry) =>
+        entry.change.files.find((file) => file.path === entry.path)?.hash !==
+          initial.get(entry.path) &&
         (await this.fileStateCurrent(entry.path, entry.change.files))
           ? entry
           : undefined,
@@ -243,9 +238,19 @@ export class SessionJournal {
           : undefined,
       ),
     );
-    return current.filter((validation): validation is JournalValidation =>
-      Boolean(validation),
+    const fresh = current.filter(
+      (validation): validation is JournalValidation => Boolean(validation),
     );
+    const latest = new Map<string, JournalValidation>();
+    for (const validation of fresh)
+      latest.set(
+        JSON.stringify([
+          validation.cwd ?? ".",
+          validation.taskId ?? validation.command,
+        ]),
+        validation,
+      );
+    return [...latest.values()];
   }
 
   private changedPaths() {
@@ -319,6 +324,7 @@ function publicValidation(validation: JournalValidation) {
   return {
     category: validation.category,
     command: validation.command,
+    cwd: validation.cwd,
     id: validation.id,
     paths: [...validation.paths],
     recovery: validation.recovery,

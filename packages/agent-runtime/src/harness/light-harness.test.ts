@@ -111,25 +111,27 @@ const symbolLanguageCases = [
     "Value",
     "{ return 2; }",
   ],
-  ["sample.c", "int sample(void) { return 1; }\n", "sample", "{ return 2; }"],
+  ["sample.c", "int sample(void) { return 1; }\n", "sample", "{ return 2; }", "unsupported"],
   [
     "sample.h",
     "static int sample(void) { return 1; }\n",
     "sample",
     "{ return 2; }",
+    "unsupported",
   ],
-  ["sample.cpp", "int sample() { return 1; }\n", "sample", "{ return 2; }"],
-  ["sample.cc", "int sample() { return 1; }\n", "sample", "{ return 2; }"],
-  ["sample.cxx", "int sample() { return 1; }\n", "sample", "{ return 2; }"],
+  ["sample.cpp", "int sample() { return 1; }\n", "sample", "{ return 2; }", "unsupported"],
+  ["sample.cc", "int sample() { return 1; }\n", "sample", "{ return 2; }", "unsupported"],
+  ["sample.cxx", "int sample() { return 1; }\n", "sample", "{ return 2; }", "unsupported"],
   [
     "sample.hpp",
     "inline int sample() { return 1; }\n",
     "sample",
     "{ return 2; }",
+    "unsupported",
   ],
 ] as const;
 
-for (const [path, source, query, replacement] of symbolLanguageCases)
+for (const [path, source, query, replacement, validation = "passed"] of symbolLanguageCases)
   test(`symbol read and body edit execute for ${path}`, async () => {
     await withWorkspace({ [path]: source }, async (root) => {
       const workspace = lightWorkspace(root, `language-${path}`);
@@ -153,7 +155,7 @@ for (const [path, source, query, replacement] of symbolLanguageCases)
         ],
       });
       assert.equal(result.status, "ok");
-      assert.equal(record(data(result).parse).status, "passed");
+      assert.equal(record(data(result).parse).status, validation);
       assert.match(
         await readFile(join(root, path), "utf8"),
         replacement.includes("span") ? /span/u : /2/u,
@@ -392,7 +394,7 @@ test("auto search combines lexical matches and supports multi-term glob scopes",
   );
 });
 
-test("small raw reads deduplicate by emitted bytes without invalidating other files", async () => {
+test("raw rereads return source and keep edit aliases stable across unrelated reads", async () => {
   await withWorkspace(
     { "a.ts": "export const a = 1\n", "b.ts": "export const b = 2\n" },
     async (root) => {
@@ -406,7 +408,7 @@ test("small raw reads deduplicate by emitted bytes without invalidating other fi
       const repeated = data(
         await workspace.readCode({ target: "a.ts" }, context),
       );
-      assert.equal(repeated.status, "already_in_context");
+      assert.equal(repeated.content, first.content);
       assert.equal(
         record(array(repeated.editTargets)[0]).alias,
         firstTarget.alias,
@@ -428,8 +430,8 @@ test("small raw reads deduplicate by emitted bytes without invalidating other fi
         { sessionId: "coverage", toolCallId: "edit-a" },
       );
       assert.equal(
-        data(await workspace.readCode({ target: "b.ts" }, context)).status,
-        "already_in_context",
+        data(await workspace.readCode({ target: "b.ts" }, context)).content,
+        "export const b = 2\n",
       );
       assert.match(
         String(
@@ -472,8 +474,8 @@ export function ProjectCard({ title }: ProjectCardProps) {
           { target: "ProjectCard.tsx", view: "raw" },
           context,
         ),
-      ).status,
-      "already_in_context",
+      ).content,
+      source,
     );
   });
 });
@@ -559,7 +561,7 @@ test("path-qualified symbol aliases resolve when the path matches", async () => 
   });
 });
 
-test("read coverage survives isolated Light bridge executions", async () => {
+test("rereads and receipts survive isolated Light bridge executions", async () => {
   await withWorkspace(
     { "value.ts": "export const value = 1\n" },
     async (root) => {
@@ -575,8 +577,8 @@ test("read coverage survives isolated Light bridge executions", async () => {
         "raw",
       );
       assert.equal(
-        data(await executeLightWorkspaceRequest(request)).status,
-        "already_in_context",
+        data(await executeLightWorkspaceRequest(request)).content,
+        "export const value = 1\n",
       );
     },
   );
@@ -696,7 +698,7 @@ test("run_task preserves pipeline failures and complete diagnostics", async () =
     });
     assert.equal(result.status, "blocked");
     if (result.status !== "blocked") return;
-    assert.equal(result.category, "code");
+    assert.equal(result.category, "command");
     assert.match(result.message, /code 7/u);
     assert.match(result.message, /diagnostic start/u);
     assert.match(result.message, /fatal detail/u);
@@ -815,27 +817,22 @@ test("run_task classifies infrastructure and storage failures as environment", a
       assert.equal(result.status, "blocked");
       if (result.status !== "blocked") continue;
       assert.equal(result.category, "environment");
-      assert.match(result.recovery ?? "", /Do not retry unchanged/u);
+      assert.match(result.recovery ?? "", /reported environment problem/u);
+      assert.doesNotMatch(result.recovery ?? "", /finish_task|Do not retry unchanged/u);
     }
   });
 });
 
-test("run_task denies shell writes and unmanaged infrastructure", async () => {
+test("run_task denies destructive commands and unmanaged infrastructure", async () => {
   await withWorkspace({ "value.txt": "safe\n" }, async (root) => {
     const workspace = lightWorkspace(root, "command-policy");
     for (const command of [
-      "printf unsafe > value.txt",
-      "cp value.txt copy.txt",
-      "sed -i s/safe/unsafe/ value.txt",
-      "node -e \"require('node:fs').writeFileSync('value.txt', 'unsafe')\"",
+      "rm value.txt",
       "pnpm install",
       "git add value.txt",
       "git -C . add value.txt",
       "docker run postgres:17",
-      "find node_modules/prisma -type f",
       "pnpm exec prettier src --write",
-      "pnpm exec eslint src --fix",
-      "pnpm exec prisma format",
     ]) {
       const result = await workspace.tasks.run({ kind: "command", command });
       assert.equal(result.status, "blocked");
@@ -845,20 +842,25 @@ test("run_task denies shell writes and unmanaged infrastructure", async () => {
   });
 });
 
-test("run_task denies mutating formatter project scripts", async () => {
+test("run_task executes finite formatter project scripts", async () => {
   const scripts = {
     format: "prettier --write .",
     "lint:fix": "eslint . --fix",
     "prisma:format": "prisma format",
   };
   await withWorkspace(
-    { "package.json": JSON.stringify({ scripts }) },
+    {
+      "package.json": JSON.stringify({
+        scripts: Object.fromEntries(
+          Object.keys(scripts).map((name) => [name, "node --version"]),
+        ),
+      }),
+    },
     async (root) => {
       const workspace = lightWorkspace(root, "project-command-policy");
       for (const task of Object.keys(scripts)) {
         const result = await workspace.tasks.run({ kind: "project", task });
-        assert.equal(result.status, "blocked");
-        if (result.status === "blocked") assert.equal(result.category, "input");
+        assert.equal(result.status, "ok", JSON.stringify(result));
       }
     },
   );
@@ -980,7 +982,7 @@ test("edit payloads accept full components up to a mechanical limit", () => {
   assert.equal(rejected.success, false);
 });
 
-test("run_task reuses identical inspections and rejects service scripts", async () => {
+test("run_task executes explicit inspections and rejects service scripts", async () => {
   await withWorkspace(
     {
       "package.json": JSON.stringify({
@@ -1000,7 +1002,7 @@ test("run_task reuses identical inspections and rejects service scripts", async 
         await workspace.tasks.run({ kind: "command", command: "pwd" }),
       );
       assert.equal(first.cached, undefined);
-      assert.equal(second.cached, true);
+      assert.equal(second.cached, undefined);
       assert.equal(first.validation, undefined);
       assert.equal(second.validation, undefined);
       const firstValidation = data(
@@ -1009,7 +1011,7 @@ test("run_task reuses identical inspections and rejects service scripts", async 
       const validation = data(
         await workspace.tasks.run({ kind: "project", task: "test" }),
       );
-      assert.equal(validation.cached, true);
+      assert.equal(validation.cached, undefined);
       assert.equal(record(firstValidation.validation).status, "passed");
       assert.equal(record(validation.validation).status, "passed");
       assert.equal(
@@ -1077,7 +1079,7 @@ test("run_task prefers an exact task id over nested scripts with the same name",
   );
 });
 
-test("run_task reuse survives isolated Light bridge executions", async () => {
+test("run_task executes explicit inspections across isolated Light bridges", async () => {
   await withWorkspace({ "package.json": "{}\n" }, async (root) => {
     const request = {
       input: { kind: "command" as const, command: "pwd" },
@@ -1088,11 +1090,11 @@ test("run_task reuse survives isolated Light bridge executions", async () => {
     const first = data(await executeLightWorkspaceRequest(request));
     const second = data(await executeLightWorkspaceRequest(request));
     assert.equal(first.cached, undefined);
-    assert.equal(second.cached, true);
+    assert.equal(second.cached, undefined);
   });
 });
 
-test("run_task does not repeat a failed command at one source revision", async () => {
+test("run_task executes an explicitly repeated failed command", async () => {
   await withWorkspace({ "package.json": "{}\n" }, async (root) => {
     const workspace = lightWorkspace(root, "failed-task-reuse");
     const command = "node -e \"console.error('failure'); process.exit(3)\"";
@@ -1101,7 +1103,7 @@ test("run_task does not repeat a failed command at one source revision", async (
     assert.equal(first.status, "blocked");
     assert.equal(second.status, "blocked");
     if (second.status !== "blocked") return;
-    assert.match(second.message, /already failed/u);
+    assert.match(second.message, /Command exited with code 3/u);
   });
 });
 
@@ -1721,7 +1723,7 @@ test("aliases survive workspace reload and ambiguous relocation never writes", a
   });
 });
 
-test("real Cline compaction metadata enables one fresh hydration", async () => {
+test("source remains available on repeated reads before and after Cline compaction", async () => {
   await withWorkspace(
     { "value.ts": "export const value = 1\n" },
     async (root) => {
@@ -1729,8 +1731,8 @@ test("real Cline compaction metadata enables one fresh hydration", async () => {
       const initial = { agentId: "lead" };
       await workspace.readCode({ target: "value.ts" }, initial);
       assert.equal(
-        data(await workspace.readCode({ target: "value.ts" }, initial)).status,
-        "already_in_context",
+        data(await workspace.readCode({ target: "value.ts" }, initial)).content,
+        "export const value = 1\n",
       );
       const compacted = {
         agentId: "lead",
@@ -1749,8 +1751,8 @@ test("real Cline compaction metadata enables one fresh hydration", async () => {
       );
       assert.equal(
         data(await workspace.readCode({ target: "value.ts" }, compacted))
-          .status,
-        "already_in_context",
+          .content,
+        "export const value = 1\n",
       );
     },
   );
@@ -2367,6 +2369,32 @@ test("symbol aliases remain valid across successive indexed edits", async () => 
       await readFile(join(root, "target.ts"), "utf8"),
       "export function target() { return 3 }\n",
     );
+  });
+});
+
+for (const [content, lines] of [["", 0], ["\n", 1], ["first\nsecond", 2], ["first\nsecond\n", 2]] as const) {
+  test(`deleting ${JSON.stringify(content)} reports only existing lines`, async () => {
+    await withWorkspace({ "notes.txt": content }, async (root) => {
+      const workspace = lightWorkspace(root, "delete-line-count");
+      const result = data(await workspace.editCode({ operations: [{
+        kind: "patch", patch: "*** Begin Patch\n*** Delete File: notes.txt\n*** End Patch",
+      }] }));
+      const change = record(array(result.changes)[0]);
+      assert.equal(change.additions, 0);
+      assert.equal(change.deletions, lines);
+    });
+  });
+}
+
+test("creating a file does not report a deletion from an empty source", async () => {
+  await withWorkspace({}, async (root) => {
+    const workspace = lightWorkspace(root, "add-line-count");
+    const result = data(await workspace.editCode({ operations: [{
+      kind: "patch", patch: "*** Begin Patch\n*** Add File: notes.txt\n+first\n+second\n*** End Patch",
+    }] }));
+    const change = record(array(result.changes)[0]);
+    assert.equal(change.additions, 2);
+    assert.equal(change.deletions, 0);
   });
 });
 

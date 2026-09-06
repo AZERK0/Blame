@@ -15,9 +15,11 @@ export type LightPatchPlan =
 
 export type LightPatchOperation = { patch: string; path: string };
 
+type PatchHunk = { anchor?: string; lines: string[]; eof?: boolean };
+
 type ParsedPatch = {
   headerIndex: number;
-  hunks: string[][];
+  hunks: PatchHunk[];
   mode: "add" | "delete" | "update";
   lines: string[];
 };
@@ -103,8 +105,8 @@ export async function planLightPatch(
     parseClinePatchShape(patch),
     source,
   );
-  assertExactUniqueContexts(source, parsed, path);
-  const normalized = normalizedPatch(parsed, path);
+  const exact = exactContextPatch(source, parsed, path);
+  const normalized = normalizedPatch(exact, path);
   const change = await computeSingleChange(normalized, workspaceRoot);
   return patchPlanFromChange(change, source);
 }
@@ -118,7 +120,9 @@ function normalizedMissingTargetAddition(
     parsed.mode !== "update" ||
     parsed.hunks.length === 0 ||
     parsed.hunks.some(
-      (hunk) => hunk.length === 0 || hunk.some((line) => !line.startsWith("+")),
+      (hunk) =>
+        hunk.lines.length === 0 ||
+        hunk.lines.some((line) => !line.startsWith("+")),
     )
   )
     return parsed;
@@ -156,8 +160,17 @@ function patchPlanFromChange(
     throw new Error("Patch update target does not exist.");
   return {
     mode: "update",
-    replacements: changedRanges(source, change.newContent ?? ""),
+    replacements: changedRanges(
+      source,
+      preservePatchLineEndings(source, change.newContent ?? ""),
+    ),
   };
+}
+
+function preservePatchLineEndings(source: string, content: string) {
+  const uniformCrlf =
+    source.includes("\r\n") && !/(?<!\r)\n/u.test(source);
+  return uniformCrlf ? content.replace(/\r?\n/gu, "\r\n") : content;
 }
 
 function parseClinePatchShape(patch: string): ParsedPatch {
@@ -199,39 +212,144 @@ function assertEmptyPatchPrefix(lines: string[], firstHeader: number) {
 }
 
 function patchHunks(lines: string[]) {
-  const hunks: string[][] = [];
-  let current: string[] | undefined;
+  const hunks: PatchHunk[] = [];
+  let current: PatchHunk | undefined;
   for (const line of lines) {
     if (line.startsWith("@@")) {
-      current = [];
+      current = { lines: [], anchor: line.slice(2).trim() || undefined };
       hunks.push(current);
-      continue;
+    } else if (line === "*** End of File" && current) current.eof = true;
+    else {
+      if (!current) hunks.push((current = { lines: [] }));
+      current.lines.push(patchBodyLine(line));
     }
-    if (line === "*** End of File") continue;
-    if (!current) {
-      current = [];
-      hunks.push(current);
-    }
-    current.push(line);
   }
   return hunks;
 }
 
-function assertExactUniqueContexts(
+function patchBodyLine(line: string) {
+  if (line === "") return " ";
+  if (!/^[ +-]/u.test(line))
+    throw new Error("Patch hunk lines must start with a space, +, or -.");
+  return line;
+}
+
+function exactContextPatch(
   source: string | undefined,
   parsed: ParsedPatch,
   path: string,
 ) {
-  if (parsed.mode !== "update") return;
+  if (parsed.mode !== "update") return parsed;
   if (source === undefined)
     throw new Error("Patch update target does not exist.");
-  for (const hunk of parsed.hunks) {
-    const context = selectedLines(hunk, new Set([" ", "-"]));
-    if (!context) throw new Error("Update hunks require exact context.");
-    const matches = lineBoundedMatches(source, context);
-    if (matches.length !== 1)
-      throw new Error(patchContextFailure(path, source, context, matches));
+  source = source.replaceAll("\r\n", "\n");
+  const lines = parsed.lines.slice(0, parsed.headerIndex + 1);
+  const ordered = orderedHunkRanges(source, parsed.hunks, path);
+  let cursor = 0;
+  for (const [index, hunk] of parsed.hunks.entries()) {
+    const range =
+      ordered?.[index] ?? exactHunkRange(source, hunk, cursor, path);
+    const prefix = source
+      .slice(cursor, range.start)
+      .split("\n")
+      .slice(0, -1);
+    lines.push("@@", ...prefix.map((line) => ` ${line}`), ...hunk.lines);
+    cursor = range.end + 1;
   }
+  lines.push("*** End Patch");
+  return { ...parsed, lines };
+}
+
+function orderedHunkRanges(
+  source: string,
+  hunks: PatchHunk[],
+  path: string,
+) {
+  if (hunks.length < 2 || hunks.some((hunk) => hunk.anchor || hunk.eof))
+    return undefined;
+  const contexts = hunks.map((hunk) =>
+    selectedLines(hunk.lines, new Set([" ", "-"])),
+  );
+  if (contexts.some((context) => !context))
+    throw new Error("Update hunks require exact context.");
+  const earliest = directionalHunkRanges(source, contexts, path, false);
+  const latest = directionalHunkRanges(source, contexts, path, true);
+  const ambiguous = earliest.findIndex(
+    (range, index) => range.start !== latest[index]!.start,
+  );
+  if (ambiguous >= 0)
+    throw new Error(
+      patchContextFailure(path, source, contexts[ambiguous]!,
+        lineBoundedMatches(source, contexts[ambiguous]!, earliest[ambiguous]!.start)),
+    );
+  return earliest;
+}
+
+function directionalHunkRanges(
+  source: string,
+  contexts: string[],
+  path: string,
+  reverse: boolean,
+) {
+  let cursor = reverse ? source.length : 0;
+  const ordered = reverse ? [...contexts].reverse() : contexts;
+  const ranges = ordered.map((context) => {
+    const start = reverse
+      ? lastLineBoundedMatch(source, context, cursor)
+      : lineBoundedMatches(source, context, cursor)[0];
+    if (start === undefined)
+      throw new Error(patchContextFailure(path, source, context, []));
+    const end = start + context.length;
+    cursor = reverse ? start - 1 : end + 1;
+    return { start, end };
+  });
+  return reverse ? ranges.reverse() : ranges;
+}
+
+function lastLineBoundedMatch(source: string, value: string, end: number) {
+  let cursor = end - value.length;
+  while (cursor >= 0) {
+    const index = source.lastIndexOf(value, cursor);
+    if (index < 0) return undefined;
+    if (lineBoundary(source, index, index + value.length)) return index;
+    cursor = index - 1;
+  }
+  return undefined;
+}
+
+function exactHunkRange(
+  source: string,
+  hunk: PatchHunk,
+  cursor: number,
+  path: string,
+) {
+  if (hunk.anchor) {
+    const anchors = anchorMatches(source, hunk.anchor, cursor);
+    if (anchors.length !== 1)
+      throw new Error(patchContextFailure(path, source, hunk.anchor, anchors));
+    cursor = source.indexOf("\n", anchors[0]!);
+    cursor = cursor < 0 ? source.length : cursor + 1;
+  }
+  const context = selectedLines(hunk.lines, new Set([" ", "-"]));
+  if (!context) throw new Error("Update hunks require exact context.");
+  const start = hunk.eof
+    ? source.replace(/\n$/u, "").length - context.length
+    : cursor;
+  const matches = lineBoundedMatches(source, context, Math.max(cursor, start));
+  if (!matches.length || (!hunk.anchor && !hunk.eof && matches.length !== 1))
+    throw new Error(patchContextFailure(path, source, context, matches));
+  return { start: matches[0]!, end: matches[0]! + context.length };
+}
+
+function anchorMatches(source: string, anchor: string, start: number) {
+  const matches: number[] = [];
+  let cursor = 0;
+  for (const line of source.split("\n")) {
+    if (cursor >= start && line.trim() === anchor) matches.push(cursor);
+    if (matches.length > 1) break;
+    cursor += line.length + 1;
+  }
+  return matches;
 }
 
 function patchContextFailure(
@@ -242,7 +360,12 @@ function patchContextFailure(
 ) {
   if (matches.length) {
     const lines = matches.map((offset) => lineNumberAt(source, offset));
-    return `Patch context is ambiguous in ${path} at lines ${lines.join(", ")}.`;
+    return [
+      `Patch context is ambiguous in ${path} at lines ${lines.join(", ")}.`,
+      ...matches.slice(0, 4).map((offset, index) =>
+        patchCandidateContext(source, offset, matches[index - 1])),
+      "Include the distinguishing context in the hunk or use a unique @@ anchor.",
+    ].join("\n");
   }
   const closest = closestCurrentContext(source, expected);
   return [
@@ -250,6 +373,31 @@ function patchContextFailure(
     `Closest current lines ${closest.startLine}-${closest.endLine}:`,
     closest.content,
   ].join("\n");
+}
+
+function patchCandidateContext(source: string, offset: number, previousOffset?: number) {
+  const lines = source.split("\n");
+  const index = lineNumberAt(source, offset) - 1;
+  const start = Math.max(0, index - 3);
+  const end = Math.min(lines.length, index + 4);
+  const content = lines.slice(start, end).join("\n");
+  const previous = previousOffset === undefined ? -1 : lineNumberAt(source, previousOffset) - 1;
+  const anchor = precedingUniqueAnchor(lines, index, previous);
+  return [
+    `Candidate at line ${index + 1}, context ${start + 1}-${end}:\n${content.slice(0, 1_200)}`,
+    ...(anchor ? [`Unique preceding anchor at line ${anchor.line}:\n@@ ${anchor.text}`] : []),
+  ].join("\n");
+}
+
+function precedingUniqueAnchor(lines: string[], index: number, previous: number) {
+  const counts = new Map<string, number>();
+  for (const line of lines) counts.set(line.trim(), (counts.get(line.trim()) ?? 0) + 1);
+  for (let candidate = index - 1; candidate > previous; candidate -= 1) {
+    const text = lines[candidate]!.trim();
+    if (text && text.length <= 300 && counts.get(text) === 1)
+      return { line: candidate + 1, text };
+  }
+  return undefined;
 }
 
 function closestCurrentContext(source: string, expected: string) {
@@ -297,7 +445,9 @@ function lineSimilarity(left: string, right: string) {
   const overlap = (candidate.match(/[\p{L}\p{N}_$]+/gu) ?? []).filter((word) =>
     words.has(word),
   ).length;
-  return containment + commonPrefixLength(candidate, expected) * 4 + overlap * 20;
+  return (
+    containment + commonPrefixLength(candidate, expected) * 4 + overlap * 20
+  );
 }
 
 function commonPrefixLength(left: string, right: string) {
@@ -375,10 +525,7 @@ function characterBefore(value: string, end: number) {
   const low = value.charCodeAt(end - 1);
   const high = value.charCodeAt(end - 2);
   const paired =
-    low >= 0xdc00 &&
-    low <= 0xdfff &&
-    high >= 0xd800 &&
-    high <= 0xdbff;
+    low >= 0xdc00 && low <= 0xdfff && high >= 0xd800 && high <= 0xdbff;
   const start = paired ? end - 2 : end - 1;
   return { start, value: value.slice(start, end) };
 }
@@ -417,16 +564,16 @@ function selectedLines(lines: string[], prefixes: Set<string>) {
     .join("\n");
 }
 
-function lineBoundedMatches(source: string, value: string) {
+function lineBoundedMatches(source: string, value: string, start = 0) {
   const matches: number[] = [];
-  let offset = 0;
+  let offset = start;
   while (offset <= source.length) {
     const index = source.indexOf(value, offset);
     if (index < 0) break;
     const end = index + value.length;
     if (lineBoundary(source, index, end)) matches.push(index);
     if (matches.length > 1) break;
-    offset = index + Math.max(1, value.length);
+    offset = index + 1;
   }
   return matches;
 }

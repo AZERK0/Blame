@@ -1,3 +1,6 @@
+import type { SgNode } from "@ast-grep/napi";
+import { parseCode } from "./code-intelligence.js";
+
 export const blockedCommandParts = [
   "rm -rf",
   "sudo",
@@ -7,75 +10,108 @@ export const blockedCommandParts = [
 ];
 
 export function blockedCommandReason(command: string) {
-  const normalized = command.toLocaleLowerCase();
-  if (dependencyInternals.test(normalized))
-    return "Dependency internals are excluded from inspection. Use project manifests, declared types, and validation diagnostics.";
-  if (managedInfrastructure.test(normalized))
-    return "Managed preview infrastructure cannot be started from run_task.";
-  if (longRunningProcess.test(normalized) || backgroundProcess.test(normalized))
+  const root = parseCode("command.sh", Buffer.from(command)).trees[0]?.root;
+  if (!root) return "Unable to inspect the shell command syntax.";
+  if (hasBackgroundProcess(root))
     return "Long-running processes must use the managed preview runtime.";
+  const invocations = root
+    .findAll({ rule: { kind: "command" } })
+    .map(commandInvocation);
+  const denied = invocations.map(blockedInvocationReason).find(Boolean);
+  if (denied) return denied;
   if (
-    filesystemMutation.test(normalized) ||
-    inPlaceMutation.test(normalized) ||
-    formatterMutation.test(normalized) ||
-    packageManagerMutation.test(normalized) ||
-    writesThroughInterpreter(normalized)
+    root
+      .findAll({ rule: { kind: "pipeline" } })
+      .some((node) => remoteScript.test(node.text()))
   )
-    return filesystemWriteReason;
-  if (mutatingRedirection(normalized))
-    return "Shell redirection cannot write files; use edit_code.";
-  if (deniedGitCommand(normalized))
-    return "Git mutations are unavailable from run_task.";
-  if (elevatedOrRemoteScript.test(normalized))
-    return "The command is denied by the shell safety policy.";
+    return "Remote scripts cannot be piped into a shell.";
   return undefined;
 }
 
-export function blockedProjectTaskReason(command: string) {
-  return formatterMutation.test(command.toLocaleLowerCase())
-    ? filesystemWriteReason
-    : undefined;
+function blockedInvocationReason(command: string): string | undefined {
+  const normalized = command.toLocaleLowerCase();
+  if (managedInfrastructure.test(normalized))
+    return "Managed preview infrastructure cannot be started from run_task.";
+  if (
+    (longRunningProcess.test(normalized) && !signalInspection(command)) ||
+    unmanagedViteCommand(normalized)
+  )
+    return "Long-running processes must use the managed preview runtime.";
+  if (destructiveFileCommand.test(normalized))
+    return "Use edit_code for file deletion; destructive filesystem commands are unavailable.";
+  if (packageManagerMutation.test(normalized))
+    return "Use the dependency operation for Node package changes.";
+  if (deniedGitCommand(command))
+    return "Git mutations are unavailable from run_task.";
+  if (/^sudo(?:\s|$)/u.test(normalized))
+    return "Privilege escalation is unavailable from run_task.";
+  const unwrapped = command.replace(
+    /^(?:(?:command|exec|env)\s+(?:[^\s=]+=[^\s]+\s+)*|(?:npm|pnpm|yarn|bun)\s+exec\s+(?:--\s+)?|(?:npx|bunx|(?:pnpm|yarn)\s+dlx)\s+(?:(?:-y|--yes|--)\s+)*)/u,
+    "",
+  );
+  return unwrapped === command ? undefined : blockedInvocationReason(unwrapped);
 }
 
-const filesystemWriteReason =
-  "Filesystem writes must use edit_code or the dependency operation.";
+function commandInvocation(node: SgNode) {
+  const children = node.children();
+  const nameIndex = children.findIndex(
+    (child) => child.kind() === "command_name",
+  );
+  return children
+    .slice(nameIndex)
+    .map((child) => child.text())
+    .join(" ");
+}
 
-const dependencyInternals =
-  /(?:^|[\s'"`])(?:\.\/)?[^\s'"`]*node_modules(?:\/|\b)/u;
+function hasBackgroundProcess(node: SgNode): boolean {
+  return node.kind() === "&" || node.children().some(hasBackgroundProcess);
+}
+
 const managedInfrastructure =
-  /(?:^|[;&|]\s*|\s)(?:docker|docker-compose|nerdctl|podman|postgres|pg_ctl|createdb|initdb)(?:\s|$)/u;
+  /^(?:docker|docker-compose|nerdctl|podman|postgres|pg_ctl|createdb|initdb)(?:\s|$)/u;
 const longRunningProcess =
-  /(?:^|[;&|]\s*|\s)(?:next\s+(?:dev|start)|vite(?:\s|$)|playwright\s+install|pnpm\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|npm\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|yarn\s+(?:dev|preview|start|serve|watch)|bun\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|nohup|kill|pkill)(?:\s|$)/u;
-const filesystemMutation =
-  /(?:^|[;&|]\s*|\s)(?:cp|mv|rm|install|mkdir|rmdir|touch|truncate|tee|dd|rsync|ln|chmod|chown|patch)(?:\s|$)/u;
-const inPlaceMutation =
-  /(?:^|[;&|]\s*|\s)(?:apply_patch|perl\s+-\S*i\S*|sed\s+-\S*i\S*)(?:\s|$)/u;
-const formatterMutation =
-  /\b(?:prettier|biome)\b[^;&|\n]*\s--write(?:\s|$)|\beslint\b[^;&|\n]*\s--fix(?:\s|$)|\bprisma\s+format(?:\s|$)/u;
+  /^(?:next\s+(?:dev|start)|pnpm\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|npm\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|yarn\s+(?:dev|preview|start|serve|watch)|bun\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|nohup|kill|pkill)(?:\s|$)/u;
+const destructiveFileCommand = /^(?:rm|rmdir|dd|chown)(?:\s|$)/u;
 const packageManagerMutation =
-  /(?:^|[;&|]\s*|\s)(?:(?:npm|pnpm|yarn|bun)\s+(?:add|ci|install|link|remove|uninstall|unlink|update|upgrade)|npx(?:\s|$)|bunx(?:\s|$)|(?:pnpm|yarn)\s+dlx(?:\s|$))/u;
-const elevatedOrRemoteScript =
-  /\bsudo\b|\b(?:curl|wget)\b[^\n|]*\|\s*(?:ba)?sh\b|>\s*\/dev\/(?!null\b)/u;
-const backgroundProcess = /(?:^|\s)&(?:\s|$)/u;
+  /^(?:(?:npm|pnpm|yarn|bun)\s+(?:add|ci|install|link|remove|uninstall|unlink|update|upgrade))/u;
+const remoteScript = /\b(?:curl|wget)\b[^\n|]*\|\s*(?:ba)?sh\b/u;
 const allowedGitCommands = new Set([
+  "annotate",
+  "blame",
   "cat-file",
+  "clone",
+  "version",
+  "help",
+  "describe",
+  "rev-list",
+  "check-ignore",
   "diff",
   "grep",
   "log",
   "ls-files",
+  "ls-remote",
   "ls-tree",
   "rev-parse",
   "show",
   "status",
 ]);
 
-function writesThroughInterpreter(command: string) {
-  return /\b(?:appendfile|copyfile|createwritestream|rename(?:sync)?|rmsync|unlink(?:sync)?|writefile(?:sync)?|write_text)\b|\bshutil\.copy\b|\bopen\([^)]*,\s*["'][^"']*[wax+]/u.test(
-    command,
+function signalInspection(command: string) {
+  const [name, option, ...signals] = command.split(/\s+/u);
+  return (
+    name === "kill" &&
+    /^(?:-[lL]|--table|--list(?:=[\w+-]+)?)$/u.test(option ?? "") &&
+    signals.every((signal) => /^\w+(?:[+-]\d+)?$/u.test(signal))
   );
 }
 
 function deniedGitCommand(command: string) {
+  if (!/^git(?:\s|$)/u.test(command)) return false;
+  command = command.replace(
+    /\bgit(?:\s+(?:-C|--git-dir|--work-tree)(?:\s+|=)(?:'[^']*'|"[^"]*"|[^\s;|&]+))+\s+/gu,
+    "git ",
+  );
+  if (/^git\s+--(?:version|help)\s*$/u.test(command)) return false;
   if (/\bgit\s+-/u.test(command)) return true;
   return [...command.matchAll(/\bgit\s+([a-z][\w-]*)([^;&|\n]*)/gu)].some(
     ([, operation, argumentsValue]) =>
@@ -85,26 +121,9 @@ function deniedGitCommand(command: string) {
   );
 }
 
-function mutatingRedirection(command: string) {
-  const shellSource = withoutHereDocumentBodies(command);
-  return [
-    ...shellSource.matchAll(/(?:^|[\s;|&])\d*>{1,2}\s*([^\s;|&]+)/gu),
-  ].some(([, target]) => target !== "/dev/null" && !target?.startsWith("&"));
-}
-
-function withoutHereDocumentBodies(command: string) {
-  const output: string[] = [];
-  let delimiter: string | undefined;
-  for (const line of command.split("\n")) {
-    if (delimiter) {
-      if (line.trim() === delimiter) {
-        output.push(line);
-        delimiter = undefined;
-      }
-      continue;
-    }
-    output.push(line);
-    delimiter = line.match(/<<-?\s*["']?([a-z_][a-z0-9_]*)["']?/iu)?.[1];
-  }
-  return output.join("\n");
+function unmanagedViteCommand(command: string) {
+  return (
+    /^vite(?:\s|$)/u.test(command) &&
+    !/^vite\s+(?:build|optimize|--help|--version)(?:\s|$)/u.test(command)
+  );
 }

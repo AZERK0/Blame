@@ -1,6 +1,7 @@
 import { access, readFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import fg from "fast-glob";
+import { nativeTaskCatalog } from "./native-task-catalog.js";
 
 export type TaskCatalogItem = {
   command: string;
@@ -14,7 +15,8 @@ export type TaskCatalogItem = {
     | "service"
     | "test"
     | "typecheck";
-  package_manager: "bun" | "npm" | "pnpm" | "yarn";
+  package_manager?: "bun" | "npm" | "pnpm" | "yarn";
+  invocation?: TaskInvocation;
   package_manager_version?: string;
   requiresNetwork: boolean;
   script?: string;
@@ -30,7 +32,7 @@ export type TaskInvocation = {
 };
 
 type PackageManagerSelection = {
-  name: TaskCatalogItem["package_manager"];
+  name: NonNullable<TaskCatalogItem["package_manager"]>;
   version?: string;
 };
 
@@ -52,7 +54,8 @@ export async function readTaskCatalog(
   options: { dependencyTaskAvailable?: boolean } = {},
 ): Promise<TaskCatalogItem[]> {
   const manifests = await readPackageManifests(root, workspaceFiles);
-  if (!manifests.length) return [];
+  const native = await nativeTaskCatalog(root, workspaceFiles);
+  if (!manifests.length) return native;
   const rootManifest = manifests.find(({ file }) => file === "package.json");
   const packageManager = await detectPackageManager(
     root,
@@ -66,10 +69,14 @@ export async function readTaskCatalog(
       ? []
       : [dependencyTask(packageManager)]),
     ...disambiguateTasks(candidates),
+    ...native,
   ].sort((left, right) => left.task_id.localeCompare(right.task_id));
 }
 
 export function taskInvocation(task: TaskCatalogItem): TaskInvocation {
+  if (task.invocation) return task.invocation;
+  if (!task.package_manager)
+    throw new Error(`No command for task ${task.task_id}.`);
   if (task.kind === "dependencies") return dependencyInvocation(task);
   const script = task.script ?? task.task_id;
   return taskCommand(
@@ -107,6 +114,8 @@ function dependencyTask(
 function dependencyInvocation(
   task: Pick<TaskCatalogItem, "package_manager" | "package_manager_version">,
 ) {
+  if (!task.package_manager)
+    throw new Error("No Node package manager was detected.");
   const args = dependencyArguments[task.package_manager];
   return taskCommand(
     task.package_manager,

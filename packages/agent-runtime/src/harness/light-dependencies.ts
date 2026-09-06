@@ -17,7 +17,7 @@ type DependencyInput = Extract<LightRunTaskInput, { kind: "dependency" }>;
 export type LightDependencyResult =
   | { changedPaths: string[]; output: string; status: "applied" }
   | {
-      category: "code" | "environment";
+      category: "code" | "environment" | "input";
       message: string;
       status: "blocked";
     };
@@ -41,7 +41,14 @@ export class LightDependencyService {
   ): Promise<LightDependencyResult> {
     const snapshot = await this.files.snapshot(signal);
     const manifest = manifestPath(this.files, input.packagePath);
-    const manifestContent = (await this.files.read(manifest)).content;
+    const file = await optionalFile(this.files, manifest);
+    if (!file)
+      return {
+        status: "blocked",
+        category: "input",
+        message: `No Node manifest at ${manifest}. Use run_task with the native package manager for other ecosystems.`,
+      };
+    const manifestContent = file.content;
     const before = await snapshotDependencyFiles(this.files, snapshot);
     try {
       const effectiveInput = alignedDependencyInput(input, manifestContent);
