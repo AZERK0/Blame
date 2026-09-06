@@ -10,6 +10,73 @@ import {
 } from "./corpus-utils.mjs";
 import { scoreRun } from "./score-run.mjs";
 import { scenarioChecks } from "./scenario-checks.mjs";
+import { selectedScenarios } from "./select-scenarios.mjs";
+import { writeCampaignReport } from "./report-corpus.mjs";
+
+test("campaigns require explicit groups of at most ten scenarios", async () => {
+  const { scenarios } = await readManifest();
+  assert.throws(() => selectedScenarios(scenarios), /ten scenarios/u);
+  assert.throws(
+    () =>
+      selectedScenarios(
+        scenarios,
+        scenarios
+          .slice(0, 11)
+          .map(({ id }) => id)
+          .join(","),
+      ),
+    /ten scenarios/u,
+  );
+  assert.equal(
+    selectedScenarios(
+      scenarios,
+      scenarios
+        .slice(0, 10)
+        .map(({ id }) => id)
+        .join(","),
+    ).length,
+    10,
+  );
+});
+
+test("behavior scoring rejects correct text in unreachable code", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-behavior-score-"));
+  try {
+    await mkdir(join(root, "src"));
+    await writeFile(
+      join(root, "src/project-label.ts"),
+      'export function formatProjectLabel(name: string) { return "WRONG"; return `Project · ${name.trim()}`; }',
+    );
+    const checks = await scenarioChecks("symbol-function", root);
+    assert.equal(
+      checks.every(({ passed }) => passed),
+      false,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("reports leave missing usage unknown instead of treating it as free", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-unknown-usage-"));
+  try {
+    await mkdir(join(root, "run"));
+    await writeFile(
+      join(root, "run/score.json"),
+      JSON.stringify({
+        scenario: "missing",
+        qualityScore: 0,
+        tokens: { input: null, output: null, cost: null },
+      }),
+    );
+    const report = await writeCampaignReport(root);
+    assert.equal(report.totalTokens.input, null);
+    assert.equal(report.totalCost, null);
+    assert.equal(report.missingUsageRuns, 1);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 test("defines twenty-five unique scored scenarios", async () => {
   const manifest = await readManifest();

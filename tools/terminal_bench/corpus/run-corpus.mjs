@@ -11,6 +11,8 @@ import {
 } from "./corpus-utils.mjs";
 import { scoreRun } from "./score-run.mjs";
 import { writeCampaignReport } from "./report-corpus.mjs";
+import { selectedScenarios } from "./select-scenarios.mjs";
+import { recordCampaignProvenance } from "./campaign-provenance.mjs";
 
 const options = parseArguments(process.argv.slice(2));
 const harness = harnessOption(options.get("harness"));
@@ -27,6 +29,7 @@ const scenarios = selectedScenarios(
 
 await mkdir(output, { recursive: true });
 await mkdir(campaign, { recursive: false });
+await recordCampaignProvenance(campaign, scenarios);
 for (const [index, scenario] of scenarios.entries())
   await executeScenario(campaign, scenario, index);
 const report = await writeCampaignReport(campaign);
@@ -91,20 +94,6 @@ function executeRunner(runDirectory, workspace, scenario) {
     BLAME_HEADLESS_DEV: "true",
     NODE_ENV: "development",
   });
-}
-
-function selectedScenarios(scenarios, selection) {
-  if (!selection || selection === "all") return scenarios;
-  const ids = new Set(
-    selection
-      .split(",")
-      .map((value) => value.trim())
-      .filter(Boolean),
-  );
-  const selected = scenarios.filter((scenario) => ids.has(scenario.id));
-  if (selected.length !== ids.size)
-    throw new Error("One or more selected scenarios do not exist.");
-  return selected;
 }
 
 function requiredOption(values, name) {

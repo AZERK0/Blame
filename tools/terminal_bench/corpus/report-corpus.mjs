@@ -28,6 +28,12 @@ export async function writeCampaignReport(campaignDirectory) {
 
 function aggregateRuns(runs) {
   return {
+    missingUsageRuns: runs.filter(
+      (run) =>
+        run.tokens.input == null ||
+        run.tokens.output == null ||
+        run.tokens.cost == null,
+    ).length,
     runCount: runs.length,
     averageQualityScore: average(runs.map((run) => run.qualityScore)),
     successfulRuns: runs.filter((run) => run.status === "succeeded").length,
@@ -35,12 +41,12 @@ function aggregateRuns(runs) {
     formattedRuns: runs.filter((run) => run.formattingPassed === true).length,
     totalDurationMs: total(runs, (run) => run.durationMs),
     totalTokens: {
-      input: total(runs, (run) => run.tokens.input),
-      output: total(runs, (run) => run.tokens.output),
-      cacheRead: total(runs, (run) => run.tokens.cacheRead),
-      cacheWrite: total(runs, (run) => run.tokens.cacheWrite),
+      input: knownTotal(runs, (run) => run.tokens.input),
+      output: knownTotal(runs, (run) => run.tokens.output),
+      cacheRead: knownTotal(runs, (run) => run.tokens.cacheRead),
+      cacheWrite: knownTotal(runs, (run) => run.tokens.cacheWrite),
     },
-    totalCost: total(runs, (run) => run.tokens.cost),
+    totalCost: knownTotal(runs, (run) => run.tokens.cost),
     totalToolCalls: total(runs, (run) => run.metrics?.tools?.calls),
     totalReadCalls: total(runs, (run) => run.metrics?.navigation?.readCalls),
     totalReturnedBytes: total(
@@ -70,11 +76,11 @@ function markdownReport(report) {
   const header =
     "| Scénario | Score | Format | Statut | Durée | Entrée | Sortie | Cache lu | Coût | Outils | Lectures | Rejets édition |\n| --- | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |";
   const rows = report.runs.map(markdownRow).join("\n");
-  return `# Terminal Bench corpus report\n\n${header}\n${rows}\n\nScore moyen : ${report.averageQualityScore}/100  \nFormatage : ${report.formattedRuns}/${report.runCount}  \nTokens d'entrée : ${report.totalTokens.input}  \nTokens de sortie : ${report.totalTokens.output}  \nTokens de cache lus : ${report.totalTokens.cacheRead}  \nCoût : ${report.totalCost.toFixed(5)}  \n`;
+  return `# Terminal Bench corpus report\n\n${header}\n${rows}\n\nScore moyen : ${report.averageQualityScore}/100  \nFormatage : ${report.formattedRuns}/${report.runCount}  \nTokens d'entrée : ${report.totalTokens.input}  \nTokens de sortie : ${report.totalTokens.output}  \nTokens de cache lus : ${report.totalTokens.cacheRead}  \nCoût : ${report.totalCost?.toFixed(5) ?? "inconnu"}  \n`;
 }
 
 function markdownRow(run) {
-  return `| ${run.scenario} | ${run.qualityScore} | ${run.formattingPassed ? "oui" : "non"} | ${run.status} | ${(run.durationMs / 1000).toFixed(1)} s | ${run.tokens.input} | ${run.tokens.output} | ${run.tokens.cacheRead} | ${run.tokens.cost.toFixed(5)} | ${run.metrics?.tools?.calls ?? 0} | ${run.metrics?.navigation?.readCalls ?? 0} | ${run.metrics?.editing?.blocked ?? 0} |`;
+  return `| ${run.scenario} | ${run.qualityScore} | ${run.formattingPassed ? "oui" : "non"} | ${run.status} | ${(run.durationMs / 1000).toFixed(1)} s | ${run.tokens.input} | ${run.tokens.output} | ${run.tokens.cacheRead} | ${run.tokens.cost?.toFixed(5) ?? "inconnu"} | ${run.metrics?.tools?.calls ?? 0} | ${run.metrics?.navigation?.readCalls ?? 0} | ${run.metrics?.editing?.blocked ?? 0} |`;
 }
 
 async function readScore(directory) {
@@ -87,6 +93,12 @@ async function readScore(directory) {
 
 function total(values, read) {
   return values.reduce((sum, value) => sum + (Number(read(value)) || 0), 0);
+}
+
+function knownTotal(values, read) {
+  return values.every((value) => Number.isFinite(read(value)))
+    ? total(values, read)
+    : null;
 }
 
 function average(values) {

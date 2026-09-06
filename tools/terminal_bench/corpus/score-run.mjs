@@ -73,11 +73,11 @@ function runScore(
 function usageMetrics(usage) {
   const value = usage?.aggregateUsage ?? usage?.usage ?? usage ?? {};
   return {
-    input: value.totalInputTokens ?? value.inputTokens ?? 0,
-    output: value.totalOutputTokens ?? value.outputTokens ?? 0,
-    cacheRead: value.totalCacheReadTokens ?? value.cacheReadTokens ?? 0,
-    cacheWrite: value.totalCacheWriteTokens ?? value.cacheWriteTokens ?? 0,
-    cost: value.totalCost ?? value.cost ?? 0,
+    input: value.totalInputTokens ?? value.inputTokens ?? null,
+    output: value.totalOutputTokens ?? value.outputTokens ?? null,
+    cacheRead: value.totalCacheReadTokens ?? value.cacheReadTokens ?? null,
+    cacheWrite: value.totalCacheWriteTokens ?? value.cacheWriteTokens ?? null,
+    cost: value.totalCost ?? value.cost ?? null,
   };
 }
 

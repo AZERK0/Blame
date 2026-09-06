@@ -41,11 +41,13 @@ const checkFunctions = {
 };
 
 async function checkSymbolFunction(workspace) {
-  const source = await sourceFile(workspace, "src/project-label.ts");
+  const module = await typeScriptModule(workspace, "src/project-label.ts");
   return [
-    check(
-      "trimmed project label",
-      /return `Project · \$\{name\.trim\(\)\}`;/u.test(source),
+    await behaviorCheck("trimmed project label", () =>
+      [" Alpha ", "\tÉté\n", "", "   "].every(
+        (name) =>
+          module.formatProjectLabel(name) === `Project · ${name.trim()}`,
+      ),
     ),
   ];
 }
@@ -85,34 +87,51 @@ async function checkCssMedia(workspace) {
 }
 
 async function checkSymbolRebase(workspace) {
-  const source = await sourceFile(workspace, "src/pricing.ts");
+  const module = await typeScriptModule(workspace, "src/pricing.ts");
   return [
-    check(
-      "fee threshold",
-      /totalCents\s*<\s*100_?000/u.test(source) ||
-        /totalCents\s*>=\s*100_?000/u.test(source),
-    ),
-    check(
-      "three percent fee",
-      /Math\.round\(totalCents\s*\*\s*0\.03\)/u.test(source),
-    ),
-    check(
-      "updated fee description",
-      /calculateServiceFee\(totalCents\)\s*>\s*0\s*\?\s*["']standard["']\s*:\s*["']none["']/u.test(
-        source,
+    await behaviorCheck("fee threshold", () =>
+      [0, 99_999, 100_000].every(
+        (amount) =>
+          module.calculateServiceFee(amount) === (amount < 100_000 ? 0 : 3_000),
       ),
+    ),
+    await behaviorCheck(
+      "three percent fee rounded",
+      () =>
+        module.calculateServiceFee(100_017) === 3_001 &&
+        module.calculateServiceFee(255_555) === 7_667,
+    ),
+    await behaviorCheck(
+      "updated fee description",
+      () =>
+        module.describeServiceFee(99_999) === "none" &&
+        module.describeServiceFee(100_000) === "standard",
     ),
   ];
 }
 
 async function checkLargeNavigation(workspace) {
   const source = await sourceFile(workspace, "src/project-registry.ts");
-  const body = source.slice(
-    source.indexOf("export function selectFeaturedProjects"),
-  );
+  const module = await typeScriptModule(workspace, "src/project-registry.ts");
+  const projects = [
+    { id: "a", featured: true, rank: 3 },
+    { id: "b", featured: false, rank: 1 },
+    { id: "c", featured: true, rank: 2 },
+  ];
   return [
-    check("featured filter", /filter\([^\n]*featured/u.test(body)),
-    check("rank sort", /sort\([^\n]*rank/u.test(body)),
+    await behaviorCheck("featured filtering and rank ordering", () =>
+      sameValues(
+        module.selectFeaturedProjects(projects).map(({ id }) => id),
+        ["c", "a"],
+      ),
+    ),
+    check(
+      "input ordering preserved",
+      sameValues(
+        projects.map(({ id }) => id),
+        ["a", "b", "c"],
+      ),
+    ),
     check(
       "registry preserved",
       (source.match(/id: "project-/gu) ?? []).length === 180,
@@ -122,32 +141,30 @@ async function checkLargeNavigation(workspace) {
 
 async function checkLargeCreate(workspace) {
   const source = await sourceFile(workspace, "src/project-seed.ts");
-  const seeds = source.slice(source.indexOf("PROJECT_SEEDS"));
-  const identifiers = fieldValues(source, "id", /project-\d{3}/u);
-  const titles = fieldValues(source, "title", /Project \d{3}/u);
+  const module = await typeScriptModule(workspace, "src/project-seed.ts");
+  const seeds = Array.isArray(module.PROJECT_SEEDS) ? module.PROJECT_SEEDS : [];
   return [
     check("large file", Buffer.byteLength(source) > 10_000),
     check("seed type", /export\s+type\s+ProjectSeed/u.test(source)),
     check("seed export", /export\s+const\s+PROJECT_SEEDS/u.test(source)),
     check(
       "120 identifiers",
-      identifiers.length === 120 &&
-        identifiers[0] === "project-001" &&
-        identifiers.at(-1) === "project-120",
+      seeds.length === 120 &&
+        seeds.every(
+          (seed, index) =>
+            seed.id === `project-${String(index + 1).padStart(3, "0")}`,
+        ),
     ),
     check(
       "120 titles and statuses",
-      titles.length === 120 &&
-        (seeds.match(/status:\s*["']published["']/gu) ?? []).length === 120,
+      seeds.length === 120 &&
+        seeds.every(
+          (seed, index) =>
+            seed.title === `Project ${String(index + 1).padStart(3, "0")}` &&
+            seed.status === "published",
+        ),
     ),
   ];
-}
-
-function fieldValues(source, field, pattern) {
-  const matches = source.matchAll(
-    new RegExp(`\\b${field}:\\s*["'](${pattern.source})["']`, "gu"),
-  );
-  return [...matches].map((match) => match[1]);
 }
 
 async function checkTaskSelection(workspace) {
@@ -173,12 +190,16 @@ async function checkProofFreshness(workspace) {
 }
 
 async function checkReadDeduplication(workspace) {
-  const source = await sourceFile(workspace, "src/api/projects.ts");
+  const module = await typeScriptModule(workspace, "src/api/projects.ts");
   return [
-    check(
-      "empty title fallback",
-      /title\.trim\(\)[\s\S]*["']Untitled project["']/u.test(source) ||
-        /trimmedTitle[\s\S]*["']Untitled project["']/u.test(source),
+    await behaviorCheck("empty title fallback", () =>
+      ["", " \n\t "].every(
+        (title) => module.normalizeProjectTitle(title) === "Untitled project",
+      ),
+    ),
+    await behaviorCheck(
+      "nonempty titles trimmed",
+      () => module.normalizeProjectTitle("  Studio  ") === "Studio",
     ),
   ];
 }
@@ -740,7 +761,7 @@ async function checkStatusMigration(workspace) {
 
 function traceChecks(id, result, events) {
   if (id === "proof-freshness")
-    return [check("fresh terminal proof", result.verified === true)];
+    return [check("fresh terminal proof", freshTerminalProof(result, events))];
   if (id === "read-deduplication")
     return [
       check(
@@ -755,6 +776,35 @@ function traceChecks(id, result, events) {
   if (id === "task-selection")
     return [check("root build selected", rootBuildSelected(events))];
   return [];
+}
+
+function freshTerminalProof(result, events) {
+  const completed = events
+    .map((row) => row.event?.payload)
+    .filter(
+      (payload) =>
+        payload?.phase === "finished" && payload.output?.status === "ok",
+    );
+  const lastEdit = completed.findLastIndex(
+    (payload) =>
+      payload.toolCall?.name === "edit_code" &&
+      payload.output.data?.changed === true,
+  );
+  if (lastEdit < 0 || result.verified !== true) return false;
+  const revision = completed[lastEdit].output.data.sourceRevisionId;
+  return (
+    Boolean(revision) &&
+    completed.slice(lastEdit + 1).some((payload) => {
+      const validation = payload.output.data?.validation;
+      return (
+        validation?.status === "passed" &&
+        validation.sourceRevisionId === revision &&
+        ["src/project-label.ts", "src/styles.css"].every((path) =>
+          validation.paths?.includes(path),
+        )
+      );
+    })
+  );
 }
 
 function rootBuildSelected(events) {
