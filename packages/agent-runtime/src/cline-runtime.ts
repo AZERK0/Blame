@@ -819,7 +819,7 @@ export class BlameAgentRuntime {
       const taskObjective = input.taskObjective ?? input.prompt;
       const taskContract = {
         acceptance_criteria: [taskObjective],
-        effect_requirement: "source_change" as const,
+        effect_requirement: "none" as const,
         session_id: sessionId,
         ...(input.storyId ? { story_id: input.storyId } : {}),
         objective: taskObjective,
@@ -1103,7 +1103,18 @@ export class BlameAgentRuntime {
       ...startContext(input),
       logFile: sessionLogFile,
     });
-    const failure = resultFailureMessage(session.result);
+    await this.completeSessionStartResult(cline, session, executionId);
+  }
+
+  private async completeSessionStartResult(
+    cline: ClineCore,
+    session: RuntimeClineResult,
+    executionId: string,
+  ) {
+    const { sessionId, result } = session;
+    await this.sessionTerminalDrains.get(sessionId);
+    if (!this.runLifecycles.canInvoke(sessionId, executionId)) return;
+    const failure = this.sessionResultFailure(sessionId, executionId, result);
     if (
       failure &&
       this.shouldRecoverTransportFailure(sessionId, executionId, failure)
@@ -1112,6 +1123,16 @@ export class BlameAgentRuntime {
       return;
     }
     this.sessionTransportRecoveries.delete(sessionId);
+    if (!failure) return;
+    await this.terminateSessionExecution({
+      cline,
+      display: true,
+      event: this.sessionFailureEvent(sessionId, executionId, failure),
+      executionId,
+      reason: "Cline start returned a failure",
+      sessionId,
+      terminalState: terminalStateFromResult(result),
+    });
   }
 
   private async failSessionStart(
@@ -2774,10 +2795,6 @@ export class BlameAgentRuntime {
       message,
       status: "recovering",
     });
-    this.emitSessionNotice(
-      sessionId,
-      "Provider connection interrupted. Blame is resuming from the persisted session state.",
-    );
   }
 
   private shouldRecoverTransportFailure(
@@ -2786,6 +2803,8 @@ export class BlameAgentRuntime {
     error: unknown,
   ) {
     if (!retryableModelTransportFailure(error)) return false;
+    if (this.sessionStartInputs.get(sessionId)?.interactive !== true)
+      return false;
     if (!this.runLifecycles.canInvoke(sessionId, executionId)) return false;
     if (this.sessionSubmittedSummaries.has(sessionId)) return false;
     if ((this.sessionActiveTools.get(sessionId)?.size ?? 0) > 0) return false;
@@ -2813,11 +2832,48 @@ export class BlameAgentRuntime {
       attempt: attempts,
       status: "recovering",
     });
+    this.emitSessionNotice(
+      sessionId,
+      "Provider connection interrupted. Blame is resuming from the persisted session state.",
+    );
     return this.sendPrompt(
       cline,
       sessionId,
       transportRecoveryPrompt,
       {},
+      executionId,
+    );
+  }
+
+  private sessionResultFailure(
+    sessionId: string,
+    executionId: string,
+    result: unknown,
+  ) {
+    const failure = resultFailureMessage(result);
+    if (
+      resultFailureDetail(result) ||
+      (!failure && resultStatus(asRecord(result)))
+    )
+      return failure;
+    const recovery = this.sessionTransportRecoveries.get(sessionId);
+    return recovery?.executionId === executionId && recovery.attempts === 0
+      ? recovery.message
+      : failure;
+  }
+
+  private sessionFailureEvent(
+    sessionId: string,
+    executionId: string,
+    message: string,
+  ) {
+    return this.withExecutionId(
+      sessionId,
+      {
+        type: "error",
+        sessionId,
+        payload: { message, ...clineErrorMetadata(message) },
+      },
       executionId,
     );
   }
@@ -3783,7 +3839,11 @@ export class BlameAgentRuntime {
           sendResultLogPayload(result, Date.now() - startedAt),
           activeContext,
         );
-        const failure = resultFailureMessage(result);
+        const failure = this.sessionResultFailure(
+          sessionId,
+          activeExecutionId,
+          result,
+        );
         if (failure) {
           if (
             this.shouldRecoverTransportFailure(
@@ -6044,12 +6104,17 @@ export function resultFailureMessage(result: unknown) {
   const payload = asRecord(result);
   const status = incompleteResultStatus(payload);
   if (!status) return undefined;
+  return resultFailureDetail(result) ?? terminalProductMessage(status);
+}
+
+function resultFailureDetail(result: unknown) {
+  const payload = asRecord(result);
   const error = asRecord(payload.error);
-  const message =
+  return (
     stringValue(error.message) ??
     stringValue(payload.error) ??
-    stringValue(payload.message);
-  return message ?? terminalProductMessage(status);
+    stringValue(payload.message)
+  );
 }
 
 function resultStatus(payload: Record<string, unknown>) {

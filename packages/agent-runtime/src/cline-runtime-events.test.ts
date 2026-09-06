@@ -1336,6 +1336,7 @@ test("resumes a failed provider stream once from persisted state", async () => {
       executionId: string,
     ): Promise<unknown>;
     sessionExecutionIds: Map<string, string>;
+    sessionStartInputs: Map<string, { config: object; interactive: boolean }>;
   };
   const prompts: string[] = [];
   const core = {
@@ -1356,6 +1357,10 @@ test("resumes a failed provider stream once from persisted state", async () => {
     stop: async () => undefined,
   };
   internals.sessionExecutionIds.set("transport-session", "execution");
+  internals.sessionStartInputs.set("transport-session", {
+    config: {},
+    interactive: true,
+  });
   internals.runLifecycles.begin("transport-session", "execution");
 
   await internals.sendPrompt(
@@ -1377,6 +1382,232 @@ test("resumes a failed provider stream once from persisted state", async () => {
     false,
   );
 });
+
+test("ends a noninteractive transport failure without waiting or promising a retry", async () => {
+  const fixture = await transportEventFixture(false);
+  try {
+    fixture.publishFailure();
+    await fixture.internals.sessionTerminalDrains.get("session");
+    assert.equal(
+      fixture.internals.runLifecycles.state("session")?.state,
+      "failed",
+    );
+    assert.equal(fixture.prompts.length, 0);
+    assert.equal(fixture.emitted.at(-1)?.type, "error");
+    assert.match(
+      JSON.stringify(fixture.emitted.at(-1)?.payload),
+      /UND_ERR_SOCKET/u,
+    );
+    assert.equal(fixture.emitted.some(isTransportRecoveryNotice), false);
+  } finally {
+    await fixture.runtime.shutdown();
+  }
+});
+
+for (const result of [undefined, { finishReason: "error" }]) {
+  test(`retains the streamed transport cause when an interactive turn returns ${JSON.stringify(result)}`, async () => {
+    const fixture = await transportEventFixture(true, result);
+    try {
+      await fixture.internals.sendPrompt(
+        fixture.core,
+        "session",
+        "Continue",
+        {},
+        "execution",
+      );
+      assert.equal(fixture.prompts.length, 2);
+      assert.match(fixture.prompts[1] ?? "", /runtime_recovery/u);
+      assert.equal(
+        fixture.internals.runLifecycles.state("session")?.state,
+        "succeeded",
+      );
+      assert.equal(fixture.emitted.filter(isTransportRecoveryNotice).length, 1);
+      assert.equal(fixture.noticesBeforeResolution(), 0);
+    } finally {
+      await fixture.runtime.shutdown();
+    }
+  });
+}
+
+test("ends a repeated interactive transport failure after the existing single retry", async () => {
+  const fixture = await transportEventFixture(
+    true,
+    { finishReason: "error" },
+    true,
+  );
+  try {
+    await fixture.internals.sendPrompt(
+      fixture.core,
+      "session",
+      "Continue",
+      {},
+      "execution",
+    );
+    assert.equal(fixture.prompts.length, 2);
+    assert.equal(
+      fixture.internals.runLifecycles.state("session")?.state,
+      "failed",
+    );
+    assert.equal(
+      fixture.emitted.filter((event) => event.type === "error").length,
+      1,
+    );
+  } finally {
+    await fixture.runtime.shutdown();
+  }
+});
+
+test("ends a failed session start even when the SDK emitted no terminal event", async () => {
+  const fixture = await transportEventFixture(false);
+  try {
+    await fixture.internals.completeSessionStartResult(
+      fixture.core,
+      {
+        sessionId: "session",
+        result: {
+          finishReason: "error",
+          error: { message: "Provider unavailable" },
+        },
+      },
+      "execution",
+    );
+    assert.equal(
+      fixture.internals.runLifecycles.state("session")?.state,
+      "failed",
+    );
+    assert.equal(fixture.prompts.length, 0);
+    assert.match(
+      JSON.stringify(fixture.emitted.at(-1)?.payload),
+      /Provider unavailable/u,
+    );
+  } finally {
+    await fixture.runtime.shutdown();
+  }
+});
+
+for (const result of [
+  { finishReason: "completed", outputText: "Recovered internally" },
+  { finishReason: "error", error: { message: "HTTP 401 invalid API key" } },
+]) {
+  test(`honors an explicit interactive result instead of replaying an earlier transport failure: ${result.finishReason}`, async () => {
+    const fixture = await transportEventFixture(true, result);
+    try {
+      await fixture.internals.sendPrompt(
+        fixture.core,
+        "session",
+        "Continue",
+        {},
+        "execution",
+      );
+      assert.equal(fixture.prompts.length, 1);
+      assert.equal(fixture.emitted.some(isTransportRecoveryNotice), false);
+      assert.equal(
+        fixture.internals.runLifecycles.state("session")?.state,
+        result.finishReason === "error" ? "failed" : "succeeded",
+      );
+    } finally {
+      await fixture.runtime.shutdown();
+    }
+  });
+}
+
+type TransportTestRuntime = {
+  completeSessionStartResult(
+    core: unknown,
+    session: { sessionId: string; result?: unknown },
+    executionId: string,
+  ): Promise<void>;
+  runLifecycles: RunLifecycleRegistry;
+  sendPrompt(
+    core: unknown,
+    sessionId: string,
+    prompt: string,
+    attachments: object,
+    executionId: string,
+  ): Promise<unknown>;
+  sessionExecutionIds: Map<string, string>;
+  sessionStartInputs: Map<string, { config: object; interactive: boolean }>;
+  sessionTerminalDrains: Map<string, Promise<void>>;
+  subscribeCoreSession(sessionId: string, core: unknown): Promise<void>;
+};
+
+type TransportTestState = {
+  earlyNotices: number;
+  emitted: AgentEvent[];
+  listener(event: CoreSessionEvent): void;
+  prompts: string[];
+};
+
+async function transportEventFixture(
+  interactive: boolean,
+  result?: unknown,
+  repeated = false,
+) {
+  const state: TransportTestState = {
+    earlyNotices: 0,
+    emitted: [],
+    listener: () => undefined,
+    prompts: [],
+  };
+  const core = transportTestCore(state, result, repeated);
+  const runtime = new BlameAgentRuntime(
+    { emit: (event) => state.emitted.push(event) },
+    { createCore: async () => core as never },
+  );
+  const internals = runtime as unknown as TransportTestRuntime;
+  await internals.subscribeCoreSession("session", core);
+  internals.sessionExecutionIds.set("session", "execution");
+  internals.sessionStartInputs.set("session", { config: {}, interactive });
+  internals.runLifecycles.begin("session", "execution");
+  return {
+    core,
+    emitted: state.emitted,
+    internals,
+    prompts: state.prompts,
+    publishFailure: () => publishTransportFailure(state),
+    runtime,
+    noticesBeforeResolution: () => state.earlyNotices,
+  };
+}
+
+function transportTestCore(
+  state: TransportTestState,
+  result: unknown,
+  repeated: boolean,
+) {
+  return {
+    ...deferredPromptCore(() => undefined),
+    async subscribe(listener: TransportTestState["listener"]) {
+      state.listener = listener;
+      return () => undefined;
+    },
+    async send({ prompt }: { prompt: string }) {
+      state.prompts.push(prompt);
+      if (state.prompts.length > 1 && !repeated)
+        return { finishReason: "completed", outputText: "Recovered" };
+      publishTransportFailure(state);
+      state.earlyNotices = state.emitted.filter(
+        isTransportRecoveryNotice,
+      ).length;
+      return result;
+    },
+  };
+}
+
+function publishTransportFailure(state: TransportTestState) {
+  state.listener(
+    agentEvent({
+      type: "error",
+      message: "Provider stream closed (UND_ERR_SOCKET)",
+    }),
+  );
+}
+
+function isTransportRecoveryNotice(event: AgentEvent) {
+  return (
+    event.type === "notice" && /resuming/u.test(JSON.stringify(event.payload))
+  );
+}
 
 test("never projects an internal payload as the final assistant response", () => {
   const internalPayload = JSON.stringify({
@@ -1693,10 +1924,13 @@ test("renders the compact native Cline development prompt", async () => {
   assert.match(prompt, /briefing as evidence already gathered/);
   assert.match(
     prompt,
-    /Prefer symbol operations inside existing supported symbols/,
+    /Prefer symbol operations when they reduce ambiguity or text/,
   );
-  assert.match(prompt, /Use `run_task` for proportionate inspection/);
-  assert.match(prompt, /call `finish_task` once/);
+  assert.match(
+    prompt,
+    /`run_task` for finite inspection, validation, generation/,
+  );
+  assert.match(prompt, /call `finish_task`/);
   assert.doesNotMatch(prompt, /complete_turn/);
   assert.doesNotMatch(prompt, /continuity_update|change_receipt_refs/);
   assert.doesNotMatch(
