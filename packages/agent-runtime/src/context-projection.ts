@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { projectReadOverlap } from "./read-overlap-projection.js";
+import { presentToolResults } from "./tool-result-presentation.js";
 import type {
   AgentPlugin,
   ContentBlock,
@@ -108,7 +109,7 @@ function stableContextMessageBuilder(options: ContextProjectionOptions) {
       const ready = providerReadyMessages(messages);
       const canonical = providerMessageView(messages);
       const entries = stableProjectionEntries(canonical, committed);
-      const projected = entries.flatMap((entry) => entry.messages);
+      const projected = presentToolResults(entries.flatMap((entry) => entry.messages));
       if (!ready) return structuredClone(projected);
       committed = entries;
       requestIndex += 1;

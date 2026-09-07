@@ -95,6 +95,14 @@ La trace SPARQL du premier lot révèle que la recherche d'un identifiant conten
 
 La séparation des termes utilise maintenant les espaces et conserve la ponctuation littérale. Le moteur ripgrep, le repli Node, le classement et la recherche de chemins partagent ce contrat ; aucune recherche supplémentaire n'est ajoutée. Quatorze reproductions indépendantes, comprenant cinquante leurres avant chaque cible, échouent avant correction et passent après. Les 120 tests ciblés de navigation, d'édition et de reprise passent, avec build et lint réussis. Le changement est postérieur au gel V2 : il ne peut expliquer aucun résultat de la confirmation en cours, et son effet sur la réussite du modèle reste à mesurer.
 
+## Présentation du code au modèle
+
+La même campagne contient plusieurs patchs avec des antislashs doublés. Le résultat structuré des outils présente le code dans une chaîne JSON échappée. Cela fournit une hypothèse de friction de recopie, sans établir que cette représentation explique à elle seule les erreurs du modèle.
+
+La projection destinée au fournisseur présente désormais les contenus échappés dans des blocs de texte, avec les métadonnées, chemins et alias conservés. Les événements et données du runtime restent structurés ; les règles de fraîcheur et de validation sont inchangées. La transformation intervient après la projection stable et s'applique aussi à son aperçu utilisé pour la compaction. Elle ne modifie ni les outils Cline natifs ni les images. Cinquante tests de présentation, projection, compaction et images passent, ainsi que le build et ESLint.
+
+Le [replay hors modèle](benchmarks/harness-iterations-2026-09-07/presentation-replay.json) sur les sorties Blame du premier lot passe de 76 783 à 74 529 octets de texte. Cette petite réduction de volume ne mesure pas les tokens facturés. L'objectif principal est de présenter les caractères du code tels qu'ils sont, sans nouvelle instruction ni mécanisme de réparation des patchs. L'effet sur les erreurs et la réussite sera vérifié dans une campagne V3 distincte, avec les recherches littérales corrigées ; V2 demeure figée.
+
 ## Ce que la recherche apporte à cette intervention
 
 [SWE-agent](https://swe-agent.com/0.7/background/aci/) étudie l'effet d'une interface simple pour la navigation, l'édition et le retour d'erreurs. Cela soutient ici la priorité aux diagnostics locaux et aux opérations cohérentes ; ses scores ne prédisent pas ceux de Blame.

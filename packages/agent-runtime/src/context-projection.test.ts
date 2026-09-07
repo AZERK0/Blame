@@ -11,6 +11,7 @@ import {
   projectProviderContext,
   type ContextProjectionMetrics,
 } from "./context-projection.js";
+import { presentToolResults } from "./tool-result-presentation.js";
 
 test("projects acknowledged edits and reads superseded after edits", () => {
   const original = projectionMessages();
@@ -732,7 +733,7 @@ test("canonical edits and resets rebase instead of resurrecting prior content", 
   assert.deepEqual(await builder.build(edited), edited);
   assert.deepEqual(await builder.build([]), []);
   const fresh = overlapReads([overlapSource("fresh"), overlapSource("fresh")]);
-  assert.deepEqual(await builder.build(fresh), projectProviderContext(fresh, { systemPrompt: "", tools: [] }).messages);
+  assert.deepEqual(await builder.build(fresh), presentToolResults(projectProviderContext(fresh, { systemPrompt: "", tools: [] }).messages));
 });
 
 test("provider result mutation cannot modify the retained projection", async () => {
@@ -816,7 +817,7 @@ test("native compaction sees the retained context budget and starts a new projec
   assert.ok(builder.metrics.at(-1)!.messageBytes > projectProviderContext(history, { systemPrompt: "", tools: [] }).metrics.messageBytes);
   assert.ok(compacted.length < history.length);
   const rebased = await builder.build(compacted);
-  assert.deepEqual(rebased, projectProviderContext(compacted, { systemPrompt: "", tools: [] }).messages);
+  assert.deepEqual(rebased, presentToolResults(projectProviderContext(compacted, { systemPrompt: "", tools: [] }).messages));
   assert.equal(builder.metrics.at(-1)!.messageBytes, Buffer.byteLength(JSON.stringify(rebased)));
 });
 
