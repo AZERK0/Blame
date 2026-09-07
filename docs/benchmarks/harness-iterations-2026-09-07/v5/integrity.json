@@ -1,0 +1,24 @@
+{
+  "inputFilesVerified": 32,
+  "allInputsUnchanged": true,
+  "trials": 9,
+  "eventHashes": {
+    "build-cython-ext__JfKjT9Z": "044f18acd7daa0c626ec934ee2c03fb8a845c716aa876411ea20da1213a1087f",
+    "build-cython-ext__hVtamyB": "4c6ce6d4673c43f292d087ed44ec739a83357dc9069102273a31a3eccc1c1b27",
+    "build-cython-ext__jkRXj5y": "8d3f6335ebe585153da0c5b16d014f56d292e0e1e69e21db6c529e45e17cc68e",
+    "regex-chess__eYXE3sh": "935acefdd22955360821418411468d6a727fd1f021f70c519ade1de89fef20dd",
+    "regex-chess__hZhNhGx": "019f924ec74a1b04d6bfde76aef97690cdc45fb8d5da065a8d6eb0e47b43d391",
+    "regex-chess__jYtJWiQ": "05d2026de718d09e14040edc52ed926d4421269c1701ee7a5ef6054fccbbcc96",
+    "sparql-university__4sBNx9g": "5343b7bffc124e1b8a10d51bbd65d2520a69cf5349cae376a13755be929769a3",
+    "sparql-university__W3wbd4R": "c7e80e1df76ebca0ba1c71e5d19e11c730fdf86ddddf1cd2e557fdf9bf1883e5",
+    "sparql-university__zb2sAE3": "9d959b1dc91af851a0f2f40f0094d2b3a734e386b8bd4e012654858a21605f32"
+  },
+  "postVerifierToolStarts": 0,
+  "auditToolStarts": 304,
+  "missingUsageTrials": [
+    "build-cython-ext__hVtamyB",
+    "regex-chess__hZhNhGx",
+    "regex-chess__jYtJWiQ"
+  ],
+  "note": "No benchmark-oracle access confirmed; Cline Cython inactivity and both timed-out regex usages remain explicit. Recorder timestamps are not server-side execution clocks."
+}

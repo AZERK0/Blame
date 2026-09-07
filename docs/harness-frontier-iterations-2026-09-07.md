@@ -1,6 +1,6 @@
 # Itérations du harness — 7 septembre 2026
 
-Dix-huit nouveaux essais diagnostiques sont terminés ; une confirmation prévue sur 36 essais a été interrompue par l’infrastructure après 23 essais créés. Aucun dépassement global de Cline n'est annoncé à ce stade. La comparaison des 108 essais précédents reste inchangée et ses résultats négatifs sont conservés dans [le rapport initial](harness-global-measurement-2026-09-06.md).
+Vingt-sept nouveaux essais diagnostiques sont terminés ; une confirmation prévue sur 36 essais a été interrompue par l’infrastructure après 23 essais créés. Aucun dépassement global de Cline n'est annoncé à ce stade. La comparaison des 108 essais précédents reste inchangée et ses résultats négatifs sont conservés dans [le rapport initial](harness-global-measurement-2026-09-06.md).
 
 ## Première itération : résultats mesurés
 
@@ -168,3 +168,17 @@ Une inspection de la navigation reproduit un défaut indépendant : les huit pre
 Cinq des six nouveaux cas échouent avant correction ; les six passent après. La suite complète atteint 570 tests, dont 569 réussites et une exclusion Windows. Après extraction d’un petit helper partagé, les 123 tests ciblés de navigation passent à nouveau avec le build et le lint. Le correctif est commité dans `67e04153`. Il répond à un défaut de récupération d’information avéré ; il n’établit pas qu’il récupérera tout le surcoût Cython.
 
 V6 n’avait exécuté aucun essai. Son enregistrement est conservé comme remplacé avant exécution par la [confirmation V7](benchmarks/harness-iterations-2026-09-07/frontier-v7/protocol.md), avec la même sélection, les mêmes ordres, budgets, contrôles et analyses. L’archive finale porte le SHA256 `ec0528743686690de7be7692891211de12090f9bc2c70216a85bd7bdcbb38a59`. Aucun résultat V5 ou antérieur n’est retiré.
+
+## Résultat complet V5
+
+Le lot se termine à 17:54 UTC, avec neuf essais et sans retry. V2 et V5 réussissent chacun 2/3 ; Cline réussit 1/3, avec un arrêt pour inactivité sur Cython après cinq usages complets et une sixième requête incomplète. Les trois versions échouent sur regex-chess : V2 atteint 64 itérations en 863,2 secondes ; V5 et Cline atteignent environ 902 secondes, avec des usages incomplets. La chute des tokens observés de V5 sur cet échec ne constitue pas un gain d’intelligence ni une économie globale exacte.
+
+| Tâche | V2 : succès / secondes / tokens | V5 : succès / secondes / tokens | Cline : succès / secondes / tokens |
+| --- | ---: | ---: | ---: |
+| SPARQL | 1 / 79,7 / 69 755 | 1 / 83,2 / 52 607 | 1 / 122,9 / 60 158 |
+| Cython | 1 / 278,8 / 697 918 | 1 / 338,2 / 997 424 | 0 / 546,2 / ≥ 63 825 |
+| Regex | 0 / 863,2 / 2 690 283 | 0 / 902,0 / ≥ 90 545 | 0 / 902,4 / ≥ 1 827 878 |
+
+Sur les deux tâches réussies par V2 et V5 avec usage complet, V5 consomme 36,8 % de tokens et 11,2 % de coût supplémentaires, avec 17,5 % de temps en plus. SPARQL seul progresse en tokens de 24,6 %, mais Cython domine cet agrégat sélectionné. Le score V5 supérieur au contrôle Cline ne démontre pas une meilleure compétence générale, compte tenu de l’arrêt Cython du contrôle. Les [neuf résultats](benchmarks/harness-iterations-2026-09-07/v5/trials.csv), [analyses](benchmarks/harness-iterations-2026-09-07/v5/analysis.json) et [contrôles d’intégrité](benchmarks/harness-iterations-2026-09-07/v5/integrity.json) sont conservés. La revue de 304 appels ne confirme aucun accès au vérificateur ou à une solution du benchmark ; aucun appel ne commence après le démarrage du vérificateur.
+
+La confirmation V7 démarre ensuite à 17:54:46 UTC, avec l’archive et les paramètres enregistrés, sans autre modification du runtime pendant ses 36 essais.
