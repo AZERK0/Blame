@@ -1,0 +1,406 @@
+{
+  "registeredAt": "2026-09-07T21:46:50.631575+00:00",
+  "bundles": {
+    "final": {
+      "path": "/mnt/dev/web/Blame/.blame/benchmarks/terminal-bench-frontier-v9-20260907/runner-final.tgz",
+      "sha256": "cc8816ac445d17ee24e73efb680d461c1f100a9ce2263522270242f276148a97"
+    }
+  },
+  "groups": [
+    {
+      "id": "batch-01",
+      "repetition": 1,
+      "tasks": [
+        "fix-git",
+        "winning-avg-corewars",
+        "raman-fitting"
+      ],
+      "armOrder": [
+        "final",
+        "cline"
+      ],
+      "trials": 6
+    },
+    {
+      "id": "batch-02",
+      "repetition": 1,
+      "tasks": [
+        "dna-assembly",
+        "pytorch-model-cli",
+        "vulnerable-secret"
+      ],
+      "armOrder": [
+        "final",
+        "cline"
+      ],
+      "trials": 6
+    },
+    {
+      "id": "batch-03",
+      "repetition": 2,
+      "tasks": [
+        "vulnerable-secret",
+        "pytorch-model-cli",
+        "dna-assembly"
+      ],
+      "armOrder": [
+        "cline",
+        "final"
+      ],
+      "trials": 6
+    },
+    {
+      "id": "batch-04",
+      "repetition": 2,
+      "tasks": [
+        "raman-fitting",
+        "winning-avg-corewars",
+        "fix-git"
+      ],
+      "armOrder": [
+        "cline",
+        "final"
+      ],
+      "trials": 6
+    }
+  ],
+  "tasks": [
+    {
+      "id": "fix-git",
+      "metadata": {
+        "author_name": "TheMikeMerrill",
+        "author_email": "mchlmerrill@gmail.com",
+        "difficulty": "easy",
+        "category": "software-engineering",
+        "tags": [
+          "coding",
+          "version-control"
+        ],
+        "expert_time_estimate_min": 5.0,
+        "junior_time_estimate_min": 20.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/fix-git:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "agent": {
+        "timeout_sec": 900.0
+      },
+      "verifier": {
+        "timeout_sec": 900.0,
+        "env": {}
+      },
+      "seenBeforeCampaign": false,
+      "stratum": "software-engineering",
+      "image": {
+        "task": "fix-git",
+        "compressedBytes": 158051230,
+        "digest": "sha256:61e431c00c58df652287aadce5457634d9f9330cfdd153ebdf2802df0d540119"
+      },
+      "hashes": {
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "README.md": "818af93ec53de56cffbd33da3377f5bd013786e1232cc7fa47f7dff6cca9a93f",
+        "environment/Dockerfile": "dfd64a46955909f58d1b562ea233c3cace75195bbef5d75cd6b599f3b8967bb7",
+        "environment/resources/patch_files/about.md": "2e09260b011012f9f7f491cd02809903449924cf8f825acd369fb8990b04e768",
+        "environment/resources/patch_files/default.html": "fb3fad17b83338002f5fd6a99ea1ec3a662cea570f9fff9240b8abc1861be655",
+        "environment/setup.sh": "99125cf2e362f2f4a864ba2f55c2f0e9f0aa0641fed588cef588184fcc192de2",
+        "instruction.md": "f98174e47ba5ce040f6fad22ef3cbca4dd27b3192868ea5d082077222c3ec4e8",
+        "solution/solve.sh": "4789fa74e92e5b7b893c4b8637c26db2b6458b2136edfc3e686cc278dfc23630",
+        "task.toml": "25507ef6cbd6bf73c8bfdfbe7f7ba136224c8453fbba2de2993c639e2a61ad8b",
+        "tests/test.sh": "4770437ea96c3cc84684b4f99d55fb148fcac09f9ea1e8ef49de487716e6c334",
+        "tests/test_outputs.py": "a8a6f51eb0d7c4ebdf0813c8f0b645edf29c995f1f9faf2aca3886a6713043f3"
+      }
+    },
+    {
+      "id": "winning-avg-corewars",
+      "metadata": {
+        "author_name": "Jeong Shin",
+        "author_email": "jeongshin@alumni.stanford.edu",
+        "difficulty": "medium",
+        "category": "software-engineering",
+        "tags": [
+          "pmars",
+          "corewars",
+          "gaming"
+        ],
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 240.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/winning-avg-corewars:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "agent": {
+        "timeout_sec": 3600.0
+      },
+      "verifier": {
+        "timeout_sec": 3600.0,
+        "env": {}
+      },
+      "seenBeforeCampaign": false,
+      "stratum": "software-engineering",
+      "image": {
+        "task": "winning-avg-corewars",
+        "compressedBytes": 293666981,
+        "digest": "sha256:ad7a6b1c53aed59e10916c692aa7e2ae00042a4283187430aee1e3e79f72d5c6"
+      },
+      "hashes": {
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "README.md": "031493cd99656d9ea13e96de4a9d6801ef075ce09e2d8d6d4f6b1057eff244a2",
+        "environment/Dockerfile": "645036f0bc26d9dccfa943bae20536e3d849540b919bcdbbd1c6e62a9ea4c9f9",
+        "environment/warriors/g2-clear.red": "3f542cc0f2304f0b5365df39e4f098dfca66280dad1db8e9ba4b668f8a51c8b5",
+        "environment/warriors/paper.red": "ece3b39b4eb597cacb85b0e399a0be017c17ea59fbf4d901fae4108a5430a13b",
+        "environment/warriors/snake.red": "91b332b675f86d871ddca2ba0d2629c3361252ed3edf794de55e6693fbb1c7bd",
+        "environment/warriors/stone.red": "fbddb5ac8c4cd04beba68ae03e91e281072b0e131c36c976943f38ce78c11a55",
+        "environment/warriors/vampire.red": "28e1945cd6bbe52166b69215be3cb763e391fa0fe65e8550f2d6e3d6621da622",
+        "instruction.md": "f8198a1644547b116b4b67384f6bb6b3a78e85076f8cda20079a77f2f3499242",
+        "solution/solve.sh": "760a9abad5281db831e579c2529fa30c58d9e61fb923d9d46edac165669c3682",
+        "task.toml": "a9b48765d03a66d966f6a162be203bc31e1d9d6e4abe616a2f4b42bac5dc246f",
+        "tests/test.sh": "4770437ea96c3cc84684b4f99d55fb148fcac09f9ea1e8ef49de487716e6c334",
+        "tests/test_outputs.py": "252f78e5ce87ae3cf5852f192889aef5bd693ab0a13a6bf94cbb2fdce3218e93"
+      }
+    },
+    {
+      "id": "raman-fitting",
+      "metadata": {
+        "author_name": "Jan-Lucas Uslu",
+        "author_email": "uslu@stanford.edu",
+        "difficulty": "medium",
+        "category": "scientific-computing",
+        "tags": [
+          "coding",
+          "fitting",
+          "analysis",
+          "physics"
+        ],
+        "expert_time_estimate_min": 5.0,
+        "junior_time_estimate_min": 30.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/raman-fitting:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "agent": {
+        "timeout_sec": 900.0
+      },
+      "verifier": {
+        "timeout_sec": 900.0,
+        "env": {}
+      },
+      "seenBeforeCampaign": false,
+      "stratum": "scientific-computing",
+      "image": {
+        "task": "raman-fitting",
+        "compressedBytes": 44205352,
+        "digest": "sha256:401fa95d5d491f44a473eda9d2c52930f9565cc889c796eabcb6e20fec26852e"
+      },
+      "hashes": {
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "README.md": "483e913750bb6bc035b00277a689eca4354324b3cbe035eca31da291f420cfc6",
+        "environment/Dockerfile": "8fd5c0f21a6914cd440d10c84c9db06fec606f20dc3e0363b17a3b8c220dc4d9",
+        "environment/task-deps/graphene.dat": "cac96a29e73251e625cb2d17b5079250071b148e6792e0aa349632953dbfa094",
+        "instruction.md": "1fa59a89d88daf6a4b2d422955f53779b461880b527f40d79c71b16e0ee52433",
+        "solution/solve.sh": "cc803d3c254063f82ab1da5b59f276951d50d1f307657606027a45dc035a53ee",
+        "task.toml": "0f3f6b580d7435954b3a114e77cdfb6cd0a856f15cc0ad83cd1b69c48492dfed",
+        "tests/test.sh": "4770437ea96c3cc84684b4f99d55fb148fcac09f9ea1e8ef49de487716e6c334",
+        "tests/test_outputs.py": "171fae772ccf262aec8ddac5bd2c6c731eed842421f5d8439a330b158c9f8c13"
+      }
+    },
+    {
+      "id": "dna-assembly",
+      "metadata": {
+        "author_name": "Karl Krauth",
+        "author_email": "kkt@stanford.edu",
+        "difficulty": "hard",
+        "category": "scientific-computing",
+        "tags": [
+          "biology",
+          "cloning"
+        ],
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 180.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/dna-assembly:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "agent": {
+        "timeout_sec": 1800.0
+      },
+      "verifier": {
+        "timeout_sec": 1800.0,
+        "env": {}
+      },
+      "seenBeforeCampaign": false,
+      "stratum": "scientific-computing",
+      "image": {
+        "task": "dna-assembly",
+        "compressedBytes": 29724813,
+        "digest": "sha256:d1adf6835f1dd91205ba70e452c699d0aea601010038e5617f370716efb50569"
+      },
+      "hashes": {
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "README.md": "e7855c23d9822f688eec4dd89ca0f1caf91c6a69e1c8f3c9eb544b4ab2a94821",
+        "environment/Dockerfile": "26e9e43a98f0b1d132bb638f44b7dc882b0d0ca32d56fa33048adeee00ab600d",
+        "environment/sequences.fasta": "ebdc361b5fba28eb0a2c7a8a8a444ccb12cc842c8cbc6df5a2c24254f130736f",
+        "instruction.md": "88998c98beabdd966ab46c04ede822bbc74796696aa1bf87c567a9131210533c",
+        "solution/solve.sh": "c976cb118c8ef1befd846ba05fd5cadb1b1f529bc76b9f2ea9cb3049e6e11a47",
+        "task.toml": "7b571544b64d9be1c91526837e5d805c2181afe0e6fd57a7f0676bba36c868d7",
+        "tests/test.sh": "271c8317c98539e3b49233d017fe51fb0e5fba8114e76830fe698565499b2b1d",
+        "tests/test_outputs.py": "5c2d0fd2e5f6303263e9750f67acda7db491ef04841832b4fc62bcfb61b08924"
+      }
+    },
+    {
+      "id": "pytorch-model-cli",
+      "metadata": {
+        "author_name": "Jan-Lucas Uslu",
+        "author_email": "uslu@stanford.edu",
+        "difficulty": "medium",
+        "category": "model-training",
+        "tags": [
+          "coding",
+          "C",
+          "pytorch"
+        ],
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/pytorch-model-cli:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "agent": {
+        "timeout_sec": 900.0
+      },
+      "verifier": {
+        "timeout_sec": 900.0,
+        "env": {}
+      },
+      "seenBeforeCampaign": false,
+      "stratum": "model-training",
+      "image": {
+        "task": "pytorch-model-cli",
+        "compressedBytes": 44342024,
+        "digest": "sha256:c996884b5fb5fb2c0c07d67da2c4f974f271f07234ed28e1a868240375c57a67"
+      },
+      "hashes": {
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "README.md": "35a093fa5f1592737784ba718c2e3e9ae17ff8b5e53e003fae560ddce091039c",
+        "environment/Dockerfile": "8fd5c0f21a6914cd440d10c84c9db06fec606f20dc3e0363b17a3b8c220dc4d9",
+        "environment/task-deps/cJSON.c": "0e7995261640c96db16ed2c91a5d981efa917cf5e72d0f97ec45a1179ae3ad73",
+        "environment/task-deps/cJSON.h": "0909160541bcc510e0b2d8c7a9cc051fa1459a0f13be4d8e56346a15491f2f2f",
+        "environment/task-deps/image.png": "f4d5dfefe463939996541404340e7099d5957b56e1df3760d13b5d2de754db53",
+        "environment/task-deps/lodepng.cpp": "67873c5f6272f779a143a9c81070e8783327c5552d0b9de2aaee2cb779308917",
+        "environment/task-deps/lodepng.h": "b735b7e0357319973e9488d520d7f270d734a6e9e1bf924fb1d5b8d26d7e97ce",
+        "environment/task-deps/model.pth": "a32103eef09936e586b1a7dc7e64d279500a38ff30fdd6df2167e28eb954eee6",
+        "environment/task-deps/model.py": "e4d3a5c728449656d0efde7871ee227619348352769795ed1be1a8b7f835fddc",
+        "instruction.md": "ce36ee1f6c589f81ee6a6be4967e25c76a2ed697006928023f42dfb9f28a6750",
+        "solution/solve.sh": "3b34e561c9ef0a53c9948655847846eb4811aaac67b990480aa6aac1b04bfe66",
+        "task.toml": "fc1c018efbd5d0537ac0741d53d1ebad3886faa51d14cbde8ec953856411bc0d",
+        "tests/test.sh": "43fb67e537c7adc2df11c2367f47c876cb5d16a7c1ae16d0339c3a3364bb2b06",
+        "tests/test_outputs.py": "370702c57a4e0c85f70ee37a5c357ae3a5df8480a275bb6263b0376f2f6c093b"
+      }
+    },
+    {
+      "id": "vulnerable-secret",
+      "metadata": {
+        "author_name": "Justin Bauer",
+        "author_email": "justin.bauer@snorkel.ai",
+        "difficulty": "medium",
+        "category": "security",
+        "tags": [
+          "security",
+          "file-operations"
+        ],
+        "expert_time_estimate_min": 20.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/vulnerable-secret:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "agent": {
+        "timeout_sec": 900.0
+      },
+      "verifier": {
+        "timeout_sec": 900.0,
+        "env": {}
+      },
+      "seenBeforeCampaign": false,
+      "stratum": "security",
+      "image": {
+        "task": "vulnerable-secret",
+        "compressedBytes": 133922796,
+        "digest": "sha256:61ebb40454dd103aa2f7e71ad6dafd91cf2b301e6bb07e69d5b472412d1ee15b"
+      },
+      "hashes": {
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "README.md": "b07cb59309e82c3689233bd602ada09f5c9aeb29f4b6b5202e0be16cfb5a0c5c",
+        "environment/Dockerfile": "26f994bdf7bd3d8e261a3fd273dc1c54632d8a7e208312b2f2034bef167118af",
+        "environment/vulnerable.c": "ee7c26f47dbc0c77d05225acab56866fc502fd4a27111ebefa8a648d6cc19507",
+        "instruction.md": "d43c72e6c39cdeb1141a9c8eae8357df1b0901383ee2beedacf828bf017d7a2f",
+        "solution/solve.sh": "69de3ffc423578fde8f2f75282ee8d72129c91e669eef844cd14dfab308a2855",
+        "task.toml": "51079626e4c76445e616eff8723efc53af7f1cf8d9c64d15aab2f4f0ecd6df3c",
+        "tests/test.sh": "d9e46bae71e0b119bdc8aaf689de9a780db29741cb5d46bfcc9090ad8943e08e",
+        "tests/test_outputs.py": "f2b65f63ac81acd1e80e1ad4c59c1022131a0f9eb20f8ab3212c4ef8d8f0c753"
+      }
+    }
+  ],
+  "protocolSha256": "5c3be340f1a81e4958041c6b33be3516c1b7c54d21fce26ff05701734bbdc5c7",
+  "adapterSha256": "558a8acba042338f944e82aa520d9b3c04ff2419a28f670903d89ae23fb198cb",
+  "sourceCommit": "f73d5368f9ffe0366ca82b18abd90865c9499510",
+  "upstreamCommit": "2fd12b88aafdd04a52c298e3940bcb189f9766d6",
+  "selectionSha256": "6b213bcbf82bb10ada7ac5be9abe430f274548f64d89702876c14f1e76fa7064",
+  "configHashes": {
+    "batch-01": "2e92d4bc8c87cfc776e59517ca15ded6975571ed7ecd0f8f82386a3aa5eaae14",
+    "batch-02": "17ff3b13bbb75a24adbbae56a450a8f2d248c7b80f3e1d484e1a43a98f010774",
+    "batch-03": "05111dd521f344c5ad8b4bff743f02253eadffcba1a6ee8c704c672b9b07a50a",
+    "batch-04": "8df0a0bc1162ec86ddb189a9706bb4b730c35edb1da95df1bc9a82d3f3571623"
+  },
+  "registrationCommit": "f73d5368f9ffe0366ca82b18abd90865c9499510",
+  "initialDockerImages": [
+    "node:24-bookworm-slim"
+  ]
+}
