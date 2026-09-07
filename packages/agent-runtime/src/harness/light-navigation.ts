@@ -11,6 +11,7 @@ import type { WorkspaceFiles } from "./workspace-files.js";
 
 export type SearchMode = "references" | "symbol" | "text";
 export type EditTarget = { alias: string; qualifiedName: string };
+export type TextSearchResults = { results: unknown[]; engine: "node" | "ripgrep"; limited: boolean };
 
 const smallFileCharacters = 8_000;
 
@@ -21,29 +22,30 @@ export function searchMode(input: LightSearchCodeInput): SearchMode {
 }
 
 export function symbolSearchResult(results: unknown[], candidates: string[]) {
-  return searchResult("symbol", "syntax", results, candidates);
+  return searchResult("symbol", "syntax", results, candidates, results.length >= 8);
 }
 
 export function textSearchResult(
   mode: Exclude<SearchMode, "symbol">,
-  results: unknown[],
+  search: TextSearchResults,
   candidates: string[],
 ) {
-  const engine = mode === "references" ? "lexical_fallback" : "ripgrep";
-  return searchResult(mode, engine, results, candidates);
+  const engine = mode === "references" ? "lexical_fallback" : search.engine;
+  return searchResult(mode, engine, search.results, candidates, search.limited);
 }
 
 export function autoSearchResult(
   symbols: unknown[],
-  text: unknown[],
+  text: TextSearchResults,
   candidates: string[],
 ) {
-  const results = uniqueSearchResults([...symbols.slice(0, 4), ...text]);
+  const results = uniqueSearchResults([...symbols.slice(0, 4), ...text.results]);
   return searchResult(
     "auto",
-    "syntax_and_ripgrep",
+    `syntax_and_${text.engine}`,
     results.slice(0, 8),
     candidates,
+    text.limited || symbols.length >= 8 || results.length > 8,
   );
 }
 
@@ -52,6 +54,7 @@ function searchResult(
   engine: string,
   results: unknown[],
   candidates: string[],
+  limited: boolean,
 ): LightToolResult<unknown> {
   return {
     status: "ok",
@@ -60,9 +63,8 @@ function searchResult(
       engine,
       results,
       candidateCount: candidates.length,
-      ...(results.length
-        ? {}
-        : { guidance: "No match in the selected scope." }),
+      ...(limited ? { limited, guidance: "Result limit reached; narrow the query or scope, or use run_task for an exhaustive scan." }
+        : results.length ? {} : { guidance: "No match in the selected scope." }),
     },
   };
 }

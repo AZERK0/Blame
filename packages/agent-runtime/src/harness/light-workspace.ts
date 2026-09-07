@@ -56,6 +56,7 @@ import {
   uniqueSearchResults,
   type EditTarget,
   type SearchMode,
+  type TextSearchResults,
 } from "./light-navigation.js";
 import { LightTaskRunner } from "./light-task-runner.js";
 import {
@@ -77,6 +78,7 @@ type LightWorkspaceOptions = {
 };
 
 type ReadContext = Partial<AgentToolContext>;
+type SearchSource = { content: Buffer; symbols: ParsedSymbol[] };
 
 const maximumRawCharacters = 64_000;
 const maximumOutlineItems = 32;
@@ -266,11 +268,7 @@ export class LightWorkspace {
       signal,
     );
     if (mode !== "symbol") return textSearchResult(mode, text, candidates);
-    const symbolCandidates = autoSymbolCandidates(
-      text,
-      candidates,
-      input.query,
-    );
+    const symbolCandidates = autoSymbolCandidates(text.results, candidates, input.query);
     const symbols = await this.symbolSearch(
       input.query,
       symbolCandidates,
@@ -359,17 +357,16 @@ export class LightWorkspace {
       if (content.byteLength > 2 * 1024 * 1024) continue;
       for (const symbol of parseCode(path, content).symbols) {
         if (!symbolMatches(symbol, normalized)) continue;
-        const { alias, materialized } = this.aliases.registerSymbol(
-          path,
-          content,
-          symbol,
-          revision,
-        );
-        results.push(searchSymbolResult(alias, path, materialized));
+        results.push(this.symbolResult(path, content, symbol, revision));
         if (results.length >= 8) break;
       }
     }
     return results;
+  }
+
+  private symbolResult(path: string, content: Buffer, symbol: ParsedSymbol, revision: string, reason?: string) {
+    const { alias, materialized } = this.aliases.registerSymbol(path, content, symbol, revision);
+    return searchSymbolResult(alias, path, materialized, reason);
   }
 
   private async textSearch(
@@ -378,7 +375,7 @@ export class LightWorkspace {
     revision: string,
     promoteSymbols: boolean,
     signal?: AbortSignal,
-  ) {
+  ): Promise<TextSearchResults> {
     const paths = this.pathSearch(query, candidates);
     const searched = await searchWithRipgrep({
       candidates,
@@ -387,16 +384,28 @@ export class LightWorkspace {
       root: this.files.root,
       signal,
     });
-    if (!searched.available)
-      return uniqueSearchResults([
-        ...paths,
-        ...(await this.nodeTextSearch(query, candidates)),
-      ]).slice(0, 8);
-    const matches = rankedTextMatches(searched.items, query).slice(0, 8);
-    const content = await Promise.all(
-      matches.map((match) => this.textMatch(match, revision, promoteSymbols)),
-    );
-    return uniqueSearchResults([...paths, ...content]).slice(0, 8);
+    const content = searched.available
+      ? await this.materializeMatches(rankedTextMatches(searched.items, query), revision, promoteSymbols)
+      : await this.nodeTextSearch(query, candidates, signal);
+    const results = uniqueSearchResults([...paths, ...content]);
+    return { results: results.slice(0, 8), engine: searched.engine,
+      limited: searched.truncated || content.length >= 8 || paths.length >= 8 || results.length > 8 };
+  }
+
+  private async materializeMatches(matches: LexicalSearchMatch[], revision: string, promote: boolean) {
+    const sources = new Map<string, SearchSource>();
+    let results: unknown[] = [];
+    for (const match of matches) {
+      let source = sources.get(match.path);
+      if (!source) {
+        const { content } = await this.files.read(match.path);
+        source = { content, symbols: promote && symbolicPath(match.path) ? parseCode(match.path, content).symbols : [] };
+        sources.set(match.path, source);
+      }
+      results = uniqueSearchResults([...results, this.textMatch(match, revision, source)]);
+      if (results.length >= 8) break;
+    }
+    return results;
   }
 
   private pathSearch(query: string, candidates: string[]) {
@@ -409,32 +418,14 @@ export class LightWorkspace {
     }));
   }
 
-  private async textMatch(
+  private textMatch(
     match: LexicalSearchMatch,
     revision: string,
-    promoteSymbols: boolean,
+    source: SearchSource,
   ) {
-    const content = (await this.files.read(match.path)).content;
-    const symbol = promoteSymbols
-      ? enclosingSymbol(
-          parseCode(match.path, content).symbols,
-          match.range_utf8_bytes,
-        )
-      : undefined;
-    if (symbol) {
-      const { alias, materialized } = this.aliases.registerSymbol(
-        match.path,
-        content,
-        symbol,
-        revision,
-      );
-      return searchSymbolResult(
-        alias,
-        match.path,
-        materialized,
-        "lexical_symbol",
-      );
-    }
+    const { content } = source;
+    const symbol = enclosingSymbol(source.symbols, match.range_utf8_bytes);
+    if (symbol) return this.symbolResult(match.path, content, symbol, revision, "lexical_symbol");
     const alias = this.aliases.registerRange(
       match.path,
       content,
@@ -450,11 +441,13 @@ export class LightWorkspace {
     };
   }
 
-  private async nodeTextSearch(query: string, candidates: string[]) {
+  private async nodeTextSearch(query: string, candidates: string[], signal?: AbortSignal) {
     const results: unknown[] = [];
     const terms = searchTerms(query);
     for (const path of candidates) {
+      signal?.throwIfAborted();
       if (results.length >= 8) break;
+      if (await this.files.fileSize(path) > 2 * 1024 * 1024) continue;
       const content = (await this.files.read(path)).content;
       const source = content.toString("utf8");
       const index = firstTermIndex(source, terms, query);
