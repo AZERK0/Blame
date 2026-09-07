@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
-const { createHandler } = await import('../../../packages/agent-runtime/node_modules/@cline/llms/dist/index.js');
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+const { createHandler } = await import(pathToFileURL(resolve('packages/agent-runtime/node_modules/@cline/llms/dist/index.js')).href);
 const root = '.blame/benchmarks/terminal-bench-frontier-v7-20260907';
 const path = `${root}/jobs/batch-01/financial-document-processor__xxmeJNp/agent/events.jsonl`;
 const events = readFileSync(path, 'utf8').trim().split('\n').map(line => JSON.parse(line).event);
