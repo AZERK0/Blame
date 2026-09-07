@@ -5275,6 +5275,7 @@ function developmentPracticePrompt(
   practice: ProjectCodePracticeKey,
 ) {
   const enabled = practices.find((item) => item.practice === practice)?.enabled;
+  if (practice === "unit_tests" && enabled === undefined) return "";
   if (practice === "coding_style") {
     return loadPrompt(
       `practices/coding-style/${enabled ? "standard" : "match-codebase"}`,

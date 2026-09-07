@@ -1,0 +1,6 @@
+{
+  "at": "2026-09-07T16:11:00.472283+00:00",
+  "status": "superseded_before_execution",
+  "trialsExecuted": 0,
+  "reason": "Code audit found absent unit_tests preference was interpreted as an explicit prohibition. Include the general default-policy correction in a new immutable V4 candidate; retain V3 registration and archive without executing it. Same diagnostic tasks, arms and budgets; V2 confirmation unchanged."
+}

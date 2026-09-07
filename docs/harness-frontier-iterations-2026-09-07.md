@@ -107,6 +107,14 @@ Le [replay hors modèle](benchmarks/harness-iterations-2026-09-07/presentation-r
 
 Le bundle V3, issu de `35c69e24`, est figé avec le SHA256 `89325fa33e1cf4dc844c626a9f0b942c7cc5a74d8bb1fd2027d74a7e44f25805`. Neuf essais comparent V2, V3 et Cline contemporain sur SPARQL, Cython et regex-chess. Ces tâches sont choisies pour le diagnostic de recherche et de présentation, et sont toutes connues. Le [protocole](benchmarks/harness-iterations-2026-09-07/v3/protocol.md) et les [entrées figées](benchmarks/harness-iterations-2026-09-07/v3/manifest.json) précèdent les résultats. Ce lot sera exécuté après la confirmation V2, avec deux conteneurs simultanés, afin de préserver ses ressources.
 
+## Préférence de tests absente
+
+Le prompt traitait l'absence d'une préférence `unit_tests` comme une désactivation : il interdisait alors d'ajouter des tests même si l'appelant n'avait exprimé aucun choix. La branche sans préférence n'ajoute désormais aucune consigne de test supplémentaire ; la guidance générale de validation suffit. Les préférences explicitement activées ou désactivées sont conservées. Cela concerne notamment le runner headless ; le client desktop qui fournit une valeur explicite conserve ce réglage.
+
+Un test du prompt réel échoue avant correction et passe après, pour une préférence absente, une liste vide et une liste contenant un autre réglage. Les 67 tests d'événements/runtime et le build/lint passent, notamment les branches explicites activée et désactivée. Aucun évaluateur, test imposé ou nouvelle boucle n'est ajouté.
+
+V3 n'avait encore exécuté aucun essai lors de cette découverte. Son enregistrement est conservé comme annulé avant exécution ; le lot diagnostique sera réenregistré avec le bundle V4 qui inclut cette simplification, les mêmes tâches, les mêmes bras et les mêmes budgets. Aucun résultat n'est supprimé ni sélectionné. La confirmation V2 en cours reste inchangée.
+
 ## Ce que la recherche apporte à cette intervention
 
 [SWE-agent](https://swe-agent.com/0.7/background/aci/) étudie l'effet d'une interface simple pour la navigation, l'édition et le retour d'erreurs. Cela soutient ici la priorité aux diagnostics locaux et aux opérations cohérentes ; ses scores ne prédisent pas ceux de Blame.

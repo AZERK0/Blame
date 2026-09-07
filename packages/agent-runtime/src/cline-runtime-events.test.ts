@@ -2034,7 +2034,20 @@ test("includes optional guidance only for interactive scoped sessions", async ()
   assert.match(prompt, /managed by Blame/);
 });
 
-test("keeps default development practices concise and actionable", async () => {
+test("an absent test preference leaves validation choices to the agent", async () => {
+  for (const codePractices of [undefined, [], [{ practice: "coding_style" as const, enabled: true }]]) {
+    const prompt = await buildDevelopmentSystemPrompt({
+      apiConnection: { token: "token", url: "https://example.com" },
+      codePractices,
+      cwd: process.cwd(), modelId: "model", providerId: "provider",
+      summary: "Implement the request", title: "Change", workspaceRoot: process.cwd(),
+    });
+    assert.doesNotMatch(prompt, /Unit Tests: Disabled|do not add tests|Professional TDD/);
+    assert.match(prompt, /choose additional tests when the change needs them/);
+  }
+});
+
+test("keeps explicit development practices concise and actionable", async () => {
   const prompt = await buildDevelopmentSystemPrompt({
     apiConnection: { token: "token", url: "https://example.com" },
     codePractices: [
