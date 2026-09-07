@@ -15,6 +15,8 @@ import test from "node:test";
 import { LightWorkspace } from "./light-workspace.js";
 import { LightFinishService } from "./light-finish-service.js";
 import { SessionJournal } from "./session-journal.js";
+import { observeCommand } from "./command-changes.js";
+import { WorkspaceFiles } from "./workspace-files.js";
 
 test("a short generator creates source without pretending to validate it", async () => {
   await fixture(async (root, workspace) => {
@@ -129,6 +131,105 @@ function writeValue(value: number) {
   return nodeCommand(
     `require('fs').writeFileSync('value.js', 'module.exports = ${value};\\n')`,
   );
+}
+
+test("committing pre-existing dirty content does not claim it", async () => {
+  await fixture(async (root) => {
+    await writeFile(join(root, "value.js"), "module.exports = 5;\n");
+    await observeGit(root, () => commit(root));
+    assert.deepEqual((await journal(root)).changedPaths, []);
+  });
+});
+
+test("a command write remains attributed after it is committed", async () => {
+  await fixture(async (root) => {
+    await observeGit(root, async () => {
+      await writeFile(join(root, "value.js"), "module.exports = 2;\n");
+      commit(root);
+    });
+    assert.deepEqual((await journal(root)).changedPaths, ["value.js"]);
+  });
+});
+
+test("committed renames retain both the old and new paths", async () => {
+  await fixture(async (root) => {
+    await observeGit(root, () => {
+      git(root, ["mv", "value.js", "renamed.js"]);
+      commit(root);
+    });
+    assert.deepEqual((await journal(root)).changedPaths.sort(), ["renamed.js", "value.js"]);
+  });
+});
+
+test("staged renames retain both paths without changing HEAD", async () => {
+  await fixture(async (root) => {
+    await observeGit(root, () => git(root, ["mv", "value.js", "renamed.js"]));
+    assert.deepEqual((await journal(root)).changedPaths.sort(), ["renamed.js", "value.js"]);
+  });
+});
+
+test("switching away and back restores the original file attribution", async () => {
+  await fixture(async (root) => {
+    git(root, ["branch", "original"]);
+    git(root, ["switch", "-qc", "alternate"]);
+    await writeFile(join(root, "value.js"), "module.exports = 2;\n");
+    commit(root);
+    git(root, ["switch", "-q", "original"]);
+    await writeFile(join(root, "personal.txt"), "user data\n");
+    await observeGit(root, () => git(root, ["switch", "-q", "alternate"]));
+    assert.deepEqual((await journal(root)).changedPaths, ["value.js"]);
+    await observeGit(root, () => git(root, ["switch", "-q", "original"]));
+    assert.deepEqual((await journal(root)).changedPaths, []);
+    assert.equal(await readFile(join(root, "personal.txt"), "utf8"), "user data\n");
+  });
+});
+
+test("the first commit records newly created files", async () => {
+  await fixture(async (root) => {
+    git(root, ["switch", "--orphan", "initial"]);
+    await observeGit(root, async () => {
+      await writeFile(join(root, "created.py"), "value = 1\n");
+      commit(root);
+    });
+    assert.deepEqual((await journal(root)).changedPaths, ["created.py"]);
+  });
+});
+
+test("a failure after commit keeps its original error and file effects", async () => {
+  await fixture(async (root) => {
+    await assert.rejects(observeGit(root, async () => {
+      await writeFile(join(root, "value.js"), "module.exports = 2;\n");
+      commit(root);
+      throw new Error("fixture command failed");
+    }), /fixture command failed/u);
+    assert.deepEqual((await journal(root)).changedPaths, ["value.js"]);
+  });
+});
+
+test("an authorized isolated Git commit returns success through run_task", async () => {
+  await fixture(async (root) => {
+    const workspace = new LightWorkspace(root, { sessionId: "commands", taskContract: {
+      session_id: "commands",
+      effect_requirement: "none", environment: { isolated: true, managedPreview: false },
+    } });
+    const result = await workspace.runTask({ kind: "command", command:
+      "printf 'module.exports = 2;\\n' > value.js && git add value.js && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -qm requested",
+    }, {} as never);
+    assert.equal(result.status, "ok", JSON.stringify(result));
+    assert.deepEqual((await journal(root)).changedPaths, ["value.js"]);
+  });
+});
+
+async function observeGit(root: string, execute: () => unknown | Promise<unknown>) {
+  const files = new WorkspaceFiles(root);
+  return observeCommand(files, new SessionJournal(root, "commands"),
+    await files.snapshot(), async () => execute());
+}
+
+function commit(root: string) {
+  git(root, ["add", "--all", "--", ".", ":(exclude).blame"]);
+  git(root, ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+    "commit", "-qm", "fixture change"]);
 }
 
 function nodeCommand(script: string) {

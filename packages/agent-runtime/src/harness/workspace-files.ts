@@ -163,19 +163,27 @@ export class WorkspaceFiles {
     return sha256((await this.read(path)).content);
   }
 
-  async baseline(path: string, signal?: AbortSignal) {
+  async baseline(path: string, signal?: AbortSignal, revision = "HEAD") {
     const normalized = this.normalizePath(path);
     const treeEntry = await this.gitOptional(
-      ["ls-tree", "HEAD", "--", normalized],
+      ["ls-tree", revision, "--", normalized],
       signal,
     );
     if (!treeEntry) return null;
     const mode = Number.parseInt(treeEntry.split(/\s+/u)[0]!, 8) & 0o777;
     const content = await this.gitBuffer(
-      ["show", `HEAD:${normalized}`],
+      ["show", `${revision}:${normalized}`],
       signal,
     );
     return { content, mode };
+  }
+
+  async committedChanges(previous?: string, current?: string) {
+    if (previous === current) return [];
+    const args = previous && current
+      ? ["diff", "--no-renames", "--name-only", "-z", previous, current, "--"]
+      : ["ls-tree", "-r", "--name-only", "-z", (previous ?? current)!];
+    return nulList(await this.git(args)).filter(isHarnessSourcePath);
   }
 
   resolveForWrite(path: string) {
@@ -275,7 +283,7 @@ export class WorkspaceFiles {
   private async gitChangedPaths(hasHead: boolean, signal?: AbortSignal) {
     const tracked = hasHead
       ? nulList(
-          await this.git(["diff", "--name-only", "-z", "HEAD", "--"], signal),
+          await this.git(["diff", "--no-renames", "--name-only", "-z", "HEAD", "--"], signal),
         )
       : nulList(await this.git(["ls-files", "--cached", "-z"], signal));
     const untracked = nulList(

@@ -23,10 +23,6 @@ async function recordCommandChanges(
 ) {
   if (before.revision.source_revision_id === after.revision.source_revision_id)
     return [];
-  if (before.revision.base_commit !== after.revision.base_commit)
-    throw new Error(
-      "The repository HEAD changed during command execution; inspect the worktree before continuing.",
-    );
   const alreadyRecorded = new Set(await journal.currentChangedPaths());
   const changes = (await changedFiles(files, before, after)).filter(
     ({ path }) => !alreadyRecorded.has(path),
@@ -55,17 +51,16 @@ async function changedFiles(
   const newStates = new Map(
     after.fileStates.map(({ path, hash }) => [path, hash]),
   );
-  const candidates = new Set([...oldStates.keys(), ...newStates.keys()]);
+  const committed = await files.committedChanges(before.revision.base_commit, after.revision.base_commit);
+  const candidates = new Set([...oldStates.keys(), ...newStates.keys(), ...committed]);
   const changes = [];
   for (const path of candidates) {
-    if (oldStates.get(path) === newStates.get(path)) continue;
-    const baseline =
-      oldStates.has(path) && newStates.has(path)
-        ? "absent"
-        : await baselineHash(files, before, path);
-    const hash = oldStates.get(path) ?? baseline;
-    if (hash !== (newStates.get(path) ?? baseline))
-      changes.push({ path, hash });
+    if (oldStates.has(path) && oldStates.get(path) === newStates.get(path)) continue;
+    const [hash, nextHash] = await Promise.all([
+      oldStates.get(path) ?? baselineHash(files, before, path),
+      newStates.get(path) ?? baselineHash(files, after, path),
+    ]);
+    if (hash !== nextHash) changes.push({ path, hash });
   }
   return changes;
 }
@@ -76,6 +71,6 @@ async function baselineHash(
   path: string,
 ) {
   if (!snapshot.git || !snapshot.revision.base_commit) return "absent";
-  const file = await files.baseline(path);
+  const file = await files.baseline(path, undefined, snapshot.revision.base_commit);
   return file ? sha256(file.content) : "absent";
 }
