@@ -98,7 +98,7 @@ function searchCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "search_code",
     description:
-      "Find source by path, text, symbol, or references. Lexical hits inside supported symbols become editable sN aliases. Multi-term queries match useful terms. Scope accepts paths and *, **, ?, or {a,b} globs. Returns up to eight short results; generated outputs and node_modules are excluded.",
+      "Find source by path, text, symbol, or references. Lexical hits inside supported symbols become editable sN aliases. Whitespace separates search terms; punctuation stays literal. Scope accepts paths and *, **, ?, or {a,b} globs. Returns up to eight short results; generated outputs and node_modules are excluded.",
     schema: lightSearchCodeInputSchema,
     execute: (input, context) => workspace.searchCode(input, context.signal),
   });

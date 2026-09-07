@@ -192,12 +192,11 @@ export function lexicalQuery(query: string) {
 export function searchTerms(query: string) {
   return [
     ...new Set(
-      (
-        query
-          .normalize("NFKC")
-          .toLocaleLowerCase()
-          .match(/[\p{L}\p{N}_$@./-]+/gu) ?? []
-      ).filter(Boolean),
+      query
+        .normalize("NFKC")
+        .toLocaleLowerCase()
+        .split(/\s+/u)
+        .filter(Boolean),
     ),
   ].slice(0, 12);
 }

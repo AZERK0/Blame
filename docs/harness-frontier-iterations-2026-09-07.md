@@ -89,6 +89,12 @@ Ce correctif du relais est postérieur au gel V2 et n'entre pas dans les bundles
 
 Un test supplémentaire exécute le runner autonome et une vraie commande détachée, puis termine le runner par SIGTERM. Avant correction, la commande survit ; après transmission du signal à l'AbortSignal existant, elle est arrêtée. Le runner traite aussi SIGINT et retire ses gestionnaires en fin d'opération. Les 17 tests ciblés donnent 16 réussites et une exclusion Windows, avec build et lint réussis. Cette vérification POSIX couvre le défaut de propagation entre processus sans ajouter de protocole au modèle ; elle est également postérieure au gel V2.
 
+## Recherche littérale : défaut reproduit pendant la confirmation
+
+La trace SPARQL du premier lot révèle que la recherche d'un identifiant contenant `:` est élargie en une alternative entre ses composants. Les occurrences du préfixe occupent les 32 premiers résultats collectés et peuvent masquer l'identifiant demandé. Le défaut existe aussi pour les espaces de noms C++, les attributs XML, les sélecteurs CSS, les URL et les opérateurs ; il n'est pas propre à SPARQL.
+
+La séparation des termes utilise maintenant les espaces et conserve la ponctuation littérale. Le moteur ripgrep, le repli Node, le classement et la recherche de chemins partagent ce contrat ; aucune recherche supplémentaire n'est ajoutée. Quatorze reproductions indépendantes, comprenant cinquante leurres avant chaque cible, échouent avant correction et passent après. Les 120 tests ciblés de navigation, d'édition et de reprise passent, avec build et lint réussis. Le changement est postérieur au gel V2 : il ne peut expliquer aucun résultat de la confirmation en cours, et son effet sur la réussite du modèle reste à mesurer.
+
 ## Ce que la recherche apporte à cette intervention
 
 [SWE-agent](https://swe-agent.com/0.7/background/aci/) étudie l'effet d'une interface simple pour la navigation, l'édition et le retour d'erreurs. Cela soutient ici la priorité aux diagnostics locaux et aux opérations cohérentes ; ses scores ne prédisent pas ceux de Blame.
