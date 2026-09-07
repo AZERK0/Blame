@@ -1,4 +1,5 @@
 import type { AgentToolContext } from "@cline/sdk";
+import { readWorkspaceImage } from "./light-images.js";
 import { pythonBodyRange } from "./python-body.js";
 import {
   outlineSymbol,
@@ -483,25 +484,15 @@ export class LightWorkspace {
   ): Promise<LightToolResult<unknown>> {
     const path = this.files.normalizePath(input.target);
     assertMutableWorkspacePath(path);
+    const image = await readWorkspaceImage(this.files, path, context);
+    if (image) return image;
     const file = await this.files.read(path);
     const source = file.content.toString("utf8");
     const view = routedView(input, path, source.length);
     if (view === "outline")
-      return await this.readOutlinePath(
-        path,
-        file.content,
-        revision,
-        context,
-        input.range,
-      );
+      return await this.readOutlinePath(path, file.content, revision, context, input.range);
     if (view === "range")
-      return await this.readLineRange(
-        path,
-        file.content,
-        input,
-        revision,
-        context,
-      );
+      return await this.readLineRange(path, file.content, input, revision, context);
     return await this.raw(
       path,
       file.content,

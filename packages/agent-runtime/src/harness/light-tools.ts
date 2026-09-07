@@ -108,7 +108,7 @@ function readCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "read_code",
     description:
-      "Read a file, compact directory, sN alias, path#qualifiedName, @changes, or @capabilities. A line range selects those lines; otherwise omit view for automatic raw/outline routing. Symbol outlines list contained declarations. Results expose editTargets and containedBy relationships. Generated outputs and node_modules are excluded.",
+      "Read a text file or local image, compact directory, sN alias, path#qualifiedName, @changes, or @capabilities. A line range selects those lines; otherwise omit view for automatic raw/outline routing. Symbol outlines list contained declarations. Results expose editTargets and containedBy relationships. Generated outputs and node_modules are excluded.",
     schema: lightReadCodeInputSchema,
     execute: (input, context) => workspace.readCode(input, context),
   });
@@ -165,11 +165,15 @@ function harnessTool<TSchema extends z.ZodTypeAny>(
     async execute(value: unknown, context: AgentToolContext) {
       const parsed = definition.schema.safeParse(value);
       if (!parsed.success) return invalidInput(parsed.error);
-      return redactSecurityValue(
-        await definition.execute(parsed.data, context),
-      );
+      return modelToolResponse(await definition.execute(parsed.data, context));
     },
   });
+}
+
+function modelToolResponse(result: LightToolResult<unknown>) {
+  if (result.status !== "ok" || !result.content) return redactSecurityValue(result);
+  const { content, ...text } = result;
+  return [{ type: "text" as const, text: JSON.stringify(redactSecurityValue(text)) }, ...content];
 }
 
 function invalidInput(error: z.ZodError): LightToolResult<unknown> {

@@ -100,3 +100,15 @@ function runProcess(command, args, input) {
     child.stdin.end(input);
   });
 }
+
+test("standalone payload returns image media with the forwarded model capability", async () => {
+  await withPayload(async (packageRoot, workspaceRoot) => {
+    const pixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZlL8AAAAASUVORK5CYII=", "base64");
+    await writeFile(join(workspaceRoot, "pixel.png"), pixel);
+    const result = await executeRunner(packageRoot, workspaceRoot, {
+      input: { target: "pixel.png" }, toolContext: { metadata: { modelSupportsImages: true } },
+    });
+    assert.equal(result.status, "ok", JSON.stringify(result));
+    assert.deepEqual(result.content, [{ type: "image", mediaType: "image/png", data: pixel.toString("base64") }]);
+  });
+});

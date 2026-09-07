@@ -1,3 +1,4 @@
+import type { ImageContent } from "@cline/sdk";
 import { z } from "zod";
 
 const relativePath = z.string().trim().min(1).max(4_096);
@@ -114,7 +115,7 @@ export type LightTaskContract = {
 };
 
 export type LightToolResult<T> =
-  | { status: "ok"; data: T; receipt?: string }
+  | { status: "ok"; data: T; receipt?: string; content?: ImageContent[] }
   | {
       status: "blocked";
       category: "input" | "code" | "command" | "environment" | "external";
