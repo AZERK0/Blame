@@ -103,6 +103,10 @@ La projection destinée au fournisseur présente désormais les contenus échapp
 
 Le [replay hors modèle](benchmarks/harness-iterations-2026-09-07/presentation-replay.json) sur les sorties Blame du premier lot passe de 76 783 à 74 529 octets de texte. Cette petite réduction de volume ne mesure pas les tokens facturés. L'objectif principal est de présenter les caractères du code tels qu'ils sont, sans nouvelle instruction ni mécanisme de réparation des patchs. L'effet sur les erreurs et la réussite sera vérifié dans une campagne V3 distincte, avec les recherches littérales corrigées ; V2 demeure figée.
 
+## Troisième itération enregistrée
+
+Le bundle V3, issu de `35c69e24`, est figé avec le SHA256 `89325fa33e1cf4dc844c626a9f0b942c7cc5a74d8bb1fd2027d74a7e44f25805`. Neuf essais comparent V2, V3 et Cline contemporain sur SPARQL, Cython et regex-chess. Ces tâches sont choisies pour le diagnostic de recherche et de présentation, et sont toutes connues. Le [protocole](benchmarks/harness-iterations-2026-09-07/v3/protocol.md) et les [entrées figées](benchmarks/harness-iterations-2026-09-07/v3/manifest.json) précèdent les résultats. Ce lot sera exécuté après la confirmation V2, avec deux conteneurs simultanés, afin de préserver ses ressources.
+
 ## Ce que la recherche apporte à cette intervention
 
 [SWE-agent](https://swe-agent.com/0.7/background/aci/) étudie l'effet d'une interface simple pour la navigation, l'édition et le retour d'erreurs. Cela soutient ici la priorité aux diagnostics locaux et aux opérations cohérentes ; ses scores ne prédisent pas ceux de Blame.
