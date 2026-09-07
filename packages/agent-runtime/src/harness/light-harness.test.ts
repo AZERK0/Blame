@@ -1341,7 +1341,7 @@ test("one batch combines an import patch and a symbol body replacement", async (
           {
             kind: "patch",
             path: "src/app.ts",
-            patch: applyPatch("ignored.ts", [
+            patch: applyPatch("src/app.ts", [
               "-import { value } from './value.js'",
               "+import { value as helper } from './value.js'",
             ]),
@@ -1554,7 +1554,7 @@ test("symbol insertion and Prisma patching share one atomic batch", async () => 
           {
             kind: "patch",
             path: "schema.prisma",
-            patch: applyPatch("ignored.prisma", [
+            patch: applyPatch("schema.prisma", [
               " model User {",
               "   id Int @id",
               "+  name String",
