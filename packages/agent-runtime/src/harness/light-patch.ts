@@ -244,10 +244,11 @@ function exactContextPatch(
   source = source.replaceAll("\r\n", "\n");
   const lines = parsed.lines.slice(0, parsed.headerIndex + 1);
   const ordered = orderedHunkRanges(source, parsed.hunks, path);
+  const repeated = singleRepeatedLineRange(source, parsed.hunks);
   let cursor = 0;
   for (const [index, hunk] of parsed.hunks.entries()) {
     const range =
-      ordered?.[index] ?? exactHunkRange(source, hunk, cursor, path);
+      ordered?.[index] ?? repeated ?? exactHunkRange(source, hunk, cursor, path);
     const prefix = source
       .slice(cursor, range.start)
       .split("\n")
@@ -274,7 +275,8 @@ function orderedHunkRanges(
   const earliest = directionalHunkRanges(source, contexts, path, false);
   const latest = directionalHunkRanges(source, contexts, path, true);
   const ambiguous = earliest.findIndex(
-    (range, index) => range.start !== latest[index]!.start,
+    (range, index) => range.start !== latest[index]!.start &&
+      contexts[index] !== selectedLines(hunks[index]!.lines, new Set([" ", "+"])),
   );
   if (ambiguous >= 0)
     throw new Error(
@@ -282,6 +284,24 @@ function orderedHunkRanges(
         lineBoundedMatches(source, contexts[ambiguous]!, earliest[ambiguous]!.start)),
     );
   return earliest;
+}
+
+function singleRepeatedLineRange(source: string, hunks: PatchHunk[]) {
+  if (hunks.length !== 1) return undefined;
+  const hunk = hunks[0]!;
+  const value = hunk.lines[0]?.slice(1);
+  if (hunk.anchor || hunk.eof || !value ||
+    hunk.lines.some((line) => line.slice(1) !== value)) return undefined;
+  const context = selectedLines(hunk.lines, new Set([" ", "-"]));
+  if (!context) return undefined;
+  const matches = lineBoundedMatches(source, context);
+  const first = matches[0];
+  if (first === undefined) return undefined;
+  const range = { start: first, end: first + context.length };
+  if (matches.length === 1) return range;
+  const last = lastLineBoundedMatch(source, context, source.length)!;
+  const span = source.slice(first, last + context.length);
+  return span.split("\n").every((line) => line === value) ? range : undefined;
 }
 
 function directionalHunkRanges(
