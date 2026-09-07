@@ -1,0 +1,36 @@
+{
+  "confirmedStops": [
+    {
+      "campaign": "terminal-bench-global-20260906",
+      "trial": "fix-code-vulnerability__qaYESbk",
+      "classification": "shared_blame_runtime_inactivity_watchdog",
+      "limit": "No cause of provider silence established; this is not itself a Cline SDK or infrastructure failure.",
+      "harness": "cline",
+      "bundleName": "runner-final.tgz"
+    },
+    {
+      "campaign": "terminal-bench-iteration-v2-20260907",
+      "trial": "build-cython-ext__kdgqzsB",
+      "classification": "shared_blame_runtime_inactivity_watchdog",
+      "limit": "No cause of provider silence established; this is not itself a Cline SDK or infrastructure failure.",
+      "harness": "cline",
+      "bundleName": "runner-final.tgz"
+    },
+    {
+      "campaign": "terminal-bench-iteration-v5-20260907",
+      "trial": "build-cython-ext__hVtamyB",
+      "classification": "shared_blame_runtime_inactivity_watchdog",
+      "limit": "No cause of provider silence established; this is not itself a Cline SDK or infrastructure failure.",
+      "harness": "cline",
+      "bundleName": "runner-final.tgz"
+    },
+    {
+      "campaign": "terminal-bench-iteration-v8-20260907",
+      "trial": "financial-document-processor__BkDobPU",
+      "classification": "shared_blame_runtime_inactivity_watchdog",
+      "limit": "No cause of provider silence established; this is not itself a Cline SDK or infrastructure failure.",
+      "harness": "blame",
+      "bundleName": "runner-before.tgz"
+    }
+  ]
+}

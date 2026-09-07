@@ -1,6 +1,5 @@
 import {
   BlameAgentRuntime,
-  createClineBaselineRuntime,
   type AgentEvent,
 } from "@blame/agent-runtime";
 import type {
@@ -109,17 +108,13 @@ export function runtimeFactory(
   harness: BenchmarkConfig["harness"],
   config: BenchmarkConfig,
 ) {
-  return harness === "cline"
-    ? createClineBaselineRuntime(events)
-    : new BlameAgentRuntime(events, {
-        ...(config.projectMemoryFile
-          ? {
-              projectMemoryPersistence: new ProjectMemoryFile(
-                config.projectMemoryFile,
-              ),
-            }
-          : {}),
-      });
+  return new BlameAgentRuntime(events, {
+    developmentHarness: harness,
+    modelInactivityTimeoutMs: config.timeoutMs,
+    ...(harness === "blame" && config.projectMemoryFile
+      ? { projectMemoryPersistence: new ProjectMemoryFile(config.projectMemoryFile) }
+      : {}),
+  });
 }
 
 function sessionInput(config: BenchmarkConfig): BenchmarkSessionInput {
