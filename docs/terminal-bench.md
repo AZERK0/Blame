@@ -68,7 +68,9 @@ pnpm benchmark:agent -- run \
 
 The direct run also requires `BLAME_API_URL`, `BLAME_API_TOKEN`, `BLAME_PROVIDER_ID`, and `BLAME_MODEL_ID`.
 
-Pass `--harness cline` to run the same instruction through the default Cline system prompt and native workspace tools. This comparison mode keeps Blame's credential transport, redacted event recording, model configuration, timeout, and usage reporting, but does not add the Blame briefing, semantic tools, specialist, plugins, or completion contract. The default is `--harness blame`.
+Pass `--harness cline` to run the same instruction through the default Cline system prompt and native workspace tools. This comparison mode keeps Blame's credential transport, redacted event recording, model configuration, session deadline, and usage reporting, but does not add the Blame briefing, semantic tools, specialist, plugins, or completion contract. The default is `--harness blame`.
+
+The native command budgets differ: Blame uses 120 seconds; Cline SDK 0.0.81 uses 30 seconds. Its `run_commands` schema does not expose the `timeout` argument sometimes emitted by the model. A shared session deadline therefore does not imply identical command deadlines. The current runner includes session creation in its deadline and separately bounds cleanup. Frozen September 7 V1, V2 and V4 bundles start their internal deadline after session creation; Harbor additionally imposes each official task's timeout.
 
 For Harbor, set `BLAME_BENCHMARK_HARNESS=cline` in the agent's `env` configuration. The adapter forwards the selection to the same bundled runner; unset or empty keeps Blame. Only `blame` and `cline` are accepted. This baseline measures the bundled Cline SDK, not a separate installation of the Cline extension or CLI. It also retains the runner's common lifecycle and compaction settings. The Harbor adapter is still named `blame`; verify `harness: "cline"` in each runner result. Freeze the bundle and task revisions across both arms and retain unsuccessful attempts when comparing consumption.
 
@@ -81,6 +83,8 @@ With Harbor installed in the active Python environment, verify the adapter with 
 The [September 5 harness correction report](/mnt/dev/web/Blame/docs/harness-corrections-2026-09-05.md) preserves the paired runs, unsuccessful attempts, prompt ablation, and exact bundle provenance.
 
 The [fifteen-task Cline SDK comparison](/mnt/dev/web/Blame/docs/cline-comparison-terminal-bench-2026-09-05.md) compares the archived Blame campaign with fifteen new native Cline SDK runs from the same frozen bundle. It reports official success separately from consumption and preserves both compression timeouts.
+
+The [September 7 iterations](/mnt/dev/web/Blame/docs/harness-frontier-iterations-2026-09-07.md) record reproduced defects, fixes, native timeout differences, the independent task selection, and immutable comparative campaigns. Mechanical replays are reported separately from model success and provider usage.
 
 Successful, fresh project validations in Blame return at most 900 characters when the redacted output exceeds 1,200 characters. `outputLog` points to the complete redacted output inside the workspace; inspect it with an ordinary `run_task` command such as `tail` or `cat`. This shortening does not apply to unrecognized inspection commands, failures, or source-changing checks. Logs under `.blame/logs` do not invalidate source freshness. If a log cannot be written, the existing 4,000-character diagnostic fallback remains available.
 

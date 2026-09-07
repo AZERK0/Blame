@@ -88,7 +88,10 @@ def main():
     validate_calculation()
     data = json.loads((ROOT / 'results.json').read_text())
     rows = data['rows']
-    assert len(rows) == 36 and len({(row['task'], row['arm'], row['repetition']) for row in rows}) == 36
+    manifest = json.loads((ROOT / 'manifest.json').read_text())
+    expected = {(task['id'], arm, repetition) for task in manifest['tasks'] for arm in ['final', 'cline'] for repetition in [1, 2]}
+    actual = {(row['task'], row['arm'], row['repetition']) for row in rows}
+    assert len(rows) == len(expected) and actual == expected, 'Missing, duplicated, or unexpected trial combinations'
     result = {'note': 'Descriptive stratified sample uncertainty. The bootstrap resamples task clusters with both repetitions intact. Complete-usage blocks are a selected subset when any usage is missing. Ratios below one favor Blame. Failed trials are retained.',
               'all': subset(rows), 'fresh': subset([row for row in rows if not row['seenBeforeCampaign']]),
               'seen': subset([row for row in rows if row['seenBeforeCampaign']]),
