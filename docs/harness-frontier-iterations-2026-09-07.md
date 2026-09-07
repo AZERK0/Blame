@@ -87,6 +87,8 @@ Chaque appel transmettait aussi tout le snapshot de conversation alors que le ru
 
 Ce correctif du relais est postérieur au gel V2 et n'entre pas dans les bundles de la confirmation en cours. Les essais headless utilisent les outils locaux ; la validation du changement repose sur le relais exercé par les tests, et non sur une exécution des machines virtuelles macOS ou Windows.
 
+Un test supplémentaire exécute le runner autonome et une vraie commande détachée, puis termine le runner par SIGTERM. Avant correction, la commande survit ; après transmission du signal à l'AbortSignal existant, elle est arrêtée. Le runner traite aussi SIGINT et retire ses gestionnaires en fin d'opération. Les 17 tests ciblés donnent 16 réussites et une exclusion Windows, avec build et lint réussis. Cette vérification POSIX couvre le défaut de propagation entre processus sans ajouter de protocole au modèle ; elle est également postérieure au gel V2.
+
 ## Ce que la recherche apporte à cette intervention
 
 [SWE-agent](https://swe-agent.com/0.7/background/aci/) étudie l'effet d'une interface simple pour la navigation, l'édition et le retour d'erreurs. Cela soutient ici la priorité aux diagnostics locaux et aux opérations cohérentes ; ses scores ne prédisent pas ceux de Blame.
