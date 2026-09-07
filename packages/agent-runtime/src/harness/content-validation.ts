@@ -87,7 +87,7 @@ function validateSemantic(input: { content: Buffer; path: string }) {
       "C/C++ syntax requires the project compiler and preprocessing configuration.",
     ]);
   const status = parsed.errorCount ? "failed" : "passed";
-  const diagnostics = parseSyntaxDiagnostics(parsed);
+  const diagnostics = parseSyntaxDiagnostics(parsed, input.content);
   return validation(input.path, status, "ast-grep", diagnostics);
 }
 
@@ -115,7 +115,7 @@ function validateTypeScript(input: { content: Buffer; path: string }) {
     });
   const semantic = parseCode(input.path, input.content);
   const semanticDiagnostics = semantic.supported
-    ? parseSyntaxDiagnostics(semantic)
+    ? parseSyntaxDiagnostics(semantic, input.content)
     : ["ast-grep syntax validation is unavailable."];
   const diagnostics = [...typescriptDiagnostics, ...semanticDiagnostics];
   return validation(

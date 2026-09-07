@@ -559,11 +559,11 @@ function missingSyntaxToken(node: SgNode) {
   return range.start.index === range.end.index;
 }
 
-export function parseSyntaxDiagnostics(parsed: ParseResult) {
+export function parseSyntaxDiagnostics(parsed: ParseResult, content: Buffer) {
   return parsed.trees.flatMap((tree) =>
-    syntaxErrorNodes(tree.root).map((node) => {
-      const position = node.range().start;
-      const location = `${position.line + tree.lineOffset + 1}:${position.column + 1}`;
+    syntaxErrorNodes(tree.root).slice(0, 20).map((node) => {
+      const prefix = content.subarray(0, byteRange(node, tree)[0]).toString("utf8");
+      const location = `${prefix.split("\n").length}:${prefix.length - prefix.lastIndexOf("\n")}`;
       const detail = node.kind() === "ERROR"
         ? `Unexpected syntax ${JSON.stringify(node.text().slice(0, 120))}`
         : `Expected ${JSON.stringify(node.kind())}`;

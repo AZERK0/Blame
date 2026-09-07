@@ -173,3 +173,16 @@ async function fixture(
     await rm(root, { recursive: true, force: true });
   }
 }
+
+for (const path of ["Component.vue", "Component.svelte"]) {
+  test(`${path} diagnostics use absolute source columns with Unicode prefixes`, async () => {
+    for (const prefix of ['<script lang="ts">', 'é🧠<script lang="ts">', '\n<script lang="ts">']) {
+      const source = `${prefix}const broken = ;</script>\n`;
+      const result = await validateContent({ path, content: Buffer.from(source), workspaceRoot: tmpdir() });
+      const beforeError = source.slice(0, source.indexOf("= ;"));
+      const position = `${beforeError.split("\n").length}:${beforeError.length - beforeError.lastIndexOf("\n")}`;
+      assert.equal(result.status, "failed");
+      assert.ok(result.diagnostics.some((line) => line.startsWith(`${position} `)), JSON.stringify(result));
+    }
+  });
+}
