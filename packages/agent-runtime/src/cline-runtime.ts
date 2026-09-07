@@ -2700,7 +2700,6 @@ export class BlameAgentRuntime {
           sessionId,
           normalizeEvent(sessionId, payload),
         );
-        if (terminalToolEvent(normalized)) return;
         const display = !this.shouldSkipSessionDisplayEvent(sessionId, payload);
         const event = this.withSubmittedSummary(
           sessionId,
@@ -2716,6 +2715,10 @@ export class BlameAgentRuntime {
           return;
         }
         if (this.shouldSkipDuplicateSessionEvent(sessionId, event)) return;
+        if (terminalToolEvent(event)) {
+          this.events?.captureHiddenToolEvent?.(event);
+          return;
+        }
         const terminalState = terminalLifecycleState(event);
         if (terminalState) {
           const drain = this.finalizeStreamTerminal(

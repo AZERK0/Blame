@@ -96,6 +96,73 @@ test("waits past recoverable agent errors for the real terminal", async () => {
   assert.equal(recorder.eventCount, 2);
 });
 
+test("persists usage and closes the recorder when session abort never settles", async () => {
+  const recorder = new MemoryRecorder();
+  const started = performance.now();
+  const result = await runBenchmark({ ...benchmarkConfig(), timeoutMs: 5 }, {
+    cleanupTimeoutMs: 20,
+    createRecorder: () => recorder,
+    createRuntime: () => pendingRuntime(() => new Promise(() => undefined)),
+  });
+  assert.equal(result.status, "timed_out");
+  assert.equal(result.cleanupIncomplete, true);
+  assert.equal(result.usage?.aggregateUsage?.totalInputTokens, 12);
+  assert.equal(recorder.closed, true);
+  assert.ok(performance.now() - started < 500);
+});
+
+test("a stuck shutdown cannot prevent results or write late events into a closed recorder", async () => {
+  const recorder = new MemoryRecorder();
+  let events: AgentRuntimeEvents | undefined;
+  const result = await runBenchmark(benchmarkConfig(), {
+    cleanupTimeoutMs: 20,
+    createRecorder: () => recorder,
+    createRuntime: (sink) => {
+      events = sink;
+      return runtimeStub({ start: () => sink.emit({ type: "done", payload: {} }),
+        shutdown: () => new Promise(() => undefined) });
+    },
+  });
+  assert.equal(result.status, "succeeded");
+  assert.equal(result.cleanupIncomplete, true);
+  assert.equal(result.usage?.aggregateUsage?.totalInputTokens, 12);
+  const count = recorder.eventCount;
+  events?.emit({ type: "usage", payload: {} });
+  events?.captureHiddenToolEvent?.({ type: "tool", payload: {} });
+  assert.equal(recorder.eventCount, count);
+  assert.equal(recorder.closed, true);
+});
+
+test("a stuck usage lookup remains unavailable instead of becoming zero usage", async () => {
+  const runtime = pendingRuntime(() => undefined);
+  runtime.sessions.usage = () => new Promise(() => undefined);
+  const result = await runBenchmark({ ...benchmarkConfig(), timeoutMs: 5 }, {
+    cleanupTimeoutMs: 20,
+    createRecorder: () => new MemoryRecorder(),
+    createRuntime: () => runtime,
+  });
+  assert.equal(result.status, "timed_out");
+  assert.equal(result.cleanupIncomplete, true);
+  assert.equal(result.usage, undefined);
+});
+
+test("records hidden finalization tools once without changing terminal detection", async () => {
+  const recorder = new MemoryRecorder();
+  const result = await runBenchmark(benchmarkConfig(), {
+    createRecorder: () => recorder,
+    createRuntime: (events) => runtimeStub({ start() {
+      for (const phase of ["started", "finished"])
+        events.captureHiddenToolEvent?.({ type: "tool", payload: {
+          phase, toolCallId: "finish-1", toolCall: { id: "finish-1", name: "finish_task", input: { summary: "Done" } },
+        } });
+      events.emit({ type: "done", payload: { verified: true } });
+    } }),
+  });
+  assert.equal(result.status, "succeeded");
+  assert.equal(recorder.toolEventCount, 2);
+  assert.equal(result.metrics.tools.calls, 1);
+});
+
 function successfulRuntime(
   events: AgentRuntimeEvents,
   inputs: StartDevelopmentSessionInput[],
@@ -113,13 +180,13 @@ function successfulRuntime(
   });
 }
 
-function pendingRuntime(abort: () => void) {
+function pendingRuntime(abort: () => void | Promise<void>) {
   return runtimeStub({ abort, start: () => undefined });
 }
 
 function runtimeStub(callbacks: {
-  abort?: () => void;
-  shutdown?: () => void;
+  abort?: () => void | Promise<void>;
+  shutdown?: () => void | Promise<void>;
   start(input: StartDevelopmentSessionInput): void;
 }): BenchmarkRuntime {
   return {

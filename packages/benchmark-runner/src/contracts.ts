@@ -33,6 +33,7 @@ export type BenchmarkStatus =
   | "timed_out";
 
 export type BenchmarkResult = {
+  cleanupIncomplete?: boolean;
   reasoningEffort?: ReasoningSelection;
   maxIterations: number;
   timeoutMs: number;
@@ -170,6 +171,7 @@ export type BenchmarkEventRecorder = {
 };
 
 export type BenchmarkRunDependencies = {
+  cleanupTimeoutMs?: number;
   createRecorder(): BenchmarkEventRecorder;
   createRuntime: BenchmarkRuntimeFactory;
   now?(): Date;

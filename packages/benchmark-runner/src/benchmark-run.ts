@@ -12,6 +12,7 @@ import type {
   BenchmarkSessionInput,
 } from "./contracts.js";
 import { ProjectMemoryFile } from "./project-memory-file.js";
+import { boundedCleanup } from "./bounded-cleanup.js";
 
 class BenchmarkTimeoutError extends Error {}
 class BenchmarkCancelledError extends Error {}
@@ -28,16 +29,20 @@ export async function runBenchmark(
     config.harness,
     config,
   );
+  const cleanupTimeoutMs = dependencies.cleanupTimeoutMs ?? 5_000;
+  let shutdownIncomplete = false;
   let outcome;
   try {
     outcome = await executeSession(
       config,
       runtime,
       terminal.promise,
+      cleanupTimeoutMs,
       dependencies.signal,
     );
   } finally {
-    await runtime.shutdown().catch(() => undefined);
+    shutdownIncomplete = !(await boundedCleanup(() => runtime.shutdown(), cleanupTimeoutMs)).completed;
+    terminal.stop();
     await recorder.close();
   }
   const finishedAt = (dependencies.now ?? currentDate)();
@@ -47,6 +52,7 @@ export async function runBenchmark(
     recorder,
     startedAt,
     ...outcome,
+    cleanupIncomplete: shutdownIncomplete || outcome.cleanupIncomplete,
   });
 }
 
@@ -54,24 +60,29 @@ async function executeSession(
   config: BenchmarkConfig,
   runtime: BenchmarkRuntime,
   terminal: Promise<AgentEvent>,
+  cleanupTimeoutMs: number,
   signal?: AbortSignal,
 ) {
   let sessionId: string | undefined;
   let usage;
   let terminalEvent: AgentEvent | undefined;
   let failure: unknown;
+  let cleanupIncomplete = false;
   try {
     sessionId = (await runtime.sessions.startDevelopment(sessionInput(config)))
       .sessionId;
     terminalEvent = await waitForTerminal(terminal, config.timeoutMs, signal);
   } catch (error) {
     failure = error;
-    await abortSession(runtime, sessionId);
+    cleanupIncomplete = !(await abortSession(runtime, sessionId, cleanupTimeoutMs));
   } finally {
-    if (sessionId)
-      usage = await runtime.sessions.usage(sessionId).catch(() => undefined);
+    if (sessionId) {
+      const collected = await boundedCleanup(() => runtime.sessions.usage(sessionId!), cleanupTimeoutMs);
+      usage = collected.value;
+      cleanupIncomplete ||= !collected.completed;
+    }
   }
-  return { failure, sessionId, terminalEvent, usage };
+  return { cleanupIncomplete, failure, sessionId, terminalEvent, usage };
 }
 
 export function runtimeFactory(
@@ -109,18 +120,25 @@ function sessionInput(config: BenchmarkConfig): BenchmarkSessionInput {
 }
 
 function terminalObserver(recorder: BenchmarkEventRecorder) {
+  let active = true;
   let resolveTerminal: (event: AgentEvent) => void = () => undefined;
   const promise = new Promise<AgentEvent>((resolve) => {
     resolveTerminal = resolve;
   });
+  const record = (event: AgentEvent) => {
+    if (!active) return false;
+    recorder.record(event);
+    return true;
+  };
   return {
     events: {
+      captureHiddenToolEvent: record,
       emit(event: AgentEvent) {
-        recorder.record(event);
-        if (isTerminalEvent(event)) resolveTerminal(event);
+        if (record(event) && isTerminalEvent(event)) resolveTerminal(event);
       },
     },
     promise,
+    stop: () => { active = false; },
   };
 }
 
@@ -162,12 +180,13 @@ function waitForTerminal(
   });
 }
 
-async function abortSession(runtime: BenchmarkRuntime, sessionId?: string) {
-  if (!sessionId) return;
-  await runtime.sessions.abort(sessionId).catch(() => undefined);
+async function abortSession(runtime: BenchmarkRuntime, sessionId: string | undefined, timeoutMs: number) {
+  if (!sessionId) return true;
+  return (await boundedCleanup(() => runtime.sessions.abort(sessionId), timeoutMs)).completed;
 }
 
 function benchmarkResult(input: {
+  cleanupIncomplete?: boolean;
   config: BenchmarkConfig;
   failure?: unknown;
   finishedAt: Date;
@@ -179,6 +198,7 @@ function benchmarkResult(input: {
 }): BenchmarkResult {
   const terminalPayload = recordValue(input.terminalEvent?.payload);
   return {
+    ...(input.cleanupIncomplete ? { cleanupIncomplete: true } : {}),
     completion: terminalPayload?.completion,
     durationMs: input.finishedAt.getTime() - input.startedAt.getTime(),
     error: resultError(input.failure, input.terminalEvent),

@@ -1191,6 +1191,36 @@ for (const type of ["error", "run-failed"]) {
   });
 }
 
+test("records hidden completion tools with their execution identity without displaying cards", async () => {
+  const { hidden, emitted, publish, runtime } = await hiddenCompletionFixture();
+  for (const type of ["content_start", "content_end"])
+    publish(agentEvent({ type, contentType: "tool", toolCallId: "finish-1",
+      toolName: "finish_task", input: { summary: "Done" } }));
+  assert.equal(hidden.length, 2);
+  assert.ok(hidden.every((event) => event.executionId === "execution"));
+  assert.ok(hidden.every(terminalToolEvent));
+  assert.equal(emitted.filter(terminalToolEvent).length, 0);
+  await runtime.shutdown();
+});
+
+async function hiddenCompletionFixture() {
+  const hidden: AgentEvent[] = [];
+  const emitted: AgentEvent[] = [];
+  let publish: (event: CoreSessionEvent) => void = () => undefined;
+  const runtime = new BlameAgentRuntime({
+    emit: (event) => emitted.push(event),
+    captureHiddenToolEvent: (event) => hidden.push(event),
+  });
+  const core = { ...deferredPromptCore(() => undefined),
+    async subscribe(callback: typeof publish) { publish = callback; return () => undefined; },
+  };
+  const internals = runtime as unknown as TransportTestRuntime;
+  await internals.subscribeCoreSession("session", core);
+  internals.sessionExecutionIds.set("session", "execution");
+  internals.runLifecycles.begin("session", "execution");
+  return { hidden, emitted, publish, runtime };
+}
+
 test("continues delivering tools and the final response after a recoverable snapshot error", async () => {
   const emitted: AgentEvent[] = [];
   const runtime = new BlameAgentRuntime({

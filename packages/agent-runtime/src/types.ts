@@ -740,6 +740,7 @@ export type AgentEvent = {
 
 export type AgentRuntimeEvents = {
   emit(event: AgentEvent): void;
+  captureHiddenToolEvent?(event: AgentEvent): void;
 };
 
 export type CodeGraphStatusState =
