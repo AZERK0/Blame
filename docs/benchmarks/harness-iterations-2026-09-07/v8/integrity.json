@@ -1,0 +1,53 @@
+{
+  "inputFilesVerified": 41,
+  "allInputsUnchanged": true,
+  "trials": 9,
+  "eventHashes": {
+    "financial-document-processor__BkDobPU": "f82973f7fb9857f7a6408c0dd4cf42a02be87f41ddf92f557a03aa8dbfc460c8",
+    "financial-document-processor__CvQgP4H": "2289df7faaddc7f5357c6d0ef6c30d684cf861533ba37058e7c43c75704db3f0",
+    "financial-document-processor__aKRQFq2": "8ff699fd3447949a47088f7b3ef10114a0f9d3083255a2247fac05121e40d238",
+    "gcode-to-text__iSifKYc": "94813bf78cfe918b84d9ad3313b435edd61d6f48222173ee192ca4176e4dec03",
+    "gcode-to-text__kNZy2Qz": "bf121f67c691b332667fb330b5ff7b4f69b35dbb5cd42838386fbe7d6a4979b9",
+    "gcode-to-text__ospM3RX": "c113c898c361fd3b6c395818a8a125405bcbbd9459fd85c513fa174503c7858b",
+    "financial-document-processor__5utV8UL": "f81d557f3dc9f70862e33fb4840a667ce359bb0ce4f337189cdb5efb3b1a0b51",
+    "financial-document-processor__nvabn2U": "60a582629d6746e478565c2ecf19a4f97b52e8b0fb51b63e6c9be471a43055a9",
+    "financial-document-processor__uwBY7hS": "2ebbd7c7558dee74a883b4c1616b150f0b4cc891d62945e4dc4d6c74a71a6067"
+  },
+  "imageChecks": [
+    {
+      "task": "financial-document-processor",
+      "group": "batch-01",
+      "digests": [
+        "alexgshaw/financial-document-processor@sha256:ef6c9cfaaf14cdd200163008a188d5baa9f626f3bfb8d3e7d6f30c08518e6251"
+      ],
+      "expectedDigest": "sha256:ef6c9cfaaf14cdd200163008a188d5baa9f626f3bfb8d3e7d6f30c08518e6251",
+      "matched": true
+    },
+    {
+      "task": "gcode-to-text",
+      "group": "batch-01",
+      "digests": [
+        "alexgshaw/gcode-to-text@sha256:0979ef40c6a3e8c4e7ab5b6c2524c74625a84799e15cd45dd98dcf83b11efd4d"
+      ],
+      "expectedDigest": "sha256:0979ef40c6a3e8c4e7ab5b6c2524c74625a84799e15cd45dd98dcf83b11efd4d",
+      "matched": true
+    },
+    {
+      "task": "financial-document-processor",
+      "group": "batch-02",
+      "digests": [
+        "alexgshaw/financial-document-processor@sha256:ef6c9cfaaf14cdd200163008a188d5baa9f626f3bfb8d3e7d6f30c08518e6251"
+      ],
+      "expectedDigest": "sha256:ef6c9cfaaf14cdd200163008a188d5baa9f626f3bfb8d3e7d6f30c08518e6251",
+      "matched": true
+    }
+  ],
+  "auditToolStarts": 652,
+  "missingUsageTrials": [
+    "financial-document-processor__BkDobPU",
+    "gcode-to-text__ospM3RX",
+    "financial-document-processor__5utV8UL"
+  ],
+  "postVerifierAuditPresent": true,
+  "note": "Image observations occur after both arms finish each task in each repetition. Absence of a candidate match does not prove absence of contamination; see manual adjudication. Recorder times are not server-side execution clocks."
+}

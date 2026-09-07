@@ -257,3 +257,24 @@ Deux tests avec le vrai runtime et une horloge simulée échouent avant correcti
 Après la fin des neuf essais V8, la confirmation V9 est [enregistrée](benchmarks/harness-iterations-2026-09-07/frontier-v9/manifest.json) pour 24 essais : six tâches nouvelles localement, deux bras et deux répétitions, en quatre lots de six. La seconde répétition inverse groupes, tâches et bras. Les [règles d’analyse](benchmarks/harness-iterations-2026-09-07/frontier-v9/protocol.md) conservent échecs, usages inconnus, sensibilité au retrait d’une tâche et incertitude par bootstrap des six tâches. Aucun retry ni arrêt sur score favorable n’est prévu.
 
 Le bundle commun `cc8816ac445d17ee24e73efb680d461c1f100a9ce2263522270242f276148a97` provient de `f73d5368`. Le harness reprend V8 ; le runner corrige seulement le délai interne concurrent du budget explicite. Les réglages restent Luna high, 64 itérations et 900 secondes, avec les ressources et délais officiels Harbor, sur le même Docker dédié. Les six digests d’images sont revérifiés avant enregistrement. Les résultats ne seront pas agrégés artificiellement avec les versions et échantillons précédents.
+
+## Résultat complet V8
+
+Les neuf essais se terminent à 21:45:41 UTC : Blame V8 réussit 1/3, Blame V7 et Cline 0/3. La réussite est la seconde répétition documentaire. Aucune réponse de référence n’est ajoutée au runtime ; la correction est identique dans les deux répétitions. Toutes les versions échouent sur G-code.
+
+| Mesure des trois essais par bras | Blame V7 | Blame V8 | Cline contemporain |
+| --- | ---: | ---: | ---: |
+| Réussites officielles | 0/3 | 1/3 | 0/3 |
+| Temps agent cumulé | 34,8 min | 12,6 min | 26,1 min |
+| Requêtes observées | 101 | 52 | 68 |
+| Essais à usage incomplet | 2 | 0 | 1 |
+
+La baisse de temps est de 63,8 % face à V7 et 51,7 % face à Cline sur ce lot diagnostique. Ces écarts comprennent les échecs et expirations : une ancienne session Blame est arrêtée par le watchdog commun, l’autre atteint le délai du runner ; Cline G-code atteint le délai Harbor. Ils ne constituent pas un classement général.
+
+Les deux essais documentaires V8 ne compactent plus, contre 30 compactions terminées pour V7 et dix pour Cline au total. Les lectures d’images natives passent de 170 pour V7 à 31 pour V8, contre 62 pour Cline ; les caractères de remplacement issus du décodage binaire disparaissent des sorties V8. La seconde réussite V8 lit chaque JPEG une fois. L’essai V8 échoué ne compacte pas non plus et classe encore un document incorrectement : la préservation du contexte améliore les conditions de raisonnement sans garantir chaque décision du modèle.
+
+**Régression à conserver :** sur les deux paires documentaires dont V8 et Cline ont un usage complet, V8 traite **72,3 % de tokens supplémentaires**, malgré un coût enregistré inférieur de 37,9 %. Le contexte visuel reste disponible plus longtemps et son cache coûte moins cher que des relectures après compaction ; cette observation n’établit pas la part causale de chaque mécanisme. V8 réussit une fois, Cline aucune. G-code, seule paire complète V8/V7, consomme 36,1 % de tokens de moins et 19,2 % de coût de moins ; les deux échouent et n’utilisent pas les images. Aucune économie globale exacte n’est déduite des sommes partielles des témoins.
+
+Les [neuf essais](benchmarks/harness-iterations-2026-09-07/v8/trials.csv), [analyses](benchmarks/harness-iterations-2026-09-07/v8/analysis.json), [métriques médias](benchmarks/harness-iterations-2026-09-07/v8/media-metrics.json) et [contrôles d’intégrité](benchmarks/harness-iterations-2026-09-07/v8/integrity.json) sont archivés. Les 41 entrées figées, neuf traces et trois observations d’images sont vérifiées. Le scan des 652 appels ne confirme aucun accès oracle ; aucun appel enregistré ne commence après le démarrage du vérificateur. La portée et les limites de cette revue sont publiées.
+
+Le résultat justifie de conserver le correctif de transmission et de compaction, pas d’affirmer que tous les axes sont améliorés sur toute tâche. La confirmation indépendante V9 commence à 21:47:58 UTC, avec le runner commun corrigé et le harness V8, sans modification de code pendant ses 24 essais.
