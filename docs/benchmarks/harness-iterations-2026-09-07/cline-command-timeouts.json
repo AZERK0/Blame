@@ -1,0 +1,289 @@
+[
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "build-cython-ext__6aZjCBz",
+    "durationMs": 30011,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_ME9HMr6xUvJLkdcPyPAkxnGE"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "build-cython-ext__6aZjCBz",
+    "durationMs": 30014,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_F40l7YseDPrUVuWKVHr8vrjS"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "build-cython-ext__6aZjCBz",
+    "durationMs": 30027,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_CZ8fWsGFb8nw3C8cHo8OYOhM"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "mailman__6YgKxaM",
+    "durationMs": 30020,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_oK7ZOHiD5Bfu6XOC8L7A4p7f"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "mailman__6YgKxaM",
+    "durationMs": 30033,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_jljaNYO8dyA4r73Af19Ufhpw"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "mailman__WjHDrur",
+    "durationMs": 30017,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_4ioV5kuD8n6Yb2PkQtI0VsLz"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "query-optimize__z8VGMoa",
+    "durationMs": 30015,
+    "declaredTimeout": null,
+    "toolCallId": "call_aRnKYiPS0jom0znjxX8PV0k9"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "query-optimize__z8VGMoa",
+    "durationMs": 30020,
+    "declaredTimeout": null,
+    "toolCallId": "call_Q2AOpdGysWWHbw3kHGWJzhKD"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "query-optimize__z8VGMoa",
+    "durationMs": 30010,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_l9kvX9rAYSwDPvWGF11c9Vuw"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "polyglot-rust-c__c9Knzpk",
+    "durationMs": 30006,
+    "declaredTimeout": null,
+    "toolCallId": "call_luqIwCTo0Eyqyp3sSKAh9Mqh"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "bn-fit-modify__aaNi2jB",
+    "durationMs": 30028,
+    "declaredTimeout": null,
+    "toolCallId": "call_hzpaqZ2TetV8798DQb4AOE6S"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "crack-7z-hash__7rqSKxr",
+    "durationMs": 30081,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_8W27W1DzPFvgNp0yC3fw40qd"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "crack-7z-hash__7rqSKxr",
+    "durationMs": 30051,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_rTRECYf1Y3rlKIOx92ewmy0x"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "crack-7z-hash__7rqSKxr",
+    "durationMs": 30401,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_ZrwjBGZGAt7Hj7QS8EbYUOLk"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "feal-differential-cryptanalysis__TUszgHs",
+    "durationMs": 30005,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_P2E4JWs5A3Rot7RMvV8bCEa8"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "query-optimize__mUhA9mz",
+    "durationMs": 30010,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_2QISE7oRKwf9gU45NpO6Tl2R"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "query-optimize__mUhA9mz",
+    "durationMs": 30033,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_Hdj7AVzhgIajGJtfxAQqXASB"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__jXrneaz",
+    "durationMs": 30012,
+    "declaredTimeout": 600000,
+    "toolCallId": "call_GHo3G6d5IFPBVA4JHP9zf6dh"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__jXrneaz",
+    "durationMs": 30061,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_sgmlmaRlIz5pWFqKeorwl7UZ"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "crack-7z-hash__e2KmYh2",
+    "durationMs": 30015,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_mQ10rlKjtZ8r4TxAIsv7Ak2F"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "crack-7z-hash__e2KmYh2",
+    "durationMs": 30003,
+    "declaredTimeout": 30000,
+    "toolCallId": "call_PDfjWHmQ9FWWeweElH5600Dt"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "crack-7z-hash__e2KmYh2",
+    "durationMs": 30009,
+    "declaredTimeout": 30000,
+    "toolCallId": "call_PmA7iBAIG0SaRrQYhYK7y3x0"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "crack-7z-hash__e2KmYh2",
+    "durationMs": 30065,
+    "declaredTimeout": 1000,
+    "toolCallId": "call_1twCdy3yz5aT3vgwPELsWlYi"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "crack-7z-hash__e2KmYh2",
+    "durationMs": 30297,
+    "declaredTimeout": 1000,
+    "toolCallId": "call_3KHg9XtEJq7oOjGgfqmI96rT"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "crack-7z-hash__e2KmYh2",
+    "durationMs": 30086,
+    "declaredTimeout": 1000,
+    "toolCallId": "call_I3XNgYNS7QTR2XA498qhDX1m"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "crack-7z-hash__e2KmYh2",
+    "durationMs": 30072,
+    "declaredTimeout": 30000,
+    "toolCallId": "call_PMwQPgEuvIExyx47QViLIG6i"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__PMxtFNm",
+    "durationMs": 30036,
+    "declaredTimeout": 300000,
+    "toolCallId": "call_39PlsBq8uIqsJ6gaHBntQi10"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__PMxtFNm",
+    "durationMs": 30059,
+    "declaredTimeout": 600000,
+    "toolCallId": "call_QsLvR7KoUhPIaeSPEQy8i0ri"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__PMxtFNm",
+    "durationMs": 30004,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_2DEUvGtWYbvqqa0xZZ7QzOLU"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__PMxtFNm",
+    "durationMs": 30024,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_1dZ9Vg31L7LP9TUcax1xFtXe"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__PMxtFNm",
+    "durationMs": 30032,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_NzoYl6Ej1yxujM6Jr3f53XJc"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__PMxtFNm",
+    "durationMs": 30034,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_YBNoafEdoTyQTnzwFvo6yzDj"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__PMxtFNm",
+    "durationMs": 30022,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_uHqm7bSguGJ8ktJEMOMCnJKe"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__PMxtFNm",
+    "durationMs": 30079,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_xkwwOyRwE4ohTzWFJAdzBu8v"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__PMxtFNm",
+    "durationMs": 30033,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_1rgEJ1v4yIWb9Tyx43GFyzBi"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__PMxtFNm",
+    "durationMs": 30066,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_YmTDmACail1hyqeArPCm97lj"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__PMxtFNm",
+    "durationMs": 30034,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_y2dDLQ8JQ0xhXa7eSYYks1gS"
+  },
+  {
+    "campaign": "terminal-bench-global-20260906",
+    "trial": "extract-moves-from-video__PMxtFNm",
+    "durationMs": 30061,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_mNdwyJEbjqSWpT2c9wJt4JHu"
+  },
+  {
+    "campaign": "terminal-bench-iteration-v1-20260907",
+    "trial": "mailman__2NTFYFR",
+    "durationMs": 30020,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_Mc7HO2V54T51U5m6N6uFk1q7"
+  },
+  {
+    "campaign": "terminal-bench-iteration-v1-20260907",
+    "trial": "mailman__2NTFYFR",
+    "durationMs": 30011,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_GHxXfvEgC6HrITAhdsYDzHUB"
+  },
+  {
+    "campaign": "terminal-bench-iteration-v1-20260907",
+    "trial": "mailman__2NTFYFR",
+    "durationMs": 30033,
+    "declaredTimeout": 120000,
+    "toolCallId": "call_09Nhs5btRiIoqFPu5o5fZKEo"
+  }
+]

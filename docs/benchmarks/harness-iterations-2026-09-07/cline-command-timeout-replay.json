@@ -1,0 +1,17 @@
+{
+  "sdkVersion": "0.0.81",
+  "declaredToolProperties": [
+    "commands"
+  ],
+  "toolTimeoutMs": 60000,
+  "emittedTimeout": 120000,
+  "elapsedMs": 30007,
+  "result": [
+    {
+      "query": "synthetic wait",
+      "result": "",
+      "error": "Command failed: Command timed out after 30000ms",
+      "success": false
+    }
+  ]
+}
