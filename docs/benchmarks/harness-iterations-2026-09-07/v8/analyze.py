@@ -14,7 +14,7 @@ def comparison(records, reference):
     resources = {}
     for field in ['agentSeconds', 'tokens', 'cost', 'requests']:
         eligible = [(left, right) for left, right in pairs if field not in ['tokens', 'cost'] or (left['usageComplete'] and right['usageComplete'])]
-        totals = [sum(pair[index][field] for pair in eligible) for index in [0, 1]]
+        totals = [sum(pair[index][field] for pair in eligible) if eligible else None for index in [0, 1]]
         resources[field] = {'eligibleBlocks': len(eligible), 'allBlocks': len(pairs),
                             'finalTotal': totals[0], 'referenceTotal': totals[1],
                             'ratio': totals[0] / totals[1] if totals[1] else None}
