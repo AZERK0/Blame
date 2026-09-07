@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 import { execFile } from "node:child_process";
 import {
   lstat,
@@ -94,12 +96,12 @@ export class WorkspaceFiles {
     const changes: WorkspaceChange[] = [];
     for (const path of paths.sort()) {
       signal?.throwIfAborted();
-      const state = await this.pathState(path);
+      const state = await this.pathState(path, signal);
       entries.push(`${path}\0${state.digest}\0${state.kind}`);
       fileStates.push({
         path,
         hash:
-          state.contentHash ??
+          state.kind === "file" ? state.contentHash :
           (state.kind === "gone" ? "absent" : state.digest),
       });
       changes.push({ path, status: changeStatus(state.kind, baseCommit) });
@@ -234,7 +236,7 @@ export class WorkspaceFiles {
     return { metadata, resolved };
   }
 
-  private async pathState(path: string) {
+  private async pathState(path: string, signal?: AbortSignal) {
     try {
       const absolute = resolve(this.root, path);
       const info = await lstat(absolute);
@@ -244,12 +246,8 @@ export class WorkspaceFiles {
       }
       if (!info.isFile())
         return { digest: sha256("non-file"), kind: "other" as const };
-      const content = await readFile(absolute);
       return {
-        contentHash: sha256(content),
-        digest: sha256(
-          Buffer.concat([Buffer.from(`${info.mode & 0o777}\0`), content]),
-        ),
+        ...await hashFileState(absolute, info.mode, signal),
         kind: "file" as const,
       };
     } catch (error) {
@@ -437,3 +435,13 @@ const languageByExtension: Record<string, string> = {
   ".tsx": "typescript",
   ".vue": "vue",
 };
+
+async function hashFileState(path: string, mode: number, signal?: AbortSignal) {
+  const content = createHash("sha256");
+  const state = createHash("sha256").update(`${mode & 0o777}\0`);
+  for await (const chunk of createReadStream(path, { signal })) {
+    content.update(chunk);
+    state.update(chunk);
+  }
+  return { contentHash: content.digest("hex"), digest: state.digest("hex") };
+}

@@ -3,6 +3,7 @@ import {
   access,
   mkdir,
   mkdtemp,
+  open,
   readFile,
   rm,
   writeFile,
@@ -378,3 +379,18 @@ async function waitFor(path: string) {
   }
   throw new Error(`Timed out waiting for ${path}`);
 }
+
+test("snapshot cancellation interrupts a large file without returning an incomplete revision", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-hash-cancel-"));
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const file = await open(join(root, "artifact.bin"), "w");
+    try { await file.truncate(512 * 1024 * 1024); } finally { await file.close(); }
+    timer = setTimeout(() => controller.abort(), 30);
+    await assert.rejects(new WorkspaceFiles(root).snapshot(controller.signal), { name: "AbortError" });
+  } finally {
+    clearTimeout(timer);
+    await rm(root, { force: true, recursive: true });
+  }
+});
