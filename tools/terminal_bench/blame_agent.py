@@ -1,3 +1,4 @@
+import asyncio
 import json
 import shlex
 from pathlib import Path
@@ -7,6 +8,35 @@ from harbor.agents.installed.base import BaseInstalledAgent, with_prompt_templat
 from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
 
+
+RUNNER_STOP_SCRIPT = r'''
+const fs = require("node:fs/promises");
+const [control, identity, grace] = process.argv.slice(1);
+const read = path => fs.readFile(path, "utf8").catch(error => {
+  if (error.code === "ENOENT" || error.code === "ESRCH") return "";
+  throw error;
+});
+async function stop() {
+  await fs.writeFile(control + ".stop", "cancelled");
+  const value = await read(control + ".pid");
+  if (!value) return;
+  const pid = Number(value);
+  if (!Number.isSafeInteger(pid) || pid <= 1) throw Error("Invalid runner identity");
+  const command = await read(`/proc/${pid}/cmdline`);
+  if (!command) return;
+  if (!command.includes(identity)) throw Error("Runner identity changed");
+  try { process.kill(pid, "SIGTERM"); } catch (error) { if (error.code !== "ESRCH") throw error; }
+  const deadline = Date.now() + Number(grace);
+  while (Date.now() < deadline) {
+    const state = await read(`/proc/${pid}/stat`);
+    if (!state || /^\d+ \(.*\) Z /.test(state)) return;
+    await new Promise(resolve => setTimeout(resolve, 25));
+  }
+  try { process.kill(pid, "SIGKILL"); } catch (error) { if (error.code !== "ESRCH") throw error; }
+  process.exitCode = 2;
+}
+stop().catch(() => { process.exitCode = 2; });
+'''
 
 class BlameAgent(BaseInstalledAgent):
     @staticmethod
@@ -42,11 +72,36 @@ class BlameAgent(BaseInstalledAgent):
         instruction_path.write_text(instruction)
         remote_instruction = self.environment_logs_dir / "instruction.md"
         await environment.upload_file(instruction_path, remote_instruction.as_posix())
-        await self.exec_as_agent(
-            environment,
-            command=self._run_command(remote_instruction.as_posix()),
-            env=self._runtime_environment(),
-        )
+        control = self.environment_logs_dir / "runner"
+        await self.exec_as_agent(environment, command=f"rm -f {shlex.quote(str(control) + '.pid')} {shlex.quote(str(control) + '.stop')}")
+        try:
+            await self.exec_as_agent(environment, command=self._run_command(remote_instruction.as_posix()), env=self._runtime_environment())
+        except BaseException:
+            await self._finish_cancellation(environment)
+            raise
+
+    async def _finish_cancellation(self, environment: BaseEnvironment) -> None:
+        cleanup = asyncio.create_task(self._stop_runner(environment))
+        while not cleanup.done():
+            try:
+                await asyncio.shield(cleanup)
+            except asyncio.CancelledError:
+                continue
+        self._cleanup_verified = cleanup.result()
+
+    async def _stop_runner(self, environment: BaseEnvironment) -> bool:
+        command = stop_runner_command(self.environment_logs_dir / "runner", self.session_id or "terminal-bench")
+        try:
+            result = await asyncio.wait_for(environment.exec(command=command, timeout_sec=25), timeout=30)
+            if result.return_code == 0:
+                return True
+        except Exception as error:
+            self.logger.warning("Runner cleanup failed: %s", type(error).__name__)
+        try:
+            await asyncio.wait_for(environment.stop(delete=False), timeout=30)
+        except Exception as error:
+            self.logger.warning("Trial environment cleanup failed: %s", type(error).__name__)
+        return False
 
     @override
     def populate_context_post_run(self, context: AgentContext) -> None:
@@ -55,7 +110,8 @@ class BlameAgent(BaseInstalledAgent):
         fallback = not usage
         if fallback:
             usage = usage_from_events(self.logs_dir / "events.jsonl")
-        if not usage and not result:
+        cleanup = getattr(self, "_cleanup_verified", None)
+        if not usage and not result and cleanup is None:
             return
         context.n_input_tokens = usage.get("totalInputTokens")
         context.n_output_tokens = usage.get("totalOutputTokens")
@@ -68,6 +124,8 @@ class BlameAgent(BaseInstalledAgent):
             "blame_usage_source": "events" if fallback else "result",
             "blame_usage_partial": fallback or result.get("status") != "succeeded",
         }
+        if cleanup is not None:
+            context.metadata["blame_cleanup_verified"] = cleanup
 
     def _bundle_path(self) -> Path:
         value = self._get_env("BLAME_BENCHMARK_BUNDLE")
@@ -138,7 +196,9 @@ class BlameAgent(BaseInstalledAgent):
             raise ValueError(f"Unsupported benchmark harness: {harness}")
         return (
             "workspace=$(pwd -P); "
-            "blame-headless run "
+            f"printf '%s' \"$$\" > {shlex.quote((logs / 'runner.pid').as_posix())}; "
+            f"test ! -e {shlex.quote((logs / 'runner.stop').as_posix())} || exit 130; "
+            "exec blame-headless run "
             f"--harness {harness} "
             '--workspace "$workspace" '
             f"--instruction-file {shlex.quote(instruction_path)} "
@@ -146,6 +206,10 @@ class BlameAgent(BaseInstalledAgent):
             f"--events {shlex.quote((logs / 'events.jsonl').as_posix())} "
             f"--result {shlex.quote((logs / 'result.json').as_posix())}"
         )
+
+
+def stop_runner_command(control: Path, identity: str, grace_ms: int = 20_000) -> str:
+    return f"node -e {shlex.quote(RUNNER_STOP_SCRIPT)} {shlex.quote(str(control))} {shlex.quote(identity)} {grace_ms}"
 
 
 def read_json_object(path: Path) -> dict:
