@@ -929,7 +929,7 @@ function isProjectMemoryNotice(event: AgentEvent) {
   );
 }
 
-function developmentCompactionFixture(enabled: "false" | "true") {
+function developmentCompactionFixture(enabled: "false" | "true", developmentHarness?: "blame" | "cline", providerId = "anthropic") {
   const originalFetch = globalThis.fetch;
   const originalEnabled = process.env.BLAME_AGENT_COMPACTION_ENABLED;
   let capturedStart: ClineCoreStartInput | undefined;
@@ -947,9 +947,9 @@ function developmentCompactionFixture(enabled: "false" | "true") {
     },
   };
   process.env.BLAME_AGENT_COMPACTION_ENABLED = enabled;
-  globalThis.fetch = async () => providerCredentialResponse("anthropic");
+  globalThis.fetch = async () => providerCredentialResponse(providerId);
   const runtime = new BlameAgentRuntime(undefined, {
-    createCore: async () => core as never,
+    createCore: async () => core as never, developmentHarness,
   });
   return compactionFixtureResult(
     runtime,
@@ -2163,3 +2163,21 @@ test("development instructions describe only caller-declared isolation", async (
   assert.match(isolated, /inside an isolated task environment/);
   assert.doesNotMatch(isolated, /get_preview_devtools/);
 });
+
+for (const harness of ["blame", "cline"] as const) {
+  test(`${harness} receives only its configured image compaction behavior`, async () => {
+    const workspace = await mkdtemp(join(tmpdir(), "image-compaction-runtime-"));
+    const fixture = developmentCompactionFixture("true", harness, "openai-native");
+    try {
+      await fixture.runtime.sessions.startDevelopment({
+        apiConnection: { url: "https://api.example" }, autoSendPrompt: false, cwd: workspace,
+        modelId: "gpt-5.6-luna", providerId: "openai-native", summary: "Inspect an image.",
+        title: "Image input", workspaceRoot: workspace,
+      });
+      assert.equal(fixture.start()?.config.compaction?.imageTokenLimit, harness === "blame" ? 36_000 : undefined);
+    } finally {
+      await fixture.restore();
+      await rm(workspace, { force: true, recursive: true });
+    }
+  });
+}

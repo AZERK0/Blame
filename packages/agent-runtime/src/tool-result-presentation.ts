@@ -1,11 +1,12 @@
 import type { ContentBlock, Message } from "@cline/sdk";
+import { projectImageContext } from "./image-context.js";
 
 const harnessNames = new Set(["read_code", "search_code", "edit_code", "run_task"]);
 const textKeys = new Set(["content", "body", "imports", "signature", "snippet", "output", "message"]);
 
 export function presentToolResults(messages: Message[]): Message[] {
   const names = new Map<string, string>();
-  return messages.map((message) => {
+  const presented = messages.map((message) => {
     if (!Array.isArray(message.content)) return message;
     const content = message.content.map((block: ContentBlock) => {
       if (block.type === "tool_use") names.set(block.id, block.name);
@@ -13,6 +14,7 @@ export function presentToolResults(messages: Message[]): Message[] {
     });
     return { ...message, content };
   });
+  return projectImageContext(presented);
 }
 
 function presentBlock(block: ContentBlock, names: Map<string, string>): ContentBlock {

@@ -1,3 +1,4 @@
+import { imageAwareCompaction } from "./image-compaction.js";
 import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import {
@@ -910,8 +911,9 @@ export class BlameAgentRuntime {
       ];
       const systemPrompt =
         input.systemPrompt ?? loadPrompt("default-agent-system");
-      const compactionConfig =
-        input.compaction ?? blameCompactionConfig(this.productionConfig);
+      const requestedCompaction = input.compaction ?? blameCompactionConfig(this.productionConfig);
+      const compactionConfig = input.clineDefaultTools ? requestedCompaction :
+        imageAwareCompaction(requestedCompaction, input.providerId, input.modelId);
       const contextProjectionExtension =
         input.nativeCompletion && compactionConfig.enabled !== false
           ? createContextProjectionExtension({

@@ -1,5 +1,6 @@
 import type { AgentToolContext } from "@cline/sdk";
-import { readWorkspaceImage } from "./light-images.js";
+import { isUtf8 } from "node:buffer";
+import { readIsolatedEnvironmentImage, readWorkspaceImage } from "./light-images.js";
 import { pythonBodyRange } from "./python-body.js";
 import {
   outlineSymbol,
@@ -217,6 +218,10 @@ export class LightWorkspace {
     context: ReadContext,
   ) {
     context.signal?.throwIfAborted();
+    const externalImage = await readIsolatedEnvironmentImage(
+      this.files, input.target, context, this.options.taskContract?.environment?.isolated,
+    );
+    if (externalImage) return externalImage;
     const special = this.specialReadResult(input.target);
     if (special) return special;
     const snapshot = await this.files.snapshot(context.signal);
@@ -480,7 +485,7 @@ export class LightWorkspace {
     const image = await readWorkspaceImage(this.files, path, context);
     if (image) return image;
     const file = await this.files.read(path);
-    const source = file.content.toString("utf8");
+    const source = readableSource(file.content);
     const view = routedView(input, path, source.length);
     if (view === "outline")
       return await this.readOutlinePath(path, file.content, revision, context, input.range);
@@ -1106,4 +1111,10 @@ function inputBlocked(error: unknown): LightToolResult<unknown> {
 
 function arrayValue(value: unknown) {
   return Array.isArray(value) ? value : [];
+}
+
+function readableSource(content: Buffer) {
+  if (content.includes(0) || !isUtf8(content) || content.subarray(0, 5).toString("ascii") === "%PDF-")
+    throw new Error("Binary or PDF content is not source text. Use run_task to extract text or render images, then read the output.");
+  return content.toString("utf8");
 }

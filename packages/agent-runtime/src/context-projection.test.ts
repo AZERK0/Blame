@@ -840,3 +840,20 @@ async function stableProjectionBuilder() {
   await extension.setup?.({ registerMessageBuilder(builder: { build: typeof build }) { build = builder.build; } } as never, {} as never);
   return { build: async (messages: Message[]) => await build(messages), metrics };
 }
+
+test("image projection preserves cache prefixes and matches compaction preflight", async () => {
+  const builder = await stableProjectionBuilder();
+  const image = { type: "image" as const, mediaType: "image/png", data: "aW1hZ2U=" };
+  const first: Message[] = [{ role: "user", content: [image] }];
+  const initial = await builder.build(first);
+  const history: Message[] = [...first, { role: "user", content: [image] }];
+  const canonical = JSON.stringify(history);
+  const preview = await builder.build(withPreviewMetadata(history));
+  const ready = await builder.build(history);
+  assert.deepEqual(ready, preview);
+  assert.deepEqual(ready.slice(0, initial.length), initial);
+  assert.equal(JSON.stringify(ready).split('"type":"image"').length - 1, 1);
+  assert.equal(JSON.stringify(history), canonical);
+  const rebased = await builder.build([{ role: "user", content: "Compacted context" }, history[1]!]);
+  assert.equal(JSON.stringify(rebased).split('"type":"image"').length - 1, 1);
+});
