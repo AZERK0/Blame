@@ -1,0 +1,3186 @@
+{
+  "registeredAt": "2026-09-07T14:06:20.339621+00:00",
+  "seed": "Blame-holdout-20260907-v1:",
+  "quotas": {
+    "software-engineering": 2,
+    "debugging": 1,
+    "system-administration": 1,
+    "data-querying": 1,
+    "security": 1
+  },
+  "seenBeforeSelection": [
+    "adaptive-rejection-sampler",
+    "bn-fit-modify",
+    "build-cython-ext",
+    "build-pmars",
+    "build-pov-ray",
+    "cancel-async-tasks",
+    "cobol-modernization",
+    "configure-git-webserver",
+    "constraints-scheduling",
+    "crack-7z-hash",
+    "db-wal-recovery",
+    "distribution-search",
+    "extract-elf",
+    "extract-moves-from-video",
+    "feal-differential-cryptanalysis",
+    "filter-js-from-html",
+    "fix-code-vulnerability",
+    "gcode-to-text",
+    "headless-terminal",
+    "kv-store-grpc",
+    "large-scale-text-editing",
+    "largest-eigenval",
+    "llm-inference-batching-scheduler",
+    "log-summary-date-ranges",
+    "mailman",
+    "make-doom-for-mips",
+    "modernize-scientific-stack",
+    "multi-source-data-merger",
+    "nginx-request-logging",
+    "openssl-selfsigned-cert",
+    "polyglot-c-py",
+    "polyglot-rust-c",
+    "portfolio-optimization",
+    "prove-plus-comm",
+    "pypi-server",
+    "query-optimize",
+    "regex-log",
+    "schemelike-metacircular-eval",
+    "sqlite-db-truncate",
+    "sqlite-with-gcov",
+    "write-compressor"
+  ],
+  "freshTasks": [
+    "regex-chess",
+    "circuit-fibsqrt",
+    "overfull-hbox",
+    "compile-compcert",
+    "sparql-university",
+    "sanitize-git-repo"
+  ],
+  "diagnosticTasks": [
+    "cancel-async-tasks",
+    "query-optimize",
+    "polyglot-rust-c"
+  ],
+  "candidates": [
+    {
+      "id": "adaptive-rejection-sampler",
+      "metadata": {
+        "author_name": "jvpoulos",
+        "author_email": "poulos@berkeley.edu",
+        "difficulty": "medium",
+        "category": "scientific-computing",
+        "tags": [
+          "applied-statistics",
+          "adaptive-rejection-sampling",
+          "Bayesian-inference",
+          "simulation"
+        ],
+        "expert_time_estimate_min": 180.0,
+        "junior_time_estimate_min": 480.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/adaptive-rejection-sampler:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "adaptive-rejection-sampler",
+        "compressedBytes": 29729019,
+        "digest": "sha256:985bed39e8448bc95f138b5f766b59003a95c4be171c96af8e76448338f3dd8f"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "705baece45c2b010507d72d8ccbee34d6b6b5776de464556b464791596297c52"
+    },
+    {
+      "id": "bn-fit-modify",
+      "metadata": {
+        "author_name": "Gabriel Dreiman",
+        "author_email": "gdreiman1@gmail.com",
+        "difficulty": "hard",
+        "category": "scientific-computing",
+        "tags": [
+          "bayesian-network",
+          "stats"
+        ],
+        "expert_time_estimate_min": 480.0,
+        "junior_time_estimate_min": 1000.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/bn-fit-modify:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "bn-fit-modify",
+        "compressedBytes": 262231215,
+        "digest": "sha256:5aeb11ca6e802b83816c9a31f055ac9d028309a853509400c2e3139ac2d8380d"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "205944a105ea2f9c4f2a3fb2e85e7001836586c72c3c08914f858e0b3aec4dce"
+    },
+    {
+      "id": "break-filter-js-from-html",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "medium",
+        "category": "security",
+        "tags": [
+          "security"
+        ],
+        "expert_time_estimate_min": 20.0,
+        "junior_time_estimate_min": 480.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/break-filter-js-from-html:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "break-filter-js-from-html",
+        "compressedBytes": 382365840,
+        "digest": "sha256:d7bfb45e47cf10d2e21dc520239215498f4eba9c1ab2d0cd7d647985dddb4fa8"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "08182b3e46537be9d2c128699e4cfc2957d8f18adbc1ab15a1590136da5c2211"
+    },
+    {
+      "id": "build-cython-ext",
+      "metadata": {
+        "author_name": "Zizhao Chen",
+        "author_email": "czz@cs.cornell.edu",
+        "difficulty": "medium",
+        "category": "debugging",
+        "tags": [
+          "coding",
+          "dependency",
+          "compilation"
+        ],
+        "estimated_duration_sec": 540.0,
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 180.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/build-cython-ext:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "build-cython-ext",
+        "compressedBytes": 303214315,
+        "digest": "sha256:3612a38fadb89a96f74a1a951fb0b0af734198fd160571eeaba6401593234594"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "454bbcc8e1cef115ae5f3a4bd5feac710215bacaa515f9327be3213818b763a8"
+    },
+    {
+      "id": "build-pmars",
+      "metadata": {
+        "author_name": "Jeong Shin",
+        "author_email": "jeongshin@alumni.stanford.edu",
+        "difficulty": "medium",
+        "category": "software-engineering",
+        "tags": [
+          "build-tools",
+          "compilation",
+          "debian",
+          "gaming",
+          "pmars",
+          "corewars"
+        ],
+        "expert_time_estimate_min": 90.0,
+        "junior_time_estimate_min": 270.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/build-pmars:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "build-pmars",
+        "compressedBytes": 61140540,
+        "digest": "sha256:57a82706f7491e0b2d1ff7e927e97ae5339892dd09c47ac43290b4ba1f5abc6f"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "a391506482e54983598302fdecac594475c2cdf4554f63cdb8518d3c11f5d253"
+    },
+    {
+      "id": "build-pov-ray",
+      "metadata": {
+        "author_name": "Jeong Shin",
+        "author_email": "jeongshin@alumni.stanford.edu",
+        "difficulty": "medium",
+        "category": "software-engineering",
+        "tags": [
+          "build-tools",
+          "compilation",
+          "graphics",
+          "ray-tracing",
+          "legacy-software",
+          "research"
+        ],
+        "estimated_duration_sec": 3600.0,
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 180.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/build-pov-ray:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "build-pov-ray",
+        "compressedBytes": 163062783,
+        "digest": "sha256:874baf49341e2853a15a9184e308c7eb632e97f434359fcff2891c6e5ca1b39b"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [
+        "Previously confirmed public oracle exposure"
+      ],
+      "selectionKey": "869f11b342c9757c6108a992342daf88883a35b2bfb50f844b56847005164ae6"
+    },
+    {
+      "id": "caffe-cifar-10",
+      "metadata": {
+        "author_name": "Robert Amanfu",
+        "author_email": "retroam@me.com",
+        "difficulty": "medium",
+        "category": "machine-learning",
+        "tags": [
+          "cnn",
+          "caffe"
+        ]
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/caffe-cifar-10:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "caffe-cifar-10",
+        "compressedBytes": 209535953,
+        "digest": "sha256:5b54d6e8f1b392cdeb819e28215853f500b72b8e08b91270c7a3693bf44d1fe2"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "c4f9ea21b9a3a90e721abef376889d087e4dba012ae3fe7487bff84c402b793d"
+    },
+    {
+      "id": "cancel-async-tasks",
+      "metadata": {
+        "author_name": "Alex Shaw",
+        "author_email": "alexgshaw64@gmail.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "async",
+          "concurrency",
+          "python"
+        ],
+        "expert_time_estimate_min": 120.0,
+        "junior_time_estimate_min": 600.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/cancel-async-tasks:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "cancel-async-tasks",
+        "compressedBytes": 44164493,
+        "digest": "sha256:84c7fae6b256dcc56a350790e2a9715eefc7dad662a9d8e8a472363aa71ef18d"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "1e49ccbbd3a84a413fd246332eb5119b3279204a8640eb3218861d0e7b0c9d78"
+    },
+    {
+      "id": "chess-best-move",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "medium",
+        "category": "games",
+        "tags": [],
+        "expert_time_estimate_min": 45.0,
+        "junior_time_estimate_min": 180.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/chess-best-move:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "chess-best-move",
+        "compressedBytes": 240205069,
+        "digest": "sha256:bb447f94d9e2a8ed879f85c85a514b213b7418f9fe11fd7b2428a0b0e436e647"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "3302bba329a7b22539da0f8e87e54bda73e30229cc4468fe835e38ea43a04d7d"
+    },
+    {
+      "id": "circuit-fibsqrt",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "software-engineering"
+        ],
+        "expert_time_estimate_min": 960.0,
+        "junior_time_estimate_min": 2400.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/circuit-fibsqrt:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "circuit-fibsqrt",
+        "compressedBytes": 149127889,
+        "digest": "sha256:29783439f529eaed2145592f15af7a2281161528860392a382c825489030ae3a"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "72e5ffab0a3818dae8341be037c1020b81dda3f1bdd6d297ea5cf79e63125660"
+    },
+    {
+      "id": "cobol-modernization",
+      "metadata": {
+        "author_name": "Akshay Anand",
+        "author_email": "akshay_anand@berkeley.edu",
+        "difficulty": "easy",
+        "category": "software-engineering",
+        "tags": [
+          "coding"
+        ],
+        "expert_time_estimate_min": 20.0,
+        "junior_time_estimate_min": 70.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/cobol-modernization:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "cobol-modernization",
+        "compressedBytes": 162011504,
+        "digest": "sha256:593ab9df3d83f771e927888b2d9436b380cdf7ec4d0af2a9f0802d541edebba0"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "1fd0bbccf50b6da884722a8e47344e895c27dcd72dd4d25f71c9149c19d770f6"
+    },
+    {
+      "id": "code-from-image",
+      "metadata": {
+        "author_name": "Guanghao Ye",
+        "author_email": "ghye@mit.edu",
+        "difficulty": "medium",
+        "category": "software-engineering",
+        "tags": [
+          "ocr"
+        ],
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/code-from-image:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "code-from-image",
+        "compressedBytes": 44244747,
+        "digest": "sha256:2be9cdb746ed18c1b2b1404032efae0b2235a1b8fc479ef17730c95409d89f76"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "7e1de597de97583ae04b5a19c0ca4980d8411805a8ac19eaafe90690bc320155"
+    },
+    {
+      "id": "compile-compcert",
+      "metadata": {
+        "author_name": "Robert Zhang",
+        "author_email": "robertz@cs.utexas.edu",
+        "difficulty": "medium",
+        "category": "system-administration",
+        "tags": [
+          "compilation",
+          "compilers"
+        ],
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/compile-compcert:20251031",
+        "cpus": 2,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "compile-compcert",
+        "compressedBytes": 29723240,
+        "digest": "sha256:f316947b7be23ad0d187320126eb1cbb5685f48342c6543fdd3ac839aa9e1a7f"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "c738bb3165718218f52ed0c9358d2ad4a655585e31f41c289f43667578cda232"
+    },
+    {
+      "id": "configure-git-webserver",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "system-administration",
+        "tags": [
+          "system",
+          "version-control",
+          "web"
+        ],
+        "expert_time_estimate_min": 15.0,
+        "junior_time_estimate_min": 60.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/configure-git-webserver:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "configure-git-webserver",
+        "compressedBytes": 72338544,
+        "digest": "sha256:9e48389b917fd4650dda1f64406bd7198bbf20dc1c6b0e5c4d81a3c16369f88c"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "298088122efd6f1b15a3ce519921b1bba59f5a3f3c5e9e4d09a91cd052973e84"
+    },
+    {
+      "id": "constraints-scheduling",
+      "metadata": {
+        "author_name": "Derek Pham",
+        "author_email": "derek.pham@snorkel.ai",
+        "difficulty": "medium",
+        "category": "personal-assistant",
+        "tags": [
+          "calendar",
+          "scheduling",
+          "constraint-satisfaction",
+          "ics-parsing",
+          "temporal-reasoning"
+        ],
+        "estimated_duration_sec": 1800.0,
+        "expert_time_estimate_min": 15.0,
+        "junior_time_estimate_min": 30.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/constraints-scheduling:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "constraints-scheduling",
+        "compressedBytes": 49849705,
+        "digest": "sha256:567ce5a189f8d11ac461790876e934cc7af38391baf89a78f95f4dafc1fec3b0"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "6ab7956049c87e2a8121aaea62f61547fdc3b0cd941678179234579403b8293c"
+    },
+    {
+      "id": "count-dataset-tokens",
+      "metadata": {
+        "author_name": "Ryan Marten",
+        "author_email": "ryanmarten2000@gmail.com",
+        "difficulty": "medium",
+        "category": "model-training",
+        "tags": [
+          "machine-learning",
+          "data",
+          "datasets",
+          "tokenization",
+          "huggingface"
+        ],
+        "expert_time_estimate_min": 30,
+        "junior_time_estimate_min": 120
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/count-dataset-tokens:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "count-dataset-tokens",
+        "compressedBytes": 44164493,
+        "digest": "sha256:9c513c4ba342bd95be501f6f5eadd4806a2b18749c87c251615825100130232d"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "bcd1d1bb730d655621e229e8cc9c331de9bed0b1dd1f53772ce2f8399bc272a9"
+    },
+    {
+      "id": "crack-7z-hash",
+      "metadata": {
+        "author_name": "Jan-Lucas Uslu",
+        "author_email": "uslu@stanford.edu",
+        "difficulty": "medium",
+        "category": "security",
+        "tags": [
+          "decrypt",
+          "security",
+          "file-operations"
+        ],
+        "expert_time_estimate_min": 5.0,
+        "junior_time_estimate_min": 10.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/crack-7z-hash:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "crack-7z-hash",
+        "compressedBytes": 355841799,
+        "digest": "sha256:0f4453abd774c5a3d3d7e66ba28fae88ec2e49ada3a993b324ebc16c348666d3"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "32f1b05ed16443c732d375529996d9c6743e1cfcfc870aae6022625f200a534d"
+    },
+    {
+      "id": "custom-memory-heap-crash",
+      "metadata": {
+        "author_name": "Boxuan Li",
+        "author_email": "liboxuanhk@gmail.com",
+        "difficulty": "medium",
+        "category": "debugging",
+        "tags": [
+          "cpp",
+          "memory-management",
+          "debugging"
+        ],
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 1200.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/custom-memory-heap-crash:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "custom-memory-heap-crash",
+        "compressedBytes": 1267991521,
+        "digest": "sha256:1895d7d6240d5fb2ec774d6bfdd1057d170f8d199c15c582e4585d3c63802557"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "50109c119330695119e418b03e7a04041b05398ba14a2b7d7e5075c752befbbb"
+    },
+    {
+      "id": "db-wal-recovery",
+      "metadata": {
+        "author_name": "Xiangning Lin",
+        "author_email": "xiangnlin@alumni.cmu.edu",
+        "difficulty": "medium",
+        "category": "file-operations",
+        "tags": [
+          "database",
+          "encryption",
+          "recovery"
+        ],
+        "expert_time_estimate_min": 45.0,
+        "junior_time_estimate_min": 240.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/db-wal-recovery:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "db-wal-recovery",
+        "compressedBytes": 175272473,
+        "digest": "sha256:0e33ea5ec823975d1bd6c3778395c9f94251dd88f571146057bff6adb7e4594e"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "dda32f4bb610365b693337c9f31506ce3ad87727d1606692123c9454e5e2f42a"
+    },
+    {
+      "id": "distribution-search",
+      "metadata": {
+        "author_name": "Xuandong Zhao",
+        "author_email": "xuandongzhao@berkeley.edu",
+        "difficulty": "medium",
+        "category": "machine-learning",
+        "tags": [
+          "coding",
+          "statistics",
+          "machine-learning"
+        ],
+        "expert_time_estimate_min": 120.0,
+        "junior_time_estimate_min": 240.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/distribution-search:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "distribution-search",
+        "compressedBytes": 181095925,
+        "digest": "sha256:1448f7aa1c6080488251d00350e8e90477858989b1bec0accc866d7b3220738a"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "f3724a86b43cf95fa0aeccbfec172ed3ddd55960aaa5e6ef16609b719b39ad33"
+    },
+    {
+      "id": "dna-assembly",
+      "metadata": {
+        "author_name": "Karl Krauth",
+        "author_email": "kkt@stanford.edu",
+        "difficulty": "hard",
+        "category": "scientific-computing",
+        "tags": [
+          "biology",
+          "cloning"
+        ],
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 180.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/dna-assembly:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "dna-assembly",
+        "compressedBytes": 29724813,
+        "digest": "sha256:d1adf6835f1dd91205ba70e452c699d0aea601010038e5617f370716efb50569"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "2934d0d36e133c259aaa15810079388e59931043fc1cd66fa1ad5912373b6f4b"
+    },
+    {
+      "id": "dna-insert",
+      "metadata": {
+        "author_name": "Karl Krauth",
+        "author_email": "kkt@stanford.edu",
+        "difficulty": "medium",
+        "category": "scientific-computing",
+        "tags": [
+          "biology",
+          "cloning"
+        ],
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/dna-insert:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "dna-insert",
+        "compressedBytes": 29724629,
+        "digest": "sha256:4dd8760694e355de85ecf03605cb487ccdb33322f6afad513d2920829baa33b2"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "a8d82fbeca8c4bdfe218a26f930f52d28f0e3d220cd211b22685b16ee0916ccd"
+    },
+    {
+      "id": "extract-elf",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "medium",
+        "category": "file-operations",
+        "tags": [],
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 240.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/extract-elf:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "extract-elf",
+        "compressedBytes": 347385449,
+        "digest": "sha256:6932e4cb318464307eacd497ef8dc617eaf551b6a90231f815ec0b911895cfed"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "5b5f4fc3036631dbe5faca97895c3ecaea3fd72230a2f979f29ae61e97062bb4"
+    },
+    {
+      "id": "extract-moves-from-video",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "file-operations",
+        "tags": [
+          "file-operations",
+          "web",
+          "video-processing"
+        ],
+        "expert_time_estimate_min": 120.0,
+        "junior_time_estimate_min": 480.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/extract-moves-from-video:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "extract-moves-from-video",
+        "compressedBytes": 29723240,
+        "digest": "sha256:14a9dcca7d08ce53c5a0ed9fbd663a996ef28f207c199ed69d9ccf6064f8b184"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "41bfa38c22c954d4385174894511d62d6bef982fd92b11ca6e995393d6e51679"
+    },
+    {
+      "id": "feal-differential-cryptanalysis",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "mathematics",
+        "tags": [
+          "software-engineering"
+        ],
+        "expert_time_estimate_min": 480.0,
+        "junior_time_estimate_min": 19200.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/feal-differential-cryptanalysis:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "feal-differential-cryptanalysis",
+        "compressedBytes": 51631558,
+        "digest": "sha256:bea93bafe9eab601ca58729f5735a13f8339f52055322d1cf840e3742b54a287"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "1806e146244abfb92f7e15d89b45386522bde0f39498ecec1357ffc0e2252100"
+    },
+    {
+      "id": "feal-linear-cryptanalysis",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "mathematics",
+        "tags": [
+          "software-engineering"
+        ],
+        "expert_time_estimate_min": 960.0,
+        "junior_time_estimate_min": 19200.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/feal-linear-cryptanalysis:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "feal-linear-cryptanalysis",
+        "compressedBytes": 150821673,
+        "digest": "sha256:ea78749a8422c6228d26c8753f45906a6a2df089906764b7e3c3e27e8f718ee7"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "634c5f01059ac866c3d5c6076727a957e293af6294640dc55695c94f8976b7d3"
+    },
+    {
+      "id": "filter-js-from-html",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "medium",
+        "category": "security",
+        "tags": [
+          "security"
+        ],
+        "expert_time_estimate_min": 45.0,
+        "junior_time_estimate_min": 480.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/filter-js-from-html:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "filter-js-from-html",
+        "compressedBytes": 377962614,
+        "digest": "sha256:92acda0f124b988036a6f426ce0bc47fac19f5efe9fc5e6ea3ea52ccb075d0a4"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "00175543374036fbab83676c8e368f5c162b82a83e61b030983fb3f1b4809432"
+    },
+    {
+      "id": "financial-document-processor",
+      "metadata": {
+        "author_name": "Dariush Wahdany",
+        "author_email": "tbench@hey.wahdany.eu",
+        "difficulty": "medium",
+        "category": "data-processing",
+        "tags": [
+          "ocr",
+          "image-processing",
+          "financial",
+          "file-operations"
+        ],
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 60.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/financial-document-processor:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "financial-document-processor",
+        "compressedBytes": 51790066,
+        "digest": "sha256:ef6c9cfaaf14cdd200163008a188d5baa9f626f3bfb8d3e7d6f30c08518e6251"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "d836890873c060f466865a0a75fafac22baa6f872b3f090a4706f7d9a54ea35f"
+    },
+    {
+      "id": "fix-code-vulnerability",
+      "metadata": {
+        "author_name": "Yue Liu",
+        "author_email": "yliu@u.nus.edu",
+        "difficulty": "hard",
+        "category": "security",
+        "tags": [
+          "security",
+          "code-vulnerability",
+          "common-weakness-enumeration"
+        ],
+        "expert_time_estimate_min": 120.0,
+        "junior_time_estimate_min": 240.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/fix-code-vulnerability:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "fix-code-vulnerability",
+        "compressedBytes": 190685882,
+        "digest": "sha256:cac325252991f823713b2d0441502972901dd782bd67f66c03d9b1e410dac5c0"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "2c4401f15c5f0017b3e846825cc948c34c9a396a245bd608f3cd18669280c931"
+    },
+    {
+      "id": "fix-git",
+      "metadata": {
+        "author_name": "TheMikeMerrill",
+        "author_email": "mchlmerrill@gmail.com",
+        "difficulty": "easy",
+        "category": "software-engineering",
+        "tags": [
+          "coding",
+          "version-control"
+        ],
+        "expert_time_estimate_min": 5.0,
+        "junior_time_estimate_min": 20.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/fix-git:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "fix-git",
+        "compressedBytes": 158051230,
+        "digest": "sha256:61e431c00c58df652287aadce5457634d9f9330cfdd153ebdf2802df0d540119"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "e8f319d9553dc9eee680d13ae74d12f5127f30dda41b632e022096fe8b9e38f5"
+    },
+    {
+      "id": "fix-ocaml-gc",
+      "metadata": {
+        "author_name": "Sadiq Jaffer",
+        "author_email": "sj514@cam.ac.uk",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "troubleshooting"
+        ],
+        "expert_time_estimate_min": 1440.0,
+        "junior_time_estimate_min": 14400.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/fix-ocaml-gc:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "fix-ocaml-gc",
+        "compressedBytes": 765425815,
+        "digest": "sha256:66a1e2293076c9ef27a118611b3089a6284fdf467fd4675592d0cce7d11e5b0b"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "2d9ba66f968b4f6cc3ac5ce4653a38966cae10912e9759832d9a6a11aa01df6a"
+    },
+    {
+      "id": "gcode-to-text",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "medium",
+        "category": "file-operations",
+        "tags": [
+          "file-operations"
+        ],
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 300.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/gcode-to-text:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "gcode-to-text",
+        "compressedBytes": 45036582,
+        "digest": "sha256:0979ef40c6a3e8c4e7ab5b6c2524c74625a84799e15cd45dd98dcf83b11efd4d"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "393b63fc7a7dcf618391e10a2cdc81851d1e8becf05eb318f02c26d6638fd7f6"
+    },
+    {
+      "id": "git-leak-recovery",
+      "metadata": {
+        "author_name": "Yiwei Dai",
+        "author_email": "daiyiwei98@gmail.com",
+        "difficulty": "medium",
+        "category": "software-engineering",
+        "tags": [
+          "git",
+          "security"
+        ],
+        "estimated_duration_sec": 45.0,
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 60.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/git-leak-recovery:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "git-leak-recovery",
+        "compressedBytes": 95724176,
+        "digest": "sha256:62160e522a4238b8bcd522411ea97b5b200f811e5899d34947e66809bef7e586"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "a6f14b4568cbc4f32d45bf398a5ed67c17c13b3d78dd3cb7e2355e5f5237a2e3"
+    },
+    {
+      "id": "git-multibranch",
+      "metadata": {
+        "author_name": "Vedang",
+        "author_email": "vedangchannel1@gmail.com",
+        "difficulty": "medium",
+        "category": "system-administration",
+        "tags": [
+          "system",
+          "version-control",
+          "web"
+        ],
+        "expert_time_estimate_min": 180.0,
+        "junior_time_estimate_min": 360.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/git-multibranch:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "git-multibranch",
+        "compressedBytes": 222129979,
+        "digest": "sha256:5bc449921c138295f6ddd8dca2977319fee2ce523811dbe56cec4ca663385fb5"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "cef271223ec23b401386bd9cf59dd0d7297b8a6a59e915c231f42f67119866fd"
+    },
+    {
+      "id": "gpt2-codegolf",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [],
+        "expert_time_estimate_min": 2400.0,
+        "junior_time_estimate_min": 9600.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/gpt2-codegolf:20251031",
+        "cpus": 1,
+        "memory_mb": 8192,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "gpt2-codegolf",
+        "compressedBytes": 614179061,
+        "digest": "sha256:537e7bd26b02db5c761230515fa09dc05f89403c6737fbdae4b5793ebc2c7066"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "GPU or memory beyond local evaluation envelope",
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "a896582a272431ee90ab52904fb5990f40e0aa3881404d928905c86cb1d79103"
+    },
+    {
+      "id": "headless-terminal",
+      "metadata": {
+        "author_name": "Alex Shaw",
+        "author_email": "alexgshaw64@gmail.com",
+        "difficulty": "medium",
+        "category": "software-engineering",
+        "tags": [
+          "bash",
+          "terminal"
+        ],
+        "expert_time_estimate_min": 120.0,
+        "junior_time_estimate_min": 240.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/headless-terminal:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "headless-terminal",
+        "compressedBytes": 62277092,
+        "digest": "sha256:eb7e209672bf6cef2785fafd9e13509b10626c327bcc2b37f5bf40ca83eaf3aa"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "3d15d7b1c591bda5d72507d72b1c4c147afc3cc1d96b3588d6d4ed44c59a1564"
+    },
+    {
+      "id": "hf-model-inference",
+      "metadata": {
+        "author_name": "Junhong Shen",
+        "author_email": "unknown",
+        "difficulty": "medium",
+        "category": "data-science",
+        "tags": [
+          "api",
+          "coding",
+          "data-processing",
+          "data-science"
+        ],
+        "expert_time_estimate_min": 20.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/hf-model-inference:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "hf-model-inference",
+        "compressedBytes": 6185996249,
+        "digest": "sha256:f96dd7d3c85c7257b404fd63ba8d24ced2478cd90232c20e297c372f953fa607"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "a557f505b2888e6a279bf4731e9347acb437c2e17cfc4a7baface0767938deeb"
+    },
+    {
+      "id": "install-windows-3.11",
+      "metadata": {
+        "author_name": "Ivan Bercovich",
+        "author_email": "ibercovich@gmail.com",
+        "difficulty": "hard",
+        "category": "system-administration",
+        "tags": [
+          "virtualization",
+          "qemu",
+          "windows-3.11",
+          "vnc",
+          "sys-admin",
+          "retro-computing"
+        ],
+        "expert_time_estimate_min": 300.0,
+        "junior_time_estimate_min": 600.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/install-windows-3.11:20251031",
+        "cpus": 2,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "install-windows-3.11",
+        "compressedBytes": 573371248,
+        "digest": "sha256:c6695097316ef8810abce0545e347e65354aef9d51d4f7f662c3242e742f6a3e"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "7e57550e00375482c00f221e16a00d4b6a8c93eedafdea3b1a874079a4868439"
+    },
+    {
+      "id": "kv-store-grpc",
+      "metadata": {
+        "author_name": "Minghao Yan",
+        "author_email": "minghaoyan2@gmail.com",
+        "difficulty": "medium",
+        "category": "software-engineering",
+        "tags": [
+          "coding",
+          "file-operations",
+          "system"
+        ],
+        "expert_time_estimate_min": 15.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/kv-store-grpc:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "kv-store-grpc",
+        "compressedBytes": 44164493,
+        "digest": "sha256:3399400800dcb207634daa42bc1b052e831e285cc9d221eea66c47bc0fc79791"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "3106b58bc02a4261a634468495e84ef1c4bcef0be41cca68ca5f6d5db1f43edb"
+    },
+    {
+      "id": "large-scale-text-editing",
+      "metadata": {
+        "author_name": "Robert Zhang",
+        "author_email": "robertz@cs.utexas.edu",
+        "difficulty": "medium",
+        "category": "file-operations",
+        "tags": [
+          "text-editing",
+          "large-scale-text-manipulation",
+          "vim",
+          "vim-macros"
+        ],
+        "expert_time_estimate_min": 40.0,
+        "junior_time_estimate_min": 90.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/large-scale-text-editing:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "large-scale-text-editing",
+        "compressedBytes": 73308403,
+        "digest": "sha256:719adca3f1388220546ce6a155eee56eff3c4fe318183100320606a210f6b59c"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "51ee23552ca45ff6a07abba60973d9e00377a9570d69b62c44414a6b613070e2"
+    },
+    {
+      "id": "largest-eigenval",
+      "metadata": {
+        "author_name": "Zizhao Chen",
+        "author_email": "czz@cs.cornell.edu",
+        "difficulty": "medium",
+        "category": "mathematics",
+        "tags": [
+          "coding",
+          "optimization",
+          "constraint",
+          "numerical-approximation"
+        ],
+        "estimated_duration_sec": 210.0,
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 180.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/largest-eigenval:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "largest-eigenval",
+        "compressedBytes": 84686418,
+        "digest": "sha256:cb9e3e3b09d0783f3bbcfeec8d77bc32d3791204fb2be6650b19be4fbc082b2e"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "b5beb3587a9d82427f62375e390339eb6eee041bb5fd3c6e4ccbef2594f177de"
+    },
+    {
+      "id": "llm-inference-batching-scheduler",
+      "metadata": {
+        "author_name": "Changran Hu",
+        "author_email": "changran_hu@berkeley.edu",
+        "difficulty": "hard",
+        "category": "machine-learning",
+        "tags": [
+          "batching",
+          "inference",
+          "performance-optimization",
+          "scheduling"
+        ],
+        "expert_time_estimate_min": 45.0,
+        "junior_time_estimate_min": 450.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/llm-inference-batching-scheduler:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "llm-inference-batching-scheduler",
+        "compressedBytes": 44181013,
+        "digest": "sha256:19e79aa49be4e55dccca1dde966515ebe6852314b6010bcb9230afb48b996774"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "ad3f4bcafb51a115014d75ddc1e3e02ab82af813e5ce549a485d419d1fa361ce"
+    },
+    {
+      "id": "log-summary-date-ranges",
+      "metadata": {
+        "author_name": "Orfeas Menis Mastromichalakis",
+        "author_email": "menisorfeas@gmail.com",
+        "difficulty": "medium",
+        "category": "data-processing",
+        "tags": [
+          "log-analysis",
+          "report-generation",
+          "data-processing"
+        ],
+        "expert_time_estimate_min": 75.0,
+        "junior_time_estimate_min": 150.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/log-summary-date-ranges:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "log-summary-date-ranges",
+        "compressedBytes": 44857647,
+        "digest": "sha256:cbeb6ba905c2fec294f16cd5e16e3ea7f2e04d38ac2484d51a11de262aa7dc51"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "661759971f0695c6e5cc16b6df5d3cd62adc36b3001af35340e7c02292b5af49"
+    },
+    {
+      "id": "mailman",
+      "metadata": {
+        "author_name": "Zizhao Chen",
+        "author_email": "czz@cs.cornell.edu",
+        "difficulty": "medium",
+        "category": "system-administration",
+        "tags": [
+          "email-server",
+          "mailing-list"
+        ],
+        "estimated_duration_sec": 900.0,
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 180.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/mailman:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "mailman",
+        "compressedBytes": 161823791,
+        "digest": "sha256:04fac73db7e2b4f49d43f09fbc2266a94d70131f07efa1393d370abc059f4094"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "5fdbd42f7ca2547570c0a97fac07c2e92f386250503c9a74cadd8d466db32b21"
+    },
+    {
+      "id": "make-doom-for-mips",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "software-engineering"
+        ],
+        "expert_time_estimate_min": 480.0,
+        "junior_time_estimate_min": 1920.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/make-doom-for-mips:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "make-doom-for-mips",
+        "compressedBytes": 189544020,
+        "digest": "sha256:80a9459f1b94b692ea8346f68e6b864f6c4d984fbdf6ffd68ad332308300c2ec"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "55a326989f8c1208f6cf3c8093226099c0662165341451b8eaed9fb531d61e2f"
+    },
+    {
+      "id": "make-mips-interpreter",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "software-engineering"
+        ],
+        "expert_time_estimate_min": 480.0,
+        "junior_time_estimate_min": 3600.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/make-mips-interpreter:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "make-mips-interpreter",
+        "compressedBytes": 518964876,
+        "digest": "sha256:082fc8821b317f30fdfbf8d08d528874ce331c03e8083aef0406d48cdd7132a2"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "9404b31c1d3223f91a0cd307dc9a7177ebf258859dda7a0a7b2af3f551bcd22d"
+    },
+    {
+      "id": "mcmc-sampling-stan",
+      "metadata": {
+        "author_name": "Zhiwei Xu",
+        "author_email": "zhiweixu@umich.edu",
+        "difficulty": "hard",
+        "category": "data-science",
+        "tags": [
+          "R",
+          "stan",
+          "bayesian-statistics",
+          "mcmc"
+        ],
+        "expert_time_estimate_min": 180.0,
+        "junior_time_estimate_min": 2880.0,
+        "custom_docker_compose": true,
+        "moved_workdir_from_compose_to_dockerfile": true
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/mcmc-sampling-stan:20251031",
+        "cpus": 4,
+        "memory_mb": 8192,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "mcmc-sampling-stan",
+        "compressedBytes": 237648324,
+        "digest": "sha256:073fc36a3347b4f6b43bd6e98339542c41ed531c771af8bee40ba10f00cfabaf"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "GPU or memory beyond local evaluation envelope"
+      ],
+      "selectionKey": "215adb0582e19104a2bfcfae9ded72e1bdb3753f1666036c82fca796dd2a50ea"
+    },
+    {
+      "id": "merge-diff-arc-agi-task",
+      "metadata": {
+        "author_name": "Zhi Wang",
+        "author_email": "zhw119@ucsd.edu",
+        "difficulty": "medium",
+        "category": "debugging",
+        "tags": [
+          "git",
+          "coding"
+        ],
+        "expert_time_estimate_min": 20.0,
+        "junior_time_estimate_min": 40.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/merge-diff-arc-agi-task:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "merge-diff-arc-agi-task",
+        "compressedBytes": 29725592,
+        "digest": "sha256:bfc2a235f2ceea64ffb1ffc5529c2acebf570bff61f3668f0e5669ef570c17d4"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "ca05eb4ef42170e53be10f6faab1a391ffd2db9b0739aa644aba22533254f9cf"
+    },
+    {
+      "id": "model-extraction-relu-logits",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "mathematics",
+        "tags": [
+          "security"
+        ],
+        "expert_time_estimate_min": 480.0,
+        "junior_time_estimate_min": 2400.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/model-extraction-relu-logits:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "model-extraction-relu-logits",
+        "compressedBytes": 83690938,
+        "digest": "sha256:52fe1f089f38650f0dc22d7531ee6e01ebd526de1b349aaa2ecb331dca9fabce"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "b1a6c972a31bbd593e4563921be7f4ee1ef568ea1338e277c3bef6687536601c"
+    },
+    {
+      "id": "modernize-scientific-stack",
+      "metadata": {
+        "author_name": "Jianbo Wu",
+        "author_email": "wujianbo99999@gmail.com",
+        "difficulty": "medium",
+        "category": "scientific-computing",
+        "tags": [
+          "python-migration",
+          "scientific-computing",
+          "legacy-modernization",
+          "climate-science",
+          "data-processing"
+        ],
+        "estimated_duration_sec": 300.0,
+        "expert_time_estimate_min": 120.0,
+        "junior_time_estimate_min": 240.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/modernize-scientific-stack:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "modernize-scientific-stack",
+        "compressedBytes": 346662397,
+        "digest": "sha256:64e69cee13bf6b0b9016e735b51891bce996a60f1e2d1a005bf12c949e221d71"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "58310a65be3b9b34c33ab5939c33cc9b8742afcf7130e109088e2207dfd33df0"
+    },
+    {
+      "id": "mteb-leaderboard",
+      "metadata": {
+        "author_name": "Niklas Muennighoff",
+        "author_email": "n.muennighoff@gmail.com",
+        "difficulty": "medium",
+        "category": "data-science",
+        "tags": [
+          "retrieval",
+          "mteb"
+        ],
+        "expert_time_estimate_min": 5.0,
+        "junior_time_estimate_min": 10.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/mteb-leaderboard:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "mteb-leaderboard",
+        "compressedBytes": 8820321042,
+        "digest": "sha256:968de9456bfc53728f7df0cb6c9ce33e17bd0e5563ddfe031e6ed2964965aecf"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "2a46e91de53509cdf84bb63533b5b3ee3257bb255c206816c613650d01c27ae9"
+    },
+    {
+      "id": "mteb-retrieve",
+      "metadata": {
+        "author_name": "Niklas Muennighoff",
+        "author_email": "n.muennighoff@gmail.com",
+        "difficulty": "medium",
+        "category": "data-science",
+        "tags": [
+          "data-processing",
+          "data-science",
+          "mteb"
+        ],
+        "expert_time_estimate_min": 15.0,
+        "junior_time_estimate_min": 45.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/mteb-retrieve:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "mteb-retrieve",
+        "compressedBytes": 8810527785,
+        "digest": "sha256:99dd676a21fd3124b7b8164cd93e8f0c51f1fdab2f84a831c61049eff78d063d"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "87581f710c9570e37946f9c24386806fc64f199439804cd0b5af0f6f3483a5ab"
+    },
+    {
+      "id": "multi-source-data-merger",
+      "metadata": {
+        "author_name": "Xin Lan",
+        "author_email": "xl2681@columbia.edu",
+        "difficulty": "medium",
+        "category": "data-processing",
+        "tags": [
+          "data-processing",
+          "etl",
+          "schema-mapping",
+          "conflict-resolution",
+          "pandas",
+          "parquet"
+        ],
+        "estimated_duration_sec": 1800.0,
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/multi-source-data-merger:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "multi-source-data-merger",
+        "compressedBytes": 220871490,
+        "digest": "sha256:8b32782078ff7383a1b4e5d3cecca8ce287e30f50bb4c0e5db009a18064e666e"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "a6bfb29e45c360b0a64dd8708938850c85ebf617e0a30788c2d6b748f152209b"
+    },
+    {
+      "id": "nginx-request-logging",
+      "metadata": {
+        "author_name": "Junhong Shen",
+        "author_email": "junhongs@andrew.cmu.edu",
+        "difficulty": "medium",
+        "category": "system-administration",
+        "tags": [
+          "web-server"
+        ],
+        "expert_time_estimate_min": 20.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/nginx-request-logging:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "nginx-request-logging",
+        "compressedBytes": 67277698,
+        "digest": "sha256:693e64431a0dbf45952e8b91a298d54fd60247e501c6623fb8fa3ebc07fc3d3d"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "4a96945f0caf09b9c48215b067a7e541f64f49797d8ea843ceaadba98578c176"
+    },
+    {
+      "id": "openssl-selfsigned-cert",
+      "metadata": {
+        "author_name": "Junhong Shen",
+        "author_email": "unknown",
+        "difficulty": "medium",
+        "category": "security",
+        "tags": [
+          "coding",
+          "file-operations",
+          "security",
+          "system"
+        ],
+        "expert_time_estimate_min": 20.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/openssl-selfsigned-cert:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "openssl-selfsigned-cert",
+        "compressedBytes": 44165464,
+        "digest": "sha256:4c948a4e630af2435ae0a19108fc0814a946ac2fa29a512469e0fc77b38c8c12"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "a01c40a0fed4ad96350ca8ed622d615d4c62a26592de534625bec73778a0525b"
+    },
+    {
+      "id": "overfull-hbox",
+      "metadata": {
+        "author_name": "Sam Buchanan",
+        "author_email": "sdbuchanan@berkeley.edu",
+        "difficulty": "easy",
+        "category": "debugging",
+        "tags": [
+          "latex",
+          "document-processing",
+          "combinatorial-optimization"
+        ],
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 60.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/overfull-hbox:20251031",
+        "cpus": 2,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "overfull-hbox",
+        "compressedBytes": 131844457,
+        "digest": "sha256:67fe0ccc0ff2305d6fcb3652977d377b901bb7bd96904b6765835935574992e1"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "cde433a089f23840dfd1dfd5cda7efb9aadc95098aab038b3b359db405c1d1b8"
+    },
+    {
+      "id": "password-recovery",
+      "metadata": {
+        "author_name": "Harsh Raj",
+        "author_email": "harsh777111raj@gmail.com",
+        "difficulty": "hard",
+        "category": "security",
+        "tags": [
+          "system",
+          "file-operations",
+          "troubleshooting"
+        ],
+        "expert_time_estimate_min": 100.0,
+        "junior_time_estimate_min": 300.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/password-recovery:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "password-recovery",
+        "compressedBytes": 62185367,
+        "digest": "sha256:15fcd84bf3b06270ee148211cc6da6599b13ec2f41ac1d0894cf75c2225872ee"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "5dfa97c3f9f8ff0c0b2a3716b935eb2e57c57912bab3b5e3b2ca9d705c216da0"
+    },
+    {
+      "id": "path-tracing",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "images"
+        ],
+        "expert_time_estimate_min": 360.0,
+        "junior_time_estimate_min": 2400.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/path-tracing:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "path-tracing",
+        "compressedBytes": 399386034,
+        "digest": "sha256:4b44725102cd627dfa895191a5a30d16dae3c5623bb43da6459f79135db6b482"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "e36a4b25541f363dbed02de3005f5a571ebad978160c46e614ae04f5e0fa31c7"
+    },
+    {
+      "id": "path-tracing-reverse",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "images"
+        ],
+        "expert_time_estimate_min": 120.0,
+        "junior_time_estimate_min": 1440.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/path-tracing-reverse:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "path-tracing-reverse",
+        "compressedBytes": 170980081,
+        "digest": "sha256:7911e42479d8f6d8af1248bc52442a0efbc5a33e3ecf535fdc20d252a2c64142"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "56e9966640e52616d54b907059336ef9c87aa95a0cf4cbd2b4d29cdb7c8fa460"
+    },
+    {
+      "id": "polyglot-c-py",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "medium",
+        "category": "software-engineering",
+        "tags": [
+          "coding"
+        ],
+        "expert_time_estimate_min": 20.0,
+        "junior_time_estimate_min": 480.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/polyglot-c-py:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "polyglot-c-py",
+        "compressedBytes": 148540671,
+        "digest": "sha256:0f1c3b7816d70cf5551573fd6aeef76893f2ae3000be2419997b6871b5d987ed"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "2c39d6b6c3fb7425c0f5d9c856dc1e5c250dbdeadaabe351e592e4a687477577"
+    },
+    {
+      "id": "polyglot-rust-c",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "coding",
+          "no-verified-solution"
+        ],
+        "expert_time_estimate_min": 180.0,
+        "junior_time_estimate_min": 720.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/polyglot-rust-c:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "polyglot-rust-c",
+        "compressedBytes": 271241474,
+        "digest": "sha256:3ba84f0e138a4b65e58c53f920a0fc852571e6402901c3bdbb876e9dab6e6c5e"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "1ef721eef0ddb3cedfc2f87d130c0414bb8b85ef23b6eb56ccf307f3154ebf1c"
+    },
+    {
+      "id": "portfolio-optimization",
+      "metadata": {
+        "author_name": "Yanhao Li",
+        "author_email": "liyanhao@stu.pku.edu.cn",
+        "difficulty": "medium",
+        "category": "optimization",
+        "tags": [
+          "c-programming",
+          "python-extension",
+          "optimization"
+        ],
+        "expert_time_estimate_min": 120.0,
+        "junior_time_estimate_min": 480.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/portfolio-optimization:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "portfolio-optimization",
+        "compressedBytes": 196450772,
+        "digest": "sha256:93461db3cec697c31585941a3b9387c1398495aa1ff0aee2ac752c7230b50ef8"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "ad468d2a50f757a594d7341a375b4f7b3519bd1f461c2ff26f1f23e0a9f1ebf3"
+    },
+    {
+      "id": "protein-assembly",
+      "metadata": {
+        "author_name": "Karl Krauth",
+        "author_email": "kkt@stanford.edu",
+        "difficulty": "hard",
+        "category": "scientific-computing",
+        "tags": [
+          "biology",
+          "cloning",
+          "proteins"
+        ],
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 300.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/protein-assembly:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "protein-assembly",
+        "compressedBytes": 44167917,
+        "digest": "sha256:94de701b57e7ecfdbada6044f8534876e4b58874f8f313184dadc4d7533e0818"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "f64a39c34b82a7030fbfa487ff6ea4a841cb4f236ac6d0fce204fe03d8291181"
+    },
+    {
+      "id": "prove-plus-comm",
+      "metadata": {
+        "author_name": "TheMikeMerrill",
+        "author_email": "mchlmerrill@gmail.com",
+        "difficulty": "easy",
+        "category": "software-engineering",
+        "tags": [
+          "coding"
+        ],
+        "expert_time_estimate_min": 5.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/prove-plus-comm:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "prove-plus-comm",
+        "compressedBytes": 491449847,
+        "digest": "sha256:e26741d01681a9da1beeff8b7b7b65fe2b921b8b122a306a3707a81ebd051f73"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "7cb77ace1203e7b66ab4ce1ca62c4fa6965451c6daefa923fae7031543694fa2"
+    },
+    {
+      "id": "pypi-server",
+      "metadata": {
+        "author_name": "Anurag Kashyap",
+        "author_email": "anurag1457@gmail.com",
+        "difficulty": "medium",
+        "category": "software-engineering",
+        "tags": [
+          "coding",
+          "system"
+        ],
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 180.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/pypi-server:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "pypi-server",
+        "compressedBytes": 83717494,
+        "digest": "sha256:d18bb30f47c7dcaa3acdbc31ac7413c98eadca2ea16540bbd380f2f063b95276"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "a1807ba2168349e13e721581988f91cc9ab913756bb0dcbc5bdbf704ed833e71"
+    },
+    {
+      "id": "pytorch-model-cli",
+      "metadata": {
+        "author_name": "Jan-Lucas Uslu",
+        "author_email": "uslu@stanford.edu",
+        "difficulty": "medium",
+        "category": "model-training",
+        "tags": [
+          "coding",
+          "C",
+          "pytorch"
+        ],
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/pytorch-model-cli:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "pytorch-model-cli",
+        "compressedBytes": 44342024,
+        "digest": "sha256:c996884b5fb5fb2c0c07d67da2c4f974f271f07234ed28e1a868240375c57a67"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "f829d65cce22f5b0d1ea78fbc65e5291ba79065da244228b9f771c4d96deca60"
+    },
+    {
+      "id": "pytorch-model-recovery",
+      "metadata": {
+        "author_name": "Akshay Anand",
+        "author_email": "akshay_anand@berkeley.edu",
+        "difficulty": "medium",
+        "category": "model-training",
+        "tags": [
+          "coding",
+          "pytorch",
+          "machine-learning"
+        ],
+        "expert_time_estimate_min": 15.0,
+        "junior_time_estimate_min": 70.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/pytorch-model-recovery:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "pytorch-model-recovery",
+        "compressedBytes": 6103392088,
+        "digest": "sha256:83efba8d1a163dfe62694789e271ed55010509b6deabbf2d7d6472b40ca8d69a"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "7ad3312fa74a37fca22122af0da814a8078635362e67bb21e00033b91b834016"
+    },
+    {
+      "id": "qemu-alpine-ssh",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "medium",
+        "category": "system-administration",
+        "tags": [
+          "sys-admin"
+        ],
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 480.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/qemu-alpine-ssh:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "qemu-alpine-ssh",
+        "compressedBytes": 1308549973,
+        "digest": "sha256:541e8214a8c4faa7b556531b899d45da21048fa2ca6dd328d8cb6c4cffa8e964"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "8f1f8137f2af1c40e61566a5342be2203179ccb16b2971b03b06044be00e5108"
+    },
+    {
+      "id": "qemu-startup",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "medium",
+        "category": "system-administration",
+        "tags": [
+          "sys-admin"
+        ],
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 480.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/qemu-startup:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "qemu-startup",
+        "compressedBytes": 1308549973,
+        "digest": "sha256:1a666e049db553c5e713830b1f5de1953210ab7c99212d006bb4e46cbc6b6d04"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "5d99ef1bc59cf5a01a930583e5d2ceead5a7fd9ac70c2ab0bfe62abfe677b91e"
+    },
+    {
+      "id": "query-optimize",
+      "metadata": {
+        "author_name": "Shreyas Pimpalgaonkar",
+        "author_email": "shreyas@bespokelabs.ai",
+        "difficulty": "medium",
+        "category": "data-science",
+        "tags": [
+          "query-optimization",
+          "sql-query"
+        ],
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 480.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/query-optimize:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "query-optimize",
+        "compressedBytes": 120490320,
+        "digest": "sha256:28de7da87004eab5b29bd5eaf1823579bc5b73ccea4b80349a5623185770da14"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "1a2a362e5cbaec9e98218fba58519886550164aeb947f9279508c5683708ece5"
+    },
+    {
+      "id": "raman-fitting",
+      "metadata": {
+        "author_name": "Jan-Lucas Uslu",
+        "author_email": "uslu@stanford.edu",
+        "difficulty": "medium",
+        "category": "scientific-computing",
+        "tags": [
+          "coding",
+          "fitting",
+          "analysis",
+          "physics"
+        ],
+        "expert_time_estimate_min": 5.0,
+        "junior_time_estimate_min": 30.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/raman-fitting:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "raman-fitting",
+        "compressedBytes": 44205352,
+        "digest": "sha256:401fa95d5d491f44a473eda9d2c52930f9565cc889c796eabcb6e20fec26852e"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "4d8085d98b196c6895c9ae76a37650e389e45a7855e1c7271f61c0011ebf9c4a"
+    },
+    {
+      "id": "regex-chess",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "software-engineering"
+        ],
+        "expert_time_estimate_min": 1440.0,
+        "junior_time_estimate_min": 4800.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/regex-chess:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "regex-chess",
+        "compressedBytes": 55617575,
+        "digest": "sha256:e3b6d61d2d3930fbbdc5f7bf091a7f8b7f6125e1951ef8a7dbe165b1ef62942c"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "686206fa8a9c9ae409437fb3ff3e5af6f600a2779cdb339fc5d0dee89023b6b5"
+    },
+    {
+      "id": "regex-log",
+      "metadata": {
+        "author_name": "Orfeas Menis Mastromichalakis",
+        "author_email": "menisorfeas@gmail.com",
+        "difficulty": "medium",
+        "category": "data-processing",
+        "tags": [
+          "regex",
+          "string-parsing",
+          "log-analysis"
+        ],
+        "expert_time_estimate_min": 45.0,
+        "junior_time_estimate_min": 180.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/regex-log:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "regex-log",
+        "compressedBytes": 29723240,
+        "digest": "sha256:90101b2e815323a8da20528a1439bebc407eb9761c9c68a3d557730856c878e9"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "f791ce568b2f242855d8f523f1b68e241a063759825913696b025dfa3f65488c"
+    },
+    {
+      "id": "reshard-c4-data",
+      "metadata": {
+        "author_name": "jeffreywpli / dwahdany",
+        "author_email": "unknown",
+        "difficulty": "medium",
+        "category": "data-science",
+        "tags": [
+          "coding",
+          "data-processing",
+          "file-operations"
+        ],
+        "expert_time_estimate_min": 30,
+        "junior_time_estimate_min": 60
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/reshard-c4-data:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "reshard-c4-data",
+        "compressedBytes": 1432498021,
+        "digest": "sha256:92d209e704785e17ad6b3f740e813dd72bc7ac33982ce435d197ab9d890eac2a"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "5b5cc5c5dc9bf83975bf3570f8f7a9b009e0be10225c2c86c1ba11bc724e666e"
+    },
+    {
+      "id": "rstan-to-pystan",
+      "metadata": {
+        "author_name": "Zhiwei Xu",
+        "author_email": "zhiweixu@umich.edu",
+        "difficulty": "medium",
+        "category": "data-science",
+        "tags": [
+          "pystan",
+          "rstan",
+          "gaussian-process"
+        ],
+        "expert_time_estimate_min": 180.0,
+        "junior_time_estimate_min": 2880.0,
+        "custom_docker_compose": true,
+        "moved_workdir_from_compose_to_dockerfile": true
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/rstan-to-pystan:20251031",
+        "cpus": 4,
+        "memory_mb": 8192,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "rstan-to-pystan",
+        "compressedBytes": 50931626,
+        "digest": "sha256:b23d48839408524326095c15ada4145c772b87646cf299022ff1f58c97baba91"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "GPU or memory beyond local evaluation envelope"
+      ],
+      "selectionKey": "b58e5699d0ed432f6121286112dadddc3b3004b7b1d67f91a5980be328f778ef"
+    },
+    {
+      "id": "sam-cell-seg",
+      "metadata": {
+        "author_name": "Gabriel Dreiman",
+        "author_email": "gdreiman1@gmail.com",
+        "difficulty": "hard",
+        "category": "data-science",
+        "tags": [
+          "image-processing",
+          "machine-learning",
+          "histopathology"
+        ],
+        "expert_time_estimate_min": 600.0,
+        "junior_time_estimate_min": 1200.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/sam-cell-seg:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "sam-cell-seg",
+        "compressedBytes": 411493212,
+        "digest": "sha256:d76bdeef19d8113f4094013249c982eca93e62e46130484846269b2d378879d0"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "7a8f2b0aa57a58b142462a58a15548a2074948b673125c582d0ec5e63b05755e"
+    },
+    {
+      "id": "sanitize-git-repo",
+      "metadata": {
+        "author_name": "jeffreywpli",
+        "author_email": "unknown",
+        "difficulty": "medium",
+        "category": "security",
+        "tags": [
+          "security",
+          "system",
+          "version-control"
+        ],
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 60.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/sanitize-git-repo:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "sanitize-git-repo",
+        "compressedBytes": 202928151,
+        "digest": "sha256:4b5234da5bb0d67f3b0bf8db40a2883c07a5219f62b64c2bf9ff1ac84cd0f672"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "8ca675e4ba724161ecbb965ccb59d54a04881f74bedb299684a2c88d7ea12028"
+    },
+    {
+      "id": "schemelike-metacircular-eval",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "medium",
+        "category": "software-engineering",
+        "tags": [
+          "software-engineering"
+        ],
+        "expert_time_estimate_min": 300.0,
+        "junior_time_estimate_min": 2440.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/schemelike-metacircular-eval:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "schemelike-metacircular-eval",
+        "compressedBytes": 44180314,
+        "digest": "sha256:b485be38bf80d56c1a4cd9da95bbf7ec129dc03f6786b86c0525518a96f6d1db"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "65b93a5ec905b8d8b4c00ffd9056a253fe7c1bf3a4fb25f19749bb6d7ed47b14"
+    },
+    {
+      "id": "sparql-university",
+      "metadata": {
+        "author_name": "Orfeas Menis Mastromichalakis",
+        "author_email": "menisorfeas@gmail.com",
+        "difficulty": "hard",
+        "category": "data-querying",
+        "tags": [
+          "knowledge-graph",
+          "sparql-query",
+          "information-retrieval"
+        ],
+        "expert_time_estimate_min": 800.0,
+        "junior_time_estimate_min": 10000.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/sparql-university:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "sparql-university",
+        "compressedBytes": 29725003,
+        "digest": "sha256:92fa4304e51167f9fb4466144eba33ef9272a7df0ac1cab9fc3986bccd1ab708"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "fb8d9e7bfd6d2f921610bf1f3388c4d277b713a530cd0f2fe68b67aa687c88e6"
+    },
+    {
+      "id": "sqlite-db-truncate",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "medium",
+        "category": "debugging",
+        "tags": [
+          "file-operations"
+        ],
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 240.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/sqlite-db-truncate:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "sqlite-db-truncate",
+        "compressedBytes": 44164774,
+        "digest": "sha256:aabac93c93bd1f310e6a6fb893911d7735026ed18491c72133c9196a09092ca4"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "337a4c5c46d9a4cbcdc4c2ee4723c0ef3ba85e0f04007b465670ddb0155e54a8"
+    },
+    {
+      "id": "sqlite-with-gcov",
+      "metadata": {
+        "author_name": "Mike Merrill",
+        "author_email": "mchlmerrill@gmail.com",
+        "difficulty": "medium",
+        "category": "system-administration",
+        "tags": [
+          "software-installation",
+          "system"
+        ],
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/sqlite-with-gcov:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "sqlite-with-gcov",
+        "compressedBytes": 42276070,
+        "digest": "sha256:f986820b00c74ce75db7288719d364df313fde7c7917bea6eb6352a08431a89f"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "a2c65b725e27a39d50bdc17a488bbcccb811f2011f8966111ba75a92342bfcd5"
+    },
+    {
+      "id": "torch-pipeline-parallelism",
+      "metadata": {
+        "author_name": "Eric Wang",
+        "author_email": "flpha0830@gmail.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "system"
+        ],
+        "expert_time_estimate_min": 240.0,
+        "junior_time_estimate_min": 1200.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/torch-pipeline-parallelism:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "torch-pipeline-parallelism",
+        "compressedBytes": 29723240,
+        "digest": "sha256:3cb7b39d86f1704b20e668851da0b08b34b3270c01d583f136d65190984a8d1b"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "a9d513f1f8c1c6a7bf8b618f75f20d1bb8478e201288de70a5ac9887b6968055"
+    },
+    {
+      "id": "torch-tensor-parallelism",
+      "metadata": {
+        "author_name": "Eric Wang",
+        "author_email": "flpha0830@gmail.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "system"
+        ],
+        "expert_time_estimate_min": 240.0,
+        "junior_time_estimate_min": 1200.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/torch-tensor-parallelism:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "torch-tensor-parallelism",
+        "compressedBytes": 29723240,
+        "digest": "sha256:c50ac169e11465f41b49749fe87e4487f24d31a0c39c0906cd3242cc5499c690"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "b226b8d1f86295a0eed10f1bf0b2f68be887cdbd6fbe90299edbe214255b7957"
+    },
+    {
+      "id": "train-fasttext",
+      "metadata": {
+        "author_name": "jeffreywpli",
+        "author_email": "unknown",
+        "difficulty": "hard",
+        "category": "model-training",
+        "tags": [
+          "data-processing",
+          "data-science"
+        ],
+        "expert_time_estimate_min": 30,
+        "junior_time_estimate_min": 90
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/train-fasttext:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "train-fasttext",
+        "compressedBytes": 509007650,
+        "digest": "sha256:3c77da9617e7fa577de04aef73fb1ac3114be32d7ffef72609c83929d842b157"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [
+        "Image unavailable or compressed layers beyond 350 MiB"
+      ],
+      "selectionKey": "90e63f700368eb930f84aeac210cd932f8d21e06f7580e870c89484a71a66a87"
+    },
+    {
+      "id": "tune-mjcf",
+      "metadata": {
+        "author_name": "Zizhao Chen",
+        "author_email": "czz@cs.cornell.edu",
+        "difficulty": "medium",
+        "category": "scientific-computing",
+        "tags": [
+          "mujoco",
+          "physics",
+          "simulation",
+          "numerical-optimization"
+        ],
+        "estimated_duration_sec": 210.0,
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/tune-mjcf:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "tune-mjcf",
+        "compressedBytes": 80255067,
+        "digest": "sha256:56c197739db2db79562384581fcc9d3d71e6c171bf052104b1a7ee0282e7c3cf"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "bdac0c38dbdc06dee0983a1c51a298e3d773fcc276e0624feb331c6c81bd8215"
+    },
+    {
+      "id": "video-processing",
+      "metadata": {
+        "author_name": "Ivan Bercovich",
+        "author_email": "ibercovich@gmail.com",
+        "difficulty": "hard",
+        "category": "video-processing",
+        "tags": [
+          "video-processing"
+        ],
+        "expert_time_estimate_min": 400.0,
+        "junior_time_estimate_min": 1000.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/video-processing:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "video-processing",
+        "compressedBytes": 311869882,
+        "digest": "sha256:a2c0f39e3ab04e67ac6e49cad9167bb0d987babe32511768c01aa0c6905a875f"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "b3ac4cbfa196cac458441aac9fa59c9742206d64edf4f7d6c36ffe320cb96cf1"
+    },
+    {
+      "id": "vulnerable-secret",
+      "metadata": {
+        "author_name": "Justin Bauer",
+        "author_email": "justin.bauer@snorkel.ai",
+        "difficulty": "medium",
+        "category": "security",
+        "tags": [
+          "security",
+          "file-operations"
+        ],
+        "expert_time_estimate_min": 20.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/vulnerable-secret:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "vulnerable-secret",
+        "compressedBytes": 133922796,
+        "digest": "sha256:61ebb40454dd103aa2f7e71ad6dafd91cf2b301e6bb07e69d5b472412d1ee15b"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "e2d1d605937438b1eaf653d283d9c2207d2f0af1f5f36b78f5b2f54a3185e10a"
+    },
+    {
+      "id": "winning-avg-corewars",
+      "metadata": {
+        "author_name": "Jeong Shin",
+        "author_email": "jeongshin@alumni.stanford.edu",
+        "difficulty": "medium",
+        "category": "software-engineering",
+        "tags": [
+          "pmars",
+          "corewars",
+          "gaming"
+        ],
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 240.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/winning-avg-corewars:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "winning-avg-corewars",
+        "compressedBytes": 293666981,
+        "digest": "sha256:ad7a6b1c53aed59e10916c692aa7e2ae00042a4283187430aee1e3e79f72d5c6"
+      },
+      "seenBeforeCampaign": false,
+      "exclusions": [],
+      "selectionKey": "93029710c6c98f9f850335c8fd37a78712e28966634fbb841599570556960dc9"
+    },
+    {
+      "id": "write-compressor",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "coding"
+        ],
+        "expert_time_estimate_min": 1440.0,
+        "junior_time_estimate_min": 4800.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/write-compressor:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "write-compressor",
+        "compressedBytes": 291923729,
+        "digest": "sha256:3618e1f8a997b437c09cd3dbaac736705809c05f6f12f584b65722175970ebe1"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "449b55815db6228fc436b3f15b4e72f8ceb693b3e47fa94b06d08b5e0d63da78"
+    }
+  ],
+  "eligibility": "Same frozen CPU/memory/image envelope as global campaign; exclude every previously attempted local task and previously contaminated POV-Ray."
+}

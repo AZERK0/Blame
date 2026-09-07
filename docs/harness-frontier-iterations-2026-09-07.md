@@ -1,6 +1,6 @@
 # Itérations du harness — 7 septembre 2026
 
-Neuf nouveaux essais diagnostiques sont terminés ; neuf autres sont en cours. Aucun dépassement global de Cline n'est annoncé à ce stade. La comparaison des 108 essais précédents reste inchangée et ses résultats négatifs sont conservés dans [le rapport initial](harness-global-measurement-2026-09-06.md).
+Dix-huit nouveaux essais diagnostiques sont terminés ; une confirmation de 36 essais est en cours. Aucun dépassement global de Cline n'est annoncé à ce stade. La comparaison des 108 essais précédents reste inchangée et ses résultats négatifs sont conservés dans [le rapport initial](harness-global-measurement-2026-09-06.md).
 
 ## Première itération : résultats mesurés
 
@@ -48,9 +48,23 @@ Les limites par commande diffèrent entre les outils natifs : 30 secondes pour C
 
 Une sélection indépendante de six tâches jamais essayées localement est enregistrée avant les nouveaux résultats : `regex-chess`, `circuit-fibsqrt`, `overfull-hbox`, `compile-compcert`, `sparql-university`, `sanitize-git-repo`. Elle utilise des quotas de catégories et l'ordre SHA256 de `Blame-holdout-20260907-v1:` suivi du nom. La liste complète des candidats, des exclusions et des tâches déjà essayées est conservée dans `.blame/benchmarks/harness-iterations-20260907/holdout-selection.json`. Cette sélection ne constitue pas encore une campagne exécutée.
 
-## Deuxième itération figée
+## Deuxième itération : résultats et corrections
 
 Le bundle issu de `8ef307f4` porte l'empreinte `a6fbf121a6b00c8dd67e93e3d9c74879352442049fe35e701752abb69ffed5dd`. Neuf essais sur G-code, l'annulation asynchrone et Cython comparent V1, V2 et Cline contemporain. La nouvelle mesure Cython conserve l'échec de transport précédent dans sa campagne d'origine. Le modèle, les ressources et l'absence de retries restent identiques.
+
+| Tâche | V1 : succès / secondes / tokens | V2 : succès / secondes / tokens | Cline : succès / secondes / tokens |
+| --- | ---: | ---: | ---: |
+| Cython | 1 / 314,2 / 1 057 752 | 1 / 278,4 / 812 679 | 0 / 489,6 / inconnus |
+| Annulation asynchrone | 1 / 40,4 / 10 491 | 1 / 52,6 / 13 726 | 1 / 195,4 / 65 349 |
+| G-code | 0 / 165,7 / 172 054 | 0 / 31,4 / 35 892 | 0 / 525,4 / 582 373 |
+
+V2 et V1 réussissent 2/3, Cline 1/3. Le nouvel échec Cline sur Cython est un arrêt du runtime commun après deux fenêtres de 240 secondes sans activité, sans appel d'outil ni relevé fournisseur complet. La trace ne distingue pas une attente du modèle d'une interruption du transport. Le message d'erreur indique seulement une fenêtre de 240 secondes ; les horodatages et le code établissent huit minutes au total. Cet échec n'établit pas une différence de compétence sur Cython.
+
+L'annulation asynchrone est une réussite commune, mais V2 régresse légèrement face à V1 sur cette répétition : quatre requêtes contre trois, environ 30 % de temps supplémentaire. Cython progresse : 26 requêtes contre 32, environ 23 % de tokens et 11 % de temps en moins. Sur ces deux paires réussies, V2 réduit les tokens de 22,6 %, le temps de 6,7 % et le coût estimé de 10,1 %. Cet agrégat reste sélectionné sur deux tâches connues ; il ne démontre pas un gain global stable.
+
+Les deux Blame prennent un libellé de métadonnées pour le texte à reconstruire dans G-code. Aucun n'essaie la lecture native d'image ; la capacité nouvelle n'a donc pas été exercée par le modèle sur cet essai. Finir cet échec plus vite représente l'essentiel de l'économie de temps du lot, et ne compte pas comme une amélioration de compétence. Aucun rejet d'édition n'est observé dans les deux bras Blame de ce lot.
+
+La revue des 231 appels commencés ne trouve aucun accès confirmé aux solutions ou au vérificateur du benchmark ; les chemins signalés appartiennent aux tests du projet pyknotid demandé. Les [résultats](benchmarks/harness-iterations-2026-09-07/v2/analysis.json), [essais](benchmarks/harness-iterations-2026-09-07/v2/trials.csv), [protocole](benchmarks/harness-iterations-2026-09-07/v2/protocol.md) et [empreintes](benchmarks/harness-iterations-2026-09-07/v2/manifest.json) conservent tous les résultats.
 
 - Le packaging autonome suit maintenant les imports réels des modules au lieu d'une liste manuelle devenue incomplète. Un test exécute l'archive construite : navigation, commande et lecture d'image. Il avait reproduit un échec de démarrage par module absent.
 - Les relais des environnements gérés transmettent le contexte de l'outil, notamment les capacités du modèle et l'identité de session. La version de l'agent de runtime passe de 5 à 6 pour déclencher leur actualisation.
@@ -58,6 +72,12 @@ Le bundle issu de `8ef307f4` porte l'empreinte `a6fbf121a6b00c8dd67e93e3d9c74879
 - Les diagnostics des scripts Vue et Svelte utilisent la position dans le fichier d'origine, y compris sur une ligne contenant des caractères Unicode.
 - Les empreintes des fichiers sont calculées en flux avec annulation. Le protocole de hash reste exactement identique. Sur un snapshot contenant un fichier de 128 Mio, deux passages par version donnent environ 170 ms et 309 Mio de pic RSS auparavant, contre 127 ms et 86 Mio après correction. Les snapshots sont identiques. Ce replay ne représente ni la mémoire totale d'un agent ni une économie de tokens.
 - Deux phrases du prompt demandent de regrouper les inspections indépendantes et de vérifier le comportement demandé ainsi que l'état final. Leur impact sur les requêtes et les résultats doit être mesuré. Aucun routeur, évaluateur supplémentaire, règle de nettoyage propre au benchmark ou appel LLM additionnel n'est introduit.
+
+## Confirmation enregistrée avant exécution
+
+La confirmation démarre le 7 septembre à 15:25 UTC : neuf tâches × deux harness × deux répétitions, en six lots de six essais et deux conteneurs simultanés. Les six tâches inédites sélectionnées à 14:06 sont conservées, avec trois tâches diagnostiques : annulation asynchrone, SQL et Rust/C. V2 reste figée ; Cline utilise le même runner avec ses outils et son prompt natifs. L'ordre configuré des blocs, tâches et bras est inversé pour la deuxième répétition. Aucun retry ni remplacement de tâche.
+
+Les analyses conserveront les échecs et consommations partielles, distingueront les tâches inédites et connues, et regrouperont les deux répétitions d'une tâche pour les intervalles bootstrap. Le retrait d'une tâche à la fois vérifiera si une seule domine les gains. Neuf tâches constituent neuf groupes statistiques, pas 36 observations indépendantes. Les [critères et limites](benchmarks/harness-iterations-2026-09-07/confirmation/protocol.md), [entrées figées](benchmarks/harness-iterations-2026-09-07/confirmation/manifest.json) et [sélection indépendante](benchmarks/harness-iterations-2026-09-07/confirmation/holdout-selection.json) sont versionnés avant les résultats.
 
 ## Ce que la recherche apporte à cette intervention
 

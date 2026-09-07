@@ -1,0 +1,176 @@
+{
+  "registeredAt": "2026-09-07T15:01:38.284928+00:00",
+  "bundles": {
+    "before": {
+      "sha256": "37fd65a0dd3e6ff5fb241ccd388bec16766833a67e8c2cbd7d44a41610c8ca88"
+    },
+    "final": {
+      "sha256": "a6fbf121a6b00c8dd67e93e3d9c74879352442049fe35e701752abb69ffed5dd"
+    }
+  },
+  "groups": [
+    {
+      "id": "batch-01",
+      "repetition": 1,
+      "tasks": [
+        "gcode-to-text",
+        "cancel-async-tasks",
+        "build-cython-ext"
+      ],
+      "armOrder": [
+        "cline",
+        "final",
+        "before"
+      ],
+      "trials": 9
+    }
+  ],
+  "tasks": [
+    {
+      "id": "gcode-to-text",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "medium",
+        "category": "file-operations",
+        "tags": [
+          "file-operations"
+        ],
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 300.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/gcode-to-text:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "gcode-to-text",
+        "compressedBytes": 45036582,
+        "digest": "sha256:0979ef40c6a3e8c4e7ab5b6c2524c74625a84799e15cd45dd98dcf83b11efd4d"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "393b63fc7a7dcf618391e10a2cdc81851d1e8becf05eb318f02c26d6638fd7f6",
+      "stratum": "data",
+      "hashes": {
+        "task.toml": "3aa7a504fe5b3c6eaab16881b0e6dbbe8ac6d4f59084fa49b1e98ad9c71ea00c",
+        "README.md": "06f4c8b746d5509618247dbff0ff7474ef95813a8c6f161b0a0955c020a9fe53",
+        "instruction.md": "ee524a8f846b35f1784a7c9fb01c17f077f6b3b61c8b61d0d2f2a87c0be3166b",
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "solution/solve.sh": "22dbd3a33750fae3c9e15c669e0f0dcbc2262434fb534bf0c2019269c044792b",
+        "environment/text.gcode.gz": "edc008516eb0c30cd2540649642c52f78894b99dc4f79547064e9ffbfbc0e55f",
+        "environment/Dockerfile": "5383f514233180e5a264c1b3180d33b00f14f622217c5062a96d4aa970d4102e",
+        "tests/test.sh": "4770437ea96c3cc84684b4f99d55fb148fcac09f9ea1e8ef49de487716e6c334",
+        "tests/test_outputs.py": "6b049dc626aa103b20d165552e5cb39ba02c6803b04ba06a43d79435b5f701a6"
+      }
+    },
+    {
+      "id": "cancel-async-tasks",
+      "metadata": {
+        "author_name": "Alex Shaw",
+        "author_email": "alexgshaw64@gmail.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "async",
+          "concurrency",
+          "python"
+        ],
+        "expert_time_estimate_min": 120.0,
+        "junior_time_estimate_min": 600.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/cancel-async-tasks:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "cancel-async-tasks",
+        "compressedBytes": 44164493,
+        "digest": "sha256:84c7fae6b256dcc56a350790e2a9715eefc7dad662a9d8e8a472363aa71ef18d"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "1e49ccbbd3a84a413fd246332eb5119b3279204a8640eb3218861d0e7b0c9d78",
+      "stratum": "software",
+      "hashes": {
+        "task.toml": "14db0675e04408f2133b0067e8dbddf66a1d6e7baf6b8d38bef8ecccfc4e58a8",
+        "README.md": "9adf86b1279cc44f83fe16e6d340595aa992240f1d87243d204cae32e453693b",
+        "instruction.md": "23d22f7039b50682941652c716f96dac314b8585c32c133614cac77dc067f47e",
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "solution/solve.sh": "4938ca4ad5b7dcd36b414b42a1abb10c058ecefce7462b678f9bd05c9fae1844",
+        "environment/Dockerfile": "1ee7bdb4a7536f5f114c11a3ac6ff42790abfea901fcba6b2a8ea8685f19140e",
+        "tests/test.sh": "79600a6b863def31b4daa008297423010cd2d6243e689d67503e118e4dc53397",
+        "tests/test.py": "f533c0a64db068f582b4733c5b81f2e66b8fa52fcd3efa65752e6bd6d24780aa",
+        "tests/test_outputs.py": "d6f510b51fafc81b4e9b5cc95535aa13491c8753e0e4171db42c45f4de460ee7"
+      }
+    },
+    {
+      "id": "build-cython-ext",
+      "metadata": {
+        "author_name": "Zizhao Chen",
+        "author_email": "czz@cs.cornell.edu",
+        "difficulty": "medium",
+        "category": "debugging",
+        "tags": [
+          "coding",
+          "dependency",
+          "compilation"
+        ],
+        "estimated_duration_sec": 540.0,
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 180.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/build-cython-ext:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "build-cython-ext",
+        "compressedBytes": 303214315,
+        "digest": "sha256:3612a38fadb89a96f74a1a951fb0b0af734198fd160571eeaba6401593234594"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "454bbcc8e1cef115ae5f3a4bd5feac710215bacaa515f9327be3213818b763a8",
+      "stratum": "debugging",
+      "hashes": {
+        "task.toml": "c472f0e7522c128fb7f03e00b50c8cdf2e5e6474daa1e094e7441f4b54e770b2",
+        "README.md": "d5f5113941c3963292bae396baa9369571026f46e59437f98ddcc93475dd7729",
+        "instruction.md": "7e52874e45f88505bd21540229719de6639a401477557d814489981d472f0e34",
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "solution/solve.sh": "41bbdde88617070366a70e518eedca466a4ea1acd7e96899b2fb7da988e40abc",
+        "environment/Dockerfile": "cb6cf421cb9b69d43bd25cd491e49bda982fbb865d47515178d017eda727194e",
+        "tests/test.sh": "0156c9c4085258b696ce424cf1ce96cba44d1263c5d73bdf54083fd80237f915",
+        "tests/test_outputs.py": "6549f1a8e04b6163ec08877e6f6b9868bf94563f3a3c72ac1fba9c512c31689e"
+      }
+    }
+  ],
+  "protocolSha256": "939a9da7b15d8814b68ed3fec44dd6076972c7fe2ff6c85377a92475263914df",
+  "adapterSha256": "944ac5a177dfa3c14079c5a4f1ad780e5772a7c31236a1bd152b99ef881849ae",
+  "sourceCommit": "8ef307f4a5ce5329859865f0cf94abe7fb1dcdad",
+  "upstreamCommit": "2fd12b88aafdd04a52c298e3940bcb189f9766d6",
+  "configHashes": {
+    "batch-01": "a18a6c86db6d0bd8b248d860304a8315f6bc6b9f3e9e995664fefb816b811625"
+  }
+}
