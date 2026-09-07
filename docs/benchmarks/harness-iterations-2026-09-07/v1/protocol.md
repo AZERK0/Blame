@@ -1,0 +1,11 @@
+# Diagnostic iteration V1, frozen before execution
+
+Nine trials: mailman, kv-store-grpc and build-cython-ext, each through the archived final Blame (before), corrected Blame (final), and contemporary native Cline SDK 0.0.81 (cline). These three tasks are diagnostic and previously seen, selected because traces exposed command lifecycle, capability and editing friction. This is not a generalization sample. No task solution, verifier feedback or task-specific rule is added to the harness.
+
+One group of nine, two concurrent Docker trials, no retries, same gpt-5.6-luna high model, 64 iterations and nominal runner deadline 900 seconds; official Harbor timeouts unchanged. Agent order before/final/cline; task order fixed as listed. Cline uses the corrected bundle's shared transport, telemetry and bounded cleanup. The archived Blame bundle is SHA256 69cfa03e3dd3358cf27abdf8c1af42a256be26d8043b0f0945b7eaec977d2adb. New bundle hash and commit are in the manifest. No bundle or adapter changes during the group.
+
+BLAME_ISOLATED_ENVIRONMENT=true accurately declares the already isolated Docker environment to the new runner. No preview is attached. This fixes false capabilities and permits authorized setup; the old bundle ignores the newly introduced flag. All agents receive identical environment declarations.
+
+Retain every official reward, failure, elapsed agent duration, observed input/output/cache tokens and provider-reported cost. Unknown usage is never zero. Reconcile usage events against aggregate counters and issued requests; distinguish incomplete results and cleanupIncomplete. Track all started/finished calls, including formerly hidden finish_task events. Tool-count comparisons against the archived bundle must account for that telemetry difference.
+
+Complete all nine before drawing conclusions or changing the candidate. Inspect traces for general failure mechanisms and contamination without feeding privileged material to measured agents. Any subsequent change has a separate frozen bundle and campaign. A small diagnostic win does not establish stable global superiority. The next comparison must include previously untried tasks selected before outcomes and retain all runs.

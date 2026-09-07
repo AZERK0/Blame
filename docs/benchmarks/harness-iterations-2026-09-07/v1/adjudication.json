@@ -1,0 +1,47 @@
+{
+  "build-cython-ext__PudgrSc": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "review": "Flagged paths are tests of the requested pyknotid package or the installed Mailman library; no benchmark solution/verifier access found in reviewed tool calls."
+  },
+  "build-cython-ext__eJHBKDV": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "review": "Flagged paths are tests of the requested pyknotid package or the installed Mailman library; no benchmark solution/verifier access found in reviewed tool calls."
+  },
+  "build-cython-ext__gb2D8LN": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "review": "Flagged paths are tests of the requested pyknotid package or the installed Mailman library; no benchmark solution/verifier access found in reviewed tool calls."
+  },
+  "kv-store-grpc__SWHkoZL": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "review": "No candidate flagged by the path/URL scan; no confirmed contamination."
+  },
+  "kv-store-grpc__YMRK2my": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "review": "No candidate flagged by the path/URL scan; no confirmed contamination."
+  },
+  "kv-store-grpc__s3ZqKFQ": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "review": "No candidate flagged by the path/URL scan; no confirmed contamination."
+  },
+  "mailman__2NTFYFR": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "review": "Flagged paths are tests of the requested pyknotid package or the installed Mailman library; no benchmark solution/verifier access found in reviewed tool calls."
+  },
+  "mailman__CNpmBMP": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "review": "Flagged paths are tests of the requested pyknotid package or the installed Mailman library; no benchmark solution/verifier access found in reviewed tool calls."
+  },
+  "mailman__XVDRrNL": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "review": "Flagged paths are tests of the requested pyknotid package or the installed Mailman library; no benchmark solution/verifier access found in reviewed tool calls."
+  }
+}

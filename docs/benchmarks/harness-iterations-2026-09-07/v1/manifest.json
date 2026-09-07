@@ -1,0 +1,177 @@
+{
+  "registeredAt": "2026-09-07T14:03:45.014833+00:00",
+  "bundles": {
+    "before": {
+      "sha256": "69cfa03e3dd3358cf27abdf8c1af42a256be26d8043b0f0945b7eaec977d2adb"
+    },
+    "final": {
+      "sha256": "37fd65a0dd3e6ff5fb241ccd388bec16766833a67e8c2cbd7d44a41610c8ca88"
+    }
+  },
+  "groups": [
+    {
+      "id": "batch-01",
+      "repetition": 1,
+      "tasks": [
+        "mailman",
+        "kv-store-grpc",
+        "build-cython-ext"
+      ],
+      "armOrder": [
+        "before",
+        "final",
+        "cline"
+      ],
+      "trials": 9
+    }
+  ],
+  "tasks": [
+    {
+      "id": "mailman",
+      "metadata": {
+        "author_name": "Zizhao Chen",
+        "author_email": "czz@cs.cornell.edu",
+        "difficulty": "medium",
+        "category": "system-administration",
+        "tags": [
+          "email-server",
+          "mailing-list"
+        ],
+        "estimated_duration_sec": 900.0,
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 180.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/mailman:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "mailman",
+        "compressedBytes": 161823791,
+        "digest": "sha256:04fac73db7e2b4f49d43f09fbc2266a94d70131f07efa1393d370abc059f4094"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "5fdbd42f7ca2547570c0a97fac07c2e92f386250503c9a74cadd8d466db32b21",
+      "stratum": "system",
+      "hashes": {
+        "task.toml": "a04f4d0e9be25056d2cd79d6a018bc875b6e6fb51d429a9241f282272cc660d1",
+        "README.md": "aa1b1e3a6eed21b6d3455755a4cbfd10d211b0155e49f01b3e1d6f192325637c",
+        "instruction.md": "240d03a73e38087d40c55460d48a098c70143e911a279cffe2468f642322cdee",
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "solution/solve.sh": "326572800999206e3d882e177902878722b98f8c90b19f3e2bcdfb5425989a50",
+        "environment/Dockerfile": "69f9fc624fa27eb7baf2a5b28b7d90e31899ee5bc18f4219cace00b8c7435784",
+        "tests/test.sh": "82c7dd138ef047c84a63c2c924eef586695dff03bb80a4c6ba0ced96e9bc8cf2",
+        "tests/test_outputs.py": "86ff052aeb0634303e1a143fa92b8d85e87f9f888ff4c3fb63029829e748e84c",
+        "environment/src/eval.py": "4dcf044f28a5656d3bffb35f81f8de9b7ad3dd15327d8e5f3dde65586beca827"
+      }
+    },
+    {
+      "id": "kv-store-grpc",
+      "metadata": {
+        "author_name": "Minghao Yan",
+        "author_email": "minghaoyan2@gmail.com",
+        "difficulty": "medium",
+        "category": "software-engineering",
+        "tags": [
+          "coding",
+          "file-operations",
+          "system"
+        ],
+        "expert_time_estimate_min": 15.0,
+        "junior_time_estimate_min": 120.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/kv-store-grpc:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "kv-store-grpc",
+        "compressedBytes": 44164493,
+        "digest": "sha256:3399400800dcb207634daa42bc1b052e831e285cc9d221eea66c47bc0fc79791"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "3106b58bc02a4261a634468495e84ef1c4bcef0be41cca68ca5f6d5db1f43edb",
+      "stratum": "software",
+      "hashes": {
+        "task.toml": "6ff0f30a526bfff86a67b0b53439b9965229c0f368167dc1a5d05f34d82299a3",
+        "README.md": "51fdc2ad06f0adb1270164f247ea41799b2ee2ad15490e48ddbf5e79d3767aaa",
+        "instruction.md": "f4b3facc199d5b1c78db6e603ffa29ec1b93a77ff7d291e1a92b42e6bf582bed",
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "solution/solve.sh": "6bee2938ac9731d1156b0ca02b28c3d5793bf2cbe5f995c863d397093af01cb7",
+        "environment/Dockerfile": "47c9982789092437f950736110b2bd18899c39b8fd20f3af3c95b848e564a197",
+        "tests/test.sh": "c348467a076bf614d0a850e25b2263f85bbf7b4c7a8d344fbd5454a0611a0df8",
+        "tests/test_outputs.py": "115de2e964bbe689d07930527113422ef8a9e4be4eb958ad84594e3fcd2b1b0e"
+      }
+    },
+    {
+      "id": "build-cython-ext",
+      "metadata": {
+        "author_name": "Zizhao Chen",
+        "author_email": "czz@cs.cornell.edu",
+        "difficulty": "medium",
+        "category": "debugging",
+        "tags": [
+          "coding",
+          "dependency",
+          "compilation"
+        ],
+        "estimated_duration_sec": 540.0,
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 180.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/build-cython-ext:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "build-cython-ext",
+        "compressedBytes": 303214315,
+        "digest": "sha256:3612a38fadb89a96f74a1a951fb0b0af734198fd160571eeaba6401593234594"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "454bbcc8e1cef115ae5f3a4bd5feac710215bacaa515f9327be3213818b763a8",
+      "stratum": "debugging",
+      "hashes": {
+        "task.toml": "c472f0e7522c128fb7f03e00b50c8cdf2e5e6474daa1e094e7441f4b54e770b2",
+        "README.md": "d5f5113941c3963292bae396baa9369571026f46e59437f98ddcc93475dd7729",
+        "instruction.md": "7e52874e45f88505bd21540229719de6639a401477557d814489981d472f0e34",
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "solution/solve.sh": "41bbdde88617070366a70e518eedca466a4ea1acd7e96899b2fb7da988e40abc",
+        "environment/Dockerfile": "cb6cf421cb9b69d43bd25cd491e49bda982fbb865d47515178d017eda727194e",
+        "tests/test.sh": "0156c9c4085258b696ce424cf1ce96cba44d1263c5d73bdf54083fd80237f915",
+        "tests/test_outputs.py": "6549f1a8e04b6163ec08877e6f6b9868bf94563f3a3c72ac1fba9c512c31689e"
+      }
+    }
+  ],
+  "protocolSha256": "0ac4f881574ee75a1a53519dc9eef1a52c9d4c66f08fab489ab483e41a08dc4c",
+  "adapterSha256": "944ac5a177dfa3c14079c5a4f1ad780e5772a7c31236a1bd152b99ef881849ae",
+  "sourceCommit": "9e76d57db4b5c341b626119bda743c987b8acf92",
+  "upstreamCommit": "2fd12b88aafdd04a52c298e3940bcb189f9766d6",
+  "configHashes": {
+    "batch-01": "e30e3f4e0d46e4b9afb46dfd362008fd4f62801165bc0aa2e09ccb0ba304aab5"
+  }
+}

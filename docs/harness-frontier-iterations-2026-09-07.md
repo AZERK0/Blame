@@ -1,6 +1,24 @@
 # Itérations du harness — 7 septembre 2026
 
-Campagne en cours. Aucun dépassement de Cline n'est annoncé à ce stade. La comparaison des 108 essais précédents reste inchangée et ses résultats négatifs sont conservés dans [le rapport initial](harness-global-measurement-2026-09-06.md).
+Neuf nouveaux essais diagnostiques sont terminés ; neuf autres sont en cours. Aucun dépassement global de Cline n'est annoncé à ce stade. La comparaison des 108 essais précédents reste inchangée et ses résultats négatifs sont conservés dans [le rapport initial](harness-global-measurement-2026-09-06.md).
+
+## Première itération : résultats mesurés
+
+Les trois tâches étaient connues avant les corrections. Le tableau conserve les scores officiels ; un échec de transport n'est pas transformé en réussite ni remplacé par un retry.
+
+| Tâche | Ancien Blame final : succès / secondes | Blame V1 : succès / secondes | Cline : succès / secondes |
+| --- | ---: | ---: | ---: |
+| Cython | 1 / 548,1 | 1 / 293,5 | 0 / 293,3 |
+| gRPC | 1 / 76,9 | 1 / 66,4 | 1 / 92,4 |
+| Mailman | 0 / 1 800,0 | 1 / 636,1 | 1 / 546,5 |
+
+Cline échoue sur Cython avec une rupture du flux fournisseur (`UND_ERR_SOCKET`), après trois requêtes. Sa consommation est incomplète. L'ancien Blame atteint le délai officiel sur Mailman avec une commande de service encore en attente. Ces résultats étayent le correctif du cycle de vie ; le score 3/3 contre 2/3 ne démontre pas une meilleure compétence que Cline.
+
+Sur Cython, V1 consomme 924 514 tokens contre 2 471 546 pour l'ancien Blame, avec 32 requêtes contre 60 et 46,4 % de temps en moins. Aucun appel d'édition n'est rejeté contre sept auparavant. Ces anciens rejets concernaient des correspondances ambiguës ou absentes ; le nouveau parcours utilise davantage de transformations groupées par commande. Ce résultat ne mesure donc pas l'effet causal des seuls en-têtes de patch.
+
+Sur Mailman, V1 consomme 1 604 757 tokens contre 1 728 399 pour Cline, mais prend 16,4 % de temps supplémentaire et coûte 3,1 % de plus selon l'estimation fournisseur. Les 37 requêtes de Blame contre 27 pour Cline restent un défaut concret. Sur gRPC, V1 est environ 28 % plus rapide avec environ 55 % de tokens en moins ; une seule répétition ne permet pas d'en établir la stabilité.
+
+Les totaux de tokens de l'ancien Blame et de Cline sont des sommes partielles : aucun gain global exact n'en est déduit. Les scans des traces ont signalé des chemins de tests appartenant au projet demandé ou aux bibliothèques installées ; leur revue n'a trouvé aucun accès confirmé aux solutions ou au vérificateur du benchmark. Les [données détaillées](benchmarks/harness-iterations-2026-09-07/v1/analysis.json), [essais CSV](benchmarks/harness-iterations-2026-09-07/v1/trials.csv), [protocole](benchmarks/harness-iterations-2026-09-07/v1/protocol.md) et [empreintes](benchmarks/harness-iterations-2026-09-07/v1/manifest.json) sont versionnés.
 
 ## Corrections de la première version
 
@@ -14,7 +32,7 @@ Ces changements corrigent des contrats et des mécanismes généraux. Ils n'ajou
 
 ## Vérification mécanique
 
-La suite runtime comporte 523 tests : 521 réussites, un test Windows non exécutable sous Linux, et une assertion de texte devenue obsolète après la correction du prompt. Après adaptation de cette assertion, les 66 tests d'événements et de prompt passent. Les 21 tests du runner et les 10 tests de l'adaptateur passent également. Les fichiers modifiés passent ESLint. Ce décompte décrit les exécutions effectuées, pas un benchmark de compétence du modèle.
+La dernière suite complète du runtime comporte 530 tests : 529 réussites et un test Windows non exécutable sous Linux. Un test supplémentaire d'annulation des empreintes a ensuite été ajouté et passe avec les 11 autres tests d'invariants. Les 21 tests du runner, les 10 tests de l'adaptateur, les quatre tests de packaging/relais et les 22 tests ciblés du runtime desktop passent également. Les fichiers modifiés passent ESLint. Ce décompte décrit les exécutions effectuées, pas un benchmark de compétence du modèle ; les machines virtuelles macOS et Windows n'ont pas été exécutées sur cet hôte Linux.
 
 Le replay du parent ayant un enfant conservant stdout passe d'environ 3,3 secondes à 0,13 seconde ; l'annulation revient en environ 0,16 seconde. Cela établit le correctif mécanique, pas un gain global agent. La clôture de `startDevelopment` elle-même n'est pas couverte par le nouveau délai de nettoyage ; seuls l'attente terminale et les chemins de nettoyage explicitement testés le sont.
 
@@ -27,6 +45,17 @@ Le bundle corrigé provient de `9e76d57d` ; son SHA256 est `37fd65a0dd3e6ff5fb24
 Les fichiers figés se trouvent dans `.blame/benchmarks/terminal-bench-iteration-v1-20260907`. L'adaptateur, les tâches, les configurations et les bundles sont vérifiés par hash avant le lot. Les échecs et les coûts partiels restent dans les données ; les usages manquants ne sont pas remplacés par zéro. Les compteurs d'outils des anciens bundles omettent `finish_task` : leur comparaison brute avec les nouveaux compteurs serait trompeuse.
 
 Une sélection indépendante de six tâches jamais essayées localement est enregistrée avant les nouveaux résultats : `regex-chess`, `circuit-fibsqrt`, `overfull-hbox`, `compile-compcert`, `sparql-university`, `sanitize-git-repo`. Elle utilise des quotas de catégories et l'ordre SHA256 de `Blame-holdout-20260907-v1:` suivi du nom. La liste complète des candidats, des exclusions et des tâches déjà essayées est conservée dans `.blame/benchmarks/harness-iterations-20260907/holdout-selection.json`. Cette sélection ne constitue pas encore une campagne exécutée.
+
+## Deuxième itération figée
+
+Le bundle issu de `8ef307f4` porte l'empreinte `a6fbf121a6b00c8dd67e93e3d9c74879352442049fe35e701752abb69ffed5dd`. Neuf essais sur G-code, l'annulation asynchrone et Cython comparent V1, V2 et Cline contemporain. La nouvelle mesure Cython conserve l'échec de transport précédent dans sa campagne d'origine. Le modèle, les ressources et l'absence de retries restent identiques.
+
+- Le packaging autonome suit maintenant les imports réels des modules au lieu d'une liste manuelle devenue incomplète. Un test exécute l'archive construite : navigation, commande et lecture d'image. Il avait reproduit un échec de démarrage par module absent.
+- Les relais des environnements gérés transmettent le contexte de l'outil, notamment les capacités du modèle et l'identité de session. La version de l'agent de runtime passe de 5 à 6 pour déclencher leur actualisation.
+- `read_code` envoie les images locales prises en charge comme contenu image natif quand le modèle accepte les images. Il ne transforme plus un PNG en texte UTF-8 illisible. Les signatures, tailles et limites de l'espace de travail sont vérifiées sans ajouter d'outil.
+- Les diagnostics des scripts Vue et Svelte utilisent la position dans le fichier d'origine, y compris sur une ligne contenant des caractères Unicode.
+- Les empreintes des fichiers sont calculées en flux avec annulation. Le protocole de hash reste exactement identique. Sur un snapshot contenant un fichier de 128 Mio, deux passages par version donnent environ 170 ms et 309 Mio de pic RSS auparavant, contre 127 ms et 86 Mio après correction. Les snapshots sont identiques. Ce replay ne représente ni la mémoire totale d'un agent ni une économie de tokens.
+- Deux phrases du prompt demandent de regrouper les inspections indépendantes et de vérifier le comportement demandé ainsi que l'état final. Leur impact sur les requêtes et les résultats doit être mesuré. Aucun routeur, évaluateur supplémentaire, règle de nettoyage propre au benchmark ou appel LLM additionnel n'est introduit.
 
 ## Ce que la recherche apporte à cette intervention
 
