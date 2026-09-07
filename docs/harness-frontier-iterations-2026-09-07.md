@@ -79,6 +79,14 @@ La confirmation démarre le 7 septembre à 15:25 UTC : neuf tâches × deux harn
 
 Les analyses conserveront les échecs et consommations partielles, distingueront les tâches inédites et connues, et regrouperont les deux répétitions d'une tâche pour les intervalles bootstrap. Le retrait d'une tâche à la fois vérifiera si une seule domine les gains. Neuf tâches constituent neuf groupes statistiques, pas 36 observations indépendantes. Les [critères et limites](benchmarks/harness-iterations-2026-09-07/confirmation/protocol.md), [entrées figées](benchmarks/harness-iterations-2026-09-07/confirmation/manifest.json) et [sélection indépendante](benchmarks/harness-iterations-2026-09-07/confirmation/holdout-selection.json) sont versionnés avant les résultats.
 
+## Correctif des relais, vérifié séparément
+
+L'audit du passage aux environnements gérés révèle deux défauts supplémentaires. Les lectures et éditions transmettaient le contexte sérialisable, mais perdaient l'`AbortSignal` fourni séparément au relais. Une édition déjà annulée pouvait ainsi créer son fichier. Quatre tests reproduisent les contrats à corriger ; après correction, les 115 tests ciblés de lecture, édition, relais, images et reprise passent, ainsi que le build TypeScript et ESLint.
+
+Chaque appel transmettait aussi tout le snapshot de conversation alors que le runtime ne l'utilise que pour identifier la dernière compaction. Le même calcul de génération de contexte est maintenant effectué avant le transfert, avec les champs de métadonnées et d'identité existants. Le snapshot reste accepté en entrée pour les appelants antérieurs. Aucun nouvel outil, mécanisme de résumé ou appel au modèle n'est ajouté. Le [replay avant](benchmarks/harness-iterations-2026-09-07/relay-context-before.json) et [après](benchmarks/harness-iterations-2026-09-07/relay-context-after.json) passe de 1 507 230 à 148 octets transmis sur une conversation synthétique, avec capacité image et génération de compaction conservées. Cela mesure des octets de transfert interne, pas des tokens fournisseur.
+
+Ce correctif du relais est postérieur au gel V2 et n'entre pas dans les bundles de la confirmation en cours. Les essais headless utilisent les outils locaux ; la validation du changement repose sur le relais exercé par les tests, et non sur une exécution des machines virtuelles macOS ou Windows.
+
 ## Ce que la recherche apporte à cette intervention
 
 [SWE-agent](https://swe-agent.com/0.7/background/aci/) étudie l'effet d'une interface simple pour la navigation, l'édition et le retour d'erreurs. Cela soutient ici la priorité aux diagnostics locaux et aux opérations cohérentes ; ses scores ne prédisent pas ceux de Blame.

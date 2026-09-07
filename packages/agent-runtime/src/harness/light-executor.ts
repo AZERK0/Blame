@@ -9,7 +9,7 @@ import type {
   LightToolResult,
 } from "./light-contracts.js";
 import { executeLocalFinishTask } from "./light-finish-service.js";
-import { LightWorkspace } from "./light-workspace.js";
+import { contextGeneration, LightWorkspace } from "./light-workspace.js";
 
 export const lightWorkspaceToolNames = [
   "search_code",
@@ -57,11 +57,8 @@ export function lightToolContext(
     ...(context.conversationId
       ? { conversationId: context.conversationId }
       : {}),
-    ...(context.metadata && typeof context.metadata === "object"
-      ? { metadata: context.metadata as Record<string, unknown> }
-      : {}),
+    metadata: { ...context.metadata, contextGeneration: contextGeneration(context) },
     ...(context.sessionId ? { sessionId: context.sessionId } : {}),
-    ...(context.snapshot ? { snapshot: context.snapshot } : {}),
     ...(context.toolCallId ? { toolCallId: context.toolCallId } : {}),
   };
 }

@@ -54,9 +54,9 @@ function executorWorkspace(
   const invoke = executorInvocation(workspaceRoot, options);
   return {
     editCode: (input, context) =>
-      invoke("edit_code", input, lightToolContext(context)),
+      invoke("edit_code", input, lightToolContext(context), context?.signal),
     readCode: (input, context) =>
-      invoke("read_code", input, lightToolContext(context)),
+      invoke("read_code", input, lightToolContext(context), context.signal),
     runTask: (input, context) =>
       invoke("run_task", input, lightToolContext(context), context.signal),
     searchCode: (input, signal) => invoke("search_code", input, {}, signal),

@@ -1084,7 +1084,7 @@ function shortImportBlock(source: string) {
   };
 }
 
-function contextGeneration(context: ReadContext) {
+export function contextGeneration(context: ReadContext) {
   const metadata = context.metadata ?? {};
   const generation = metadata.contextGeneration ?? metadata.contextEpoch;
   if (typeof generation === "string" || typeof generation === "number")
