@@ -1,0 +1,170 @@
+{
+  "registeredAt": "2026-09-07T20:58:51.239216+00:00",
+  "bundles": {
+    "before": {
+      "path": "/mnt/dev/web/Blame/.blame/benchmarks/terminal-bench-iteration-v8-20260907/runner-before.tgz",
+      "sha256": "ec0528743686690de7be7692891211de12090f9bc2c70216a85bd7bdcbb38a59"
+    },
+    "final": {
+      "path": "/mnt/dev/web/Blame/.blame/benchmarks/terminal-bench-iteration-v8-20260907/runner-final.tgz",
+      "sha256": "2a7f591925410a598d495ed3f0100e0ab44b9a2b11bed082159f2a3cbe00ef09"
+    }
+  },
+  "groups": [
+    {
+      "id": "batch-01",
+      "repetition": 1,
+      "tasks": [
+        "financial-document-processor",
+        "gcode-to-text"
+      ],
+      "armOrder": [
+        "final",
+        "cline",
+        "before"
+      ],
+      "trials": 6
+    },
+    {
+      "id": "batch-02",
+      "repetition": 2,
+      "tasks": [
+        "financial-document-processor"
+      ],
+      "armOrder": [
+        "before",
+        "cline",
+        "final"
+      ],
+      "trials": 3
+    }
+  ],
+  "tasks": [
+    {
+      "id": "financial-document-processor",
+      "metadata": {
+        "author_name": "Dariush Wahdany",
+        "author_email": "tbench@hey.wahdany.eu",
+        "difficulty": "medium",
+        "category": "data-processing",
+        "tags": [
+          "ocr",
+          "image-processing",
+          "financial",
+          "file-operations"
+        ],
+        "expert_time_estimate_min": 30.0,
+        "junior_time_estimate_min": 60.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/financial-document-processor:20251031",
+        "cpus": 1,
+        "memory_mb": 4096,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "agent": {
+        "timeout_sec": 1200.0
+      },
+      "verifier": {
+        "timeout_sec": 1200.0,
+        "env": {}
+      },
+      "seenBeforeCampaign": true,
+      "stratum": "data-processing",
+      "image": {
+        "task": "financial-document-processor",
+        "compressedBytes": 51790066,
+        "digest": "sha256:ef6c9cfaaf14cdd200163008a188d5baa9f626f3bfb8d3e7d6f30c08518e6251"
+      },
+      "hashes": {
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "README.md": "32438e7780d235dd609f4740e36512c4cd2f34ef26842ea52c5bbde46fcf5e86",
+        "environment/Dockerfile": "2ea485aead008998d7a551e8c80b6bd354a74cbffc310a1f4b88d0b7c53d23ff",
+        "environment/documents/1t2tala7.jpg": "d5fc89cdc92240baa7fc6506237e3841af88880a6f57fa6e3f60b925e605fd22",
+        "environment/documents/41ibljh7.pdf": "bc95a144939b7f21abd832019625a3f2c182a7abe8d57f9bd25e7c6f5d6b3ba5",
+        "environment/documents/53lc58dr.jpg": "2c8607b9c75907077e23f45ce7bc75335a4a46e9f9aab5ee0d901b86b63e7a8e",
+        "environment/documents/5lxo6qji.pdf": "0b3873d45510867d3063637d01f8e9255c4be96586b1f6b06682a208877d441c",
+        "environment/documents/8mdd4v30.jpg": "56238d4d934c433c24e53d0674f0530e11024f284e8ffcb3bb0bcc0d58850740",
+        "environment/documents/9t84azyt.pdf": "d46a7397df8e7903ddef31b76c1633c4989f09b8c301e0cf87dab00cd08a4663",
+        "environment/documents/c11ertj5.pdf": "570adcb1be1800cca727420b543e9c68bb7607ebaddf80524c7380560e549434",
+        "environment/documents/dbdw2pcn.pdf": "ad8f14ad77a98d0926a68d17e5ce822c2f9d3a355ccf4a6b1ded5327c31cbb87",
+        "environment/documents/g0fn9xuy.jpg": "807a6b0b942eb2ce406db3c57a833bba539e165017c81e2b1a0a98104d213677",
+        "environment/documents/hv3a3zmf.jpg": "c212aa5440b23e4b5e97af3c271685769b1050edd73a1ee461acce2c5998eb3c",
+        "environment/documents/jxepq85j.jpg": "a51b4a78c278c1b755e674511729d8514681b94094a4130c457ed71c533a0083",
+        "environment/documents/pbhsahxt.jpg": "badb1930a086c35b1484463098cbfb7823beb21abae71a9fe95bf90807fa9e41",
+        "environment/documents/sg65kxvf.jpg": "53d8335a156bd0b18bd1808693cc805c39e013d9768fd7eb7497f22e18b1c5cb",
+        "environment/documents/ujv6oh9s.jpg": "ad3359faf1126b33fc587098ed3f5b722734eeb4364794eea66e10112014f25a",
+        "environment/documents/wnnhj7xv.pdf": "5ee01b997176b9124302899471651ce4d4b160f292caf79f2250e2e8324e3480",
+        "environment/documents/xaji0y6d.jpg": "e0b8a2c7078efe82d7657f5023f01ff5498d59cca54a74ef2b6983bc979a1c54",
+        "environment/documents/zbikcidk.jpg": "862f7d313f1233f3e44a89610a4015d861dc771ad2ba8028ad56e2d4fd37ac71",
+        "environment/randomize_filenames.py": "09828ee53e8f2165a9888c5de84e40fcb057bb889d93bfc90d9aeca8c4e23be4",
+        "instruction.md": "b21cf2af1891922732327bf586d14b250d36d96de7867479c15bd1c58ef0db58",
+        "solution/solve.sh": "90861b79c4bd7733909616ffa058151847eb67a4d43395a964c449cf7e24c4fb",
+        "task.toml": "163ee252895c05d36ca37137dba4d6c24b46be28d56ce84ef8bb35bb5b894bda",
+        "tests/test.sh": "48abbda713ace5cee00dd28c7398959f28280062350eb88206a6697a28c72790",
+        "tests/test_outputs.py": "978f506ad5c1bfaf28f9bc774dfe4347d33d046ca009b8496eb513956b7f5a9a"
+      }
+    },
+    {
+      "id": "gcode-to-text",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "medium",
+        "category": "file-operations",
+        "tags": [
+          "file-operations"
+        ],
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 300.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/gcode-to-text:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "gcode-to-text",
+        "compressedBytes": 45036582,
+        "digest": "sha256:0979ef40c6a3e8c4e7ab5b6c2524c74625a84799e15cd45dd98dcf83b11efd4d"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "393b63fc7a7dcf618391e10a2cdc81851d1e8becf05eb318f02c26d6638fd7f6",
+      "stratum": "data",
+      "hashes": {
+        "task.toml": "3aa7a504fe5b3c6eaab16881b0e6dbbe8ac6d4f59084fa49b1e98ad9c71ea00c",
+        "README.md": "06f4c8b746d5509618247dbff0ff7474ef95813a8c6f161b0a0955c020a9fe53",
+        "instruction.md": "ee524a8f846b35f1784a7c9fb01c17f077f6b3b61c8b61d0d2f2a87c0be3166b",
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "solution/solve.sh": "22dbd3a33750fae3c9e15c669e0f0dcbc2262434fb534bf0c2019269c044792b",
+        "environment/text.gcode.gz": "edc008516eb0c30cd2540649642c52f78894b99dc4f79547064e9ffbfbc0e55f",
+        "environment/Dockerfile": "5383f514233180e5a264c1b3180d33b00f14f622217c5062a96d4aa970d4102e",
+        "tests/test.sh": "4770437ea96c3cc84684b4f99d55fb148fcac09f9ea1e8ef49de487716e6c334",
+        "tests/test_outputs.py": "6b049dc626aa103b20d165552e5cb39ba02c6803b04ba06a43d79435b5f701a6"
+      }
+    }
+  ],
+  "protocolSha256": "35e075d6cdeb51c94dd90b8d9a17d042f94c8cb8358304619342d5bc26dbcc09",
+  "adapterSha256": "558a8acba042338f944e82aa520d9b3c04ff2419a28f670903d89ae23fb198cb",
+  "sourceCommit": "dfa4b4a2b86e6a6e9802e23f641c8e8a9399ec6f",
+  "upstreamCommit": "2fd12b88aafdd04a52c298e3940bcb189f9766d6",
+  "configHashes": {
+    "batch-01": "f2189bdbc15e37a58cfd739637a9e7b7cbe406a3c88d3f3514c7948ead942bb3",
+    "batch-02": "2cbe0eb02e741f1b4cbea38f7ef5c92fe12f64034cd708781079e951108612dc"
+  },
+  "initialDockerImages": [
+    "node:24-bookworm-slim"
+  ]
+}
