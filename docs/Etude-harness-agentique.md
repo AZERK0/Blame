@@ -1,6 +1,6 @@
 # Blame — Étude des outils d’un harness agentique de code
 
-**Version de travail — mise à jour du 6 septembre 2026**
+**Version de travail — mise à jour du 7 septembre 2026**
 
 **Objet :** définir les primitives d’un IDE agentique qui dépassent le paradigme actuel `grep → read_file(lines) → patch → shell`, en s’appuyant sur la littérature scientifique, les systèmes existants et les contraintes propres à Blame.
 
@@ -31,6 +31,8 @@ La section 21.54 retire le faux jugement syntaxique C/C++, corrige les plages de
 La section 21.55 approfondit cette régression sans ajouter de run. Les 27 requêtes finales de Doom représentent 95,1 % du surcoût du groupe. Sur cette trajectoire, les 22 requêtes qui réécrivent un ancien résultat concentrent 93,8 % de l’entrée hors cache : leur taux de cache est de 7,85 %, contre 96,20 % sur les autres requêtes. Le rejeu avec les deux projecteurs montre les mêmes événements de réécriture ; le retrait d’écho n’en ajoute aucun. La projection rétrospective préexistante constitue le principal amplificateur identifié côté harness, sans chiffrage causal du gain récupérable. Une capture hors réseau révèle aussi un contrat d’optionalité mal explicité au fournisseur : strict est omis sur les fonctions. Son effet exact dans le backend historique n’est pas établi.
 
 La section 21.56 corrige le contrat fournisseur, la stabilité du contexte et la récupération des commandes. Le premier groupe de dix conserve 4/5 réussites par bras avec −47,5 % de coût rapporté et −18,5 % de durée. Deux suivis de quatre essais affichent cependant +62,5 % puis +51,5 % de coût ; le dernier contient un témoin POV-Ray exposé à une solution publique. Des défauts mécaniques supplémentaires sont corrigés (portée des symboles, binaires web, faux rejets d’inspection). Un gain global stable de la version finale n’est pas démontré.
+
+La campagne figée des 6–7 septembre, en section 21.57, termine les 108 essais prévus : 18 tâches, deux répétitions, trois bras contemporains avec Luna high. Blame final réussit 21/36 contre 19/36 pour le témoin antérieur et 28/36 pour Cline SDK intégré. Son temps agent cumulé baisse de 10,9 % face au témoin, mais augmente de 4,3 % face à Cline ; les intervalles restent larges et le signe face à Cline change entre répétitions. Douze usages incomplets interdisent une économie globale exacte de tokens. Sur les onze blocs à usage complet, le final consomme 29,8 % de tokens supplémentaires face au témoin. Les critères préenregistrés échouent : aucun gain global stable n’est démontré. Des replays isolent des défauts de capture/annulation, de classification des validations et d’autorité du chemin de patch ; les traces gRPC montrent une capacité de service annoncée mais indisponible. Le [rapport complet](/mnt/dev/web/Blame/docs/harness-global-measurement-2026-09-06.md) sépare ces défauts des erreurs de solution et des limites du fournisseur. Aucun correctif de production n’a été introduit pendant cette campagne.
 
 ## Résumé décisionnel initial — historique remplacé
 
@@ -3756,6 +3758,34 @@ Le troisième groupe de quatre essais conserve 2/2 réussites par bras, mais aff
 La dernière revue trouve deux faux rejets amont : l’énumération des signaux par `kill -l/-L` et la lecture des références par `git ls-remote`. Le rejeu des six rejets de politique observés admet désormais les quatre appels consultatifs et conserve les deux autres rejets. La description web est également clarifiée pour attribuer l’analyse à l’agent, sans promettre une extraction automatique absente du runtime. Ces derniers changements sont validés séparément après les essais live ; ils ne permettent pas de réétiqueter les bundles déjà mesurés ni d’annoncer une absence de régression globale.
 
 La version finale `69cf` passe 513 tests et devient le bundle par défaut. Deux essais contrôlés distincts de Terminal-Bench, sur un ZIP inerte et un JSON UTF-8 inédits, exercent réellement la correction web : même réponse correcte, un appel web groupé par bras, 13 892→5 519 tokens d’entrée, 0,00304192→0,00131692 $ et 20,397→12,397 secondes. Ce gain ciblé ne remplace pas la mesure d’autonomie sur tâches libres. Les deux derniers ajustements (inspection des commandes et description honnête du web) ne sont pas réattribués aux bundles Terminal-Bench antérieurs. Le bilan reste une amélioration mécanique prouvée avec une efficacité globale encore variable, sans nouveau bras Cline.
+
+### 21.57. Campagne globale figée : le gain stable n’est pas établi
+
+Le protocole est enregistré avant les résultats le 6 septembre à 17:56 UTC. Les 108 essais se terminent le 7 septembre à 01:11 UTC, sans retry ni arrêt anticipé : 18 tâches Terminal-Bench 2, trois bras, deux répétitions, douze groupes de neuf et deux conteneurs simultanés. Sept tâches n’avaient jamais été exécutées dans les archives locales ; cela ne garantit pas leur absence dans l’entraînement. Les bundles antérieur `e574bca5…` et final `69cfa03e…`, le modèle `gpt-5.6-luna` high et les budgets sont figés. Cline utilise le SDK natif 0.0.81 dans le même runtime de mesure ; il ne représente pas la dernière extension autonome.
+
+| Mesure sur les 36 essais de chaque bras | Blame antérieur | Blame final | Cline SDK |
+|---|---:|---:|---:|
+| Réussites officielles et auditées | 19/36 | 21/36 | 28/36 |
+| Répétition 1 | 11/18 | 11/18 | 14/18 |
+| Répétition 2 | 8/18 | 10/18 | 14/18 |
+| Temps agent cumulé, secondes | 15 228,4 | 13 572,3 | 13 015,4 |
+| Tokens observés, entrée + sortie | ≥ 10 804 180 | ≥ 12 646 404 | ≥ 16 696 027 |
+| Coût déclaré observé, dollars | ≥ 0,91985 | ≥ 0,94401 | ≥ 1,21172 |
+| Usages non entièrement confirmés | 5 | 4 | 3 |
+
+Les coûts et tokens incomplets sont des bornes basses, pas des économies exactes. La réussite et les durées conservent les 108 essais, y compris les timeouts. Le temps final baisse de 10,9 % face au témoin, avec IC 95 % [−32,3 % ; +10,2 %]. Retirer FEAL réduit cette baisse à 0,4 % : l’ancien bras y reste bloqué sur un calcul orphelin. Face à Cline, le temps final augmente de 4,3 %, avec IC [−27,7 % ; +54,9 %] ; les répétitions donnent −4,9 % puis +14,6 %. La réussite finale perd 19,4 points observés face à Cline. L’IC par métrique est [−38,9 ; −5,6] points ; la sensibilité corrigée pour six comparaisons atteint zéro.
+
+L’analyse secondaire des onze tâches dont les six usages sont complets donne, face à l’ancien Blame, +29,8 % de tokens, +11,1 % de coût et −5,8 % de durée. Face à Cline, elle donne −13,6 %, −27,4 % et −28,1 %. Cette sélection exclut notamment Mailman et ses longues attentes : elle ne doit pas remplacer le temps intégral ni faire disparaître la perte de qualité. Le bootstrap conserve les deux répétitions et les trois bras par tâche, avec 20 000 tirages ; les répétitions ne sont pas traitées comme 36 tâches indépendantes.
+
+Un diagnostic exploratoire sur les seize paires réussies par les deux versions Blame, toutes à usage complet, donne +26,5 % de tokens, +8,3 % de coût et −7,1 % de temps pour le final. Trois tâches conservent des gains locaux dans les deux répétitions face à Cline : BN, COBOL et terminal headless. Six opérations symboliques sont demandées dans le final contre 101 patchs ; aucune compaction achevée n’est observée. Ce corpus ne démontre pas une supériorité générale du mode symbolique ni des longues sessions compactées.
+
+Les traces et replays établissent cinq priorités : borner la capture/annulation et classer correctement ses résultats avant validation ; décrire les capacités disponibles et le périmètre autorisé ; supprimer la redirection silencieuse de la cible d’un patch ; conserver la lecture native des images locales ; persister l’usage lors des interruptions et les événements de finalisation avant leur filtrage d’interface. Un test fini annulé après 1 000 ms reçoit encore un reçu `passed` à 3 108 ms. Un lancement gRPC explicitement demandé est refusé en faveur d’une preview absente, alors que la même capacité passe sous une autre forme de commande. Ces propriétés mécaniques sont établies ; leur part exacte dans l’écart global n’est pas isolée.
+
+Les échecs asynchrones et SQL répétés relèvent de propriétés de la solution non satisfaites ; les Rust/C finaux sont refusés pour des fichiers de compilation présents avant les tests fonctionnels. L’OOM de la première vidéo Cline et les attentes du fournisseur restent séparés des refus d’édition. Les treize essais signalés par le détecteur d’intégrité ont été examinés ; aucune consultation de solution officielle ni altération du vérificateur n’est confirmée. Les six traces FEAL ont aussi été revues. Cette inspection ne prouve pas l’absence de contamination non observable.
+
+**Verdict : la promesse globale n’est pas validée sur cette campagne.** Elle échoue déjà sur les scores et la stabilité du temps face au contrôle Cline ; l’incomplétude des usages interdit en plus une preuve globale sur les tokens. Le runtime de production est resté inchangé. Les corrections découvertes demandent une intervention séparée ; aucun prompt mémorisant les solutions, retry générique ou garde-fou propre à ces tâches n’est justifié.
+
+Le [rapport détaillé](/mnt/dev/web/Blame/docs/harness-global-measurement-2026-09-06.md), le [protocole enregistré](/mnt/dev/web/Blame/docs/benchmarks/harness-global-2026-09-06/protocol.md), les [108 mesures CSV](/mnt/dev/web/Blame/docs/benchmarks/harness-global-2026-09-06/trials.csv), les [analyses appariées](/mnt/dev/web/Blame/docs/benchmarks/harness-global-2026-09-06/analysis.json) et le [contrôle d’intégrité](/mnt/dev/web/Blame/docs/benchmarks/harness-global-2026-09-06/integrity.json) conservent les chiffres et leur portée. Les scripts, événements et replays bruts restent dans `.blame/benchmarks/terminal-bench-global-20260906/`.
 
 ## Références complémentaires
 

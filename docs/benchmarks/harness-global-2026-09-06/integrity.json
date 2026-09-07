@@ -1,0 +1,49 @@
+{
+  "verifiedAt": "2026-09-07T01:13:38.959988+00:00",
+  "sourceCommit": "86c9acce317b59610351ad28a13d03d5bebaea50",
+  "registeredInputs": "bundle, protocol, configuration, adapter and task hashes verified",
+  "trialChecks": {
+    "trials": 108,
+    "groups": 12,
+    "maximumGroupTrials": 9,
+    "configuredModelSettings": "verified",
+    "availableAgentSettingsAndEventHashes": "verified",
+    "missingAgentResults": [
+      "extract-moves-from-video__jXrneaz",
+      "mailman__2csyWxw",
+      "mailman__AocgYHh",
+      "mailman__Dr5sNDm",
+      "mailman__RNHDB48",
+      "feal-differential-cryptanalysis__ZVTqMsk"
+    ],
+    "missingEventFiles": []
+  },
+  "imageChecks": {
+    "recordedImageDigests": 36,
+    "allRecordedDigestsMatchPreflight": true,
+    "distinctGroupTaskImages": 36
+  },
+  "analysisScripts": {
+    "analyze.py": "9a4acd45e8a2fb4cff20abe3289814cf81a0b732538f8ce3cd92a1a1738f91ed",
+    "audit.py": "3400cec6686d75dfd63a1c94bff1a5e3a4b582fd4a4ba4acaa961037dd210254",
+    "characterize.py": "6c78d265f62bada65bb0820c590db5057377ca6f252ce60658b30f211f1cf4e0",
+    "check_analysis.py": "13b5636f7ad8a90e778fb3e2f495b82983acee6870c69d95f96ab994c2ca274b",
+    "collect.py": "31ef18cec6e3ee8ae5abf6c2d8392b4278ad9be86aba05f71dfc7ea421cf1801",
+    "integrity.py": "57adfefaa720ec5ee542948feb4567ea5659e5d833598ddd5fa0a2b065c74af0",
+    "outcome_resources.py": "31f569ddaf013384d5b44460424914ada5e5a66c4e6b64547b270a448cf67a39",
+    "preflight.py": "519180b4665ae0c5aba7265c18e74f42a3bf95ef4f0096a068ecc4cf6a799c15",
+    "register.py": "d70695f6ca814ed55332629cf6de4f4653a77ee29fbf03cee866cf26ffe8ea98",
+    "report.py": "69b1182338bf8fc1f78eb50b6c844a1954b590be7699c336e7e034b5e15e5898",
+    "run_campaign.py": "4af297ebc3415637cf8a39510aa1a8cab33fac64c66745fe9ddab3d8e56dfc60",
+    "status.py": "cf8a81a1f94a9fb86f58c73419749153928d7a7aac0d67b40a1b0ebbbc8a27fe",
+    "timing.py": "bac1e30d1ab8c618da8ca83a45359f861f187ea5891276a4ed4c7269596a0316"
+  },
+  "artifacts": {
+    "manifest.json": "a31f7521dad5960b603342135f9e38384ef78a80b47a22f5b2ab54c7994964a4",
+    "results.json": "2a18435c7eb8c0be9fa7d41a1ef3d98ba92a92145d5e6dcb61266e3c83b030c2",
+    "analysis.json": "1f51896f9cf940fd12e36288b3902bd999d41347b2b6a2a45acb5b8c45f5093e",
+    "audit-candidates.json": "d39d8dba11cd82edd2193bff191badc49e3c5d81ccb9468953f257bb3dabb29b",
+    "adjudication.json": "8fd65234c93ae8f9f98bfc90a0cfa494e539cc7542e5877aff98d312607b4c87",
+    "trials.csv": "aceb4933749c191b15ddb5c678b789c91ef2b8ecc133727bee9af87d352a0d47"
+  }
+}
