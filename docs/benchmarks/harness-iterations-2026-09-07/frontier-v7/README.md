@@ -1,0 +1,3 @@
+# Final V7 confirmation
+
+V7 supersedes V6 before any V6 trial was executed. The exact selection and image preflight remain in ../frontier-confirmation/holdout-selection-v2.json and holdout-image-preflight-v2.json. collect.py, timing.py, audit.py and analyze.py are byte-for-byte copies of the archived V6 analysis scripts in that directory. This directory archives the revised immutable protocol, bundle/adapter/config hashes, registration and launcher. Execute only from the distinct .blame/benchmarks/terminal-bench-frontier-v7-20260907 root with the dedicated DOCKER_HOST in the protocol. Never restart an existing campaign to replace its results.

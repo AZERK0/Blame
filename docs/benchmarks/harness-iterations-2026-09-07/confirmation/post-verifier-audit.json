@@ -1,0 +1,263 @@
+{
+  "note": "Recorder timestamps, not server-side execution clocks. Tool starts after verifier start indicate potential overlap and require trace review; non-tool telemetry alone is not proof of a workspace mutation.",
+  "trials": [
+    {
+      "trial": "cancel-async-tasks__rjXSrbd",
+      "verifierStartedAt": "2026-09-07T15:42:39.980260Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "cancel-async-tasks__vpmPMmc",
+      "verifierStartedAt": "2026-09-07T15:42:32.231964Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "regex-chess__5i6NzKJ",
+      "verifierStartedAt": "2026-09-07T15:40:42.361354Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "regex-chess__e7KyLb8",
+      "verifierStartedAt": "2026-09-07T15:40:42.054783Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "sparql-university__3DBNNs6",
+      "verifierStartedAt": "2026-09-07T15:45:07.549486Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "sparql-university__8HivAsG",
+      "verifierStartedAt": "2026-09-07T15:45:09.615439Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "circuit-fibsqrt__HsPUyxX",
+      "verifierStartedAt": "2026-09-07T16:01:02.417895Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "circuit-fibsqrt__pPGFjyf",
+      "verifierStartedAt": "2026-09-07T16:00:46.594275Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "overfull-hbox__NnMVib3",
+      "verifierStartedAt": "2026-09-07T16:24:53.005680Z",
+      "lateEventCount": 28,
+      "lastLateEvent": {
+        "at": "2026-09-07T16:25:18.549Z",
+        "type": "reasoning"
+      },
+      "postVerifierToolCalls": [
+        {
+          "at": "2026-09-07T16:24:58.233Z",
+          "tool": "run_commands"
+        },
+        {
+          "at": "2026-09-07T16:24:58.241Z",
+          "tool": "run_commands"
+        },
+        {
+          "at": "2026-09-07T16:25:03.819Z",
+          "tool": "run_commands"
+        }
+      ],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "overfull-hbox__cSmSa5M",
+      "verifierStartedAt": "2026-09-07T16:22:36.702721Z",
+      "lateEventCount": 12,
+      "lastLateEvent": {
+        "at": "2026-09-07T16:22:53.924Z",
+        "type": "notice"
+      },
+      "postVerifierToolCalls": [
+        {
+          "at": "2026-09-07T16:22:49.266Z",
+          "tool": "edit_code"
+        },
+        {
+          "at": "2026-09-07T16:22:53.836Z",
+          "tool": "run_task"
+        }
+      ],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "query-optimize__9jYZ9tU",
+      "verifierStartedAt": "2026-09-07T16:07:54.420324Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "query-optimize__z9BUtHy",
+      "verifierStartedAt": "2026-09-07T16:05:34.666017Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "compile-compcert__3wq7pWL",
+      "verifierStartedAt": "2026-09-07T16:33:46.052771Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "compile-compcert__x98BrdL",
+      "verifierStartedAt": "2026-09-07T16:40:45.955563Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "polyglot-rust-c__UEifWej",
+      "verifierStartedAt": null,
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": true,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "polyglot-rust-c__sGZSUFU",
+      "verifierStartedAt": "2026-09-07T16:38:29.232244Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "sanitize-git-repo__ZGYRFCj",
+      "verifierStartedAt": null,
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": true,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "sanitize-git-repo__iPrCRbZ",
+      "verifierStartedAt": null,
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": true,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "compile-compcert__2hEzV8h",
+      "verifierStartedAt": null,
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "polyglot-rust-c__4jpFULh",
+      "verifierStartedAt": "2026-09-07T16:55:24.439666Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "polyglot-rust-c__JMNfquS",
+      "verifierStartedAt": null,
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": true
+    },
+    {
+      "trial": "sanitize-git-repo__RfzvuXq",
+      "verifierStartedAt": "2026-09-07T16:50:30.535372Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "sanitize-git-repo__gavGUgy",
+      "verifierStartedAt": "2026-09-07T16:44:59.902972Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    }
+  ]
+}

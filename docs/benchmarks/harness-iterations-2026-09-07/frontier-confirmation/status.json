@@ -1,0 +1,6 @@
+{
+  "status": "superseded_before_execution",
+  "trialsExecuted": 0,
+  "at": "2026-09-07T17:46:52.384520+00:00",
+  "reason": "The still-running V5 diagnostic exposed fragmented navigation; code inspection reproduced distinct-symbol starvation and dropped limit metadata on independent fixtures. V7 includes the verified correction and retains the same selected tasks, controls and analysis protocol."
+}
