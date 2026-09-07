@@ -1,0 +1,151 @@
+{
+  "inputFilesVerified": 74,
+  "allInputsUnchanged": true,
+  "trials": 24,
+  "eventHashes": {
+    "fix-git__P66i6wX": "de21a2ed279fb6264c9e08f52b3b96d3521226c46b5ce83d980debd656a97eaf",
+    "fix-git__VFLaDzY": "68c5f8696ea690dab06066d0a739a8120427f0a0ccaf3f87b9ba30e35cbceaf2",
+    "raman-fitting__nQ93VrE": "54a5ac2b1fcf135123c16ed680e01453b27ee0ad544f3243f6bd60fd0276beb1",
+    "raman-fitting__nm46FDs": "52256ea29f83b4b3014f5d5b5a59be2808fc45731ec9d2e49ce0afc3aafae001",
+    "winning-avg-corewars__CxNT23q": "e5e956d356584f312055e073feefe2f28cb5d39903d22a403b65d1957115676b",
+    "winning-avg-corewars__jxzdris": "6659cfb1c71c616012235c87ded7a3c59d40a61e8bd1e2b6a44c2261209b1c15",
+    "dna-assembly__EJxWm2i": "25424a0f40975afc526064e2a2d6f9e27f0fad6a4e5eb11b23a2f139925a0881",
+    "dna-assembly__LwoQHzt": "789f5ad8f124abc0625802282004eb2ff23f2b295a0eba40b3d07ce86c131e8a",
+    "pytorch-model-cli__boQ8VsC": "b5f51952ebfff4e52d8ad57c4d042a6370ae257d3ce27eda45b43098c9ac3149",
+    "pytorch-model-cli__xLZ5eNG": "f08a380acfa2f52272e091d774bcaa6a8d6da0aae98cd8ebccc54a231d9ea0f1",
+    "vulnerable-secret__avygcRp": "fd89d8b4e8437dd9405c264e9133125281950d8ec13c97fc5bd797f317bad9a1",
+    "vulnerable-secret__uZdHxTo": "3e30bdbcc51150969d7f872f7b40265d87908573d3ff4c640645dd947d1be951",
+    "dna-assembly__FTJJgNH": "5fb32fc3a275e765c089d03d93be643cf308c9d932f09376e5b01cf80070e79b",
+    "dna-assembly__fkaU9nD": "60f027729a7b522ef9e97aa411b68cc2418a0bdb9e027da50b02504b9ef1efa2",
+    "pytorch-model-cli__5pcHbpH": "5c0f364d4fa2457088d6d96473155edfebc41a4eed4db92ff320614a2b0c1a61",
+    "pytorch-model-cli__SeNxuoC": "d970966dc36043bf92cb9bf8ec339562e0025ab4c8e744c37ef8aeebee05fb21",
+    "vulnerable-secret__mqxpRxY": "9d8cb0497c8cf2ced37d28d59cde8d82ad44129542533bfca5e66af1b4b1ed75",
+    "vulnerable-secret__qXxhC8m": "913ef300102428bb9718a23d0709e24fcdefffa1b8f3c777b7e8017d09e2c9e3",
+    "fix-git__7hQow9H": "202b2d7a9a4ee852015ab15699d10d3dfab2417e5304c60940755abc06607ac2",
+    "fix-git__nM5j62P": "1e380ced5299de9e321b3e9b6bbaa0c6a514eb80c3d2ae8d65f021e3f00be71f",
+    "raman-fitting__LSmjTU7": "d7533c6c35d7297f23c72ddda9504dba2161b8be2039c204e539f445607c9cb6",
+    "raman-fitting__jn8y8Ao": "4f54c3ca0c13a070b5dde1c103842a46ebdde51960d60d5c12d4c7ab0804ecb5",
+    "winning-avg-corewars__s3MGw9u": "27c02ea178bf60c9b81154cb3a7c339c506ec6de79476f74c6655fcc8830b198",
+    "winning-avg-corewars__uo9DDbU": "c13c898be8a3ffd5b92f5b0e345ec3f0fbed9300fbfaee17c135c5d765dcc9f0"
+  },
+  "imageChecks": [
+    {
+      "task": "fix-git",
+      "group": "batch-01",
+      "digests": [
+        "alexgshaw/fix-git@sha256:61e431c00c58df652287aadce5457634d9f9330cfdd153ebdf2802df0d540119"
+      ],
+      "expectedDigest": "sha256:61e431c00c58df652287aadce5457634d9f9330cfdd153ebdf2802df0d540119",
+      "matched": true
+    },
+    {
+      "task": "winning-avg-corewars",
+      "group": "batch-01",
+      "digests": [
+        "alexgshaw/winning-avg-corewars@sha256:ad7a6b1c53aed59e10916c692aa7e2ae00042a4283187430aee1e3e79f72d5c6"
+      ],
+      "expectedDigest": "sha256:ad7a6b1c53aed59e10916c692aa7e2ae00042a4283187430aee1e3e79f72d5c6",
+      "matched": true
+    },
+    {
+      "task": "raman-fitting",
+      "group": "batch-01",
+      "digests": [
+        "alexgshaw/raman-fitting@sha256:401fa95d5d491f44a473eda9d2c52930f9565cc889c796eabcb6e20fec26852e"
+      ],
+      "expectedDigest": "sha256:401fa95d5d491f44a473eda9d2c52930f9565cc889c796eabcb6e20fec26852e",
+      "matched": true
+    },
+    {
+      "task": "dna-assembly",
+      "group": "batch-02",
+      "digests": [
+        "alexgshaw/dna-assembly@sha256:d1adf6835f1dd91205ba70e452c699d0aea601010038e5617f370716efb50569"
+      ],
+      "expectedDigest": "sha256:d1adf6835f1dd91205ba70e452c699d0aea601010038e5617f370716efb50569",
+      "matched": true
+    },
+    {
+      "task": "pytorch-model-cli",
+      "group": "batch-02",
+      "digests": [
+        "alexgshaw/pytorch-model-cli@sha256:c996884b5fb5fb2c0c07d67da2c4f974f271f07234ed28e1a868240375c57a67"
+      ],
+      "expectedDigest": "sha256:c996884b5fb5fb2c0c07d67da2c4f974f271f07234ed28e1a868240375c57a67",
+      "matched": true
+    },
+    {
+      "task": "vulnerable-secret",
+      "group": "batch-02",
+      "digests": [
+        "alexgshaw/vulnerable-secret@sha256:61ebb40454dd103aa2f7e71ad6dafd91cf2b301e6bb07e69d5b472412d1ee15b"
+      ],
+      "expectedDigest": "sha256:61ebb40454dd103aa2f7e71ad6dafd91cf2b301e6bb07e69d5b472412d1ee15b",
+      "matched": true
+    },
+    {
+      "task": "vulnerable-secret",
+      "group": "batch-03",
+      "digests": [
+        "alexgshaw/vulnerable-secret@sha256:61ebb40454dd103aa2f7e71ad6dafd91cf2b301e6bb07e69d5b472412d1ee15b"
+      ],
+      "expectedDigest": "sha256:61ebb40454dd103aa2f7e71ad6dafd91cf2b301e6bb07e69d5b472412d1ee15b",
+      "matched": true
+    },
+    {
+      "task": "pytorch-model-cli",
+      "group": "batch-03",
+      "digests": [
+        "alexgshaw/pytorch-model-cli@sha256:c996884b5fb5fb2c0c07d67da2c4f974f271f07234ed28e1a868240375c57a67"
+      ],
+      "expectedDigest": "sha256:c996884b5fb5fb2c0c07d67da2c4f974f271f07234ed28e1a868240375c57a67",
+      "matched": true
+    },
+    {
+      "task": "dna-assembly",
+      "group": "batch-03",
+      "digests": [
+        "alexgshaw/dna-assembly@sha256:d1adf6835f1dd91205ba70e452c699d0aea601010038e5617f370716efb50569"
+      ],
+      "expectedDigest": "sha256:d1adf6835f1dd91205ba70e452c699d0aea601010038e5617f370716efb50569",
+      "matched": true
+    },
+    {
+      "task": "raman-fitting",
+      "group": "batch-04",
+      "digests": [
+        "alexgshaw/raman-fitting@sha256:401fa95d5d491f44a473eda9d2c52930f9565cc889c796eabcb6e20fec26852e"
+      ],
+      "expectedDigest": "sha256:401fa95d5d491f44a473eda9d2c52930f9565cc889c796eabcb6e20fec26852e",
+      "matched": true
+    },
+    {
+      "task": "fix-git",
+      "group": "batch-04",
+      "digests": [
+        "alexgshaw/fix-git@sha256:61e431c00c58df652287aadce5457634d9f9330cfdd153ebdf2802df0d540119"
+      ],
+      "expectedDigest": "sha256:61e431c00c58df652287aadce5457634d9f9330cfdd153ebdf2802df0d540119",
+      "matched": true
+    },
+    {
+      "task": "winning-avg-corewars",
+      "group": "batch-04",
+      "digests": [
+        "alexgshaw/winning-avg-corewars@sha256:ad7a6b1c53aed59e10916c692aa7e2ae00042a4283187430aee1e3e79f72d5c6"
+      ],
+      "expectedDigest": "sha256:ad7a6b1c53aed59e10916c692aa7e2ae00042a4283187430aee1e3e79f72d5c6",
+      "matched": true
+    }
+  ],
+  "auditToolStarts": 721,
+  "missingUsageTrials": [
+    "winning-avg-corewars__jxzdris",
+    "dna-assembly__EJxWm2i",
+    "dna-assembly__LwoQHzt",
+    "dna-assembly__FTJJgNH",
+    "dna-assembly__fkaU9nD"
+  ],
+  "postVerifierAuditPresent": true,
+  "note": "Image observations occur after both arms finish each task in each repetition. Absence of a candidate match does not prove absence of contamination; see manual adjudication. Recorder times are not server-side execution clocks."
+}

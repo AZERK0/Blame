@@ -1,0 +1,40 @@
+{
+  "trial": "winning-avg-corewars__s3MGw9u",
+  "eventLine": 205,
+  "recordedStatus": "blocked",
+  "reconstruction": "Three recorded successful edits; intervening inspected commands do not write this target.",
+  "sourceBytes": 2433,
+  "sourceSha256": "b979148144578257804d7e007c96d51aa600d7a1d9536c16a045a1abddb5b126",
+  "status": "ok",
+  "actualContentSha256": "ef94a922b185d1aae2d33ce0a8493beff390d407fe941b9ebac58fa1ec1e0d12",
+  "effects": {
+    "matches": [
+      {
+        "lines": [
+          20
+        ],
+        "sha256": "ef94a922b185d1aae2d33ce0a8493beff390d407fe941b9ebac58fa1ec1e0d12"
+      },
+      {
+        "lines": [
+          21
+        ],
+        "sha256": "ef94a922b185d1aae2d33ce0a8493beff390d407fe941b9ebac58fa1ec1e0d12"
+      },
+      {
+        "lines": [
+          22
+        ],
+        "sha256": "ef94a922b185d1aae2d33ce0a8493beff390d407fe941b9ebac58fa1ec1e0d12"
+      },
+      {
+        "lines": [
+          23
+        ],
+        "sha256": "ef94a922b185d1aae2d33ce0a8493beff390d407fe941b9ebac58fa1ec1e0d12"
+      }
+    ],
+    "distinctResults": 1
+  },
+  "note": "Analyst-only exact-content replay; no commands, provider request, verifier, or official solution executed. Acceptance does not imply task success."
+}

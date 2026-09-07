@@ -1,0 +1,130 @@
+{
+  "note": "Post-hoc analyst diagnosis; never delivered to evaluated agents. Observed failures are not isolated causal effects of the harness. Raw provider errors and task contents are not published.",
+  "trials": {
+    "winning-avg-corewars__CxNT23q": {
+      "officialOutcome": "Opponent integrity and output existence pass; performance threshold fails.",
+      "runtimeOutcome": "Normal completion with complete usage, 56 requests, no compaction or runtime error event.",
+      "frictions": {
+        "ambiguousPatch": 1,
+        "outsideWorkspaceTextRead": 1,
+        "invalidCommandKind": 2
+      },
+      "interpretation": "The ambiguous patch has two matching locations and supplies distinguishing context. Seven command failures are process exit codes: one simulator help crash and six invalid generated program attempts. These are not seven policy rejections. The remaining input frictions are observable, but do not establish why the final program misses the performance threshold."
+    },
+    "winning-avg-corewars__jxzdris": {
+      "officialOutcome": "Failure retained.",
+      "runtimeOutcome": "timed_out",
+      "agentSeconds": 902.249573,
+      "runnerMs": 900031,
+      "usageComplete": false,
+      "interpretation": "The nonzero exit label alone does not establish an infrastructure fault; the recorded runner status and duration are reported separately."
+    },
+    "raman-fitting__nQ93VrE": {
+      "officialOutcome": "Result file exists, but both fitted peak parameter checks fail.",
+      "runtimeOutcome": "Normal completion with complete provider usage, no runtime error or compaction.",
+      "interpretation": "Both arms output similar peak centers that disagree with the official checks. This is an observed solution error; there is no evidence that image compaction or patch rejection caused it. Exact reference values are not supplied to evaluated agents.",
+      "referenceInspection": {
+        "scope": "Analyst only, after the recorded trial; never supplied to evaluated agents.",
+        "finding": "The upstream reference converts the wavelength axis before fitting the requested peaks. The task instruction and numeric data contain no explicit axis-unit header.",
+        "reportedCentersOnLargeRawScale": true,
+        "limitation": "This identifies a scientific interpretation requirement, not an isolated causal effect of the harness. No oracle run or corrected score is substituted."
+      }
+    },
+    "raman-fitting__nm46FDs": {
+      "officialOutcome": "Result file exists, but both fitted peak parameter checks fail.",
+      "runtimeOutcome": "Normal completion with complete provider usage, no runtime error or compaction.",
+      "interpretation": "Both arms output similar peak centers that disagree with the official checks. This is an observed solution error; there is no evidence that image compaction or patch rejection caused it. Exact reference values are not supplied to evaluated agents.",
+      "frictions": {
+        "missingNumpyImport": 1,
+        "invalidCommandEnvelope": 1,
+        "blockedEdits": 0
+      },
+      "referenceInspection": {
+        "scope": "Analyst only, after the recorded trial; never supplied to evaluated agents.",
+        "finding": "The upstream reference converts the wavelength axis before fitting the requested peaks. The task instruction and numeric data contain no explicit axis-unit header.",
+        "reportedCentersOnLargeRawScale": true,
+        "limitation": "This identifies a scientific interpretation requirement, not an isolated causal effect of the harness. No oracle run or corrected score is substituted."
+      }
+    },
+    "dna-assembly__EJxWm2i": {
+      "officialOutcome": "Failure at the fixed trial deadline; provider usage incomplete.",
+      "runtimeOutcome": "timed_out at about 900 seconds in the runner.",
+      "lastReasoningAt": "2026-09-07T22:17:59.878Z",
+      "interpretation": "The final observed tool call finished before another provider request. No pending tool call explains the final silence. The cause of the unanswered request is not established. Both trials remain in the score and elapsed-time totals.",
+      "contentCheck": {
+        "largestSerializedToolOutputBytes": 50808,
+        "replacementCharacters": 0,
+        "compactionNotices": 0,
+        "conclusion": "The inspected tool outputs do not reproduce the earlier binary-decoding or image-compaction failure."
+      }
+    },
+    "dna-assembly__LwoQHzt": {
+      "officialOutcome": "Failure at the fixed trial deadline; provider usage incomplete.",
+      "runtimeOutcome": "timed_out at about 900 seconds in the runner.",
+      "lastReasoningAt": "2026-09-07T22:28:10.930Z",
+      "interpretation": "The final observed tool call finished before another provider request. No pending tool call explains the final silence. The cause of the unanswered request is not established. Both trials remain in the score and elapsed-time totals.",
+      "contentCheck": {
+        "largestSerializedToolOutputBytes": 11047,
+        "replacementCharacters": 0,
+        "compactionNotices": 0,
+        "conclusion": "The inspected tool outputs do not reproduce the earlier binary-decoding or image-compaction failure."
+      }
+    },
+    "dna-assembly__FTJJgNH": {
+      "officialOutcome": "Failure retained.",
+      "runtimeOutcome": "timed_out",
+      "runnerMs": 900060,
+      "usageComplete": false,
+      "lastReasoningAt": "2026-09-07T22:57:01.341Z",
+      "interpretation": "A fixed-deadline failure is not itself evidence of a compiler, harness validation, provider, or infrastructure defect."
+    },
+    "dna-assembly__fkaU9nD": {
+      "officialOutcome": "Failure retained.",
+      "runtimeOutcome": "timed_out",
+      "runnerMs": 900064,
+      "usageComplete": false,
+      "lastReasoningAt": "2026-09-07T22:57:32.010Z",
+      "interpretation": "A fixed-deadline failure is not itself evidence of a compiler, harness validation, provider, or infrastructure defect."
+    },
+    "raman-fitting__LSmjTU7": {
+      "officialOutcome": "Result file exists, but both peak parameter checks fail.",
+      "runtimeOutcome": "succeeded",
+      "usageComplete": true,
+      "blockedEdits": 0,
+      "interpretation": "The observed solution still fails the scientific parameter checks. No task-specific correction or reference values are fed into subsequent trials.",
+      "referenceInspection": {
+        "scope": "Analyst only, after the recorded trial; never supplied to evaluated agents.",
+        "finding": "The upstream reference converts the wavelength axis before fitting the requested peaks. The task instruction and numeric data contain no explicit axis-unit header.",
+        "reportedCentersOnLargeRawScale": true,
+        "limitation": "This identifies a scientific interpretation requirement, not an isolated causal effect of the harness. No oracle run or corrected score is substituted."
+      }
+    },
+    "winning-avg-corewars__s3MGw9u": {
+      "officialOutcome": "Output and opponent integrity pass; the performance requirement fails.",
+      "runtimeOutcome": "succeeded",
+      "usageComplete": true,
+      "requests": 23,
+      "tools": 43,
+      "edits": 8,
+      "blockedEdits": 5,
+      "frictions": {
+        "rawTextForExistingFile": 1,
+        "missingContext": 2,
+        "ambiguousContext": 2
+      },
+      "mechanicalFinding": "Two rejected proposals have no ambiguity in their file effect: a no-op leading hunk before a unique change, and a single repeated-line expansion with four possible positions. Replays and independent fixtures are analyzed separately after V9.",
+      "limitation": "The corrected acceptance is not a new task run and does not turn the official failure into a success."
+    },
+    "winning-avg-corewars__uo9DDbU": {
+      "officialOutcome": "Success retained.",
+      "review": "All 19 tool inputs inspected. The agent reads supplied opponents and simulator documentation, writes its own program and temporary parameter sweeps, and checks performance. No change to the simulator or protected opponents and no benchmark/oracle access is found in these inputs.",
+      "nativeCommandBudget": "The extra timeout field present in some calls is not consumed by the native run_commands implementation. Its configured default remains 30000 ms; no timeout override is inferred from the supplied field."
+    },
+    "raman-fitting__jn8y8Ao": {
+      "officialOutcome": "Output exists; both peak parameter checks fail.",
+      "runtimeOutcome": "succeeded",
+      "usageComplete": true,
+      "interpretation": "A scientific solution failure retained; upstream reference inspection occurs only in analyst context, never in evaluated agent input."
+    }
+  }
+}

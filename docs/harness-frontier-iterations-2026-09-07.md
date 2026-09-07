@@ -1,6 +1,6 @@
 # Itérations du harness — 7 septembre 2026
 
-Vingt-sept nouveaux essais diagnostiques sont terminés ; une confirmation prévue sur 36 essais a été interrompue par l’infrastructure après 23 essais créés. Aucun dépassement global de Cline n'est annoncé à ce stade. La comparaison des 108 essais précédents reste inchangée et ses résultats négatifs sont conservés dans [le rapport initial](harness-global-measurement-2026-09-06.md).
+Les six campagnes terminées totalisent 96 nouveaux essais : 36 diagnostics et deux confirmations distinctes de 36 puis 24 essais. Une autre confirmation prévue sur 36 essais a été interrompue par l’infrastructure après 23 essais créés, dont 22 résultats lisibles ; elle reste séparée. V7 retrouve un avantage de temps à score égal, mais V9 finit à 6/12 contre 7/12 pour Cline avec seulement 1,6 % de temps en moins. La supériorité globale n’est donc pas établie. Les 108 essais précédents restent inchangés dans [le rapport initial](harness-global-measurement-2026-09-06.md). Deux faux refus de patch découverts dans V9 sont corrigés après sa clôture, avec tests et replays séparés des scores.
 
 ## Première itération : résultats mesurés
 
@@ -278,3 +278,64 @@ Les deux essais documentaires V8 ne compactent plus, contre 30 compactions termi
 Les [neuf essais](benchmarks/harness-iterations-2026-09-07/v8/trials.csv), [analyses](benchmarks/harness-iterations-2026-09-07/v8/analysis.json), [métriques médias](benchmarks/harness-iterations-2026-09-07/v8/media-metrics.json) et [contrôles d’intégrité](benchmarks/harness-iterations-2026-09-07/v8/integrity.json) sont archivés. Les 41 entrées figées, neuf traces et trois observations d’images sont vérifiées. Le scan des 652 appels ne confirme aucun accès oracle ; aucun appel enregistré ne commence après le démarrage du vérificateur. La portée et les limites de cette revue sont publiées.
 
 Le résultat justifie de conserver le correctif de transmission et de compaction, pas d’affirmer que tous les axes sont améliorés sur toute tâche. La confirmation indépendante V9 commence à 21:47:58 UTC, avec le runner commun corrigé et le harness V8, sans modification de code pendant ses 24 essais.
+
+## Résultat complet V9
+
+Les 24 essais se terminent le 7 septembre à 23:14:20 UTC, soit le 8 septembre à 01:14:20 à Paris. Les six tâches étaient nouvelles dans les archives locales. Les quatre groupes de six, deux répétitions, budgets, ordre inversé et absence de retry sont respectés. Le bundle mesuré reste `cc8816ac…`, issu de `f73d5368` ; les correctifs postérieurs ne lui sont pas réattribués.
+
+| Mesure | Blame V9 | Cline SDK 0.0.81 contemporain |
+| --- | ---: | ---: |
+| Réussites officielles et auditées | 6/12 | 7/12 |
+| Temps agent cumulé | 74,2 min | 75,4 min |
+| Requêtes observées | 244 | 170 |
+| Appels outils | 405 | 316 |
+| Essais à usage incomplet | 2 | 3 |
+| Tokens enregistrés, sommes partielles | ≥ 4 830 426 | ≥ 4 224 858 |
+| Coût enregistré, sommes partielles | ≥ 0,43622828 | ≥ 0,38441464 |
+
+Le temps baisse de **1,6 %**, avec un ratio bootstrap descriptif à 95 % de **[0,908 ; 1,007]**. Le gain reste de 1,6 % puis 1,7 % dans les deux répétitions ; retirer une tâche laisse un ratio compris entre 0,973 et 0,994. Son ampleur est faible, son intervalle couvre l’absence de gain et la qualité observée est inférieure. La différence de réussite vaut −8,3 points, avec un intervalle descriptif de [−25 ; 0]. Six tâches stratifiées et deux répétitions ne permettent pas une conclusion populationnelle forte.
+
+Quatre tâches ont des usages complets pour les deux bras et les deux répétitions : Git, PyTorch, sécurité et Raman. Sur ce sous-ensemble prévu par le protocole, qui conserve les échecs Raman, les tokens diminuent de **27,1 %** et le coût déclaré de **15,9 %**. Les ratios bootstrap sont respectivement [0,665 ; 0,823] et [0,721 ; 0,915]. ADN et Core War sont exclus de ce calcul à cause des usages incomplets ; leurs échecs restent dans les scores et temps globaux. Les sommes partielles du tableau ne sont jamais transformées en économies exactes.
+
+| Tâche, deux répétitions | Réussites Blame / Cline | Secondes Blame / Cline | Usage complet des quatre essais |
+| --- | ---: | ---: | --- |
+| Git | 2 / 2 | 165,1 / 202,5 | Oui |
+| PyTorch CLI | 2 / 2 | 413,4 / 429,1 | Oui |
+| Sécurité | 2 / 2 | 83,9 / 130,3 | Oui |
+| Raman | 0 / 0 | 952,4 / 926,6 | Oui |
+| ADN | 0 / 0 | 1 804,3 / 1 804,2 | Non |
+| Core War | 0 / 1 | 1 033,0 / 1 032,1 | Non |
+
+Les six paires réussies en commun ont un usage complet : 684 616 contre 920 290 tokens, 0,07463 contre 0,09845 de coût et 662,4 contre 761,9 secondes. Ces gains de 25,6 %, 24,2 % et 13,1 % montrent une efficacité utile sur ces tâches ; ce sous-ensemble sélectionné ne compense pas la réussite manquante. Les 24 opérations d’édition Blame sont des patchs : V9 ne mesure pas un avantage de l’édition par symbole.
+
+L’écart restant porte notamment sur les allers-retours : **43,5 % de requêtes supplémentaires** pour Blame. ADN en concentre 36 des 74 supplémentaires et Core War 26. Leurs trajectoires diffèrent ; cette ventilation n’isole pas la causalité des changements de prompt ou d’outils. Les quatre essais ADN atteignent le délai. Dans la première paire, les dernières commandes étaient terminées avant l’attente finale du fournisseur ; aucune compaction ni pollution binaire comparable aux défauts antérieurs n’est observée. La cause du silence reste inconnue.
+
+Sur Raman, les fichiers existent mais les paramètres échouent. La référence amont, inspectée uniquement par l’analyste, demande une conversion de l’axe avant ajustement. Les premiers résultats suivent l’échelle brute des données ; ni l’instruction ni le fichier numérique ne portent d’en-tête d’unité explicite. Ce besoin d’interprétation scientifique ne justifie pas d’injecter une formule propre à la tâche dans le harness. Aucun résultat de référence n’est fourni aux agents.
+
+Cline réussit la seconde tentative Core War en 129,9 secondes et douze requêtes, en partant des programmes fournis puis en effectuant des balayages de paramètres locaux. La revue des dix-neuf appels ne trouve ni modification du simulateur ou des adversaires protégés, ni accès oracle. Certains appels contiennent un champ `timeout`, mais l’exécuteur natif ne le consomme pas : la limite configurée reste de 30 secondes. Blame conserve ses 120 secondes ; il ne s’agit toujours pas d’une ablation à budget de commande égal.
+
+Les [essais](benchmarks/harness-iterations-2026-09-07/frontier-v9/trials.csv), [analyses](benchmarks/harness-iterations-2026-09-07/frontier-v9/analysis.json), [diagnostics](benchmarks/harness-iterations-2026-09-07/frontier-v9/diagnosis-notes.json) et [contrôles d’intégrité](benchmarks/harness-iterations-2026-09-07/frontier-v9/integrity.json) sont publiés. Les 74 entrées figées, 24 traces et douze observations de digests concordent. Le scan des 721 appels, la revue des URL et des trajectoires diagnostiquées ne confirment aucun accès oracle ou altération du vérificateur. Aucun appel enregistré ne commence après vérification. Les limites de cette revue sont explicites ; ce n’est pas une garantie d’absence de contamination. Le moteur Docker réservé aux mesures est arrêté après vérification de l’absence de conteneur restant.
+
+## Corrections après V9 : ambiguïté de position et résultat unique
+
+Six des 24 appels d’édition V9 sont rejetés, tous sur Core War. La seconde tentative contient cinq refus : un contenu brut pour un fichier existant, deux contextes absents et deux contextes ambigus. Deux de ces propositions ambiguës ont pourtant un effet unique sur le fichier.
+
+Le [replay initial](benchmarks/harness-iterations-2026-09-07/frontier-v9/patch-effect-replay-before.json) reconstruit exactement le fichier depuis les trois éditions réussies enregistrées. Les commandes intermédiaires inspectées ne l’écrivent pas. Une expansion de lignes identiques possède quatre positions possibles, toutes donnant le même SHA256 final, mais le harness la bloque. Un autre patch contient un premier hunk sans effet, puis un changement unique : les 64 placements ordonnés du hunk inchangé donnent aussi un seul fichier final.
+
+Le correctif `fd533a53` accepte le premier cas uniquement pour un hunk composé d’une même ligne, lorsque toute la zone entre la première et la dernière correspondance appartient au même bloc répété. Une occurrence séparée par du contenu différent reste bloquante. Pour plusieurs hunks ordonnés sans ancre explicite, les hunks sans changement ne doivent plus avoir une position unique, mais chaque hunk qui modifie le contenu reste soumis à cette exigence. La précision porte sur le résultat réel, avec les mêmes contrôles de fraîcheur, chevauchement, syntaxe et atomicité. Aucun outil, appel modèle, hash à mémoriser ou algorithme de recherche combinatoire n’est ajouté.
+
+Huit tests indépendants couvrent suppression d’appels identiques, expansion de données, Unicode/CRLF, occurrence distante, changement de valeur, atomicité et composition avec un hunk inchangé. Quatre échouent avant correction ; les huit passent après, puis les 131 tests ciblés passent. Les [replays des 64 placements](benchmarks/harness-iterations-2026-09-07/frontier-v9/patch-effect-replay-199-after.json) et [des quatre placements](benchmarks/harness-iterations-2026-09-07/frontier-v9/patch-effect-replay-205-after.json) produisent les octets prédits. Ils restent indépendants : une acceptation antérieure changerait la suite de la trajectoire réelle. Aucun score contrefactuel n’est calculé.
+
+Le commit `500c743a` précise aussi que le contenu brut concerne un nouveau fichier, que les fichiers existants exigent un patch Cline et qu’une ancre précède les lignes changées. Cette clarification répond aux confusions observées sans nouvelle forme d’appel. La suite complète finale compte **610 tests : 609 réussites et une exclusion Windows sous Linux**, avec build et lint réussis. Les corrections sont postérieures aux 24 essais V9 ; leur effet global sur les tokens, le temps et les réussites n’est pas mesuré par cette campagne.
+
+## Verdict et priorités restantes
+
+Les améliorations de capture, navigation, contexte, médias, édition et cycle de vie sont livrées avec des preuves mécaniques. V7 montre un avantage de temps à score égal ; V9 retrouve des économies sur quatre tâches entièrement mesurables, mais garde une réussite de moins et un écart de temps faible. V8 conserve aussi une régression de tokens documentaires. **La promesse d’une supériorité globale stable sur Cline n’est pas validée, et aucun classement frontier mondial n’est démontré.** Les campagnes ne sont pas fusionnées comme si elles partageaient une version et un échantillonnage identiques.
+
+Les priorités étayées restent, dans l’ordre :
+
+1. Vérifier lors de la prochaine comparaison figée l’effet réel des deux corrections de patch postérieures à V9. Leurs preuves d’exactitude justifient la livraison ; elles ne justifient pas un nouveau score.
+2. Réduire les allers-retours sur des défauts de contrat reproduits indépendamment. Le différentiel de requêtes est mesuré ; sa causalité complète reste à établir. Les erreurs scientifiques et les attentes fournisseur ne sont pas des motifs suffisants pour ajouter une critique LLM permanente ou des solutions mémorisées.
+3. Étendre la validation à un autre modèle et à un corpus applicatif exerçant réellement les symboles, tout en gardant les comparaisons contemporaines et les coûts manquants explicites. Les résultats présents portent sur Luna high et Cline SDK intégré 0.0.81, pas sur tous les modèles ni sur la dernière extension autonome.
+
+Le travail conserve cinq primitives, les patchs pour les formats secondaires et la responsabilité mécanique du runtime. L’isolation élargie reste explicitement déclarée par l’appelant ; les sessions desktop ne l’activent pas automatiquement sur la seule présence d’un worktree ou d’un relais géré.
