@@ -3814,6 +3814,24 @@ La confirmation V7 fige le bundle `ec0528743686690de7be7692891211de12090f9bc2c70
 
 **Verdict :** un avantage de vitesse apparaît sur cette confirmation, sans dépendre d’une tâche unique. La supériorité en précision n’est pas établie. Des défauts de transmission et de compaction des images sont reproduits séparément ; leur correction reste à mesurer après intégration. Le [rapport détaillé](/mnt/dev/web/Blame/docs/harness-frontier-iterations-2026-09-07.md) et les [données V7](/mnt/dev/web/Blame/docs/benchmarks/harness-iterations-2026-09-07/frontier-v7/analysis.json) présentent les résultats négatifs et les limites.
 
+### 21.59. Préserver les médias et respecter le budget explicite
+
+L’analyse V7 reproduit deux pertes d’information dans le SDK : le base64 des images est estimé comme du texte pour déclencher et effectuer la compaction, et les images répétées épuisent son budget de transmission. Onze images distinctes arrivent bien initialement ; leur répétition suffit à en omettre cinq. Un replay avec le vrai SDK et un fournisseur simulé montre ensuite une compaction qui retire les onze images avant envoi. Ces défauts mécaniques ne sont pas assimilés à une incapacité visuelle du modèle.
+
+La correction conserve les pixels et le transcript canonique. Une projection commune à l’envoi et au calcul de compaction déduplique les images, privilégie les lectures récentes dans les 8 Mio encodés admis par le SDK et indique les omissions. Le lecteur respecte aussi sa limite individuelle de 5 Mio encodés. Les images temporaires absolues deviennent lisibles dans un environnement explicitement isolé ; les PDF et binaires ne sont plus décodés comme du code. Aucune permission d’édition supplémentaire n’est accordée.
+
+Pour les modèles GPT‑5.6 vérifiés, une option du SDK remplace la contribution du base64 par une borne conservatrice de 36 000 tokens par image, issue de la documentation du fournisseur. Ce n’est pas un tokenizer exact, et cette borne n’est pas étendue par hypothèse à Astra ou aux autres fournisseurs. Le contrôle Cline conserve son estimation native. La correction est livrée aux hubs gérés dans l’archive existante, avec vérification de l’identité du SDK. Une installation npm réelle puis un replay distant transmettent les onze images sans compaction prématurée ; aucune exécution de VM macOS ou Windows n’est revendiquée.
+
+La suite runtime atteint 602 tests, dont 601 réussites et une exclusion Windows sous Linux. Onze tests de livraison/relais et 44 tests desktop pertinents passent. Les validations de build, lint et scripts passent également. Quatre rejets d’édition Rust de V7 sont reproduits séparément et refusés aussi par le compilateur : ils ne justifient pas d’affaiblir la validation.
+
+Le diagnostic V8 est figé sur neuf essais : deux répétitions documentaires et une tâche G-code, avec V7, V8 et Cline contemporains. V8 réussit 1/3 contre 0/3 pour les deux témoins ; le temps cumulé vaut 12,6 minutes contre 34,8 et 26,1. Les compactions documentaires terminées passent de trente pour V7 à zéro pour V8, contre dix pour Cline. L’échec documentaire V8 subsistant conserve pourtant ses images : une décision de classification reste incorrecte. Les trois versions échouent sur G-code sans utiliser d’images.
+
+Le bilan de consommation demeure mixte : sur les deux paires documentaires à usage complet V8/Cline, V8 traite 72,3 % de tokens supplémentaires mais coûte 37,9 % de moins selon les relevés fournisseur. Les témoins ont trois usages incomplets au total ; aucune économie globale exacte n’est annoncée. Ce petit lot choisi pour diagnostiquer les médias ne remplace pas une confirmation indépendante. Les [résultats V8](/mnt/dev/web/Blame/docs/benchmarks/harness-iterations-2026-09-07/v8/analysis.json) conservent cette régression.
+
+Un arrêt à huit minutes de silence est attribué au watchdog du wrapper Blame commun aux deux bras, et non automatiquement au modèle, au SDK Cline ou à l’infrastructure. Le runner aligne désormais ce délai interne sur le budget explicite de l’essai, déjà borné depuis la création de session. Deux reproductions avec le vrai runtime échouent avant correction et passent après ; les 26 tests du runner passent. Le watchdog desktop par défaut reste inchangé. Les quatre arrêts historiques retrouvés sont conservés dans leurs campagnes, sans score corrigé fictivement.
+
+Une confirmation V9 est enregistrée puis lancée sur six nouvelles tâches locales, deux bras et deux répétitions, en quatre groupes de six. Elle reprend le harness V8 et applique le délai commun corrigé aux deux bras. Le bundle, les tâches, les paramètres et les règles d’analyse restent figés pendant les 24 essais. Ses résultats sont encore en attente ; ils ne seront pas mélangés aux agrégats V7 et V8 comme s’il s’agissait d’une seule expérience.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)
