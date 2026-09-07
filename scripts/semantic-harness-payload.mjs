@@ -10,7 +10,8 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
@@ -19,37 +20,7 @@ const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const agentRuntimeDir = join(rootDir, "packages/agent-runtime");
 const agentRuntimeDist = join(agentRuntimeDir, "dist");
 const payloadName = "blame-semantic-harness.tgz";
-const payloadHarnessFiles = new Set([
-  "code-intelligence.js",
-  "command-policy.js",
-  "component-symbols.js",
-  "content-validation.js",
-  "environment-adapter.js",
-  "initial-task-briefing.js",
-  "language-capabilities.js",
-  "lexical-search.js",
-  "light-aliases.js",
-  "light-capabilities.js",
-  "light-commit.js",
-  "light-dependencies.js",
-  "light-diagnostic.js",
-  "light-edit.js",
-  "light-executor.js",
-  "light-finish-service.js",
-  "light-identity.js",
-  "light-navigation.js",
-  "light-patch.js",
-  "light-task-runner.js",
-  "light-workspace.js",
-  "package-manager-runtime.js",
-  "packaged-resource-path.js",
-  "patch-symbol-attribution.js",
-  "read-coverage.js",
-  "semantic-harness-runner.js",
-  "session-journal.js",
-  "task-catalog.js",
-  "workspace-files.js",
-]);
+const { preProcessFile } = createRequire(join(agentRuntimeDir, "package.json"))("typescript");
 const dependencyNames = [
   "@ast-grep/lang-bash",
   "@ast-grep/lang-c",
@@ -72,6 +43,7 @@ const dependencyNames = [
   "typescript",
   "write-file-atomic",
   "yarn",
+  "zod",
 ];
 
 export async function buildSemanticHarnessPayload({
@@ -84,16 +56,7 @@ export async function buildSemanticHarnessPayload({
   );
   const staging = await mkdtemp(join(tmpdir(), "blame-semantic-harness-"));
   try {
-    const harnessSource = join(agentRuntimeDist, "harness");
-    await cp(harnessSource, join(staging, "harness"), {
-      recursive: true,
-      filter: (source) =>
-        source === harnessSource || payloadHarnessFiles.has(basename(source)),
-    });
-    await cp(
-      join(agentRuntimeDist, "security-secret-redaction.js"),
-      join(staging, "security-secret-redaction.js"),
-    );
+    const runtimeFiles = await copyRuntimeModules(staging);
     await writeFile(
       join(staging, "package.json"),
       `${JSON.stringify(
@@ -106,7 +69,7 @@ export async function buildSemanticHarnessPayload({
             "blame-semantic-harness": "harness/semantic-harness-runner.js",
           },
           engines: { node: ">=22" },
-          files: ["harness", "security-secret-redaction.js"],
+          files: runtimeFiles,
           dependencies: Object.fromEntries(
             dependencyNames.map((name) => [
               name,
@@ -142,6 +105,25 @@ export async function buildSemanticHarnessPayload({
   } finally {
     await rm(staging, { force: true, recursive: true });
   }
+}
+
+async function copyRuntimeModules(staging) {
+  const pending = [join(agentRuntimeDist, "harness/semantic-harness-runner.js")];
+  const copied = new Set();
+  while (pending.length) {
+    const source = pending.pop();
+    if (copied.has(source)) continue;
+    const local = relative(agentRuntimeDist, source);
+    if (local.startsWith("..")) throw new Error("Runtime import escapes its package");
+    const imports = preProcessFile(await readFile(source, "utf8"), true, true).importedFiles;
+    const destination = join(staging, local);
+    await mkdir(dirname(destination), { recursive: true });
+    await cp(source, destination);
+    copied.add(source);
+    for (const { fileName } of imports)
+      if (fileName.startsWith(".")) pending.push(resolve(dirname(source), fileName));
+  }
+  return [...copied].map((path) => relative(agentRuntimeDist, path).replaceAll("\\", "/"));
 }
 
 export async function prepareSemanticHarnessPayload(options) {
