@@ -1,0 +1,365 @@
+{
+  "note": "Recorder timestamps, not server-side execution clocks. Tool starts after verifier start indicate potential overlap and require trace review; non-tool telemetry alone is not proof of a workspace mutation.",
+  "trials": [
+    {
+      "trial": "cancel-async-tasks__PTSsCrK",
+      "verifierStartedAt": "2026-09-07T18:12:48.045011Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "cancel-async-tasks__pC4TQud",
+      "verifierStartedAt": "2026-09-07T18:11:51.206870Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "financial-document-processor__hmqBDPv",
+      "verifierStartedAt": "2026-09-07T18:28:35.297927Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "financial-document-processor__xxmeJNp",
+      "verifierStartedAt": "2026-09-07T18:27:43.716754Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "path-tracing-reverse__KaFdfeB",
+      "verifierStartedAt": "2026-09-07T18:10:14.597765Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "path-tracing-reverse__hC8j88A",
+      "verifierStartedAt": "2026-09-07T18:10:14.257372Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "merge-diff-arc-agi-task__FQ9QL7y",
+      "verifierStartedAt": "2026-09-07T18:54:33.167625Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "merge-diff-arc-agi-task__VkXcw5G",
+      "verifierStartedAt": "2026-09-07T18:59:17.007619Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "query-optimize__4ossTxj",
+      "verifierStartedAt": "2026-09-07T18:47:21.502987Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "query-optimize__PG7WzEj",
+      "verifierStartedAt": "2026-09-07T18:54:29.876597Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "torch-pipeline-parallelism__UJGRTbC",
+      "verifierStartedAt": "2026-09-07T18:43:42.391277Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "torch-pipeline-parallelism__iWmjZjv",
+      "verifierStartedAt": "2026-09-07T18:33:01.733563Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "git-multibranch__DM9AkcT",
+      "verifierStartedAt": "2026-09-07T19:04:05.008079Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "git-multibranch__GrSWpmv",
+      "verifierStartedAt": "2026-09-07T19:05:56.049416Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "password-recovery__XUgcx8Y",
+      "verifierStartedAt": "2026-09-07T19:13:11.821652Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "password-recovery__aCR5RHx",
+      "verifierStartedAt": "2026-09-07T19:16:10.921840Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "polyglot-rust-c__9iqpMgM",
+      "verifierStartedAt": "2026-09-07T19:08:28.183245Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "polyglot-rust-c__n4zKPT2",
+      "verifierStartedAt": "2026-09-07T19:17:28.667798Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "git-multibranch__D9qZdKP",
+      "verifierStartedAt": "2026-09-07T19:38:55.100324Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "git-multibranch__qsbHPL9",
+      "verifierStartedAt": "2026-09-07T19:35:30.405360Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "password-recovery__9TKLHXw",
+      "verifierStartedAt": "2026-09-07T19:19:53.247964Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "password-recovery__RVmjWvp",
+      "verifierStartedAt": "2026-09-07T19:19:53.171118Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "polyglot-rust-c__RxdnYPn",
+      "verifierStartedAt": "2026-09-07T19:30:28.369937Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "polyglot-rust-c__ob7uHMW",
+      "verifierStartedAt": "2026-09-07T19:32:28.656959Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "merge-diff-arc-agi-task__JtUN73K",
+      "verifierStartedAt": "2026-09-07T19:45:53.778594Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "merge-diff-arc-agi-task__f5nEtNb",
+      "verifierStartedAt": "2026-09-07T19:41:44.084224Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "query-optimize__DNo8Rzn",
+      "verifierStartedAt": "2026-09-07T19:54:12.703225Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "query-optimize__q5ifpEj",
+      "verifierStartedAt": "2026-09-07T19:46:21.318563Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "torch-pipeline-parallelism__KF3NCiQ",
+      "verifierStartedAt": "2026-09-07T20:03:44.014223Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "torch-pipeline-parallelism__TWPoqLZ",
+      "verifierStartedAt": "2026-09-07T19:59:03.391602Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "cancel-async-tasks__2dwxXUh",
+      "verifierStartedAt": "2026-09-07T20:22:15.961496Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "cancel-async-tasks__6pWAior",
+      "verifierStartedAt": "2026-09-07T20:23:58.788419Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "financial-document-processor__UJFCWwG",
+      "verifierStartedAt": "2026-09-07T20:25:22.367765Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "financial-document-processor__ZPuoGRK",
+      "verifierStartedAt": "2026-09-07T20:19:44.995150Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "path-tracing-reverse__27HWjkV",
+      "verifierStartedAt": "2026-09-07T20:39:20.062627Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "path-tracing-reverse__ZYRQT8y",
+      "verifierStartedAt": "2026-09-07T20:39:54.517301Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    }
+  ]
+}

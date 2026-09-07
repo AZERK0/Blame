@@ -202,3 +202,24 @@ Une session SDK locale complète confirme ensuite le trajet, avec stockage tempo
 Le [replay du serveur distant candidat](benchmarks/harness-iterations-2026-09-07/frontier-v7/image-session-remote-candidate-replay.json) conserve lui aussi les onze images ; le [contrôle distant](benchmarks/harness-iterations-2026-09-07/frontier-v7/image-session-remote-native-replay.json) compacte et n’en transmet aucune. Le test utilise le même point d’entrée racine que le runtime géré. Un import indépendant du sous-chemin public `@cline/core/hub` échoue déjà avec le SDK non modifié (`CX0 is not defined`) ; ce défaut distinct n’est pas introduit par le candidat et ce sous-chemin n’est pas celui utilisé par les VM.
 
 L’inspection de la livraison révèle que les scripts VM réinstallent le SDK depuis npm. Une simple correction pnpm sur le poste ne suffirait donc pas. Le candidat de livraison place le core corrigé dans l’archive existante, charge ce core pour le hub et vérifie son identité avant de réutiliser un ancien processus. Trois tests d’extraction/exécution de l’archive et six contrôles des scripts passent avec dépendances locales. L’installation npm complète et les mesures du candidat restent à effectuer après V7 ; aucune exécution de VM macOS ou Windows n’est annoncée.
+
+## Résultat complet V7
+
+Les 36 essais se terminent à 20:40:19 UTC, sans modification du runtime, retry ou remplacement. Blame et Cline SDK intégré réussissent chacun 9/18 : 4 contre 5 dans la première répétition, puis 5 contre 4 dans la seconde. Six tâches nouvelles dans les archives locales et trois diagnostics connus restent distingués. Le résultat précédent de 108 essais n’est ni effacé ni remplacé par cette campagne.
+
+| Mesure | Blame V7 | Cline contemporain |
+| --- | ---: | ---: |
+| Réussites officielles | 9/18 | 9/18 |
+| Temps agent cumulé | 108,1 min | 139,7 min |
+| Requêtes observées | 306 | 311 |
+| Essais à usage incomplet | 2 | 4 |
+
+Le temps agent diminue de **22,6 %**. Le ratio Blame/Cline est de 0,774, avec un intervalle bootstrap descriptif à 95 % de [0,580 ; 0,999], en rééchantillonnant les neuf tâches avec leurs deux répétitions conservées ensemble. La médiane des ratios par tâche vaut 0,813 ; retirer n’importe quelle tâche laisse un ratio entre 0,721 et 0,849. Les deux répétitions favorisent Blame en temps. Sur les six tâches nouvelles localement, la baisse est de 24,4 %, mais la différence de réussite reste nulle. Ce petit échantillon stratifié ne prouve ni non-infériorité en précision ni classement mondial : l’intervalle de différence de réussite couvre −16,7 à +16,7 points.
+
+Sept tâches ont un usage complet pour les quatre essais appariés. Sur ce sous-ensemble sélectionné, qui conserve les échecs, les tokens diminuent de **39,6 %** et le coût déclaré par le fournisseur de **39,1 %**. Les ratios bootstrap sont respectivement [0,341 ; 1,033] et [0,450 ; 0,912]. Les deux tâches documentaires/visuelles exclues pour usage incomplet empêchent d’affirmer un gain global exact de tokens ou de coût. Les sommes partielles de tous les essais ne sont pas utilisées comme économies exactes.
+
+Les [résultats par essai](benchmarks/harness-iterations-2026-09-07/frontier-v7/trials.csv), [analyses](benchmarks/harness-iterations-2026-09-07/frontier-v7/analysis.json) et [contrôles d’intégrité](benchmarks/harness-iterations-2026-09-07/frontier-v7/integrity.json) sont archivés. Les 110 entrées figées et les 36 traces sont vérifiées ; 18 observations confirment les digests des images Docker après les paires. Le scan des 1 449 appels enregistrés ne trouve aucun motif d’accès oracle ; la revue des URL et des traces diagnostiquées ne confirme aucun accès au vérificateur ou à une solution. Ce contrôle n’est pas une preuve d’absence de contamination. Aucun appel enregistré ne commence après le démarrage du vérificateur.
+
+Le second essai documentaire Cline finit avec le code 124 à 900,4 secondes, conformément au délai commun du runner : ce n’est pas un incident mémoire démontré. Le second essai Blame termine en 563,4 secondes avec seulement cinq compactions, mais échoue au vérificateur. Les défauts multimodaux reproduits ne sont donc pas présentés comme l’explication unique des échecs documentaires.
+
+**Verdict V7 :** l’avantage de vitesse face au contrôle Cline devient observable et ne dépend plus d’une seule tâche. La consommation complète disponible va dans le bon sens. La supériorité en résolution et l’économie globale exacte restent non établies. L’itération suivante cible les pertes d’information multimodales avérées, sans instruction propre aux tâches ni nouvelle boucle de raisonnement.

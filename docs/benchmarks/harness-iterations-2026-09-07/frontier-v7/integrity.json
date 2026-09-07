@@ -1,0 +1,218 @@
+{
+  "inputFilesVerified": 110,
+  "allInputsUnchanged": true,
+  "trials": 36,
+  "eventHashes": {
+    "cancel-async-tasks__PTSsCrK": "c68314485581febecb6fd38b49e82fb7c056cedc06f0a0f3af9f74cc4f729eb7",
+    "cancel-async-tasks__pC4TQud": "43fa792b819e76b6d3c6f07649704b090b0c164693efe11b20d9b110b63b7550",
+    "financial-document-processor__hmqBDPv": "ad6d0ddcd779416a08b8f2c0c4983bdee1bd9ebfc5625f8c86ce95b10ea8cb3f",
+    "financial-document-processor__xxmeJNp": "a26249f5346f2a480aa31a6d76ae06ce9044e77c13e293bc8863d305638d4310",
+    "path-tracing-reverse__KaFdfeB": "1b7d629955c3e72ee2e0c0e44365875318b40aa7ead19bc92b786a4fcf2eff8f",
+    "path-tracing-reverse__hC8j88A": "78b0657103e71a9a8356d103737e7a197625e1046e67c123dbea9581d9c457d1",
+    "merge-diff-arc-agi-task__FQ9QL7y": "80d0b4134d02025a506ef8dfb81a46ae8e9b0e8fffd878ebe2ac993683423e27",
+    "merge-diff-arc-agi-task__VkXcw5G": "052fe2e40d67bd6ddbe55346c4f52c5ab5168cf79de75496e7f8465a32d2a52e",
+    "query-optimize__4ossTxj": "467d09e8b1f95b90daa99827487c15c1d65cde29a1a1d7b730615ceb6b3c9f11",
+    "query-optimize__PG7WzEj": "214e15febad9988407dd92a84b1bc10a476dde1adccddb05246c5dca986cddc9",
+    "torch-pipeline-parallelism__UJGRTbC": "86677fedf1bc65a0934c227039d32ab2a010ef112cc147bf22a989ad0970fb6c",
+    "torch-pipeline-parallelism__iWmjZjv": "3f23150c73cc17d0c71ad05a6a3d1fdfe9bf3c0e33d1338db999d5c6470c0305",
+    "git-multibranch__DM9AkcT": "f2508f7aea20e538d300a9480cc9082588586877d92e2f428d45e50b6584022b",
+    "git-multibranch__GrSWpmv": "97268e5823328227faaba798163a154f7999d293770c4d85ec74d324cb2f20a4",
+    "password-recovery__XUgcx8Y": "954841a4fb413d174db78c2b9af8a70c97e20606e8bc7b0e267d9e67d2e98342",
+    "password-recovery__aCR5RHx": "7a7f73b35b8e34532aac07779dbddd061bdb8f6e070577d55894d2b1a9e61ade",
+    "polyglot-rust-c__9iqpMgM": "2333af1fd78e4483df3f988208652639fb99ad9fed0bdcaecb568bbc5d93a395",
+    "polyglot-rust-c__n4zKPT2": "3e7fa2a5c26c35aca5986ba5bce42f58b77f8acf0ef9cd24b78b300a8e244f56",
+    "git-multibranch__D9qZdKP": "0248687e06224e67d997ff2bba1560d0e8b0e5bbb729d9bd6c18b3127e902beb",
+    "git-multibranch__qsbHPL9": "4cb5a43d93214389dd84acb490538c33dcd4fa173087dabf2102e54dfb420387",
+    "password-recovery__9TKLHXw": "b3801b17ac326162b4318528ef9110cfb1c951bb636287865847823014bdf679",
+    "password-recovery__RVmjWvp": "e700d293452bc662b5c7269fbed72d070d9de369948e4eb4223efd1027a43968",
+    "polyglot-rust-c__RxdnYPn": "448b60973af9d79427c6e66ce32561512afd3bb79c9591d32a0c5c052c8164f4",
+    "polyglot-rust-c__ob7uHMW": "61cdf4f45e72bdf1f1e60fc054a5b52fb611a3b271faf6e64b9ec527c484566d",
+    "merge-diff-arc-agi-task__JtUN73K": "9dcc3565b9f6f2745963ac0430b463a92ebbd1b3882fd4efb7e7a11b57f5186a",
+    "merge-diff-arc-agi-task__f5nEtNb": "01b4d8149f040ee62743c56d2dbeefb480e633fa2dee5abff898c6e761fbbd98",
+    "query-optimize__DNo8Rzn": "d92dbe610827dc72a9876616c34bb6c6a2c7eb85117f02994d5e1a81a748e905",
+    "query-optimize__q5ifpEj": "1b0ff4fcdb28fdc04ce36d8405e79f3d44471522b9a049d89fd8760041bc66fb",
+    "torch-pipeline-parallelism__KF3NCiQ": "485804f215dc0a4f90f070bdbdae0bf52469d87a28e69bfa5f7d5629b97e9b6a",
+    "torch-pipeline-parallelism__TWPoqLZ": "c35f619be58c9db5960afdddf01698021be8c55f41f1c4ae00b15914e93d5ec1",
+    "cancel-async-tasks__2dwxXUh": "cded2c1382f3bf3d5b3fa976264857850ebdb498a2497d512ccd8c12c13c871b",
+    "cancel-async-tasks__6pWAior": "060b5b1fee86afb33ac276ef6af63787dcf9c0fae59e8d3f4b74bb37f837e893",
+    "financial-document-processor__UJFCWwG": "7cacaa2151708f180440613f678ce3fb87db6b50a196231bab01d91c1447453d",
+    "financial-document-processor__ZPuoGRK": "e699cb1b5c10cae6bcffec6aa85e313d6a5e2904689b3dd880ed442fd431258e",
+    "path-tracing-reverse__27HWjkV": "fd5cc3aeef17f5fcb9edb8ee935305363470dd85b362bc7458924bba92feac87",
+    "path-tracing-reverse__ZYRQT8y": "1923a8e25f26b46a0d421b87e38596dd7b9b2ebc11252e454ee5135a1805237b"
+  },
+  "imageChecks": [
+    {
+      "task": "path-tracing-reverse",
+      "group": "batch-01",
+      "digests": [
+        "alexgshaw/path-tracing-reverse@sha256:7911e42479d8f6d8af1248bc52442a0efbc5a33e3ecf535fdc20d252a2c64142"
+      ],
+      "expectedDigest": "sha256:7911e42479d8f6d8af1248bc52442a0efbc5a33e3ecf535fdc20d252a2c64142",
+      "matched": true
+    },
+    {
+      "task": "cancel-async-tasks",
+      "group": "batch-01",
+      "digests": [
+        "alexgshaw/cancel-async-tasks@sha256:84c7fae6b256dcc56a350790e2a9715eefc7dad662a9d8e8a472363aa71ef18d"
+      ],
+      "expectedDigest": "sha256:84c7fae6b256dcc56a350790e2a9715eefc7dad662a9d8e8a472363aa71ef18d",
+      "matched": true
+    },
+    {
+      "task": "financial-document-processor",
+      "group": "batch-01",
+      "digests": [
+        "alexgshaw/financial-document-processor@sha256:ef6c9cfaaf14cdd200163008a188d5baa9f626f3bfb8d3e7d6f30c08518e6251"
+      ],
+      "expectedDigest": "sha256:ef6c9cfaaf14cdd200163008a188d5baa9f626f3bfb8d3e7d6f30c08518e6251",
+      "matched": true
+    },
+    {
+      "task": "torch-pipeline-parallelism",
+      "group": "batch-02",
+      "digests": [
+        "alexgshaw/torch-pipeline-parallelism@sha256:3cb7b39d86f1704b20e668851da0b08b34b3270c01d583f136d65190984a8d1b"
+      ],
+      "expectedDigest": "sha256:3cb7b39d86f1704b20e668851da0b08b34b3270c01d583f136d65190984a8d1b",
+      "matched": true
+    },
+    {
+      "task": "query-optimize",
+      "group": "batch-02",
+      "digests": [
+        "alexgshaw/query-optimize@sha256:28de7da87004eab5b29bd5eaf1823579bc5b73ccea4b80349a5623185770da14"
+      ],
+      "expectedDigest": "sha256:28de7da87004eab5b29bd5eaf1823579bc5b73ccea4b80349a5623185770da14",
+      "matched": true
+    },
+    {
+      "task": "merge-diff-arc-agi-task",
+      "group": "batch-02",
+      "digests": [
+        "alexgshaw/merge-diff-arc-agi-task@sha256:bfc2a235f2ceea64ffb1ffc5529c2acebf570bff61f3668f0e5669ef570c17d4"
+      ],
+      "expectedDigest": "sha256:bfc2a235f2ceea64ffb1ffc5529c2acebf570bff61f3668f0e5669ef570c17d4",
+      "matched": true
+    },
+    {
+      "task": "git-multibranch",
+      "group": "batch-03",
+      "digests": [
+        "alexgshaw/git-multibranch@sha256:5bc449921c138295f6ddd8dca2977319fee2ce523811dbe56cec4ca663385fb5"
+      ],
+      "expectedDigest": "sha256:5bc449921c138295f6ddd8dca2977319fee2ce523811dbe56cec4ca663385fb5",
+      "matched": true
+    },
+    {
+      "task": "password-recovery",
+      "group": "batch-03",
+      "digests": [
+        "alexgshaw/password-recovery@sha256:15fcd84bf3b06270ee148211cc6da6599b13ec2f41ac1d0894cf75c2225872ee"
+      ],
+      "expectedDigest": "sha256:15fcd84bf3b06270ee148211cc6da6599b13ec2f41ac1d0894cf75c2225872ee",
+      "matched": true
+    },
+    {
+      "task": "polyglot-rust-c",
+      "group": "batch-03",
+      "digests": [
+        "alexgshaw/polyglot-rust-c@sha256:3ba84f0e138a4b65e58c53f920a0fc852571e6402901c3bdbb876e9dab6e6c5e"
+      ],
+      "expectedDigest": "sha256:3ba84f0e138a4b65e58c53f920a0fc852571e6402901c3bdbb876e9dab6e6c5e",
+      "matched": true
+    },
+    {
+      "task": "password-recovery",
+      "group": "batch-04",
+      "digests": [
+        "alexgshaw/password-recovery@sha256:15fcd84bf3b06270ee148211cc6da6599b13ec2f41ac1d0894cf75c2225872ee"
+      ],
+      "expectedDigest": "sha256:15fcd84bf3b06270ee148211cc6da6599b13ec2f41ac1d0894cf75c2225872ee",
+      "matched": true
+    },
+    {
+      "task": "polyglot-rust-c",
+      "group": "batch-04",
+      "digests": [
+        "alexgshaw/polyglot-rust-c@sha256:3ba84f0e138a4b65e58c53f920a0fc852571e6402901c3bdbb876e9dab6e6c5e"
+      ],
+      "expectedDigest": "sha256:3ba84f0e138a4b65e58c53f920a0fc852571e6402901c3bdbb876e9dab6e6c5e",
+      "matched": true
+    },
+    {
+      "task": "git-multibranch",
+      "group": "batch-04",
+      "digests": [
+        "alexgshaw/git-multibranch@sha256:5bc449921c138295f6ddd8dca2977319fee2ce523811dbe56cec4ca663385fb5"
+      ],
+      "expectedDigest": "sha256:5bc449921c138295f6ddd8dca2977319fee2ce523811dbe56cec4ca663385fb5",
+      "matched": true
+    },
+    {
+      "task": "merge-diff-arc-agi-task",
+      "group": "batch-05",
+      "digests": [
+        "alexgshaw/merge-diff-arc-agi-task@sha256:bfc2a235f2ceea64ffb1ffc5529c2acebf570bff61f3668f0e5669ef570c17d4"
+      ],
+      "expectedDigest": "sha256:bfc2a235f2ceea64ffb1ffc5529c2acebf570bff61f3668f0e5669ef570c17d4",
+      "matched": true
+    },
+    {
+      "task": "query-optimize",
+      "group": "batch-05",
+      "digests": [
+        "alexgshaw/query-optimize@sha256:28de7da87004eab5b29bd5eaf1823579bc5b73ccea4b80349a5623185770da14"
+      ],
+      "expectedDigest": "sha256:28de7da87004eab5b29bd5eaf1823579bc5b73ccea4b80349a5623185770da14",
+      "matched": true
+    },
+    {
+      "task": "torch-pipeline-parallelism",
+      "group": "batch-05",
+      "digests": [
+        "alexgshaw/torch-pipeline-parallelism@sha256:3cb7b39d86f1704b20e668851da0b08b34b3270c01d583f136d65190984a8d1b"
+      ],
+      "expectedDigest": "sha256:3cb7b39d86f1704b20e668851da0b08b34b3270c01d583f136d65190984a8d1b",
+      "matched": true
+    },
+    {
+      "task": "cancel-async-tasks",
+      "group": "batch-06",
+      "digests": [
+        "alexgshaw/cancel-async-tasks@sha256:84c7fae6b256dcc56a350790e2a9715eefc7dad662a9d8e8a472363aa71ef18d"
+      ],
+      "expectedDigest": "sha256:84c7fae6b256dcc56a350790e2a9715eefc7dad662a9d8e8a472363aa71ef18d",
+      "matched": true
+    },
+    {
+      "task": "financial-document-processor",
+      "group": "batch-06",
+      "digests": [
+        "alexgshaw/financial-document-processor@sha256:ef6c9cfaaf14cdd200163008a188d5baa9f626f3bfb8d3e7d6f30c08518e6251"
+      ],
+      "expectedDigest": "sha256:ef6c9cfaaf14cdd200163008a188d5baa9f626f3bfb8d3e7d6f30c08518e6251",
+      "matched": true
+    },
+    {
+      "task": "path-tracing-reverse",
+      "group": "batch-06",
+      "digests": [
+        "alexgshaw/path-tracing-reverse@sha256:7911e42479d8f6d8af1248bc52442a0efbc5a33e3ecf535fdc20d252a2c64142"
+      ],
+      "expectedDigest": "sha256:7911e42479d8f6d8af1248bc52442a0efbc5a33e3ecf535fdc20d252a2c64142",
+      "matched": true
+    }
+  ],
+  "auditToolStarts": 1449,
+  "missingUsageTrials": [
+    "financial-document-processor__hmqBDPv",
+    "financial-document-processor__xxmeJNp",
+    "path-tracing-reverse__KaFdfeB",
+    "path-tracing-reverse__hC8j88A",
+    "financial-document-processor__UJFCWwG",
+    "path-tracing-reverse__ZYRQT8y"
+  ],
+  "postVerifierAuditPresent": true,
+  "note": "Image observations occur after both arms finish each task in each repetition. Absence of a candidate match does not prove absence of contamination; see manual adjudication. Recorder times are not server-side execution clocks."
+}

@@ -1,0 +1,60 @@
+{
+  "cancel-async-tasks__pC4TQud": {
+    "classification": "solution_validation_gap",
+    "observations": [
+      "All four visible implementation/command calls succeeded; finish_task was accepted.",
+      "The agent wrote a cancellation check with an asynchronous cleanup yield; that check passed.",
+      "The official verifier passes five checks and fails cleanup when pending jobs exceed the concurrency limit.",
+      "The peer Cline trial used a different concurrency primitive and passed all official checks."
+    ],
+    "limits": "This trace does not isolate a causal effect of the harness prompt. No benchmark-specific cancellation instruction or solver is added, and this audit is not fed into evaluated agents."
+  },
+  "financial-document-processor__xxmeJNp": {
+    "classification": "repeated_image_reads_and_shared_sdk_media_budget",
+    "observations": [
+      "189 read_code calls, including twelve identical reads for nine JPEG paths.",
+      "All eleven distinct JPEG images reach the real SDK request boundary in an offline replay.",
+      "Repeating the same eleven images crosses the shared 8 MiB encoded media budget: 17 of 22 images remain, five become omission placeholders.",
+      "Cline also repeats image reads; the first unnecessary repetition is not explained by media omission.",
+      "Eleven rejected read_code requests target generated absolute /tmp paths; seven are PNG paths and four are text/PPM paths.",
+      "46 PDF reads return 235576 serialized output bytes in total, including 27030 Unicode replacement characters and 330 encoded NULs. These are observed output bytes, not provider token savings."
+    ],
+    "limits": "The replay does not measure comprehension or global performance. The archived V7 campaign remains unchanged. No audit material is fed to evaluated agents.",
+    "compaction": {
+      "blameStarted": 45,
+      "blameCompleted": 23,
+      "clineStarted": 27,
+      "clineCompleted": 22,
+      "offlineOriginalEstimateTokens": 1772012,
+      "offlineOriginalMessagesBefore": 23,
+      "offlineOriginalMessagesAfter": 11,
+      "isolatedCandidateRetainsAllMessages": true,
+      "scope": "Opt-in SDK estimator bound for documented GPT-5.6 families; no modification to V7 measured runtime."
+    }
+  },
+  "git-multibranch__DM9AkcT": {
+    "classification": "deployment_solution_failure",
+    "observations": [
+      "The command errors include server-side deployment-directory permissions and HTTP 403.",
+      "The Git observation layer does not report a HEAD-change rejection.",
+      "The official multi-branch HTTPS deployment check fails; the peer Cline trial passes."
+    ],
+    "limits": "No benchmark-specific deployment solver is added. The exact remaining deployment defect is not yet isolated."
+  },
+  "financial-document-processor__UJFCWwG": {
+    "classification": "configured_runner_deadline",
+    "agentStatus": "timed_out",
+    "runnerMs": 900406,
+    "exitCode": 124,
+    "officialException": "NonZeroAgentExitCodeError",
+    "compactionsCompleted": 24,
+    "note": "The official task allows 1200 seconds, so the common 900-second runner deadline returns exit 124 before Harbor times out. No heap-OOM marker was found. This is not classified as an infrastructure failure."
+  },
+  "financial-document-processor__ZPuoGRK": {
+    "classification": "completed_solution_fails_official_verifier",
+    "agentStatus": "succeeded",
+    "runnerMs": 563359,
+    "compactionsCompleted": 5,
+    "note": "The model reports completion and the official verifier rejects the result. The cause of the solution defect has not been isolated; do not attribute all documentary failures to compaction."
+  }
+}

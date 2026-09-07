@@ -1,0 +1,8 @@
+{
+  "trials": 36,
+  "recordedToolStarts": 1449,
+  "candidateMatches": 0,
+  "confirmedOracleAccess": 0,
+  "confirmedVerifierTampering": 0,
+  "limitations": "Pattern scan plus review of outbound URL inventory and diagnosed traces; not proof of absence of contamination. No audit information was passed to evaluated agents."
+}
