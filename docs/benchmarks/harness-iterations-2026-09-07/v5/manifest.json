@@ -1,0 +1,192 @@
+{
+  "registeredAt": "2026-09-07T17:08:07.233258+00:00",
+  "bundles": {
+    "before": {
+      "path": "/mnt/dev/web/Blame/.blame/benchmarks/terminal-bench-iteration-v5-20260907/runner-before.tgz",
+      "sha256": "a6fbf121a6b00c8dd67e93e3d9c74879352442049fe35e701752abb69ffed5dd"
+    },
+    "final": {
+      "path": "/mnt/dev/web/Blame/.blame/benchmarks/terminal-bench-iteration-v5-20260907/runner-final.tgz",
+      "sha256": "c3eda4da30797a365dc528450061010a6583e55e52de1bb69cc932bcf6f4ae55"
+    }
+  },
+  "groups": [
+    {
+      "id": "batch-01",
+      "repetition": 1,
+      "tasks": [
+        "sparql-university",
+        "build-cython-ext",
+        "regex-chess"
+      ],
+      "armOrder": [
+        "final",
+        "cline",
+        "before"
+      ],
+      "trials": 9
+    }
+  ],
+  "tasks": [
+    {
+      "id": "sparql-university",
+      "metadata": {
+        "author_name": "Orfeas Menis Mastromichalakis",
+        "author_email": "menisorfeas@gmail.com",
+        "difficulty": "hard",
+        "category": "data-querying",
+        "tags": [
+          "knowledge-graph",
+          "sparql-query",
+          "information-retrieval"
+        ],
+        "expert_time_estimate_min": 800.0,
+        "junior_time_estimate_min": 10000.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/sparql-university:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "agent": {
+        "timeout_sec": 900.0
+      },
+      "verifier": {
+        "timeout_sec": 900.0,
+        "env": {}
+      },
+      "seenBeforeCampaign": true,
+      "stratum": "data-querying",
+      "image": {
+        "task": "sparql-university",
+        "compressedBytes": 29725003,
+        "digest": "sha256:92fa4304e51167f9fb4466144eba33ef9272a7df0ac1cab9fc3986bccd1ab708"
+      },
+      "hashes": {
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "README.md": "947086de0f27f93c2d8700dcba8c3bfc96b289fc62dec6f956d86388dc908d05",
+        "environment/Dockerfile": "dd0abcd64e90ab16141169bcbf88a8e5f52732f207cb37765d351cc7a48916a9",
+        "environment/university_graph.ttl": "0b0b1f2c0ee7ea7ddc9382f94ff8181996ffa7be60a1651111c1f57b49e09a85",
+        "instruction.md": "22eeab47d3b27b06df2627b3c21cfbd579ed7dcc85ebcb7c4b3a241c3c35f449",
+        "solution/solve.sh": "d17995a8f29c6d656c749271fd28e10d31afee6aa75f40ad28fea1c907f2a791",
+        "task.toml": "47a6f6dd9ce0fc7631ef607e900fcd039b2d064ea90545645b49c678cddc9585",
+        "tests/test.sh": "45902b57bd0f1dd6959216bc9943ab27bb349edc7ff557035a1ecc8732e4cc6b",
+        "tests/test_outputs.py": "ecf15840fc14f1eeff2f3b6317d7f0febc8fa81f688d24e3054205ba13207b39",
+        "tests/university_graph_test.ttl": "368ce01d32513ee04dfe592784b0c976086e514c1eab9b3165a016ca7b0192cb"
+      }
+    },
+    {
+      "id": "build-cython-ext",
+      "metadata": {
+        "author_name": "Zizhao Chen",
+        "author_email": "czz@cs.cornell.edu",
+        "difficulty": "medium",
+        "category": "debugging",
+        "tags": [
+          "coding",
+          "dependency",
+          "compilation"
+        ],
+        "estimated_duration_sec": 540.0,
+        "expert_time_estimate_min": 60.0,
+        "junior_time_estimate_min": 180.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/build-cython-ext:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "image": {
+        "task": "build-cython-ext",
+        "compressedBytes": 303214315,
+        "digest": "sha256:3612a38fadb89a96f74a1a951fb0b0af734198fd160571eeaba6401593234594"
+      },
+      "seenBeforeCampaign": true,
+      "exclusions": [],
+      "selectionKey": "454bbcc8e1cef115ae5f3a4bd5feac710215bacaa515f9327be3213818b763a8",
+      "stratum": "debugging",
+      "hashes": {
+        "task.toml": "c472f0e7522c128fb7f03e00b50c8cdf2e5e6474daa1e094e7441f4b54e770b2",
+        "README.md": "d5f5113941c3963292bae396baa9369571026f46e59437f98ddcc93475dd7729",
+        "instruction.md": "7e52874e45f88505bd21540229719de6639a401477557d814489981d472f0e34",
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "solution/solve.sh": "41bbdde88617070366a70e518eedca466a4ea1acd7e96899b2fb7da988e40abc",
+        "environment/Dockerfile": "cb6cf421cb9b69d43bd25cd491e49bda982fbb865d47515178d017eda727194e",
+        "tests/test.sh": "0156c9c4085258b696ce424cf1ce96cba44d1263c5d73bdf54083fd80237f915",
+        "tests/test_outputs.py": "6549f1a8e04b6163ec08877e6f6b9868bf94563f3a3c72ac1fba9c512c31689e"
+      }
+    },
+    {
+      "id": "regex-chess",
+      "metadata": {
+        "author_name": "Nicholas Carlini",
+        "author_email": "nicholas@carlini.com",
+        "difficulty": "hard",
+        "category": "software-engineering",
+        "tags": [
+          "software-engineering"
+        ],
+        "expert_time_estimate_min": 1440.0,
+        "junior_time_estimate_min": 4800.0
+      },
+      "environment": {
+        "build_timeout_sec": 600.0,
+        "docker_image": "alexgshaw/regex-chess:20251031",
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true,
+        "mcp_servers": [],
+        "env": {}
+      },
+      "agent": {
+        "timeout_sec": 3600.0
+      },
+      "verifier": {
+        "timeout_sec": 3600.0,
+        "env": {}
+      },
+      "seenBeforeCampaign": true,
+      "stratum": "software-engineering",
+      "image": {
+        "task": "regex-chess",
+        "compressedBytes": 55617575,
+        "digest": "sha256:e3b6d61d2d3930fbbdc5f7bf091a7f8b7f6125e1951ef8a7dbe165b1ef62942c"
+      },
+      "hashes": {
+        ".gitignore": "9a8dd8d9b6c3adb8e9e56328df27deef859a3e98fffc9b8133c8b22207c25953",
+        "README.md": "9296cbee592fc996c58d228b51fee303647e5ecfae82d5666d42a40cb30ec355",
+        "environment/Dockerfile": "2616cd775252303839dfda0ee2f047eb862952b053b0103bd6b2460ef90c11b7",
+        "environment/check.py": "f9c416ae9ea01dcdd5f6a43170c8434b8c0a0b389a4a30876a2048e277d191c7",
+        "instruction.md": "a6ed3fcc54fc92d71a84af921942422d299ca89b410dcd92cd05a53d0d06436c",
+        "solution/solve.sh": "b728bf0ea392a3d244afbd0818d36933c8d3e190e47743c1382cd518d518a2e9",
+        "task.toml": "07fe52636fcc4bc9fff25d5630af145b97a5331219d719cc8decb4ca67ea21d4",
+        "tests/test.sh": "8f7f00a1c4dde7fcca6c918c768f2aba432b8c4007c15989716c68091950da87",
+        "tests/test_outputs.py": "4983c44d21c56dd8191381eff0304afc8b87bb714527ea9036b3319c015a30b4"
+      }
+    }
+  ],
+  "protocolSha256": "dd07f70317dfa372566c798bf5997c975d9030045de54e2e850ff68a26782cbd",
+  "adapterSha256": "558a8acba042338f944e82aa520d9b3c04ff2419a28f670903d89ae23fb198cb",
+  "sourceCommit": "2edebcd73966aef97b090671a202fae66a1fe5ae",
+  "upstreamCommit": "2fd12b88aafdd04a52c298e3940bcb189f9766d6",
+  "configHashes": {
+    "batch-01": "5e8cf1dba089c05b4644bbc6a71698b4cee2a5d42b6a6cc92acaf0d96b146c31"
+  },
+  "initialDockerImages": [
+    "node:24-bookworm-slim"
+  ]
+}

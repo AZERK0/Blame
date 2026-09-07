@@ -71,9 +71,10 @@ def tools_metrics(events):
 
 def trial(path):
     result, agent = read(path), read(path.parent / 'agent/result.json')
-    environment = read(path.parent / 'config.json')['agent']['env']
+    config = read(path.parent / 'config.json')
+    environment = config['agent']['env']
     arm = 'cline' if environment['BLAME_BENCHMARK_HARNESS'] == 'cline' else Path(environment['BLAME_BENCHMARK_BUNDLE']).stem.removeprefix('runner-')
-    task = result['task_name'].rsplit('/', 1)[-1]
+    task = result.get('task_name', config['task']['path']).rsplit('/', 1)[-1]
     metadata = next(task_row for task_row in MANIFEST['tasks'] if task_row['id'] == task)
     group = next(group for group in MANIFEST['groups'] if group['id'] == path.parents[1].name)
     event_path = path.parent / 'agent/events.jsonl'
@@ -83,7 +84,7 @@ def trial(path):
               'trial': path.parent.name, 'path': str(path), 'stratum': metadata['stratum'],
               'seenBeforeCampaign': metadata['seenBeforeCampaign'], 'reward': reward,
               'auditedReward': 1 if reward == 1 else 0, 'status': agent.get('status'),
-              'exception': result.get('exception_info'), 'errors': [row['event']['payload'] for row in events if row['event']['type'] == 'error'],
+              'resultComplete': bool(result), 'exception': result.get('exception_info') if result else {'exception_type': 'IncompleteResultArtifact'}, 'errors': [row['event']['payload'] for row in events if row['event']['type'] == 'error'],
               'agentSeconds': elapsed(result.get('agent_execution')), 'runnerMs': agent.get('durationMs'),
               'stages': {key: elapsed(result.get(key)) for key in ['environment_setup', 'agent_setup', 'agent_execution', 'verifier']},
               'eventSha256': hashlib.sha256(event_path.read_bytes()).hexdigest() if event_path.exists() else None,
@@ -112,7 +113,7 @@ def apply_adjudication(records):
 
 
 def collect():
-    records = [trial(path) for path in sorted((ROOT / 'jobs').glob('*/*/result.json'))]
+    records = [trial(path.with_name('result.json')) for path in sorted((ROOT / 'jobs').glob('*/*/config.json'))]
     apply_adjudication(records)
     summaries = {arm: summarize([record for record in records if record['arm'] == arm]) for arm in sorted({record['arm'] for record in records})}
     result = {'rows': records, 'summary': summaries}

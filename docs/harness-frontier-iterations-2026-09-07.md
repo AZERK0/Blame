@@ -1,6 +1,6 @@
 # Itérations du harness — 7 septembre 2026
 
-Dix-huit nouveaux essais diagnostiques sont terminés ; une confirmation de 36 essais est en cours. Aucun dépassement global de Cline n'est annoncé à ce stade. La comparaison des 108 essais précédents reste inchangée et ses résultats négatifs sont conservés dans [le rapport initial](harness-global-measurement-2026-09-06.md).
+Dix-huit nouveaux essais diagnostiques sont terminés ; une confirmation prévue sur 36 essais a été interrompue par l’infrastructure après 23 essais créés. Aucun dépassement global de Cline n'est annoncé à ce stade. La comparaison des 108 essais précédents reste inchangée et ses résultats négatifs sont conservés dans [le rapport initial](harness-global-measurement-2026-09-06.md).
 
 ## Première itération : résultats mesurés
 
@@ -132,3 +132,17 @@ Ce changement corrige le contrat du runner de mesure, sans changer le prompt ni 
 L'étude [Quantifying infrastructure noise in agentic coding evals](https://www.anthropic.com/engineering/infrastructure-noise) montre que les limites de ressources modifient les résultats. Nous conservons donc les ressources identiques entre bras et séparons les phases d'installation, d'exécution et de vérification ; nous n'augmentons pas la mémoire d'un seul bras pour améliorer son score.
 
 La documentation [Node sur les processus enfants](https://nodejs.org/api/child_process.html) distingue la sortie du processus de la fermeture des flux. La documentation [Tree-sitter](https://tree-sitter.github.io/tree-sitter/using-parsers/queries/1-syntax.html) distingue les erreurs des tokens manquants de largeur nulle. Ces deux distinctions expliquent directement les défauts reproduits dans le code.
+
+## Confirmation interrompue et correction de la mesure
+
+La confirmation V2 s’arrête pendant le quatrième lot : 23 essais créés sur 36, 22 résultats JSON lisibles et un résultat vide. Les données partielles conservent trois réussites Blame sur onze essais créés et quatre Cline sur douze ; cinq récompenses sont absentes. Ces dénominateurs différents et l’interruption interdisent une comparaison globale. Les 13 essais jamais créés ne sont ni des échecs du modèle ni des résultats manquants remplacés par zéro. Le [statut](benchmarks/harness-iterations-2026-09-07/confirmation/status.json) et le [CSV partiel](benchmarks/harness-iterations-2026-09-07/confirmation/trials.csv) restent consultables.
+
+Le disque système manque d’espace pendant les installations : les deux sanitize-git-repo de la première répétition échouent avant de lancer le modèle. Une installation Rust/C échoue également sur les signatures apt, sans preuve suffisante pour attribuer précisément cette erreur au disque. Lors de la tentative de récupération, ma copie du cache Python développe les liens physiques et remplit temporairement le disque de travail ; elle contribue à l’interruption du quatrième lot. Les originaux sont conservés et les caches restaurés. Ce défaut opératoire appartient à cette campagne, pas au modèle. Un échec Cline distinct sur sanitize-git-repo atteint la limite du tas JavaScript pendant une édition ; il est conservé séparément.
+
+Les deux essais overfull-hbox continuent à produire des appels après expiration Harbor et démarrage du vérificateur : environ 17,6 secondes pour Blame, 25,9 pour Cline. Tous deux échouent officiellement. Leurs temps et consommations sont affectés ; aucun avantage n’en est déduit. Le nouvel adaptateur transmet l’arrêt au processus possédé par l’essai, attend sa fin avant vérification et empêche un démarrage tardif. Si cet arrêt ne peut être vérifié, il ferme l’environnement de cet essai. Les réussites normales ne déclenchent pas ce nettoyage. Deux reproductions échouent avec l’ancien adaptateur ; 16 tests passent après correction, dont annulation répétée et identité de processus différente. Un [replay Docker réel](benchmarks/harness-iterations-2026-09-07/confirmation/adapter-cancellation-replay.json) confirme l’arrêt avant vérification et les limites CPU/mémoire effectives. Aucun protocole supplémentaire n’est demandé au modèle.
+
+## Nouvelle mesure V5 après correction de l’infrastructure
+
+Aucun essai V4 n’avait démarré. Son enregistrement reste archivé ; V5 reprend les neuf essais diagnostiques avec le runner actuel et l’adaptateur corrigé. Les [entrées](benchmarks/harness-iterations-2026-09-07/v5/manifest.json) et le [protocole](benchmarks/harness-iterations-2026-09-07/v5/protocol.md) sont figés avant exécution. Les trois tâches sont connues, et ne deviennent pas un nouvel échantillon indépendant par réexécution.
+
+Un moteur Docker dédié sans privilèges root utilise le disque personnel disposant de plus de 450 Gio libres. Le Docker habituel et les ressources officielles des tâches sont conservés. La présence de cgroup v2 et du pilote systemd ne suffit pas à elle seule : le conteneur de vérification lit effectivement 2 Gio et un CPU dans ses limites. La [documentation Docker](https://docs.docker.com/engine/security/rootless/tips/) explique ces conditions. Les bras V2, V5 et Cline du nouveau lot utilisent tous ce moteur ; leurs durées ne sont pas agrégées avec celles des anciennes campagnes.
