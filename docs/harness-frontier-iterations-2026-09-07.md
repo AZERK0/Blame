@@ -32,9 +32,9 @@ Ces changements corrigent des contrats et des mécanismes généraux. Ils n'ajou
 
 ## Vérification mécanique
 
-La suite complète du runtime exécutée après les corrections de présentation comporte 555 tests : 554 réussites et un test Windows non exécutable sous Linux. Le test supplémentaire de préférence absente passe ensuite avec les 66 autres tests d'événements/runtime. Les 21 tests du runner, les 10 tests de l'adaptateur, les quatre tests de packaging/relais et les 22 tests ciblés du runtime desktop passent également. Les fichiers modifiés passent ESLint. Ce décompte décrit les exécutions effectuées, pas un benchmark de compétence du modèle ; les machines virtuelles macOS et Windows n'ont pas été exécutées sur cet hôte Linux.
+La suite complète du runtime exécutée après les corrections de présentation comporte 555 tests : 554 réussites et un test Windows non exécutable sous Linux. Le test supplémentaire de préférence absente passe ensuite avec les 66 autres tests d'événements/runtime. Les 24 tests du runner, les 10 tests de l'adaptateur, les quatre tests de packaging/relais et les 22 tests ciblés du runtime desktop passent également. Les fichiers modifiés passent ESLint. Ce décompte décrit les exécutions effectuées, pas un benchmark de compétence du modèle ; les machines virtuelles macOS et Windows n'ont pas été exécutées sur cet hôte Linux.
 
-Le replay du parent ayant un enfant conservant stdout passe d'environ 3,3 secondes à 0,13 seconde ; l'annulation revient en environ 0,16 seconde. Cela établit le correctif mécanique, pas un gain global agent. La clôture de `startDevelopment` elle-même n'est pas couverte par le nouveau délai de nettoyage ; seuls l'attente terminale et les chemins de nettoyage explicitement testés le sont.
+Le replay du parent ayant un enfant conservant stdout passe d'environ 3,3 secondes à 0,13 seconde ; l'annulation revient en environ 0,16 seconde. Cela établit le correctif mécanique, pas un gain global agent. Dans les bundles figés V1, V2 et V4, la création de session reste hors du délai interne : celui-ci commence après `startDevelopment`. Un correctif du runner postérieur au gel V4 est décrit ci-dessous ; il ne modifie aucun de ces essais.
 
 ## Mesure enregistrée avant les résultats
 
@@ -114,6 +114,12 @@ Le prompt traitait l'absence d'une préférence `unit_tests` comme une désactiv
 Un test du prompt réel échoue avant correction et passe après, pour une préférence absente, une liste vide et une liste contenant un autre réglage. Les 67 tests d'événements/runtime et le build/lint passent, notamment les branches explicites activée et désactivée. Aucun évaluateur, test imposé ou nouvelle boucle n'est ajouté.
 
 V3 n'avait encore exécuté aucun essai lors de cette découverte. Son enregistrement est conservé comme annulé avant exécution ; le lot diagnostique sera réenregistré avec le bundle V4 qui inclut cette simplification, les mêmes tâches, les mêmes bras et les mêmes budgets. Aucun résultat n'est supprimé ni sélectionné. La confirmation V2 en cours reste inchangée. Le [nouveau protocole](benchmarks/harness-iterations-2026-09-07/v4/protocol.md) et le [manifeste V4](benchmarks/harness-iterations-2026-09-07/v4/manifest.json) figent le bundle issu de `2fa75cd3`, SHA256 `b62c8d54a5e6c5b159b26c86f29934a5557ceb6cb39485b762d842ec9bda5372`.
+
+## Délai du runner, y compris le démarrage
+
+Après le gel V4, trois tests reproduisent deux démarrages non bornés et le lancement inutile d'une session pour une demande déjà annulée. Le délai couvre désormais la création puis l'exécution de la session. Une création qui aboutit après expiration déclenche l'annulation de cette session ; son identifiant tardif et ses événements ne remplacent pas le résultat déjà clos. Quand le démarrage reste en attente, le nettoyage est marqué incomplet et l'usage reste inconnu. Les 24 tests du runner passent, ainsi que le build et ESLint.
+
+Ce changement corrige le contrat du runner de mesure, sans changer le prompt ni les décisions de l'agent. Les délais de nettoyage restent séparément bornés. Les archives V1, V2 et V4 conservent leur comportement antérieur pour la comparabilité ; aucune baisse de temps de leurs essais ne peut être attribuée à ce correctif.
 
 ## Ce que la recherche apporte à cette intervention
 

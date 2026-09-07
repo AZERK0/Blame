@@ -17,6 +17,8 @@ import { boundedCleanup } from "./bounded-cleanup.js";
 class BenchmarkTimeoutError extends Error {}
 class BenchmarkCancelledError extends Error {}
 
+type SessionState = { requested: boolean; sessionId?: string; failure?: unknown };
+
 export async function runBenchmark(
   config: BenchmarkConfig,
   dependencies: BenchmarkRunDependencies,
@@ -63,26 +65,43 @@ async function executeSession(
   cleanupTimeoutMs: number,
   signal?: AbortSignal,
 ) {
-  let sessionId: string | undefined;
+  const state: SessionState = { requested: false };
   let usage;
   let terminalEvent: AgentEvent | undefined;
-  let failure: unknown;
   let cleanupIncomplete = false;
   try {
-    sessionId = (await runtime.sessions.startDevelopment(sessionInput(config)))
-      .sessionId;
-    terminalEvent = await waitForTerminal(terminal, config.timeoutMs, signal);
+    if (signal?.aborted) throw new BenchmarkCancelledError("Benchmark cancelled.");
+    const execution = startSession(config, runtime, terminal, state, cleanupTimeoutMs);
+    terminalEvent = await waitForTerminal(execution, config.timeoutMs, signal);
   } catch (error) {
-    failure = error;
-    cleanupIncomplete = !(await abortSession(runtime, sessionId, cleanupTimeoutMs));
+    state.failure = error;
+    cleanupIncomplete = state.requested && !state.sessionId;
+    cleanupIncomplete ||= !(await abortSession(runtime, state.sessionId, cleanupTimeoutMs));
   } finally {
-    if (sessionId) {
-      const collected = await boundedCleanup(() => runtime.sessions.usage(sessionId!), cleanupTimeoutMs);
+    if (state.sessionId) {
+      const collected = await boundedCleanup(() => runtime.sessions.usage(state.sessionId!), cleanupTimeoutMs);
       usage = collected.value;
       cleanupIncomplete ||= !collected.completed;
     }
   }
-  return { cleanupIncomplete, failure, sessionId, terminalEvent, usage };
+  return { cleanupIncomplete, failure: state.failure, sessionId: state.sessionId, terminalEvent, usage };
+}
+
+async function startSession(
+  config: BenchmarkConfig,
+  runtime: BenchmarkRuntime,
+  terminal: Promise<AgentEvent>,
+  state: SessionState,
+  cleanupTimeoutMs: number,
+) {
+  state.requested = true;
+  const { sessionId } = await runtime.sessions.startDevelopment(sessionInput(config));
+  if (state.failure) {
+    await abortSession(runtime, sessionId, cleanupTimeoutMs);
+    throw state.failure;
+  }
+  state.sessionId = sessionId;
+  return terminal;
 }
 
 export function runtimeFactory(

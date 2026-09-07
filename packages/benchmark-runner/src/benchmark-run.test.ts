@@ -165,6 +165,47 @@ test("records hidden finalization tools once without changing terminal detection
   assert.equal(result.metrics.tools.calls, 1);
 });
 
+test("the deadline covers a session creation that never settles", { timeout: 500 }, async () => {
+  const recorder = new MemoryRecorder();
+  const runtime = pendingRuntime(() => undefined);
+  runtime.sessions.startDevelopment = () => new Promise(() => undefined);
+  const result = await runBenchmark({ ...benchmarkConfig(), timeoutMs: 5 }, {
+    cleanupTimeoutMs: 20, createRecorder: () => recorder, createRuntime: () => runtime,
+  });
+  assert.equal(result.status, "timed_out");
+  assert.equal(result.cleanupIncomplete, true);
+  assert.equal(result.usage, undefined);
+  assert.equal(recorder.closed, true);
+});
+
+test("a pre-cancelled benchmark never starts a model session", async () => {
+  let started = false;
+  const result = await runBenchmark(benchmarkConfig(), {
+    signal: AbortSignal.abort(), createRecorder: () => new MemoryRecorder(),
+    createRuntime: () => runtimeStub({ start: () => { started = true; } }),
+  });
+  assert.equal(result.status, "cancelled");
+  assert.equal(started, false);
+});
+
+test("a session created after the deadline is aborted without reopening its recorder", { timeout: 500 }, async () => {
+  const recorder = new MemoryRecorder();
+  const aborted: string[] = [];
+  let created: (value: { sessionId: string }) => void = () => undefined;
+  const runtime = pendingRuntime(() => undefined);
+  runtime.sessions.startDevelopment = () => new Promise((resolve) => { created = resolve; });
+  runtime.sessions.abort = async (id) => { aborted.push(id); };
+  const result = await runBenchmark({ ...benchmarkConfig(), timeoutMs: 5 }, {
+    cleanupTimeoutMs: 20, createRecorder: () => recorder, createRuntime: () => runtime,
+  });
+  created({ sessionId: "late-session" });
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  assert.equal(result.status, "timed_out");
+  assert.equal(result.sessionId, undefined);
+  assert.deepEqual(aborted, ["late-session"]);
+  assert.equal(recorder.closed, true);
+});
+
 function successfulRuntime(
   events: AgentRuntimeEvents,
   inputs: StartDevelopmentSessionInput[],
