@@ -118,7 +118,7 @@ function editCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "edit_code",
     description:
-      "Atomically apply symbol operations or focused Cline patches, including inside symbols. Choose the smaller precise edit: replace_body replaces the entire body. Disambiguate repeated patch text with unique context or an @@ anchor. A missing path accepts complete raw content. Do not combine a parent with its containedBy child. The runtime handles freshness, overlaps, and supported syntax checks.",
+      "Atomically apply symbol operations or focused Cline patches, including inside symbols. Choose the smaller precise edit: replace_body replaces the entire body. Disambiguate repeated patch text with unique context or a preceding @@ anchor. For a new file, patch may contain complete raw text; existing files require Cline patch syntax. Do not combine a parent with its containedBy child. The runtime handles freshness, overlaps, and supported syntax checks.",
     schema: lightEditCodeInputSchema,
     execute: (input, context) =>
       workspace.editCode(input, {
