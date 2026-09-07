@@ -1,0 +1,40 @@
+{
+  "note": "Offline native compaction replay. No provider call; only counts are published. The candidate's opt-in image bound leaves the native control unchanged.",
+  "requestedImages": 11,
+  "before": {
+    "compacted": true,
+    "messagesAfter": 11,
+    "notices": [
+      {
+        "phase": "started"
+      },
+      {
+        "phase": "completed",
+        "tokensBefore": 1772012,
+        "tokensAfter": 768
+      }
+    ]
+  },
+  "unchangedControl": {
+    "compacted": true,
+    "messagesAfter": 11,
+    "notices": [
+      {
+        "phase": "started"
+      },
+      {
+        "phase": "completed",
+        "tokensBefore": 1772012,
+        "tokensAfter": 768
+      }
+    ]
+  },
+  "after": {
+    "compacted": false,
+    "messagesAfter": 23,
+    "notices": []
+  },
+  "textCompactionPreserved": true,
+  "constrainedImageBudgetCompacts": true,
+  "canonicalMessagesUnchanged": true
+}
