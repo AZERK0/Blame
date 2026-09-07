@@ -1,0 +1,19 @@
+{
+  "npmInstallation": "completed including native postinstall scripts",
+  "dependencyLinksToWorkspace": false,
+  "checks": [
+    {
+      "tool": "read_code",
+      "status": "ok"
+    },
+    {
+      "tool": "search_code",
+      "status": "ok"
+    },
+    {
+      "tool": "run_task",
+      "status": "ok"
+    }
+  ],
+  "buildId": "blame-sdk-image-budget-v1-42c6834e6a8863f3e5fc0cee914e70a0bf28947162006a0a7a2b30011af82d50"
+}

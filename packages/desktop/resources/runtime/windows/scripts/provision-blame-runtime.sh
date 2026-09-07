@@ -98,11 +98,9 @@ node_archive_sha256() {
 }
 
 ensure_cline_sdk() {
-  if node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)' >/dev/null 2>&1 && npm root -g >/dev/null 2>&1 && valid_cline_sdk_install; then
-    return
-  fi
-  npm install -g --omit=optional "@cline/sdk@$cline_sdk_version" "@cline/core@$cline_sdk_version"
-  valid_cline_sdk_install
+  if valid_cline_sdk_install; then return; fi
+  printf '%s\n' "Bundled Cline SDK is missing or incompatible." >&2
+  return 1
 }
 
 valid_semantic_harness_install() {
@@ -148,7 +146,7 @@ ensure_semantic_harness() {
   fi
   payload_sha256="$(sha256sum "$payload" | awk '{ print $1 }')"
   marker="/etc/blame-semantic-harness-sha256"
-  if valid_semantic_harness_install &&
+  if valid_semantic_harness_install && valid_cline_sdk_install &&
     [ "$(cat "$marker" 2>/dev/null || true)" = "$payload_sha256" ]; then
     return
   fi
@@ -162,20 +160,16 @@ valid_cline_sdk_install() {
   node -e '
 const fs = require("fs");
 const path = require("path");
-const root = process.argv[1];
+const root = path.join(process.argv[1], "@blame/semantic-harness-runtime/node_modules");
 const version = process.argv[2];
 const readVersion = (name) => JSON.parse(fs.readFileSync(path.join(root, name, "package.json"), "utf8")).version;
-const coreRoots = [
-  path.join(root, "@cline/core"),
-  path.join(root, "@cline/sdk/node_modules/@cline/core"),
-];
-const coreRoot = coreRoots.find((candidate) => fs.existsSync(path.join(candidate, "package.json")));
+const coreRoot = path.join(root, "../vendor/cline-core");
 const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
 process.exit(
   readVersion("@cline/sdk") === version &&
   coreRoot &&
   JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8")).version === version &&
-  fs.existsSync(sdkEntry)
+  fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/image-token-estimation.js"))
     ? 0
     : 1
 );
@@ -319,7 +313,7 @@ json_worker_count = max(1, min(2, os.cpu_count() or 1))
 large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
-runtime_agent_version = "6"
+runtime_agent_version = "7"
 
 def serialize_json_line(value):
     return json.dumps(value, separators=(",", ":")) + "\n"
@@ -615,7 +609,7 @@ def npm_root():
 
 def cline_hub_module_path():
     root = npm_root()
-    path = os.path.join(root, "@cline", "sdk", "dist", "index.js")
+    path = os.path.join(root, "@blame", "semantic-harness-runtime", "vendor", "cline-core", "dist", "index.js")
     if not path:
         raise RuntimeError("Cline SDK is not installed in BlameRuntime")
     if not os.path.exists(path):
@@ -649,6 +643,11 @@ def read_line_with_timeout(pipe, timeout):
     t.start()
     t.join(timeout)
     return result[0]
+
+def cline_hub_build_id():
+    module = "file://" + cline_hub_module_path()
+    script = f"const hub = await import({json.dumps(module)}); console.log(JSON.stringify({{\"buildId\": hub.resolveHubBuildId()}}));"
+    return run_node_json(script)["buildId"]
 
 def run_cline_hub_ensure(params):
     global hub_process, hub_result_cache
@@ -698,6 +697,7 @@ def run_cline_hub_ensure(params):
 
     import time
 
+    expected_build_id = cline_hub_build_id()
     reused = False
     if discovery_root:
         discovery_files = [os.path.join(discovery_root, "production.json")]
@@ -714,7 +714,7 @@ def run_cline_hub_ensure(params):
                     data = json.load(f)
                 pid = data.get("pid")
                 authToken = data.get("authToken")
-                if pid and authToken and is_pid_alive(pid):
+                if pid and authToken and data.get("buildId") == expected_build_id and is_pid_alive(pid):
                     # Process is alive. Wait up to 3 seconds for the port to start listening.
                     port_ready = False
                     for _ in range(15):

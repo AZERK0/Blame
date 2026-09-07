@@ -161,19 +161,15 @@ valid_cline_sdk_install() {
   node - "$global_node_root" "$cline_sdk_version" <<'NODE'
 const fs = require("fs");
 const path = require("path");
-const root = process.argv[2];
+const root = path.join(process.argv[2], "@blame/semantic-harness-runtime/node_modules");
 const version = process.argv[3];
 const sdkPackage = path.join(root, "@cline/sdk/package.json");
-const coreRoots = [
-  path.join(root, "@cline/core"),
-  path.join(root, "@cline/sdk/node_modules/@cline/core"),
-];
-const coreRoot = coreRoots.find((candidate) => fs.existsSync(path.join(candidate, "package.json")));
+const coreRoot = path.join(root, "../vendor/cline-core");
 if (!fs.existsSync(sdkPackage) || !coreRoot) process.exit(1);
 const sdk = JSON.parse(fs.readFileSync(sdkPackage, "utf8"));
 const core = JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8"));
 const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
-process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) ? 0 : 1);
+process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/image-token-estimation.js")) ? 0 : 1);
 NODE
 }
 check host-home test -d "$host_mount"

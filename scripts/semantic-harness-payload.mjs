@@ -6,6 +6,7 @@ import {
   mkdtemp,
   readFile,
   readdir,
+  realpath,
   rm,
   writeFile,
 } from "node:fs/promises";
@@ -46,65 +47,65 @@ const dependencyNames = [
   "zod",
 ];
 
-export async function buildSemanticHarnessPayload({
-  outputPaths,
-  runtimeVersion,
-}) {
+export async function buildSemanticHarnessPayload({ outputPaths, runtimeVersion }) {
   await access(join(agentRuntimeDist, "harness/semantic-harness-runner.js"));
-  const agentPackage = JSON.parse(
-    await readFile(join(agentRuntimeDir, "package.json"), "utf8"),
-  );
   const staging = await mkdtemp(join(tmpdir(), "blame-semantic-harness-"));
   try {
     const runtimeFiles = await copyRuntimeModules(staging);
-    await writeFile(
-      join(staging, "package.json"),
-      `${JSON.stringify(
-        {
-          name: "@blame/semantic-harness-runtime",
-          version: payloadVersion(runtimeVersion),
-          private: true,
-          type: "module",
-          bin: {
-            "blame-semantic-harness": "harness/semantic-harness-runner.js",
-          },
-          engines: { node: ">=22" },
-          files: runtimeFiles,
-          dependencies: Object.fromEntries(
-            dependencyNames.map((name) => [
-              name,
-              agentPackage.dependencies[name],
-            ]),
-          ),
-        },
-        null,
-        2,
-      )}\n`,
-      "utf8",
-    );
-    const packDirectory = join(staging, "packed");
-    await mkdir(packDirectory);
-    await execFileAsync(
-      process.platform === "win32" ? "npm.cmd" : "npm",
-      ["pack", "--ignore-scripts", "--pack-destination", packDirectory],
-      {
-        cwd: staging,
-        shell: process.platform === "win32",
-      },
-    );
-    const archive = (await readdir(packDirectory)).find((file) =>
-      file.endsWith(".tgz"),
-    );
-    if (!archive)
-      throw new Error("Semantic harness npm pack produced no archive");
+    const coreManifest = await copyRuntimeSdk(staging);
+    await writePayloadManifest(staging, runtimeFiles, coreManifest, runtimeVersion);
+    const archive = await packArchive(staging, join(staging, "packed"));
     for (const outputPath of outputPaths) {
       await mkdir(dirname(outputPath), { recursive: true });
       await rm(outputPath, { force: true });
-      await cp(join(packDirectory, archive), outputPath);
+      await cp(archive, outputPath);
     }
   } finally {
     await rm(staging, { force: true, recursive: true });
   }
+}
+
+async function copyRuntimeSdk(staging) {
+  const coreRoot = await runtimeCorePackagePath();
+  await access(join(coreRoot, "dist/image-token-estimation.js"));
+  await cp(coreRoot, join(staging, "vendor/cline-core"), { recursive: true });
+  return JSON.parse(await readFile(join(coreRoot, "package.json"), "utf8"));
+}
+
+export async function runtimeCorePackagePath() {
+  const sdkRoot = await realpath(join(agentRuntimeDir, "node_modules/@cline/sdk"));
+  const locations = createRequire(join(sdkRoot, "package.json")).resolve.paths("@cline/core") ?? [];
+  for (const location of locations) {
+    try { return dirname(await realpath(join(location, "@cline/core/package.json"))); }
+    catch (error) { if (error.code !== "ENOENT") throw error; }
+  }
+  throw new Error("Cline SDK core dependency is missing");
+}
+
+async function writePayloadManifest(staging, runtimeFiles, coreManifest, runtimeVersion) {
+  const agentPackage = JSON.parse(await readFile(join(agentRuntimeDir, "package.json"), "utf8"));
+  const dependencies = Object.fromEntries(dependencyNames.map((name) => [name, agentPackage.dependencies[name]]));
+  const manifest = {
+    name: "@blame/semantic-harness-runtime",
+    version: payloadVersion(runtimeVersion),
+    private: true,
+    type: "module",
+    bin: { "blame-semantic-harness": "harness/semantic-harness-runner.js" },
+    engines: { node: ">=22" },
+    files: [...runtimeFiles, "vendor/cline-core"],
+    dependencies: { ...coreManifest.dependencies, ...dependencies },
+  };
+  await writeFile(join(staging, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+}
+
+async function packArchive(directory, destination) {
+  await mkdir(destination, { recursive: true });
+  await execFileAsync(process.platform === "win32" ? "npm.cmd" : "npm",
+    ["pack", "--ignore-scripts", "--pack-destination", destination],
+    { cwd: directory, shell: process.platform === "win32" });
+  const archive = (await readdir(destination)).find((file) => file.endsWith(".tgz"));
+  if (!archive) throw new Error("Runtime npm pack produced no archive");
+  return join(destination, archive);
 }
 
 async function copyRuntimeModules(staging) {

@@ -1,7 +1,9 @@
+import { pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import {
   access,
+  realpath,
   mkdir,
   mkdtemp,
   readFile,
@@ -12,7 +14,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
-import { buildSemanticHarnessPayload } from "./semantic-harness-payload.mjs";
+import { buildSemanticHarnessPayload, runtimeCorePackagePath } from "./semantic-harness-payload.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const agentRuntimeDir = join(rootDir, "packages/agent-runtime");
@@ -58,16 +60,20 @@ async function linkRuntimeDependencies(packageRoot) {
   const manifest = JSON.parse(
     await readFile(join(packageRoot, "package.json"), "utf8"),
   );
-  const dependencies = Object.keys(manifest.dependencies);
-  for (const name of dependencies) {
+  const coreRoot = await runtimeCorePackagePath();
+  const dependencyRoot = dirname(dirname(coreRoot));
+  for (const name of Object.keys(manifest.dependencies)) {
     const destination = join(packageRoot, "node_modules", name);
+    const source = await dependencyPath(name, dependencyRoot);
     await mkdir(dirname(destination), { recursive: true });
-    await symlink(
-      join(agentRuntimeDir, "node_modules", name),
-      destination,
-      process.platform === "win32" ? "junction" : undefined,
-    );
+    await symlink(source, destination, process.platform === "win32" ? "junction" : undefined);
   }
+}
+
+async function dependencyPath(name, coreDependencies) {
+  try { return await realpath(join(agentRuntimeDir, "node_modules", name)); }
+  catch (error) { if (error.code !== "ENOENT") throw error; }
+  return realpath(join(coreDependencies, name));
 }
 
 async function executeRunner(packageRoot, workspaceRoot, request = {}) {
@@ -110,5 +116,24 @@ test("standalone payload returns image media with the forwarded model capability
     });
     assert.equal(result.status, "ok", JSON.stringify(result));
     assert.deepEqual(result.content, [{ type: "image", mediaType: "image/png", data: pixel.toString("base64") }]);
+  });
+});
+
+test("standalone payload ships the patched SDK used by the managed hub", async () => {
+  await withPayload(async (packageRoot) => {
+    const entry = join(packageRoot, "vendor/cline-core/dist/index.js");
+    const sdk = await import(pathToFileURL(entry).href);
+    const config = { providerId: "anthropic", modelId: "fixture", compaction: { enabled: true, strategy: "basic", imageTokenLimit: 36000 } };
+    const messages = Array.from({ length: 6 }, (_, index) => ({ role: index % 2 ? "assistant" : "user", content: [
+      { type: "text", text: "Inspect the input." },
+      { type: "image", mediaType: "image/png", data: "A".repeat(600000) },
+    ] }));
+    const prepare = sdk.createContextCompactionPrepareTurn(sdk.splitCoreSessionConfig(config).config);
+    const result = await prepare({ messages, apiMessages: messages, systemPrompt: "", tools: [],
+      abortSignal: new AbortController().signal, agentId: "fixture", conversationId: "fixture", parentAgentId: null, iteration: 1,
+      model: { id: "fixture", provider: "anthropic", info: { maxInputTokens: 922000, contextWindow: 1050000 } },
+    });
+    assert.equal(result, undefined);
+    assert.match(sdk.resolveHubBuildId(), /^blame-sdk-image-budget-v1-/);
   });
 });
