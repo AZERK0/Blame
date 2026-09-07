@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { execa } from "execa";
 import { parse, type ParseError } from "jsonc-parser";
 import ts from "typescript";
-import { parseCode } from "./code-intelligence.js";
+import { parseCode, parseSyntaxDiagnostics } from "./code-intelligence.js";
 import { languageCapability } from "./language-capabilities.js";
 import { workspaceCommandEnvironment } from "./workspace-command-environment.js";
 
@@ -87,9 +87,7 @@ function validateSemantic(input: { content: Buffer; path: string }) {
       "C/C++ syntax requires the project compiler and preprocessing configuration.",
     ]);
   const status = parsed.errorCount ? "failed" : "passed";
-  const diagnostics = parsed.errorCount
-    ? [`Parser reported ${parsed.errorCount} syntax error(s).`]
-    : [];
+  const diagnostics = parseSyntaxDiagnostics(parsed);
   return validation(input.path, status, "ast-grep", diagnostics);
 }
 
@@ -117,9 +115,7 @@ function validateTypeScript(input: { content: Buffer; path: string }) {
     });
   const semantic = parseCode(input.path, input.content);
   const semanticDiagnostics = semantic.supported
-    ? semantic.errorCount
-      ? [`ast-grep reported ${semantic.errorCount} syntax error(s).`]
-      : []
+    ? parseSyntaxDiagnostics(semantic)
     : ["ast-grep syntax validation is unavailable."];
   const diagnostics = [...typescriptDiagnostics, ...semanticDiagnostics];
   return validation(

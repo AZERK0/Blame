@@ -541,11 +541,35 @@ function extension(path: string) {
 }
 
 function countErrorNodes(root: SgNode) {
-  let count = 0;
+  return syntaxErrorNodes(root).length;
+}
+
+function syntaxErrorNodes(root: SgNode) {
+  const errors: SgNode[] = [];
   walk(root, (node) => {
-    if (node.kind() === "ERROR" || node.kind() === "MISSING") count += 1;
+    if (node.kind() === "ERROR" || node.kind() === "MISSING" || missingSyntaxToken(node))
+      errors.push(node);
   });
-  return count;
+  return errors;
+}
+
+function missingSyntaxToken(node: SgNode) {
+  if (!node.isLeaf() || node.isNamed()) return false;
+  const range = node.range();
+  return range.start.index === range.end.index;
+}
+
+export function parseSyntaxDiagnostics(parsed: ParseResult) {
+  return parsed.trees.flatMap((tree) =>
+    syntaxErrorNodes(tree.root).map((node) => {
+      const position = node.range().start;
+      const location = `${position.line + tree.lineOffset + 1}:${position.column + 1}`;
+      const detail = node.kind() === "ERROR"
+        ? `Unexpected syntax ${JSON.stringify(node.text().slice(0, 120))}`
+        : `Expected ${JSON.stringify(node.kind())}`;
+      return `${location} ${detail}`;
+    }),
+  ).slice(0, 20);
 }
 
 function walk(node: SgNode, visit: (node: SgNode) => void) {

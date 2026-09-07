@@ -22,6 +22,48 @@ const macroFunction = [
 ].join("\n");
 const regionDefinitions = "#define BEGIN_REGION {\n#define END_REGION }\n";
 
+const validSyntaxSamples = {
+  "value.py": ["", "def value():\n    pass\n", "text = ''\n", "class Empty:\n    pass\n"],
+  "value.rs": ["", "fn main() {}", "fn value() -> i32 { 1 }"],
+  "value.go": ["", "package main\nfunc main() {}\n"],
+  "Value.java": ["class Value {}", "class Value { void run() {} }"],
+  "Value.cs": ["class Value {}", "class Value { void Run() {} }"],
+  "value.js": ["", "function value() { return 1 }", "const value = () => ({})", "const text = ``"],
+  "value.ts": ["", "interface Value {}", "type Value = {};", "function value() {}"],
+  "value.sh": ["", "echo value", "cat <<'END'\nEND\n"],
+};
+
+for (const [path, samples] of Object.entries(validSyntaxSamples)) {
+  test(`valid ${path} handles empty constructs and implicit delimiters`, async () => {
+    for (const content of samples) {
+      assert.equal(parseCode(path, Buffer.from(content)).errorCount, 0, content);
+      const result = await validateContent({ path, content: Buffer.from(content), workspaceRoot: tmpdir() });
+      assert.notEqual(result.status, "failed", JSON.stringify(result));
+    }
+  });
+}
+
+test("missing Python punctuation reports its location and expected token", async () => {
+  const content = Buffer.from("def value(:\n    return 2\n");
+  const result = await validateContent({ path: "value.py", content, workspaceRoot: tmpdir() });
+  assert.equal(result.status, "failed");
+  assert.match(result.diagnostics.join("\n"), /1:11 Expected "\)"/u);
+  await assert.rejects(execute("python3", ["-c", "import ast; ast.parse('def value(:\\n    return 2\\n')"]));
+});
+
+test("missing punctuation preserves source during an atomic replacement", async () => {
+  await fixture(async (root, workspace) => {
+    const source = "def value():\n    return 1\n";
+    await writeFile(join(root, "value.py"), source);
+    await workspace.readCode({ target: "value.py" }, {});
+    const patch = "*** Begin Patch\n*** Delete File: value.py\n*** Add File: value.py\n+def value(:\n+    return 2\n+\n*** End Patch";
+    const result = await workspace.editCode({ operations: [{ kind: "patch", patch }] });
+    assert.equal(result.status, "blocked", JSON.stringify(result));
+    assert.equal(await readFile(join(root, "value.py"), "utf8"), source);
+    assert.match(JSON.stringify(result), /1:11/u);
+  });
+});
+
 for (const extension of ["c", "h", "cpp", "cc", "cxx", "hpp"]) {
   test(`unpreprocessed ${extension} remains unverified even without parser errors`, async () => {
     const result = await validateContent({
