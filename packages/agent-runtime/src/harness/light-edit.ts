@@ -404,6 +404,8 @@ function applyPatchPlan(
   patch: Awaited<ReturnType<typeof planLightPatch>>,
 ) {
   if (patch.mode === "add") {
+    if (file.initial && file.mutation === "delete")
+      return replaceDeletedFile(file, path, patch.content);
     if (file.initial) throw new Error(`${path} already exists.`);
     file.mutation = "add";
     file.replacements.push({
@@ -425,6 +427,18 @@ function applyPatchPlan(
       source: `patch ${path}`,
     })),
   );
+}
+
+function replaceDeletedFile(file: PlannedFile, path: string, content: string) {
+  if (file.replacements.length)
+    throw new Error(`File replacement cannot overlap another edit in ${path}.`);
+  file.mutation = undefined;
+  file.replacements.push({
+    start: 0,
+    end: file.initial!.length,
+    replacement: content,
+    source: `replace ${path}`,
+  });
 }
 
 function appliedEditResult(

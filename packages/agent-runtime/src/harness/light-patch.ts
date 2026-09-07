@@ -36,8 +36,7 @@ export function splitLightPatch(
   assertEmptyPatchPrefix(lines, headers[0]!.index);
   return headers.map((header, index) => {
     const end = headers[index + 1]?.index ?? lines.length - 1;
-    const path =
-      headers.length === 1 && requestedPath ? requestedPath : header.path;
+    const path = header.path;
     const section = [
       "*** Begin Patch",
       ...lines.slice(header.index, end),

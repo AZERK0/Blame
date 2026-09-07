@@ -48,7 +48,7 @@ const symbolEdit = z
 const patchEdit = z
   .object({
     kind: z.literal("patch"),
-    path: relativePath.optional(),
+    path: relativePath.optional().describe("Target for raw content or a patch without file headers. Explicit patch headers select their own files."),
     patch: editContent
       .min(1)
       .describe(
