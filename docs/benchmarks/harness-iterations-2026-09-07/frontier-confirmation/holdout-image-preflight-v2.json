@@ -1,0 +1,47 @@
+[
+  {
+    "task": "path-tracing-reverse",
+    "compressedBytes": 170980081,
+    "digest": "sha256:7911e42479d8f6d8af1248bc52442a0efbc5a33e3ecf535fdc20d252a2c64142"
+  },
+  {
+    "task": "torch-pipeline-parallelism",
+    "compressedBytes": 29723240,
+    "digest": "sha256:3cb7b39d86f1704b20e668851da0b08b34b3270c01d583f136d65190984a8d1b"
+  },
+  {
+    "task": "merge-diff-arc-agi-task",
+    "compressedBytes": 29725592,
+    "digest": "sha256:bfc2a235f2ceea64ffb1ffc5529c2acebf570bff61f3668f0e5669ef570c17d4"
+  },
+  {
+    "task": "git-multibranch",
+    "compressedBytes": 222129979,
+    "digest": "sha256:5bc449921c138295f6ddd8dca2977319fee2ce523811dbe56cec4ca663385fb5"
+  },
+  {
+    "task": "financial-document-processor",
+    "compressedBytes": 51790066,
+    "digest": "sha256:ef6c9cfaaf14cdd200163008a188d5baa9f626f3bfb8d3e7d6f30c08518e6251"
+  },
+  {
+    "task": "password-recovery",
+    "compressedBytes": 62185367,
+    "digest": "sha256:15fcd84bf3b06270ee148211cc6da6599b13ec2f41ac1d0894cf75c2225872ee"
+  },
+  {
+    "task": "cancel-async-tasks",
+    "compressedBytes": 44164493,
+    "digest": "sha256:84c7fae6b256dcc56a350790e2a9715eefc7dad662a9d8e8a472363aa71ef18d"
+  },
+  {
+    "task": "query-optimize",
+    "compressedBytes": 120490320,
+    "digest": "sha256:28de7da87004eab5b29bd5eaf1823579bc5b73ccea4b80349a5623185770da14"
+  },
+  {
+    "task": "polyglot-rust-c",
+    "compressedBytes": 271241474,
+    "digest": "sha256:3ba84f0e138a4b65e58c53f920a0fc852571e6402901c3bdbb876e9dab6e6c5e"
+  }
+]
