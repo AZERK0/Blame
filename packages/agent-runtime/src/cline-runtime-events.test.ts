@@ -1962,7 +1962,7 @@ test("renders the compact native Cline development prompt", async () => {
   );
   assert.match(
     prompt,
-    /`run_task` for finite inspection, validation, generation/,
+    /`run_task` for inspection, validation, generation/,
   );
   assert.match(prompt, /call `finish_task`/);
   assert.doesNotMatch(prompt, /complete_turn/);
@@ -2138,3 +2138,15 @@ function fileAttachment(name: string, type: string) {
     type,
   };
 }
+
+test("development instructions describe only caller-declared isolation", async () => {
+  const input = { apiConnection: { token: "token", url: "https://example.test" },
+    cwd: process.cwd(), workspaceRoot: process.cwd(), modelId: "model", providerId: "provider",
+    title: "Environment", summary: "Configure a service" };
+  const host = await buildDevelopmentSystemPrompt(input);
+  const isolated = await buildDevelopmentSystemPrompt({ ...input, isolatedEnvironment: true });
+  assert.match(host, /current process permissions/);
+  assert.doesNotMatch(host, /inside an isolated task environment/);
+  assert.match(isolated, /inside an isolated task environment/);
+  assert.doesNotMatch(isolated, /get_preview_devtools/);
+});

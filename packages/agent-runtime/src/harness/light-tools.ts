@@ -39,7 +39,7 @@ export function lightSemanticHarnessTools(
         sessionId: options.taskContract?.session_id ?? "unscoped-session",
         taskContract: options.taskContract,
       });
-  return lightWorkspaceTools(workspace);
+  return lightWorkspaceTools(workspace, options.taskContract?.environment);
 }
 
 type LightWorkspacePort = Pick<
@@ -85,12 +85,12 @@ function executorInvocation(
     );
 }
 
-function lightWorkspaceTools(workspace: LightWorkspacePort) {
+function lightWorkspaceTools(workspace: LightWorkspacePort, environment?: LightTaskContract["environment"]) {
   return [
     searchCodeTool(workspace),
     readCodeTool(workspace),
     editCodeTool(workspace),
-    runTaskTool(workspace),
+    runTaskTool(workspace, environment),
   ];
 }
 
@@ -129,11 +129,15 @@ function editCodeTool(workspace: LightWorkspacePort) {
   });
 }
 
-function runTaskTool(workspace: LightWorkspacePort) {
+function runTaskTool(workspace: LightWorkspacePort, environment?: LightTaskContract["environment"]) {
   return harnessTool({
     name: "run_task",
     description:
-      "Run finite project tasks, inspections, generators, or formatters. Source changes are journaled and require a subsequent check. Explicit calls execute; finish_task reuses fresh validation. Use the dependency operation for Node packages, native commands for other ecosystems, and the managed preview for services. Prettier on explicit files uses atomic edits. Returns bounded output and code/environment diagnostics; use run_task to inspect outputLog when returned.",
+      "Run project tasks, inspections, generators, formatters, or requested setup. Source changes are journaled and require a subsequent check. Explicit calls execute; finish_task reuses fresh validation. Use the dependency operation for Node packages and native commands for other ecosystems. " +
+      (environment?.managedPreview === false
+        ? "For requested services, detach the process and redirect its input/output so the command can finish. "
+        : "Use the managed preview for services. ") +
+      "Prettier on explicit files uses atomic edits. Returns bounded output and code/environment diagnostics; use run_task to inspect outputLog when returned.",
     schema: lightRunTaskInputSchema,
     execute: (input, context) => workspace.runTask(input, context),
   });

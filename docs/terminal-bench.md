@@ -32,6 +32,7 @@ The configured Blame account must already contain the provider credential select
 Install Harbor in its own Python environment, then run a Terminal Bench dataset with the local adapter:
 
 ```bash
+export BLAME_ISOLATED_ENVIRONMENT="true"
 harbor run \
   -d "<terminal-bench-dataset>" \
   --agent tools.terminal_bench.blame_agent:BlameAgent \
@@ -100,3 +101,5 @@ The [contract and context correction pass](/mnt/dev/web/Blame/docs/harness-cache
 The final web follow-up preserves another four trials with 2/2 official success in each arm but higher aggregate input and cost. A trace audit finds that its POV-Ray control downloaded public solution, verifier and reference artifacts: retain the nominal score and usage, label the pair contaminated, and do not claim clean superiority from it. The other seventeen traces show no explicit matching oracle retrieval in this bounded audit; that is not proof against training contamination. Final source additionally corrects signal-listing and Git-reference inspection refusals and clarifies the web description. These last changes are tested and replayed after the frozen live campaign, with a separate final bundle and separate synthetic resource measurement; do not relabel older trial bundles.
 
 The selected final bundle is `69cfa03e3dd3358cf27abdf8c1af42a256be26d8043b0f0945b7eaec977d2adb`. Its separate two-run synthetic web measurement exercises the binary fix with one two-URL call per arm and correct answers: 13,892→5,519 input tokens, identical JSON, and a 96,291→190-byte ZIP result. Keep this controlled resource test separate from the eighteen Terminal-Bench trials; it is not a global success or latency estimate. Final validation passes 513 tests and runtime lint.
+
+`BLAME_ISOLATED_ENVIRONMENT=true` is an operator assertion that the runner is already inside an isolated task environment, such as the Docker environment above. It does not create a sandbox. Leave it unset for host workspaces; a Git worktree is not operating-system isolation. The default is false and the value is recorded in each benchmark result. Isolated runs allow authorized environment setup and process control; managed preview restrictions apply only when a preview service is actually attached. The Node dependency operation and remote-script restrictions remain in force.

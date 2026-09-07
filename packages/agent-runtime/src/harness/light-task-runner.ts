@@ -8,7 +8,7 @@ import {
   DeterministicFormatterError,
   type FormatterCommand,
 } from "./deterministic-formatter.js";
-import type { LightRunTaskInput, LightToolResult } from "./light-contracts.js";
+import type { LightRunTaskInput, LightToolResult, LightTaskContract } from "./light-contracts.js";
 import {
   dependencyManifestSections,
   LightDependencyService,
@@ -33,6 +33,7 @@ type RunnerContext = {
 };
 
 type LightTaskRunnerOptions = {
+  commandEnvironment?: LightTaskContract["environment"];
   edits?: Pick<LightEditService, "replaceFiles">;
   files: WorkspaceFiles;
   journal: SessionJournal;
@@ -52,6 +53,7 @@ type FailureAssessment = {
 };
 
 export class LightTaskRunner {
+  private readonly commandEnvironment: LightTaskContract["environment"];
   private readonly edits?: Pick<LightEditService, "replaceFiles">;
   private readonly environment: EnvironmentAdapter;
   private readonly formatter: DeterministicFormatter;
@@ -61,6 +63,7 @@ export class LightTaskRunner {
   private readonly refreshPreviewDependencies?: () => Promise<unknown>;
 
   constructor(options: LightTaskRunnerOptions) {
+    this.commandEnvironment = options.commandEnvironment;
     this.edits = options.edits;
     this.files = options.files;
     this.journal = options.journal;
@@ -82,7 +85,8 @@ export class LightTaskRunner {
   ): Promise<LightToolResult<unknown>> {
     try {
       const task = await this.resolveProjectTask(input);
-      if (task.kind === "service") return managedServiceResult(task.task_id);
+      if (task.kind === "service" && this.commandEnvironment?.managedPreview !== false)
+        return managedServiceResult(task.task_id);
       return await this.executeProjectTask(task, context);
     } catch (error) {
       const category =
@@ -119,7 +123,7 @@ export class LightTaskRunner {
     if (formatter) return this.format(formatter, input, context);
     const formatterRecovery = this.formatter.recovery(input.command);
     if (formatterRecovery) return blocked("input", formatterRecovery);
-    const denied = blockedCommandReason(input.command);
+    const denied = blockedCommandReason(input.command, this.commandEnvironment);
     if (denied) return blocked("input", denied);
     try {
       const invocation = this.environment.command(input.command);

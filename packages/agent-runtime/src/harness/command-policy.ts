@@ -1,5 +1,6 @@
 import type { SgNode } from "@ast-grep/napi";
 import { parseCode } from "./code-intelligence.js";
+import type { LightTaskContract } from "./light-contracts.js";
 
 export const blockedCommandParts = [
   "rm -rf",
@@ -9,15 +10,15 @@ export const blockedCommandParts = [
   "> /dev/",
 ];
 
-export function blockedCommandReason(command: string) {
+export function blockedCommandReason(command: string, environment?: LightTaskContract["environment"]) {
   const root = parseCode("command.sh", Buffer.from(command)).trees[0]?.root;
   if (!root) return "Unable to inspect the shell command syntax.";
-  if (hasBackgroundProcess(root))
+  if (environment?.managedPreview !== false && hasBackgroundProcess(root))
     return "Long-running processes must use the managed preview runtime.";
   const invocations = root
     .findAll({ rule: { kind: "command" } })
     .map(commandInvocation);
-  const denied = invocations.map(blockedInvocationReason).find(Boolean);
+  const denied = invocations.map((value) => blockedInvocationReason(value, environment)).find(Boolean);
   if (denied) return denied;
   if (
     root
@@ -28,20 +29,24 @@ export function blockedCommandReason(command: string) {
   return undefined;
 }
 
-function blockedInvocationReason(command: string): string | undefined {
+function blockedInvocationReason(command: string, environment?: LightTaskContract["environment"]): string | undefined {
   const normalized = command.toLocaleLowerCase();
-  if (managedInfrastructure.test(normalized))
-    return "Managed preview infrastructure cannot be started from run_task.";
+  if (managedInfrastructure.test(normalized) && (environment?.managedPreview !== false || !environment.isolated))
+    return environment?.managedPreview === false
+      ? "Infrastructure commands require an isolated task environment."
+      : "Managed preview infrastructure cannot be started from run_task.";
+  if (!environment?.isolated && processControl.test(normalized) && !signalInspection(command))
+    return "Direct process control is unavailable in this workspace.";
   if (
-    (longRunningProcess.test(normalized) && !signalInspection(command)) ||
-    unmanagedViteCommand(normalized)
+    environment?.managedPreview !== false &&
+    (longRunningProcess.test(normalized) || unmanagedViteCommand(normalized))
   )
     return "Long-running processes must use the managed preview runtime.";
-  if (destructiveFileCommand.test(normalized))
+  if (!environment?.isolated && destructiveFileCommand.test(normalized))
     return "Use edit_code for file deletion; destructive filesystem commands are unavailable.";
   if (packageManagerMutation.test(normalized))
     return "Use the dependency operation for Node package changes.";
-  if (deniedGitCommand(command))
+  if (!environment?.isolated && deniedGitCommand(command))
     return "Git mutations are unavailable from run_task.";
   if (/^sudo(?:\s|$)/u.test(normalized))
     return "Privilege escalation is unavailable from run_task.";
@@ -49,7 +54,7 @@ function blockedInvocationReason(command: string): string | undefined {
     /^(?:(?:command|exec|env)\s+(?:[^\s=]+=[^\s]+\s+)*|(?:npm|pnpm|yarn|bun)\s+exec\s+(?:--\s+)?|(?:npx|bunx|(?:pnpm|yarn)\s+dlx)\s+(?:(?:-y|--yes|--)\s+)*)/u,
     "",
   );
-  return unwrapped === command ? undefined : blockedInvocationReason(unwrapped);
+  return unwrapped === command ? undefined : blockedInvocationReason(unwrapped, environment);
 }
 
 function commandInvocation(node: SgNode) {
@@ -70,7 +75,8 @@ function hasBackgroundProcess(node: SgNode): boolean {
 const managedInfrastructure =
   /^(?:docker|docker-compose|nerdctl|podman|postgres|pg_ctl|createdb|initdb)(?:\s|$)/u;
 const longRunningProcess =
-  /^(?:next\s+(?:dev|start)|pnpm\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|npm\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|yarn\s+(?:dev|preview|start|serve|watch)|bun\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|nohup|kill|pkill)(?:\s|$)/u;
+  /^(?:next\s+(?:dev|start)|pnpm\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|npm\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|yarn\s+(?:dev|preview|start|serve|watch)|bun\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|nohup)(?:\s|$)/u;
+const processControl = /^(?:kill|pkill)(?:\s|$)/u;
 const destructiveFileCommand = /^(?:rm|rmdir|dd|chown)(?:\s|$)/u;
 const packageManagerMutation =
   /^(?:(?:npm|pnpm|yarn|bun)\s+(?:add|ci|install|link|remove|uninstall|unlink|update|upgrade))/u;

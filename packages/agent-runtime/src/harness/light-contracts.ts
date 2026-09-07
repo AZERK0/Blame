@@ -105,6 +105,7 @@ export type LightEditCodeInput = z.infer<typeof lightEditCodeInputSchema>;
 export type LightRunTaskInput = z.infer<typeof lightRunTaskInputSchema>;
 
 export type LightTaskContract = {
+  environment?: { isolated: boolean; managedPreview: boolean };
   acceptance_criteria?: string[];
   effect_requirement?: "none" | "source_change";
   objective?: string;

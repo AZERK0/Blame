@@ -154,3 +154,25 @@ function terminateFixture(pid: number) {
     if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
   }
 }
+
+test("an isolated workspace can configure a repository and run a detached service", { skip: process.platform === "win32" }, async () => {
+  await fixture(async (root) => {
+    const workspace = new LightWorkspace(root, { sessionId: "isolated-service",
+      taskContract: { session_id: "isolated-service", acceptance_criteria: ["Configure the environment"],
+        effect_requirement: "none", environment: { isolated: true, managedPreview: false } } });
+    const setup = await workspace.runTask({ kind: "command", command: "git init fixture" }, {});
+    assert.equal(setup.status, "ok", JSON.stringify(setup));
+    await writeFile(join(root, "service.cjs"), "setTimeout(()=>{},3000)");
+    const started = performance.now();
+    const result = await workspace.runTask({ kind: "command",
+      command: "nohup node service.cjs > service.log 2>&1 < /dev/null & echo $! > service.pid" }, {});
+    const pid = Number(await readFile(join(root, "service.pid"), "utf8"));
+    try {
+      assert.equal(result.status, "ok", JSON.stringify(result));
+      assert.ok(performance.now() - started < 1500);
+      assert.doesNotThrow(() => process.kill(pid, 0));
+    } finally {
+      terminateFixture(pid);
+    }
+  });
+});

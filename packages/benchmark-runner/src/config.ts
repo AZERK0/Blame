@@ -50,6 +50,7 @@ function benchmarkConfig(
   const reasoningEffort = reasoningValue(environment.BLAME_REASONING_EFFORT);
   return {
     apiUrl: requiredEnvironment(environment, "BLAME_API_URL"),
+    isolatedEnvironment: isolatedEnvironmentValue(environment.BLAME_ISOLATED_ENVIRONMENT),
     apiToken: requiredEnvironment(environment, "BLAME_API_TOKEN"),
     credentialLabel: optionalEnvironment(environment, "BLAME_CREDENTIAL_LABEL"),
     harness: harnessValue(options.get("harness")),
@@ -83,6 +84,12 @@ function harnessValue(value: string | undefined) {
   if (value === undefined || value === "blame") return "blame" as const;
   if (value === "cline") return "cline" as const;
   throw new HeadlessConfigurationError(`Invalid harness: ${value}.`);
+}
+
+function isolatedEnvironmentValue(value: string | undefined) {
+  if (value === undefined || value === "false") return false;
+  if (value === "true") return true;
+  throw new HeadlessConfigurationError("BLAME_ISOLATED_ENVIRONMENT must be true or false.");
 }
 
 function benchmarkPaths(options: Map<string, string>, cwd: string) {

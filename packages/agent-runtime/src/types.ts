@@ -167,6 +167,7 @@ export type LoginOAuthProviderInput = {
 };
 
 export type StartSessionInput = {
+  isolatedEnvironment?: boolean;
   apiConnection: ApiConnection;
   providerId: string;
   modelId: string;
@@ -215,6 +216,7 @@ export type FileAttachment = {
 };
 
 export type StartDevelopmentSessionInput = {
+  isolatedEnvironment?: boolean;
   apiConnection: ApiConnection;
   providerId: string;
   modelId: string;

@@ -819,6 +819,8 @@ export class BlameAgentRuntime {
         : requestedConfigExtensions;
       const taskObjective = input.taskObjective ?? input.prompt;
       const taskContract = {
+        environment: { isolated: input.isolatedEnvironment === true,
+          managedPreview: Boolean(input.previewDevtoolsScope) },
         acceptance_criteria: [taskObjective],
         effect_requirement: "none" as const,
         session_id: sessionId,
@@ -3652,6 +3654,7 @@ export class BlameAgentRuntime {
       workspaceRoot: input.workspaceRoot,
       workspaceMode: input.workspaceMode,
       previewDevtoolsScope: input.previewDevtoolsScope,
+      isolatedEnvironment: input.isolatedEnvironment,
       systemPrompt: await buildDevelopmentSystemPrompt(input),
       enableBuiltInSkills: true,
       enableSpecialistConsult,
@@ -5029,6 +5032,9 @@ export async function buildDevelopmentSystemPrompt(
   const metadata = await buildWorkspaceMetadata(input.cwd);
   const practices = input.codePractices ?? [];
   return renderPrompt(loadPrompt("code-agent-system"), {
+    BLAME_ENVIRONMENT: input.isolatedEnvironment
+      ? "Commands run inside an isolated task environment. Apply the authorized environment changes there and verify that requested setup or services are active."
+      : "Commands use the current process permissions. Keep their effects within the user's authorized scope and preserve unrelated state.",
     BLAME_PRACTICES: developmentPracticePrompts(practices),
     BLAME_PREVIEW: developmentPreviewPrompt(input),
     BLAME_SPECIALISTS: developmentSpecialistConsultEnabled(input)

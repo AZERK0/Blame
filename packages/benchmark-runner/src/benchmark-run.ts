@@ -105,6 +105,7 @@ export function runtimeFactory(
 
 function sessionInput(config: BenchmarkConfig): BenchmarkSessionInput {
   return {
+    isolatedEnvironment: config.isolatedEnvironment,
     apiConnection: { token: config.apiToken, url: config.apiUrl },
     credentialLabel: config.credentialLabel,
     cwd: config.workspaceRoot,
@@ -205,6 +206,7 @@ function benchmarkResult(input: {
     eventCount: input.recorder.eventCount,
     finishedAt: input.finishedAt.toISOString(),
     harness: input.config.harness,
+    isolatedEnvironment: input.config.isolatedEnvironment === true,
     metrics: input.recorder.metrics(input.startedAt, input.finishedAt),
     modelId: input.config.modelId,
     providerId: input.config.providerId,

@@ -8,6 +8,7 @@ import type {
 } from "@blame/agent-runtime";
 
 export type BenchmarkConfig = {
+  isolatedEnvironment?: boolean;
   apiUrl: string;
   apiToken: string;
   credentialLabel?: string;
@@ -33,6 +34,7 @@ export type BenchmarkStatus =
   | "timed_out";
 
 export type BenchmarkResult = {
+  isolatedEnvironment?: boolean;
   cleanupIncomplete?: boolean;
   reasoningEffort?: ReasoningSelection;
   maxIterations: number;

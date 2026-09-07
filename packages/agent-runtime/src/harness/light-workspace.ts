@@ -114,6 +114,7 @@ export class LightWorkspace {
       journal: this.journal,
     });
     this.tasks = new LightTaskRunner({
+      commandEnvironment: options.taskContract?.environment,
       edits: this.edits,
       files: this.files,
       journal: this.journal,

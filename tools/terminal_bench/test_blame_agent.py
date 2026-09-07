@@ -24,6 +24,13 @@ class HarnessSelectionTests(unittest.TestCase):
         self.assertEqual(command[command.index("--harness") + 1], "cline")
         self.assertEqual(command[command.index("--instruction-file") + 1], "/logs/a 'b.md")
 
+    def test_isolation_is_only_forwarded_when_explicitly_configured(self):
+        agent = self.agent("blame")
+        self.assertNotIn("BLAME_ISOLATED_ENVIRONMENT", agent._optional_runtime_environment())
+        agent = BlameAgent(logs_dir=Path("/tmp/benchmark-adapter-test"),
+                          extra_env={"BLAME_ISOLATED_ENVIRONMENT": "true"})
+        self.assertEqual(agent._optional_runtime_environment()["BLAME_ISOLATED_ENVIRONMENT"], "true")
+
     def test_unknown_harness_is_rejected_before_shell_execution(self):
         with self.assertRaisesRegex(ValueError, "Unsupported benchmark harness"):
             self.agent("cline; touch /tmp/unwanted")._run_command("/logs/instruction.md")

@@ -94,6 +94,7 @@ class BlameAgent(BaseInstalledAgent):
 
     def _optional_runtime_environment(self) -> dict[str, str]:
         names = [
+            "BLAME_ISOLATED_ENVIRONMENT",
             "BLAME_CREDENTIAL_LABEL",
             "BLAME_MAX_ITERATIONS",
             "BLAME_REASONING_EFFORT",

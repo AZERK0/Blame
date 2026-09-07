@@ -75,3 +75,17 @@ function environment() {
     NODE_ENV: "development",
   };
 }
+
+test("isolation is an explicit caller assertion with a conservative default", async () => {
+  await withInstruction(async (directory, instructionPath) => {
+    const args = ["run", "--instruction-file", instructionPath];
+    for (const value of [undefined, "false", "true"]) {
+      const parsed = await parseBenchmarkCommand(args,
+        { ...environment(), BLAME_ISOLATED_ENVIRONMENT: value }, directory);
+      assert.equal(parsed.config.isolatedEnvironment, value === "true");
+    }
+    await assert.rejects(parseBenchmarkCommand(args,
+      { ...environment(), BLAME_ISOLATED_ENVIRONMENT: "yes" }, directory),
+    /BLAME_ISOLATED_ENVIRONMENT must be true or false/);
+  });
+});

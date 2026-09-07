@@ -53,6 +53,8 @@ test("runs one development session and returns benchmark metrics", async () => {
   assert.equal(result.usage?.aggregateUsage?.totalInputTokens, 12);
   assert.equal(inputs[0]?.summary, "Fix the task");
   assert.equal(inputs[0]?.projectId, "project-1");
+  assert.equal(inputs[0]?.isolatedEnvironment, true);
+  assert.equal(result.isolatedEnvironment, true);
   assert.equal(recorder.closed, true);
   assert.equal(shutdown, true);
 });
@@ -211,6 +213,7 @@ function runtimeStub(callbacks: {
 
 function benchmarkConfig(): BenchmarkConfig {
   return {
+    isolatedEnvironment: true,
     apiToken: "token",
     apiUrl: "https://api.example.test",
     harness: "blame",
