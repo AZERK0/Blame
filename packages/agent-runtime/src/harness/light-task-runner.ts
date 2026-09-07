@@ -1,4 +1,3 @@
-import { execa } from "execa";
 import { relative } from "node:path";
 import { redactSecuritySecrets } from "../security-secret-redaction.js";
 import { EnvironmentAdapter } from "./environment-adapter.js";
@@ -22,7 +21,7 @@ import {
   taskInvocation,
   type TaskCatalogItem,
 } from "./task-catalog.js";
-import { workspaceCommandEnvironment } from "./workspace-command-environment.js";
+import { executeWorkspaceCommand } from "./workspace-command-process.js";
 import { validationScopePaths } from "./validation-scope.js";
 import { validationOutput, type ValidationOutput } from "./validation-output.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
@@ -300,14 +299,12 @@ export class LightTaskRunner {
     snapshot: WorkspaceSnapshot,
     changedPaths: string[],
   ): Promise<LightToolResult<unknown>> {
-    const output = redactedOutput(
-      result.all ?? `${result.stdout}\n${result.stderr}`,
-    );
-    const status = result.exitCode === 0 ? "passed" : "failed";
+    const output = redactedOutput(result.all);
+    const status = result.failed ? "failed" : "passed";
     const failure =
-      result.exitCode === 0
-        ? undefined
-        : await commandFailureAssessment(output, this.files, metadata.taskKind);
+      result.interruption ? commandFailure() : result.failed
+        ? await commandFailureAssessment(output, this.files, metadata.taskKind)
+        : undefined;
     const validatedRevisionId = snapshot.revision.source_revision_id;
     if (validatedRevisionId !== metadata.sourceRevisionId) {
       if (failure && isValidationKind(metadata.taskKind))
@@ -450,17 +447,7 @@ function executeCommand(
   cwd: string,
   signal?: AbortSignal,
 ) {
-  return execa(executable, args, {
-    all: true,
-    cancelSignal: signal,
-    cwd,
-    env: workspaceCommandEnvironment(process.env, executable),
-    extendEnv: false,
-    reject: false,
-    stdin: "ignore",
-    timeout: 120_000,
-    maxBuffer: 512 * 1024,
-  });
+  return executeWorkspaceCommand(executable, args, { cwd, signal });
 }
 
 function redactedOutput(output: string | Uint8Array) {
