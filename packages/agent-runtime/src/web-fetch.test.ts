@@ -68,6 +68,25 @@ test("text, HTML, JSON, XML and CSV retain the SDK output without URL suffix inf
     });
 });
 
+for (const sample of [
+  { name: "text", type: "text/plain", body: "Actual destination content" },
+  { name: "declared binary", type: "application/zip", body: Buffer.from([0, 1, 2]) },
+  { name: "detected binary", type: "text/plain", body: Buffer.from([0, 1, 2, 3]) },
+]) {
+  test(`redirected ${sample.name} reports the actual response URL`, async () => {
+    await withServer((request, response) => {
+      if (request.url !== "/destination") {
+        response.writeHead(302, { location: "/destination" }).end();
+        return;
+      }
+      response.writeHead(200, { "content-type": sample.type }).end(sample.body);
+    }, async (url) => {
+      const result = await webFetch(url, "inspect", context);
+      assert.equal(result.split("\n")[0], `URL: ${new URL("/destination", url).href}`);
+    });
+  });
+}
+
 test("declared binary resources return bounded metadata without waiting for a body", async () => {
   await withServer((_request, response) => {
     response.writeHead(200, { "content-type": "application/zip", "content-length": "900000000" });

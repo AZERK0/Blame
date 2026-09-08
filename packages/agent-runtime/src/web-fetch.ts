@@ -58,11 +58,12 @@ async function fetchWebContent(url: string, prompt: string, signal: AbortSignal,
   });
   try {
     if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    const resolvedUrl = response.url || url;
     const contentType = response.headers.get("content-type") ?? "";
-    if (isBinaryMediaType(contentType)) return binaryResponse(url, response);
+    if (isBinaryMediaType(contentType)) return binaryResponse(resolvedUrl, response);
     const body = await readWebBody(response, limit, signal);
-    return body.content === undefined ? binaryResponse(url, response) :
-      formatWebContent(url, prompt, contentType, body.content, body.bytes);
+    return body.content === undefined ? binaryResponse(resolvedUrl, response) :
+      formatWebContent(resolvedUrl, prompt, contentType, body.content, body.bytes);
   } finally {
     await response.body?.cancel().catch(() => undefined);
   }
