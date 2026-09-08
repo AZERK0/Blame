@@ -1,0 +1,45 @@
+{
+  "runtimeSuite": {
+    "tests": 621,
+    "passed": 620,
+    "failed": 0,
+    "skipped": 1,
+    "skipReason": "Windows-only test on Linux"
+  },
+  "runnerSuite": {
+    "tests": 28,
+    "passed": 28,
+    "failed": 0
+  },
+  "build": "passed for both packages",
+  "lint": "passed for both packages",
+  "webRedirect": {
+    "commit": "2df1402f360ffaf660646ede1de9679634d1741c",
+    "before": {
+      "tests": 3,
+      "passed": 0,
+      "failed": 3
+    },
+    "after": {
+      "tests": 3,
+      "passed": 3,
+      "failed": 0
+    }
+  },
+  "benchmarkTitle": {
+    "commit": "f677325ee90a3f351b5dd0ce0dcd9569b0563f57",
+    "before": {
+      "tests": 2,
+      "passed": 0,
+      "failed": 2
+    },
+    "after": {
+      "tests": 2,
+      "passed": 2,
+      "failed": 0
+    }
+  },
+  "modelCallsInRegressions": 0,
+  "performanceAttribution": "Both provenance fixes are after the frozen 18-trial comparison; no live gain is credited to them.",
+  "rejectedPrompt": "e8e49070 restored byte-for-byte to 7c50d3ee in c3b769ae after an adverse frozen comparison."
+}

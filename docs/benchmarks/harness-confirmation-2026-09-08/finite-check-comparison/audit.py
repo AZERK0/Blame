@@ -5,6 +5,7 @@ from pathlib import Path
 from collect import ROOT, rows
 
 PATTERNS = {'external_oracle': re.compile(r'swe[-_ ]?(?:bench|sharp)|multi[-_ ]swe|/pull/|/commit/|fix\.patch|reference\.patch', re.I),
+            'pull_request_body': re.compile(r'\bPull Request #|\bFiles changed\b|\bmerged (?:commit|\d+ commits?)\b', re.I),
             'oracle_search': re.compile(r'answer[ _-]*key|benchmark (?:task wording|implementation)', re.I),
             'benchmark_reference': re.compile(r'terminal[-_ ]bench|tbench\.ai|harborframework|laude-institute', re.I),
             'oracle_path': re.compile(r'solution/solve\.sh|tests/test_outputs\.py|reference_illum|reward\.txt|/logs/verifier|/tests/'),

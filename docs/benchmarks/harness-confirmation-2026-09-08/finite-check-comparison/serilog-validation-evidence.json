@@ -1,0 +1,85 @@
+{
+  "scope": "Manual review of completed Serilog command results. Not a new runtime validator and not substituted for the official reward.",
+  "byArm": {
+    "before": {
+      "visibleActualTestRuns": 1,
+      "trials": 2
+    },
+    "final": {
+      "visibleActualTestRuns": 2,
+      "trials": 2
+    },
+    "cline": {
+      "visibleActualTestRuns": 2,
+      "trials": 2
+    }
+  },
+  "trials": [
+    {
+      "trial": "serilog__serilog-2103__RDXF5Cw",
+      "arm": "before",
+      "repetition": 1,
+      "eventLines": [
+        104,
+        112
+      ],
+      "actualTestRunVisible": false
+    },
+    {
+      "trial": "serilog__serilog-2103__yxgUBeg",
+      "arm": "before",
+      "repetition": 2,
+      "eventLines": [
+        122
+      ],
+      "actualTestRunVisible": true
+    },
+    {
+      "trial": "serilog__serilog-2103__grrS4N2",
+      "arm": "final",
+      "repetition": 1,
+      "eventLines": [
+        114,
+        129,
+        140
+      ],
+      "actualTestRunVisible": true
+    },
+    {
+      "trial": "serilog__serilog-2103__dyHwBv8",
+      "arm": "final",
+      "repetition": 2,
+      "eventLines": [
+        111,
+        120,
+        128
+      ],
+      "actualTestRunVisible": true
+    },
+    {
+      "trial": "serilog__serilog-2103__5FNz3mG",
+      "arm": "cline",
+      "repetition": 1,
+      "eventLines": [
+        532,
+        627,
+        639
+      ],
+      "actualTestRunVisible": true
+    },
+    {
+      "trial": "serilog__serilog-2103__xbCBRvX",
+      "arm": "cline",
+      "repetition": 2,
+      "eventLines": [
+        592,
+        767,
+        966,
+        977
+      ],
+      "actualTestRunVisible": true
+    }
+  ],
+  "candidateRecovery": "Both final trials first receive silent no-restore exit zero, remove the flag, and then obtain actual assertions. One runs 39 tests; the other runs its own focused test and then 39 tests.",
+  "causalLimit": "This observed behavior is consistent with the general prompt clarification; two repetitions on one known diagnosis do not establish a universal reliability rate."
+}

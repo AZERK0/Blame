@@ -1,5 +1,7 @@
 # Confirmation figée et corpus applicatif externe — 8 septembre 2026
 
+La passe est terminée : 96 essais agent sur douze tâches distinctes, dans quatre campagnes séparées et des lots de neuf au maximum. Les cinq primitives et l’architecture restent stables. Les corrections mécaniques utiles sont conservées ; une expérience de prompt défavorable est retirée. Aucun essai Sol ni expérience longitudinale de mémoire n’est réalisé. La supériorité globale stable sur Cline reste non démontrée.
+
 ## Périmètre enregistré avant exécution
 
 Cette passe exécute les points 1 à 3 demandés : mesurer les correctifs post-V9, diagnostiquer les requêtes évitables et séparer la généralité système du travail sur des dépôts applicatifs externes. Elle conserve Luna high, les cinq primitives et l'architecture actuelle. Aucun essai Sol ni benchmark de mémoire projet n'est prévu. La mémoire n'est pas activée dans les essais sans identifiant projet.
@@ -50,4 +52,20 @@ Les deux Material UI corrigés terminent dès la première demande, sans les 32 
 
 ## Itération sur l’exécution des tests
 
-Le commit `e8e49070` clarifie uniquement le prompt : choisir des tests ciblés non interactifs qui se terminent, et confirmer leur exécution réelle. Aucun nouvel outil, état, parseur, flag automatique ni dépendance. Les 617 tests applicables passent, avec un test Windows ignoré. Une [campagne distincte](benchmarks/harness-confirmation-2026-09-08/finite-check-comparison/protocol.md) de 18 essais Material UI, Vue et Serilog est enregistrée au commit `1894deda` puis lancée à 20:22:05 UTC, en deux lots de neuf. Ce sont des diagnostics connus, sans essai Sol ni mémoire projet.
+Le commit `e8e49070` essaie une clarification générale du prompt sur des tests ciblés, non interactifs et réellement exécutés. La campagne distincte de 18 essais, enregistrée au commit `1894deda`, termine à 21:23:56 UTC. L’expérience fait +32,4 % de temps, +35,3 % de requêtes et +72,4 % de tokens face au témoin, avec le même score officiel et audité. Elle est retirée au commit `c3b769ae` : le prompt revient exactement à `7c50d3ee`.
+
+| Dernière campagne diagnostique | Blame témoin conservé | Expérience retirée | Cline SDK |
+| --- | ---: | ---: | ---: |
+| Réussites officielles | 6/6 | 6/6 | 5/6 |
+| Réussites indépendantes après audit | 5/6 | 5/6 | 5/6 |
+| Minutes agent | 29,92 | 39,61 | 35,13 |
+| Requêtes modèle | 102 | 138 | 115 |
+| Tokens, usages complets | 2 771 460 | 4 778 238 | 9 513 642 |
+
+Le témoin conservé paraît plus efficient que Cline sur ces trois diagnostics : −14,8 % de temps et −70,9 % de tokens. Cette comparaison est exploratoire après sélection, contient une contamination et présente un intervalle de temps couvrant l’absence de gain. En retirant Vue, les deux tâches restantes donnent 4/4 de chaque côté, −7,9 % de temps et −63,6 % de tokens, toujours sans preuve de gain global stable.
+
+Les deux contaminations de cette campagne proviennent d’une URL d’issue redirigée vers la page du correctif. Le numéro de pull request avait été injecté dans le titre à partir de l’identifiant du dataset. Le commit `f677325e` utilise désormais un titre neutre tout en conservant l’identifiant dans les résultats. Le commit `2df1402f` corrige aussi l’URL affichée après redirection HTTP. Ces corrections de provenance sont postérieures aux mesures et ne reçoivent aucun gain live attribué.
+
+L’échec officiel Cline Vue ne démontre pas une mauvaise solution : les quatre tests propres à l’issue passent, mais deux anciens tests asynchrones échouent. Quatre contrôles après campagne montrent deux dépôts intacts avec seulement l’échec attendu, puis un patch Cline qui échoue sur un autre test asynchrone et passe entièrement lors du second replay. Les scores initiaux sont conservés ; le résultat du vérificateur est variable et la cause précise du premier échec reste inconnue.
+
+Le [rapport final de cette expérience](benchmarks/harness-confirmation-2026-09-08/finite-check-comparison/report.md) contient les données complètes, les sensibilités et les limites. La livraison finale conserve les gains mécaniques prouvés et évite la nouvelle prescription coûteuse. Les dernières vérifications donnent 620 tests runtime réussis, un test Windows ignoré, 28 tests du runner réussis et cinq reproductions indépendantes réussies ; build et lint passent. Aucun outil, état ou dépendance supplémentaire n’est ajouté.

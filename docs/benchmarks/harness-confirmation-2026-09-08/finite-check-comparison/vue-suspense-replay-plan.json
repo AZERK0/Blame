@@ -1,0 +1,31 @@
+{
+  "registeredAt": "2026-09-08T21:12:05.774047+00:00",
+  "reason": "Original Cline trial passes all four issue-specific tests but fails two pre-existing asynchronous Suspense tests. The final source patch only changes server-renderer/ssrRenderSlot, not client Suspense. Distinguish reproducible regression from nondeterminism; do not replace original reward.",
+  "order": [
+    [
+      "baseline",
+      1
+    ],
+    [
+      "captured",
+      1
+    ],
+    [
+      "captured",
+      2
+    ],
+    [
+      "baseline",
+      2
+    ]
+  ],
+  "patchSha256": "3d4c5ac7c95380f857178cf65d1eab75307900fefba602f2a851eb2184a142e2",
+  "resources": {
+    "cpus": 4,
+    "memoryGiB": 8,
+    "concurrency": 1
+  },
+  "modelCalls": 0,
+  "referenceSourceFix": false,
+  "startCondition": "All 18 agent trials complete and no other benchmark container running."
+}

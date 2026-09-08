@@ -1,0 +1,23 @@
+{"at": "2026-09-08T20:22:05.976269+00:00", "kind": "group_start", "group": "batch-01", "repetition": 1, "tasks": ["mui__material-ui-23778", "vuejs__core-11491", "serilog__serilog-2103"]}
+{"at": "2026-09-08T20:28:45.992133+00:00", "kind": "trial_done", "group": "batch-01", "task": "mui__material-ui-23778", "arm": "before", "reward": 1.0, "exception": null, "trial": "mui__material-ui-23778__73oWuL4"}
+{"at": "2026-09-08T20:30:55.997890+00:00", "kind": "trial_done", "group": "batch-01", "task": "mui__material-ui-23778", "arm": "final", "reward": 1.0, "exception": null, "trial": "mui__material-ui-23778__HXkLtnB"}
+{"at": "2026-09-08T20:34:16.014769+00:00", "kind": "trial_done", "group": "batch-01", "task": "mui__material-ui-23778", "arm": "cline", "reward": 1.0, "exception": null, "trial": "mui__material-ui-23778__AsH3apf"}
+{"at": "2026-09-08T20:38:36.043670+00:00", "kind": "trial_done", "group": "batch-01", "task": "vuejs__core-11491", "arm": "before", "reward": 1.0, "exception": null, "trial": "vuejs__core-11491__MGYWWkB"}
+{"at": "2026-09-08T20:44:46.078533+00:00", "kind": "trial_done", "group": "batch-01", "task": "vuejs__core-11491", "arm": "final", "reward": 1.0, "exception": null, "trial": "vuejs__core-11491__UXzVHtd"}
+{"at": "2026-09-08T20:46:36.088536+00:00", "kind": "trial_done", "group": "batch-01", "task": "serilog__serilog-2103", "arm": "before", "reward": 1.0, "exception": null, "trial": "serilog__serilog-2103__RDXF5Cw"}
+{"at": "2026-09-08T20:47:36.095528+00:00", "kind": "trial_done", "group": "batch-01", "task": "vuejs__core-11491", "arm": "cline", "reward": 1.0, "exception": null, "trial": "vuejs__core-11491__q6eq7uN"}
+{"at": "2026-09-08T20:48:56.108352+00:00", "kind": "trial_done", "group": "batch-01", "task": "serilog__serilog-2103", "arm": "final", "reward": 1.0, "exception": null, "trial": "serilog__serilog-2103__grrS4N2"}
+{"at": "2026-09-08T20:49:56.118149+00:00", "kind": "trial_done", "group": "batch-01", "task": "serilog__serilog-2103", "arm": "cline", "reward": 1.0, "exception": null, "trial": "serilog__serilog-2103__5FNz3mG"}
+{"at": "2026-09-08T20:49:56.118795+00:00", "kind": "group_end", "group": "batch-01", "trials": 9, "exitCode": 0}
+{"at": "2026-09-08T20:49:56.464447+00:00", "kind": "group_start", "group": "batch-02", "repetition": 2, "tasks": ["serilog__serilog-2103", "vuejs__core-11491", "mui__material-ui-23778"]}
+{"at": "2026-09-08T20:52:06.471031+00:00", "kind": "trial_done", "group": "batch-02", "task": "serilog__serilog-2103", "arm": "final", "reward": 1.0, "exception": null, "trial": "serilog__serilog-2103__dyHwBv8"}
+{"at": "2026-09-08T20:52:46.473384+00:00", "kind": "trial_done", "group": "batch-02", "task": "serilog__serilog-2103", "arm": "cline", "reward": 1.0, "exception": null, "trial": "serilog__serilog-2103__xbCBRvX"}
+{"at": "2026-09-08T20:54:16.482277+00:00", "kind": "trial_done", "group": "batch-02", "task": "serilog__serilog-2103", "arm": "before", "reward": 1.0, "exception": null, "trial": "serilog__serilog-2103__yxgUBeg"}
+{"at": "2026-09-08T21:08:06.562075+00:00", "kind": "trial_done", "group": "batch-02", "task": "vuejs__core-11491", "arm": "cline", "reward": 0.0, "exception": null, "trial": "vuejs__core-11491__UoqFMSs"}
+{"at": "2026-09-08T21:08:26.564842+00:00", "kind": "trial_done", "group": "batch-02", "task": "vuejs__core-11491", "arm": "final", "reward": 1.0, "exception": null, "trial": "vuejs__core-11491__mkBiid8"}
+{"at": "2026-09-08T21:13:06.587924+00:00", "kind": "trial_done", "group": "batch-02", "task": "mui__material-ui-23778", "arm": "cline", "reward": 1.0, "exception": null, "trial": "mui__material-ui-23778__sFctdf9"}
+{"at": "2026-09-08T21:19:36.638097+00:00", "kind": "trial_done", "group": "batch-02", "task": "mui__material-ui-23778", "arm": "final", "reward": 1.0, "exception": null, "trial": "mui__material-ui-23778__XDAVqZ9"}
+{"at": "2026-09-08T21:20:16.642363+00:00", "kind": "trial_done", "group": "batch-02", "task": "vuejs__core-11491", "arm": "before", "reward": 1.0, "exception": null, "trial": "vuejs__core-11491__t4LL4VN"}
+{"at": "2026-09-08T21:23:56.672601+00:00", "kind": "trial_done", "group": "batch-02", "task": "mui__material-ui-23778", "arm": "before", "reward": 1.0, "exception": null, "trial": "mui__material-ui-23778__tywYHcd"}
+{"at": "2026-09-08T21:23:56.673374+00:00", "kind": "group_end", "group": "batch-02", "trials": 9, "exitCode": 0}
+{"at": "2026-09-08T21:23:56.674444+00:00", "kind": "campaign_complete", "trials": 18}

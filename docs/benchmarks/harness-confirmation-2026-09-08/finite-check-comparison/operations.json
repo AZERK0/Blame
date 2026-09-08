@@ -1,0 +1,308 @@
+{
+  "note": "Finished tool calls. Operation counts include rejected calls. Read views are observed outputs, including automatic symbol selection. Native patch calls and Blame patch operations are different units.",
+  "trials": [
+    {
+      "trial": "mui__material-ui-23778__73oWuL4",
+      "counts": {
+        "finishedTools": 40,
+        "readView.raw": 9,
+        "readView.unknown": 1,
+        "readView.range": 6,
+        "readView.directory": 1,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T20:27:52.215Z",
+        "requestsThroughFirstFinish": 14,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.4590001106262207
+      }
+    },
+    {
+      "trial": "mui__material-ui-23778__AsH3apf",
+      "counts": {
+        "finishedTools": 35,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "mui__material-ui-23778__HXkLtnB",
+      "counts": {
+        "finishedTools": 39,
+        "readView.range": 12,
+        "readView.outline": 1,
+        "readView.raw": 3,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "readView.unknown": 1,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T20:30:04.351Z",
+        "requestsThroughFirstFinish": 15,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.29600000381469727
+      }
+    },
+    {
+      "trial": "serilog__serilog-2103__5FNz3mG",
+      "counts": {
+        "finishedTools": 23,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "serilog__serilog-2103__RDXF5Cw",
+      "counts": {
+        "finishedTools": 29,
+        "readView.unknown": 2,
+        "readView.outline": 1,
+        "readView.range": 6,
+        "readView.raw": 3,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T20:46:04.254Z",
+        "requestsThroughFirstFinish": 10,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.33500003814697266
+      }
+    },
+    {
+      "trial": "serilog__serilog-2103__grrS4N2",
+      "counts": {
+        "finishedTools": 34,
+        "readView.raw": 6,
+        "readView.range": 7,
+        "editCalls": 3,
+        "rejectedEditCalls": 2,
+        "editOperation.patch": 5,
+        "rejectedOperation.patch": 3,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T20:48:32.787Z",
+        "requestsThroughFirstFinish": 12,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.40000009536743164
+      }
+    },
+    {
+      "trial": "vuejs__core-11491__MGYWWkB",
+      "counts": {
+        "finishedTools": 79,
+        "readView.raw": 18,
+        "readView.range": 9,
+        "editCalls": 2,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 2,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T20:37:34.268Z",
+        "requestsThroughFirstFinish": 30,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.38500022888183594
+      }
+    },
+    {
+      "trial": "vuejs__core-11491__UXzVHtd",
+      "counts": {
+        "finishedTools": 86,
+        "readView.raw": 14,
+        "readView.outline": 2,
+        "readView.range": 7,
+        "readView.unknown": 4,
+        "editCalls": 8,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 8,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T20:43:47.960Z",
+        "requestsThroughFirstFinish": 36,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.40599989891052246
+      }
+    },
+    {
+      "trial": "vuejs__core-11491__q6eq7uN",
+      "counts": {
+        "finishedTools": 56,
+        "nativePatchCalls": 4
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "mui__material-ui-23778__XDAVqZ9",
+      "counts": {
+        "finishedTools": 41,
+        "readView.raw": 9,
+        "readView.unknown": 2,
+        "readView.range": 10,
+        "readView.directory": 1,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T21:18:56.436Z",
+        "requestsThroughFirstFinish": 17,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.4849998950958252
+      }
+    },
+    {
+      "trial": "mui__material-ui-23778__sFctdf9",
+      "counts": {
+        "finishedTools": 26,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "mui__material-ui-23778__tywYHcd",
+      "counts": {
+        "finishedTools": 33,
+        "readView.raw": 6,
+        "readView.range": 10,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T21:23:05.889Z",
+        "requestsThroughFirstFinish": 10,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.4939999580383301
+      }
+    },
+    {
+      "trial": "serilog__serilog-2103__dyHwBv8",
+      "counts": {
+        "finishedTools": 33,
+        "readView.raw": 6,
+        "readView.range": 6,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T20:51:35.751Z",
+        "requestsThroughFirstFinish": 11,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.20399999618530273
+      }
+    },
+    {
+      "trial": "serilog__serilog-2103__xbCBRvX",
+      "counts": {
+        "finishedTools": 28,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "serilog__serilog-2103__yxgUBeg",
+      "counts": {
+        "finishedTools": 30,
+        "readView.unknown": 1,
+        "readView.directory": 1,
+        "readView.range": 6,
+        "readView.outline": 1,
+        "readView.raw": 2,
+        "editCalls": 2,
+        "rejectedEditCalls": 1,
+        "editOperation.patch": 3,
+        "rejectedOperation.patch": 1,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T20:53:46.515Z",
+        "requestsThroughFirstFinish": 11,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.3689999580383301
+      }
+    },
+    {
+      "trial": "vuejs__core-11491__UoqFMSs",
+      "counts": {
+        "finishedTools": 92,
+        "nativePatchCalls": 9
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "vuejs__core-11491__mkBiid8",
+      "counts": {
+        "finishedTools": 111,
+        "readView.raw": 17,
+        "readView.range": 11,
+        "readView.unknown": 3,
+        "editCalls": 13,
+        "rejectedEditCalls": 3,
+        "editOperation.patch": 13,
+        "rejectedOperation.patch": 3,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T21:07:13.232Z",
+        "requestsThroughFirstFinish": 47,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.3259999752044678
+      }
+    },
+    {
+      "trial": "vuejs__core-11491__t4LL4VN",
+      "counts": {
+        "finishedTools": 82,
+        "readView.outline": 3,
+        "readView.raw": 17,
+        "readView.range": 10,
+        "editCalls": 6,
+        "rejectedEditCalls": 2,
+        "editOperation.patch": 6,
+        "rejectedOperation.patch": 2,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T21:19:24.648Z",
+        "requestsThroughFirstFinish": 27,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.39299988746643066
+      }
+    }
+  ]
+}
