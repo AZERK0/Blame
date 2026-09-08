@@ -37,6 +37,8 @@ Deux validations Vue passent leurs assertions mais restent en mode surveillance 
 
 Sur 14 appels d’édition Blame : 14 opérations de patch et une opération par symbole dans un appel mixte. Un patch est refusé pour un contexte réellement absent dans un test Avalonia ; ce refus est justifié. L’édition symbolique Vue est acceptée, mais suit la récupération du correctif publié. Il n’y a aucune lecture de vue `symbol` : 86 vues brutes, 105 plages, cinq outlines et deux répertoires. Les [comptages](operations.json) prouvent l’utilisation de certains chemins mécaniques, pas leur avantage causal.
 
+La [complétion interne](completion-states.json) reste distincte du vérificateur externe : dix essais Blame terminent avec `verification: unverified` et les deux Material UI sans décision de complétion enregistrée, malgré un statut de processus `succeeded`. Le catalogue natif reconnaît Node, Cargo, Go et pytest, mais pas les tâches Maven/Gradle/.NET de ce corpus ; une commande shell opaque ne vaut pas preuve structurée de validation. Ce constat ne justifie ni d’inventer une preuve, ni de déclarer les tests externes absents. Il limite la portée de la validation automatique actuelle.
+
 ## Limites et intégrité
 
 Les images des six tâches ont un contrôle base 0 / référence 1 avant agents. Les [évaluations](evaluations.json) distinguent les tests officiels requis de toute la suite : Material UI conserve sept échecs annexes avec sa référence, et aucun de ses quatre essais ne réussit toute la suite. Les vingt essais des autres dépôts la réussissent.

@@ -1,0 +1,250 @@
+[
+  {
+    "trial": "fasterxml__jackson-databind-4468__vT8ZpKP",
+    "task": "fasterxml__jackson-databind-4468",
+    "repetition": 1,
+    "reward": 1.0,
+    "runnerStatus": "succeeded",
+    "completion": {
+      "source_revision_id": "src_3e4c5ef39a9a3022d75987e36fc03083",
+      "delivery": "satisfied",
+      "verification": "unverified",
+      "satisfied_obligations": [],
+      "missing_obligations": [],
+      "failed_obligations": [],
+      "reservations": [
+        {
+          "code": "VALIDATION_UNAVAILABLE",
+          "message": "No current project validation was available.",
+          "obligation_ids": []
+        }
+      ]
+    },
+    "submissionOutcome": null
+  },
+  {
+    "trial": "mui__material-ui-23778__pQiGuqM",
+    "task": "mui__material-ui-23778",
+    "repetition": 1,
+    "reward": 1.0,
+    "runnerStatus": "succeeded",
+    "completion": null,
+    "submissionOutcome": null
+  },
+  {
+    "trial": "vuejs__core-11491__gDXBExk",
+    "task": "vuejs__core-11491",
+    "repetition": 1,
+    "reward": 1.0,
+    "runnerStatus": "succeeded",
+    "completion": {
+      "source_revision_id": "src_e96f2137d129fa1395c35db17195bdd2",
+      "delivery": "satisfied",
+      "verification": "unverified",
+      "satisfied_obligations": [],
+      "missing_obligations": [],
+      "failed_obligations": [],
+      "reservations": [
+        {
+          "code": "VALIDATION_UNAVAILABLE",
+          "message": "No current project validation was available.",
+          "obligation_ids": []
+        }
+      ]
+    },
+    "submissionOutcome": null
+  },
+  {
+    "trial": "avaloniaui__avalonia-15640__UeXTTvH",
+    "task": "avaloniaui__avalonia-15640",
+    "repetition": 1,
+    "reward": 1.0,
+    "runnerStatus": "succeeded",
+    "completion": {
+      "source_revision_id": "src_86cd497014c8362bf6eae78b8a9da209",
+      "delivery": "satisfied",
+      "verification": "unverified",
+      "satisfied_obligations": [],
+      "missing_obligations": [],
+      "failed_obligations": [],
+      "reservations": [
+        {
+          "code": "VALIDATION_UNAVAILABLE",
+          "message": "No current project validation was available.",
+          "obligation_ids": []
+        }
+      ]
+    },
+    "submissionOutcome": null
+  },
+  {
+    "trial": "googlecontainertools__jib-4035__g6cgxjm",
+    "task": "googlecontainertools__jib-4035",
+    "repetition": 1,
+    "reward": 1.0,
+    "runnerStatus": "succeeded",
+    "completion": {
+      "source_revision_id": "src_5bbdd787fb20b99fee2e06167bb5d407",
+      "delivery": "satisfied",
+      "verification": "unverified",
+      "satisfied_obligations": [],
+      "missing_obligations": [],
+      "failed_obligations": [],
+      "reservations": [
+        {
+          "code": "VALIDATION_UNAVAILABLE",
+          "message": "No current project validation was available.",
+          "obligation_ids": []
+        }
+      ]
+    },
+    "submissionOutcome": null
+  },
+  {
+    "trial": "serilog__serilog-2103__WjEQup2",
+    "task": "serilog__serilog-2103",
+    "repetition": 1,
+    "reward": 1.0,
+    "runnerStatus": "succeeded",
+    "completion": {
+      "source_revision_id": "src_ae405e0d48393a021d3a3c0a51ce1292",
+      "delivery": "satisfied",
+      "verification": "unverified",
+      "satisfied_obligations": [],
+      "missing_obligations": [],
+      "failed_obligations": [],
+      "reservations": [
+        {
+          "code": "VALIDATION_UNAVAILABLE",
+          "message": "No current project validation was available.",
+          "obligation_ids": []
+        }
+      ]
+    },
+    "submissionOutcome": null
+  },
+  {
+    "trial": "avaloniaui__avalonia-15640__gYzrvht",
+    "task": "avaloniaui__avalonia-15640",
+    "repetition": 2,
+    "reward": 1.0,
+    "runnerStatus": "succeeded",
+    "completion": {
+      "source_revision_id": "src_21f6f28f47f92ea3a79307db776c4156",
+      "delivery": "satisfied",
+      "verification": "unverified",
+      "satisfied_obligations": [],
+      "missing_obligations": [],
+      "failed_obligations": [],
+      "reservations": [
+        {
+          "code": "VALIDATION_UNAVAILABLE",
+          "message": "No current project validation was available.",
+          "obligation_ids": []
+        }
+      ]
+    },
+    "submissionOutcome": null
+  },
+  {
+    "trial": "googlecontainertools__jib-4035__2ngawLD",
+    "task": "googlecontainertools__jib-4035",
+    "repetition": 2,
+    "reward": 1.0,
+    "runnerStatus": "succeeded",
+    "completion": {
+      "source_revision_id": "src_1948969ef99737f9e6b3e8d852f89872",
+      "delivery": "satisfied",
+      "verification": "unverified",
+      "satisfied_obligations": [],
+      "missing_obligations": [],
+      "failed_obligations": [],
+      "reservations": [
+        {
+          "code": "VALIDATION_UNAVAILABLE",
+          "message": "No current project validation was available.",
+          "obligation_ids": []
+        }
+      ]
+    },
+    "submissionOutcome": null
+  },
+  {
+    "trial": "serilog__serilog-2103__CSvfDRw",
+    "task": "serilog__serilog-2103",
+    "repetition": 2,
+    "reward": 1.0,
+    "runnerStatus": "succeeded",
+    "completion": {
+      "source_revision_id": "src_bf794b369a699c7c7d40e1fa96d02237",
+      "delivery": "satisfied",
+      "verification": "unverified",
+      "satisfied_obligations": [],
+      "missing_obligations": [],
+      "failed_obligations": [],
+      "reservations": [
+        {
+          "code": "VALIDATION_UNAVAILABLE",
+          "message": "No current project validation was available.",
+          "obligation_ids": []
+        }
+      ]
+    },
+    "submissionOutcome": null
+  },
+  {
+    "trial": "fasterxml__jackson-databind-4468__8tCSFWW",
+    "task": "fasterxml__jackson-databind-4468",
+    "repetition": 2,
+    "reward": 1.0,
+    "runnerStatus": "succeeded",
+    "completion": {
+      "source_revision_id": "src_09a80cc5d3d5c0ef7139ca701116dc83",
+      "delivery": "satisfied",
+      "verification": "unverified",
+      "satisfied_obligations": [],
+      "missing_obligations": [],
+      "failed_obligations": [],
+      "reservations": [
+        {
+          "code": "VALIDATION_UNAVAILABLE",
+          "message": "No current project validation was available.",
+          "obligation_ids": []
+        }
+      ]
+    },
+    "submissionOutcome": null
+  },
+  {
+    "trial": "mui__material-ui-23778__3KgQ3JV",
+    "task": "mui__material-ui-23778",
+    "repetition": 2,
+    "reward": 1.0,
+    "runnerStatus": "succeeded",
+    "completion": null,
+    "submissionOutcome": null
+  },
+  {
+    "trial": "vuejs__core-11491__AMDbBHp",
+    "task": "vuejs__core-11491",
+    "repetition": 2,
+    "reward": 1.0,
+    "runnerStatus": "succeeded",
+    "completion": {
+      "source_revision_id": "src_e96f2137d129fa1395c35db17195bdd2",
+      "delivery": "satisfied",
+      "verification": "unverified",
+      "satisfied_obligations": [],
+      "missing_obligations": [],
+      "failed_obligations": [],
+      "reservations": [
+        {
+          "code": "VALIDATION_UNAVAILABLE",
+          "message": "No current project validation was available.",
+          "obligation_ids": []
+        }
+      ]
+    },
+    "submissionOutcome": null
+  }
+]
