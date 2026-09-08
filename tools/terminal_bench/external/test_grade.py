@@ -58,6 +58,20 @@ class ExternalVerifierTest(unittest.TestCase):
         self.assertEqual(result['reward'], 1)
         self.assertTrue(result['fullSuitePassed'])
 
+    def test_audit_keeps_committed_staged_and_untracked_agent_changes(self):
+        (self.workspace / 'value.py').write_text('value = 2\n')
+        self.git('add', 'value.py')
+        self.git('commit', '-qm', 'agent fix')
+        (self.workspace / 'check.py').write_text('print("PASS")\n')
+        self.git('add', 'check.py')
+        (self.workspace / 'new-file.txt').write_text('agent artifact\n')
+        result = evaluate(self.tests, self.specification(), self.logs)
+        self.assertEqual(result['reward'], 1)
+        patch = (self.logs / 'agent.diff').read_text()
+        self.assertIn('+value = 2', patch)
+        self.assertIn('+print("PASS")', patch)
+        self.assertIn('?? new-file.txt', (self.logs / 'agent-status.txt').read_text())
+
     def test_missing_skipped_or_conflicting_required_results_never_pass(self):
         specification = self.specification()
         for passed, failed, skipped in [(set(), set(), set()), (set(), set(), {'regression'}),

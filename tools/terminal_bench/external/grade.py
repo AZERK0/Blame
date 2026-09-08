@@ -86,7 +86,8 @@ def score(specification, passed, failed, skipped, exit_code):
 
 def evaluate(directory, specification, logs):
     workspace = Path(specification['workspace'])
-    (logs / 'agent.diff').write_bytes(execute(['git', 'diff', '--binary'], workspace).stdout)
+    (logs / 'agent.diff').write_bytes(execute(['git', 'diff', '--binary', specification['baselineCommit']], workspace).stdout)
+    (logs / 'agent-status.txt').write_bytes(execute(['git', 'status', '--porcelain=v1', '--untracked-files=all'], workspace).stdout)
     restore_test_paths(specification, workspace)
     patch = str(directory / 'test.patch')
     execute(['git', 'apply', '--check', patch], workspace)
