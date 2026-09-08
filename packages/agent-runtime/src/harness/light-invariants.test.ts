@@ -246,7 +246,7 @@ test("round trips have no delivered source effect and explanation tasks can fini
   );
 });
 
-test("a package check covers its own changes and finish checks both changed packages", async () => {
+test("a package check cannot verify changes in another unchecked package", async () => {
   await fixture(
     {
       "package.json": manifest({ build: "node --version" }),
@@ -267,12 +267,13 @@ test("a package check covers its own changes and finish checks both changed pack
         ["a.ts"],
       );
       const notifications: LightCompletionNotification[] = [];
-      await finisher(root, notifications).finish("Both updated", {} as never);
-      assert.equal(notifications[0]?.verified, true);
-      const journal = await new SessionJournal(
-        root,
-        "invariants",
-      ).completionSnapshot();
+      const finish = finisher(root, notifications);
+      await finish.finish("Both updated", {} as never);
+      assert.equal(notifications[0]?.verified, false);
+      await workspace.runTask({ kind: "project", task: "test" }, {});
+      await finish.finish("Both checked", {} as never);
+      assert.equal(notifications[1]?.verified, true);
+      const journal = await new SessionJournal(root, "invariants").completionSnapshot();
       assert.equal(
         journal.validations.filter(({ terminal }) => terminal === "passed")
           .length,
@@ -393,4 +394,57 @@ test("snapshot cancellation interrupts a large file without returning an incompl
     clearTimeout(timer);
     await rm(root, { force: true, recursive: true });
   }
+});
+
+test("finish reuses a requested test without imposing another build", async () => {
+  await fixture({
+    "a.ts": "export const value = 1;\n",
+    "package.json": manifest({ build: 'node -e "process.exit(7)"', test: "node --version" }),
+  }, async (root, workspace) => {
+    await editValue(workspace, 1, 2);
+    assert.equal((await workspace.runTask({ kind: "project", task: "test" }, {})).status, "ok");
+    const notifications: LightCompletionNotification[] = [];
+    assert.equal(await finisher(root, notifications).finish("Complete", {} as never), "Complete");
+    assert.equal(notifications[0]?.verified, true);
+  });
+});
+
+for (const inspection of [undefined, "node --version"]) {
+  test(`finish reports unverified work without inventing a check after ${inspection ?? "no command"}`, async () => {
+    await fixture({
+      "a.ts": "export const value = 1;\n",
+      "package.json": manifest({ build: 'node -e "process.exit(7)"' }),
+    }, async (root, workspace) => {
+      await editValue(workspace, 1, 2);
+      if (inspection) await workspace.runTask({ kind: "command", command: inspection }, {});
+      const notifications: LightCompletionNotification[] = [];
+      await finisher(root, notifications).finish("Complete", {} as never);
+      assert.equal(notifications[0]?.verified, false);
+      assert.equal(notifications[0]?.completion.verification, "unverified");
+      assert.deepEqual(notifications[0]?.completion.satisfied_obligations, []);
+    });
+  });
+}
+
+test("finish refreshes the requested stale test without selecting a new build", async () => {
+  await fixture({
+    "a.ts": "export const value = 1;\n",
+    "package.json": manifest({ build: 'node -e "process.exit(7)"', test: "node --version" }),
+  }, async (root, workspace) => {
+    await editValue(workspace, 1, 2);
+    await workspace.runTask({ kind: "project", task: "test" }, {});
+    await editValue(workspace, 2, 3);
+    const activities: string[] = [];
+    const notifications: LightCompletionNotification[] = [];
+    const finish = new LightFinishService({
+      workspaceRoot: root, conversationId: "invariants",
+      onComplete: (value) => { notifications.push(value); },
+      onValidationActivity: ({ input, phase }) => {
+        if (phase === "started" && input.kind === "project") activities.push(input.task);
+      },
+    });
+    await finish.finish("Complete", {} as never);
+    assert.deepEqual(activities, ["test"]);
+    assert.equal(notifications[0]?.verified, true);
+  });
 });

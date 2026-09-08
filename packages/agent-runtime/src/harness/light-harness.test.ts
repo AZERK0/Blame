@@ -1998,6 +1998,7 @@ test("remote finish_task forwards automatic validation activities", async () => 
       const sessionId = "remote-finish";
       const taskContract = contract(sessionId);
       const workspace = lightWorkspace(root, sessionId);
+      await workspace.tasks.run({ kind: "project", task: "test" });
       await workspace.editCode({
         operations: [
           {

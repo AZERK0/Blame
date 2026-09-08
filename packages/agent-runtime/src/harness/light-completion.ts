@@ -27,7 +27,7 @@ export function createLightCompletionTool(
   return createTool({
     name: lightCompletionToolName,
     description:
-      "Finish with a concise natural summary. Mention a non-obvious durable implementation decision only when it helps future work. The runtime checks known changes, reuses current validation, and runs at most one missing relevant validation. Do not provide receipts or internal state.",
+      "Finish with a concise natural summary. Mention a non-obvious durable implementation decision only when it helps future work. The runtime checks known changes, reuses current checks, and refreshes relevant checks already requested in this session. Work without a current check is reported as unverified. Do not provide receipts or internal state.",
     inputSchema: finishTaskInputSchema as unknown as Record<string, unknown>,
     lifecycle: { completesRun: true },
     retryable: false,

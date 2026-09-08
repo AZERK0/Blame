@@ -86,7 +86,7 @@ test("source effects remain visible after a command fails", async () => {
   });
 });
 
-test("a project formatter is followed by a check on the resulting source", async () => {
+test("a project formatter requires a requested check to verify the resulting source", async () => {
   await fixture(async (root, workspace) => {
     const manifest = {
       scripts: { build: "node --version", format: writeValue(2) },
@@ -99,13 +99,17 @@ test("a project formatter is followed by a check on the resulting source", async
     assert.equal(result.status, "ok", JSON.stringify(result));
     assert.deepEqual((await journal(root)).changedPaths, ["value.js"]);
     let verified = false;
-    await new LightFinishService({
+    const finish = new LightFinishService({
       workspaceRoot: root,
       conversationId: "commands",
       onComplete: (value) => {
         verified = value.verified;
       },
-    }).finish("Formatted", {} as never);
+    });
+    await finish.finish("Formatted", {} as never);
+    assert.equal(verified, false);
+    await workspace.runTask({ kind: "project", task: "build" }, {} as never);
+    await finish.finish("Checked", {} as never);
     assert.equal(verified, true);
     assert.equal((await journal(root)).validations.at(-1)?.taskId, "build");
   });

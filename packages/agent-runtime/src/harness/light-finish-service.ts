@@ -155,20 +155,21 @@ export class LightFinishService {
 
   private async validationInputs(changedPaths: string[]) {
     const snapshot = await this.files.snapshot();
-    const catalog = await readTaskCatalog(this.files.root, snapshot.files);
+    const attempted = new Set(
+      this.journal.currentValidations().map(({ taskId }) => taskId),
+    );
+    const catalog = (
+      await readTaskCatalog(this.files.root, snapshot.files)
+    ).filter(({ task_id }) => attempted.has(task_id));
     const scopes = [...new Set(catalog.map(({ cwd }) => cwd))];
     const failedTasks = latestFailedTasks(this.journal.currentValidations());
     return scopes.flatMap((cwd) => {
       const paths = validationScopePaths(changedPaths, snapshot.files, cwd);
       if (!paths.length) return [];
-      const task = paths.length
-        ? selectValidationTask(
-            catalog.filter((item) => item.cwd === cwd),
-            paths,
-          )
-        : undefined;
-      const required = catalog.filter(
-        (item) => item.cwd === cwd && failedTasks.has(item.task_id),
+      const scopedTasks = catalog.filter((item) => item.cwd === cwd);
+      const task = selectValidationTask(scopedTasks, paths);
+      const required = scopedTasks.filter((item) =>
+        failedTasks.has(item.task_id),
       );
       if (task && !required.includes(task)) required.push(task);
       return required.map((item) => ({
