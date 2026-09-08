@@ -1,0 +1,26 @@
+[
+  {
+    "instance": "mui__material-ui-23778",
+    "reference": "mswebench/mui_m_material-ui:pr-23778",
+    "digest": "sha256:bd34828f09335254aa71a3c3927e3ea13e7c119ccaf1314338c6dc3eaf817ceb",
+    "compressedBytes": 1631278008
+  },
+  {
+    "instance": "vuejs__core-11491",
+    "reference": "mswebench/vuejs_m_core:pr-11491",
+    "digest": "sha256:b15b774f38fc93796762fb82d26b1100ad7dcc6034aa91f0d09969ce5d7934e7",
+    "compressedBytes": 835325372
+  },
+  {
+    "instance": "fasterxml__jackson-databind-4468",
+    "reference": "mswebench/fasterxml_m_jackson-databind:pr-4468",
+    "digest": "sha256:5ebf98f1a4f193cf059d1b7593d5a2c73b930dc839ff3973164063dc52f654a6",
+    "compressedBytes": 433424235
+  },
+  {
+    "instance": "googlecontainertools__jib-4035",
+    "reference": "mswebench/googlecontainertools_m_jib:pr-4035",
+    "digest": "sha256:97dbae1fa1704e3da1a9f6eba8156453d80b26ffb03b401c8effb2805623d0bf",
+    "compressedBytes": 662335231
+  }
+]

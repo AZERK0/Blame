@@ -1,0 +1,41 @@
+{
+  "status": "preparation_in_progress_no_agent_runs",
+  "datasets": [
+    {
+      "source": "https://huggingface.co/datasets/ByteDance-Seed/Multi-SWE-bench-flash",
+      "revision": "b0485dbebaf8a1317ebf140e80e6fc6c02d3502b"
+    },
+    {
+      "source": "https://huggingface.co/datasets/microsoft/SWE-Sharp-Bench",
+      "revision": "41e599424ff967e0f44d69750f9f023a89f7758d"
+    }
+  ],
+  "findings": [
+    {
+      "kind": "non_discriminating_reserved_task",
+      "instance": "avaloniaui__avalonia-16090",
+      "officialFailToPassCount": 0,
+      "action": "Preserve initial reservation, require at least one official failing test and reserve next metadata-ranked distinct C# repository candidate."
+    },
+    {
+      "kind": "unavailable_prebuilt_csharp_images",
+      "namespace": "swebcs",
+      "publicRepositoryCount": 0,
+      "action": "Prepare source-based container environments and independently validate unchanged official test patches before agent runs."
+    },
+    {
+      "kind": "csharp_verifier_filter",
+      "instance": "serilog__serilog-2103",
+      "finding": "The published CSV conversion produces an upstream dotnet --filter argument containing a test file path, whereas the test runner expects a test expression. The corpus must validate a working command against the same official test identifiers before scoring."
+    },
+    {
+      "kind": "upstream_setup_delta",
+      "instance": "fasterxml__jackson-databind-4468",
+      "finding": "The published image changes two pom.xml versions from 2.17.1-SNAPSHOT to 2.17.4-SNAPSHOT. Preserve and hash this setup delta for both arms."
+    },
+    {
+      "kind": "reference_material_in_images",
+      "finding": "Multi-SWE images include reference/test patches, scripts and full Git history. Agent images must remove these artifacts and future history before trials; verifier material is injected only after the agent terminates."
+    }
+  ]
+}
