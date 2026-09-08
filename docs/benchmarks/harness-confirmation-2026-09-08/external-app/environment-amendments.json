@@ -1,0 +1,11 @@
+[
+  {
+    "task": "googlecontainertools__jib-4035",
+    "stage": "pre-agent environment build",
+    "failure": "APT repository metadata Origin and Label changed in the signed Azul repository; image build exits 100 before source changes or tests.",
+    "adaptation": "Explicitly accept Origin and Label metadata changes for this image build; signature validation remains enabled. No task source, expected tests, or agent prompt changed.",
+    "initialDockerfileSha256": "7882e1f8f8c8738cbf5c9295c55f07d56910e79bc5313fec96eb768c15ebd5a7",
+    "correctedDockerfileSha256": "af471f702ca81c9275d62efc2ce324a6ca2ab2de894704714cebcd421882fc3f",
+    "status": "validated: corrected image built; baseline reward 0, reference reward 1, all 60 PASS_TO_PASS preserved"
+  }
+]
