@@ -31,7 +31,9 @@ Sur les deux Material UI du témoin précédent, la fin déclenche un build non 
 
 La correction supprime cette friction, mais les commandes de test lancées avant la fin peuvent encore rester ouvertes après les assertions. Sur Material UI, le temps corrigé reste 2,51 fois celui de Cline. Deux appels d’édition corrigés sont refusés, représentant trois opérations : contexte mal indenté puis terminateur de patch incomplet, événements 121 et 129 du premier essai. Aucun faux refus déterministe supplémentaire n’est établi par ces cas.
 
-La fin conserve le statut non vérifié lorsque le runtime ne reconnaît pas de preuve. Le catalogue natif ne couvre pas encore Maven, Gradle et .NET. La réussite du processus ou des tests externes ne doit pas être substituée à cette information.
+Le troisième appel d’édition corrigé refusé concerne Jackson : deux opérations donnent seulement un nom qualifié, alors que le contrat attend un alias fourni ou une cible `path#qualifiedName`. Les mêmes opérations réussissent immédiatement avec les alias déjà disponibles, événements 80 et 88 de `SWjw3Yx`. Deux éditions symboliques indépendantes sont donc acceptées sur un vrai cas Java ; aucune lecture avec la vue `symbol` n’est observée. Ce faible effectif ne chiffre pas un avantage du symbolique. Au total, le corrigé compte 11 appels d’édition, dont trois refusés, contenant 11 opérations de patch et quatre opérations symboliques, avec respectivement trois et deux opérations refusées. Appels et opérations ne sont pas interchangeables.
+
+La fin conserve le statut non vérifié lorsque le runtime ne reconnaît pas de preuve : les six essais corrigés sont `unverified`, les deux Material UI précédents n’enregistrent aucune décision de fin. Le blocage conservé concerne les échecs de code enregistrés comme build, test, typecheck ou lint, et ne constitue pas une interprétation universelle des commandes opaques. Le catalogue natif ne couvre pas encore Maven, Gradle et .NET. La réussite du processus ou des tests externes ne doit pas être substituée à cette information.
 
 ## Régression Serilog et replay indépendant
 
