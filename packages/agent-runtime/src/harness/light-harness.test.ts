@@ -15,7 +15,7 @@ import {
   lightCapabilityDescription,
 } from "./light-capabilities.js";
 import { LightCommitService } from "./light-commit.js";
-import { lightEditCodeInputSchema } from "./light-contracts.js";
+import { lightEditCodeInputSchema, lightRunTaskInputSchema } from "./light-contracts.js";
 import type { LightToolResult } from "./light-contracts.js";
 import { alignDependencyPackages } from "./light-dependencies.js";
 import { executeLightWorkspaceRequest } from "./light-executor.js";
@@ -702,6 +702,59 @@ test("run_task preserves pipeline failures and complete diagnostics", async () =
     assert.match(result.message, /code 7/u);
     assert.match(result.message, /diagnostic start/u);
     assert.match(result.message, /fatal detail/u);
+  });
+});
+
+test("run_task executes an unambiguous command without a kind", async () => {
+  await withWorkspace({ "src/value.txt": "value\n" }, async (root) => {
+    const tool = lightSemanticHarnessTools(root).find(({ name }) => name === "run_task")!;
+    const result = await tool.execute(
+      { command: "node -p 'process.cwd()'", cwd: "src" },
+      { sessionId: "implicit-command", toolCallId: "cwd" } as never,
+    ) as LightToolResult<unknown>;
+    assert.equal(data(result).output, join(root, "src"));
+  });
+});
+
+test("run_task normalizes an implicit command before remote dispatch", async () => {
+  const calls: unknown[] = [];
+  const tool = lightSemanticHarnessTools("/workspace", {
+    executor: async (request) => {
+      calls.push(request.input);
+      return { status: "ok", data: {} };
+    },
+  }).find(({ name }) => name === "run_task")!;
+  const result = await tool.execute(
+    { command: "printf ready", cwd: "src" },
+    { sessionId: "implicit-command", toolCallId: "remote" } as never,
+  ) as LightToolResult<unknown>;
+  assert.equal(result.status, "ok");
+  assert.deepEqual(calls, [{ kind: "command", command: "printf ready", cwd: "src" }]);
+});
+
+test("run_task never guesses conflicting or incomplete operation inputs", () => {
+  for (const input of [
+    { command: "printf ready", task: "test" },
+    { command: "printf ready", action: "add", packages: ["zod"] },
+    { kind: "dependency", command: "printf ready" },
+    { kind: "unknown", command: "printf ready" },
+    { kind: null, command: "printf ready" },
+    { task: "test" },
+    { kind: "command", commentary: "printf ready" },
+    { command: "" },
+    {},
+  ]) assert.equal(lightRunTaskInputSchema.safeParse(input).success, false);
+});
+
+test("run_task keeps command policy for an implicit operation", async () => {
+  await withWorkspace({}, async (root) => {
+    const tool = lightSemanticHarnessTools(root).find(({ name }) => name === "run_task")!;
+    const result = await tool.execute(
+      { command: "sudo --version" },
+      { sessionId: "implicit-command", toolCallId: "policy" } as never,
+    ) as LightToolResult<unknown>;
+    assert.equal(result.status, "blocked");
+    if (result.status === "blocked") assert.match(result.message, /sudo|privilege/iu);
   });
 });
 

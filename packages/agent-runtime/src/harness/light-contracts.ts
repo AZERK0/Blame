@@ -77,7 +77,7 @@ export const lightRunTaskInputSchema = z.discriminatedUnion("kind", [
     .strict(),
   z
     .object({
-      kind: z.literal("command"),
+      kind: z.literal("command").optional().default("command"),
       command: z.string().trim().min(1).max(8_000),
       cwd: relativePath.optional(),
     })
