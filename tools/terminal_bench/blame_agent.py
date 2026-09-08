@@ -9,6 +9,9 @@ from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
 
 
+NODE_EXECUTABLE = "/opt/blame-node/bin/node"
+
+
 RUNNER_STOP_SCRIPT = r'''
 const fs = require("node:fs/promises");
 const [control, identity, grace] = process.argv.slice(1);
@@ -53,7 +56,7 @@ class BlameAgent(BaseInstalledAgent):
         bundle = self._bundle_path()
         await self.ensure_system_dependencies(
             environment,
-            ("ca_certificates", "coreutils", "curl", "nodejs", "tar", "xz"),
+            ("ca_certificates", "coreutils", "curl", "tar", "xz"),
         )
         await environment.upload_file(bundle, "/tmp/blame-benchmark-runner.tgz")
         await self._install_node(environment)
@@ -184,7 +187,9 @@ class BlameAgent(BaseInstalledAgent):
             "mkdir -p /installed-agent/blame; "
             "tar -xzf /tmp/blame-benchmark-runner.tgz -C /installed-agent/blame; "
             "chmod 755 /installed-agent/blame/dist/cli.js; "
-            "ln -sf /installed-agent/blame/dist/cli.js /usr/local/bin/blame-headless; "
+            "rm -f /usr/local/bin/blame-headless; "
+            f"printf %s {shlex.quote(runner_launcher())} > /usr/local/bin/blame-headless; "
+            "chmod 755 /usr/local/bin/blame-headless; "
             "blame-headless --version"
         )
 
@@ -209,7 +214,7 @@ class BlameAgent(BaseInstalledAgent):
 
 
 def stop_runner_command(control: Path, identity: str, grace_ms: int = 20_000) -> str:
-    return f"node -e {shlex.quote(RUNNER_STOP_SCRIPT)} {shlex.quote(str(control))} {shlex.quote(identity)} {grace_ms}"
+    return f"{NODE_EXECUTABLE} -e {shlex.quote(RUNNER_STOP_SCRIPT)} {shlex.quote(str(control))} {shlex.quote(identity)} {grace_ms}"
 
 
 def read_json_object(path: Path) -> dict:
@@ -245,11 +250,30 @@ def observed_total(usages: list[dict], field: str) -> int | float | None:
     return sum(values)
 
 
+def runner_launcher() -> str:
+    return f'#!/bin/sh\nexec {NODE_EXECUTABLE} /installed-agent/blame/dist/cli.js "$@"\n'
+
+
+def compatible_node(binary: str) -> str:
+    return f"{binary} -e 'process.exit(Number(process.versions.node.split(`.`)[0]) >= 22 ? 0 : 1)' 2>/dev/null"
+
+
 def node_install_command() -> str:
     return (
-        "set -euo pipefail; "
-        "if node -e 'process.exit(Number(process.versions.node.split(`.`)[0]) >= 22 ? 0 : 1)' "
-        "2>/dev/null; then exit 0; fi; "
+        "set -euo pipefail; blame_project_node=$(command -v node || true); "
+        f"if {compatible_node(NODE_EXECUTABLE)}; then :; "
+        f"elif {compatible_node('node')}; then mkdir -p /opt/blame-node/bin; "
+        'ln -sf "$(readlink -f "$blame_project_node")" /opt/blame-node/bin/node; '
+        f"else {download_node_command()}; fi; "
+        'if [ -z "$blame_project_node" ]; then '
+        "ln -sf /opt/blame-node/bin/node /usr/local/bin/node; fi; "
+        "if ! command -v npm >/dev/null 2>&1 && test -f /opt/blame-node/bin/npm; then "
+        "ln -sf /opt/blame-node/bin/npm /usr/local/bin/npm; fi"
+    )
+
+
+def download_node_command() -> str:
+    return (
         "case $(uname -m) in "
         "x86_64) arch=x64; sha=d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307 ;; "
         "aarch64|arm64) arch=arm64; sha=fff4078c5def658577f92c88db7db3bc0072924bfb93fe52c1e744a54e94abb8 ;; "
@@ -258,7 +282,5 @@ def node_install_command() -> str:
         "curl -fsSL https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-$arch.tar.xz -o $archive; "
         "echo \"$sha  $archive\" | sha256sum -c -; "
         "rm -rf /opt/blame-node; mkdir -p /opt/blame-node; "
-        "tar -xJf $archive -C /opt/blame-node --strip-components=1; "
-        "ln -sf /opt/blame-node/bin/node /usr/local/bin/node; "
-        "ln -sf /opt/blame-node/bin/npm /usr/local/bin/npm"
+        "tar -xJf $archive -C /opt/blame-node --strip-components=1"
     )

@@ -9,7 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from harbor.models.agent.context import AgentContext
-from tools.terminal_bench.blame_agent import BlameAgent, stop_runner_command
+from tools.terminal_bench.blame_agent import NODE_EXECUTABLE, BlameAgent, stop_runner_command
 
 
 class DetachedEnvironment:
@@ -34,6 +34,7 @@ class DetachedEnvironment:
         return await asyncio.shield(job)
 
     async def execute(self, command):
+        command = command.replace(NODE_EXECUTABLE, "node")
         if "blame-headless run" in command:
             self.model_requested.set()
             if self.deferred:
