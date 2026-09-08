@@ -129,7 +129,7 @@ function sessionInput(config: BenchmarkConfig): BenchmarkSessionInput {
     projectId: config.projectId,
     reasoningEffort: config.reasoningEffort,
     summary: config.instruction,
-    title: config.taskId,
+    title: "Requested task",
     workspaceRoot: config.workspaceRoot,
   };
 }

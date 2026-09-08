@@ -59,6 +59,25 @@ test("runs one development session and returns benchmark metrics", async () => {
   assert.equal(shutdown, true);
 });
 
+for (const harness of ["blame", "cline"] as const) {
+  test(`${harness} keeps dataset identifiers outside model task text`, async () => {
+    const inputs: StartDevelopmentSessionInput[] = [];
+    const config = {
+      ...benchmarkConfig(), harness,
+      taskId: "external-project__component-86420__trial",
+    };
+    const result = await runBenchmark(config, {
+      createRecorder: () => new MemoryRecorder(),
+      createRuntime: (events) => successfulRuntime(events, inputs, () => undefined),
+    });
+    assert.equal(result.status, "succeeded");
+    assert.equal(result.taskId, config.taskId);
+    assert.equal(inputs[0]?.summary, config.instruction);
+    assert.ok(inputs[0]?.title);
+    assert.doesNotMatch(inputs[0].title, /external-project|component|86420|trial/u);
+  });
+}
+
 test("aborts a session that reaches the benchmark timeout", async () => {
   let aborted = false;
   const result = await runBenchmark(
