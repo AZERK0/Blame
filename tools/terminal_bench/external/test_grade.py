@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.terminal_bench.external.grade import evaluate, run_tests, score
+from tools.terminal_bench.external.grade import evaluate, parse_tests, run_tests, score
 
 
 class ExternalVerifierTest(unittest.TestCase):
@@ -61,7 +61,8 @@ class ExternalVerifierTest(unittest.TestCase):
     def test_missing_skipped_or_conflicting_required_results_never_pass(self):
         specification = self.specification()
         for passed, failed, skipped in [(set(), set(), set()), (set(), set(), {'regression'}),
-                                       ({'regression'}, {'regression'}, set())]:
+                                       ({'regression'}, {'regression'}, set()),
+                                       ({'regression'}, set(), {'regression'})]:
             self.assertEqual(score(specification, passed, failed, skipped, 0)['reward'], 0)
 
     def test_subset_reward_does_not_hide_full_suite_failure(self):
@@ -83,6 +84,16 @@ class ExternalVerifierTest(unittest.TestCase):
         specification = dict(self.specification(), testTimeoutSeconds=0.05,
                              command='python3 -c "import time; time.sleep(10)"')
         self.assertEqual(run_tests(specification, self.logs / 'timeout.log'), 124)
+
+    def test_later_passing_dotnet_case_cannot_erase_earlier_failure(self):
+        log = ('<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">'
+               '<TestDefinitions><UnitTest id="one"><TestMethod className="Suite" name="Behavior"/>'
+               '</UnitTest></TestDefinitions><Results><UnitTestResult testId="one" outcome="Failed"/>'
+               '<UnitTestResult testId="one" outcome="Passed"/></Results></TestRun>')
+        passed, failed, skipped = parse_tests({'parser': 'csharp'}, self.tests, log)
+        self.assertEqual(passed, set())
+        self.assertEqual(failed, {'Suite.Behavior'})
+        self.assertEqual(skipped, set())
 
 
 if __name__ == '__main__':

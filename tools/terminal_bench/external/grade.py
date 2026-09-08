@@ -1,10 +1,12 @@
 import importlib.util
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
 from pathlib import Path
+from xml.etree import ElementTree
 
 
 def execute(arguments, directory):
@@ -44,14 +46,27 @@ def load_parser(directory):
 
 
 def parse_tests(specification, directory, log):
-    parser = load_parser(directory)
     if specification['parser'] == 'multi':
-        result = parser.parse_log(None, log)
+        result = load_parser(directory).parse_log(None, log)
         return result.passed_tests, result.failed_tests, result.skipped_tests
-    result = parser.parse_log_dotnet_test(log, None)
-    passed = {name for name, status in result.items() if status == 'PASSED'}
-    failed = {name for name, status in result.items() if status in ['FAILED', 'ERROR']}
-    return passed, failed, set(result) - passed - failed
+    outcomes = [outcome for xml in re.findall(r'<TestRun.*?</TestRun>', log, re.DOTALL)
+                for outcome in trx_outcomes(ElementTree.fromstring(xml))]
+    passed = {name for name, status in outcomes if status == 'Passed'}
+    failed = {name for name, status in outcomes if status in ['Failed', 'Error']}
+    skipped = {name for name, status in outcomes if status not in ['Passed', 'Failed', 'Error']}
+    return passed - failed - skipped, failed, skipped
+
+
+def trx_outcomes(root):
+    namespace = {'trx': 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010'}
+    definitions = {}
+    for test in root.findall('.//trx:UnitTest', namespace):
+        method = test.find('trx:TestMethod', namespace)
+        if method is not None:
+            definitions[test.get('id')] = method.get('className') + '.' + method.get('name')
+    return [(definitions[result.get('testId')], result.get('outcome'))
+            for result in root.findall('.//trx:UnitTestResult', namespace)
+            if result.get('testId') in definitions]
 
 
 def score(specification, passed, failed, skipped, exit_code):
@@ -59,7 +74,7 @@ def score(specification, passed, failed, skipped, exit_code):
     pass_to_pass = set(specification['passToPass'])
     required = fail_to_pass | pass_to_pass
     completed = exit_code >= 0 and exit_code != 124
-    resolved = completed and bool(fail_to_pass) and required <= passed and not required & failed
+    resolved = completed and bool(fail_to_pass) and required <= passed and not required & (failed | skipped)
     return {'reward': int(resolved), 'suiteExitCode': exit_code,
             'fullSuitePassed': resolved and exit_code == 0 and not failed,
             'passed': len(passed), 'failed': len(failed), 'skipped': len(skipped),
