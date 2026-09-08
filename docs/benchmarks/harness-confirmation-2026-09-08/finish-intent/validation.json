@@ -21,6 +21,6 @@
   },
   "build": "passed",
   "lint": "passed",
-  "livePerformance": "Not yet measured. Separate eighteen-trial frozen campaign planned.",
+  "livePerformance": "Measured separately in finish-intent-comparison/report.md: fewer requests and less time than before, but 5/6 successes versus 6/6 for both controls; no superiority claim.",
   "scope": "Only refresh project checks already requested; retain failure blocking, freshness, source effects and explicit unverified delivery. No model, tool-count, memory or dependency change."
 }

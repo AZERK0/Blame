@@ -1,0 +1,16 @@
+{
+  "withoutRestore": {
+    "exitCode": 0,
+    "stdoutBytes": 0,
+    "stderrBytes": 0,
+    "ownRegressionMentioned": false
+  },
+  "withRestore": {
+    "exitCode": 1,
+    "stdoutBytes": 2596,
+    "stderrBytes": 126,
+    "ownRegressionMentioned": true
+  },
+  "modelCalls": 0,
+  "note": "Captured agent source and its own regression test; no hidden test patch or reference fix is injected."
+}

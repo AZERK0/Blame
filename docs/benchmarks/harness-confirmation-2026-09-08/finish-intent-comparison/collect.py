@@ -84,6 +84,7 @@ def trial(path):
               'trial': path.parent.name, 'path': str(path), 'stratum': metadata['stratum'],
               'seenBeforeCampaign': metadata['seenBeforeCampaign'], 'reward': reward,
               'auditedReward': 1 if reward == 1 else 0, 'status': agent.get('status'),
+              'completionVerification': (agent.get('completion') or {}).get('verification'),
               'resultComplete': bool(result), 'exception': result.get('exception_info') if result else {'exception_type': 'IncompleteResultArtifact'}, 'errors': [row['event']['payload'] for row in events if row['event']['type'] == 'error'],
               'agentSeconds': elapsed(result.get('agent_execution')), 'runnerMs': agent.get('durationMs'),
               'stages': {key: elapsed(result.get(key)) for key in ['environment_setup', 'agent_setup', 'agent_execution', 'verifier']},
@@ -121,8 +122,8 @@ def collect():
     result = {'rows': records, 'summary': summaries}
     (ROOT / 'results.json').write_text(json.dumps(result, indent=2, ensure_ascii=False) + '\n')
     with (ROOT / 'trials.csv').open('w', newline='') as stream:
-        fields = ['task', 'arm', 'repetition', 'group', 'trial', 'reward', 'auditedReward', 'status', 'usageComplete', 'tokens', 'input', 'output', 'cache', 'uncachedInput', 'cost', 'agentSeconds', 'runnerMs', 'requests', 'tools', 'edits', 'blockedEdits']
-        writer = csv.DictWriter(stream, fieldnames=fields, extrasaction='ignore')
+        fields = ['task', 'arm', 'repetition', 'group', 'trial', 'reward', 'auditedReward', 'status', 'completionVerification', 'usageComplete', 'tokens', 'input', 'output', 'cache', 'uncachedInput', 'cost', 'agentSeconds', 'runnerMs', 'requests', 'tools', 'edits', 'blockedEdits']
+        writer = csv.DictWriter(stream, fieldnames=fields, extrasaction='ignore', lineterminator='\n')
         writer.writeheader()
         writer.writerows(records)
     print(json.dumps(summaries))

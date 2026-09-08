@@ -1,0 +1,1284 @@
+{
+  "note": "Descriptive paired task-cluster bootstrap, two repetitions retained. Three known diagnostic tasks, not a holdout or global superiority estimate. Missing usage is unknown; failed trials are included.",
+  "comparisons": {
+    "finalVsBefore": {
+      "all": {
+        "trials": 12,
+        "taskClusters": 3,
+        "successDifference": -0.16666666666666666,
+        "successDifferenceTaskClusterBootstrap95": [
+          -0.5,
+          0.0
+        ],
+        "resources": {
+          "agentSeconds": {
+            "taskClusters": 3,
+            "allTaskClusters": 3,
+            "completeUsageSelection": false,
+            "ratio": 0.6752207153760288,
+            "taskClusterBootstrap95": [
+              0.6388309612563358,
+              0.8254219666907641
+            ],
+            "medianTaskRatio": 0.6963608058614885,
+            "leaveOneTaskOutRange": [
+              0.646055344050868,
+              0.7747356821227512
+            ]
+          },
+          "tokens": {
+            "taskClusters": 2,
+            "allTaskClusters": 3,
+            "completeUsageSelection": true,
+            "ratio": 0.7502264292593668,
+            "taskClusterBootstrap95": [
+              0.6485623003194888,
+              0.9927100334188234
+            ],
+            "medianTaskRatio": 0.8206361668691561,
+            "leaveOneTaskOutRange": [
+              0.6485623003194888,
+              0.9927100334188234
+            ]
+          },
+          "cost": {
+            "taskClusters": 2,
+            "allTaskClusters": 3,
+            "completeUsageSelection": true,
+            "ratio": 0.7978788885248911,
+            "taskClusterBootstrap95": [
+              0.708221936344837,
+              0.9474203904004258
+            ],
+            "medianTaskRatio": 0.8278211633726313,
+            "leaveOneTaskOutRange": [
+              0.708221936344837,
+              0.9474203904004258
+            ]
+          },
+          "requests": {
+            "taskClusters": 3,
+            "allTaskClusters": 3,
+            "completeUsageSelection": false,
+            "ratio": 0.5434782608695652,
+            "taskClusterBootstrap95": [
+              0.3888888888888889,
+              0.9473684210526315
+            ],
+            "medianTaskRatio": 0.7586206896551724,
+            "leaveOneTaskOutRange": [
+              0.4789915966386555,
+              0.8333333333333334
+            ]
+          }
+        }
+      },
+      "repetitions": {
+        "1": {
+          "final": {
+            "trials": 3,
+            "passed": 3,
+            "agentSeconds": 847.917855,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          },
+          "before": {
+            "trials": 3,
+            "passed": 3,
+            "agentSeconds": 1163.387095,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 1
+          }
+        },
+        "2": {
+          "final": {
+            "trials": 3,
+            "passed": 2,
+            "agentSeconds": 547.342161,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          },
+          "before": {
+            "trials": 3,
+            "passed": 3,
+            "agentSeconds": 902.989105,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          }
+        }
+      },
+      "strata": {
+        "csharp": {
+          "trials": 4,
+          "taskClusters": 1,
+          "successDifference": -0.5,
+          "successDifferenceTaskClusterBootstrap95": [
+            -0.5,
+            -0.5
+          ],
+          "resources": {
+            "agentSeconds": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.6963608058614885,
+              "taskClusterBootstrap95": [
+                0.6963608058614885,
+                0.6963608058614885
+              ],
+              "medianTaskRatio": 0.6963608058614885,
+              "leaveOneTaskOutRange": null
+            },
+            "tokens": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.9927100334188234,
+              "taskClusterBootstrap95": [
+                0.9927100334188234,
+                0.9927100334188234
+              ],
+              "medianTaskRatio": 0.9927100334188234,
+              "leaveOneTaskOutRange": null
+            },
+            "cost": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.9474203904004258,
+              "taskClusterBootstrap95": [
+                0.9474203904004258,
+                0.9474203904004258
+              ],
+              "medianTaskRatio": 0.9474203904004258,
+              "leaveOneTaskOutRange": null
+            },
+            "requests": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.9473684210526315,
+              "taskClusterBootstrap95": [
+                0.9473684210526315,
+                0.9473684210526315
+              ],
+              "medianTaskRatio": 0.9473684210526315,
+              "leaveOneTaskOutRange": null
+            }
+          }
+        },
+        "java": {
+          "trials": 4,
+          "taskClusters": 1,
+          "successDifference": 0.0,
+          "successDifferenceTaskClusterBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "resources": {
+            "agentSeconds": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.8254219666907642,
+              "taskClusterBootstrap95": [
+                0.8254219666907642,
+                0.8254219666907642
+              ],
+              "medianTaskRatio": 0.8254219666907642,
+              "leaveOneTaskOutRange": null
+            },
+            "tokens": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.6485623003194888,
+              "taskClusterBootstrap95": [
+                0.6485623003194888,
+                0.6485623003194888
+              ],
+              "medianTaskRatio": 0.6485623003194888,
+              "leaveOneTaskOutRange": null
+            },
+            "cost": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.708221936344837,
+              "taskClusterBootstrap95": [
+                0.708221936344837,
+                0.708221936344837
+              ],
+              "medianTaskRatio": 0.708221936344837,
+              "leaveOneTaskOutRange": null
+            },
+            "requests": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.7586206896551724,
+              "taskClusterBootstrap95": [
+                0.7586206896551724,
+                0.7586206896551724
+              ],
+              "medianTaskRatio": 0.7586206896551724,
+              "leaveOneTaskOutRange": null
+            }
+          }
+        },
+        "react-javascript": {
+          "trials": 4,
+          "taskClusters": 1,
+          "successDifference": 0.0,
+          "successDifferenceTaskClusterBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "resources": {
+            "agentSeconds": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.6388309612563358,
+              "taskClusterBootstrap95": [
+                0.6388309612563358,
+                0.6388309612563358
+              ],
+              "medianTaskRatio": 0.6388309612563358,
+              "leaveOneTaskOutRange": null
+            },
+            "tokens": {
+              "taskClusters": 0,
+              "allTaskClusters": 1,
+              "completeUsageSelection": true,
+              "ratio": null,
+              "taskClusterBootstrap95": null,
+              "medianTaskRatio": null,
+              "leaveOneTaskOutRange": null
+            },
+            "cost": {
+              "taskClusters": 0,
+              "allTaskClusters": 1,
+              "completeUsageSelection": true,
+              "ratio": null,
+              "taskClusterBootstrap95": null,
+              "medianTaskRatio": null,
+              "leaveOneTaskOutRange": null
+            },
+            "requests": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.3888888888888889,
+              "taskClusterBootstrap95": [
+                0.3888888888888889,
+                0.3888888888888889
+              ],
+              "medianTaskRatio": 0.3888888888888889,
+              "leaveOneTaskOutRange": null
+            }
+          }
+        }
+      }
+    },
+    "finalVsCline": {
+      "all": {
+        "trials": 12,
+        "taskClusters": 3,
+        "successDifference": -0.16666666666666666,
+        "successDifferenceTaskClusterBootstrap95": [
+          -0.5,
+          0.0
+        ],
+        "resources": {
+          "agentSeconds": {
+            "taskClusters": 3,
+            "allTaskClusters": 3,
+            "completeUsageSelection": false,
+            "ratio": 1.40682340661799,
+            "taskClusterBootstrap95": [
+              0.5832002679534122,
+              2.5124653549239286
+            ],
+            "medianTaskRatio": 0.7978698191214781,
+            "leaveOneTaskOutRange": [
+              0.7061196858712191,
+              1.7354143588974993
+            ]
+          },
+          "tokens": {
+            "taskClusters": 3,
+            "allTaskClusters": 3,
+            "completeUsageSelection": false,
+            "ratio": 0.6287831214447143,
+            "taskClusterBootstrap95": [
+              0.34651026520248274,
+              0.9274578435777973
+            ],
+            "medianTaskRatio": 0.5655969924470183,
+            "leaveOneTaskOutRange": [
+              0.4535132081861054,
+              0.7630888396683292
+            ]
+          },
+          "cost": {
+            "taskClusters": 3,
+            "allTaskClusters": 3,
+            "completeUsageSelection": false,
+            "ratio": 0.6774396501295461,
+            "taskClusterBootstrap95": [
+              0.5622309085263972,
+              0.7747428321651335
+            ],
+            "medianTaskRatio": 0.6850039985128339,
+            "leaveOneTaskOutRange": [
+              0.6243260000124178,
+              0.731583752770181
+            ]
+          },
+          "requests": {
+            "taskClusters": 3,
+            "allTaskClusters": 3,
+            "completeUsageSelection": false,
+            "ratio": 1.2295081967213115,
+            "taskClusterBootstrap95": [
+              0.75,
+              1.8421052631578947
+            ],
+            "medianTaskRatio": 1.2222222222222223,
+            "leaveOneTaskOutRange": [
+              0.9523809523809523,
+              1.5405405405405406
+            ]
+          }
+        }
+      },
+      "repetitions": {
+        "1": {
+          "final": {
+            "trials": 3,
+            "passed": 3,
+            "agentSeconds": 847.917855,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          },
+          "cline": {
+            "trials": 3,
+            "passed": 3,
+            "agentSeconds": 503.463352,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          }
+        },
+        "2": {
+          "final": {
+            "trials": 3,
+            "passed": 2,
+            "agentSeconds": 547.342161,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          },
+          "cline": {
+            "trials": 3,
+            "passed": 3,
+            "agentSeconds": 488.317144,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          }
+        }
+      },
+      "strata": {
+        "csharp": {
+          "trials": 4,
+          "taskClusters": 1,
+          "successDifference": -0.5,
+          "successDifferenceTaskClusterBootstrap95": [
+            -0.5,
+            -0.5
+          ],
+          "resources": {
+            "agentSeconds": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.5832002679534122,
+              "taskClusterBootstrap95": [
+                0.5832002679534122,
+                0.5832002679534122
+              ],
+              "medianTaskRatio": 0.5832002679534122,
+              "leaveOneTaskOutRange": null
+            },
+            "tokens": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.34651026520248274,
+              "taskClusterBootstrap95": [
+                0.34651026520248274,
+                0.34651026520248274
+              ],
+              "medianTaskRatio": 0.34651026520248274,
+              "leaveOneTaskOutRange": null
+            },
+            "cost": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.5622309085263972,
+              "taskClusterBootstrap95": [
+                0.5622309085263972,
+                0.5622309085263972
+              ],
+              "medianTaskRatio": 0.5622309085263972,
+              "leaveOneTaskOutRange": null
+            },
+            "requests": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.75,
+              "taskClusterBootstrap95": [
+                0.75,
+                0.75
+              ],
+              "medianTaskRatio": 0.75,
+              "leaveOneTaskOutRange": null
+            }
+          }
+        },
+        "java": {
+          "trials": 4,
+          "taskClusters": 1,
+          "successDifference": 0.0,
+          "successDifferenceTaskClusterBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "resources": {
+            "agentSeconds": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.7978698191214781,
+              "taskClusterBootstrap95": [
+                0.7978698191214781,
+                0.7978698191214781
+              ],
+              "medianTaskRatio": 0.7978698191214781,
+              "leaveOneTaskOutRange": null
+            },
+            "tokens": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.5655969924470183,
+              "taskClusterBootstrap95": [
+                0.5655969924470183,
+                0.5655969924470183
+              ],
+              "medianTaskRatio": 0.5655969924470183,
+              "leaveOneTaskOutRange": null
+            },
+            "cost": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.6850039985128339,
+              "taskClusterBootstrap95": [
+                0.6850039985128339,
+                0.6850039985128339
+              ],
+              "medianTaskRatio": 0.6850039985128339,
+              "leaveOneTaskOutRange": null
+            },
+            "requests": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 1.2222222222222223,
+              "taskClusterBootstrap95": [
+                1.2222222222222223,
+                1.2222222222222223
+              ],
+              "medianTaskRatio": 1.2222222222222223,
+              "leaveOneTaskOutRange": null
+            }
+          }
+        },
+        "react-javascript": {
+          "trials": 4,
+          "taskClusters": 1,
+          "successDifference": 0.0,
+          "successDifferenceTaskClusterBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "resources": {
+            "agentSeconds": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 2.512465354923929,
+              "taskClusterBootstrap95": [
+                2.512465354923929,
+                2.512465354923929
+              ],
+              "medianTaskRatio": 2.512465354923929,
+              "leaveOneTaskOutRange": null
+            },
+            "tokens": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.9274578435777973,
+              "taskClusterBootstrap95": [
+                0.9274578435777973,
+                0.9274578435777973
+              ],
+              "medianTaskRatio": 0.9274578435777973,
+              "leaveOneTaskOutRange": null
+            },
+            "cost": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.7747428321651335,
+              "taskClusterBootstrap95": [
+                0.7747428321651335,
+                0.7747428321651335
+              ],
+              "medianTaskRatio": 0.7747428321651335,
+              "leaveOneTaskOutRange": null
+            },
+            "requests": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 1.8421052631578947,
+              "taskClusterBootstrap95": [
+                1.8421052631578947,
+                1.8421052631578947
+              ],
+              "medianTaskRatio": 1.8421052631578947,
+              "leaveOneTaskOutRange": null
+            }
+          }
+        }
+      }
+    }
+  },
+  "summary": {
+    "before": {
+      "tokens": null,
+      "input": null,
+      "output": null,
+      "cache": null,
+      "uncachedInput": null,
+      "cost": null,
+      "agentSeconds": 2066.3762,
+      "runnerMs": 2059042,
+      "requests": 138,
+      "tools": 289,
+      "edits": 10,
+      "blockedEdits": 1,
+      "runs": 6,
+      "passed": 6,
+      "nominalPassed": 6,
+      "incompleteUsage": [
+        "mui__material-ui-23778__f34vpDv"
+      ],
+      "missingReward": [],
+      "missing": {
+        "tokens": 0,
+        "input": 0,
+        "output": 0,
+        "cache": 0,
+        "uncachedInput": 0,
+        "cost": 0,
+        "agentSeconds": 0,
+        "runnerMs": 0,
+        "requests": 0,
+        "tools": 0,
+        "edits": 0,
+        "blockedEdits": 0
+      },
+      "observedPartialSums": {
+        "tokens": 3536634,
+        "input": 3500314,
+        "output": 36320,
+        "cache": 3159040,
+        "uncachedInput": 341274,
+        "cost": 0.1750196,
+        "agentSeconds": 2066.3762,
+        "runnerMs": 2059042,
+        "requests": 138,
+        "tools": 289,
+        "edits": 10,
+        "blockedEdits": 1
+      }
+    },
+    "cline": {
+      "tokens": 2286736,
+      "input": 2259703,
+      "output": 27033,
+      "cache": 1916416,
+      "uncachedInput": 343287,
+      "cost": 0.13942532,
+      "agentSeconds": 991.780496,
+      "runnerMs": 984170,
+      "requests": 61,
+      "tools": 138,
+      "edits": 0,
+      "blockedEdits": 0,
+      "runs": 6,
+      "passed": 6,
+      "nominalPassed": 6,
+      "incompleteUsage": [],
+      "missingReward": [],
+      "missing": {
+        "tokens": 0,
+        "input": 0,
+        "output": 0,
+        "cache": 0,
+        "uncachedInput": 0,
+        "cost": 0,
+        "agentSeconds": 0,
+        "runnerMs": 0,
+        "requests": 0,
+        "tools": 0,
+        "edits": 0,
+        "blockedEdits": 0
+      },
+      "observedPartialSums": {
+        "tokens": 2286736,
+        "input": 2259703,
+        "output": 27033,
+        "cache": 1916416,
+        "uncachedInput": 343287,
+        "cost": 0.13942532,
+        "agentSeconds": 991.780496,
+        "runnerMs": 984170,
+        "requests": 61,
+        "tools": 138,
+        "edits": 0,
+        "blockedEdits": 0
+      }
+    },
+    "final": {
+      "tokens": 1437861,
+      "input": 1416156,
+      "output": 21705,
+      "cache": 1193472,
+      "uncachedInput": 222684,
+      "cost": 0.09445224,
+      "agentSeconds": 1395.260016,
+      "runnerMs": 1387893,
+      "requests": 75,
+      "tools": 189,
+      "edits": 11,
+      "blockedEdits": 3,
+      "runs": 6,
+      "passed": 5,
+      "nominalPassed": 5,
+      "incompleteUsage": [],
+      "missingReward": [],
+      "missing": {
+        "tokens": 0,
+        "input": 0,
+        "output": 0,
+        "cache": 0,
+        "uncachedInput": 0,
+        "cost": 0,
+        "agentSeconds": 0,
+        "runnerMs": 0,
+        "requests": 0,
+        "tools": 0,
+        "edits": 0,
+        "blockedEdits": 0
+      },
+      "observedPartialSums": {
+        "tokens": 1437861,
+        "input": 1416156,
+        "output": 21705,
+        "cache": 1193472,
+        "uncachedInput": 222684,
+        "cost": 0.09445224,
+        "agentSeconds": 1395.260016,
+        "runnerMs": 1387893,
+        "requests": 75,
+        "tools": 189,
+        "edits": 11,
+        "blockedEdits": 3
+      }
+    }
+  },
+  "oracleAttemptSensitivity": {
+    "finalVsBefore": {
+      "all": {
+        "trials": 12,
+        "taskClusters": 3,
+        "successDifference": -0.16666666666666666,
+        "successDifferenceTaskClusterBootstrap95": [
+          -0.5,
+          0.0
+        ],
+        "resources": {
+          "agentSeconds": {
+            "taskClusters": 3,
+            "allTaskClusters": 3,
+            "completeUsageSelection": false,
+            "ratio": 0.6752207153760288,
+            "taskClusterBootstrap95": [
+              0.6388309612563358,
+              0.8254219666907641
+            ],
+            "medianTaskRatio": 0.6963608058614885,
+            "leaveOneTaskOutRange": [
+              0.646055344050868,
+              0.7747356821227512
+            ]
+          },
+          "tokens": {
+            "taskClusters": 2,
+            "allTaskClusters": 3,
+            "completeUsageSelection": true,
+            "ratio": 0.7502264292593668,
+            "taskClusterBootstrap95": [
+              0.6485623003194888,
+              0.9927100334188234
+            ],
+            "medianTaskRatio": 0.8206361668691561,
+            "leaveOneTaskOutRange": [
+              0.6485623003194888,
+              0.9927100334188234
+            ]
+          },
+          "cost": {
+            "taskClusters": 2,
+            "allTaskClusters": 3,
+            "completeUsageSelection": true,
+            "ratio": 0.7978788885248911,
+            "taskClusterBootstrap95": [
+              0.708221936344837,
+              0.9474203904004258
+            ],
+            "medianTaskRatio": 0.8278211633726313,
+            "leaveOneTaskOutRange": [
+              0.708221936344837,
+              0.9474203904004258
+            ]
+          },
+          "requests": {
+            "taskClusters": 3,
+            "allTaskClusters": 3,
+            "completeUsageSelection": false,
+            "ratio": 0.5434782608695652,
+            "taskClusterBootstrap95": [
+              0.3888888888888889,
+              0.9473684210526315
+            ],
+            "medianTaskRatio": 0.7586206896551724,
+            "leaveOneTaskOutRange": [
+              0.4789915966386555,
+              0.8333333333333334
+            ]
+          }
+        }
+      },
+      "repetitions": {
+        "1": {
+          "final": {
+            "trials": 3,
+            "passed": 3,
+            "agentSeconds": 847.917855,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          },
+          "before": {
+            "trials": 3,
+            "passed": 3,
+            "agentSeconds": 1163.387095,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 1
+          }
+        },
+        "2": {
+          "final": {
+            "trials": 3,
+            "passed": 2,
+            "agentSeconds": 547.342161,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          },
+          "before": {
+            "trials": 3,
+            "passed": 3,
+            "agentSeconds": 902.989105,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          }
+        }
+      },
+      "strata": {
+        "csharp": {
+          "trials": 4,
+          "taskClusters": 1,
+          "successDifference": -0.5,
+          "successDifferenceTaskClusterBootstrap95": [
+            -0.5,
+            -0.5
+          ],
+          "resources": {
+            "agentSeconds": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.6963608058614885,
+              "taskClusterBootstrap95": [
+                0.6963608058614885,
+                0.6963608058614885
+              ],
+              "medianTaskRatio": 0.6963608058614885,
+              "leaveOneTaskOutRange": null
+            },
+            "tokens": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.9927100334188234,
+              "taskClusterBootstrap95": [
+                0.9927100334188234,
+                0.9927100334188234
+              ],
+              "medianTaskRatio": 0.9927100334188234,
+              "leaveOneTaskOutRange": null
+            },
+            "cost": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.9474203904004258,
+              "taskClusterBootstrap95": [
+                0.9474203904004258,
+                0.9474203904004258
+              ],
+              "medianTaskRatio": 0.9474203904004258,
+              "leaveOneTaskOutRange": null
+            },
+            "requests": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.9473684210526315,
+              "taskClusterBootstrap95": [
+                0.9473684210526315,
+                0.9473684210526315
+              ],
+              "medianTaskRatio": 0.9473684210526315,
+              "leaveOneTaskOutRange": null
+            }
+          }
+        },
+        "java": {
+          "trials": 4,
+          "taskClusters": 1,
+          "successDifference": 0.0,
+          "successDifferenceTaskClusterBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "resources": {
+            "agentSeconds": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.8254219666907642,
+              "taskClusterBootstrap95": [
+                0.8254219666907642,
+                0.8254219666907642
+              ],
+              "medianTaskRatio": 0.8254219666907642,
+              "leaveOneTaskOutRange": null
+            },
+            "tokens": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.6485623003194888,
+              "taskClusterBootstrap95": [
+                0.6485623003194888,
+                0.6485623003194888
+              ],
+              "medianTaskRatio": 0.6485623003194888,
+              "leaveOneTaskOutRange": null
+            },
+            "cost": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.708221936344837,
+              "taskClusterBootstrap95": [
+                0.708221936344837,
+                0.708221936344837
+              ],
+              "medianTaskRatio": 0.708221936344837,
+              "leaveOneTaskOutRange": null
+            },
+            "requests": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.7586206896551724,
+              "taskClusterBootstrap95": [
+                0.7586206896551724,
+                0.7586206896551724
+              ],
+              "medianTaskRatio": 0.7586206896551724,
+              "leaveOneTaskOutRange": null
+            }
+          }
+        },
+        "react-javascript": {
+          "trials": 4,
+          "taskClusters": 1,
+          "successDifference": 0.0,
+          "successDifferenceTaskClusterBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "resources": {
+            "agentSeconds": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.6388309612563358,
+              "taskClusterBootstrap95": [
+                0.6388309612563358,
+                0.6388309612563358
+              ],
+              "medianTaskRatio": 0.6388309612563358,
+              "leaveOneTaskOutRange": null
+            },
+            "tokens": {
+              "taskClusters": 0,
+              "allTaskClusters": 1,
+              "completeUsageSelection": true,
+              "ratio": null,
+              "taskClusterBootstrap95": null,
+              "medianTaskRatio": null,
+              "leaveOneTaskOutRange": null
+            },
+            "cost": {
+              "taskClusters": 0,
+              "allTaskClusters": 1,
+              "completeUsageSelection": true,
+              "ratio": null,
+              "taskClusterBootstrap95": null,
+              "medianTaskRatio": null,
+              "leaveOneTaskOutRange": null
+            },
+            "requests": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.3888888888888889,
+              "taskClusterBootstrap95": [
+                0.3888888888888889,
+                0.3888888888888889
+              ],
+              "medianTaskRatio": 0.3888888888888889,
+              "leaveOneTaskOutRange": null
+            }
+          }
+        }
+      }
+    },
+    "finalVsCline": {
+      "all": {
+        "trials": 12,
+        "taskClusters": 3,
+        "successDifference": -0.16666666666666666,
+        "successDifferenceTaskClusterBootstrap95": [
+          -0.5,
+          0.0
+        ],
+        "resources": {
+          "agentSeconds": {
+            "taskClusters": 3,
+            "allTaskClusters": 3,
+            "completeUsageSelection": false,
+            "ratio": 1.40682340661799,
+            "taskClusterBootstrap95": [
+              0.5832002679534122,
+              2.5124653549239286
+            ],
+            "medianTaskRatio": 0.7978698191214781,
+            "leaveOneTaskOutRange": [
+              0.7061196858712191,
+              1.7354143588974993
+            ]
+          },
+          "tokens": {
+            "taskClusters": 3,
+            "allTaskClusters": 3,
+            "completeUsageSelection": false,
+            "ratio": 0.6287831214447143,
+            "taskClusterBootstrap95": [
+              0.34651026520248274,
+              0.9274578435777973
+            ],
+            "medianTaskRatio": 0.5655969924470183,
+            "leaveOneTaskOutRange": [
+              0.4535132081861054,
+              0.7630888396683292
+            ]
+          },
+          "cost": {
+            "taskClusters": 3,
+            "allTaskClusters": 3,
+            "completeUsageSelection": false,
+            "ratio": 0.6774396501295461,
+            "taskClusterBootstrap95": [
+              0.5622309085263972,
+              0.7747428321651335
+            ],
+            "medianTaskRatio": 0.6850039985128339,
+            "leaveOneTaskOutRange": [
+              0.6243260000124178,
+              0.731583752770181
+            ]
+          },
+          "requests": {
+            "taskClusters": 3,
+            "allTaskClusters": 3,
+            "completeUsageSelection": false,
+            "ratio": 1.2295081967213115,
+            "taskClusterBootstrap95": [
+              0.75,
+              1.8421052631578947
+            ],
+            "medianTaskRatio": 1.2222222222222223,
+            "leaveOneTaskOutRange": [
+              0.9523809523809523,
+              1.5405405405405406
+            ]
+          }
+        }
+      },
+      "repetitions": {
+        "1": {
+          "final": {
+            "trials": 3,
+            "passed": 3,
+            "agentSeconds": 847.917855,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          },
+          "cline": {
+            "trials": 3,
+            "passed": 3,
+            "agentSeconds": 503.463352,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          }
+        },
+        "2": {
+          "final": {
+            "trials": 3,
+            "passed": 2,
+            "agentSeconds": 547.342161,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          },
+          "cline": {
+            "trials": 3,
+            "passed": 3,
+            "agentSeconds": 488.317144,
+            "missingAgentDuration": 0,
+            "incompleteUsage": 0
+          }
+        }
+      },
+      "strata": {
+        "csharp": {
+          "trials": 4,
+          "taskClusters": 1,
+          "successDifference": -0.5,
+          "successDifferenceTaskClusterBootstrap95": [
+            -0.5,
+            -0.5
+          ],
+          "resources": {
+            "agentSeconds": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.5832002679534122,
+              "taskClusterBootstrap95": [
+                0.5832002679534122,
+                0.5832002679534122
+              ],
+              "medianTaskRatio": 0.5832002679534122,
+              "leaveOneTaskOutRange": null
+            },
+            "tokens": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.34651026520248274,
+              "taskClusterBootstrap95": [
+                0.34651026520248274,
+                0.34651026520248274
+              ],
+              "medianTaskRatio": 0.34651026520248274,
+              "leaveOneTaskOutRange": null
+            },
+            "cost": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.5622309085263972,
+              "taskClusterBootstrap95": [
+                0.5622309085263972,
+                0.5622309085263972
+              ],
+              "medianTaskRatio": 0.5622309085263972,
+              "leaveOneTaskOutRange": null
+            },
+            "requests": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.75,
+              "taskClusterBootstrap95": [
+                0.75,
+                0.75
+              ],
+              "medianTaskRatio": 0.75,
+              "leaveOneTaskOutRange": null
+            }
+          }
+        },
+        "java": {
+          "trials": 4,
+          "taskClusters": 1,
+          "successDifference": 0.0,
+          "successDifferenceTaskClusterBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "resources": {
+            "agentSeconds": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.7978698191214781,
+              "taskClusterBootstrap95": [
+                0.7978698191214781,
+                0.7978698191214781
+              ],
+              "medianTaskRatio": 0.7978698191214781,
+              "leaveOneTaskOutRange": null
+            },
+            "tokens": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.5655969924470183,
+              "taskClusterBootstrap95": [
+                0.5655969924470183,
+                0.5655969924470183
+              ],
+              "medianTaskRatio": 0.5655969924470183,
+              "leaveOneTaskOutRange": null
+            },
+            "cost": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.6850039985128339,
+              "taskClusterBootstrap95": [
+                0.6850039985128339,
+                0.6850039985128339
+              ],
+              "medianTaskRatio": 0.6850039985128339,
+              "leaveOneTaskOutRange": null
+            },
+            "requests": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 1.2222222222222223,
+              "taskClusterBootstrap95": [
+                1.2222222222222223,
+                1.2222222222222223
+              ],
+              "medianTaskRatio": 1.2222222222222223,
+              "leaveOneTaskOutRange": null
+            }
+          }
+        },
+        "react-javascript": {
+          "trials": 4,
+          "taskClusters": 1,
+          "successDifference": 0.0,
+          "successDifferenceTaskClusterBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "resources": {
+            "agentSeconds": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 2.512465354923929,
+              "taskClusterBootstrap95": [
+                2.512465354923929,
+                2.512465354923929
+              ],
+              "medianTaskRatio": 2.512465354923929,
+              "leaveOneTaskOutRange": null
+            },
+            "tokens": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.9274578435777973,
+              "taskClusterBootstrap95": [
+                0.9274578435777973,
+                0.9274578435777973
+              ],
+              "medianTaskRatio": 0.9274578435777973,
+              "leaveOneTaskOutRange": null
+            },
+            "cost": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 0.7747428321651335,
+              "taskClusterBootstrap95": [
+                0.7747428321651335,
+                0.7747428321651335
+              ],
+              "medianTaskRatio": 0.7747428321651335,
+              "leaveOneTaskOutRange": null
+            },
+            "requests": {
+              "taskClusters": 1,
+              "allTaskClusters": 1,
+              "completeUsageSelection": false,
+              "ratio": 1.8421052631578947,
+              "taskClusterBootstrap95": [
+                1.8421052631578947,
+                1.8421052631578947
+              ],
+              "medianTaskRatio": 1.8421052631578947,
+              "leaveOneTaskOutRange": null
+            }
+          }
+        }
+      }
+    }
+  }
+}

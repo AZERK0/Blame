@@ -1,0 +1,302 @@
+{
+  "note": "Finished tool calls. Operation counts include rejected calls. Read views are observed outputs, including automatic symbol selection. Native patch calls and Blame patch operations are different units.",
+  "trials": [
+    {
+      "trial": "fasterxml__jackson-databind-4468__9Uc3rvM",
+      "counts": {
+        "finishedTools": 21,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "fasterxml__jackson-databind-4468__MSJdBMW",
+      "counts": {
+        "finishedTools": 50,
+        "readView.outline": 4,
+        "readView.range": 12,
+        "readView.raw": 4,
+        "readView.unknown": 1,
+        "editCalls": 2,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 2,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T19:42:01.798Z",
+        "requestsThroughFirstFinish": 16,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.26399993896484375
+      }
+    },
+    {
+      "trial": "fasterxml__jackson-databind-4468__V4M3qAo",
+      "counts": {
+        "finishedTools": 43,
+        "readView.range": 15,
+        "readView.raw": 4,
+        "editCalls": 2,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 2,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T19:42:00.859Z",
+        "requestsThroughFirstFinish": 12,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.4500000476837158
+      }
+    },
+    {
+      "trial": "mui__material-ui-23778__f34vpDv",
+      "counts": {
+        "finishedTools": 74,
+        "readView.raw": 8,
+        "readView.range": 12,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "automaticValidationCalls": 1,
+        "finishCalls": 12,
+        "finishErrors": 12
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T19:33:07.961Z",
+        "requestsThroughFirstFinish": 14,
+        "requestsAfterFirstFinish": 32,
+        "secondsFromFirstFinishToLastEvent": 320.2669999599457
+      }
+    },
+    {
+      "trial": "mui__material-ui-23778__k3GF2AJ",
+      "counts": {
+        "finishedTools": 24,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "mui__material-ui-23778__mmCF8Zc",
+      "counts": {
+        "finishedTools": 37,
+        "readView.raw": 6,
+        "readView.range": 10,
+        "editCalls": 4,
+        "rejectedEditCalls": 2,
+        "editOperation.patch": 6,
+        "rejectedOperation.patch": 3,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T19:33:39.717Z",
+        "requestsThroughFirstFinish": 21,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.4240000247955322
+      }
+    },
+    {
+      "trial": "serilog__serilog-2103__FonLQzj",
+      "counts": {
+        "finishedTools": 26,
+        "readView.raw": 7,
+        "readView.range": 3,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T19:46:07.928Z",
+        "requestsThroughFirstFinish": 9,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.2220001220703125
+      }
+    },
+    {
+      "trial": "serilog__serilog-2103__KLiMfNg",
+      "counts": {
+        "finishedTools": 29,
+        "readView.range": 7,
+        "readView.raw": 2,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T19:44:19.364Z",
+        "requestsThroughFirstFinish": 9,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.3509998321533203
+      }
+    },
+    {
+      "trial": "serilog__serilog-2103__js8xSKH",
+      "counts": {
+        "finishedTools": 24,
+        "nativePatchCalls": 2
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "fasterxml__jackson-databind-4468__26RrXEo",
+      "counts": {
+        "finishedTools": 14,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "fasterxml__jackson-databind-4468__9PdeQSD",
+      "counts": {
+        "finishedTools": 30,
+        "readView.outline": 1,
+        "readView.raw": 5,
+        "readView.range": 5,
+        "readView.unknown": 1,
+        "editCalls": 3,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 3,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T19:58:29.347Z",
+        "requestsThroughFirstFinish": 13,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.46700000762939453
+      }
+    },
+    {
+      "trial": "fasterxml__jackson-databind-4468__SWjw3Yx",
+      "counts": {
+        "finishedTools": 24,
+        "readView.range": 7,
+        "readView.outline": 1,
+        "editCalls": 2,
+        "rejectedEditCalls": 1,
+        "editOperation.symbol": 4,
+        "rejectedOperation.symbol": 2,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T19:55:37.325Z",
+        "requestsThroughFirstFinish": 10,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.26199984550476074
+      }
+    },
+    {
+      "trial": "mui__material-ui-23778__4TVZCqZ",
+      "counts": {
+        "finishedTools": 78,
+        "readView.raw": 14,
+        "readView.unknown": 2,
+        "readView.range": 9,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "automaticValidationCalls": 1,
+        "finishCalls": 11,
+        "finishErrors": 11
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T20:03:24.477Z",
+        "requestsThroughFirstFinish": 10,
+        "requestsAfterFirstFinish": 34,
+        "secondsFromFirstFinishToLastEvent": 419.69000005722046
+      }
+    },
+    {
+      "trial": "mui__material-ui-23778__BkFJ246",
+      "counts": {
+        "finishedTools": 32,
+        "readView.raw": 8,
+        "readView.unknown": 1,
+        "readView.range": 5,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T20:05:29.797Z",
+        "requestsThroughFirstFinish": 14,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.4850001335144043
+      }
+    },
+    {
+      "trial": "mui__material-ui-23778__khCyEJR",
+      "counts": {
+        "finishedTools": 22,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "serilog__serilog-2103__2wZUEsL",
+      "counts": {
+        "finishedTools": 33,
+        "nativePatchCalls": 2
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "serilog__serilog-2103__Cj3M5AF",
+      "counts": {
+        "finishedTools": 27,
+        "readView.range": 6,
+        "readView.raw": 3,
+        "readView.outline": 1,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T19:50:17.348Z",
+        "requestsThroughFirstFinish": 9,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.20399999618530273
+      }
+    },
+    {
+      "trial": "serilog__serilog-2103__QvEwBcX",
+      "counts": {
+        "finishedTools": 28,
+        "readView.raw": 4,
+        "readView.range": 7,
+        "editCalls": 2,
+        "rejectedEditCalls": 1,
+        "editOperation.patch": 3,
+        "rejectedOperation.patch": 1,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T19:53:07.858Z",
+        "requestsThroughFirstFinish": 10,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.3919999599456787
+      }
+    }
+  ]
+}

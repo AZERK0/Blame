@@ -1,0 +1,25 @@
+{
+  "trial": "serilog__serilog-2103__Cj3M5AF",
+  "failedRequired": "Serilog.Tests.Capturing.PropertyValueConverterTests.PrivateGettersAreIgnoredWhenCapturing",
+  "sourceMistake": "GetMethod can return a non-public getter; checking only null does not establish public visibility.",
+  "validationEvents": [
+    94,
+    106
+  ],
+  "observedValidation": "Both dotnet test --no-restore invocations exit 0 without a test result; second prints only the captured exit code.",
+  "completionVerification": "unverified",
+  "summaryClaim": "Model nevertheless claims focused tests verified the behavior.",
+  "harnessAttribution": "Runtime preserves the command exit and empty output and does not mark the patch verified. The native catalogue does not recognize .NET tests. The completed fresh-image replay confirms that --no-restore ran no test while implicit restore exposed the agent-authored regression.",
+  "sources": [
+    "https://raw.githubusercontent.com/dotnet/runtime/v8.0.0/src/libraries/System.Private.CoreLib/src/System/Reflection/PropertyInfo.cs",
+    "https://github.com/dotnet/sdk/issues/4140",
+    "https://github.com/dotnet/core/issues/7412"
+  ],
+  "agentDiffSha256": "b9b50b9afbca8f2079be5e714fa0bddd0c5b1ac7663c53d80c02b888213366b5",
+  "replayStatus": "Completed after the frozen campaign: without restore exits 0 with no output, with restore exits 1 and fails the agent-authored regression test.",
+  "modelFeedback": "None; no task-specific API answer enters the evaluated prompt.",
+  "nativeTaskCatalogueUnchanged": true,
+  "nativeTaskCatalogueSha256": "7d18a3bc7b3a35ed5587a004ecc57d1541083bb001ebef30a6d0b1a48b30cd3f",
+  "causalLimit": "The catalogue lacks .NET recognition in both compared source versions; the finish filter did not remove a .NET automatic test. A single stochastic wrong API choice cannot establish that the prompt change caused the quality loss.",
+  "replay": "serilog-validation-replay/summary.json"
+}

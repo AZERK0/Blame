@@ -40,4 +40,14 @@ Les 24 essais externes sont terminés : Blame 12/12 contre Cline 11/12 aux tests
 
 Le commit `7c50d3ee` limite la validation automatique de fin aux vérifications déjà demandées dans la session. Il conserve le rafraîchissement des preuves périmées, le blocage des échecs connus et la déclaration des changements non vérifiés. Les deux Material UI avaient ajouté 34 puis 32 requêtes après un premier patch déjà correct, sans modifier ensuite ce patch. Un replay neuf confirme l’échec du build sur le dépôt intact et la réussite des tests officiels dès le premier patch.
 
-Quatre régressions indépendantes échouent avant correction et passent après. La suite complète compte 618 tests : 617 réussis, un test Windows ignoré, aucun échec ; build et lint passent. Les [preuves de validation](benchmarks/harness-confirmation-2026-09-08/finish-intent/validation.json) ne remplacent pas une mesure live. La comparaison suivante garde trois tâches diagnostiques connues, trois bras et deux répétitions, en deux lots de neuf ; aucun résultat global n’est présupposé.
+Quatre régressions indépendantes échouent avant correction et passent après. La suite complète compte 618 tests : 617 réussis, un test Windows ignoré, aucun échec ; build et lint passent. Les [preuves de validation](benchmarks/harness-confirmation-2026-09-08/finish-intent/validation.json) sont accompagnées d’une comparaison distincte sur trois tâches diagnostiques connues, trois bras et deux répétitions, en deux lots de neuf.
+
+## Mesure de la correction de fin
+
+Les 18 essais sont terminés et audités : Blame corrigé 5/6, Blame précédent et Cline 6/6. Face au précédent, le corrigé réduit les requêtes de 138 à 75 (−45,7 %) et le temps de 34,44 à 23,25 minutes (−32,5 %). Face à Cline, il conserve +23,0 % de requêtes et +40,7 % de temps, malgré −37,1 % de tokens et −32,3 % de coût SDK. La qualité inférieure interdit de qualifier cela d’avantage global.
+
+Les deux Material UI corrigés terminent dès la première demande, sans les 32 et 34 requêtes ultérieures observées chez le témoin. La régression Serilog est un mauvais choix d’API suivi de commandes de test silencieuses : un replay neuf prouve que `--no-restore` sort à zéro sans lancer le test écrit par l’agent, alors qu’avec restauration ce test échoue. Aucune perte de résultat par le runtime n’est établie. Le [rapport de comparaison](benchmarks/harness-confirmation-2026-09-08/finish-intent-comparison/report.md) conserve cette régression et les limites causales.
+
+## Itération sur l’exécution des tests
+
+Le commit `e8e49070` clarifie uniquement le prompt : choisir des tests ciblés non interactifs qui se terminent, et confirmer leur exécution réelle. Aucun nouvel outil, état, parseur, flag automatique ni dépendance. Les 617 tests applicables passent, avec un test Windows ignoré. Une [campagne distincte](benchmarks/harness-confirmation-2026-09-08/finite-check-comparison/protocol.md) de 18 essais Material UI, Vue et Serilog est enregistrée au commit `1894deda` puis lancée à 20:22:05 UTC, en deux lots de neuf. Ce sont des diagnostics connus, sans essai Sol ni mémoire projet.

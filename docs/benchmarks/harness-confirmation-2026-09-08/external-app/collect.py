@@ -123,7 +123,7 @@ def collect():
     (ROOT / 'results.json').write_text(json.dumps(result, indent=2, ensure_ascii=False) + '\n')
     with (ROOT / 'trials.csv').open('w', newline='') as stream:
         fields = ['task', 'arm', 'repetition', 'group', 'trial', 'reward', 'auditedReward', 'status', 'completionVerification', 'usageComplete', 'tokens', 'input', 'output', 'cache', 'uncachedInput', 'cost', 'agentSeconds', 'runnerMs', 'requests', 'tools', 'edits', 'blockedEdits']
-        writer = csv.DictWriter(stream, fieldnames=fields, extrasaction='ignore')
+        writer = csv.DictWriter(stream, fieldnames=fields, extrasaction='ignore', lineterminator='\n')
         writer.writeheader()
         writer.writerows(records)
     print(json.dumps(summaries))

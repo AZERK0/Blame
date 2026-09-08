@@ -3877,6 +3877,16 @@ L’audit observe une seule édition symbolique acceptée dans Vue, après récu
 
 Une comparaison distincte du correctif est enregistrée au commit `4bad819e` et démarre à 19:23:25 UTC : dix-huit essais, trois tâches diagnostiques connues, version précédente, version corrigée et Cline, deux répétitions et deux lots de neuf. Les trois bras reçoivent la même consigne interdisant de récupérer une solution ultérieure, tout en autorisant les références historiques de l’issue, la documentation et les dépendances. Cette correction de protocole n’est pas un blocage web runtime. La version évaluée reste figée jusqu’à la fin ; les résultats sont présentés séparément après clôture.
 
+### 21.63. La fin corrigée réduit les tours, sans supériorité globale
+
+La comparaison figée de fin termine ses 18 essais à 20:11:06 UTC. Les trois tâches connues, trois bras et deux répétitions donnent 5/6 réussites pour `7c50d3ee`, contre 6/6 pour Blame précédent et Cline. L’audit ne confirme aucun accès à une solution ultérieure. Les 297 entrées figées et 18 traces sont vérifiées, sans démarrage d’outil après le vérificateur. Un usage du témoin précédent reste incomplet.
+
+Le correctif réduit les requêtes de 138 à 75 et le temps de 34,44 à 23,25 minutes, soit −45,7 % et −32,5 % face au précédent. Sur les deux Material UI, la première fin est acceptée sans appel modèle ultérieur, contre 32 et 34 requêtes supplémentaires auparavant. La cause mécanique est donc corrigée. Face à Cline, le corrigé garde néanmoins +23,0 % de requêtes et +40,7 % de temps ; les −37,1 % de tokens et −32,3 % de coût SDK ne s’obtiennent pas à qualité égale. Trois diagnostics ne permettent aucune généralisation.
+
+L’échec Serilog utilise une API pouvant retourner un getter privé, puis assimile deux invocations silencieuses de `dotnet test --no-restore`, sorties à zéro, à des tests réussis. Le runtime conserve leur résultat et indique une livraison non vérifiée. Un replay neuf, avec le seul patch et test écrits par l’agent, confirme zéro octet et zéro test visible sans restauration ; avec restauration, 39 tests tournent et le test propre à l’agent échoue. Aucun test caché ou correctif de référence n’est injecté. Le catalogue .NET était absent des deux versions : la perte de qualité ne prouve pas que le filtre de fin l’a causée.
+
+Le [rapport et les preuves](/mnt/dev/web/Blame/docs/benchmarks/harness-confirmation-2026-09-08/finish-intent-comparison/report.md) conservent ce résultat défavorable. Le commit suivant `e8e49070` clarifie en amont les invocations ciblées, non interactives, terminables et réellement exécutées, sans nouvelle mécanique. La suite compte toujours 617 réussites, aucun échec et un test Windows ignoré. Son effet est évalué séparément dans 18 essais diagnostiques Material UI/Vue/Serilog, enregistrés au commit `1894deda` et démarrés à 20:22:05 UTC. Aucun essai Sol ni expérience de mémoire n’est ajouté.
+
 ## Références complémentaires
 
 - [Aider — Repository map](https://aider.chat/docs/repomap.html)
