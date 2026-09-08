@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-09-08T15:29:06.420605+00:00",
+  "server": "Docker 29.7.2",
+  "engineDataRoot": "/home/azerko/.cache/blame-benchmark-docker-20260907/data",
+  "runtimeDirectory": "/run/user/1000/blame-bench-docker-20260907",
+  "containerImage": "alpine:3.22",
+  "containerDigest": "sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce",
+  "exitCode": 0,
+  "observedMemoryMax": 268435456,
+  "observedCpuMax": "100000 100000",
+  "previousAttempt": ".blame/benchmarks/terminal-bench-frontier-v10-20260908",
+  "previousAttemptAgentCalls": 0
+}

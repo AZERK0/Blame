@@ -1,0 +1,298 @@
+{
+  "status": "infrastructure_failure_before_agent",
+  "trialsCreated": 36,
+  "agentCalls": 0,
+  "usageObserved": false,
+  "reason": "Dedicated dockerd automatically connected to pre-existing rootless containerd because XDG_RUNTIME_DIR was shared. Overlay snapshots were outside the dedicated engine mount namespace and mounting failed. No agent or verifier ran.",
+  "nextAction": "Use dedicated XDG_RUNTIME_DIR and verify an actual container with enforced cgroups before registering a separate rerun using the same immutable bundles, selection and budgets.",
+  "trials": [
+    {
+      "trial": "dna-assembly__5GisoA7",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "dna-assembly__JNsgiY8",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "dna-assembly__eyBzPWn",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "torch-tensor-parallelism__ADDXaLt",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "torch-tensor-parallelism__ZjWnb6U",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "torch-tensor-parallelism__oLNDLmB",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "winning-avg-corewars__2wveghF",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "winning-avg-corewars__GiA5snP",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "winning-avg-corewars__qnpwQdi",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "count-dataset-tokens__UQz26EU",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "count-dataset-tokens__f6792RB",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "count-dataset-tokens__srNcJjS",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "git-leak-recovery__RnTPPWQ",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "git-leak-recovery__apft3pF",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "git-leak-recovery__r2fFcYR",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "tune-mjcf__4DNQ7ZJ",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "tune-mjcf__WhbPcUi",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "tune-mjcf__sdKHQFU",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "count-dataset-tokens__SDH4yVB",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "count-dataset-tokens__W3sZUn5",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "count-dataset-tokens__t85KCkc",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "git-leak-recovery__c2zxgrj",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "git-leak-recovery__ssscW7v",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "git-leak-recovery__wzAJ7TW",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "tune-mjcf__4YLm8pU",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "tune-mjcf__H9NyKKm",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "tune-mjcf__Qu5nLjN",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "dna-assembly__DQqQiXt",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "dna-assembly__UxXRTr7",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "dna-assembly__XFtjm3k",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "torch-tensor-parallelism__Ww4YCbZ",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "torch-tensor-parallelism__fFNmKpp",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "torch-tensor-parallelism__o9NY7DR",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "winning-avg-corewars__N8LHtov",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "winning-avg-corewars__V6B5bvH",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    },
+    {
+      "trial": "winning-avg-corewars__aXDwWdF",
+      "errorType": "RuntimeError",
+      "stage": "environment_setup",
+      "modelEvents": 0,
+      "permissionDenied": true,
+      "reward": null
+    }
+  ]
+}

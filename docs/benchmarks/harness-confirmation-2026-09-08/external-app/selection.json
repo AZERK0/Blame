@@ -1,0 +1,60 @@
+{
+  "registeredAt": "2026-09-08T15:25:26.411455+00:00",
+  "seed": "Blame-external-app-20260908:",
+  "status": "reserved_before_environment_preflight",
+  "tasks": [
+    {
+      "dataset": "Multi-SWE-bench-flash",
+      "instance_id": "mui__material-ui-23778",
+      "repo": "mui/material-ui",
+      "language": "typescript",
+      "stratum": "react-typescript",
+      "selectionKey": "9cc5925b61877e70fbc9a9e5af70a25674313005fbe685cbb40128b671be0c19"
+    },
+    {
+      "dataset": "Multi-SWE-bench-flash",
+      "instance_id": "vuejs__core-11491",
+      "repo": "vuejs/core",
+      "language": "typescript",
+      "stratum": "typescript",
+      "selectionKey": "00d4067dab2a4991d5cf10790e0b89ee0301275576fa3c40ec0adeb46bb6c721"
+    },
+    {
+      "dataset": "Multi-SWE-bench-flash",
+      "instance_id": "fasterxml__jackson-databind-4468",
+      "repo": "fasterxml/jackson-databind",
+      "language": "java",
+      "stratum": "java",
+      "selectionKey": "01f64311951875a97ffd41eee3f725d6ebc0e8d76211490f8b9abedf0ec815c7"
+    },
+    {
+      "dataset": "Multi-SWE-bench-flash",
+      "instance_id": "googlecontainertools__jib-4035",
+      "repo": "googlecontainertools/jib",
+      "language": "java",
+      "stratum": "java",
+      "selectionKey": "05c39fdcb62dba0c930fef8fd3d1d1a21afaf6b06503e7d3869b4fdbdb89c480"
+    },
+    {
+      "dataset": "SWE-Sharp-Bench",
+      "instance_id": "avaloniaui__avalonia-16090",
+      "repo": "AvaloniaUI/Avalonia",
+      "language": "csharp",
+      "stratum": "csharp",
+      "selectionKey": "024fef0914bac7250a27611960770f7dc82519e6c69410fe6cb12ab64eea46de"
+    },
+    {
+      "dataset": "SWE-Sharp-Bench",
+      "instance_id": "serilog__serilog-2103",
+      "repo": "serilog/serilog",
+      "language": "csharp",
+      "stratum": "csharp",
+      "selectionKey": "03ddaf6d0fa1e54825be36f99b2e34569b837ada459b03c8472031945b7ce1c9"
+    }
+  ],
+  "datasetSha256": {
+    "multi.jsonl": "48d6d02cc976a71a06b494cc60581d92e82c06c2793c0d412c52c63e6956bebe",
+    "sharp.csv": "95324e8ca8112d8b17232cbde178f179fda3ae012f9e533d58d1a23434025e50"
+  },
+  "note": "Selection by metadata only. One React/TS, one other TS, two distinct Java repositories, two distinct C# repositories. No task patch/body read before reservation. Unavailable environments will be reported before any agent call; no score-based replacement. Prisma and full preview coverage not established."
+}
