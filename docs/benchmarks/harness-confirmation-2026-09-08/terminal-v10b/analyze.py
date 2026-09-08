@@ -90,7 +90,8 @@ def compare(rows):
     return {'all': subset(selected),
             'fresh': subset([row for row in selected if not row['seenBeforeCampaign']]),
             'seen': subset([row for row in selected if row['seenBeforeCampaign']]),
-            'repetitions': per_repetition(selected)}
+            'repetitions': per_repetition(selected),
+            'withoutPreflightOverlapTask': subset([row for row in selected if row['task'] != 'dna-assembly'])}
 
 
 def main():
@@ -106,8 +107,13 @@ def main():
     comparisons = {}
     for COMPARATOR in ['before', 'cline']:
         comparisons['finalVs' + COMPARATOR.title()] = compare(rows)
+    attempted_as_failures = [dict(row, auditedReward=0) if row.get('audit', {}).get('attemptedOracleAccess') else row for row in rows]
+    conservative = {}
+    for COMPARATOR in ['before', 'cline']:
+        conservative['finalVs' + COMPARATOR.title()] = compare(attempted_as_failures)
     result = {'note': 'Descriptive stratified task-cluster bootstrap, two repetitions retained. Missing usage is unknown. Failed trials are included. Ratios below one favor the candidate.',
-              'comparisons': comparisons, 'summary': data['summary']}
+              'comparisons': comparisons, 'summary': data['summary'],
+              'oracleAttemptSensitivity': {'note': 'Additional conservative sensitivity: unsuccessful oracle searches also score zero. Primary adjudication retains the registered confirmed-access criterion. All times and usage remain included.', 'comparisons': conservative}}
     (ROOT / 'analysis.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result))
 

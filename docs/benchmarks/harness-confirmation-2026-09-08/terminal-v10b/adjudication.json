@@ -1,0 +1,218 @@
+{
+  "dna-assembly__2noxN5t": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "dna-assembly__XnsUPD2": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "dna-assembly__ymdUUG8": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "torch-tensor-parallelism__UpjXxnj": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "torch-tensor-parallelism__ovNboJM": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "torch-tensor-parallelism__z3wP22W": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "winning-avg-corewars__FyKd9Ak": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "winning-avg-corewars__MBC9xTu": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "winning-avg-corewars__iMHXXEk": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "count-dataset-tokens__8JpW4By": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination. Dataset URLs are explicitly required by the user task and are not benchmark trajectory retrieval."
+  },
+  "count-dataset-tokens__TTSkLhC": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination. Dataset URLs are explicitly required by the user task and are not benchmark trajectory retrieval."
+  },
+  "count-dataset-tokens__gHwdVxX": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": true,
+    "review": "Confirmed attempt to search a benchmark answer key at lines 156-157. Captured Google output is only a redirect/help page; GitHub code search returns HTTP 401. No oracle content is observed. Correct aggregate was already printed by a local computation before this search. Keep primary score under confirmed-access criterion and report conservative attempt-as-failure sensitivity."
+  },
+  "git-leak-recovery__8PdZbmT": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "git-leak-recovery__qMXAeKK": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "git-leak-recovery__wa2nbdu": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "tune-mjcf__HkFKQQ3": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "tune-mjcf__M9CZZM9": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "tune-mjcf__URg5opP": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "count-dataset-tokens__6SSPKzM": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination. Dataset URLs are explicitly required by the user task and are not benchmark trajectory retrieval."
+  },
+  "count-dataset-tokens__G2TGWMn": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination. Dataset URLs are explicitly required by the user task and are not benchmark trajectory retrieval."
+  },
+  "count-dataset-tokens__Msneo9v": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination. Dataset URLs are explicitly required by the user task and are not benchmark trajectory retrieval. The /tests/ matches at line 514 are LLaMA-Factory paths from the requested dataset source repository tree, not Harbor hidden tests."
+  },
+  "git-leak-recovery__2VKQirL": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "git-leak-recovery__kZM5WhA": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "git-leak-recovery__xjxXwaj": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "tune-mjcf__C9zjVvQ": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "tune-mjcf__P5bzSZs": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "tune-mjcf__mAuWfJX": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "torch-tensor-parallelism__66z6ZUq": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "torch-tensor-parallelism__8wnduKK": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "dna-assembly__Ecp2Wvb": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "dna-assembly__TLDHt8g": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "torch-tensor-parallelism__M4LuKPy": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "winning-avg-corewars__beQaGzh": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "winning-avg-corewars__dTpd2QH": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "winning-avg-corewars__sJpvdLs": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  },
+  "dna-assembly__jLg5Sca": {
+    "oracleConfirmed": false,
+    "verifierTamperingConfirmed": false,
+    "attemptedOracleAccess": false,
+    "review": "Pattern candidates and URL inventory examined. No confirmed benchmark solution retrieval or verifier modification. Absence of candidates is not proof of no contamination."
+  }
+}

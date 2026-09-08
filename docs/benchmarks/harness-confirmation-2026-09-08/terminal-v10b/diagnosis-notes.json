@@ -1,0 +1,83 @@
+{
+  "note": "Analyst diagnosis after completed trials; no diagnostics or hidden tests supplied to evaluated agents. Frozen V10b bundles are unchanged. See full results and adjudication for campaign comparison.",
+  "trials": {
+    "dna-assembly__ymdUUG8": {
+      "finding": "Two missing command discriminators rejected at event lines 314 and 482; independently replayed without executing recorded commands. A corrupted input at line 452 remains rejected. Runtime fix 727a3f4d is outside the frozen V10b bundles. Both Blame trials have one Python 3 unavailable error.",
+      "attribution": "Missing kind is a malformed model call with a deterministic runtime recovery. The two refusals alone do not explain the 16-request difference. Corrupt-field origin is not established."
+    },
+    "winning-avg-corewars__iMHXXEk": {
+      "finding": "No edit_code rejection. Ten command failures originate in Redcode compilation: five commands hit undefined symbols and five hit the instruction limit. One inspection command exits 2. Two read_code input failures: nonexistent README.md and unsupported view value.",
+      "attribution": "Observed compiler failures are solution errors, with repeated checks against separate opponents. No basis for weakening syntax validation or claiming patch refusal caused this trajectory.",
+      "timing": {
+        "agentSeconds": 591.61964,
+        "completedToolUnionSeconds": 26.886000633239746,
+        "iterationToContextSeconds": 0.814,
+        "contextToUsageSeconds": 560.387,
+        "completeIntervals": 45,
+        "limitation": "Recorder boundaries. After context composition still includes SDK dispatch, network and provider time; not a measurement of model compute alone."
+      }
+    },
+    "torch-tensor-parallelism__z3wP22W": {
+      "officialTestPassed": 1,
+      "officialTestFailed": 12,
+      "attribution": "Distributed tests execute. Prior Blame has incompatible weight shape; candidate and Cline have incorrect gradients. These observed failures are solution correctness failures, not environment startup failures."
+    },
+    "torch-tensor-parallelism__UpjXxnj": {
+      "officialTestPassed": 5,
+      "officialTestFailed": 8,
+      "attribution": "Distributed tests execute. Prior Blame has incompatible weight shape; candidate and Cline have incorrect gradients. These observed failures are solution correctness failures, not environment startup failures."
+    },
+    "torch-tensor-parallelism__ovNboJM": {
+      "officialTestPassed": 5,
+      "officialTestFailed": 8,
+      "attribution": "Distributed tests execute. Prior Blame has incompatible weight shape; candidate and Cline have incorrect gradients. These observed failures are solution correctness failures, not environment startup failures."
+    },
+    "count-dataset-tokens__gHwdVxX": {
+      "finding": "Recorded computations expose reasoning=63841 and solution=15745. Official expected count=79586 is their sum. Before Blame retains both fields; candidate and Cline answer reasoning only.",
+      "attribution": "Observed answer-scope choice, not missing data or tokenizer failure. The README names both metadata fields; the prompt calls them deepseek tokens. No task-specific rule added to the harness.",
+      "oracleSearch": {
+        "toolStartLine": 156,
+        "toolFinishLine": 157,
+        "attemptConfirmed": true,
+        "successfulOracleRetrievalConfirmed": false,
+        "outputs": "Google HTML extraction contains a redirect/help page only; GitHub code search returns HTTP 401. A local computation printed grand=79586 before the search, at the tool following line 137.",
+        "scoring": "Keep official score under the registered confirmed-access criterion; report the attempt and a separate conservative sensitivity if needed."
+      }
+    },
+    "count-dataset-tokens__8JpW4By": {
+      "finding": "Recorded computations expose reasoning=63841 and solution=15745. Official expected count=79586 is their sum. Before Blame retains both fields; candidate and Cline answer reasoning only.",
+      "attribution": "Observed answer-scope choice, not missing data or tokenizer failure. The README names both metadata fields; the prompt calls them deepseek tokens. No task-specific rule added to the harness."
+    },
+    "count-dataset-tokens__TTSkLhC": {
+      "finding": "Recorded computations expose reasoning=63841 and solution=15745. Official expected count=79586 is their sum. Before Blame retains both fields; candidate and Cline answer reasoning only.",
+      "attribution": "Observed answer-scope choice, not missing data or tokenizer failure. The README names both metadata fields; the prompt calls them deepseek tokens. No task-specific rule added to the harness."
+    },
+    "torch-tensor-parallelism__66z6ZUq": {
+      "officialTestPassed": 3,
+      "officialTestFailed": 10,
+      "attribution": "Official distributed tests execute. Column gradients mismatch and row matrix multiplication shapes mismatch. These are solution correctness failures; Python installation friction occurred earlier but did not prevent verifier execution."
+    },
+    "torch-tensor-parallelism__8wnduKK": {
+      "officialTestPassed": 5,
+      "officialTestFailed": 8,
+      "attribution": "Official distributed tests execute. Column and row distributed gradients mismatch. These are solution correctness failures; Python installation friction occurred earlier but did not prevent verifier execution."
+    },
+    "torch-tensor-parallelism__M4LuKPy": {
+      "officialTestPassed": 9,
+      "officialTestFailed": 4,
+      "attribution": "Official distributed tests execute. Row weight gradient tensor widths mismatch in distributed cases. These are solution correctness failures; Python installation friction occurred earlier but did not prevent verifier execution."
+    },
+    "count-dataset-tokens__G2TGWMn": {
+      "finding": "Both reasoning and solution metadata counts were available. Before returns the reasoning count and fails; candidate and Cline return the combined count and pass.",
+      "attribution": "Answer scope interpretation varies between repetitions. No benchmark-specific prompt rule added."
+    },
+    "count-dataset-tokens__6SSPKzM": {
+      "finding": "Both reasoning and solution metadata counts were available. Before returns the reasoning count and fails; candidate and Cline return the combined count and pass.",
+      "attribution": "Answer scope interpretation varies between repetitions. No benchmark-specific prompt rule added."
+    },
+    "count-dataset-tokens__Msneo9v": {
+      "finding": "Both reasoning and solution metadata counts were available. Before returns the reasoning count and fails; candidate and Cline return the combined count and pass.",
+      "attribution": "Answer scope interpretation varies between repetitions. No benchmark-specific prompt rule added."
+    }
+  }
+}

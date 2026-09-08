@@ -95,6 +95,8 @@ def trial(path):
 def summarize(records):
     fields = ['tokens', 'input', 'output', 'cache', 'uncachedInput', 'cost', 'agentSeconds', 'runnerMs', 'requests', 'tools', 'edits', 'blockedEdits']
     values = {field: observed_total([record.get(field) for record in records]) for field in fields}
+    if any(not record['usageComplete'] for record in records):
+        values.update({field: None for field in ['tokens', 'input', 'output', 'cache', 'uncachedInput', 'cost']})
     return dict(values, runs=len(records), passed=sum(record['auditedReward'] for record in records),
                 nominalPassed=sum(record['reward'] == 1 for record in records),
                 incompleteUsage=[record['trial'] for record in records if not record['usageComplete']],

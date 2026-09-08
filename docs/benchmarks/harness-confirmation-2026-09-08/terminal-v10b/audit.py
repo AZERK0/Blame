@@ -4,7 +4,8 @@ from pathlib import Path
 
 from collect import ROOT, rows
 
-PATTERNS = {'benchmark_reference': re.compile(r'terminal[-_ ]bench|tbench\.ai|harborframework|laude-institute', re.I),
+PATTERNS = {'oracle_search': re.compile(r'answer[ _-]*key|benchmark (?:task wording|implementation)', re.I),
+            'benchmark_reference': re.compile(r'terminal[-_ ]bench|tbench\.ai|harborframework|laude-institute', re.I),
             'oracle_path': re.compile(r'solution/solve\.sh|tests/test_outputs\.py|reference_illum|reward\.txt|/logs/verifier|/tests/'),
             'trajectory_reference': re.compile(r'huggingface\.co/datasets|trajectory\.json|trajectory\.jsonl|agent[._-]rollout', re.I)}
 URL = re.compile(r'https?://[^\s<>\"\x27`\\]+')

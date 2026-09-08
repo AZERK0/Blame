@@ -1,0 +1,308 @@
+{
+  "note": "Finished tool calls. Operation counts include rejected calls. Read views are observed outputs, including automatic symbol selection. Native patch calls and Blame patch operations are different units.",
+  "trials": [
+    {
+      "trial": "dna-assembly__2noxN5t",
+      "counts": {
+        "finishedTools": 25
+      }
+    },
+    {
+      "trial": "dna-assembly__XnsUPD2",
+      "counts": {
+        "finishedTools": 44,
+        "readView.raw": 1
+      }
+    },
+    {
+      "trial": "dna-assembly__ymdUUG8",
+      "counts": {
+        "finishedTools": 57,
+        "readView.raw": 1,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0
+      }
+    },
+    {
+      "trial": "torch-tensor-parallelism__UpjXxnj",
+      "counts": {
+        "finishedTools": 11,
+        "editCalls": 2,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 2,
+        "rejectedOperation.patch": 0,
+        "readView.raw": 1
+      }
+    },
+    {
+      "trial": "torch-tensor-parallelism__ovNboJM",
+      "counts": {
+        "finishedTools": 14,
+        "nativePatchCalls": 2
+      }
+    },
+    {
+      "trial": "torch-tensor-parallelism__z3wP22W",
+      "counts": {
+        "finishedTools": 12,
+        "editCalls": 3,
+        "rejectedEditCalls": 1,
+        "editOperation.patch": 3,
+        "rejectedOperation.patch": 1,
+        "readView.raw": 1,
+        "readView.range": 2
+      }
+    },
+    {
+      "trial": "winning-avg-corewars__FyKd9Ak",
+      "counts": {
+        "finishedTools": 14,
+        "nativePatchCalls": 1
+      }
+    },
+    {
+      "trial": "winning-avg-corewars__MBC9xTu",
+      "counts": {
+        "finishedTools": 28,
+        "readView.raw": 8,
+        "readView.range": 4,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0
+      }
+    },
+    {
+      "trial": "winning-avg-corewars__iMHXXEk",
+      "counts": {
+        "finishedTools": 144,
+        "readView.raw": 12,
+        "readView.unknown": 2,
+        "readView.directory": 1,
+        "readView.outline": 1,
+        "editCalls": 15,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 15,
+        "rejectedOperation.patch": 0,
+        "readView.range": 1
+      }
+    },
+    {
+      "trial": "count-dataset-tokens__8JpW4By",
+      "counts": {
+        "finishedTools": 17,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0
+      }
+    },
+    {
+      "trial": "count-dataset-tokens__TTSkLhC",
+      "counts": {
+        "finishedTools": 14
+      }
+    },
+    {
+      "trial": "count-dataset-tokens__gHwdVxX",
+      "counts": {
+        "finishedTools": 27,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0
+      }
+    },
+    {
+      "trial": "git-leak-recovery__8PdZbmT",
+      "counts": {
+        "finishedTools": 13
+      }
+    },
+    {
+      "trial": "git-leak-recovery__qMXAeKK",
+      "counts": {
+        "finishedTools": 8
+      }
+    },
+    {
+      "trial": "git-leak-recovery__wa2nbdu",
+      "counts": {
+        "finishedTools": 8
+      }
+    },
+    {
+      "trial": "tune-mjcf__HkFKQQ3",
+      "counts": {
+        "finishedTools": 16
+      }
+    },
+    {
+      "trial": "tune-mjcf__M9CZZM9",
+      "counts": {
+        "finishedTools": 32,
+        "readView.raw": 3,
+        "editCalls": 6,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 6,
+        "rejectedOperation.patch": 0
+      }
+    },
+    {
+      "trial": "tune-mjcf__URg5opP",
+      "counts": {
+        "finishedTools": 31,
+        "readView.raw": 2,
+        "editCalls": 2,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 2,
+        "rejectedOperation.patch": 0
+      }
+    },
+    {
+      "trial": "count-dataset-tokens__6SSPKzM",
+      "counts": {
+        "finishedTools": 26
+      }
+    },
+    {
+      "trial": "count-dataset-tokens__G2TGWMn",
+      "counts": {
+        "finishedTools": 13
+      }
+    },
+    {
+      "trial": "count-dataset-tokens__Msneo9v",
+      "counts": {
+        "finishedTools": 17
+      }
+    },
+    {
+      "trial": "git-leak-recovery__2VKQirL",
+      "counts": {
+        "finishedTools": 8
+      }
+    },
+    {
+      "trial": "git-leak-recovery__kZM5WhA",
+      "counts": {
+        "finishedTools": 8
+      }
+    },
+    {
+      "trial": "git-leak-recovery__xjxXwaj",
+      "counts": {
+        "finishedTools": 10
+      }
+    },
+    {
+      "trial": "tune-mjcf__C9zjVvQ",
+      "counts": {
+        "finishedTools": 34
+      }
+    },
+    {
+      "trial": "tune-mjcf__P5bzSZs",
+      "counts": {
+        "finishedTools": 28,
+        "readView.raw": 2,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0
+      }
+    },
+    {
+      "trial": "tune-mjcf__mAuWfJX",
+      "counts": {
+        "finishedTools": 25,
+        "readView.raw": 3,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0
+      }
+    },
+    {
+      "trial": "dna-assembly__Ecp2Wvb",
+      "counts": {
+        "finishedTools": 52,
+        "readView.raw": 1
+      }
+    },
+    {
+      "trial": "dna-assembly__TLDHt8g",
+      "counts": {
+        "finishedTools": 51
+      }
+    },
+    {
+      "trial": "dna-assembly__jLg5Sca",
+      "counts": {
+        "finishedTools": 36,
+        "readView.raw": 1
+      }
+    },
+    {
+      "trial": "torch-tensor-parallelism__66z6ZUq",
+      "counts": {
+        "finishedTools": 12,
+        "editCalls": 6,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 6,
+        "rejectedOperation.patch": 0,
+        "readView.raw": 1
+      }
+    },
+    {
+      "trial": "torch-tensor-parallelism__8wnduKK",
+      "counts": {
+        "finishedTools": 13,
+        "nativePatchCalls": 2
+      }
+    },
+    {
+      "trial": "torch-tensor-parallelism__M4LuKPy",
+      "counts": {
+        "finishedTools": 11,
+        "editCalls": 4,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 4,
+        "rejectedOperation.patch": 0
+      }
+    },
+    {
+      "trial": "winning-avg-corewars__beQaGzh",
+      "counts": {
+        "finishedTools": 78,
+        "readView.raw": 10,
+        "readView.range": 1,
+        "editCalls": 9,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 9,
+        "rejectedOperation.patch": 0
+      }
+    },
+    {
+      "trial": "winning-avg-corewars__dTpd2QH",
+      "counts": {
+        "finishedTools": 33,
+        "readView.raw": 10,
+        "readView.range": 2,
+        "editCalls": 2,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 2,
+        "rejectedOperation.patch": 0
+      }
+    },
+    {
+      "trial": "winning-avg-corewars__sJpvdLs",
+      "counts": {
+        "finishedTools": 55,
+        "nativePatchCalls": 2
+      }
+    }
+  ]
+}

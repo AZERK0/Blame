@@ -1,5 +1,6 @@
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 from collect import MANIFEST, ROOT, read, rows
@@ -8,7 +9,7 @@ from collect import MANIFEST, ROOT, read, rows
 def input_files():
     workspace = ROOT.parents[2]
     expected = {ROOT / 'protocol.md': MANIFEST['protocolSha256'],
-                workspace / 'tools/terminal_bench/blame_agent.py': MANIFEST['adapterSha256'],
+                (ROOT / 'frozen-adapter.py' if '--archived-adapter' in sys.argv else workspace / 'tools/terminal_bench/blame_agent.py'): MANIFEST['adapterSha256'],
                 ROOT / 'selection.json': MANIFEST['selectionSha256']}
     expected.update({ROOT / (name + '.json'): sha for name, sha in MANIFEST['configHashes'].items()})
     expected.update({Path(bundle['path']): bundle['sha256'] for bundle in MANIFEST['bundles'].values()})
@@ -60,7 +61,7 @@ def main():
     observed = {(image['group'], image['task']) for image in images}
     assert len(images) == len(expected) and observed == expected, 'Missing image observation'
     assert post_verifier and len(audit['trials']) == 36, 'Incomplete audit artifacts'
-    result = {'inputFilesVerified': count, 'allInputsUnchanged': True,
+    result = {'adapterVerification': 'archived' if '--archived-adapter' in sys.argv else 'live workspace', 'inputFilesVerified': count, 'allInputsUnchanged': True,
               'trials': len(records), 'eventHashes': hashes, 'imageChecks': images,
               'auditToolStarts': sum(trial['started'] for trial in audit['trials']),
               'missingUsageTrials': [record['trial'] for record in records if not record['usageComplete']],
