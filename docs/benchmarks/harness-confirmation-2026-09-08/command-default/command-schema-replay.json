@@ -1,0 +1,117 @@
+{
+  "note": "Real SDK session with rejecting offline fetch; no credentials, network or recorded commands executed. Recorded command bodies are hashed only.",
+  "replays": [
+    {
+      "line": 314,
+      "inputSha256": "1fb45242c2c0bc821172b3d8ce4797f2f719559fe54f0f9d2ea9c55728d7a8fb",
+      "inferredKind": "command",
+      "commandUnchanged": true
+    },
+    {
+      "line": 482,
+      "inputSha256": "d77a70659dc0288852eb87ba5a08d70b195855c927f2aa0b87fc10dd61e30a4e",
+      "inferredKind": "command",
+      "commandUnchanged": true
+    }
+  ],
+  "corruptInputStillRejected": true,
+  "schemas": [
+    {
+      "type": "function",
+      "name": "run_task",
+      "description": "Run project tasks, inspections, generators, formatters, or requested setup. Source changes are journaled and require a subsequent check. Explicit calls execute; finish_task reuses fresh validation. Use the dependency operation for Node packages and native commands for other ecosystems. Use the managed preview for services. Prettier on explicit files uses atomic edits. Returns bounded output and code/environment diagnostics; use run_task to inspect outputLog when returned.",
+      "parameters": {
+        "type": "object",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "project"
+              },
+              "task": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "packagePath": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              }
+            },
+            "required": [
+              "kind",
+              "task"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "default": "command",
+                "type": "string",
+                "const": "command"
+              },
+              "command": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8000
+              },
+              "cwd": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              }
+            },
+            "required": [
+              "kind",
+              "command"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "dependency",
+                "description": "Node package.json dependencies only; use command for other package managers."
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "add",
+                  "remove"
+                ]
+              },
+              "packages": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                }
+              },
+              "packagePath": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              }
+            },
+            "required": [
+              "kind",
+              "action",
+              "packages"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  ]
+}
