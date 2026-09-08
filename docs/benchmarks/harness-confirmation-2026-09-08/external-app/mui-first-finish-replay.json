@@ -1,0 +1,22 @@
+{
+  "baselineBuildExit": 1,
+  "capturedPatchContainerExit": 0,
+  "capturedPatchSha256": "04b631fbfeba32ff1818ba1f8da2087435eeb35b38c4f1297ebc48fb6c91b7de",
+  "evaluation": {
+    "reward": 1,
+    "suiteExitCode": 12,
+    "fullSuitePassed": false,
+    "passed": 3386,
+    "failed": 7,
+    "skipped": 31,
+    "failToPassTotal": 1,
+    "failToPassPassed": 1,
+    "passToPassTotal": 3385,
+    "passToPassPassed": 3385,
+    "missingRequired": [],
+    "failedRequired": [],
+    "skippedRequired": []
+  },
+  "modelCalls": 0,
+  "note": "Fresh containers from the same frozen image; captured first-finish patch, never the reference fix."
+}

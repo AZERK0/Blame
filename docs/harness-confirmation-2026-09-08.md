@@ -31,3 +31,13 @@ Une nouvelle correction exige une friction reproduite indépendamment de la rép
 Les 36 essais sont terminés. La candidate post-V9 réussit 4/12 essais, contre 5/12 pour V9 et 6/12 pour Cline. Elle effectue 254 requêtes contre 144 pour Cline (+76,4 %), avec 81,0 contre 80,3 minutes agent (+0,8 %). Aucun des 30 appels de patch de la candidate n'est rejeté. Cela ne suffit pas à améliorer la qualité ni le nombre de tours. Aucun avantage global n'est confirmé.
 
 Le [rapport V10b](benchmarks/harness-confirmation-2026-09-08/terminal-v10b/report.md) contient les répétitions, les incertitudes, les limites d'infrastructure, l'audit et les consommations incomplètes. Le correctif `727a3f4d` et l'isolation de Node `e723fd40` sont postérieurs au gel : ils ne sont pas crédités de ces résultats.
+
+## Résultat du corpus applicatif
+
+Les 24 essais externes sont terminés : Blame 12/12 contre Cline 11/12 aux tests officiels requis, mais seulement 7/12 contre 8/12 après exclusion des récupérations confirmées de solutions ultérieures. Les huit contaminations restent dans les ressources. Blame effectue 243 requêtes contre 142 (+71,1 %), en 51,25 contre 52,42 minutes (−2,2 %). Le dernier Cline expire dans un flux de réponse et laisse un usage incomplet ; aucune économie globale exacte de tokens n’est calculable. Le [rapport applicatif](benchmarks/harness-confirmation-2026-09-08/external-app/report.md) sépare ces limites des résultats mécaniques.
+
+## Correction de la fin de tâche
+
+Le commit `7c50d3ee` limite la validation automatique de fin aux vérifications déjà demandées dans la session. Il conserve le rafraîchissement des preuves périmées, le blocage des échecs connus et la déclaration des changements non vérifiés. Les deux Material UI avaient ajouté 34 puis 32 requêtes après un premier patch déjà correct, sans modifier ensuite ce patch. Un replay neuf confirme l’échec du build sur le dépôt intact et la réussite des tests officiels dès le premier patch.
+
+Quatre régressions indépendantes échouent avant correction et passent après. La suite complète compte 618 tests : 617 réussis, un test Windows ignoré, aucun échec ; build et lint passent. Les [preuves de validation](benchmarks/harness-confirmation-2026-09-08/finish-intent/validation.json) ne remplacent pas une mesure live. La comparaison suivante garde trois tâches diagnostiques connues, trois bras et deux répétitions, en deux lots de neuf ; aucun résultat global n’est présupposé.

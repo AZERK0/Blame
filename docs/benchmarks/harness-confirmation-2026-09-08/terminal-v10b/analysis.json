@@ -1,5 +1,5 @@
 {
-  "note": "Descriptive stratified task-cluster bootstrap, two repetitions retained. Missing usage is unknown. Failed trials are included. Ratios below one favor the candidate.",
+  "note": "Descriptive task-cluster bootstrap with separately reported strata, two repetitions retained. Missing usage is unknown. Failed trials are included. Ratios below one favor the candidate.",
   "comparisons": {
     "finalVsBefore": {
       "all": {

@@ -1,0 +1,37 @@
+{
+  "adapterVerification": "live workspace",
+  "inputFilesVerified": 588,
+  "allInputsUnchanged": true,
+  "trials": 24,
+  "eventHashes": {
+    "fasterxml__jackson-databind-4468__7Hn5Uh2": "e64eba972c10cea9ca9facf8b4e733d164779d0d5664ae7cf4f155de3ea24157",
+    "fasterxml__jackson-databind-4468__vT8ZpKP": "ee42f3c7be899bbdaa7f361ac111a0361a6d2bd2afe25c2c5ebb19b0c44913aa",
+    "mui__material-ui-23778__QurQ3pj": "3255cb96520af3e120122a55cd0ae31e7986f36ed5929dbb655aa90ecfe2c788",
+    "mui__material-ui-23778__pQiGuqM": "3be54e216aa8cd5da016192b80045a63be61bfdecbb1a57eeccae0df90c49fc5",
+    "vuejs__core-11491__gDXBExk": "5b1ab546cc4307d9e15ea8640df5e6cb4e2fef1d2e0086ed77bd11abeab4919e",
+    "vuejs__core-11491__gNaqCf6": "0c36c0fda95c6101cfe42e9bc0b0ee728e576d3b8bafb55c10e31de9d8db42a7",
+    "avaloniaui__avalonia-15640__GH6tmeH": "76b0b68a4a2fa728553b608bcc19d15bfa88cb6a30f65054cdea302763e2c33b",
+    "avaloniaui__avalonia-15640__UeXTTvH": "ba82b081f943d8b92582b46046b1ae0c1342d9ce5d2c76fb5a6ccf142b012538",
+    "googlecontainertools__jib-4035__GxFQ7bY": "fecedf65a2710194c038cf5110c5c47f358b8e1debfa72d82bf3df63764459ee",
+    "googlecontainertools__jib-4035__g6cgxjm": "d3ea058ddb985244d89c3b9566513831142a848b31c0570c3285e3871c4e831b",
+    "serilog__serilog-2103__UohXTVr": "5d5265ff1c9c2834419512d80f1cbae23b40611f06b729e9b3f30d340e3421d3",
+    "serilog__serilog-2103__WjEQup2": "c399c7c422548339a53f38cd198cbda1e47db9a079b91e75382033c46e845590",
+    "avaloniaui__avalonia-15640__gYzrvht": "e0530ace69b35c62aa4534f2198e6d495d8fc45fb9ea1162fbd6603f291f3bd5",
+    "avaloniaui__avalonia-15640__wFRJoh3": "de842c396b084ac1c0f8c47898a0e09e74128c2433fe1c8f45ff07cca28e9725",
+    "googlecontainertools__jib-4035__2ngawLD": "a0f838d987c906847dbe28d3d0d38bf5a077fe06842dd7df4cbce91cf27ce103",
+    "googlecontainertools__jib-4035__FwEsqsv": "67396c3bab330f0ee542da5fc282dce9f2a1f1823378fb9efde97a53c8bb128a",
+    "serilog__serilog-2103__CSvfDRw": "0acd9f99cbc1f8289e0e1f86bed4e9938ff551ac2a863c4f6802ed7a9373eb41",
+    "serilog__serilog-2103__LthRxDL": "904e0c219b462b066658f0b79ddbe3ba14b04db4727590d72ad4fcbbc610a1cd",
+    "fasterxml__jackson-databind-4468__8tCSFWW": "479ea5d252d67956b2953d0c9423117a40689139b8772ad34051dd833e3ea5f5",
+    "fasterxml__jackson-databind-4468__ZPjs9DT": "e252255f44f046918807ac6972898e922595cacda9a4097e00112ed3675462ff",
+    "mui__material-ui-23778__3KgQ3JV": "1004c787f74226ae8a4b467f166ff7e865a3dbd59576b0192f86713260d60687",
+    "mui__material-ui-23778__ytkypyM": "037caae3c4573acca267697aefc49f33a19bb43751a6a3e59a97396016f3d1e9",
+    "vuejs__core-11491__AMDbBHp": "b1d921ef5a198213cdb36924170c1e6ed1df326d4d175e1b86b5d278290c1dd5",
+    "vuejs__core-11491__NyvtAnK": "8f4e5d1798ade9513f21bc8ae3c8da50f68d2a1e0d3c8c26a498865b77422dea"
+  },
+  "auditToolStarts": 901,
+  "missingUsageTrials": [
+    "mui__material-ui-23778__ytkypyM"
+  ],
+  "postVerifierToolStarts": 0
+}

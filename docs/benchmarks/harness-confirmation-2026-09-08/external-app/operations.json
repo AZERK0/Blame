@@ -1,0 +1,351 @@
+{
+  "note": "Finished tool calls. Operation counts include rejected calls. Read views are observed outputs, including automatic symbol selection. Native patch calls and Blame patch operations are different units.",
+  "trials": [
+    {
+      "trial": "fasterxml__jackson-databind-4468__7Hn5Uh2",
+      "counts": {
+        "finishedTools": 22,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "fasterxml__jackson-databind-4468__vT8ZpKP",
+      "counts": {
+        "finishedTools": 26,
+        "readView.raw": 4,
+        "readView.range": 6,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T18:20:00.931Z",
+        "requestsThroughFirstFinish": 10,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.252000093460083
+      }
+    },
+    {
+      "trial": "mui__material-ui-23778__QurQ3pj",
+      "counts": {
+        "finishedTools": 21,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "mui__material-ui-23778__pQiGuqM",
+      "counts": {
+        "finishedTools": 73,
+        "readView.range": 13,
+        "readView.raw": 7,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "automaticValidationCalls": 1,
+        "finishCalls": 11,
+        "finishErrors": 11
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T18:11:53.681Z",
+        "requestsThroughFirstFinish": 12,
+        "requestsAfterFirstFinish": 34,
+        "secondsFromFirstFinishToLastEvent": 335.010999917984
+      }
+    },
+    {
+      "trial": "vuejs__core-11491__gDXBExk",
+      "counts": {
+        "finishedTools": 58,
+        "readView.raw": 13,
+        "readView.outline": 2,
+        "readView.range": 10,
+        "readView.unknown": 1,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T18:14:47.367Z",
+        "requestsThroughFirstFinish": 15,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.17499995231628418
+      }
+    },
+    {
+      "trial": "vuejs__core-11491__gNaqCf6",
+      "counts": {
+        "finishedTools": 34,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "avaloniaui__avalonia-15640__GH6tmeH",
+      "counts": {
+        "finishedTools": 51,
+        "nativePatchCalls": 3
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "avaloniaui__avalonia-15640__UeXTTvH",
+      "counts": {
+        "finishedTools": 103,
+        "readView.raw": 11,
+        "readView.range": 17,
+        "readView.outline": 1,
+        "readView.unknown": 3,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T18:38:56.499Z",
+        "requestsThroughFirstFinish": 36,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.4419999122619629
+      }
+    },
+    {
+      "trial": "googlecontainertools__jib-4035__GxFQ7bY",
+      "counts": {
+        "finishedTools": 13,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "googlecontainertools__jib-4035__g6cgxjm",
+      "counts": {
+        "finishedTools": 19,
+        "readView.range": 7,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T18:26:27.599Z",
+        "requestsThroughFirstFinish": 7,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.4330000877380371
+      }
+    },
+    {
+      "trial": "serilog__serilog-2103__UohXTVr",
+      "counts": {
+        "finishedTools": 20,
+        "nativePatchCalls": 2
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "serilog__serilog-2103__WjEQup2",
+      "counts": {
+        "finishedTools": 40,
+        "readView.raw": 8,
+        "readView.range": 3,
+        "editCalls": 2,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 2,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T18:30:06.570Z",
+        "requestsThroughFirstFinish": 13,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.14499998092651367
+      }
+    },
+    {
+      "trial": "avaloniaui__avalonia-15640__gYzrvht",
+      "counts": {
+        "finishedTools": 65,
+        "readView.outline": 2,
+        "readView.raw": 6,
+        "readView.range": 13,
+        "readView.unknown": 2,
+        "editCalls": 2,
+        "rejectedEditCalls": 1,
+        "editOperation.patch": 2,
+        "rejectedOperation.patch": 1,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T18:43:53.415Z",
+        "requestsThroughFirstFinish": 24,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.5290000438690186
+      }
+    },
+    {
+      "trial": "avaloniaui__avalonia-15640__wFRJoh3",
+      "counts": {
+        "finishedTools": 39,
+        "nativePatchCalls": 6
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "googlecontainertools__jib-4035__2ngawLD",
+      "counts": {
+        "finishedTools": 17,
+        "readView.raw": 5,
+        "readView.range": 5,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T18:49:28.544Z",
+        "requestsThroughFirstFinish": 9,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.2630000114440918
+      }
+    },
+    {
+      "trial": "googlecontainertools__jib-4035__FwEsqsv",
+      "counts": {
+        "finishedTools": 11,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "serilog__serilog-2103__CSvfDRw",
+      "counts": {
+        "finishedTools": 30,
+        "readView.range": 5,
+        "readView.raw": 6,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T18:47:39.810Z",
+        "requestsThroughFirstFinish": 9,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.3400001525878906
+      }
+    },
+    {
+      "trial": "serilog__serilog-2103__LthRxDL",
+      "counts": {
+        "finishedTools": 22,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "fasterxml__jackson-databind-4468__8tCSFWW",
+      "counts": {
+        "finishedTools": 34,
+        "readView.range": 11,
+        "readView.raw": 5,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T18:53:19.310Z",
+        "requestsThroughFirstFinish": 13,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.28800010681152344
+      }
+    },
+    {
+      "trial": "fasterxml__jackson-databind-4468__ZPjs9DT",
+      "counts": {
+        "finishedTools": 17,
+        "nativePatchCalls": 1
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "mui__material-ui-23778__3KgQ3JV",
+      "counts": {
+        "finishedTools": 93,
+        "readView.unknown": 3,
+        "readView.raw": 12,
+        "readView.range": 11,
+        "readView.directory": 2,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "automaticValidationCalls": 1,
+        "finishCalls": 10,
+        "finishErrors": 10
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T19:06:42.120Z",
+        "requestsThroughFirstFinish": 18,
+        "requestsAfterFirstFinish": 32,
+        "secondsFromFirstFinishToLastEvent": 268.5220000743866
+      }
+    },
+    {
+      "trial": "mui__material-ui-23778__ytkypyM",
+      "counts": {
+        "finishedTools": 10
+      },
+      "completionTiming": null
+    },
+    {
+      "trial": "vuejs__core-11491__AMDbBHp",
+      "counts": {
+        "finishedTools": 41,
+        "readView.raw": 9,
+        "readView.range": 4,
+        "editCalls": 1,
+        "rejectedEditCalls": 0,
+        "editOperation.symbol": 1,
+        "rejectedOperation.symbol": 0,
+        "editOperation.patch": 1,
+        "rejectedOperation.patch": 0,
+        "finishCalls": 1,
+        "finishErrors": 0
+      },
+      "completionTiming": {
+        "firstFinishAt": "2026-09-08T18:59:37.190Z",
+        "requestsThroughFirstFinish": 11,
+        "requestsAfterFirstFinish": 0,
+        "secondsFromFirstFinishToLastEvent": 0.4099998474121094
+      }
+    },
+    {
+      "trial": "vuejs__core-11491__NyvtAnK",
+      "counts": {
+        "finishedTools": 42,
+        "nativePatchCalls": 2
+      },
+      "completionTiming": null
+    }
+  ]
+}

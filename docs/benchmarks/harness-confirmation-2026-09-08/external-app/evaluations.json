@@ -1,0 +1,508 @@
+[
+  {
+    "trial": "fasterxml__jackson-databind-4468__7Hn5Uh2",
+    "task": "fasterxml__jackson-databind-4468",
+    "arm": "cline",
+    "repetition": 1,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 649,
+      "failed": 0,
+      "skipped": 1,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 648,
+      "passToPassPassed": 648,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "fasterxml__jackson-databind-4468__vT8ZpKP",
+    "task": "fasterxml__jackson-databind-4468",
+    "arm": "final",
+    "repetition": 1,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 649,
+      "failed": 0,
+      "skipped": 1,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 648,
+      "passToPassPassed": 648,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "mui__material-ui-23778__QurQ3pj",
+    "task": "mui__material-ui-23778",
+    "arm": "cline",
+    "repetition": 1,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 12,
+      "fullSuitePassed": false,
+      "passed": 3387,
+      "failed": 7,
+      "skipped": 31,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 3385,
+      "passToPassPassed": 3385,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "mui__material-ui-23778__pQiGuqM",
+    "task": "mui__material-ui-23778",
+    "arm": "final",
+    "repetition": 1,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 12,
+      "fullSuitePassed": false,
+      "passed": 3386,
+      "failed": 7,
+      "skipped": 31,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 3385,
+      "passToPassPassed": 3385,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "vuejs__core-11491__gDXBExk",
+    "task": "vuejs__core-11491",
+    "arm": "final",
+    "repetition": 1,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 3052,
+      "failed": 0,
+      "skipped": 0,
+      "failToPassTotal": 4,
+      "failToPassPassed": 4,
+      "passToPassTotal": 3047,
+      "passToPassPassed": 3047,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "vuejs__core-11491__gNaqCf6",
+    "task": "vuejs__core-11491",
+    "arm": "cline",
+    "repetition": 1,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 3052,
+      "failed": 0,
+      "skipped": 0,
+      "failToPassTotal": 4,
+      "failToPassPassed": 4,
+      "passToPassTotal": 3047,
+      "passToPassPassed": 3047,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "avaloniaui__avalonia-15640__GH6tmeH",
+    "task": "avaloniaui__avalonia-15640",
+    "arm": "cline",
+    "repetition": 1,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 1596,
+      "failed": 0,
+      "skipped": 1,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 0,
+      "passToPassPassed": 0,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "avaloniaui__avalonia-15640__UeXTTvH",
+    "task": "avaloniaui__avalonia-15640",
+    "arm": "final",
+    "repetition": 1,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 1596,
+      "failed": 0,
+      "skipped": 1,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 0,
+      "passToPassPassed": 0,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "googlecontainertools__jib-4035__GxFQ7bY",
+    "task": "googlecontainertools__jib-4035",
+    "arm": "cline",
+    "repetition": 1,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 79,
+      "failed": 0,
+      "skipped": 0,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 60,
+      "passToPassPassed": 60,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "googlecontainertools__jib-4035__g6cgxjm",
+    "task": "googlecontainertools__jib-4035",
+    "arm": "final",
+    "repetition": 1,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 79,
+      "failed": 0,
+      "skipped": 0,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 60,
+      "passToPassPassed": 60,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "serilog__serilog-2103__UohXTVr",
+    "task": "serilog__serilog-2103",
+    "arm": "cline",
+    "repetition": 1,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 399,
+      "failed": 0,
+      "skipped": 0,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 0,
+      "passToPassPassed": 0,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "serilog__serilog-2103__WjEQup2",
+    "task": "serilog__serilog-2103",
+    "arm": "final",
+    "repetition": 1,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 399,
+      "failed": 0,
+      "skipped": 0,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 0,
+      "passToPassPassed": 0,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "avaloniaui__avalonia-15640__gYzrvht",
+    "task": "avaloniaui__avalonia-15640",
+    "arm": "final",
+    "repetition": 2,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 1596,
+      "failed": 0,
+      "skipped": 1,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 0,
+      "passToPassPassed": 0,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "avaloniaui__avalonia-15640__wFRJoh3",
+    "task": "avaloniaui__avalonia-15640",
+    "arm": "cline",
+    "repetition": 2,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 1596,
+      "failed": 0,
+      "skipped": 1,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 0,
+      "passToPassPassed": 0,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "googlecontainertools__jib-4035__2ngawLD",
+    "task": "googlecontainertools__jib-4035",
+    "arm": "final",
+    "repetition": 2,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 79,
+      "failed": 0,
+      "skipped": 0,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 60,
+      "passToPassPassed": 60,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "googlecontainertools__jib-4035__FwEsqsv",
+    "task": "googlecontainertools__jib-4035",
+    "arm": "cline",
+    "repetition": 2,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 79,
+      "failed": 0,
+      "skipped": 0,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 60,
+      "passToPassPassed": 60,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "serilog__serilog-2103__CSvfDRw",
+    "task": "serilog__serilog-2103",
+    "arm": "final",
+    "repetition": 2,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 399,
+      "failed": 0,
+      "skipped": 0,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 0,
+      "passToPassPassed": 0,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "serilog__serilog-2103__LthRxDL",
+    "task": "serilog__serilog-2103",
+    "arm": "cline",
+    "repetition": 2,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 399,
+      "failed": 0,
+      "skipped": 0,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 0,
+      "passToPassPassed": 0,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "fasterxml__jackson-databind-4468__8tCSFWW",
+    "task": "fasterxml__jackson-databind-4468",
+    "arm": "final",
+    "repetition": 2,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 649,
+      "failed": 0,
+      "skipped": 1,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 648,
+      "passToPassPassed": 648,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "fasterxml__jackson-databind-4468__ZPjs9DT",
+    "task": "fasterxml__jackson-databind-4468",
+    "arm": "cline",
+    "repetition": 2,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 649,
+      "failed": 0,
+      "skipped": 1,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 648,
+      "passToPassPassed": 648,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "mui__material-ui-23778__3KgQ3JV",
+    "task": "mui__material-ui-23778",
+    "arm": "final",
+    "repetition": 2,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 12,
+      "fullSuitePassed": false,
+      "passed": 3386,
+      "failed": 7,
+      "skipped": 31,
+      "failToPassTotal": 1,
+      "failToPassPassed": 1,
+      "passToPassTotal": 3385,
+      "passToPassPassed": 3385,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "mui__material-ui-23778__ytkypyM",
+    "task": "mui__material-ui-23778",
+    "arm": "cline",
+    "repetition": 2,
+    "evaluation": {
+      "reward": 0,
+      "suiteExitCode": 13,
+      "fullSuitePassed": false,
+      "passed": 3385,
+      "failed": 8,
+      "skipped": 31,
+      "failToPassTotal": 1,
+      "failToPassPassed": 0,
+      "passToPassTotal": 3385,
+      "passToPassPassed": 3385,
+      "missingRequired": [],
+      "failedRequired": [
+        "/home/material-ui/packages/material-ui/src/Select/Select.test.js:<Select /> accessibility sets disabled attribute in input when component is disabled"
+      ],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "vuejs__core-11491__AMDbBHp",
+    "task": "vuejs__core-11491",
+    "arm": "final",
+    "repetition": 2,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 3052,
+      "failed": 0,
+      "skipped": 0,
+      "failToPassTotal": 4,
+      "failToPassPassed": 4,
+      "passToPassTotal": 3047,
+      "passToPassPassed": 3047,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  },
+  {
+    "trial": "vuejs__core-11491__NyvtAnK",
+    "task": "vuejs__core-11491",
+    "arm": "cline",
+    "repetition": 2,
+    "evaluation": {
+      "reward": 1,
+      "suiteExitCode": 0,
+      "fullSuitePassed": true,
+      "passed": 3052,
+      "failed": 0,
+      "skipped": 0,
+      "failToPassTotal": 4,
+      "failToPassPassed": 4,
+      "passToPassTotal": 3047,
+      "passToPassPassed": 3047,
+      "missingRequired": [],
+      "failedRequired": [],
+      "skippedRequired": []
+    }
+  }
+]

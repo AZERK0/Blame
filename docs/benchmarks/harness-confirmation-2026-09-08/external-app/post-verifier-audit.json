@@ -1,0 +1,245 @@
+{
+  "note": "Recorder timestamps, not server-side execution clocks. Tool starts after verifier start indicate potential overlap and require trace review; non-tool telemetry alone is not proof of a workspace mutation.",
+  "trials": [
+    {
+      "trial": "fasterxml__jackson-databind-4468__7Hn5Uh2",
+      "verifierStartedAt": "2026-09-08T18:24:13.077198Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "fasterxml__jackson-databind-4468__vT8ZpKP",
+      "verifierStartedAt": "2026-09-08T18:20:01.636904Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "mui__material-ui-23778__QurQ3pj",
+      "verifierStartedAt": "2026-09-08T18:09:37.211881Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "mui__material-ui-23778__pQiGuqM",
+      "verifierStartedAt": "2026-09-08T18:17:29.259023Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "vuejs__core-11491__gDXBExk",
+      "verifierStartedAt": "2026-09-08T18:14:47.798173Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "vuejs__core-11491__gNaqCf6",
+      "verifierStartedAt": "2026-09-08T18:19:13.263281Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "avaloniaui__avalonia-15640__GH6tmeH",
+      "verifierStartedAt": "2026-09-08T18:39:23.188263Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "avaloniaui__avalonia-15640__UeXTTvH",
+      "verifierStartedAt": "2026-09-08T18:38:57.438154Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "googlecontainertools__jib-4035__GxFQ7bY",
+      "verifierStartedAt": "2026-09-08T18:27:10.930828Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "googlecontainertools__jib-4035__g6cgxjm",
+      "verifierStartedAt": "2026-09-08T18:26:28.623040Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "serilog__serilog-2103__UohXTVr",
+      "verifierStartedAt": "2026-09-08T18:32:16.303704Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "serilog__serilog-2103__WjEQup2",
+      "verifierStartedAt": "2026-09-08T18:30:06.933374Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "avaloniaui__avalonia-15640__gYzrvht",
+      "verifierStartedAt": "2026-09-08T18:43:54.374827Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "avaloniaui__avalonia-15640__wFRJoh3",
+      "verifierStartedAt": "2026-09-08T18:45:51.836749Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "googlecontainertools__jib-4035__2ngawLD",
+      "verifierStartedAt": "2026-09-08T18:49:29.051655Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "googlecontainertools__jib-4035__FwEsqsv",
+      "verifierStartedAt": "2026-09-08T18:48:19.133995Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "serilog__serilog-2103__CSvfDRw",
+      "verifierStartedAt": "2026-09-08T18:47:40.601916Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "serilog__serilog-2103__LthRxDL",
+      "verifierStartedAt": "2026-09-08T18:46:30.970963Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "fasterxml__jackson-databind-4468__8tCSFWW",
+      "verifierStartedAt": "2026-09-08T18:53:19.872616Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "fasterxml__jackson-databind-4468__ZPjs9DT",
+      "verifierStartedAt": "2026-09-08T18:54:37.123539Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "mui__material-ui-23778__3KgQ3JV",
+      "verifierStartedAt": "2026-09-08T19:11:11.007968Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "mui__material-ui-23778__ytkypyM",
+      "verifierStartedAt": "2026-09-08T19:14:29.929342Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "vuejs__core-11491__AMDbBHp",
+      "verifierStartedAt": "2026-09-08T18:59:38.186061Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    },
+    {
+      "trial": "vuejs__core-11491__NyvtAnK",
+      "verifierStartedAt": "2026-09-08T18:58:25.871620Z",
+      "lateEventCount": 0,
+      "lastLateEvent": null,
+      "postVerifierToolCalls": [],
+      "missingEvents": false,
+      "malformedEventRows": 0,
+      "missingResult": false
+    }
+  ]
+}

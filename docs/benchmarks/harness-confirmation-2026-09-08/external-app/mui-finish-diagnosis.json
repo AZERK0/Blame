@@ -1,0 +1,48 @@
+{
+  "trial": "mui__material-ui-23778__pQiGuqM",
+  "firstFinishAt": "2026-09-08T18:11:53.681Z",
+  "requestsAtFirstFinish": 12,
+  "totalRequests": 46,
+  "additionalRequestsAfterFirstFinish": 34,
+  "secondsThroughFirstFinish": 313.281625,
+  "secondsAfterFirstFinish": 335.054413,
+  "finishRejectedCount": 11,
+  "firstFinishDiffMatchesFinalDiff": true,
+  "diffSha256": "04b631fbfeba32ff1818ba1f8da2087435eeb35b38c4f1297ebc48fb6c91b7de",
+  "officialReward": 1,
+  "limitation": "Observed fixed-prefix counterfactual, not a new model run. A fresh isolated replay after campaign completion confirms the first-finish source diff passes the official required verifier tests. No model feedback; subsequent stochastic trajectory gains require the separate frozen comparison.",
+  "upstreamBuildScript": "https://raw.githubusercontent.com/mui/material-ui/4f6c184c749b9ef1819b52a54e6db76c26f14482/scripts/build.js",
+  "originalImageGitHEAD": "4f6c184c749b9ef1819b52a54e6db76c26f14482",
+  "originalImageBuildScriptSha256": "1b7feef702429be45f059bd41b2666007245ff164692e6fb97755a3c68b3a163",
+  "buildFailureSource": "The original script awaits a successful child exec, then throws on any nonempty stderr. The recorded stderr contains a Browserslist data-age warning. A fresh baseline container replay after campaign completion reproduces this failure unchanged. No task-specific warning suppression is added to the harness.",
+  "secondRepetition": {
+    "trial": "mui__material-ui-23778__3KgQ3JV",
+    "counts": {
+      "finishedTools": 93,
+      "readView.unknown": 3,
+      "readView.raw": 12,
+      "readView.range": 11,
+      "readView.directory": 2,
+      "editCalls": 1,
+      "rejectedEditCalls": 0,
+      "editOperation.patch": 1,
+      "rejectedOperation.patch": 0,
+      "automaticValidationCalls": 1,
+      "finishCalls": 10,
+      "finishErrors": 10
+    },
+    "completionTiming": {
+      "firstFinishAt": "2026-09-08T19:06:42.120Z",
+      "requestsThroughFirstFinish": 18,
+      "requestsAfterFirstFinish": 32,
+      "secondsFromFirstFinishToLastEvent": 268.5220000743866
+    },
+    "patchSourceEventLine": 170,
+    "firstFinishDiffMatchesFinalDiff": false,
+    "capturedDiffSha256": "9c7fc4f7d23dff632738fe3ab3983654f389a0249b9a8b892e15962020dc3a38",
+    "nominalVerifierReward": 1,
+    "firstFinishDiffMatchesFinalDiffAfterTerminalNewline": true,
+    "diffTransportNote": "The run_task output omits the final newline. Appending exactly one newline makes the captured diff byte-identical to the verifier artifact; no other normalization."
+  },
+  "isolatedReplay": "first-finish-replay/summary.json"
+}

@@ -111,7 +111,7 @@ def main():
     conservative = {}
     for COMPARATOR in ['before', 'cline']:
         conservative['finalVs' + COMPARATOR.title()] = compare(attempted_as_failures)
-    result = {'note': 'Descriptive stratified task-cluster bootstrap, two repetitions retained. Missing usage is unknown. Failed trials are included. Ratios below one favor the candidate.',
+    result = {'note': 'Descriptive task-cluster bootstrap with separately reported strata, two repetitions retained. Missing usage is unknown. Failed trials are included. Ratios below one favor the candidate.',
               'comparisons': comparisons, 'summary': data['summary'],
               'oracleAttemptSensitivity': {'note': 'Additional conservative sensitivity: unsuccessful oracle searches also score zero. Primary adjudication retains the registered confirmed-access criterion. All times and usage remain included.', 'comparisons': conservative}}
     (ROOT / 'analysis.json').write_text(json.dumps(result, indent=2) + '\n')
