@@ -194,22 +194,23 @@ async function macosImageSpec(manifest, architecture, runtimeVersion, options) {
   return { kind: "ubuntu", url: baseImage.url, sha256: baseImage.sha256 };
 }
 
-async function loadPublishedRuntimeManifest(runtimeVersion, options) {
+export async function loadPublishedRuntimeManifest(runtimeVersion, options) {
   if (
     !options.requireWindowsPrebuiltArchitecture &&
     !options.requireMacosPrebuiltArchitecture
   )
     return undefined;
   const url = runtimeManifestUrl(runtimeVersion);
-  if (!url) return undefined;
+  if (!url) throw new Error("Runtime manifest URL is not configured");
   try {
-    const response = await fetch(url);
-    if (!response.ok) return undefined;
+    const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+    if (!response.ok) throw new Error(`Runtime v${runtimeVersion} manifest returned HTTP ${response.status}`);
     const manifest = await response.json();
-    if (String(manifest.runtimeVersion) !== runtimeVersion) return undefined;
+    if (String(manifest.runtimeVersion) !== runtimeVersion)
+      throw new Error(`Published runtime version does not match v${runtimeVersion}`);
     return manifest;
-  } catch {
-    return undefined;
+  } catch (error) {
+    throw new Error(`Unable to load runtime v${runtimeVersion} manifest: ${error.message}`, { cause: error });
   }
 }
 

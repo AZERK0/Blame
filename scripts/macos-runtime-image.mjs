@@ -181,11 +181,12 @@ async function verifyRuntime(bundle, instanceName, environment) {
   const clineSdkVersion = await runtimeClineSdkVersion();
   const nodeVersion = requiredNodeVersion();
   const checks = [
+    "set -eu",
     `grep -qx ${JSON.stringify(runtimeVersion)} /etc/blame-runtime-version`,
     "test -x /usr/local/bin/blame-runtime-agent",
     `blame-runtime-agent version | grep -qx ${JSON.stringify(runtimeVersion)}`,
     `node -e 'process.exit(process.versions.node === process.argv[1] ? 0 : 1)' ${JSON.stringify(nodeVersion)}`,
-    `npm list --global --depth=0 @cline/sdk@${clineSdkVersion} @cline/core@${clineSdkVersion}`,
+    `node "$(npm root -g)/@blame/semantic-harness-runtime/runtime-sdk-check.mjs" ${JSON.stringify(clineSdkVersion)}`,
     "command -v blame-semantic-harness",
     "test -s /etc/blame-semantic-harness-sha256",
     "test \"$(/opt/blame/package-managers/pnpm/10.33.2/bin/pnpm --version)\" = \"10.33.2\"",

@@ -52,6 +52,7 @@ export async function buildSemanticHarnessPayload({ outputPaths, runtimeVersion 
   const staging = await mkdtemp(join(tmpdir(), "blame-semantic-harness-"));
   try {
     const runtimeFiles = await copyRuntimeModules(staging);
+    await cp(join(rootDir, "scripts/runtime-sdk-check.mjs"), join(staging, "runtime-sdk-check.mjs"));
     const coreManifest = await copyRuntimeSdk(staging);
     await writePayloadManifest(staging, runtimeFiles, coreManifest, runtimeVersion);
     const archive = await packArchive(staging, join(staging, "packed"));
@@ -92,7 +93,7 @@ async function writePayloadManifest(staging, runtimeFiles, coreManifest, runtime
     type: "module",
     bin: { "blame-semantic-harness": "harness/semantic-harness-runner.js" },
     engines: { node: ">=22" },
-    files: [...runtimeFiles, "vendor/cline-core"],
+    files: [...runtimeFiles, "vendor/cline-core", "runtime-sdk-check.mjs"],
     dependencies: { ...coreManifest.dependencies, ...dependencies },
   };
   await writeFile(join(staging, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");

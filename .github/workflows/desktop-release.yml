@@ -7,6 +7,10 @@ on:
         description: Release version without leading v
         required: true
         type: string
+      runtime_version:
+        description: Published runtime version (defaults to repository configuration)
+        required: false
+        type: string
       deploy:
         default: true
         description: Upload installers to the download server
@@ -17,7 +21,29 @@ on:
       - "v*"
 
 jobs:
+  preflight:
+    name: Verify published runtime
+    runs-on: ubuntu-latest
+    outputs:
+      runtime_version: ${{ steps.runtime.outputs.runtime_version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - id: runtime
+        run: node scripts/release-preflight.mjs
+        env:
+          BLAME_DOWNLOAD_BASE_URL: ${{ secrets.BLAME_DOWNLOAD_BASE_URL }}
+          BLAME_RUNTIME_VERSION: ${{ inputs.runtime_version || vars.BLAME_RUNTIME_VERSION }}
+
   build:
+    needs: preflight
     name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -78,7 +104,7 @@ jobs:
           BLAME_HOMEPAGE: ${{ vars.BLAME_HOMEPAGE }}
           BLAME_MAINTAINER_EMAIL: ${{ vars.BLAME_MAINTAINER_EMAIL }}
           BLAME_MAINTAINER_NAME: ${{ vars.BLAME_MAINTAINER_NAME }}
-          BLAME_RUNTIME_VERSION: ${{ vars.BLAME_RUNTIME_VERSION }}
+          BLAME_RUNTIME_VERSION: ${{ needs.preflight.outputs.runtime_version }}
           BLAME_REQUIRE_PREBUILT_RUNTIME: true
           MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
@@ -91,7 +117,7 @@ jobs:
           BLAME_HOMEPAGE: ${{ vars.BLAME_HOMEPAGE }}
           BLAME_MAINTAINER_EMAIL: ${{ vars.BLAME_MAINTAINER_EMAIL }}
           BLAME_MAINTAINER_NAME: ${{ vars.BLAME_MAINTAINER_NAME }}
-          BLAME_RUNTIME_VERSION: ${{ vars.BLAME_RUNTIME_VERSION }}
+          BLAME_RUNTIME_VERSION: ${{ needs.preflight.outputs.runtime_version }}
           BLAME_REQUIRE_PREBUILT_RUNTIME: true
 
       - name: Stage installers in S3

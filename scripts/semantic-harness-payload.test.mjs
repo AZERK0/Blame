@@ -121,6 +121,10 @@ test("standalone payload returns image media with the forwarded model capability
 
 test("standalone payload ships the patched SDK used by the managed hub", async () => {
   await withPayload(async (packageRoot) => {
+    const { verifyPackagedSdk } = await import(pathToFileURL(join(packageRoot, "runtime-sdk-check.mjs")).href);
+    const coreManifest = JSON.parse(await readFile(join(packageRoot, "vendor/cline-core/package.json"), "utf8"));
+    await verifyPackagedSdk(packageRoot, coreManifest.version);
+    await assert.rejects(verifyPackagedSdk(packageRoot, "invalid"), /Incompatible SDK/);
     const entry = join(packageRoot, "vendor/cline-core/dist/index.js");
     const sdk = await import(pathToFileURL(entry).href);
     const config = { providerId: "anthropic", modelId: "fixture", compaction: { enabled: true, strategy: "basic", imageTokenLimit: 36000 } };

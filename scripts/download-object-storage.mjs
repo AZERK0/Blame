@@ -6,7 +6,8 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import { createReadStream } from "node:fs";
+import { createReadStream, createWriteStream } from "node:fs";
+import { pipeline } from "node:stream/promises";
 import { stat } from "node:fs/promises";
 import { basename, extname } from "node:path";
 
@@ -173,6 +174,14 @@ export class DownloadObjectStorage {
     );
     if (!response.Body) throw new Error(`Empty S3 object: ${key}`);
     return response.Body.transformToString();
+  }
+
+  async download(key, destination) {
+    const response = await this.client.send(
+      new GetObjectCommand({ Bucket: this.config.bucket, Key: key }),
+    );
+    if (!response.Body) throw new Error(`Empty S3 object: ${key}`);
+    await pipeline(response.Body, createWriteStream(destination));
   }
 
   async uploadLatestText(name, value, cacheControl) {

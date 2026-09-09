@@ -54,7 +54,7 @@ jobs:
                 client.rest.actions.listArtifactsForRepo,
                 { owner: repositoryOwner, repo: repositoryName, per_page: 100 },
               )) {
-                artifacts.push(...response.data.artifacts.filter(({ expired }) => expired))
+                artifacts.push(...response.data.filter(({ expired }) => expired))
               }
               return artifacts
             }
