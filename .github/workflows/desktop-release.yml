@@ -36,6 +36,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: node --test scripts/macos-signing.test.mjs
       - id: runtime
         run: node scripts/release-preflight.mjs
         env:

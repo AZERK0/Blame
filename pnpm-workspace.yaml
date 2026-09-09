@@ -28,3 +28,4 @@ overrides:
 
 patchedDependencies:
   "@cline/core@0.0.81": patches/@cline__core@0.0.81.patch
+  app-builder-lib@26.8.1: patches/app-builder-lib@26.8.1.patch

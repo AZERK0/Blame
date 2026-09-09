@@ -38,6 +38,6 @@ jobs:
       - run: pnpm --filter @blame/desktop build
       - run: pnpm test:semantic-harness-payload
       - run: node --test scripts/semantic-harness-install.test.mjs
-      - run: node --test scripts/release-preflight.test.mjs scripts/runtime-artifact-transfer.test.mjs
+      - run: node --test scripts/release-preflight.test.mjs scripts/runtime-artifact-transfer.test.mjs scripts/macos-signing.test.mjs
       - run: pnpm --filter @blame/api build
       - run: pnpm --filter @blame/api exec node ace.js test --files='tests/unit/preview_runtime_security.spec.ts'

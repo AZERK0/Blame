@@ -7,3 +7,7 @@ Blame enables the option only for documented GPT-5.6 image-capable provider/mode
 All three bundles carry the same distinct hub build identity, preventing reuse of an older managed hub. Upgrading the SDK requires regenerating this patch against the pristine npm package and rerunning the SDK, local/remote session and standalone delivery checks. Do not edit pnpm's installed dependency directories by hand.
 
 The estimator uses the conservative documented 36,000-token maximum per accepted image for the enabled models, not an exact pixel-aware count. Small images can still be overestimated. See the September 7 harness report for the offline reproductions and measured performance limits.
+
+# Electron Builder macOS signing
+
+The `app-builder-lib@26.8.1` patch backports electron-userland/electron-builder#10172. It passes the temporary keychain password to `security set-key-partition-list`, while preserving the certificate password for `security import`. Recent macOS runners reject the certificate password when unlocking the keychain. `node --test scripts/macos-signing.test.mjs` exercises the installed implementation with distinct certificate and keychain passwords. Remove this patch when upgrading to an upstream version containing that fix.
