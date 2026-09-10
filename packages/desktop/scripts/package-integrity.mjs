@@ -1,6 +1,6 @@
 import { access, readFile, readdir, realpath } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { join, posix, relative, sep } from "node:path";
+import { join, normalize, posix, relative, sep } from "node:path";
 
 function runtimeTargets(manifest) {
   const paths = new Set();
@@ -99,11 +99,13 @@ function asarTools() {
 
 export function verifyAsarWorkspaceRuntime(archive) {
   const asar = asarTools();
+  // The traversal uses POSIX paths, but ASAR splits directories with path.sep.
+  // Convert at this boundary so nested entries can also be found on Windows.
   return verifyWorkspaceRuntime(
-    (path) => asar.extractFile(archive, path).toString("utf8"),
+    (path) => asar.extractFile(archive, normalize(path)).toString("utf8"),
     async (path) => {
       try {
-        const info = asar.statFile(archive, path);
+        const info = asar.statFile(archive, normalize(path));
         if (info.unpacked) await access(join(`${archive}.unpacked`, path));
         return !info.files;
       } catch {

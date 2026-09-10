@@ -84,6 +84,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Test package integrity on target OS
+        run: pnpm --filter @blame/desktop test:package
+
       - name: Resolve version
         shell: bash
         run: |

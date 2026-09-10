@@ -23,11 +23,14 @@ const asar = createRequire(builder.resolve("app-builder-lib"))(
   "@electron/asar",
 );
 
-async function fixture(action) {
+async function fixture(
+  action,
+  archivePath = "mac-arm64/Blame.app/Contents/Resources/app.asar",
+) {
   const root = await mkdtemp(join(tmpdir(), "blame-package-integrity-"));
   const source = join(root, "stage");
   const dist = join(root, "dist");
-  const archive = join(dist, "mac-arm64/Blame.app/Contents/Resources/app.asar");
+  const archive = join(dist, archivePath);
   async function file(path, value = "export {};") {
     const target = join(source, path);
     await mkdir(dirname(target), { recursive: true });
@@ -81,19 +84,25 @@ test("rejects source-only transitive workspace packages in staging and the final
   });
 });
 
-test("accepts compiled transitive packages and does not require TypeScript sources", async () => {
-  await fixture(async ({ source, dist, file, pack }) => {
-    for (const name of ["harness-core", "model-catalog"]) {
-      await file(`node_modules/@blame/${name}/dist/index.js`);
-      await rm(join(source, `node_modules/@blame/${name}/src`), {
-        recursive: true,
-      });
-    }
-    assert.equal(await verifyStagedWorkspaceRuntime(source), 4);
-    await pack();
-    await verifyPackagedWorkspaceRuntime(dist);
+for (const archivePath of [
+  "mac-arm64/Blame.app/Contents/Resources/app.asar",
+  "win-unpacked/resources/app.asar",
+  "linux-unpacked/resources/app.asar",
+]) {
+  test(`accepts compiled transitive packages without TypeScript sources in ${archivePath}`, async () => {
+    await fixture(async ({ source, dist, file, pack }) => {
+      for (const name of ["harness-core", "model-catalog"]) {
+        await file(`node_modules/@blame/${name}/dist/index.js`);
+        await rm(join(source, `node_modules/@blame/${name}/src`), {
+          recursive: true,
+        });
+      }
+      assert.equal(await verifyStagedWorkspaceRuntime(source), 4);
+      await pack();
+      await verifyPackagedWorkspaceRuntime(dist);
+    }, archivePath);
   });
-});
+}
 
 test("detects a dependency lost between deployment and packaging", async () => {
   await fixture(async ({ source, archive, file, pack }) => {
