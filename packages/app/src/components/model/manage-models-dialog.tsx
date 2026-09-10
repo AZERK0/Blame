@@ -1,4 +1,5 @@
 import { CheckIcon, PlusIcon } from "lucide-react"
+import { useEffect } from "react"
 
 import {
   ModelTags,
@@ -38,6 +39,11 @@ export function ManageModelsDialog({
   open: boolean
   selection: ModelSelection
 }) {
+  const refreshProviders = selection.refreshProviders
+  useEffect(() => {
+    if (open) void refreshProviders()
+  }, [open, refreshProviders])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[80vh] overflow-hidden p-0 sm:max-w-xl">
