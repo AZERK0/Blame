@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "model": "gpt-5.6-luna",
+  "reasoningEffort": "high",
+  "scenario": "symbol-function",
+  "repetitionsPerArm": 1,
+  "candidate": {
+    "harness": "blame",
+    "qualityScore": 100,
+    "verified": true,
+    "formattingPassed": false,
+    "durationMs": 31655,
+    "inputTokens": 29431,
+    "outputTokens": 504,
+    "cost": 0.0032654000000000003,
+    "modelRequests": 7,
+    "toolCalls": 7,
+    "symbolOperations": 2,
+    "blockedEdits": 1
+  },
+  "control": {
+    "harness": "cline",
+    "sdkVersion": "0.0.81",
+    "qualityScore": 100,
+    "verified": null,
+    "formattingPassed": true,
+    "durationMs": 31185,
+    "inputTokens": 12413,
+    "outputTokens": 999,
+    "cost": 0.00340492,
+    "modelRequests": 4,
+    "toolCalls": 7,
+    "symbolOperations": 0,
+    "blockedEdits": 0
+  },
+  "provenance": {
+    "baseCommit": "4fc8bb1740d17cb04676e066c1f3f2b16b8bf8e2",
+    "sourcePatchSha256": "1684e14f88eb5888a473e4d61bbeee9a213ec2a5cbeeac89880dbd14ca2720da",
+    "runtimeSha256": "e328d13b5ddc52a74303f16ed322c64ac65d2e3d8bdf751a2058c41dfe19668b"
+  },
+  "decision": "diagnostic_only_n_equals_1"
+}
