@@ -30,6 +30,16 @@ test("standalone payload executes navigation and command dependencies", async ()
     });
     assert.equal(command.status, "ok", JSON.stringify(command));
     assert.match(command.data.output, /payload-ready/);
+    await writeFile(join(workspaceRoot, "module.ts"), "export function target() {\n  return 1;\n}\n");
+    const observed = await executeRunner(packageRoot, workspaceRoot, {
+      tool: "read_code", input: { target: "module.ts#target" },
+    });
+    const edited = await executeRunner(packageRoot, workspaceRoot, {
+      tool: "edit_code", input: { operations: [{ kind: "patch", target: observed.data.alias,
+        patch: "*** Begin Patch\n*** Update File: module.ts\n@@\n-  return 1;\n+  return 2;\n*** End Patch" }] },
+    });
+    assert.equal(edited.status, "ok", JSON.stringify(edited));
+    assert.match(await readFile(join(workspaceRoot, "module.ts"), "utf8"), /return 2/u);
   });
 });
 

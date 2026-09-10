@@ -2181,3 +2181,37 @@ for (const harness of ["blame", "cline"] as const) {
     }
   });
 }
+
+for (const failed of [false, true]) {
+  test(`native completion consumes the same check state without another model request (${failed ? "failed" : "unknown"})`, async () => {
+    const root = await mkdtemp(join(tmpdir(), "blame-native-finish-"));
+    const emitted: AgentEvent[] = [];
+    const runtime = new BlameAgentRuntime({ emit: (event) => emitted.push(event) });
+    try {
+      const { LightFinishService } = await import("./harness/light-finish-service.js");
+      const journal = new SessionJournal(root, "native-test");
+      const { WorkspaceFiles } = await import("./harness/workspace-files.js");
+      const snapshot = await new WorkspaceFiles(root).snapshot();
+      await journal.recordValidation({ command: "node --test", paths: [], taskKind: "test",
+        sourceRevisionId: snapshot.revision.source_revision_id, status: failed ? "failed" : "unknown",
+        ...(failed ? { category: "code" as const } : {}) });
+      const internals = runtime as unknown as {
+        runLifecycles: RunLifecycleRegistry;
+        sessionNativeFinish: Map<string, (summary: string) => Promise<unknown>>;
+        sessionSubmittedSummaries: Map<string, unknown>;
+        finalizeSessionTermination(input: unknown): Promise<void>;
+      };
+      const finish = new LightFinishService({ workspaceRoot: root, conversationId: "native-test",
+        onComplete: (notification) => { internals.sessionSubmittedSummaries.set("native-test", notification); } });
+      internals.sessionNativeFinish.set("native-test", (summary) => finish.finish(summary, {} as never));
+      internals.runLifecycles.begin("native-test", "execution");
+      await internals.finalizeSessionTermination({ sessionId: "native-test", executionId: "execution",
+        terminalState: "succeeded", display: true, cline: { getAccumulatedUsage: async () => undefined },
+        event: { type: "done", sessionId: "native-test", payload: { text: "Done" } } });
+      assert.equal(internals.runLifecycles.state("native-test")?.state, failed ? "failed" : "succeeded");
+      const terminal = emitted.filter((event) => event.type === "done" || event.type === "error");
+      assert.equal(terminal.length, 1);
+      if (!failed) assert.equal((terminal[0]!.payload as { verified: boolean }).verified, false);
+    } finally { await runtime.shutdown(); await rm(root, { recursive: true, force: true }); }
+  });
+}

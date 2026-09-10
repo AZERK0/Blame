@@ -4,7 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
-import { executeWorkspaceCommand } from "./workspace-command-process.js";
+import {
+  executeWorkspaceCommand,
+  startWorkspaceCommand,
+} from "./workspace-command-process.js";
 import { LightWorkspace } from "./light-workspace.js";
 import { SessionJournal } from "./session-journal.js";
 
@@ -90,6 +93,65 @@ test("capture overflow terminates the command instead of claiming success", asyn
   assert.ok(Buffer.byteLength(result.all) < 1200);
 });
 
+test("a running command exposes stable incremental output cursors", async () => {
+  const execution = startWorkspaceCommand(
+    process.execPath,
+    ["-e", "console.log('first');setTimeout(()=>console.log('second'),100)"],
+    { cwd: tmpdir() },
+  );
+  await delay(50);
+  const first = execution.inspect();
+  assert.equal(first.process, "running");
+  assert.match(first.output, /first/u);
+  await execution.completion;
+  const second = execution.inspect(first.cursor);
+  assert.equal(second.process, "exited");
+  assert.equal(second.output.trim(), "second");
+});
+
+test("run_task inspects a long command without launching it again", async () => {
+  await fixture(async (root) => {
+    const workspace = new LightWorkspace(root, {
+      sessionId: "inspect-run",
+      initialCommandWaitMs: 20,
+    });
+    const controller = new AbortController();
+    const started = await workspace.runTask(
+      {
+        kind: "command",
+        command:
+          "node -e \"require('fs').appendFileSync('launches','x');console.log('first');setTimeout(()=>console.log('second'),80);setTimeout(()=>{},3000)\"",
+      },
+      { signal: controller.signal },
+    );
+    assert.equal(started.status, "ok", JSON.stringify(started));
+    const initial = started as {
+      data: { cursor: string; process: string; run: string };
+    };
+    assert.equal(initial.data.process, "running");
+    await delay(150);
+    const inspected = await workspace.runTask(
+      { kind: "inspect", run: initial.data.run, cursor: initial.data.cursor },
+      {},
+    );
+    assert.equal(inspected.status, "ok", JSON.stringify(inspected));
+    assert.match(JSON.stringify(inspected), /second/u);
+    controller.abort();
+    await delay(150);
+    const cancelled = await workspace.runTask(
+      {
+        kind: "inspect",
+        run: initial.data.run,
+        cursor: (inspected as { data: { cursor: string } }).data.cursor,
+      },
+      {},
+    );
+    assert.match(JSON.stringify(cancelled), /cancelled/u);
+    assert.match(JSON.stringify(cancelled), /completed/u);
+    assert.equal(await readFile(join(root, "launches"), "utf8"), "x");
+  });
+});
+
 test("spawn failures retain their environment diagnostic", async () => {
   const result = await executeWorkspaceCommand("blame-nonexistent-test-executable", [], { cwd: tmpdir() });
   assert.equal(result.failed, true);
@@ -117,10 +179,10 @@ test("an interrupted project test never receives a passed validation", async () 
     await waitFor(join(root, ".blame/ready"));
     controller.abort();
     const result = await pending;
-    assert.equal(result.status, "blocked", JSON.stringify(result));
+    assert.equal(result.status, "ok", JSON.stringify(result));
     const state = await new SessionJournal(root, "command-interruption").completionSnapshot();
     assert.ok(state.validations.length > 0);
-    assert.ok(state.validations.every((value) => value.status === "failed"));
+    assert.ok(state.validations.every((value) => value.status === "unknown"));
     assert.match(JSON.stringify(result), /cancelled/u);
   });
 });

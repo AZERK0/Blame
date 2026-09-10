@@ -307,6 +307,29 @@ test("sends non-strict harness functions at the real Codex SDK boundary", async 
   assert.ok(read);
   assert.deepEqual(read.parameters.required, ["target"]);
   assert.ok("range" in read.parameters.properties);
+  const edit = tools.find((tool) => tool.name === "edit_code");
+  assert.ok(edit);
+  const operations = edit.parameters.properties.operations as {
+    items: { oneOf: Array<{ properties: Record<string, { const?: string }>; required: string[] }> };
+  };
+  const patch = operations.items.oneOf.find((item) => item.properties.kind?.const === "patch");
+  assert.ok(patch);
+  assert.ok("target" in patch.properties);
+  assert.ok(!patch.required.includes("target"));
+  const run = tools.find((tool) => tool.name === "run_task");
+  assert.ok(run);
+  const variants = (run.parameters as unknown as {
+    oneOf: Array<{
+      properties: Record<string, { const?: string }>;
+      required: string[];
+    }>;
+  }).oneOf;
+  const inspect = variants.find(
+    (item) => item.properties.kind?.const === "inspect",
+  );
+  assert.ok(inspect);
+  assert.ok(inspect.required.includes("run"));
+  assert.ok(!inspect.required.includes("cursor"));
 });
 
 async function captureCompatiblePayload(

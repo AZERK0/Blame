@@ -105,7 +105,7 @@ for (const engine of ["ripgrep", "node"])
       await writeFile(join(root, "z-small.txt"), "needle");
       const result = data(await workspace.searchCode({ query: "needle", mode: "text" }));
       assert.deepEqual((result.results as Array<{ path: string }>).map(item => item.path), ["z-small.txt"]);
-      assert.notEqual(result.limited, true);
+      assert.equal(result.limited === true, engine === "node");
     });
   });
 

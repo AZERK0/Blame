@@ -27,14 +27,16 @@ test("native validation detects declared runners without inventing Python tests"
       "Cargo.toml": "[package]\nname='example'\n",
       "service/go.mod": "module example\n",
       "api/pyproject.toml": "[project]\nname='example'\n",
+      "backend/App.csproj": "<Project />\n",
+      "java/pom.xml": "<project />\n",
       "worker/pytest.ini": "[pytest]\n",
     },
     async (root) => {
       const tasks = await readTaskCatalog(root);
-      assert.equal(tasks.length, 3);
+      assert.equal(tasks.length, 5);
       assert.deepEqual(
         tasks.map((task) => taskInvocation(task).executable).sort(),
-        ["cargo", "go", "python3"],
+        ["cargo", "dotnet", "go", "mvn", "python3"],
       );
       assert.ok(tasks.every((task) => task.kind === "test"));
       assert.ok(tasks.every((task) => task.cwd !== "api"));
@@ -46,17 +48,27 @@ test("native package boundaries prevent a Node build validating unrelated source
   const files = [
     "package.json",
     "api/pyproject.toml",
+    "backend/App.csproj",
+    "java/pom.xml",
     "native/Cargo.toml",
     "service/go.mod",
   ];
   const paths = [
     "app.ts",
     "api/app.py",
+    "backend/App.cs",
+    "java/src/App.java",
     "native/src/lib.rs",
     "service/main.go",
   ];
   assert.deepEqual(validationScopePaths(paths, files, "."), ["app.ts"]);
   assert.deepEqual(validationScopePaths(paths, files, "api"), ["api/app.py"]);
+  assert.deepEqual(validationScopePaths(paths, files, "backend"), [
+    "backend/App.cs",
+  ]);
+  assert.deepEqual(validationScopePaths(paths, files, "java"), [
+    "java/src/App.java",
+  ]);
   assert.deepEqual(validationScopePaths(paths, files, "native"), [
     "native/src/lib.rs",
   ]);

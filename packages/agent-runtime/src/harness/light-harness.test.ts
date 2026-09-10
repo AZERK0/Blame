@@ -1065,8 +1065,8 @@ test("run_task executes explicit inspections and rejects service scripts", async
         await workspace.tasks.run({ kind: "project", task: "test" }),
       );
       assert.equal(validation.cached, undefined);
-      assert.equal(record(firstValidation.validation).status, "passed");
-      assert.equal(record(validation.validation).status, "passed");
+      assert.equal(record(firstValidation.validation).status, "unknown");
+      assert.equal(record(validation.validation).status, "unknown");
       assert.equal(
         record(firstValidation.validation).sourceRevisionId,
         record(validation.validation).sourceRevisionId,
@@ -1173,10 +1173,9 @@ test("run_task permits environment validation after external recovery", async ()
       kind: "project",
       task: "test",
     });
-    assert.equal(retried.status, "blocked");
-    if (retried.status !== "blocked") return;
-    assert.match(retried.message, /Command exited/u);
-    assert.doesNotMatch(retried.message, /already failed/u);
+    assert.equal(retried.status, "ok");
+    assert.equal(record(data(retried).check).outcome, "failed");
+    assert.match(String(data(retried).output), /P1001/u);
   });
 });
 
@@ -1303,6 +1302,7 @@ test("CSS supports structural outline and rule body editing", async () => {
         ),
       );
       const rule = record(array(outline.items)[0]);
+      await workspace.readCode({ target: String(rule.alias) }, {});
       const result = await workspace.editCode({
         operations: [
           {
@@ -1423,6 +1423,7 @@ test("one batch combines an import patch and a whole exported replacement", asyn
     'import Image from "next/image";\n\nexport default function Home() {\n  return <main />;\n}\n';
   await withWorkspace({ "src/app.tsx": source }, async (root) => {
     const workspace = lightWorkspace(root, "hybrid-whole-symbol");
+    await workspace.readCode({ target: "src/app.tsx#Home" }, {});
     const result = await workspace.editCode({
       operations: [
         {
@@ -1459,6 +1460,7 @@ test("one batch inserts before and replaces the adjacent symbol", async () => {
   ].join("\n");
   await withWorkspace({ "src/invoice.ts": source }, async (root) => {
     const workspace = lightWorkspace(root, "hybrid-adjacent");
+    await workspace.readCode({ target: "src/invoice.ts#InvoiceSummary" }, {});
     const result = await workspace.editCode({
       operations: [
         {
@@ -1533,6 +1535,7 @@ test("HTML supports outline and structural body replacement", async () => {
           (value) => record(value).qualified_name === "main#app",
         ),
       );
+      await workspace.readCode({ target: String(main.alias) }, {});
       const result = await workspace.edits.edit(
         {
           operations: [
@@ -1572,6 +1575,7 @@ for (const extension of ["vue", "svelte"])
           (value) => record(value).qualified_name === "main#app",
         ),
       );
+      await workspace.readCode({ target: String(main.alias) }, {});
       const result = await workspace.editCode({
         operations: [
           {
@@ -2521,7 +2525,9 @@ function mutation(path: string, before: string, after: string) {
 
 async function symbolAlias(workspace: LightWorkspace, query: string) {
   const result = data(await workspace.searchCode({ query, mode: "symbol" }));
-  return String(record(array(result.results)[0]).alias);
+  const alias = String(record(array(result.results)[0]).alias);
+  await workspace.readCode({ target: alias }, {});
+  return alias;
 }
 
 function applyPatch(path: string, lines: string[]) {

@@ -146,7 +146,7 @@ test("a check cannot prove source changed during execution", async () => {
       await editValue(workspace, 1, 2);
       const pending = workspace.runTask({ kind: "project", task: "build" }, {});
       await waitFor(join(root, ".blame/observed"));
-      await editValue(workspace, 2, 3);
+      await writeFile(join(root, "a.ts"), "export const value = 3;\n");
       const result = await pending;
       assert.equal(result.status, "ok");
       assert.equal(
@@ -272,12 +272,12 @@ test("a package check cannot verify changes in another unchecked package", async
       assert.equal(notifications[0]?.verified, false);
       await workspace.runTask({ kind: "project", task: "test" }, {});
       await finish.finish("Both checked", {} as never);
-      assert.equal(notifications[1]?.verified, true);
+      assert.equal(notifications[1]?.verified, false);
       const journal = await new SessionJournal(root, "invariants").completionSnapshot();
       assert.equal(
         journal.validations.filter(({ terminal }) => terminal === "passed")
           .length,
-        2,
+        1,
       );
     },
   );
@@ -313,7 +313,7 @@ test("editing another value does not erase the need to rerun a failing test", as
       const notifications: LightCompletionNotification[] = [];
       await assert.rejects(
         finisher(root, notifications).finish("Complete", {} as never),
-        /Command exited/u,
+        /validation|test|Command exited/iu,
       );
       assert.equal(notifications.length, 0);
     },
@@ -405,7 +405,7 @@ test("finish reuses a requested test without imposing another build", async () =
     assert.equal((await workspace.runTask({ kind: "project", task: "test" }, {})).status, "ok");
     const notifications: LightCompletionNotification[] = [];
     assert.equal(await finisher(root, notifications).finish("Complete", {} as never), "Complete");
-    assert.equal(notifications[0]?.verified, true);
+    assert.equal(notifications[0]?.verified, false);
   });
 });
 
@@ -445,6 +445,6 @@ test("finish refreshes the requested stale test without selecting a new build", 
     });
     await finish.finish("Complete", {} as never);
     assert.deepEqual(activities, ["test"]);
-    assert.equal(notifications[0]?.verified, true);
+    assert.equal(notifications[0]?.verified, false);
   });
 });

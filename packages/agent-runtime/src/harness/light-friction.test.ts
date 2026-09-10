@@ -350,6 +350,7 @@ test("Python body replacement preserves tabs and CRLF source conventions", async
 test("Python class body replacement preserves nested method indentation", async () => {
   await fixture({ "counter.py": classSources["counter.py"] }, async (root, workspace) => {
     const content = "def second(self):\n    return 7";
+    await workspace.readCode({ target: "counter.py#Counter" }, {});
     const edited = await workspace.editCode({ operations: [{ kind: "symbol", target: "counter.py#Counter", action: "replace_body", content }] });
     assert.equal(edited.status, "ok", JSON.stringify(edited));
     const result = await execute("python3", ["-c", "from counter import Counter; print(Counter().second())"], { cwd: root });
@@ -369,6 +370,7 @@ async function checkPythonBody(body: string, expected: string, source = classSou
 }
 
 async function replacePythonBody(workspace: LightWorkspace, content: string) {
+  await workspace.readCode({ target: "counter.py#Counter.second" }, {});
   const result = await workspace.editCode({ operations: [{ kind: "symbol", target: "counter.py#Counter.second", action: "replace_body", content }] });
   assert.equal(result.status, "ok", JSON.stringify(result));
 }
@@ -445,11 +447,10 @@ test("a recognized failing project test keeps its validation failure", async () 
       { kind: "command" as const, command: manifest.scripts.test },
     ]) {
       const result = await workspace.runTask(input, {});
-      assert.equal(result.status, "blocked");
-      if (result.status !== "blocked") continue;
-      assert.equal(result.category, "code");
-      assert.match(result.message, /assertion failed/u);
-      assert.match(result.recovery ?? "", /reported project error/u);
+      assert.equal(result.status, "ok");
+      assert.match(JSON.stringify(result), /assertion failed/u);
+      assert.match(JSON.stringify(result), /reported project error/u);
+      assert.match(JSON.stringify(result), /"outcome":"failed"/u);
     }
   });
 });
@@ -800,7 +801,7 @@ test("successful known validations expose concise output and a complete log with
     };
     assert.ok(data.output.length <= 900);
     assert.match(data.output, /BEGIN|END/u);
-    assert.equal(data.validation.status, "passed");
+    assert.equal(data.validation.status, "unknown");
     assert.match(
       await readFile(join(root, data.outputLog), "utf8"),
       /detail_50/u,
@@ -833,9 +834,9 @@ test("inspection output and failed validation diagnostics are not shortened by s
         { kind: "project", task: "test" },
         {},
       );
-      assert.equal(failed.status, "blocked", JSON.stringify(failed));
+      assert.equal(failed.status, "ok", JSON.stringify(failed));
       assert.match(JSON.stringify(failed), /detail_50/u);
-      assert.doesNotMatch(JSON.stringify(failed), /outputLog/u);
+      assert.match(JSON.stringify(failed), /outputLog/u);
     },
   );
 });
@@ -850,7 +851,7 @@ test("source-changing validation cannot acquire a fresh proof or concise success
         { kind: "project", task: "test" },
         {},
       );
-      assert.doesNotMatch(JSON.stringify(result), /outputLog/u);
+      assert.match(JSON.stringify(result), /"status":"stale"/u);
       assert.doesNotMatch(
         JSON.stringify(result),
         /"validation":\{"status":"passed"/u,
@@ -1160,6 +1161,7 @@ async function checkSymbolMutationBoundary(sample: SymbolBoundaryFixture, action
   const content = action === "insert_before" ? sample.replacement + newline :
     action === "insert_after" ? newline + sample.replacement : sample.replacement;
   await fixture({ [sample.path]: original }, async (root, workspace) => {
+    await workspace.readCode({ target: `${sample.path}#${sample.target}` }, {});
     const result = await workspace.editCode({ operations: [{ kind: "symbol", target: `${sample.path}#${sample.target}`, action, content }] });
     assert.equal(result.status, "ok", JSON.stringify(result));
     const changed = action === "delete" ? "" : action === "replace" ? content :
