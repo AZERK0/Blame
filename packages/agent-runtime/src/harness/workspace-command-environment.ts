@@ -18,6 +18,7 @@ export function workspaceCommandEnvironment(
     Object.entries(environment).filter(
       ([name]) =>
         name !== "NODE_ENV" &&
+        name !== "NODE_TEST_CONTEXT" &&
         !name.startsWith("BLAME_") &&
         !(npmTask && pnpmOnlyNpmConfiguration.has(name.toLowerCase())),
     ),

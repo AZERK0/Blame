@@ -4,6 +4,7 @@ const validationManifests = new Set([
   "package.json",
   "Cargo.toml",
   "go.mod",
+  "pom.xml",
   "pyproject.toml",
   "setup.py",
   "setup.cfg",
@@ -16,7 +17,11 @@ export function validationScopePaths(
   cwd: string,
 ) {
   const packages = files
-    .filter((path) => validationManifests.has(posix.basename(path)))
+    .filter(
+      (path) =>
+        validationManifests.has(posix.basename(path)) ||
+        path.endsWith(".csproj"),
+    )
     .map((path) => posix.dirname(path))
     .sort((left, right) => right.length - left.length);
   return paths.filter((path) => {

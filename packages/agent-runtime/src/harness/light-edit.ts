@@ -15,7 +15,7 @@ import {
   type LightAlias,
   type ResolvedLightSymbol,
 } from "./light-aliases.js";
-import { planLightPatch, splitLightPatch } from "./light-patch.js";
+import { planLightPatch, planScopedLightPatch, splitLightPatch } from "./light-patch.js";
 import {
   LightCommitConflict,
   LightCommitService,
@@ -152,7 +152,13 @@ export class LightEditService {
       signal,
     ).catch(commitFailure);
     if (isLightFailure(result)) return result;
-    return this.mapResult(result, finalFiles, snapshot);
+    try { return await this.mapResult(result, finalFiles, snapshot); }
+    catch (error) {
+      return { status: "failed", category: "harness", applied: true,
+        recovery: "recovery_required", paths: result.changedPaths,
+        message: `Files were committed but the receipt could not be persisted. Do not replay this batch. ${errorMessage(error)}`,
+        diagnosticId: `edit-${Date.now().toString(36)}` };
+    }
   }
 
   private async plan(input: LightEditCodeInput, snapshot: WorkspaceSnapshot) {
@@ -160,6 +166,11 @@ export class LightEditService {
     let operationCount = 0;
     for (const operation of input.operations) {
       if (operation.kind === "patch") {
+        if (operation.target) {
+          if (++operationCount > 50) throw new Error("Edit batch contains too many operations.");
+          await this.planScopedPatch(files, operation, snapshot);
+          continue;
+        }
         operationCount += await this.planPatch(
           files,
           operation.path,
@@ -194,6 +205,45 @@ export class LightEditService {
     for (const operation of operations)
       await this.planPatchFile(plans, operation.path, operation.patch);
     return operations.length;
+  }
+
+  private async planScopedPatch(
+    plans: Map<string, PlannedFile>,
+    operation: Extract<LightEditCodeInput["operations"][number], { kind: "patch" }>,
+    snapshot: WorkspaceSnapshot,
+  ) {
+    if (!this.aliases.get(operation.target!))
+      throw new SymbolResolutionError("A scoped patch requires an observed symbol alias.");
+    const resolved = await this.aliases.resolveSymbol(operation.target!, this.files,
+      snapshot.revision.source_revision_id, true);
+    const sections = splitLightPatch(operation.patch);
+    if (sections.length !== 1 || this.files.normalizePath(sections[0]!.path) !== resolved.path ||
+        (operation.path && this.files.normalizePath(operation.path) !== resolved.path))
+      throw new Error("Scoped patch header must match the symbol's file and contain one Update File.");
+    const [start, end] = resolved.symbol.range_utf8_bytes;
+    const source = resolved.content.subarray(start, end).toString("utf8");
+    let replacements;
+    try { replacements = planScopedLightPatch(source, sections[0]!.patch, resolved.path); }
+    catch (error) { throw new SymbolResolutionError(`${errorMessage(error)}\nCurrent target ${resolved.alias} (${resolved.path}):\n${source.slice(0, 4_000)}`); }
+    const file = await this.filePlan(plans, resolved.path, resolved.content);
+    file.symbols.push(resolved.symbol.qualified_name);
+    for (const replacement of replacements) {
+      this.aliases.assertObserved(resolved.alias, [replacement.start, replacement.end]);
+      if (replacement.start === replacement.end &&
+          (replacement.start === 0 || replacement.end === end - start))
+        throw new Error("Use insert_before or insert_after for a symbol boundary insertion.");
+      file.replacements.push({ ...replacement, start: start + replacement.start,
+        end: start + replacement.end, source: `patch ${resolved.alias}` });
+    }
+    let scoped = resolved.content.subarray(start, end);
+    for (const replacement of [...replacements].reverse())
+      scoped = Buffer.concat([scoped.subarray(0, replacement.start), Buffer.from(replacement.replacement), scoped.subarray(replacement.end)]);
+    const candidate = Buffer.concat([resolved.content.subarray(0, start), scoped, resolved.content.subarray(end)]);
+    const boundary = parseCode(resolved.path, candidate).symbols.filter((symbol) =>
+      symbol.kind === resolved.symbol.kind && symbol.range_utf8_bytes[0] === start &&
+      symbol.range_utf8_bytes[1] === start + scoped.length);
+    if (boundary.length !== 1)
+      throw new SymbolResolutionError("Scoped patch changes a declaration boundary; use an explicit symbol action.");
   }
 
   private async normalizeNewFilePatch(
@@ -240,6 +290,12 @@ export class LightEditService {
       true,
     );
     assertSymbolEditAvailable(resolved.path);
+    if (["replace", "replace_body", "delete"].includes(operation.action)) {
+      const range = operation.action === "replace_body"
+        ? symbolEditRange(resolved.symbol, "body") : resolved.symbol.range_utf8_bytes;
+      this.aliases.assertObserved(resolved.alias, [range[0] - resolved.symbol.range_utf8_bytes[0],
+        range[1] - resolved.symbol.range_utf8_bytes[0]]);
+    }
     const file = await this.filePlan(plans, resolved.path, resolved.content);
     file.symbols.push(resolved.symbol.qualified_name);
     file.replacements.push(symbolReplacement(resolved, operation));
@@ -359,12 +415,19 @@ export class LightEditService {
       for (const symbol of symbols) {
         const aliases = matchingAliases(existing, path, symbol);
         if (!aliases.length && !touched.has(symbol.qualified_name)) continue;
+        const previouslyComplete = aliases.some((entry) => {
+          if (entry.kind !== "symbol") return false;
+          try { this.aliases.assertObserved(entry.alias, [0, entry.end - entry.start]); return true; }
+          catch { return false; }
+        });
         const { alias } = this.aliases.registerSymbol(
           path,
           content,
           symbol,
           snapshot.revision.source_revision_id,
         );
+        if (previouslyComplete && touched.has(symbol.qualified_name))
+          this.aliases.observe(path, content, [symbol.range_utf8_bytes]);
         if (touched.has(symbol.qualified_name))
           output.push({ alias, path, qualifiedName: symbol.qualified_name });
       }
@@ -785,6 +848,7 @@ function commitFailure(error: unknown): LightEditFailure {
   return {
     status: "failed",
     category: "harness",
+    recovery: "recovery_required",
     message: errorMessage(error),
     diagnosticId: `edit-${Date.now().toString(36)}`,
   };

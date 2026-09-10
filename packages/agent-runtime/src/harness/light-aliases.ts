@@ -11,6 +11,7 @@ import type { WorkspaceFiles } from "./workspace-files.js";
 type SymbolAlias = {
   alias: string;
   contentHash?: string;
+  observed?: Array<[number, number]>;
   end: number;
   fileHash: string;
   kind: "symbol";
@@ -64,6 +65,7 @@ export class SymbolResolutionError extends Error {
 
 export class LightAliasRegistry {
   private readonly aliases = new Map<string, LightAlias>();
+  private readonly observations = new Map<string, { hash: string; intervals: Array<[number, number]> }>();
   private sequence = 0;
 
   registerSymbol(
@@ -124,6 +126,36 @@ export class LightAliasRegistry {
     return [...this.aliases.values()].map((entry) => ({ ...entry }));
   }
 
+  observe(path: string, content: Buffer, intervals: Array<[number, number]>) {
+    const hash = sha256(content);
+    this.rememberObservation(path, hash, intervals);
+    for (const entry of this.aliases.values()) {
+      if (entry.kind !== "symbol" || entry.path !== path || entry.fileHash !== hash) continue;
+      entry.observed = mergedIntervals([...(entry.observed ?? []), ...intervals.map(([start, end]): [number, number] =>
+        [Math.max(0, start - entry.start), Math.min(entry.end - entry.start, end - entry.start)])]
+        .filter(([start, end]) => end > start));
+    }
+  }
+
+  rememberObservation(path: string, hash: string, intervals: Array<[number, number]>) {
+    const previous = this.observations.get(path);
+    this.observations.set(path, { hash, intervals: mergedIntervals([
+      ...(previous?.hash === hash ? previous.intervals : []), ...intervals,
+    ]) });
+    if (this.observations.size > 500) this.observations.delete(this.observations.keys().next().value!);
+  }
+
+  assertObserved(alias: string | undefined, range: [number, number]) {
+    const entry = alias ? this.aliases.get(alias) : undefined;
+    if (entry?.kind !== "symbol") throw new SymbolResolutionError("Read the target before replacing it.");
+    let cursor = range[0];
+    for (const [start, end] of [...(entry.observed ?? [])].sort((a, b) => a[0] - b[0])) {
+      if (start > cursor) break;
+      cursor = Math.max(cursor, end);
+    }
+    if (cursor < range[1]) throw new SymbolResolutionError(`Read ${alias} before replacing unobserved source.`);
+  }
+
   hydrate(entries: LightAlias[]) {
     this.aliases.clear();
     for (const entry of entries) this.aliases.set(entry.alias, { ...entry });
@@ -138,7 +170,10 @@ export class LightAliasRegistry {
   ) {
     const entry = this.targetAlias(target, files);
     if (entry) return this.resolveAlias(entry, files, revision, forEdit);
-    return this.resolveQualifiedTarget(target, files, revision);
+    const resolvedTarget = await this.resolveQualifiedTarget(target, files, revision);
+    if (!forEdit) return resolvedTarget;
+    const { alias } = this.registerSymbol(resolvedTarget.path, resolvedTarget.content, resolvedTarget.symbol, revision);
+    return { ...resolvedTarget, alias };
   }
 
   private targetAlias(target: string, files: WorkspaceFiles) {
@@ -178,7 +213,7 @@ export class LightAliasRegistry {
     if (candidates.length !== 1)
       throw resolutionConflict(entry.qualifiedName, candidates);
     if (forEdit && !exact) assertObservedSymbol(entry, content, candidates[0]!);
-    this.updateSymbol(entry.alias, entry.path, content, candidates[0]!);
+    if (!forEdit) this.updateSymbol(entry.alias, entry.path, content, candidates[0]!);
     return resolved(entry.path, content, candidates[0]!, revision, entry.alias);
   }
 
@@ -236,8 +271,27 @@ export class LightAliasRegistry {
     content: Buffer,
     symbol: ParsedSymbol,
   ) {
-    this.aliases.set(alias, symbolAlias(alias, path, content, symbol));
+    const previous = this.aliases.get(alias);
+    const next = symbolAlias(alias, path, content, symbol);
+    if (previous?.kind === "symbol" && previous.contentHash === next.contentHash)
+      next.observed = previous.observed;
+    const observed = this.observations.get(path);
+    if (observed?.hash === next.fileHash) next.observed = mergedIntervals([
+      ...(next.observed ?? []), ...observed.intervals.map(([start, end]): [number, number] =>
+        [Math.max(0, start - next.start), Math.min(next.end - next.start, end - next.start)]),
+    ].filter(([start, end]) => end > start));
+    this.aliases.set(alias, next);
   }
+}
+
+function mergedIntervals(intervals: Array<[number, number]>) {
+  const output: Array<[number, number]> = [];
+  for (const [start, end] of [...intervals].sort((a, b) => a[0] - b[0])) {
+    const previous = output.at(-1);
+    if (previous && start <= previous[1]) previous[1] = Math.max(previous[1], end);
+    else output.push([start, end]);
+  }
+  return output;
 }
 
 function symbolAlias(

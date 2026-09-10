@@ -483,6 +483,7 @@ export class BlameAgentRuntime {
     string,
     LightCompletionNotification
   >();
+  private sessionNativeFinish = new Map<string, (summary: string) => Promise<unknown>>();
   private sessionMemoryWrites = new Map<string, Promise<void>>();
   private sessionDeferredTaskBriefings = new Map<string, string>();
   private sessionTerminalDrains = new Map<string, Promise<void>>();
@@ -889,6 +890,11 @@ export class BlameAgentRuntime {
             previewMcpTools,
             taskBriefing,
           );
+      const finish = standardTools?.find((tool) => tool.name === "finish_task");
+      if (finish) this.sessionNativeFinish.set(sessionId, async (summary) =>
+        finish.execute({ summary }, { sessionId, conversationId: sessionId,
+          toolCallId: "native-finish" } as Parameters<typeof finish.execute>[1]));
+      else this.sessionNativeFinish.delete(sessionId);
       const specialistTool = input.enableSpecialistConsult
         ? runtimeConsultSpecialistTool({
             credential: resolvedCredential,
@@ -1587,16 +1593,26 @@ export class BlameAgentRuntime {
       ["cancelled", "failed", "succeeded"].includes(lifecycle.state)
     )
       return;
+    let nativeFailure: string | undefined;
+    if (input.terminalState === "succeeded" && !this.sessionSubmittedSummaries.has(input.sessionId)) {
+      const finish = this.sessionNativeFinish.get(input.sessionId);
+      if (finish) {
+        const summary = stringValue(asRecord(input.event?.payload).text) ?? "Task completed.";
+        try { await finish(summary); }
+        catch (error) { nativeFailure = errorMessage(error); }
+      }
+    }
     const notification = this.sessionSubmittedSummaries.get(input.sessionId);
     const completion = notification?.completion;
-    const terminalState = completionAwareTerminalState(
+    const terminalState = nativeFailure ? "failed" : completionAwareTerminalState(
       input.terminalState,
       completion,
     );
     await this.recordSessionJournalTerminal(input.sessionId, terminalState);
-    const event =
-      terminalState === input.terminalState
-        ? input.event
+    const event = nativeFailure
+      ? this.sessionFailureEvent(input.sessionId, input.executionId, nativeFailure)
+      : terminalState === input.terminalState
+        ? input.event && this.withSubmittedSummary(input.sessionId, input.event)
         : completionFailureEvent(input.sessionId, notification);
     if (event) await this.handleSessionEvent(input.sessionId, event);
     const usage = await Promise.resolve()
@@ -3233,6 +3249,7 @@ export class BlameAgentRuntime {
     if (!terminationActive) this.sessionExecutionIds.delete(sessionId);
     this.sessionIterations.delete(sessionId);
     this.sessionSubmittedSummaries.delete(sessionId);
+    this.sessionNativeFinish.delete(sessionId);
     this.sessionDeferredTaskBriefings.delete(sessionId);
     this.sessionSpawnAgentActiveCounts.delete(sessionId);
     for (const key of this.sessionToolInputs.keys()) {

@@ -28,6 +28,7 @@ export type JournalCompletionSnapshot = {
 };
 
 export type JournalValidation = {
+  check?: import("./check-observation.js").CheckObservation;
   category?: "code" | "command" | "environment";
   command?: string;
   cwd?: string;
@@ -54,6 +55,8 @@ type ValidationInput = Omit<
 };
 
 type JournalEvent =
+  | { type: "observation_audit"; tool: "read_code" | "search_code"; requestedView: string;
+      renderedView: string; bytes: number; aliases: number; limited: boolean; timestamp: string }
   | { type: "request"; id: string; text: string; timestamp: string }
   | ({ type: "change" } & JournalChange)
   | ({ type: "validation" } & JournalValidation)
@@ -83,6 +86,10 @@ export class SessionJournal {
     if (this.requestIds.has(id)) return;
     this.requestIds.add(id);
     await this.append({ type: "request", id, text, timestamp: now() });
+  }
+
+  async recordObservationAudit(input: Omit<Extract<JournalEvent, { type: "observation_audit" }>, "type" | "timestamp">) {
+    await this.append({ ...input, type: "observation_audit", timestamp: now() });
   }
 
   async recordChange(input: ChangeInput) {
@@ -322,6 +329,7 @@ function publicChange(change: JournalChange) {
 
 function publicValidation(validation: JournalValidation) {
   return {
+    check: validation.check,
     category: validation.category,
     command: validation.command,
     cwd: validation.cwd,

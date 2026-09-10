@@ -1,5 +1,6 @@
 import type { AgentToolContext } from "@cline/sdk";
 import { isUtf8 } from "node:buffer";
+import { codeObservation, presentObservation } from "./code-observation.js";
 import { readIsolatedEnvironmentImage, readWorkspaceImage } from "./light-images.js";
 import { pythonBodyRange } from "./python-body.js";
 import {
@@ -73,6 +74,10 @@ import {
 } from "./workspace-files.js";
 
 type LightWorkspaceOptions = {
+  /** Runner-only experiment; production keeps compact search until the offline gate is met. */
+  experimentalSearchExpansion?: boolean;
+  /** Test/embedded runner override; production uses the five-second initial wait. */
+  initialCommandWaitMs?: number;
   refreshPreviewDependencies?: () => Promise<unknown>;
   sessionId: string;
   taskContract?: LightTaskContract;
@@ -121,6 +126,9 @@ export class LightWorkspace {
       commandEnvironment: options.taskContract?.environment,
       edits: this.edits,
       files: this.files,
+      ...(options.initialCommandWaitMs !== undefined
+        ? { initialCommandWaitMs: options.initialCommandWaitMs }
+        : {}),
       journal: this.journal,
       refreshPreviewDependencies: options.refreshPreviewDependencies,
     });
@@ -162,6 +170,44 @@ export class LightWorkspace {
     for (const path of paths) this.coverage.invalidatePath(path);
     if (paths.length)
       await this.journal.recordCoverage(this.coverage.snapshot());
+    if (recordValue(recordValue(result.data).check).outcome === "failed") {
+      const data = recordValue(result.data);
+      const output = typeof data.output === "string" ? data.output : "";
+      const snippets: unknown[] = [];
+      let remaining = 4 * 1024;
+      const seen = new Set<string>();
+      const locations = [
+        ...arrayValue(recordValue(data.check).diagnostics).flatMap((value) => {
+          const diagnostic = recordValue(value);
+          return typeof diagnostic.path === "string" && typeof diagnostic.line === "number"
+            ? [{ path: diagnostic.path, line: diagnostic.line }] : [];
+        }),
+        ...[...output.matchAll(/(?:^|\s|\()([^\s():]+\.(?:[cm]?[jt]sx?|py|java|cs)):(\d+)(?::\d+)?/gmu)]
+          .map((match) => ({ path: match[1]!, line: Number(match[2]) })),
+      ];
+      for (const location of locations) {
+        const { line } = location;
+        let path: string;
+        try { path = this.files.normalizePath(location.path); } catch { continue; }
+        if (snippets.length >= 2) break;
+        if (seen.has(path)) continue;
+        seen.add(path);
+        if (!Number.isSafeInteger(line) || line < 1) continue;
+        try {
+          const content = (await this.files.read(path)).content;
+          const [start, end] = lineByteRange(content, Math.max(1, line - 2), line + 2);
+          if (end - start > remaining - 512) continue;
+        } catch { continue; }
+        const snippet = await this.readCode({ target: path, view: "range",
+          range: { startLine: Math.max(1, line - 2), endLine: line + 2 } }, context);
+        if (snippet.status !== "ok") continue;
+        const bytes = Buffer.byteLength(JSON.stringify(snippet.data));
+        if (bytes > remaining) continue;
+        remaining -= bytes;
+        snippets.push({ ...recordValue(snippet.data), source: "current workspace; diagnostic revision not certified" });
+      }
+      if (snippets.length) return { ...result, data: { ...data, diagnostics: snippets } };
+    }
     return result;
   }
 
@@ -171,9 +217,11 @@ export class LightWorkspace {
   ): Promise<LightToolResult<unknown>> {
     try {
       await this.ready;
-      return await this.commits.exclusive(() =>
+      const result = await this.commits.exclusive(() =>
         this.searchCurrentWorkspace(input, signal),
       );
+      await this.recordObservationAudit("search_code", input.mode ?? "auto", result);
+      return result;
     } catch (error) {
       return inputBlocked(error);
     }
@@ -196,7 +244,32 @@ export class LightWorkspace {
       snapshot.revision.source_revision_id,
       signal,
     );
-    return this.persistAliases(result);
+    const expanded = await this.expandSearch(result, snapshot.revision.source_revision_id);
+    return this.persistAliases(expanded);
+  }
+
+  private async expandSearch(result: LightToolResult<unknown>, revision: string) {
+    if (!this.options.experimentalSearchExpansion || result.status !== "ok") return result;
+    const data = recordValue(result.data);
+    const items = arrayValue(data.results);
+    if (data.limited || !items.length || items.length > 2 || data.engine === "node") return result;
+    const observations = [];
+    for (const item of items) {
+      const alias = stringValue(recordValue(item).alias);
+      if (!alias || this.aliases.get(alias)?.kind !== "symbol") return result;
+      const resolved = await this.aliases.resolveSymbol(alias, this.files, revision);
+      const [start, end] = resolved.symbol.range_utf8_bytes;
+      if (end - start >= 4 * 1024) return result;
+      observations.push({ resolved, observation: codeObservation(resolved.path, resolved.content,
+        start, end, "symbol", { alias, qualifiedName: resolved.symbol.qualified_name }) });
+    }
+    const results = observations.map(({ resolved, observation }) => ({ ...presentObservation(observation),
+      lines: resolved.symbol.line_range, context: "Local symbol only; use read_code for imports and surrounding invariants." }));
+    if (Buffer.byteLength(JSON.stringify(results)) > 10 * 1024) return result;
+    for (const { resolved } of observations)
+      await this.registerCoverage(resolved.path, resolved.content, [resolved.symbol.range_utf8_bytes], {});
+    return { ...result, data: { ...data, results, expanded: true,
+      searchComplete: true, scope: "Eligible workspace text files up to 2 MiB; ignore rules applied." } };
   }
 
   async readCode(
@@ -205,9 +278,11 @@ export class LightWorkspace {
   ): Promise<LightToolResult<unknown>> {
     try {
       await this.ready;
-      return await this.commits.exclusive(() =>
+      const result = await this.commits.exclusive(() =>
         this.readCurrentWorkspace(input, context),
       );
+      await this.recordObservationAudit("read_code", input.view ?? "auto", result);
+      return result;
     } catch (error) {
       return inputBlocked(error);
     }
@@ -240,10 +315,23 @@ export class LightWorkspace {
     );
   }
 
+  private async recordObservationAudit(tool: "read_code" | "search_code", requestedView: string, result: LightToolResult<unknown>) {
+    if (result.status !== "ok") return;
+    const data = recordValue(result.data);
+    const targets = arrayValue(data.results ?? data.items ?? data.editTargets);
+    await this.journal.recordObservationAudit({ tool, requestedView,
+      renderedView: stringValue(data.view ?? data.mode) ?? "unknown",
+      bytes: Buffer.byteLength(JSON.stringify(result.data)),
+      aliases: targets.filter((item) => stringValue(recordValue(item).alias)).length + (data.alias ? 1 : 0),
+      limited: data.limited === true || data.truncated === true });
+  }
+
   private async initializeJournal(options: LightWorkspaceOptions) {
     await this.commits.exclusive(() => this.journal.hydrate());
     this.aliases.hydrate(this.journal.currentAliases());
     this.coverage.hydrate(this.journal.currentCoverage());
+    for (const entry of this.journal.currentCoverage().entries)
+      this.aliases.rememberObservation(entry.path, entry.hash, entry.intervals);
     const objective = options.taskContract?.objective;
     if (objective) await this.journal.ingestUserRequest("initial", objective);
   }
@@ -394,7 +482,7 @@ export class LightWorkspace {
       : await this.nodeTextSearch(query, candidates, signal);
     const results = uniqueSearchResults([...paths, ...content]);
     return { results: results.slice(0, 8), engine: searched.engine,
-      limited: searched.truncated || content.length >= 8 || paths.length >= 8 || results.length > 8 };
+      limited: !searched.available || searched.truncated || content.length >= 8 || paths.length >= 8 || results.length > 8 };
   }
 
   private async materializeMatches(matches: LexicalSearchMatch[], revision: string, promote: boolean) {
@@ -647,6 +735,14 @@ export class LightWorkspace {
       return this.readLineRange(resolved.path, resolved.content, input, revision, context);
     if (input.view === "outline")
       return this.symbolOutline(resolved, revision, context);
+    const [start, end] = resolved.symbol.range_utf8_bytes;
+    if (end - start > maximumRawCharacters) {
+      let boundedEnd = start + maximumRawCharacters;
+      while (boundedEnd > start && (resolved.content[boundedEnd]! & 0xc0) === 0x80) boundedEnd--;
+      return this.coveredContent(resolved.path, resolved.content, [[start, boundedEnd]], context,
+        "range", "symbol_exceeds_inline_budget", true,
+        [{ alias: resolved.alias!, qualifiedName: resolved.symbol.qualified_name }]);
+    }
     const { signature, body, imports, coverage } = await this.symbolProjection(
       resolved,
       context,
@@ -714,7 +810,7 @@ export class LightWorkspace {
     const coverage = await this.registerCoverage(
       resolved.path,
       resolved.content,
-      [signature, body, ...(imports ? [imports.range] : [])],
+      [resolved.symbol.range_utf8_bytes, ...(imports ? [imports.range] : [])],
       context,
     );
     return { signature, body, imports, coverage };
@@ -777,7 +873,8 @@ export class LightWorkspace {
     context: ReadContext,
     fallbackReason?: string,
   ) {
-    const end = Math.min(content.byteLength, maximumRawCharacters);
+    let end = Math.min(content.byteLength, maximumRawCharacters);
+    while (end > 0 && end < content.length && (content[end]! & 0xc0) === 0x80) end--;
     const editTargets = this.registerEditTargets(path, content, revision);
     return await this.coveredContent(
       path,
@@ -845,6 +942,7 @@ export class LightWorkspace {
     intervals: ByteInterval[],
     context: ReadContext,
   ) {
+    this.aliases.observe(path, content, intervals);
     const result = this.coverage.register({
       consumerId:
         context.agentId ||
@@ -975,10 +1073,10 @@ function symbolProjectedContent(
 ) {
   return {
     ...(rangeHasDelta(signature, uncovered)
-      ? { signature: resolved.materialized.signature }
+      ? { signature: resolved.content.subarray(resolved.symbol.range_utf8_bytes[0], body[0]).toString("utf8") }
       : {}),
     ...(rangeHasDelta(body, uncovered)
-      ? { body: resolved.content.subarray(...body).toString("utf8") }
+      ? { body: resolved.content.subarray(body[0], resolved.symbol.range_utf8_bytes[1]).toString("utf8") }
       : {}),
     ...(imports && rangeHasDelta(imports.range, uncovered)
       ? { imports: imports.content }

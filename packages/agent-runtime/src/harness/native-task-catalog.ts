@@ -9,6 +9,7 @@ const nativeManifests = new Set([
   "pyproject.toml",
   "pytest.ini",
   "setup.cfg",
+  "pom.xml",
 ]);
 
 export async function nativeTaskCatalog(
@@ -17,7 +18,7 @@ export async function nativeTaskCatalog(
 ) {
   const files =
     workspaceFiles ??
-    (await fg("**/{Cargo.toml,go.mod,pyproject.toml,pytest.ini,setup.cfg}", {
+    (await fg(["**/{Cargo.toml,go.mod,pom.xml,pyproject.toml,pytest.ini,setup.cfg}", "**/*.csproj"], {
       cwd: root,
       ignore: [
         "**/node_modules/**",
@@ -29,7 +30,9 @@ export async function nativeTaskCatalog(
       ],
     }));
   const candidates = files
-    .filter((path) => nativeManifests.has(basename(path)))
+    .filter((path) =>
+      nativeManifests.has(basename(path)) || path.endsWith(".csproj"),
+    )
     .slice(0, 200);
   const tasks = await Promise.all(
     candidates.map((path) => nativeManifestTask(root, path)),
@@ -47,6 +50,15 @@ async function nativeManifestTask(root: string, path: string) {
     return nativeTest("cargo", ["test"], cwd);
   if (basename(path) === "go.mod")
     return nativeTest("go", ["test", "./..."], cwd);
+  if (basename(path) === "pom.xml")
+    return nativeTest("mvn", ["-f", "pom.xml", "test"], cwd, "maven:test");
+  if (path.endsWith(".csproj"))
+    return nativeTest(
+      "dotnet",
+      ["test", basename(path)],
+      cwd,
+      `${basename(path)}:test`,
+    );
   const content = await readFile(join(root, path), "utf8");
   if (declaresPytest(basename(path), content))
     return nativeTest("python3", ["-m", "pytest"], cwd);
@@ -63,8 +75,8 @@ function nativeTest(
   executable: string,
   args: string[],
   cwd: string,
+  label = `${executable}:test`,
 ): TaskCatalogItem {
-  const label = `${executable}:test`;
   return {
     task_id: cwd === "." ? label : `${cwd}:${label}`,
     kind: "test",

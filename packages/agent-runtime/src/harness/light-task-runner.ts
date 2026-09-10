@@ -1,4 +1,6 @@
 import { relative } from "node:path";
+import { isTestInvocation, observeCheck, type CheckObservation } from "./check-observation.js";
+import { LightCommitService } from "./light-commit.js";
 import { redactSecuritySecrets } from "../security-secret-redaction.js";
 import { EnvironmentAdapter } from "./environment-adapter.js";
 import { blockedCommandReason } from "./command-policy.js";
@@ -21,10 +23,14 @@ import {
   taskInvocation,
   type TaskCatalogItem,
 } from "./task-catalog.js";
-import { executeWorkspaceCommand } from "./workspace-command-process.js";
+import {
+  startWorkspaceCommand,
+  type WorkspaceCommandResult,
+} from "./workspace-command-process.js";
 import { validationScopePaths } from "./validation-scope.js";
 import { validationOutput, type ValidationOutput } from "./validation-output.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
+import { managedTestReport, type ManagedTestReport } from "./managed-test-report.js";
 
 type RunnerContext = {
   sessionId?: string;
@@ -37,14 +43,25 @@ type LightTaskRunnerOptions = {
   edits?: Pick<LightEditService, "replaceFiles">;
   files: WorkspaceFiles;
   journal: SessionJournal;
+  initialCommandWaitMs?: number;
   refreshPreviewDependencies?: () => Promise<unknown>;
 };
 
+type CommandHandle = ReturnType<typeof startWorkspaceCommand>;
+type ManagedRun = {
+  command: string;
+  completion: Promise<LightToolResult<unknown>>;
+  handle: CommandHandle;
+  result?: LightToolResult<unknown>;
+};
+
 type ValidationMetadata = {
+  check?: CheckObservation;
   cwd?: string;
   sourceRevisionId?: string;
   taskId?: string;
   taskKind?: string;
+  report?: ManagedTestReport;
 };
 
 type FailureAssessment = {
@@ -60,13 +77,18 @@ export class LightTaskRunner {
   private readonly dependencies: LightDependencyService;
   private readonly files: WorkspaceFiles;
   private readonly journal: SessionJournal;
+  private readonly initialCommandWaitMs: number;
   private readonly refreshPreviewDependencies?: () => Promise<unknown>;
+  private readonly runs = new Map<string, ManagedRun>();
+  private runSequence = 0;
+  private reportSequence = 0;
 
   constructor(options: LightTaskRunnerOptions) {
     this.commandEnvironment = options.commandEnvironment;
     this.edits = options.edits;
     this.files = options.files;
     this.journal = options.journal;
+    this.initialCommandWaitMs = options.initialCommandWaitMs ?? 5_000;
     this.environment = new EnvironmentAdapter(options.files);
     this.formatter = new DeterministicFormatter(options.files);
     this.dependencies = new LightDependencyService(options.files);
@@ -74,9 +96,36 @@ export class LightTaskRunner {
   }
 
   run(input: LightRunTaskInput, context: RunnerContext = {}) {
+    if (input.kind === "inspect") return this.inspect(input);
     if (input.kind === "dependency") return this.dependency(input, context);
     if (input.kind === "project") return this.project(input, context);
     return this.command(input, context);
+  }
+
+  private async inspect(
+    input: Extract<LightRunTaskInput, { kind: "inspect" }>,
+  ): Promise<LightToolResult<unknown>> {
+    const run = this.runs.get(input.run);
+    if (!run)
+      return blocked(
+        "input",
+        `Run ${input.run} does not belong to this session or is no longer available.`,
+      );
+    try {
+      const snapshot = run.handle.inspect(input.cursor);
+      return {
+        status: "ok",
+        data: {
+          run: input.run,
+          command: run.command,
+          ...snapshot,
+          output: redactedOutput(snapshot.output),
+          ...(run.result ? { completed: run.result } : {}),
+        },
+      };
+    } catch (error) {
+      return blocked("input", errorMessage(error));
+    }
   }
 
   private async project(
@@ -99,18 +148,27 @@ export class LightTaskRunner {
     task: TaskCatalogItem,
     context: RunnerContext,
   ) {
-    const invocation = taskInvocation(task);
+    const declaredInvocation = taskInvocation(task);
+    const report = await managedTestReport(
+      task,
+      declaredInvocation,
+      this.files.root,
+      ++this.reportSequence,
+      context.signal,
+    );
+    const invocation = report?.invocation ?? declaredInvocation;
     const cwd = await this.environment.cwd(invocation.cwd);
     return this.execute(
       invocation.executable,
       invocation.args,
       cwd,
-      task.command,
+      report?.command ?? task.command,
       context,
       {
         cwd: task.cwd,
         taskId: task.task_id,
         taskKind: task.kind,
+        ...(report ? { report } : {}),
       },
     );
   }
@@ -256,6 +314,59 @@ export class LightTaskRunner {
     context: RunnerContext,
     metadata: ValidationMetadata = {},
   ): Promise<LightToolResult<unknown>> {
+    let publishHandle!: (handle: CommandHandle) => void;
+    const started = new Promise<CommandHandle>((resolve) => {
+      publishHandle = resolve;
+    });
+    const completion = new LightCommitService(this.files)
+      .exclusive(() =>
+        this.executeLocked(
+          executable,
+          args,
+          cwd,
+          command,
+          context,
+          metadata,
+          publishHandle,
+        ),
+      )
+      .catch((error) => blocked("environment", errorMessage(error)));
+    const first = await Promise.race([
+      completion.then((result) => ({ kind: "complete" as const, result })),
+      started.then((handle) => ({ kind: "started" as const, handle })),
+    ]);
+    if (first.kind === "complete") return first.result;
+    const runId = `r${++this.runSequence}`;
+    const managed: ManagedRun = { command, completion, handle: first.handle };
+    this.runs.set(runId, managed);
+    void completion.then((result) => {
+      managed.result = result;
+    });
+    const initial = await Promise.race([
+      completion.then((result) => ({ kind: "complete" as const, result })),
+      delay(this.initialCommandWaitMs).then(() => ({ kind: "running" as const })),
+    ]);
+    if (initial.kind === "complete") {
+      this.runs.delete(runId);
+      return initial.result;
+    }
+    const snapshot = first.handle.inspect();
+    return {
+      status: "ok",
+      data: {
+        run: runId,
+        command,
+        ...snapshot,
+        output: redactedOutput(snapshot.output),
+      },
+    };
+  }
+
+  private async executeLocked(
+    executable: string, args: string[], cwd: string, command: string,
+    context: RunnerContext, metadata: ValidationMetadata,
+    publishHandle: (handle: CommandHandle) => void,
+  ): Promise<LightToolResult<unknown>> {
     context.signal?.throwIfAborted();
     const snapshot = await this.files.snapshot(context.signal);
     const directory =
@@ -264,7 +375,14 @@ export class LightTaskRunner {
       ? metadata
       : await this.commandValidation(command, directory, snapshot.files);
     const { result, after, changedPaths } = await observeCommand(this.files, this.journal,
-      snapshot, () => executeCommand(executable, args, cwd, context.signal));
+      snapshot, () => {
+        const handle = startWorkspaceCommand(executable, args, {
+          cwd,
+          signal: context.signal,
+        });
+        publishHandle(handle);
+        return handle.completion;
+      });
     return this.recordedResult(
       command,
       result,
@@ -298,12 +416,29 @@ export class LightTaskRunner {
 
   private async recordedResult(
     command: string,
-    result: Awaited<ReturnType<typeof executeCommand>>,
+    result: WorkspaceCommandResult,
     metadata: ValidationMetadata,
     snapshot: WorkspaceSnapshot,
     changedPaths: string[],
   ): Promise<LightToolResult<unknown>> {
     const output = redactedOutput(result.all);
+    if (metadata.taskKind === "test" || isTestInvocation(command)) {
+      const check = observeCheck(command, { ...result, all: output }, metadata.cwd ?? ".",
+        snapshot.revision.source_revision_id !== metadata.sourceRevisionId,
+        await metadata.report?.read());
+      const failure = check.outcome === "failed" ? await commandFailureAssessment(output, this.files, "test") : undefined;
+      await this.recordCommandValidation(command,
+        check.outcome === "failed" ? "failed" : "unknown", snapshot,
+        { ...metadata, taskKind: "test", check },
+        failure);
+      return { status: "ok", data: { command, exitCode: result.exitCode,
+        ...(await validationOutput(this.files.root, output)),
+        ...(failure || changedPaths.length ? { output: boundedDiagnostic(output, "", 4_000) } : {}),
+        ...(failure ? { failure } : {}), check,
+        changed: changedPaths.length > 0, paths: changedPaths,
+        validation: { status: check.freshness === "stale" ? "stale" : check.outcome === "failed" ? "failed" : "unknown" },
+      } };
+    }
     const status = result.failed ? "failed" : "passed";
     const failure =
       result.interruption ? commandFailure() : result.failed
@@ -348,7 +483,7 @@ export class LightTaskRunner {
 
   private async recordCommandValidation(
     command: string,
-    status: "failed" | "passed",
+    status: "failed" | "passed" | "unknown",
     snapshot: WorkspaceSnapshot,
     metadata: ValidationMetadata,
     failure?: FailureAssessment,
@@ -367,6 +502,7 @@ export class LightTaskRunner {
       status,
       taskId: metadata.taskId,
       taskKind: metadata.taskKind,
+      check: metadata.check,
       ...(failure
         ? { category: failure.category, recovery: failure.recovery }
         : {}),
@@ -445,13 +581,11 @@ function taskSelectionError(task: string, candidates: TaskCatalogItem[]) {
   return `Project task ${task} is ambiguous: ${candidates.map(({ task_id }) => task_id).join(", ")}.`;
 }
 
-function executeCommand(
-  executable: string,
-  args: string[],
-  cwd: string,
-  signal?: AbortSignal,
-) {
-  return executeWorkspaceCommand(executable, args, { cwd, signal });
+function delay(ms: number) {
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, ms);
+    timer.unref();
+  });
 }
 
 function redactedOutput(output: string | Uint8Array) {

@@ -118,7 +118,7 @@ function editCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "edit_code",
     description:
-      "Atomically apply symbol operations or focused Cline patches, including inside symbols. Choose the smaller precise edit: replace_body replaces the entire body. Disambiguate repeated patch text with unique context or a preceding @@ anchor. For a new file, patch may contain complete raw text; existing files require Cline patch syntax. Do not combine a parent with its containedBy child. The runtime handles freshness, overlaps, and supported syntax checks.",
+      "Atomically apply symbol operations or focused Cline patches. Set patch target to an observed sN alias to restrict one Update File to that symbol; the header must match its file. Choose the smaller precise edit: replace_body replaces the entire observed body. For a new file, patch may contain complete raw text; existing files require Cline patch syntax. Do not combine a parent with its containedBy child. The runtime handles freshness, overlaps, and supported syntax checks.",
     schema: lightEditCodeInputSchema,
     execute: (input, context) =>
       workspace.editCode(input, {
@@ -133,11 +133,11 @@ function runTaskTool(workspace: LightWorkspacePort, environment?: LightTaskContr
   return harnessTool({
     name: "run_task",
     description:
-      "Run project tasks, inspections, generators, formatters, or requested setup. Source changes are journaled and require a subsequent check. Explicit calls execute; finish_task reuses fresh validation. Use the dependency operation for Node packages and native commands for other ecosystems. " +
+      "Run project tasks, inspections, generators, formatters, or requested setup. A command still running after the initial wait returns a session-bound rN id; inspect that id with the returned cursor to receive only new output without relaunching it. Source changes are journaled and require a subsequent check. Explicit calls execute; finish_task reuses fresh validation. Use the dependency operation for Node packages and native commands for other ecosystems. " +
       (environment?.managedPreview === false
         ? "For requested services, detach the process and redirect its input/output so the command can finish. "
         : "Use the managed preview for services. ") +
-      "Prettier on explicit files uses atomic edits. Returns bounded output and code/environment diagnostics; use run_task to inspect outputLog when returned.",
+      "Prettier on explicit files uses atomic edits. Returns bounded output and code/environment diagnostics.",
     schema: lightRunTaskInputSchema,
     execute: (input, context) => workspace.runTask(input, context),
   });

@@ -35,6 +35,7 @@ const dependencyNames = [
   "@cline/sdk",
   "@vscode/ripgrep",
   "diff",
+  "@xmldom/xmldom",
   "execa",
   "fast-glob",
   "jsonc-parser",

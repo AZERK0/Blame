@@ -15,6 +15,41 @@ export type LightPatchPlan =
 
 export type LightPatchOperation = { patch: string; path: string };
 
+/** Use the same exact hunk resolver on a bounded source, without filesystem IO. */
+export function planScopedLightPatch(source: string, patch: string, path: string) {
+  const parsed = parseClinePatchShape(patch);
+  if (parsed.mode !== "update") throw new Error("A scoped patch requires one Update File.");
+  const normalized = source.replaceAll("\r\n", "\n");
+  const exact = exactContextPatch(normalized, parsed, path);
+  const hunks = patchHunks(exact.lines.slice(exact.headerIndex + 1, -1));
+  let cursor = 0;
+  let output = "";
+  for (const hunk of hunks) {
+    const before = selectedLines(hunk.lines, new Set([" ", "-"]));
+    const after = selectedLines(hunk.lines, new Set([" ", "+"]));
+    const start = normalized.indexOf(before, cursor);
+    if (start !== cursor) throw new Error("Scoped patch context does not match.");
+    output += after;
+    cursor = start + before.length;
+    if (normalized[cursor] === "\n") { output += "\n"; cursor += 1; }
+  }
+  output += normalized.slice(cursor);
+  const originalBytes = Buffer.from(source);
+  const offsets: number[] = [];
+  for (let index = 0; index < originalBytes.length; index++) {
+    offsets.push(index);
+    if (originalBytes[index] === 13 && originalBytes[index + 1] === 10) index++;
+  }
+  offsets.push(originalBytes.length);
+  return changedRanges(normalized, output).map((replacement) => {
+    const start = offsets[replacement.start]!;
+    const end = offsets[replacement.end]!;
+    const lineEnd = originalBytes.indexOf(10, start);
+    const crlf = lineEnd > 0 && originalBytes[lineEnd - 1] === 13;
+    return { start, end, replacement: crlf ? replacement.replacement.replaceAll("\n", "\r\n") : replacement.replacement };
+  });
+}
+
 type PatchHunk = { anchor?: string; lines: string[]; eof?: boolean };
 
 type ParsedPatch = {

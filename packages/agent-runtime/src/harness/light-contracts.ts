@@ -49,6 +49,7 @@ const symbolEdit = z
 const patchEdit = z
   .object({
     kind: z.literal("patch"),
+    target: z.string().trim().min(1).max(4_096).optional().describe("Observed symbol alias. Restricts one Update File patch to this symbol; its header must match the alias path."),
     path: relativePath.optional().describe("Target for raw content or a patch without file headers. Explicit patch headers select their own files."),
     patch: editContent
       .min(1)
@@ -68,6 +69,13 @@ export const lightEditCodeInputSchema = z
   .strict();
 
 export const lightRunTaskInputSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("inspect"),
+      run: z.string().regex(/^r[1-9]\d*$/u),
+      cursor: z.string().regex(/^\d+$/u).optional(),
+    })
+    .strict(),
   z
     .object({
       kind: z.literal("project"),
@@ -126,6 +134,9 @@ export type LightToolResult<T> =
   | {
       status: "failed";
       category: "harness";
+      applied?: boolean;
+      recovery?: "recovery_required";
+      paths?: string[];
       message: string;
       diagnosticId: string;
     };

@@ -11,6 +11,12 @@ type CommandOptions = {
   maximumOutputBytes?: number;
 };
 
+export type WorkspaceCommandSnapshot = {
+  cursor: string;
+  output: string;
+  process: "running" | "exited" | "timed_out" | "cancelled";
+};
+
 export type WorkspaceCommandResult = {
   all: string;
   exitCode?: number;
@@ -23,9 +29,21 @@ export function executeWorkspaceCommand(
   args: string[],
   options: CommandOptions,
 ): Promise<WorkspaceCommandResult> {
+  return startWorkspaceCommand(executable, args, options).completion;
+}
+
+export function startWorkspaceCommand(
+  executable: string,
+  args: string[],
+  options: CommandOptions,
+) {
   options.signal?.throwIfAborted();
   const child = spawnWorkspaceProcess(executable, args, options.cwd);
-  return new CommandExecution(child, options).run();
+  const execution = new CommandExecution(child, options);
+  return {
+    completion: execution.run(),
+    inspect: (cursor?: string) => execution.inspect(cursor),
+  };
 }
 
 function spawnWorkspaceProcess(executable: string, args: string[], cwd: string) {
@@ -80,6 +98,25 @@ class CommandExecution {
     this.options.signal?.addEventListener("abort", this.cancel, { once: true });
     if (this.options.signal?.aborted) this.cancel();
     return completion;
+  }
+
+  inspect(cursor?: string): WorkspaceCommandSnapshot {
+    const offset = cursor === undefined ? 0 : Number(cursor);
+    if (!Number.isSafeInteger(offset) || offset < 0 || offset > this.bytes)
+      throw new Error(`Invalid run cursor ${cursor}.`);
+    const content = Buffer.concat(this.chunks);
+    return {
+      cursor: String(this.bytes),
+      output: content.subarray(offset).toString("utf8"),
+      process:
+        this.interruption === "cancelled"
+          ? "cancelled"
+          : this.interruption === "timed_out"
+            ? "timed_out"
+            : this.finished
+              ? "exited"
+              : "running",
+    };
   }
 
   private capture(stream: Readable | null) {

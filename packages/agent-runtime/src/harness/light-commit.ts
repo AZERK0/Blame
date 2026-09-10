@@ -53,9 +53,16 @@ export class LightCommitService {
     }
   }
 
-  async restoreFiles(mutations: LightFileMutation[]) {
-    for (const mutation of [...mutations].reverse())
+  async restoreFiles(mutations: LightFileMutation[], requireOwnedState = false) {
+    for (const mutation of [...mutations].reverse()) {
+      if (requireOwnedState) {
+        const current = contentHash(await optionalContent(this.files, mutation.path));
+        if (current === contentHash(mutation.before)) continue;
+        if (current !== contentHash(mutation.after))
+          throw new LightCommitConflict(`Recovery preserved a concurrent change in ${mutation.path}.`);
+      }
       await writeMutation(this.files, mutation, "before");
+    }
   }
 
   private async recoverInterruptedWrite() {
@@ -80,7 +87,7 @@ export class LightCommitService {
           `Interrupted edit conflicts with a newer change in ${mutation.path}; automatic recovery preserved the worktree.`,
         );
     }
-    await this.restoreFiles(mutations);
+    await this.restoreFiles(mutations, true);
     await rm(this.pendingFile);
   }
 
@@ -133,7 +140,7 @@ export class LightCommitService {
         await writeMutation(this.files, mutation, "after");
       }
     } catch (error) {
-      await this.restoreFiles(applied).catch((rollbackError) => {
+      await this.restoreFiles(applied, true).catch((rollbackError) => {
         throw new AggregateError(
           [error, rollbackError],
           "Edit rollback failed; recovery is pending.",

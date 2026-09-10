@@ -136,6 +136,8 @@ export class LightFinishService {
         continue;
       if (hasUnavailableValidation(state.validations, paths, input.task))
         continue;
+      if (state.validations.some((validation) => validation.taskId === input.task && validation.status === "unknown"))
+        continue;
       const result = await this.runValidation(input, context);
       if (result.status === "blocked" && result.category === "code")
         throw new Error(result.message);
@@ -364,7 +366,6 @@ function assertNoFailedValidation(
     (validation) =>
       validation.terminal === "failed" &&
       validation.category === "code" &&
-      validation.paths.some((path) => state.changedPaths.includes(path)) &&
       ["build", "test", "typecheck", "lint"].includes(
         validation.taskKind ?? "",
       ),

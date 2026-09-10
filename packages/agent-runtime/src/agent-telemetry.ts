@@ -1,3 +1,4 @@
+import { auditSdkUsage } from "./usage-audit.js";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 import type { CoreSessionEvent } from "@cline/sdk";
@@ -791,6 +792,12 @@ export class AgentTelemetry {
   ) {
     if (!state.component) return;
     const next = usageSnapshot(value);
+    const audit = auditSdkUsage(value);
+    state.component.span.setAttributes({
+      "blame.usage.completeness": audit.completeness,
+      "blame.usage.normalization_version": audit.normalizationVersion,
+      "blame.usage.cost_available": audit.cost !== null,
+    });
     const previous = state.usageByAgent.get(agentKey) ?? emptyUsage();
     const delta = usageDelta(previous, next);
     state.usageByAgent.set(agentKey, next);

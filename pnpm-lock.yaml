@@ -85,6 +85,9 @@ importers:
       '@vscode/ripgrep':
         specifier: 1.18.0
         version: 1.18.0
+      '@xmldom/xmldom':
+        specifier: 0.9.10
+        version: 0.9.10
       diff:
         specifier: 9.0.0
         version: 9.0.0
@@ -15534,8 +15537,7 @@ snapshots:
 
   '@xmldom/xmldom@0.8.13': {}
 
-  '@xmldom/xmldom@0.9.10':
-    optional: true
+  '@xmldom/xmldom@0.9.10': {}
 
   '@xterm/addon-fit@0.11.0': {}
 
