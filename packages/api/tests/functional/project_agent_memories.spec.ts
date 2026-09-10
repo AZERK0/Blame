@@ -48,7 +48,7 @@ test.group('project agent memories', (group) => {
 
     listed.assertStatus(200)
     rejected.assertStatus(404)
-    const records = listed.body() as Array<{ transformerData: MemoryBody['data'][] }>
+    const records = listed.body() as unknown as Array<{ transformerData: MemoryBody['data'][] }>
     assert.lengthOf(records, 1)
     assert.deepEqual(records[0]!.transformerData[0]!.files, memoryInput().files)
   })
