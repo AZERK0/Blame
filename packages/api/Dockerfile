@@ -19,6 +19,7 @@ FROM base AS builder
 
 # Copy workspace configuration
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY patches/ ./patches/
 
 # Copy packages (shared code)
 COPY packages/ ./packages/
@@ -54,6 +55,7 @@ RUN addgroup --system --gid 1001 nodejs \
 
 # Copy workspace configuration
 COPY --chown=adonis:nodejs pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY --chown=adonis:nodejs patches/ ./patches/
 
 # Copy packages (needed for workspace dependency)
 COPY --from=builder --chown=adonis:nodejs /app/packages ./packages
