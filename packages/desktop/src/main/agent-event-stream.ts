@@ -36,6 +36,16 @@ export class AgentEventStream {
     this.resetSession(sessionId);
   }
 
+  prepareSession<T extends Record<string, unknown>>(input: T) {
+    const sessionId =
+      typeof input.sessionId === "string" && input.sessionId.trim()
+        ? input.sessionId
+        : `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`;
+    // Initialize before the runtime can publish an immediate error or result.
+    this.beginSession(sessionId);
+    return { ...input, sessionId };
+  }
+
   url(sessionId: string, baseUrl: string) {
     const session = this.session(sessionId);
     const url = new URL(

@@ -166,10 +166,11 @@ function registerSessionStartIpcHandlers(
     const pendingSessionId = workspace ? `pending:${randomUUID()}` : undefined;
     if (workspace && pendingSessionId)
       agentWorkspaceWriters.begin(pendingSessionId, workspace);
+    const sessionInput = eventStream.prepareSession(prepared);
     try {
       session = await agentRuntime().startSession(
         "sessions.startDevelopment",
-        prepared,
+        sessionInput,
       );
     } catch (error) {
       if (!retryableHubTransportError(error)) throw error;
@@ -178,7 +179,9 @@ function registerSessionStartIpcHandlers(
       );
       session = await agentRuntime().startSession(
         "sessions.startDevelopment",
-        refreshRuntimeBackendConnection(await agentWorkspaceInput(prepared)),
+        refreshRuntimeBackendConnection(
+          await agentWorkspaceInput(sessionInput),
+        ),
       );
     } finally {
       if (pendingSessionId && !session)
@@ -186,7 +189,6 @@ function registerSessionStartIpcHandlers(
     }
     if (pendingSessionId)
       agentWorkspaceWriters.rebind(pendingSessionId, session.sessionId);
-    eventStream.beginSession(session.sessionId);
     return session;
   });
 }
@@ -362,10 +364,12 @@ async function startWorkspaceSession(
   if (workspace && pendingSessionId)
     agentWorkspaceWriters.begin(pendingSessionId, workspace);
   try {
-    const session = await agentRuntime().startSession(method, input);
+    const session = await agentRuntime().startSession(
+      method,
+      eventStream.prepareSession(input),
+    );
     if (pendingSessionId)
       agentWorkspaceWriters.rebind(pendingSessionId, session.sessionId);
-    eventStream.beginSession(session.sessionId);
     return session;
   } catch (error) {
     if (pendingSessionId) agentWorkspaceWriters.forget(pendingSessionId);

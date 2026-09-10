@@ -121,6 +121,47 @@ test("keeps events published before the stream URL is requested", () => {
   assert.match(response.chunks.join(""), /early event/);
 });
 
+test("prepares a session before an immediate runtime failure can be published", async () => {
+  const stream = new AgentEventStream();
+  try {
+    const input = stream.prepareSession({ prompt: "Build the carousel" });
+    assert.ok(input.sessionId);
+    assert.equal(input.prompt, "Build the carousel");
+    const startRuntime = async () => {
+      stream.publish({
+        sessionId: input.sessionId,
+        type: "error",
+        payload: { message: "Runtime startup failed" },
+      });
+      return { sessionId: input.sessionId };
+    };
+    const session = await startRuntime();
+    const url = stream.url(session.sessionId, "http://127.0.0.1:1234");
+    const response = new Response();
+    stream.handle(request(url) as never, response as never);
+    assert.match(response.chunks.join(""), /Runtime startup failed/);
+  } finally {
+    stream.close();
+  }
+});
+
+test("preparing a reused session drops old events before receiving new activity", () => {
+  const stream = new AgentEventStream();
+  try {
+    stream.publish(event("session", "old execution"));
+    const input = stream.prepareSession({ sessionId: "session" });
+    assert.equal(input.sessionId, "session");
+    stream.publish(event(input.sessionId, "new activity"));
+    const response = new Response();
+    const url = stream.url(input.sessionId, "http://127.0.0.1:1234");
+    stream.handle(request(url) as never, response as never);
+    assert.doesNotMatch(response.chunks.join(""), /old execution/);
+    assert.match(response.chunks.join(""), /new activity/);
+  } finally {
+    stream.close();
+  }
+});
+
 test("does not reset history when multiple consumers request a URL", () => {
   const stream = new AgentEventStream();
   stream.beginSession("session");
