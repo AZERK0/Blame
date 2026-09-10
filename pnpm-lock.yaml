@@ -14,9 +14,9 @@ overrides:
   brace-expansion@>=5.0.0 <5.0.9: 5.0.9
 
 patchedDependencies:
-  '@cline/core@0.0.81':
-    hash: 1c2111f21bc8f74601101fcbfcd72bea19a4770d51501892f263657f3b6c6486
-    path: patches/@cline__core@0.0.81.patch
+  '@cline/core@0.0.82':
+    hash: be2ce6a94e231c37dc1e495ecfdef314a2dd32ed23bbd6b53da655e20ece78b3
+    path: patches/@cline__core@0.0.82.patch
   app-builder-lib@26.8.1:
     hash: b01e9cad7d5cb7de17c9fa0e732aacaa0ca8e18d7d69796ec296ef2c152522fb
     path: patches/app-builder-lib@26.8.1.patch
@@ -77,11 +77,11 @@ importers:
         specifier: workspace:*
         version: link:../telemetry
       '@cline/llms':
-        specifier: 0.0.81
-        version: 0.0.81(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
+        specifier: 0.0.82
+        version: 0.0.82(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
       '@cline/sdk':
-        specifier: 0.0.81
-        version: 0.0.81(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))
+        specifier: 0.0.82
+        version: 0.0.82(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))
       '@vscode/ripgrep':
         specifier: 1.18.0
         version: 1.18.0
@@ -201,8 +201,8 @@ importers:
         specifier: workspace:*
         version: link:../telemetry
       '@cline/llms':
-        specifier: 0.0.81
-        version: 0.0.81(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
+        specifier: 0.0.82
+        version: 0.0.82(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
       '@japa/api-client':
         specifier: ^3.2.1
         version: 3.2.1(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)
@@ -1665,12 +1665,12 @@ packages:
   '@chevrotain/utils@11.2.0':
     resolution: {integrity: sha512-+7whECg4yNWHottjvr2To2BRxL4XJVjIyyv5J4+bJ0iMOVU8j/8n1qPDLZS/90W/BObDR8VNL46lFbzY/Hosmw==}
 
-  '@cline/agents@0.0.81':
-    resolution: {integrity: sha512-P3HZhizzEJP/wsZs3L3lFmitnH5PZ2uraQpAYJ6cVtj0XrAB+5bkuvAH5OZ3YIB/Am1+wnIUTH/MtLWdHXkUlA==}
+  '@cline/agents@0.0.82':
+    resolution: {integrity: sha512-J9MKxG2UIsWjdaqGfD9tj1NIn4kKvmjb0ap4IziORaI/RbhlliIw8/DTi62g2Xx0caWv+VEtekICVAGHaY1vSQ==}
     engines: {node: '>=22'}
 
-  '@cline/core@0.0.81':
-    resolution: {integrity: sha512-8lsBPSgkH4oACcIS/AQMzYsx8WfJhkHoNXYHnDKoXjJijFC9WRv2fkaPaCZqe0FPyR80ob1gVyCCLEj7pIHiRA==}
+  '@cline/core@0.0.82':
+    resolution: {integrity: sha512-2aGd2Upker6cEJdrXRR/IMlRsbiMXi41n8FM4Pu3gXL4IWDiBees7aXErqKPK/6N8N4NV9lJKsb0n5YR1MZjPQ==}
     engines: {node: '>=22'}
     peerDependencies:
       posthog-node: ^5.8.0
@@ -1678,8 +1678,8 @@ packages:
       posthog-node:
         optional: true
 
-  '@cline/llms@0.0.81':
-    resolution: {integrity: sha512-lVIjzY8N38IiU3GUJLxPMKQ8LoI12zckAH3aNMNO5CJeNaff9MI0DSEvX/+42iYv3vE3chcwzu+i+uOEE2pIEw==}
+  '@cline/llms@0.0.82':
+    resolution: {integrity: sha512-kzS0f/xIZDzXJ19f2qFu5VtzzMaCAzfSNWnGLX6LIDlwIwWnJCAxw6agz/iNxMHnxESDY5Qtcr8jHnndm1/CCg==}
     engines: {node: '>=22'}
     peerDependencies:
       '@aws-sdk/client-bedrock-runtime': ^3.0.0
@@ -1693,12 +1693,12 @@ packages:
       ai-sdk-provider-codex-cli:
         optional: true
 
-  '@cline/sdk@0.0.81':
-    resolution: {integrity: sha512-ImBfofDMEY0uCbhkHCUb0HT2rtRyfuyTUGVOBn3g+/fp9CmgqR+W6l0OZHMTVknmEzUTxj2BPxPgWbp9sAJAKw==}
+  '@cline/sdk@0.0.82':
+    resolution: {integrity: sha512-RAkOGPCS4d5LsE41aedfNbcHu9tJR0O3wv5xK2pzhNB1sP28vGXb+gS4+QezlyISqzF7SHwJ0jlXIs3kuZo8zQ==}
     engines: {node: '>=22'}
 
-  '@cline/shared@0.0.81':
-    resolution: {integrity: sha512-o9uEEunkroo9nsu6a/xxpmn1miUL79ksjnxubcph0DnYfFO2TBfFKZqbu/v18WEMCPRZ3PiMR1TCE1o7FbhGxg==}
+  '@cline/shared@0.0.82':
+    resolution: {integrity: sha512-vOG9Pa7pDxjcXptnUth8H8i0TnJAa9n//yQeR3tlIpgCbdkvr4SaQ75gV3CXxIglJzYZsP7BOr7r4KYiXWjEpQ==}
     engines: {node: '>=22'}
 
   '@colors/colors@1.5.0':
@@ -2704,6 +2704,12 @@ packages:
       '@opentelemetry/core': ^2.0.1
       '@opentelemetry/exporter-trace-otlp-http': '>=0.202.0 <1.0.0'
       '@opentelemetry/sdk-trace-base': ^2.0.1
+
+  '@langfuse/tracing@5.10.1':
+    resolution: {integrity: sha512-m2kK4D0MsH8g4Og6KpnlYk8NLdQTYe0JR5M4KKpfNj99XXLlbdpXE/g3uJSqkcrWFhpiIb+3cyS9+uV6wQ6WtA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@opentelemetry/api': ^1.9.0
 
   '@langfuse/vercel-ai-sdk@5.9.1':
     resolution: {integrity: sha512-gZPZJ3JXYTkT7W61VhbNHXgn/88+laoAQGMc082ESeXBwfuMVVPKDueZzM0xy6s0BTtPLW5WmbJ5NkLNCtR3Nw==}
@@ -11401,10 +11407,10 @@ snapshots:
 
   '@chevrotain/utils@11.2.0': {}
 
-  '@cline/agents@0.0.81(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))':
+  '@cline/agents@0.0.82(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))':
     dependencies:
-      '@cline/llms': 0.0.81(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
-      '@cline/shared': 0.0.81
+      '@cline/llms': 0.0.82(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
+      '@cline/shared': 0.0.82
       nanoid: 5.1.11
     transitivePeerDependencies:
       - '@aws-sdk/client-bedrock-runtime'
@@ -11416,11 +11422,11 @@ snapshots:
       - debug
       - supports-color
 
-  '@cline/core@0.0.81(patch_hash=1c2111f21bc8f74601101fcbfcd72bea19a4770d51501892f263657f3b6c6486)(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))':
+  '@cline/core@0.0.82(patch_hash=be2ce6a94e231c37dc1e495ecfdef314a2dd32ed23bbd6b53da655e20ece78b3)(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))':
     dependencies:
-      '@cline/agents': 0.0.81(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
-      '@cline/llms': 0.0.81(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
-      '@cline/shared': 0.0.81
+      '@cline/agents': 0.0.82(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
+      '@cline/llms': 0.0.82(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
+      '@cline/shared': 0.0.82
       '@modelcontextprotocol/sdk': 1.30.0(zod@4.4.3)
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.214.0
@@ -11451,7 +11457,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@cline/llms@0.0.81(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))':
+  '@cline/llms@0.0.82(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))':
     dependencies:
       '@ai-sdk/amazon-bedrock': 5.0.68(zod@4.4.3)
       '@ai-sdk/anthropic': 4.0.46(zod@4.4.3)
@@ -11465,10 +11471,10 @@ snapshots:
       '@ai-sdk/provider': 4.0.9
       '@ai-sdk/provider-utils': 5.0.34(zod@4.4.3)
       '@aws-sdk/credential-providers': 3.1048.0
-      '@cline/shared': 0.0.81
+      '@cline/shared': 0.0.82
       '@jerome-benoit/sap-ai-provider': 4.8.0(ai@7.0.85(zod@4.4.3))
-      '@langfuse/core': 5.10.1(@opentelemetry/api@1.9.1)
       '@langfuse/otel': 5.10.1(@opentelemetry/api@1.9.1)(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
+      '@langfuse/tracing': 5.10.1(@opentelemetry/api@1.9.1)
       '@langfuse/vercel-ai-sdk': 5.9.1(@opentelemetry/api@1.9.1)(ai@7.0.85(zod@4.4.3))(zod@4.4.3)
       '@openrouter/ai-sdk-provider': 3.0.0(ai@7.0.85(zod@4.4.3))(zod@4.4.3)
       '@opentelemetry/api': 1.9.1
@@ -11487,7 +11493,7 @@ snapshots:
       - debug
       - supports-color
 
-  '@cline/llms@0.0.81(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))':
+  '@cline/llms@0.0.82(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))':
     dependencies:
       '@ai-sdk/amazon-bedrock': 5.0.68(zod@4.4.3)
       '@ai-sdk/anthropic': 4.0.46(zod@4.4.3)
@@ -11501,10 +11507,10 @@ snapshots:
       '@ai-sdk/provider': 4.0.9
       '@ai-sdk/provider-utils': 5.0.34(zod@4.4.3)
       '@aws-sdk/credential-providers': 3.1048.0
-      '@cline/shared': 0.0.81
+      '@cline/shared': 0.0.82
       '@jerome-benoit/sap-ai-provider': 4.8.0(ai@7.0.85(zod@4.4.3))
-      '@langfuse/core': 5.10.1(@opentelemetry/api@1.9.1)
       '@langfuse/otel': 5.10.1(@opentelemetry/api@1.9.1)(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
+      '@langfuse/tracing': 5.10.1(@opentelemetry/api@1.9.1)
       '@langfuse/vercel-ai-sdk': 5.9.1(@opentelemetry/api@1.9.1)(ai@7.0.85(zod@4.4.3))(zod@4.4.3)
       '@openrouter/ai-sdk-provider': 3.0.0(ai@7.0.85(zod@4.4.3))(zod@4.4.3)
       '@opentelemetry/api': 1.9.1
@@ -11523,9 +11529,9 @@ snapshots:
       - debug
       - supports-color
 
-  '@cline/sdk@0.0.81(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))':
+  '@cline/sdk@0.0.82(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))':
     dependencies:
-      '@cline/core': 0.0.81(patch_hash=1c2111f21bc8f74601101fcbfcd72bea19a4770d51501892f263657f3b6c6486)(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))
+      '@cline/core': 0.0.82(patch_hash=be2ce6a94e231c37dc1e495ecfdef314a2dd32ed23bbd6b53da655e20ece78b3)(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))
     transitivePeerDependencies:
       - '@aws-sdk/client-bedrock-runtime'
       - '@cfworker/json-schema'
@@ -11538,7 +11544,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@cline/shared@0.0.81':
+  '@cline/shared@0.0.82':
     dependencies:
       aws4fetch: 1.0.20
       jsonrepair: 3.14.0
@@ -12363,6 +12369,11 @@ snapshots:
       '@opentelemetry/core': 2.9.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/exporter-trace-otlp-http': 0.220.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/sdk-trace-base': 2.9.0(@opentelemetry/api@1.9.1)
+
+  '@langfuse/tracing@5.10.1(@opentelemetry/api@1.9.1)':
+    dependencies:
+      '@langfuse/core': 5.10.1(@opentelemetry/api@1.9.1)
+      '@opentelemetry/api': 1.9.1
 
   '@langfuse/vercel-ai-sdk@5.9.1(@opentelemetry/api@1.9.1)(ai@7.0.85(zod@4.4.3))(zod@4.4.3)':
     dependencies:

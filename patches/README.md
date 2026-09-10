@@ -1,6 +1,6 @@
 # Cline core image accounting
 
-This pnpm patch applies only to `@cline/core@0.0.81`. Its optional `imageTokenLimit` replaces the base64 contribution in compaction estimates with a per-image token bound. It affects both the compaction trigger and retained-message selection. The default path is unchanged, including the native Cline benchmark control.
+This pnpm patch applies only to `@cline/core@0.0.82`. Its optional `imageTokenLimit` replaces the base64 contribution in compaction estimates with a per-image token bound. It affects both the compaction trigger and retained-message selection. The default path is unchanged, including the native Cline benchmark control.
 
 Blame enables the option only for documented GPT-5.6 image-capable provider/model combinations. Canonical messages and image pixels are unchanged. `packages/agent-runtime/src/image-compaction.test.ts` exercises the real SDK API, including session normalization, constrained budgets and the unchanged text/default paths. The helper is readable in the patch; most patch bytes come from the SDK's three minified distribution bundles.
 

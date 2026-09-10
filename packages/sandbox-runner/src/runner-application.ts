@@ -532,7 +532,7 @@ function requiredRouteId(
 
 function handshake() {
   return runnerHandshake({
-    clineSdkVersion: process.env.BLAME_CLINE_SDK_VERSION ?? "0.0.81",
+    clineSdkVersion: process.env.BLAME_CLINE_SDK_VERSION ?? "0.0.82",
     runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.2.17",
     imageDigest: process.env.BLAME_RUNNER_IMAGE_DIGEST ?? "unconfigured",
     capabilities: {
