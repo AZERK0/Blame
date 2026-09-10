@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -13,6 +13,56 @@ import {
 import { WorkspaceSyncService } from "./workspace-sync-service.ts";
 
 const execFileAsync = promisify(execFile);
+
+test("the sync barrier ignores VM worktrees absent from the host with cloud sessions registered", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-sync-barrier-"));
+  try {
+    const index = join(root, "index.json");
+    await writeFile(index, JSON.stringify([["cloud-session", root]]));
+    const service = new WorkspaceSyncService(index);
+    service.flushLive = async () =>
+      assert.fail("Unrelated cloud session flushed");
+    await service.flushWorkspace(
+      `/home/blame/.local/share/blame/runtime/worktrees/${root.split("/").pop()}/story-US-002-untitled-user-story`,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("the sync barrier preserves errors for missing registered cloud workspaces", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-sync-barrier-"));
+  try {
+    const missing = join(root, "missing");
+    const index = join(root, "index.json");
+    await writeFile(index, JSON.stringify([["cloud-session", missing]]));
+    const service = new WorkspaceSyncService(index);
+    await assert.rejects(service.flushWorkspace(missing), { code: "ENOENT" });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("the sync barrier resolves aliases and awaits the registered cloud flush", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-sync-barrier-"));
+  try {
+    const index = join(root, "index.json");
+    await writeFile(
+      index,
+      JSON.stringify([["cloud-session", await realpath(root)]]),
+    );
+    const alias = join(root, "alias");
+    await symlink(root, alias, "junction");
+    const service = new WorkspaceSyncService(index);
+    service.flushLive = async (sessionId) => {
+      assert.equal(sessionId, "cloud-session");
+      throw new Error("Cloud flush failed");
+    };
+    await assert.rejects(service.flushWorkspace(alias), /Cloud flush failed/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 test("skips upload and import when the persisted workspace hash is unchanged", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-workspace-sync-"));

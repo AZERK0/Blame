@@ -426,7 +426,19 @@ export class WorkspaceSyncService {
 
   async flushWorkspace(localPath: string) {
     await this.load();
-    const root = await realpath(localPath);
+    let root: string;
+    try {
+      root = await realpath(localPath);
+    } catch (error) {
+      // VM worktrees are not visible on the host and have no cloud sync to
+      // flush. Keep failures for registered cloud workspaces actionable.
+      if (
+        (error as NodeJS.ErrnoException).code === "ENOENT" &&
+        !this.sessionsByWorkspace.has(localPath)
+      )
+        return;
+      throw error;
+    }
     const sessionId = this.sessionsByWorkspace.get(root);
     if (sessionId) await this.flushLive(sessionId);
   }

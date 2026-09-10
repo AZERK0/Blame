@@ -52,9 +52,12 @@ type ManagedRuntimeCheckName =
   | "wsl"
   | "wsl2"
   | "runtime-version"
+  | "agent-version"
   | "distro"
   | "agent"
   | "node"
+  | "semantic-harness"
+  | "package-managers"
   | RuntimeDependencyName;
 
 type ManagedRuntimeCheckStatus =
@@ -580,18 +583,15 @@ function runtimeDependencyName(
   name: ManagedRuntimeCheckName,
 ): RuntimeDependencyName {
   if (
-    name === "lima" ||
-    name === "vm" ||
-    name === "wsl" ||
-    name === "wsl2" ||
-    name === "distro" ||
-    name === "host-home" ||
-    name === "runtime-version" ||
-    name === "agent" ||
-    name === "node"
-  )
-    return "blame-runtime";
-  return name;
+    name === "containerd" ||
+    name === "git" ||
+    name === "nerdctl" ||
+    name === "nerdctl-compose" ||
+    name === "cline-sdk"
+  ) {
+    return name;
+  }
+  return "blame-runtime";
 }
 
 function runtimeDependencyStatus(

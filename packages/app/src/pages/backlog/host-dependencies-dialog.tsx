@@ -1,5 +1,10 @@
 import * as React from "react"
-import { DownloadIcon, LoaderCircleIcon, RefreshCwIcon } from "lucide-react"
+import {
+  CircleAlertIcon,
+  DownloadIcon,
+  LoaderCircleIcon,
+  RefreshCwIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -136,6 +141,8 @@ function DependencyIssueRow({
   platform: ReturnType<typeof usePlatform>
   progress: RuntimeProgress | null
 }) {
+  const actionAvailable = dependencyActionAvailable(issue, platform)
+
   return (
     <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
       <div className="min-w-0">
@@ -147,7 +154,7 @@ function DependencyIssueRow({
       <Button
         type="button"
         variant="outline"
-        disabled={disabled}
+        disabled={disabled || !actionAvailable}
         onClick={() => void onAction(issue)}
       >
         <DependencyButtonIcon
@@ -174,6 +181,7 @@ function DependencyButtonIcon({
 }) {
   if (loading) return <LoaderCircleIcon className="animate-spin" />
   if (dependencyRuntimeAction(issue, platform)) return <RefreshCwIcon />
+  if (!dependencyUrl(issue)) return <CircleAlertIcon />
   return <DownloadIcon />
 }
 
@@ -182,21 +190,23 @@ function dependencyRuntimeAction(
   platform: ReturnType<typeof usePlatform>
 ) {
   if (!managedRuntimePlatform(platform.platform)) return null
-  if (issue.name === "blame-runtime") return blameRuntimeAction(issue, platform)
-  if (runtimeRepairDependency(issue.name)) {
+  if (resetRuntimeIssue(issue)) {
+    return createRuntimeAction("reset", platform.workspace?.resetRuntime)
+  }
+  if (repairRuntimeIssue(issue)) {
     return createRuntimeAction("repair", platform.workspace?.repairRuntime)
+  }
+  if (issue.name === "blame-runtime") {
+    return createRuntimeAction("ensure", platform.workspace?.ensureRuntimeReady)
   }
   return null
 }
 
-function blameRuntimeAction(
-  issue: HostDependencyIssue,
-  platform: ReturnType<typeof usePlatform>
-) {
-  if (resetRuntimeIssue(issue)) {
-    return createRuntimeAction("reset", platform.workspace?.resetRuntime)
-  }
-  return createRuntimeAction("ensure", platform.workspace?.ensureRuntimeReady)
+function repairRuntimeIssue(issue: HostDependencyIssue) {
+  return (
+    runtimeRepairDependency(issue.name) ||
+    /\brepair\s+Blame\s*Runtime\b/i.test(issue.action)
+  )
 }
 
 function createRuntimeAction(
@@ -244,8 +254,9 @@ function dependencyButtonLabel(
 ) {
   if (dependencyRuntimeAction(issue, platform)) {
     if (resetRuntimeIssue(issue)) return "Reset Runtime"
-    return issue.name === "blame-runtime" ? "Setup Runtime" : "Repair Runtime"
+    return repairRuntimeIssue(issue) ? "Repair Runtime" : "Setup Runtime"
   }
+  if (!dependencyUrl(issue)) return "Unavailable"
   if (issue.status === "unsupported") return "Upgrade"
   return "Download"
 }
@@ -266,7 +277,19 @@ function dependencyLabel(issue: HostDependencyIssue) {
     bun: "Bun",
     pip: "pip",
   }
-  return labels[issue.name]
+  return (
+    labels[issue.name] ??
+    (repairRuntimeIssue(issue) ? "Blame Runtime" : "Development requirement")
+  )
+}
+
+function dependencyActionAvailable(
+  issue: HostDependencyIssue,
+  platform: ReturnType<typeof usePlatform>
+) {
+  return Boolean(
+    dependencyRuntimeAction(issue, platform) || dependencyUrl(issue)
+  )
 }
 
 function dependencyUrl(issue: HostDependencyIssue) {
@@ -277,7 +300,8 @@ function dependencyUrl(issue: HostDependencyIssue) {
     corepack: "https://nodejs.org/en/download",
     git: "https://git-scm.com/downloads",
     nerdctl: "https://github.com/containerd/nerdctl",
-    "nerdctl-compose": "https://github.com/containerd/nerdctl/blob/main/docs/compose.md",
+    "nerdctl-compose":
+      "https://github.com/containerd/nerdctl/blob/main/docs/compose.md",
     node: "https://nodejs.org/en/download",
     npm: "https://nodejs.org/en/download",
     pnpm: "https://pnpm.io/installation",

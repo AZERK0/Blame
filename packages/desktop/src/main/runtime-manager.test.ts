@@ -223,6 +223,39 @@ test("reports stale Lima runtime version as repairable runtime", async () => {
   assert.match(status.issues[0]?.action ?? "", /Repair BlameRuntime/);
 });
 
+test("maps internal managed runtime checks to the Blame Runtime dependency", async () => {
+  for (const name of [
+    "agent-version",
+    "semantic-harness",
+    "package-managers",
+  ]) {
+    const manager = createRuntimeManager(
+      { platform: "darwin" },
+      async (_command, args) => {
+        if (args[0] !== "status") return "ok";
+        return JSON.stringify({
+          status: "repairable",
+          checks: [
+            { name: "lima", status: "available" },
+            {
+              action: "Repair BlameRuntime from Blame runtime setup.",
+              name,
+              status: "missing",
+            },
+          ],
+        });
+      },
+    );
+
+    const status = await manager.checkRuntimeDependencies();
+
+    assert.equal(status.status, "repairable", name);
+    assert.equal(status.issues[0]?.name, "blame-runtime", name);
+    assert.equal(status.issues[0]?.status, "missing", name);
+    assert.match(status.issues[0]?.action ?? "", /Repair BlameRuntime/, name);
+  }
+});
+
 test("reports missing bundled Lima as managed runtime missing", async () => {
   const manager = createRuntimeManager(
     { platform: "darwin" },
