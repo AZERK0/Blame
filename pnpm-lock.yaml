@@ -70,6 +70,9 @@ importers:
       '@blame/harness-core':
         specifier: workspace:*
         version: link:../harness-core
+      '@blame/model-catalog':
+        specifier: workspace:*
+        version: link:../model-catalog
       '@blame/preview-contract':
         specifier: workspace:*
         version: link:../preview-contract
@@ -191,6 +194,9 @@ importers:
       '@blame/deploy-contract':
         specifier: workspace:*
         version: link:../deploy-contract
+      '@blame/model-catalog':
+        specifier: workspace:*
+        version: link:../model-catalog
       '@blame/preview-contract':
         specifier: workspace:*
         version: link:../preview-contract
@@ -589,6 +595,18 @@ importers:
 
   packages/harness-core:
     devDependencies:
+      '@types/node':
+        specifier: ^24.12.0
+        version: 24.12.4
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+
+  packages/model-catalog:
+    devDependencies:
+      '@cline/shared':
+        specifier: 0.0.82
+        version: 0.0.82
       '@types/node':
         specifier: ^24.12.0
         version: 24.12.4

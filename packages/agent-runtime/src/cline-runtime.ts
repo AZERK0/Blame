@@ -156,6 +156,7 @@ import { optimizeUserStoryPrompt } from "./prompt-optimization.js";
 import { generateTitle } from "./title-generation.js";
 import { loadPrompt } from "./prompt-loader.js";
 import { createProviderCompatibleFetch } from "./provider-schema-compatibility.js";
+import { supplementalModelConfig } from "./supplemental-model-config.js";
 import { fallbackCommitSubject } from "./commit-message.js";
 import {
   assertTargetChangesRestorable,
@@ -4522,7 +4523,7 @@ function specialistSpawnTool(options: {
   input: RuntimeStartSessionInput;
   readOnlyTools: AgentTool[];
 }) {
-  const configProvider = createDelegatedAgentConfigProvider({
+  const configProvider = createDelegatedAgentConfigProvider(supplementalModelConfig({
     providerId: options.input.providerId,
     modelId: options.input.modelId,
     apiKey: options.credential.apiKey,
@@ -4532,7 +4533,7 @@ function specialistSpawnTool(options: {
     ),
     cwd: options.input.cwd,
     maxIterations: 16,
-  });
+  }));
   const spawnTool = createSpawnAgentTool({
     configProvider,
     defaultMaxIterations: 16,

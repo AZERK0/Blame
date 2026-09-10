@@ -1,4 +1,5 @@
 import { getAllProviders, getModelsForProvider } from "@cline/llms";
+import { withSupplementalModels } from "@blame/model-catalog";
 import type { ModelInfo, ProviderInfo } from "@cline/llms";
 
 import type { BlameModel, BlameProvider } from "./types.js";
@@ -22,7 +23,7 @@ export function isBaseRuntimeProvider(providerId: string) {
 }
 
 async function toBlameProvider(provider: ProviderInfo): Promise<BlameProvider> {
-  const models = await getModelsForProvider(provider.id);
+  const models = await clineModels(provider.id);
 
   return {
     id: provider.id,
@@ -61,7 +62,7 @@ function toBlameModel(modelId: string, model: ModelInfo): BlameModel {
 }
 
 export async function clineModels(providerId: string) {
-  return getModelsForProvider(providerId);
+  return withSupplementalModels(providerId, await getModelsForProvider(providerId));
 }
 
 function reasoningVariants(model: ModelInfo) {

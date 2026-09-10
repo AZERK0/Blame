@@ -1,4 +1,5 @@
 import { delimiter, isAbsolute, relative, resolve } from "node:path";
+import { supplementalModelConfig } from "./supplemental-model-config.js";
 import type {
   BasicLogger,
   CoreCheckpointConfig,
@@ -230,7 +231,7 @@ export function appendProductionConfig<T extends CoreSessionConfig>(
     maxParallelToolCalls?: number;
   };
   return {
-    ...config,
+    ...supplementalModelConfig(config),
     execution: {
       ...config.execution,
       loopDetection: config.execution?.loopDetection ?? {

@@ -7,6 +7,7 @@ import {
   type ProviderInfo,
 } from '@cline/llms'
 import { parentPort, workerData } from 'node:worker_threads'
+import { missingProviderModels, withSupplementalModels } from '@blame/model-catalog'
 import type { ClineProviderCatalog } from './cline_catalog_client.js'
 
 type ClineCatalogRequest =
@@ -19,7 +20,7 @@ async function loadProviderCatalog() {
     providers.map(async (provider: ProviderInfo) => ({
       authoritativeModels: provider.metadata?.usageCostDisplay === 'subscription',
       provider,
-      models: await getModelsForProvider(provider.id),
+      models: withSupplementalModels(provider.id, await getModelsForProvider(provider.id)),
     }))
   ) satisfies Promise<ClineProviderCatalog[]>
 }
@@ -27,7 +28,18 @@ async function loadProviderCatalog() {
 async function loadLiveCatalog(url: string, providerIds: string[]) {
   const catalog = await fetchLiveProviderModels(url)
   return Object.fromEntries(
-    providerIds.map((providerId) => [providerId, providerLiveModels(providerId, catalog)])
+    await Promise.all(
+      providerIds.map(async (providerId) => {
+        const official = await getModelsForProvider(providerId)
+        // An API model inherited through an alias is not official availability
+        // for a subscription provider (and may have different limits/pricing).
+        const additions = missingProviderModels(providerId, {
+          ...official,
+          ...catalog[providerId],
+        })
+        return [providerId, { ...providerLiveModels(providerId, catalog), ...additions }]
+      })
+    )
   )
 }
 

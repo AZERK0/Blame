@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "node bin/server.js",
-    "predev": "pnpm --filter @blame/deploy-contract build && pnpm --filter @blame/preview-contract build && pnpm --filter @blame/telemetry build",
+    "predev": "pnpm --filter @blame/model-catalog build && pnpm --filter @blame/deploy-contract build && pnpm --filter @blame/preview-contract build && pnpm --filter @blame/telemetry build",
     "build": "node ace.js build",
     "dev": "node ace.js serve --hmr",
     "email:dev": "email dev --dir app/mails",
@@ -73,6 +73,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1095.0",
     "@better-auth/passkey": "1.6.24",
     "@blame/deploy-contract": "workspace:*",
+    "@blame/model-catalog": "workspace:*",
     "@blame/preview-contract": "workspace:*",
     "@blame/preview-runtime": "workspace:*",
     "@blame/telemetry": "workspace:*",
