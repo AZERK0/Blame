@@ -37,6 +37,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: node --test scripts/macos-signing.test.mjs
+      - run: pnpm --filter @blame/desktop test:package
       - id: runtime
         run: node scripts/release-preflight.mjs
         env:

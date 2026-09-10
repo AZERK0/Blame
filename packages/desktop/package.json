@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
-    "build:workspace-dependencies": "node ../../scripts/runtime-sdk-version.mjs && pnpm --filter @blame/deploy-contract build && pnpm --filter @blame/preview-contract build && pnpm --filter @blame/preview-runtime build && pnpm --filter @blame/telemetry build && pnpm --filter @blame/agent-runtime build",
+    "build:workspace-dependencies": "node ../../scripts/runtime-sdk-version.mjs && node scripts/build-workspace-dependencies.mjs",
     "build:semantic-harness-payload": "node ../../scripts/semantic-harness-payload.mjs --runtime-root resources/runtime",
     "predev": "pnpm run build:workspace-dependencies && pnpm run build:semantic-harness-payload",
     "dev": "node scripts/dev.mjs",
@@ -22,11 +22,13 @@
     "test:preview-devtools": "electron --experimental-strip-types scripts/preview-devtools-smoke.mjs",
     "test:appimage-run-task": "node scripts/appimage-run-task-smoke.mjs",
     "test:performance": "node --test --experimental-strip-types src/main/agent-event-stream.test.ts src/main/preview-browser-partition.test.ts src/main/preview-browser/preview-navigation-policy.test.ts src/main/preview-browser/preview-route-table.test.ts src/main/preview-runtime/cloud-preview-client.test.ts src/main/preview-runtime/local/local-preview-driver.test.ts src/main/preview-runtime/local/local-preview-lifecycle.test.ts src/main/workspaces/workspace-artifact.test.ts src/main/workspaces/workspace-delta.test.ts src/main/workspaces/workspace-sync-service.test.ts src/main/workspaces/workspace-writer-registry.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:package": "node --test scripts/package-integrity.test.mjs"
   },
   "dependencies": {
     "@blame/agent-runtime": "workspace:*",
     "@blame/deploy-contract": "workspace:*",
+    "@blame/harness-core": "workspace:*",
     "@blame/preview-contract": "workspace:*",
     "@blame/preview-runtime": "workspace:*",
     "@blame/telemetry": "workspace:*",

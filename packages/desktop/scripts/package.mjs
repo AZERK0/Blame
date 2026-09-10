@@ -11,6 +11,8 @@ import {
   semanticHarnessPayloadPath,
 } from "../../../scripts/semantic-harness-payload.mjs";
 
+import { verifyStagedWorkspaceRuntime, verifyPackagedWorkspaceRuntime } from "./package-integrity.mjs";
+
 const desktopDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const rootDir = resolve(desktopDir, "../..");
 const workspaceFile = join(rootDir, "pnpm-workspace.yaml");
@@ -49,6 +51,7 @@ try {
   await cp(join(desktopDir, "out"), join(stagingDir, "out"), {
     recursive: true,
   });
+  await verifyStagedWorkspaceRuntime(stagingDir);
   const builderEnvironment = await electronBuilderEnvironment(args, stagingDir);
   await run(
     "pnpm",
@@ -64,6 +67,7 @@ try {
     rootDir,
     builderEnvironment,
   );
+  await verifyPackagedWorkspaceRuntime(join(stagingDir, "dist"));
   await preserveRuntimeArtifacts(join(stagingDir, "dist"));
   await rm(join(desktopDir, "dist"), { force: true, recursive: true });
   await cp(join(stagingDir, "dist"), join(desktopDir, "dist"), {
@@ -131,7 +135,9 @@ async function electronBuilderEnvironment(builderArgs, temporaryDirectory) {
   if (!environment.APPLE_API_KEY && encodedApiKey) {
     const apiKey = Buffer.from(encodedApiKey.replace(/\s/g, ""), "base64");
     if (!apiKey.toString("utf8").includes("-----BEGIN PRIVATE KEY-----")) {
-      throw new Error("APPLE_API_KEY_P8_B64 is not a valid App Store Connect API key");
+      throw new Error(
+        "APPLE_API_KEY_P8_B64 is not a valid App Store Connect API key",
+      );
     }
     const keyId = environment.APPLE_API_KEY_ID?.trim() || "notarization";
     const apiKeyPath = join(temporaryDirectory, `AuthKey_${keyId}.p8`);

@@ -516,6 +516,9 @@ importers:
       '@blame/deploy-contract':
         specifier: workspace:*
         version: link:../deploy-contract
+      '@blame/harness-core':
+        specifier: workspace:*
+        version: link:../harness-core
       '@blame/preview-contract':
         specifier: workspace:*
         version: link:../preview-contract
