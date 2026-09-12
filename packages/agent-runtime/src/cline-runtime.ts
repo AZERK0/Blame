@@ -1095,6 +1095,8 @@ export class BlameAgentRuntime {
       );
       this.agentTelemetry.fail(sessionId, error);
       this.userInstructionServices.stop(sessionId);
+      if (this.sessionExecutionIds.get(sessionId) === executionId)
+        await this.unsubscribeSession(sessionId, true);
       throw error;
     }
   }

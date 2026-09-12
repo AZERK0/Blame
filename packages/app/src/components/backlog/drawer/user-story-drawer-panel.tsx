@@ -1,4 +1,5 @@
 import * as React from "react"
+import { toast } from "sonner"
 import {
   AppWindowIcon,
   BookOpenIcon,
@@ -89,6 +90,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { useLatestCallback } from "@/lib/use-latest-callback"
+import { createUserStoryCommentSubmission } from "./user-story-comment-submission"
 
 const drawerSidebarStorageKey = "blame.app.user-story-drawer-sidebar-open.v1"
 const composerDraftPersistDelayMs = 500
@@ -265,6 +267,7 @@ export function UserStoryDrawerPanel({
     [developmentWorkspaceRoot, platform]
   )
   const [pendingAction, setPendingAction] = React.useState<DrawerAction>()
+  const [commentSubmission] = React.useState(createUserStoryCommentSubmission)
   const [sidebarOpen, setSidebarOpen] = React.useState(readSidebarOpen)
   const [title, setTitle] = React.useState(
     mode === "create" ? (initialDraft?.title ?? "") : (userStory?.title ?? "")
@@ -632,6 +635,7 @@ export function UserStoryDrawerPanel({
                 comment={comment}
                 commentEditorKey={commentEditorKey}
                 commentRef={commentRef}
+                commentSubmitting={pendingAction === "Request Changes"}
                 mode={mode}
                 onCommentChange={handleCommentChange}
                 onCommentCodeSelectionAttachmentRemove={
@@ -731,9 +735,10 @@ export function UserStoryDrawerPanel({
   )
 
   async function handleAction(action: DrawerAction) {
-    if (pendingAction) return
+    if (pendingAction || commentSubmission.pending) return
     if (action === "Close") return onCancel()
     if (action === "Discard") return discardUserStory()
+    if (action === "Request Changes") return submitComment()
     setPendingAction(action)
     try {
       if (mode === "create") {
@@ -751,9 +756,6 @@ export function UserStoryDrawerPanel({
       if (mode !== "create" && userStory) {
         if (action === "Approve & Merge") {
           await onApproveAndMerge(userStory)
-        } else if (action === "Request Changes") {
-          await submitComment()
-          return
         } else {
           await onUpdateUserStory(
             userStory,
@@ -802,7 +804,7 @@ export function UserStoryDrawerPanel({
   }
 
   async function submitComment() {
-    if (!userStory) return
+    if (!userStory || pendingAction || commentSubmission.pending) return
     const hasCommentAttachments =
       commentCodeSelectionAttachments.length > 0 ||
       commentFileAttachments.length > 0
@@ -812,27 +814,36 @@ export function UserStoryDrawerPanel({
     if (!body && !hasCommentAttachments) return
     setPendingAction("Request Changes")
     try {
-      const createdComment = await onCreateUserStoryComment(userStory, {
-        body,
-        codeSelectionAttachments: commentCodeSelectionAttachments,
-        fileAttachments: commentFileAttachments,
+      const submitted = await commentSubmission.submit({
+        story: userStory,
+        input: {
+          body,
+          codeSelectionAttachments: commentCodeSelectionAttachments,
+          fileAttachments: commentFileAttachments,
+        },
+        createComment: (input) => onCreateUserStoryComment(userStory, input),
+        requestChanges: (createdComment) =>
+          onRequestChanges(
+            userStory,
+            body,
+            createdComment.id,
+            createdComment.codeSelectionAttachments,
+            createdComment.fileAttachments
+          ),
       })
+      if (!submitted) return
       clearComposerDraft()
       commentValueRef.current = ""
       setComment("")
       setCommentCodeSelectionAttachments([])
       setCommentFileAttachments([])
       setCommentEditorKey((key) => key + 1)
-      if (status === "in-review") {
-        const nextStory = await onRequestChanges(
-          userStory,
-          body,
-          createdComment.id,
-          createdComment.codeSelectionAttachments,
-          createdComment.fileAttachments
-        )
-        if (nextStory.status === "in-progress") onCancel()
-      }
+      if (status === "in-review") onCancel()
+    } catch (error) {
+      toast.error("Unable to send comment", {
+        description: error instanceof Error ? error.message : String(error),
+        position: "bottom-right",
+      })
     } finally {
       setPendingAction(undefined)
     }

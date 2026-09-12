@@ -960,6 +960,45 @@ function resumableTestCore(
   };
 }
 
+test("retries session creation after a failed deferred start", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "blame-session-start-retry-"));
+  const originalFetch = globalThis.fetch;
+  let starts = 0;
+  const core = {
+    ...deferredPromptCore(() => undefined),
+    async readLiveMessages() { return []; },
+    async start(input: ClineCoreStartInput) {
+      if (++starts === 1) throw new Error("session.create timed out");
+      return { sessionId: input.config.sessionId! };
+    },
+  };
+  const runtime = new BlameAgentRuntime(undefined, {
+    createCore: async () => core as never,
+  });
+  globalThis.fetch = async () => providerCredentialResponse();
+  try {
+    const input = {
+      apiConnection: { url: "https://api.example" },
+      autoSendPrompt: false,
+      cwd: workspace,
+      workspaceRoot: workspace,
+      modelId: "model",
+      providerId: "provider",
+      summary: "Improve the carousel",
+      title: "Carousel",
+      resumeSessionId: "same-conversation",
+    };
+    await assert.rejects(runtime.sessions.startDevelopment({ ...input, executionId: "failed" }), /timed out/u);
+    const resumed = await runtime.sessions.startDevelopment({ ...input, executionId: "retry" });
+    assert.equal(resumed.sessionId, input.resumeSessionId);
+    assert.equal(starts, 2, "a failed start must not be reused as a live session");
+  } finally {
+    globalThis.fetch = originalFetch;
+    await runtime.shutdown();
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
 test("reuses active sessions but never restores while termination is pending", () => {
   const runtime = new BlameAgentRuntime();
   const internals = runtime as unknown as {

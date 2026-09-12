@@ -13,6 +13,7 @@ import {
   FilesIcon,
   FileSearchIcon,
   ListChecksIcon,
+  LoaderCircleIcon,
   MessageSquareIcon,
   PencilIcon,
   RotateCcwIcon,
@@ -470,6 +471,7 @@ export function AgentConversationComposer({
   cancelingAgent = false,
   codeSelectionAttachments,
   disabled,
+  submitting = false,
   editorKey,
   editorRef,
   fileAttachments,
@@ -492,6 +494,7 @@ export function AgentConversationComposer({
   cancelingAgent?: boolean
   codeSelectionAttachments: PendingCodeSelectionAttachment[]
   disabled?: boolean
+  submitting?: boolean
   editorKey: number
   editorRef: React.RefObject<HTMLDivElement | null>
   fileAttachments: PendingFileAttachment[]
@@ -515,7 +518,7 @@ export function AgentConversationComposer({
   )
 
   function submitMessage() {
-    if (disabled || !hasMessageBody) return
+    if (disabled || submitting || !hasMessageBody) return
     onMessageSubmit()
   }
 
@@ -531,10 +534,12 @@ export function AgentConversationComposer({
     ? cancelingAgent
       ? "Canceling agent"
       : "Cancel agent"
-    : submitLabel
+    : submitting
+      ? "Sending comment"
+      : submitLabel
 
   return (
-    <section className="grid gap-3">
+    <section aria-busy={submitting} className="grid gap-3">
       {title ? (
         <div className="flex items-center gap-4 text-xl font-medium">
           <span className="flex size-11 items-center justify-center rounded-full border bg-muted text-muted-foreground shadow-sm">
@@ -557,7 +562,7 @@ export function AgentConversationComposer({
           onFileAttachmentsAdd={onFileAttachmentsAdd}
           onMarkdownChange={onMessageChange}
           onFileLinkClick={onFileLinkClick}
-          readOnly={disabled}
+          readOnly={disabled || submitting}
           placeholder={placeholder}
           minHeight="min-h-24"
           maxHeight="max-h-80"
@@ -574,13 +579,15 @@ export function AgentConversationComposer({
               disabled={
                 agentRunning
                   ? cancelingAgent || !onAgentCancel
-                  : disabled || !hasMessageBody
+                  : disabled || submitting || !hasMessageBody
               }
               size="icon-sm"
               type="button"
               onClick={handlePrimaryAction}
             >
-              {agentRunning ? (
+              {submitting ? (
+                <LoaderCircleIcon className="size-4 animate-spin" />
+              ) : agentRunning ? (
                 <SquareIcon className="size-3.5 fill-current" />
               ) : (
                 <ArrowUpIcon className="size-4" />

@@ -50,6 +50,7 @@ type UserStoryCommentComposerProps = {
   comment: string
   commentEditorKey: number
   commentRef: React.RefObject<HTMLDivElement | null>
+  commentSubmitting: boolean
   onCommentChange: (comment: string) => void
   onCommentCodeSelectionAttachmentRemove: (id: string) => void
   onCommentFileAttachmentRemove: (id: string) => void
@@ -231,6 +232,7 @@ function UserStoryCommentComposer({
   comment,
   commentEditorKey,
   commentRef,
+  commentSubmitting,
   onCommentChange,
   onCommentCodeSelectionAttachmentRemove,
   onCommentFileAttachmentRemove,
@@ -256,6 +258,7 @@ function UserStoryCommentComposer({
     <AgentConversationComposer
       codeSelectionAttachments={commentCodeSelectionAttachments}
       disabled={status === "done"}
+      submitting={commentSubmitting}
       editorKey={commentEditorKey}
       editorRef={commentRef}
       fileAttachments={commentFileAttachments}
