@@ -17,6 +17,7 @@ import {
   gitDiffBetween,
   gitDiffStatsBetween,
   gitDiffFrom,
+  gitLogArguments,
   gitSnapshot,
   isGitRepository,
   listGitDirectory,
@@ -160,6 +161,28 @@ test("compares a checkpoint revision with the current worktree", async () => {
     assert.doesNotMatch(diff, /\.blame/);
   } finally {
     await rm(repository, { force: true, recursive: true });
+  }
+});
+
+test("story review resolves the current checkout rather than another branch's latest commit", async () => {
+  const repository = await createRepository();
+  try {
+    const base = await revision(repository);
+    await git(repository, ["switch", "-c", "story/committed"]);
+    await writeFile(join(repository, "story.txt"), "already committed\n");
+    await commit(repository, "story awaiting merge");
+    const storyHead = await revision(repository);
+    await git(repository, ["checkout", "--detach", base]);
+    const current = await git(
+      repository,
+      gitLogArguments({ currentBranchOnly: true, limit: 1 }),
+    );
+    assert.equal(current.stdout.split("\x1f")[0], base);
+    assert.doesNotMatch(current.stdout, new RegExp(storyHead));
+    const all = await git(repository, gitLogArguments({}));
+    assert.match(all.stdout, new RegExp(storyHead));
+  } finally {
+    await rm(repository, { recursive: true, force: true });
   }
 });
 

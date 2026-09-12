@@ -630,6 +630,7 @@ export type WorkspaceClient = {
   gitStatus(input: { root: string }): Promise<GitStatusResult>
   gitCommitCount?(input: { root: string }): Promise<number>
   gitLog(input: {
+    currentBranchOnly?: boolean
     root: string
     limit?: number
     skip?: number

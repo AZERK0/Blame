@@ -206,6 +206,14 @@ export function useBacklogRotation(
     })
     await backlog.update(detailedStory, {
       agentLastEvent: "Worktree ready.",
+      baseCommit:
+        (
+          await workspace.gitLog({
+            root: worktree.worktree,
+            limit: 1,
+            currentBranchOnly: true,
+          })
+        )[0]?.hash ?? null,
       branch: worktree.branch,
       status: "in-progress",
       workspaceMode: worktree.workspaceMode,

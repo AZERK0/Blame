@@ -2380,7 +2380,7 @@ export class BlameAgentRuntime {
     await this.mergeTargetIntoStory(
       input,
       preparation.targetBranch,
-      preparation.upstream,
+      preparation.baseCommit,
     );
     await removeRuntimeEnvChanges(input.worktree, preparation.baseCommit);
     return this.finalizeStoryMerge(input, logFile, preparation);
@@ -2557,15 +2557,13 @@ export class BlameAgentRuntime {
   private async mergeTargetIntoStory(
     input: ApproveAndMergeInput,
     targetBranch: string,
-    upstream?: GitUpstream,
+    targetCommit: string,
   ) {
-    const mergeTarget = upstream
-      ? `${upstream.remote}/${upstream.branch}`
-      : targetBranch;
-    if (upstream)
-      await git(input.worktree, ["fetch", upstream.remote, upstream.branch]);
+    // Preparation fetched through the project checkout, which owns remote
+    // credentials. Reuse its exact target, including unpublished local commits;
+    // the story worktree may run in a VM without those credentials.
     try {
-      await git(input.worktree, ["merge", mergeTarget]);
+      await git(input.worktree, ["merge", targetCommit]);
       return;
     } catch (error) {
       if (!(await hasMergeConflicts(input.worktree))) throw error;

@@ -1,4 +1,5 @@
 import * as React from "react"
+import { storyWorkingDiff } from "./story-working-diff.ts"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import {
@@ -176,6 +177,8 @@ function serializedUserStoryDiffTargets(
             mode: "working",
             refresh: story.agentStatus !== "Running",
             root: story.worktree,
+            baseCommit: story.baseCommit,
+            repositoryRoot,
           },
         ]
       }
@@ -250,21 +253,17 @@ async function loadUserStoryDiffStatValue(
   target: UserStoryDiffTarget,
   workspace: NonNullable<Platform["workspace"]>
 ) {
-  if (workspace.gitDiffStats) {
-    return workspace.gitDiffStats(
-      target.mode === "working"
-        ? { root: target.root }
-        : {
-            from: target.from,
-            root: target.root,
-            to: target.to,
-          }
-    )
+  if (target.mode === "working") {
+    return diffStatsFromPatch(await storyWorkingDiff(target, workspace))
   }
-  const patch =
-    target.mode === "working"
-      ? await workspace.gitDiff({ root: target.root })
-      : await workspace.gitDiffBetween(target)
+  if (workspace.gitDiffStats) {
+    return workspace.gitDiffStats({
+      from: target.from,
+      root: target.root,
+      to: target.to,
+    })
+  }
+  const patch = await workspace.gitDiffBetween(target)
   return diffStatsFromPatch(patch)
 }
 

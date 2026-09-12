@@ -168,6 +168,89 @@ test("leaves the target branch unchanged when local changes truly conflict", asy
   }
 });
 
+test("merges a VM story through host credentials and preserves unpublished target commits", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "blame-approve-host-"));
+  const repositoryRoot = join(directory, "project");
+  const worktree = join(directory, "vm-story");
+  const remote = join(directory, "remote.git");
+  const fetches: string[] = [];
+  try {
+    await mkdir(repositoryRoot);
+    await git(directory, ["init", "--bare", remote]);
+    await git(repositoryRoot, ["init", "--initial-branch=main"]);
+    await git(repositoryRoot, ["config", "user.email", "blame@example.com"]);
+    await git(repositoryRoot, ["config", "user.name", "Blame Test"]);
+    await writeFile(join(repositoryRoot, "base.txt"), "base\n");
+    await git(repositoryRoot, ["add", "."]);
+    await git(repositoryRoot, ["commit", "-m", "initial"]);
+    await git(repositoryRoot, ["remote", "add", "origin", remote]);
+    await git(repositoryRoot, ["push", "--set-upstream", "origin", "main"]);
+    await git(repositoryRoot, [
+      "worktree",
+      "add",
+      "-b",
+      "story/retry",
+      worktree,
+    ]);
+    await writeFile(join(worktree, "story.txt"), "approved story\n");
+    await git(worktree, ["add", "."]);
+    await git(worktree, [
+      "commit",
+      "-m",
+      "story already committed before retry",
+    ]);
+    await writeFile(
+      join(repositoryRoot, "local.txt"),
+      "unpublished target work\n",
+    );
+    await git(repositoryRoot, ["add", "."]);
+    await git(repositoryRoot, ["commit", "-m", "local target commit"]);
+    const baseCommit = await git(repositoryRoot, ["rev-parse", "HEAD"]);
+    const runtime = new BlameAgentRuntime(undefined, {
+      git: async (cwd, args) => {
+        if (args[0] === "fetch" || args[0] === "push") {
+          assert.equal(
+            cwd,
+            repositoryRoot,
+            "remote credentials exist only on the host",
+          );
+          if (args[0] === "fetch") fetches.push(cwd);
+        }
+        return git(cwd, args);
+      },
+    });
+    const result = await runtime.approveAndMerge({
+      apiConnection: { url: "https://api.example" },
+      modelId: "test-model",
+      providerId: "test-provider",
+      repositoryRoot,
+      worktree,
+      storyBranch: "story/retry",
+      title: "Resume a committed VM story",
+      summary: "Finish approval without giving the VM remote credentials.",
+    });
+    assert.equal(result.baseCommit, baseCommit);
+    assert.equal(result.targetBranch, "main");
+    assert.equal(
+      await git(repositoryRoot, ["rev-parse", "HEAD"]),
+      result.mergeCommit,
+    );
+    assert.equal(await git(remote, ["rev-parse", "main"]), result.mergeCommit);
+    assert.equal(
+      await readFile(join(repositoryRoot, "local.txt"), "utf8"),
+      "unpublished target work\n",
+    );
+    assert.equal(
+      await readFile(join(repositoryRoot, "story.txt"), "utf8"),
+      "approved story\n",
+    );
+    assert.deepEqual(fetches, [repositoryRoot]);
+  } finally {
+    new BlameAgentRuntime(undefined, { git });
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 async function git(cwd: string, args: string[]) {
   const { stdout } = await execFileAsync("git", args, { cwd });
   return stdout.trim();

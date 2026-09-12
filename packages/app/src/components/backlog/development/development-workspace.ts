@@ -1,4 +1,5 @@
 import * as React from "react"
+import { storyWorkingDiff } from "./story-working-diff.ts"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import {
@@ -112,9 +113,22 @@ export function useDevelopmentWorkspace(
           root: directory,
           to: historicalRefs[0],
         })
-      : await platform.workspace.gitDiff({ root: directory })
+      : await storyWorkingDiff(
+          {
+            root: directory,
+            baseCommit: userStory?.baseCommit,
+            repositoryRoot: projects.activeProject?.path,
+          },
+          platform.workspace
+        )
     return normalizeDiffs(parseGitDiff(diff))
-  }, [directory, historicalRefs, platform.workspace])
+  }, [
+    directory,
+    historicalRefs,
+    platform.workspace,
+    userStory?.baseCommit,
+    projects.activeProject?.path,
+  ])
 
   React.useEffect(() => {
     if (!directory || historical || !refreshEnabled) return

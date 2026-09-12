@@ -1196,11 +1196,20 @@ export function BacklogPage() {
   )
   const completeReviewStory = React.useCallback(
     async (story: UserStory) => {
-      const emptyDiff = await currentReviewDiffEmpty(story, platform.workspace)
+      const emptyDiff = await currentReviewDiffEmpty(
+        story,
+        platform.workspace,
+        projects.activeProject?.path
+      )
       if (emptyDiff) return markReviewStoryDone(story)
       return approveAndMergeStory(story)
     },
-    [approveAndMergeStory, markReviewStoryDone, platform.workspace]
+    [
+      approveAndMergeStory,
+      markReviewStoryDone,
+      platform.workspace,
+      projects.activeProject?.path,
+    ]
   )
   const optimizeUserStory = React.useCallback(
     (input: { summary: string; title: string }) =>

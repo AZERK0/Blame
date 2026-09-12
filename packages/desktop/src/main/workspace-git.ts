@@ -16,6 +16,24 @@ const execFileAsync = promisify(execFile);
 const maxBuffer = 50 * 1024 * 1024;
 const gitReadLimit = pLimit(6);
 
+export function gitLogArguments(input: {
+  currentBranchOnly?: boolean;
+  limit?: number;
+  skip?: number;
+}) {
+  const limit = Math.max(1, Math.min(input.limit ?? 200, 5_000));
+  const skip = Math.max(0, input.skip ?? 0);
+  return [
+    "log",
+    input.currentBranchOnly ? "HEAD" : "--all",
+    "--decorate=short",
+    `--max-count=${limit}`,
+    `--skip=${skip}`,
+    "--date=iso-strict",
+    "--pretty=format:%H%x1f%P%x1f%an%x1f%ae%x1f%ad%x1f%D%x1f%s%x1e",
+  ];
+}
+
 type GitRunner = (
   root: string,
   args: string[],
