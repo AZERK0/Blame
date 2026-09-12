@@ -38,9 +38,14 @@ export class AgentEventStream {
 
   prepareSession<T extends Record<string, unknown>>(input: T) {
     const sessionId =
-      typeof input.sessionId === "string" && input.sessionId.trim()
-        ? input.sessionId
-        : `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`;
+      [input.resumeSessionId, input.sessionId]
+        .find((value) => typeof value === "string" && value.trim())
+        ?.toString()
+        .trim() ||
+      `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`;
+    // Development resumes use the existing conversation, even when IPC has
+    // already allocated a placeholder sessionId. Clear that conversation's
+    // old completion timer before the next execution starts publishing.
     // Initialize before the runtime can publish an immediate error or result.
     this.beginSession(sessionId);
     return { ...input, sessionId };

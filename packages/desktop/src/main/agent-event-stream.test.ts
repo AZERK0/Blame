@@ -175,6 +175,58 @@ test("does not reset history when multiple consumers request a URL", () => {
   assert.match(response.chunks.join(""), /shared event/);
 });
 
+test("resumed feedback survives the previous execution's cleanup deadline", (context) => {
+  context.mock.timers.enable({ apis: ["setTimeout"] });
+  const stream = new AgentEventStream();
+  try {
+    stream.publish({ sessionId: "conversation", type: "done", payload: {} });
+    const previousUrl = stream.url("conversation", "http://127.0.0.1:1234");
+    context.mock.timers.tick(2 * 60_000);
+
+    const input = stream.prepareSession({
+      resumeSessionId: " conversation ",
+      sessionId: "ipc-placeholder",
+    });
+    assert.equal(input.sessionId, "conversation");
+    const url = stream.url(input.sessionId, "http://127.0.0.1:1234");
+    assert.notEqual(url, previousUrl);
+    const response = new Response();
+    assert.equal(stream.handle(request(url) as never, response as never), true);
+    stream.publish(event(input.sessionId, "reading file"));
+
+    context.mock.timers.tick(6 * 60_000);
+    assert.equal(response.ended, false);
+    const done = stream.publish({
+      sessionId: input.sessionId,
+      type: "done",
+      payload: { text: "Feedback implemented" },
+    });
+    assert.equal(done?.sequenceNumber, 2);
+    assert.match(response.chunks.join(""), /Feedback implemented/);
+    const reconnected = new Response();
+    assert.equal(
+      stream.handle(request(url, "1") as never, reconnected as never),
+      true,
+    );
+    assert.match(reconnected.chunks.join(""), /Feedback implemented/);
+  } finally {
+    stream.close();
+  }
+});
+
+test("blank resume ids preserve the requested session identity", () => {
+  const stream = new AgentEventStream();
+  try {
+    assert.equal(
+      stream.prepareSession({ resumeSessionId: " ", sessionId: "requested" })
+        .sessionId,
+      "requested",
+    );
+  } finally {
+    stream.close();
+  }
+});
+
 test("preserves adjacent native streaming deltas", () => {
   const stream = new AgentEventStream();
   const url = stream.url("session", "http://127.0.0.1:1234");
