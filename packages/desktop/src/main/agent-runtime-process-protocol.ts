@@ -55,6 +55,7 @@ export type AgentHostMethod = (typeof agentHostMethods)[number];
 export type AgentRpcTarget = "host" | "runtime";
 
 export type AgentRpcError = {
+  code?: string;
   message: string;
   name: string;
 };
@@ -112,16 +113,30 @@ export function agentRpcRequest(
 }
 
 export function agentRpcError(error: unknown): AgentRpcError {
+  const name = error instanceof Error ? error.name : "Error";
+  const code =
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof error.code === "string"
+      ? error.code
+      : undefined;
+  const message = error instanceof Error ? error.message : String(error);
   return {
-    message: error instanceof Error ? error.message : String(error),
-    name: error instanceof Error ? error.name : "Error",
+    ...(code ? { code } : {}),
+    message:
+      message.trim() ||
+      (name === "HubTransportError"
+        ? `Unable to connect to the agent hub (${code ?? name}).`
+        : `Agent request failed (${code ?? name}).`),
+    name,
   };
 }
 
 export function agentRpcResponseError(error: AgentRpcError) {
   const next = new Error(error.message);
   next.name = error.name;
-  return next;
+  return Object.assign(next, error.code ? { code: error.code } : {});
 }
 
 export function isAgentProcessMessage(

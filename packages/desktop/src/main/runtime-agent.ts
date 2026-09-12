@@ -145,12 +145,21 @@ export class RuntimeAgentClient {
   }
 
   async clineHubEnsure(): Promise<AgentClineHubResult> {
+    // Provisioning can replace the agent on disk while this RPC process is
+    // still running. Always load the installed launcher for hub lifecycle work.
     const result = await this.requestWithTransportRetry(
-      "clineHubEnsure",
-      {},
+      "exec",
+      {
+        command: "/usr/local/bin/blame-runtime-agent",
+        args: ["cline-hub-ensure"],
+        user: "root",
+        timeoutMs: 90_000,
+      },
       90_000,
     );
-    return result as AgentClineHubResult;
+    return JSON.parse(
+      (result as AgentExecResult).stdout,
+    ) as AgentClineHubResult;
   }
 
   async clineHubStatus(): Promise<AgentClineHubResult> {
@@ -174,11 +183,9 @@ export class RuntimeAgentClient {
       15 * 60_000,
       signal,
       () => {
-        void this.request(
-          "lightWorkspaceCancel",
-          { operationId },
-          5_000,
-        ).catch(() => undefined);
+        void this.request("lightWorkspaceCancel", { operationId }, 5_000).catch(
+          () => undefined,
+        );
       },
     );
   }

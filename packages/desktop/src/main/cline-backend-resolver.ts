@@ -178,10 +178,28 @@ export function retryableHubTransportError(error: unknown) {
       : typeof error === "object" && error && "name" in error
         ? String(error.name)
         : "";
-  const message = errorMessage(error);
+  const message =
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+      ? error.message
+      : errorMessage(error);
+  const code =
+    error && typeof error === "object" && "code" in error
+      ? error.code
+      : undefined;
   return (
     name === "HubTransportError" &&
-    (/hub connection closed/i.test(message) ||
+    ((typeof code === "string" &&
+      [
+        "hub_connect_failed",
+        "hub_connect_timeout",
+        "hub_connection_closed",
+        "hub_connection_not_open",
+      ].includes(code)) ||
+      !message.trim() ||
+      /hub connection closed/i.test(message) ||
       /hub_connection_closed/i.test(message) ||
       /\bcode=1006\b/i.test(message))
   );

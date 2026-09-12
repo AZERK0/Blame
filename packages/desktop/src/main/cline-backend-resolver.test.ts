@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  agentRpcError,
+  agentRpcResponseError,
+} from "./agent-runtime-process-protocol.ts";
+import {
   localWorkspaceInput,
   refreshRuntimeBackendConnection,
   resolveAgentWorkspaceInput,
@@ -204,4 +208,38 @@ test("forces a fresh Cline core only for a retried remote connection", () => {
 
   const local = { backend: { key: "local", mode: "local" }, cwd: "/project" };
   assert.equal(refreshRuntimeBackendConnection(local, "retry-1"), local);
+});
+
+test("preserves hub connection error codes across RPC even with an empty SDK message", () => {
+  for (const code of [
+    "hub_connect_failed",
+    "hub_connect_timeout",
+    "hub_connection_closed",
+    "hub_connection_not_open",
+  ]) {
+    const original = Object.assign(new Error(""), {
+      name: "HubTransportError",
+      code,
+    });
+    const serialized = JSON.parse(JSON.stringify(agentRpcError(original)));
+    const restored = agentRpcResponseError(serialized);
+    assert.equal(serialized.code, code);
+    assert.match(restored.message, /Unable to connect to the agent hub/);
+    assert.equal(retryableHubTransportError(restored), true);
+  }
+  assert.equal(
+    retryableHubTransportError({ name: "HubTransportError", message: "" }),
+    true,
+  );
+  const timeout = Object.assign(
+    new Error("Hub command session.create timed out"),
+    {
+      name: "HubCommandError",
+      code: "hub_command_timeout",
+    },
+  );
+  assert.equal(
+    retryableHubTransportError(agentRpcResponseError(agentRpcError(timeout))),
+    false,
+  );
 });

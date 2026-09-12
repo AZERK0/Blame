@@ -301,7 +301,7 @@ json_worker_count = max(1, min(2, os.cpu_count() or 1))
 large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
-runtime_agent_version = "7"
+runtime_agent_version = "8"
 
 def serialize_json_line(value):
     return json.dumps(value, separators=(",", ":")) + "\n"
@@ -638,12 +638,25 @@ def cline_hub_build_id():
     return run_node_json(script)["buildId"]
 
 def run_cline_hub_ensure(params):
+    # Serialize the whole startup, including callers from another agent process.
+    import fcntl
+    os.makedirs("/var/log/blame-runtime", exist_ok=True)
+    with hub_lock, open("/var/log/blame-runtime/cline-hub.lock", "a") as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        return ensure_cline_hub_locked(params)
+
+def ensure_cline_hub_locked(params):
     global hub_process, hub_result_cache
-    with hub_lock:
-        if hub_process is not None and hub_process.poll() is None and hub_result_cache is not None:
-            return {**hub_result_cache, "action": "connected"}
-        hub_process = None
-        hub_result_cache = None
+    import hashlib
+    module = cline_hub_module_path()
+    with open(module, "rb") as source:
+        fingerprint = runtime_agent_version + ":" + hashlib.sha256(source.read()).hexdigest()
+    instance_path = "/var/log/blame-runtime/cline-hub-instance.json"
+    try:
+        with open(instance_path, "r", encoding="utf-8") as instance_file:
+            instance = json.load(instance_file)
+    except (OSError, ValueError):
+        instance = {}
 
     import socket
 
@@ -691,7 +704,9 @@ def run_cline_hub_ensure(params):
                     data = json.load(f)
                 pid = data.get("pid")
                 authToken = data.get("authToken")
-                if pid and authToken and data.get("buildId") == expected_build_id and is_pid_alive(pid):
+                if (pid and authToken and data.get("buildId") == expected_build_id
+                        and instance.get("pid") == pid and instance.get("fingerprint") == fingerprint
+                        and is_pid_alive(pid)):
                     # Process is alive. Wait up to 3 seconds for the port to start listening.
                     port_ready = False
                     for _ in range(15):
@@ -700,7 +715,7 @@ def run_cline_hub_ensure(params):
                             break
                         time.sleep(0.2)
                     
-                    if port_ready:
+                    if port_ready and run_cline_hub_status({}).get("status") == "ready":
                         url = f"ws://127.0.0.1:25463/hub?authToken={authToken}"
                         hub_result_cache = {
                             "action": "connected",
@@ -738,7 +753,9 @@ def run_cline_hub_ensure(params):
     # the host to connect via 127.0.0.1 so it uses the fast Lima localhost
     # proxy rather than routing through the virtual switch.
     module = cline_hub_module_path()
+    ready_read, ready_write = os.pipe()
     script = f"""
+import {{ writeSync, closeSync }} from "node:fs";
 const hub = await import({json.dumps("file://" + module)});
 const result = await hub.ensureHubServer({{
   host: "0.0.0.0",
@@ -746,49 +763,61 @@ const result = await hub.ensureHubServer({{
   runtimeHandlers: hub.createLocalHubScheduleRuntimeHandlers()
 }});
 const url = result.url ? result.url.replace(/^ws:\\/\\/[^/]+/, "ws://127.0.0.1:25463") : result.url;
-process.stdout.write(JSON.stringify({{
+writeSync({ready_write}, JSON.stringify({{
   action: result.action,
   authToken: result.authToken,
   status: "ready",
   url: url
 }}) + "\\n");
+closeSync({ready_write});
 """
     log_path = "/var/log/blame-runtime/cline-hub.log"
-    log_file = None
+    proc = None
     try:
-        os.makedirs("/var/log/blame-runtime", exist_ok=True)
-        log_file = open(log_path, "w", encoding="utf-8")
-        log_file.write(f"Pre-flight: Starting Cline hub on 0.0.0.0:25463 using module {module}\n")
-        log_file.flush()
+        # The hub outlives the RPC agent. Its logs must never depend on an
+        # agent-owned pipe; readiness uses a separate, short-lived descriptor.
+        with open(log_path, "a", encoding="utf-8") as log_file:
+            log_file.write(f"Starting Cline hub with runtime agent {runtime_agent_version} using {module}\n")
+            log_file.flush()
+            proc = subprocess.Popen(
+                ["node", "--input-type=module", "-e", script],
+                env=clean_env({}, target_user("blame")),
+                stdin=subprocess.DEVNULL,
+                stdout=log_file,
+                stderr=log_file,
+                pass_fds=(ready_write,),
+                text=True,
+                preexec_fn=demote(target_user("blame")),
+                start_new_session=True,
+            )
+    finally:
+        os.close(ready_write)
+        if proc is None:
+            os.close(ready_read)
+
+    def monitor_hub(process):
+        code = process.wait()
+        with open(log_path, "a", encoding="utf-8") as log_file:
+            log_file.write(f"Cline hub process {process.pid} exited with code {code}\n")
+
+    threading.Thread(target=monitor_hub, args=(proc,), daemon=True).start()
+    with os.fdopen(ready_read, "r", encoding="utf-8") as ready_pipe:
+        line = read_line_with_timeout(ready_pipe, 10)
+        if not line:
+            if proc.poll() is None:
+                proc.kill()
+            proc.wait()
+            raise RuntimeError(f"Cline hub startup failed (exit={proc.returncode}); see {log_path}")
+    try:
+        result = json.loads(line)
+        if result.get("status") != "ready" or not result.get("url"):
+            raise ValueError("Cline hub returned an invalid startup result")
+        with open(instance_path, "w", encoding="utf-8") as instance_file:
+            json.dump({"pid": proc.pid, "fingerprint": fingerprint}, instance_file)
     except Exception:
-        pass
-    env = clean_env({}, target_user("blame"))
-    proc = subprocess.Popen(
-        ["node", "--input-type=module", "-e", script],
-        env=env,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=log_file if log_file is not None else subprocess.DEVNULL,
-        text=True,
-        preexec_fn=demote(target_user("blame")),
-        start_new_session=True,
-    )
-    if log_file is not None:
-        log_file.close()
-    line = read_line_with_timeout(proc.stdout, 10)
-    if not line:
-        exit_code = proc.poll()
-        if exit_code is None:
-            proc.kill()
-            exit_code = proc.wait()
-        stderr_content = ""
-        try:
-            with open(log_path, "r", encoding="utf-8") as f:
-                stderr_content = f.read()
-        except Exception as e:
-            stderr_content = f"Failed to read log file: {e}"
-        raise RuntimeError(f"Cline hub server startup failed or timed out. Code: {exit_code}, Stderr: {stderr_content}")
-    result = json.loads(line)
+        proc.kill()
+        proc.wait()
+        raise
     hub_process = proc
     hub_result_cache = result
     return result
@@ -870,6 +899,8 @@ def main():
         print(runtime_agent_version)
     elif command == "version":
         print(version())
+    elif command == "cline-hub-ensure":
+        print(json.dumps(run_cline_hub_ensure({})))
     elif command == "serve":
         serve()
     else:
