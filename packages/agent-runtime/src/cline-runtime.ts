@@ -78,8 +78,9 @@ import type { LightTaskContract } from "./harness/light-contracts.js";
 import {
   managedLightWorkspaceExecutor,
   type LightWorkspaceExecutor,
+  type SessionJournalInput,
+  writeSessionJournal,
 } from "./harness/light-executor.js";
-import { SessionJournal } from "./harness/session-journal.js";
 import {
   selectProjectMemory,
   type ProjectMemoryPersistence,
@@ -471,6 +472,7 @@ export class BlameAgentRuntime {
   private sessionLogFiles = new Map<string, string>();
   private sessionLogWrites = new Map<string, Promise<void>>();
   private sessionReleases = new Map<string, Promise<void>>();
+  private sessionJournalExecutors = new Map<string, LightWorkspaceExecutor>();
   private sessionContexts = new Map<string, ProductionSessionContext>();
   private sessionApiConnections = new Map<string, ApiConnection>();
   private sessionStartInputs = new Map<string, ClineCoreStartInput>();
@@ -620,6 +622,7 @@ export class BlameAgentRuntime {
     this.sessionTerminations.clear();
     this.sessionTerminationWatchdogs.clear();
     this.sessionContexts.clear();
+    this.sessionJournalExecutors.clear();
     this.sessionEventSignatures.clear();
     this.sessionApiConnections.clear();
     this.sessionToolSequences.clear();
@@ -837,6 +840,8 @@ export class BlameAgentRuntime {
           workspaceMode: input.workspaceMode,
         },
       );
+      if (lightExecutor)
+        this.sessionJournalExecutors.set(sessionId, lightExecutor);
       this.sessionInactivityTimeouts.set(
         sessionId,
         adaptiveModelInactivityTimeoutMs(
@@ -1241,17 +1246,11 @@ export class BlameAgentRuntime {
       },
       this.attachmentDirectory(input.sessionId),
     );
-    const workspaceRoot = this.sessionStartInputs.get(input.sessionId)?.config
-      .cwd;
-    if (workspaceRoot) {
-      const journal = new SessionJournal(workspaceRoot, input.sessionId);
-      await journal.hydrate();
-      await journal.ingestUserRequest(
-        input.executionId ??
-          `user-message://${sha256(developmentInput.prompt)}`,
-        developmentInput.prompt,
-      );
-    }
+    await this.writeSessionJournal(input.sessionId, {
+      kind: "request",
+      id: input.executionId ?? `user-message://${sha256(developmentInput.prompt)}`,
+      text: developmentInput.prompt,
+    });
     const briefing = this.sessionDeferredTaskBriefings.get(input.sessionId);
     this.sessionDeferredTaskBriefings.delete(input.sessionId);
     return this.sendSession(
@@ -1750,6 +1749,9 @@ export class BlameAgentRuntime {
       });
     }
     this.sessionStartInputs.set(restoredSessionId, start);
+    const journalExecutor = this.sessionJournalExecutors.get(sourceSessionId);
+    if (journalExecutor)
+      this.sessionJournalExecutors.set(restoredSessionId, journalExecutor);
     const inactivityTimeout =
       this.sessionInactivityTimeouts.get(sourceSessionId);
     if (inactivityTimeout)
@@ -3111,11 +3113,24 @@ export class BlameAgentRuntime {
     sessionId: string,
     state: RunTerminalState,
   ) {
+    await this.writeSessionJournal(sessionId, {
+      kind: "terminal",
+      state: lightTerminalState(state),
+    });
+  }
+
+  private async writeSessionJournal(
+    sessionId: string,
+    input: SessionJournalInput,
+  ) {
     const workspaceRoot = this.sessionStartInputs.get(sessionId)?.config.cwd;
     if (!workspaceRoot) return;
-    const journal = new SessionJournal(workspaceRoot, sessionId);
-    await journal.hydrate();
-    await journal.recordTerminal(lightTerminalState(state));
+    await writeSessionJournal({
+      workspaceRoot,
+      sessionId,
+      input,
+      executor: this.sessionJournalExecutors.get(sessionId),
+    });
   }
 
   private async publishNativeValidationActivity(
@@ -3246,6 +3261,7 @@ export class BlameAgentRuntime {
     this.autoApprovedWriteToolSessions.delete(sessionId);
     this.clineDefaultSessions.delete(sessionId);
     this.sessionContexts.delete(sessionId);
+    this.sessionJournalExecutors.delete(sessionId);
     this.sessionEventSignatures.delete(sessionId);
     if (!terminationActive) this.sessionExecutionIds.delete(sessionId);
     this.sessionIterations.delete(sessionId);

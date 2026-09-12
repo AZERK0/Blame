@@ -290,15 +290,25 @@ export function useBacklogRotation(
       agentLastEvent: `Cline debug log: ${clineLogPath(worktree.worktree, session.sessionId)}`,
       clineSessionId: session.sessionId,
     })
-    void agent.sessions.sendDevelopment({
-      executionId,
-      sessionId: session.sessionId,
-      storyId,
-      title: detailedStory.title,
-      summary: detailedStory.summary,
-      codeSelectionAttachments: detailedStory.codeSelectionAttachments ?? [],
-      fileAttachments: detailedStory.fileAttachments ?? [],
-    })
+    void agent.sessions
+      .sendDevelopment({
+        executionId,
+        sessionId: session.sessionId,
+        storyId,
+        title: detailedStory.title,
+        summary: detailedStory.summary,
+        codeSelectionAttachments: detailedStory.codeSelectionAttachments ?? [],
+        fileAttachments: detailedStory.fileAttachments ?? [],
+      })
+      .catch((error) =>
+        persistAgentEvent(detailedStory, run, {
+          type: "error",
+          sessionId: session.sessionId,
+          executionId,
+          payload: { message: errorMessage(error) },
+        })
+      )
+      .catch(reportAgentPersistenceError)
   }
 
   function reportBlocker(story: UserStory, message: string) {

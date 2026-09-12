@@ -16,6 +16,7 @@ import { previewInitializationRepairTool } from "./preview-harness-tools.js";
 import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
 import { ClineFreeModelLimitError, ClineNotSubscribedError } from "@cline/llms";
 import { SessionJournal } from "./harness/session-journal.js";
+import { executeLightWorkspaceRequest } from "./harness/light-executor.js";
 import { RunLifecycleRegistry } from "./harness/run-lifecycle.js";
 import { sha256 } from "./harness/light-identity.js";
 import type { ProjectMemoryRecord } from "./harness/project-memory.js";
@@ -160,6 +161,78 @@ test("injects selected project memory into the first deferred prompt", async () 
     globalThis.fetch = originalFetch;
     await runtime.shutdown();
     await rm(workspace, { force: true, recursive: true });
+  }
+});
+
+test("deferred VM development prompts journal remotely before reaching the model", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-remote-journal-"));
+  const remoteRoot = join(root, "vm");
+  const hostPath = join(root, "unmounted", "worktree");
+  await mkdir(remoteRoot);
+  await writeFile(
+    join(root, "unmounted"),
+    "VM path is unavailable on the host",
+  );
+  const originalFetch = globalThis.fetch;
+  let sentPrompt = "";
+  const runtime = new BlameAgentRuntime(undefined, {
+    createCore: async () =>
+      deferredPromptCore((prompt) => {
+        sentPrompt = prompt;
+      }) as never,
+    lightWorkspace: async (request) => {
+      assert.equal(request.workspaceRoot, hostPath);
+      assert.deepEqual(request.execution, {
+        backendMode: "remote",
+        workspaceMode: "local-container",
+      });
+      return executeLightWorkspaceRequest({
+        ...request,
+        workspaceRoot: remoteRoot,
+      });
+    },
+  });
+  globalThis.fetch = async () => providerCredentialResponse();
+  try {
+    const session = await runtime.sessions.startDevelopment({
+      apiConnection: { url: "https://api.example" },
+      autoSendPrompt: false,
+      cwd: hostPath,
+      workspaceRoot: hostPath,
+      workspaceMode: "local-container",
+      backend: { mode: "remote", endpoint: "ws://runtime/hub" },
+      executionId: "vm-execution",
+      modelId: "model",
+      providerId: "provider",
+      title: "Carousel",
+      summary: "Build the carousel",
+    });
+    await runtime.sessions.sendDevelopment({
+      sessionId: session.sessionId,
+      executionId: "vm-execution",
+      title: "Carousel",
+      summary: "Build the carousel",
+    });
+    assert.match(sentPrompt, /Build the carousel/);
+    const journalPath = join(
+      remoteRoot,
+      ".blame",
+      "harness",
+      "light",
+      `${sha256(session.sessionId).slice(0, 24)}.jsonl`,
+    );
+    assert.match(await readFile(journalPath, "utf8"), /"type":"request"/);
+    await (
+      runtime as unknown as {
+        recordSessionJournalTerminal(id: string, state: string): Promise<void>;
+      }
+    ).recordSessionJournalTerminal(session.sessionId, "succeeded");
+    assert.match(await readFile(journalPath, "utf8"), /"type":"terminal"/);
+    await assert.rejects(access(hostPath), { code: "ENOTDIR" });
+  } finally {
+    globalThis.fetch = originalFetch;
+    await runtime.shutdown();
+    await rm(root, { recursive: true, force: true });
   }
 });
 

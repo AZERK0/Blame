@@ -912,16 +912,26 @@ export function BacklogPage() {
         session.sessionId,
         session.executionId
       )
-      void agent.sessions.sendDevelopment({
-        executionId: session.executionId,
-        sessionId: session.sessionId,
-        storyId: session.storyId,
-        title: currentStory.title,
-        summary: currentStory.summary,
-        codeSelectionAttachments: currentStory.codeSelectionAttachments ?? [],
-        fileAttachments: currentStory.fileAttachments ?? [],
-        feedback,
-      })
+      void agent.sessions
+        .sendDevelopment({
+          executionId: session.executionId,
+          sessionId: session.sessionId,
+          storyId: session.storyId,
+          title: currentStory.title,
+          summary: currentStory.summary,
+          codeSelectionAttachments: currentStory.codeSelectionAttachments ?? [],
+          fileAttachments: currentStory.fileAttachments ?? [],
+          feedback,
+        })
+        .catch((error) =>
+          persistAgentEvent(updatedStory, run, {
+            type: "error",
+            sessionId: session.sessionId,
+            executionId: session.executionId,
+            payload: { message: errorMessage(error) },
+          })
+        )
+        .catch(reportAgentPersistenceError)
       return updatedStory
     },
     [
@@ -932,6 +942,7 @@ export function BacklogPage() {
       startStoryDevelopmentSession,
       updateStory,
       subscribeStoryAgentEvents,
+      persistAgentEvent,
     ]
   )
   const requestChanges = React.useCallback(
@@ -1007,17 +1018,27 @@ export function BacklogPage() {
         sessionId,
         session.executionId
       )
-      void agent.sessions.sendDevelopment({
-        executionId: session.executionId,
-        sessionId,
-        storyId: session.storyId,
-        title: story.title,
-        summary: story.summary,
-        feedback,
-        feedbackOnly: true,
-        feedbackCodeSelectionAttachments: codeSelectionAttachments ?? [],
-        feedbackFileAttachments: fileAttachments ?? [],
-      })
+      void agent.sessions
+        .sendDevelopment({
+          executionId: session.executionId,
+          sessionId,
+          storyId: session.storyId,
+          title: story.title,
+          summary: story.summary,
+          feedback,
+          feedbackOnly: true,
+          feedbackCodeSelectionAttachments: codeSelectionAttachments ?? [],
+          feedbackFileAttachments: fileAttachments ?? [],
+        })
+        .catch((error) =>
+          persistAgentEvent(updatedStory, run, {
+            type: "error",
+            sessionId: sessionId,
+            executionId: session.executionId,
+            payload: { message: errorMessage(error) },
+          })
+        )
+        .catch(reportAgentPersistenceError)
       return updatedStory
     },
     [
@@ -1026,6 +1047,7 @@ export function BacklogPage() {
       startStoryDevelopmentSession,
       updateStory,
       subscribeStoryAgentEvents,
+      persistAgentEvent,
     ]
   )
   const undoUserStoryComment = React.useCallback(

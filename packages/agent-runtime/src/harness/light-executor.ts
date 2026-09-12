@@ -10,6 +10,7 @@ import type {
 } from "./light-contracts.js";
 import { executeLocalFinishTask } from "./light-finish-service.js";
 import { contextGeneration, LightWorkspace } from "./light-workspace.js";
+import { SessionJournal } from "./session-journal.js";
 
 export const lightWorkspaceToolNames = [
   "search_code",
@@ -18,6 +19,7 @@ export const lightWorkspaceToolNames = [
   "run_task",
   "finish_task",
   "initial_task_briefing",
+  "session_journal",
 ] as const;
 
 export type LightWorkspaceToolName = (typeof lightWorkspaceToolNames)[number];
@@ -57,7 +59,10 @@ export function lightToolContext(
     ...(context.conversationId
       ? { conversationId: context.conversationId }
       : {}),
-    metadata: { ...context.metadata, contextGeneration: contextGeneration(context) },
+    metadata: {
+      ...context.metadata,
+      contextGeneration: contextGeneration(context),
+    },
     ...(context.sessionId ? { sessionId: context.sessionId } : {}),
     ...(context.toolCallId ? { toolCallId: context.toolCallId } : {}),
   };
@@ -120,7 +125,47 @@ async function executeWithWorkspace(
       return finishRequest(request, context);
     case "initial_task_briefing":
       return briefingRequest(request);
+    case "session_journal": {
+      const sessionId = request.toolContext?.sessionId;
+      if (!sessionId) throw new Error("Session journal requires a session ID");
+      await writeSessionJournal({
+        workspaceRoot: request.workspaceRoot,
+        sessionId,
+        input: request.input as SessionJournalInput,
+      });
+      return { status: "ok", data: {} };
+    }
   }
+}
+
+export type SessionJournalInput =
+  | { kind: "request"; id: string; text: string }
+  | { kind: "terminal"; state: string };
+
+export async function writeSessionJournal(options: {
+  workspaceRoot: string;
+  sessionId: string;
+  input: SessionJournalInput;
+  executor?: LightWorkspaceExecutor;
+}) {
+  if (options.executor) {
+    const result = await options.executor({
+      tool: "session_journal",
+      workspaceRoot: options.workspaceRoot,
+      toolContext: { sessionId: options.sessionId },
+      input: options.input,
+    });
+    if (result?.status !== "ok")
+      throw new Error("Unable to write the remote session journal");
+    return;
+  }
+  const journal = new SessionJournal(options.workspaceRoot, options.sessionId);
+  await journal.hydrate();
+  if (options.input.kind === "request")
+    await journal.ingestUserRequest(options.input.id, options.input.text);
+  else if (options.input.kind === "terminal")
+    await journal.recordTerminal(options.input.state);
+  else throw new Error("Unsupported session journal operation");
 }
 
 function finishRequest(
