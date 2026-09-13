@@ -2381,6 +2381,9 @@ export class BlameAgentRuntime {
     );
     const preparation = await this.prepareStoryMerge(input);
     try {
+      // A previous approval may have stopped with an unresolved merge. Resolve
+      // its index before the ordinary commit path can stage conflict markers.
+      await this.completePendingStoryMerge(input, preparation.targetBranch);
       await this.commitStoryWork(input);
       await this.mergeTargetIntoStory(
         input,
@@ -2476,6 +2479,11 @@ export class BlameAgentRuntime {
   }
 
   private async commitStoryWork(input: ApproveAndMergeInput) {
+    if (await hasMergeConflicts(input.worktree)) {
+      throw new Error(
+        "Resolve the active Git conflicts before committing the story.",
+      );
+    }
     const status = await storyStatus(input.worktree, "--porcelain");
     if (!status.trim()) return;
     const message = await this.generateCommitMessageWithAgent(
@@ -2582,6 +2590,28 @@ export class BlameAgentRuntime {
     } catch (error) {
       if (!(await hasMergeConflicts(input.worktree))) throw error;
     }
+    try {
+      await this.completePendingStoryMerge(input, targetBranch);
+    } catch (error) {
+      // Story work was committed before this merge. Restore that usable revision
+      // if the resolver fails, rather than leave the preview on conflict markers.
+      try {
+        await git(input.worktree, ["merge", "--abort"]);
+      } catch (abortError) {
+        throw new Error(
+          `Merge resolution failed and Git could not abort the merge: ${errorMessage(abortError)}`,
+          { cause: error },
+        );
+      }
+      throw error;
+    }
+  }
+
+  private async completePendingStoryMerge(
+    input: ApproveAndMergeInput,
+    targetBranch: string,
+  ) {
+    if (!(await hasPendingMerge(input.worktree))) return;
     await this.resolveMergeConflictsWithAgent(
       input,
       targetBranch,
@@ -2668,7 +2698,7 @@ export class BlameAgentRuntime {
           config: mergeConflictConfig(input, credential),
           interactive: false,
           source: "blame-merge-conflict-resolution",
-          toolPolicies: toolPolicies(true),
+          toolPolicies: mergeConflictToolPolicies(),
         }),
       credential.authMethod,
     );
@@ -4199,6 +4229,25 @@ export function newProjectGenerationToolPolicies() {
   ]);
 }
 
+function mergeConflictToolPolicies() {
+  return {
+    ...Object.fromEntries(
+      [...readTools, ...writeTools].map((name) => [
+        name,
+        { enabled: false, autoApprove: false },
+      ]),
+    ),
+    ...Object.fromEntries(
+      legacyDirectWorkspaceTools.map((name) => [
+        name,
+        { enabled: true, autoApprove: true },
+      ]),
+    ),
+    ask_question: { enabled: false, autoApprove: false },
+    skills: { enabled: false, autoApprove: false },
+  };
+}
+
 export function backendKey(backend?: AgentBackendConfig) {
   if (backend?.key) return backend.key;
   if (!backend) return "local";
@@ -5507,6 +5556,16 @@ function branchPathSlug(branch: string) {
 
 async function hasMergeConflicts(cwd: string) {
   return Boolean((await mergeConflictFiles(cwd)).length);
+}
+
+async function hasPendingMerge(cwd: string) {
+  try {
+    return Boolean(
+      await git(cwd, ["rev-parse", "--verify", "--quiet", "MERGE_HEAD"]),
+    );
+  } catch {
+    return false;
+  }
 }
 
 async function mergeConflictFiles(cwd: string) {

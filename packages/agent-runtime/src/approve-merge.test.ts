@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
+import type { ClineCoreStartInput } from "@cline/sdk";
 
 import { BlameAgentRuntime } from "./cline-runtime.js";
 
@@ -363,4 +364,178 @@ test("early merge failures clean only their temporary checkout and retain VM reg
 async function git(cwd: string, args: string[]) {
   const { stdout } = await execFileAsync("git", args, { cwd });
   return stdout.trim();
+}
+
+for (const pending of [false, true]) {
+  test(`resolves ${pending ? "an interrupted" : "a new"} story merge with enabled workspace tools`, async () => {
+    const fixture = await conflictingStoryFixture();
+    let resolutions = 0;
+    const runtime = mergeTestRuntime(async (request) => {
+      resolutions += 1;
+      assert.equal(request.source, "blame-merge-conflict-resolution");
+      assert.equal(request.config.cwd, fixture.input.worktree);
+      for (const tool of [
+        "read_files",
+        "search_codebase",
+        "editor",
+        "apply_patch",
+        "run_commands",
+      ]) {
+        assert.deepEqual(request.toolPolicies?.[tool], {
+          enabled: true,
+          autoApprove: true,
+        });
+      }
+      assert.equal(request.config.enableSpawnAgent, false);
+      assert.equal(request.toolPolicies?.ask_question?.enabled, false);
+      assert.match(await readFile(fixture.file, "utf8"), /<<<<<<< HEAD/);
+      await writeFile(fixture.file, "story and target\n");
+      await git(fixture.input.worktree, ["add", "shared.txt"]);
+    });
+    try {
+      if (pending) {
+        await assert.rejects(git(fixture.input.worktree, ["merge", "main"]));
+      }
+      const result = await runtime.approveAndMerge(fixture.input);
+      assert.equal(resolutions, 1);
+      assert.equal(result.baseCommit, fixture.targetCommit);
+      assert.equal(
+        await readFile(
+          join(fixture.input.repositoryRoot, "shared.txt"),
+          "utf8",
+        ),
+        "story and target\n",
+      );
+      assert.equal(
+        await git(fixture.input.worktree, ["status", "--porcelain"]),
+        "",
+      );
+      assert.equal(
+        await git(fixture.input.repositoryRoot, ["status", "--porcelain"]),
+        "",
+      );
+      const parents = await git(fixture.input.worktree, [
+        "show",
+        "-s",
+        "--format=%P",
+        "HEAD",
+      ]);
+      assert.equal(parents, `${fixture.storyCommit} ${fixture.targetCommit}`);
+    } finally {
+      await runtime.shutdown();
+      await rm(fixture.directory, { force: true, recursive: true });
+    }
+  });
+}
+
+test("a failed resolver restores a usable story and can be retried", async () => {
+  const fixture = await conflictingStoryFixture();
+  let offline = true;
+  const runtime = mergeTestRuntime(async () => {
+    if (offline) {
+      // Include a partial edit to exercise rollback of the interrupted resolver.
+      await writeFile(fixture.file, "partial resolution\n");
+      throw new Error("Resolver unavailable");
+    }
+    await writeFile(fixture.file, "story and target\n");
+    await git(fixture.input.worktree, ["add", "shared.txt"]);
+  });
+  try {
+    await assert.rejects(
+      runtime.approveAndMerge(fixture.input),
+      /Resolver unavailable/,
+    );
+    assert.equal(await readFile(fixture.file, "utf8"), "story\n");
+    assert.equal(
+      await git(fixture.input.worktree, ["rev-parse", "HEAD"]),
+      fixture.storyCommit,
+    );
+    assert.equal(
+      await git(fixture.input.worktree, ["status", "--porcelain"]),
+      "",
+    );
+    await assert.rejects(
+      git(fixture.input.worktree, ["rev-parse", "--verify", "MERGE_HEAD"]),
+    );
+    assert.equal(
+      await git(fixture.input.repositoryRoot, ["rev-parse", "HEAD"]),
+      fixture.targetCommit,
+    );
+    offline = false;
+    await runtime.approveAndMerge(fixture.input);
+    assert.equal(
+      await readFile(join(fixture.input.repositoryRoot, "shared.txt"), "utf8"),
+      "story and target\n",
+    );
+  } finally {
+    await runtime.shutdown();
+    await rm(fixture.directory, { force: true, recursive: true });
+  }
+});
+
+function mergeTestRuntime(
+  resolve: (input: ClineCoreStartInput) => Promise<void>,
+) {
+  const runtime = new BlameAgentRuntime(undefined, {
+    createCore: async () =>
+      ({
+        async start(input: ClineCoreStartInput) {
+          await resolve(input);
+          return { sessionId: "merge-test", result: { status: "done" } };
+        },
+        async dispose() {},
+      }) as never,
+  });
+  const internals = runtime as unknown as {
+    runtimeCredential(): Promise<{ apiKey: string; baseUrl: null }>;
+  };
+  internals.runtimeCredential = async () => ({
+    apiKey: "test-key",
+    baseUrl: null,
+  });
+  return runtime;
+}
+
+async function conflictingStoryFixture() {
+  const directory = await mkdtemp(join(tmpdir(), "blame-conflict-resolver-"));
+  const repositoryRoot = join(directory, "project");
+  const worktree = join(directory, "story");
+  await mkdir(repositoryRoot);
+  await git(repositoryRoot, ["init", "--initial-branch=main"]);
+  await git(repositoryRoot, ["config", "user.email", "blame@example.com"]);
+  await git(repositoryRoot, ["config", "user.name", "Blame Test"]);
+  await writeFile(join(repositoryRoot, ".gitignore"), ".blame/\n");
+  await writeFile(join(repositoryRoot, "shared.txt"), "base\n");
+  await git(repositoryRoot, ["add", "."]);
+  await git(repositoryRoot, ["commit", "-m", "base"]);
+  await git(repositoryRoot, [
+    "worktree",
+    "add",
+    "-b",
+    "story/review",
+    worktree,
+  ]);
+  const file = join(worktree, "shared.txt");
+  await writeFile(file, "story\n");
+  await git(worktree, ["commit", "-am", "story"]);
+  const storyCommit = await git(worktree, ["rev-parse", "HEAD"]);
+  await writeFile(join(repositoryRoot, "shared.txt"), "target\n");
+  await git(repositoryRoot, ["commit", "-am", "target"]);
+  const targetCommit = await git(repositoryRoot, ["rev-parse", "HEAD"]);
+  return {
+    directory,
+    file,
+    storyCommit,
+    targetCommit,
+    input: {
+      apiConnection: { url: "https://api.example" },
+      providerId: "test-provider",
+      modelId: "test-model",
+      repositoryRoot,
+      worktree,
+      storyBranch: "story/review",
+      title: "Combine two stories",
+      summary: "Preserve both compatible changes.",
+    },
+  };
 }

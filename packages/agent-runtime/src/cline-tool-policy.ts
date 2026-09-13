@@ -16,9 +16,8 @@ export const readTools: string[] = [
 export const writeTools: string[] = [...lightWriteToolNames];
 
 // These Cline built-ins bypass source revisions, immutable proposals, and the
-// execution overlay. They remain available only to the dedicated project-
-// initialization workflow, whose migration is independent from the coding
-// harness and whose policy explicitly opts into its read-only fallbacks.
+// execution overlay. Dedicated workflows opt in explicitly: initialization
+// uses read-only fallbacks, while merge resolution edits the active Git merge.
 export const legacyDirectWorkspaceTools = [
   "read_files",
   "search_codebase",
