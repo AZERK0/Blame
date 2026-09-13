@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { parse as parseYaml } from "yaml";
 import {
   composeWithNonMutatingNpmInstalls,
+  composeWithCurrentDependencyVolumes,
   composeWithoutNumericSuUser,
   composeWithAllocatedHostPorts,
   dockerComposeForPreview,
@@ -11,6 +13,69 @@ import {
   dockerComposeWithHostFileMounts,
   dependencyVolumeHashFromInputs,
 } from "./workspace-compose.ts";
+
+test("refreshes existing preview caches after package edits without rotating database volumes", () => {
+  const oldKey = "f97e587feee3";
+  const key = "154e50fa4907";
+  const compose = `services:
+  deps:
+    labels:
+      blame.dependencies.cache.key: ${oldKey}
+    volumes:
+      - blame_node_modules_${oldKey}:/workspace/node_modules
+      - blame_node_modules_${oldKey}_apps_web:/workspace/apps/web/node_modules
+  init:
+    volumes:
+      - blame_node_modules_${oldKey}:/workspace/node_modules
+  web:
+    volumes:
+      - type: volume
+        source: blame_node_modules_${oldKey}_apps_web
+        target: /workspace/apps/web/node_modules
+  db:
+    volumes:
+      - project_database:/var/lib/postgresql/data
+volumes:
+  blame_node_modules_${oldKey}:
+    name: blame_node_modules_${oldKey}
+  blame_node_modules_${oldKey}_apps_web:
+    name: blame_node_modules_${oldKey}_apps_web
+  project_database:
+    name: project_database
+`;
+  const refreshed = composeWithCurrentDependencyVolumes(compose, key);
+  const result = parseYaml(refreshed);
+  assert.doesNotMatch(refreshed, new RegExp(oldKey));
+  assert.equal(
+    result.services.deps.labels["blame.dependencies.cache.key"],
+    key,
+  );
+  assert.equal(
+    result.services.web.volumes[0].source,
+    `blame_node_modules_${key}_apps_web`,
+  );
+  assert.deepEqual(result.services.db, parseYaml(compose).services.db);
+  assert.deepEqual(result.volumes.project_database, {
+    name: "project_database",
+  });
+  assert.equal(composeWithCurrentDependencyVolumes(refreshed, key), refreshed);
+});
+
+test("refreshes list cache labels and leaves unmanaged compose files unchanged", () => {
+  const compose =
+    "services:\n  deps:\n    labels:\n      - blame.dependencies.cache.key=f97e587feee3\n";
+  assert.deepEqual(
+    parseYaml(composeWithCurrentDependencyVolumes(compose, "154e50fa4907"))
+      .services.deps.labels,
+    ["blame.dependencies.cache.key=154e50fa4907"],
+  );
+  const unmanaged = "services:\n  db:\n    image: postgres:16\n";
+  assert.equal(
+    composeWithCurrentDependencyVolumes(unmanaged, "154e50fa4907"),
+    unmanaged,
+  );
+  assert.equal(composeWithCurrentDependencyVolumes(compose, ""), compose);
+});
 
 test("allocates explicit localhost ports for runtime previews", async () => {
   const compose = [

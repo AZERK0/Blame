@@ -94,7 +94,11 @@ import {
   previewComposeEnvOverrides,
   validatePreviewComposeBindings,
 } from "./preview-compose-validation";
-import { previewContainerFailure } from "./preview-readiness";
+import {
+  containerMatchesWorktree,
+  previewComposeProjectName,
+  previewContainerFailure,
+} from "./preview-readiness";
 import { PreviewRecoveryCircuit } from "./preview-recovery-circuit";
 import {
   composeRuntimeServiceClosure,
@@ -126,6 +130,7 @@ import {
   composeWithRuntimePortPlaceholders,
   composeWithoutNumericSuUser,
   composeWithAllocatedHostPorts,
+  composeWithCurrentDependencyVolumes,
   dependencyVolumeHashFromInputs,
   dockerComposeWithHostFileMounts,
   dockerComposeForPreview,
@@ -4310,10 +4315,7 @@ async function buildSetupEnvironment(
     ),
     BLAME_PROJECT_ROOT: worktree,
     BLAME_WORKTREE_ROOT: worktree,
-    COMPOSE_PROJECT_NAME: `blame_${createHash("sha1")
-      .update(worktree)
-      .digest("hex")
-      .slice(0, 12)}`,
+    COMPOSE_PROJECT_NAME: previewComposeProjectName(worktree),
     npm_config_yes: "true",
     PATH: setupPath(),
   };
@@ -4689,9 +4691,13 @@ async function repairComposeFile(
 ) {
   if (!(await runtimePathExists(composePath))) return;
   const compose = await readRuntimeFile(composePath);
+  const dependencyCompose = composeWithCurrentDependencyVolumes(
+    compose,
+    await dependencyVolumeHashForWorktree(worktree, compose, true),
+  );
   const nextCompose = (await worktreeHasNextProject(worktree))
-    ? commandWithNextWebpackFallback(compose)
-    : compose;
+    ? commandWithNextWebpackFallback(dependencyCompose)
+    : dependencyCompose;
   const allocatedCompose = await composeWithAllocatedHostPorts(
     composeWithNonMutatingNpmInstalls(
       composeWithoutNumericSuUser(
@@ -4817,6 +4823,7 @@ const dependencyHashFiles = [
 async function dependencyVolumeHashForWorktree(
   worktree: string,
   compose: string,
+  requireInputs = false,
 ) {
   const paths = await dependencyInputPaths(worktree);
   const contents = await readExistingRuntimeFiles(
@@ -4829,6 +4836,8 @@ async function dependencyVolumeHashForWorktree(
   for (const { file } of foundInputs) {
     await appendRecoveryLog(worktree, `dependency hash input: ${file}`);
   }
+  // Hashing an already-keyed compose file would rotate an empty cache forever.
+  if (requireInputs && foundInputs.length === 0) return "";
   return dependencyVolumeHashFromInputs(foundInputs, compose);
 }
 
@@ -4918,30 +4927,6 @@ async function previewContainers(includeStopped: boolean, worktree: string) {
   } catch {
     return [];
   }
-}
-
-function containerMatchesWorktree(
-  container: RuntimeContainer,
-  worktree: string,
-) {
-  const labels = container.Config?.Labels ?? {};
-  const workingDir = labels["com.docker.compose.project.working_dir"];
-  const configFiles = labels["com.docker.compose.project.config_files"];
-  const normalizedWorktree = runtimeLabelPath(worktree);
-  return (
-    runtimeLabelPath(workingDir ?? "") === normalizedWorktree ||
-    Boolean(
-      configFiles
-        ?.split(",")
-        .some((file) =>
-          runtimeLabelPath(file).startsWith(`${normalizedWorktree}/`),
-        ),
-    )
-  );
-}
-
-function runtimeLabelPath(path: string) {
-  return path.replace(/\\/g, "/").replace(/\/+$/g, "");
 }
 
 async function waitForPreview(worktree: string, url: string) {

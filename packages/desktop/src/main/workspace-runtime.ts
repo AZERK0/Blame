@@ -37,8 +37,10 @@ const macosRuntimeWorktreeSegment =
   "/Library/Application Support/Blame/runtime/worktrees";
 const ignoredProjectSearchDirectories = [
   ".blame",
+  ".blame-preview",
   ".cache",
   ".git",
+  ".generated",
   ".next",
   ".nuxt",
   ".output",

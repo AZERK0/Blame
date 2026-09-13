@@ -1,6 +1,45 @@
 import { createHash } from "node:crypto";
 import { createServer } from "node:net";
-import { parse as parseYaml } from "yaml";
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+
+// Existing compose artifacts outlive package edits made during an agent run.
+// Rotate only Blame's dependency caches; preserve database and user volumes.
+export function composeWithCurrentDependencyVolumes(
+  compose: string,
+  key: string,
+) {
+  if (!key) return compose;
+  const document = parseYaml(compose) as {
+    services?: Record<string, { labels?: Record<string, string> | string[] }>;
+  };
+  const oldKeys = new Set<string>();
+  for (const service of Object.values(document.services ?? {})) {
+    const labels = service.labels;
+    if (!labels) continue;
+    const label = "blame.dependencies.cache.key";
+    const oldKey = Array.isArray(labels)
+      ? labels
+          .find((value) => value.startsWith(`${label}=`))
+          ?.slice(label.length + 1)
+      : labels[label];
+    if (!oldKey || !/^[a-f0-9]{12}$/.test(oldKey) || oldKey === key) continue;
+    oldKeys.add(oldKey);
+    if (Array.isArray(labels)) {
+      service.labels = labels.map((value) =>
+        value.startsWith(`${label}=`) ? `${label}=${key}` : value,
+      );
+    } else labels[label] = key;
+  }
+  if (oldKeys.size === 0) return compose;
+  let updated = stringifyYaml(document, { lineWidth: 0 });
+  for (const oldKey of oldKeys) {
+    updated = updated.replace(
+      new RegExp(`\\bblame_node_modules_${oldKey}(?=_|\\b)`, "g"),
+      `blame_node_modules_${key}`,
+    );
+  }
+  return updated;
+}
 
 export function dockerComposeForPreview(
   compose: string,

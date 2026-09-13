@@ -144,6 +144,8 @@ test("findProjectFilesByName searches arbitrary paths without excluding project-
     "/workspace/unusual/build/app/package.json",
   ]);
   assert.ok(args.includes("node_modules"));
+  assert.ok(args.includes(".blame-preview"));
+  assert.ok(args.includes(".generated"));
   assert.equal(args.includes("build"), false);
   assert.equal(args.includes("dist"), false);
 });
