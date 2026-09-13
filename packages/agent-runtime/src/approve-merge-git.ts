@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
+import { unlink } from "node:fs/promises";
+import { join } from "node:path";
 
 export type TargetChangesStash = {
   commit: string;
+  deletedStagedAdditions: string[];
 };
 
 type GitRunner = (cwd: string, args: string[]) => Promise<string>;
@@ -10,6 +13,14 @@ export async function stashTargetChanges(
   cwd: string,
   git: GitRunner,
 ): Promise<TargetChangesStash | undefined> {
+  const [added, deleted] = await Promise.all([
+    git(cwd, ["diff", "--cached", "--name-status", "--diff-filter=A", "-z"]),
+    git(cwd, ["diff", "--name-status", "--diff-filter=D", "-z"]),
+  ]);
+  const deletedPaths = new Set(statusPaths(deleted));
+  const deletedStagedAdditions = statusPaths(added).filter((path) =>
+    deletedPaths.has(path),
+  );
   const previous = await optionalGitRevision(cwd, "refs/stash", git);
   await git(cwd, [
     "stash",
@@ -19,7 +30,9 @@ export async function stashTargetChanges(
     `blame-approve-merge-${randomUUID()}`,
   ]);
   const commit = await optionalGitRevision(cwd, "refs/stash", git);
-  return commit && commit !== previous ? { commit } : undefined;
+  return commit && commit !== previous
+    ? { commit, deletedStagedAdditions }
+    : undefined;
 }
 
 export async function assertTargetChangesRestorable(
@@ -29,7 +42,7 @@ export async function assertTargetChangesRestorable(
 ) {
   if (!stash) return;
   try {
-    await git(cwd, ["stash", "apply", "--index", stash.commit]);
+    await applyTargetChanges(cwd, stash, git);
   } catch (error) {
     throw new Error(
       `The story changes conflict with local target-branch changes. The merge was stopped before advancing the target branch. ${errorMessage(error)}`,
@@ -46,7 +59,7 @@ export async function restoreTargetChanges(
   git: GitRunner,
 ) {
   try {
-    await git(cwd, ["stash", "apply", "--index", stash.commit]);
+    await applyTargetChanges(cwd, stash, git);
   } catch (error) {
     throw new Error(
       `Git could not restore the local target-branch changes automatically. They remain saved in the stash (${stash.commit}). ${errorMessage(error)}`,
@@ -59,6 +72,25 @@ export async function restoreTargetChanges(
     return {};
   } catch (cleanupError) {
     return { cleanupError };
+  }
+}
+
+function statusPaths(output: string) {
+  return output.split("\0").filter((_, index) => index % 2 === 1);
+}
+
+async function applyTargetChanges(
+  cwd: string,
+  stash: TargetChangesStash,
+  git: GitRunner,
+) {
+  await git(cwd, ["stash", "apply", "--index", stash.commit]);
+  // Git restores newly staged files even when they were deleted from the
+  // working tree before stashing. Keep their index blobs, but restore absence.
+  for (const path of stash.deletedStagedAdditions) {
+    await unlink(join(cwd, path)).catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== "ENOENT") throw error;
+    });
   }
 }
 

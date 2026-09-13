@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  rename,
+  rm,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -63,6 +71,12 @@ test("merges into a dirty target branch and restores its local changes", async (
     await git(repositoryRoot, ["add", "shared.txt"]);
     await writeFile(join(repositoryRoot, "unstaged.txt"), "local unstaged\n");
     await writeFile(join(repositoryRoot, "local-untracked.txt"), "local\n");
+    await writeFile(
+      join(repositoryRoot, "local-staged-deleted.txt"),
+      "staged archive\n",
+    );
+    await git(repositoryRoot, ["add", "local-staged-deleted.txt"]);
+    await unlink(join(repositoryRoot, "local-staged-deleted.txt"));
 
     const runtime = new BlameAgentRuntime();
     const result = await runtime.approveAndMerge({
@@ -96,7 +110,20 @@ test("merges into a dirty target branch and restores its local changes", async (
     );
     assert.equal(
       await git(repositoryRoot, ["status", "--porcelain"]),
-      ["M  shared.txt", " M unstaged.txt", "?? local-untracked.txt"].join("\n"),
+      [
+        "AD local-staged-deleted.txt",
+        "M  shared.txt",
+        " M unstaged.txt",
+        "?? local-untracked.txt",
+      ].join("\n"),
+    );
+    assert.equal(
+      await git(repositoryRoot, ["show", ":local-staged-deleted.txt"]),
+      "staged archive",
+    );
+    await assert.rejects(
+      readFile(join(repositoryRoot, "local-staged-deleted.txt")),
+      { code: "ENOENT" },
     );
     assert.match(
       await git(repositoryRoot, ["stash", "list", "--format=%gs"]),
@@ -245,6 +272,88 @@ test("merges a VM story through host credentials and preserves unpublished targe
       "approved story\n",
     );
     assert.deepEqual(fetches, [repositoryRoot]);
+  } finally {
+    new BlameAgentRuntime(undefined, { git });
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("early merge failures clean only their temporary checkout and retain VM registrations", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "blame-merge-prune-"));
+  const repositoryRoot = join(directory, "project");
+  const worktree = join(directory, "story");
+  const vmWorktree = join(directory, "vm-only");
+  const remote = join(directory, "remote.git");
+  try {
+    await mkdir(repositoryRoot);
+    await git(directory, ["init", "--bare", remote]);
+    await git(repositoryRoot, ["init", "--initial-branch=main"]);
+    await git(repositoryRoot, ["config", "user.email", "blame@example.com"]);
+    await git(repositoryRoot, ["config", "user.name", "Blame Test"]);
+    await writeFile(join(repositoryRoot, "base.txt"), "base\n");
+    await git(repositoryRoot, ["add", "."]);
+    await git(repositoryRoot, ["commit", "-m", "initial"]);
+    await git(repositoryRoot, ["remote", "add", "origin", remote]);
+    await git(repositoryRoot, ["push", "--set-upstream", "origin", "main"]);
+    await git(repositoryRoot, [
+      "worktree",
+      "add",
+      "-b",
+      "story/review",
+      worktree,
+    ]);
+    await git(repositoryRoot, [
+      "worktree",
+      "add",
+      "-b",
+      "story/vm",
+      vmWorktree,
+    ]);
+    // The host cannot see the VM's .git file, but its shared registration is valid there.
+    await rename(vmWorktree, join(directory, "vm-storage"));
+    await writeFile(join(repositoryRoot, "base.txt"), "local work\n");
+    for (const failure of ["fetch", "story-status"]) {
+      const runtime = new BlameAgentRuntime(undefined, {
+        git: async (cwd, args) => {
+          if (
+            (failure === "fetch" && args[0] === "fetch") ||
+            (failure === "story-status" &&
+              cwd === worktree &&
+              args[0] === "status")
+          ) {
+            throw new Error(`Intentional ${failure} failure`);
+          }
+          return git(cwd, args);
+        },
+      });
+      await assert.rejects(
+        runtime.approveAndMerge({
+          apiConnection: { url: "https://api.example" },
+          modelId: "test-model",
+          providerId: "test-provider",
+          repositoryRoot,
+          worktree,
+          storyBranch: "story/review",
+          title: "Preserve VM worktree",
+          summary: "Cleanup must stay scoped to the merge checkout.",
+        }),
+        new RegExp(`Intentional ${failure} failure`),
+      );
+      const registered = await git(repositoryRoot, [
+        "worktree",
+        "list",
+        "--porcelain",
+      ]);
+      assert.ok(
+        registered.includes(vmWorktree),
+        "VM worktree registration must survive host cleanup",
+      );
+      assert.doesNotMatch(registered, /\/\.merge\/main/);
+      assert.equal(
+        await readFile(join(repositoryRoot, "base.txt"), "utf8"),
+        "local work\n",
+      );
+    }
   } finally {
     new BlameAgentRuntime(undefined, { git });
     await rm(directory, { recursive: true, force: true });

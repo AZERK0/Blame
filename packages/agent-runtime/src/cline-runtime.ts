@@ -2376,14 +2376,23 @@ export class BlameAgentRuntime {
       approveMergeContext(input),
     );
     const preparation = await this.prepareStoryMerge(input);
-    await this.commitStoryWork(input);
-    await this.mergeTargetIntoStory(
-      input,
-      preparation.targetBranch,
-      preparation.baseCommit,
-    );
-    await removeRuntimeEnvChanges(input.worktree, preparation.baseCommit);
-    return this.finalizeStoryMerge(input, logFile, preparation);
+    try {
+      await this.commitStoryWork(input);
+      await this.mergeTargetIntoStory(
+        input,
+        preparation.targetBranch,
+        preparation.baseCommit,
+      );
+      await removeRuntimeEnvChanges(input.worktree, preparation.baseCommit);
+      return await this.finalizeStoryMerge(input, logFile, preparation);
+    } finally {
+      if (!preparation.targetClean) {
+        await removeIntegrationWorktree(
+          input.repositoryRoot,
+          preparation.integration,
+        );
+      }
+    }
   }
 
   private async prepareStoryMerge(
@@ -2398,9 +2407,16 @@ export class BlameAgentRuntime {
     const integration = targetClean
       ? input.repositoryRoot
       : await integrationWorktree(input.repositoryRoot, targetBranch);
-    await pullIntegrationWorktree(integration, upstream);
-    const baseCommit = await git(integration, ["rev-parse", "HEAD"]);
-    return { baseCommit, integration, targetBranch, targetClean, upstream };
+    try {
+      await pullIntegrationWorktree(integration, upstream);
+      const baseCommit = await git(integration, ["rev-parse", "HEAD"]);
+      return { baseCommit, integration, targetBranch, targetClean, upstream };
+    } catch (error) {
+      if (!targetClean) {
+        await removeIntegrationWorktree(input.repositoryRoot, integration);
+      }
+      throw error;
+    }
   }
 
   private async finalizeStoryMerge(
@@ -2445,18 +2461,12 @@ export class BlameAgentRuntime {
       });
       return { baseCommit, mergeCommit, targetBranch };
     } finally {
-      try {
-        if (targetChanges) {
-          await restoreTargetChanges(
-            input.repositoryRoot,
-            targetChanges,
-            logFile,
-          );
-        }
-      } finally {
-        if (!targetClean) {
-          await removeIntegrationWorktree(input.repositoryRoot, integration);
-        }
+      if (targetChanges) {
+        await restoreTargetChanges(
+          input.repositoryRoot,
+          targetChanges,
+          logFile,
+        );
       }
     }
   }
@@ -5378,8 +5388,7 @@ async function cleanGitStatus(cwd: string) {
 
 async function integrationWorktree(cwd: string, targetBranch: string) {
   const directory = integrationWorktreePath(cwd, targetBranch);
-  await rm(directory, { force: true, recursive: true });
-  await git(cwd, ["worktree", "prune"]);
+  await removeIntegrationWorktree(cwd, directory);
   await git(cwd, ["worktree", "add", "--detach", directory, targetBranch]);
   return directory;
 }
@@ -5446,10 +5455,12 @@ async function removeIntegrationWorktree(
 ) {
   try {
     await git(repositoryRoot, ["worktree", "remove", "--force", worktree]);
-  } catch {
-    await rm(worktree, { force: true, recursive: true });
-    await git(repositoryRoot, ["worktree", "prune"]).catch(() => undefined);
+  } catch (error) {
+    if (!errorMessage(error).includes("is not a working tree")) throw error;
   }
+  // Only remove this operation's temporary checkout. A global prune from the
+  // host would also delete registrations for worktrees stored inside the VM.
+  await rm(worktree, { force: true, recursive: true });
 }
 
 type GitUpstream = {

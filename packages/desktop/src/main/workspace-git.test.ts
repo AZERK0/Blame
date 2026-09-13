@@ -4,6 +4,7 @@ import {
   mkdtemp,
   mkdir,
   realpath,
+  rename,
   rm,
   unlink,
   writeFile,
@@ -18,6 +19,8 @@ import {
   gitDiffStatsBetween,
   gitDiffFrom,
   gitLogArguments,
+  storyWorktreeAddArguments,
+  storyWorktreeRemoveArguments,
   gitSnapshot,
   isGitRepository,
   listGitDirectory,
@@ -34,6 +37,36 @@ test("totals textual and binary numstat changes", () => {
     ),
     { additions: 12, deletions: 4, files: 2 },
   );
+});
+
+test("managed story registrations survive host pruning and can still be intentionally removed", async () => {
+  const repository = await createRepository();
+  const worktree = join(repository, "runtime-story");
+  try {
+    await git(
+      repository,
+      storyWorktreeAddArguments({
+        branch: "story/vm",
+        existing: false,
+        worktree,
+      }),
+    );
+    await rename(worktree, join(repository, "vm-storage"));
+    await git(repository, ["worktree", "prune", "--expire=now"]);
+    const retained = (
+      await git(repository, ["worktree", "list", "--porcelain"])
+    ).stdout;
+    assert.ok(retained.includes(worktree));
+    assert.match(retained, /locked Managed by Blame/);
+    await git(repository, storyWorktreeRemoveArguments(worktree));
+    assert.ok(
+      !(
+        await git(repository, ["worktree", "list", "--porcelain"])
+      ).stdout.includes(worktree),
+    );
+  } finally {
+    await rm(repository, { recursive: true, force: true });
+  }
 });
 
 test("reads a merged story from Git history", async () => {

@@ -150,6 +150,8 @@ import {
   gitDiffStatsBetween,
   gitDiffFrom,
   gitLogArguments,
+  storyWorktreeAddArguments,
+  storyWorktreeRemoveArguments,
   gitSnapshot,
   isGitRepository,
   listGitDirectory,
@@ -1420,6 +1422,15 @@ async function reuseRegisteredWorktree(context: WorktreeCreationContext) {
     () => worktreeRegistered(repositoryRoot, worktree, mode),
   );
   if (!registered) return false;
+  try {
+    await runRuntimeGit(
+      repositoryRoot,
+      ["worktree", "lock", "--reason", "Managed by Blame", worktree],
+      workspaceExecution(mode),
+    );
+  } catch (error) {
+    if (!commandErrorText(error).includes("already locked")) throw error;
+  }
   await completeWorktreeCreation(context);
   return true;
 }
@@ -1444,9 +1455,7 @@ async function addStoryWorktree(context: WorktreeCreationContext) {
   const label = existing
     ? "git worktree add existing branch"
     : "git worktree add new branch";
-  const args = existing
-    ? ["worktree", "add", worktree, branch]
-    : ["worktree", "add", "-b", branch, worktree, "HEAD"];
+  const args = storyWorktreeAddArguments({ branch, existing, worktree });
   await timedWorktreeCreateStep(timings, label, () =>
     runRuntimeGit(repositoryRoot, args, workspaceExecution(mode)),
   );
@@ -4196,7 +4205,7 @@ async function removeGitWorktree(
   try {
     await runRuntimeGit(
       repositoryRoot,
-      ["worktree", "remove", "--force", worktree],
+      storyWorktreeRemoveArguments(worktree),
       workspaceExecution(mode),
     );
   } catch (error) {
@@ -4217,11 +4226,13 @@ async function removeStaleGitWorktree(
   mode: WorkspaceMode,
 ) {
   await rmRuntime(worktree);
-  await runRuntimeGit(
-    repositoryRoot,
-    ["worktree", "prune"],
-    workspaceExecution(mode),
-  );
+  if (await worktreeRegistered(repositoryRoot, worktree, mode)) {
+    await runRuntimeGit(
+      repositoryRoot,
+      storyWorktreeRemoveArguments(worktree),
+      workspaceExecution(mode),
+    );
+  }
   if (await worktreeRegistered(repositoryRoot, worktree, mode))
     throw new Error("Unable to unregister worktree.");
 }

@@ -16,6 +16,23 @@ const execFileAsync = promisify(execFile);
 const maxBuffer = 50 * 1024 * 1024;
 const gitReadLimit = pLimit(6);
 
+export function storyWorktreeAddArguments(input: {
+  branch: string;
+  existing: boolean;
+  worktree: string;
+}) {
+  const args = ["worktree", "add", "--lock", "--reason", "Managed by Blame"];
+  return input.existing
+    ? [...args, input.worktree, input.branch]
+    : [...args, "-b", input.branch, input.worktree, "HEAD"];
+}
+
+export function storyWorktreeRemoveArguments(worktree: string) {
+  // Intentional disposal must also remove the lock protecting VM worktrees
+  // from host-side maintenance while they are active.
+  return ["worktree", "remove", "--force", "--force", worktree];
+}
+
 export function gitLogArguments(input: {
   currentBranchOnly?: boolean;
   limit?: number;
