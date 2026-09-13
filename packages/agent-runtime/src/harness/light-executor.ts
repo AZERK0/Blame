@@ -11,6 +11,7 @@ import type {
 import { executeLocalFinishTask } from "./light-finish-service.js";
 import { contextGeneration, LightWorkspace } from "./light-workspace.js";
 import { SessionJournal } from "./session-journal.js";
+import { storeWorkspaceAttachment } from "../development-attachments.js";
 
 export const lightWorkspaceToolNames = [
   "search_code",
@@ -20,6 +21,7 @@ export const lightWorkspaceToolNames = [
   "finish_task",
   "initial_task_briefing",
   "session_journal",
+  "store_attachment",
 ] as const;
 
 export type LightWorkspaceToolName = (typeof lightWorkspaceToolNames)[number];
@@ -125,6 +127,16 @@ async function executeWithWorkspace(
       return finishRequest(request, context);
     case "initial_task_briefing":
       return briefingRequest(request);
+    case "store_attachment":
+      return {
+        status: "ok",
+        data: {
+          path: await storeWorkspaceAttachment(
+            request.workspaceRoot,
+            request.input,
+          ),
+        },
+      };
     case "session_journal": {
       const sessionId = request.toolContext?.sessionId;
       if (!sessionId) throw new Error("Session journal requires a session ID");

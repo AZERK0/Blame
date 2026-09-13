@@ -7,8 +7,11 @@ import {
   mkdir,
   readFile,
   rm,
-  writeFile,
 } from "node:fs/promises";
+import {
+  writeDevelopmentAttachment,
+  type DevelopmentAttachmentStorage,
+} from "./development-attachments.js";
 import {
   basename,
   dirname,
@@ -1247,6 +1250,7 @@ export class BlameAgentRuntime {
         apiConnection: this.sessionApiConnections.get(input.sessionId),
       },
       this.attachmentDirectory(input.sessionId),
+      this.sessionAttachmentStorage(input.sessionId),
     );
     await this.writeSessionJournal(input.sessionId, {
       kind: "request",
@@ -3671,6 +3675,7 @@ export class BlameAgentRuntime {
     const developmentInput = await developmentUserInput(
       input,
       newAttachmentDirectory(input.cwd),
+      this.developmentAttachmentStorage(input),
     );
     const iterationBudget =
       input.maxIterations ?? developmentSessionMaxIterations;
@@ -3847,6 +3852,20 @@ export class BlameAgentRuntime {
       sessionId,
       randomUUID(),
     );
+  }
+
+  private developmentAttachmentStorage(input: StartDevelopmentSessionInput) {
+    const executor = managedLightWorkspaceExecutor(this.options.lightWorkspace, {
+      backendMode: input.backend?.mode,
+      workspaceMode: input.workspaceMode,
+    });
+    return executor ? { executor, workspaceRoot: input.cwd } : undefined;
+  }
+
+  private sessionAttachmentStorage(sessionId: string) {
+    const executor = this.sessionJournalExecutors.get(sessionId);
+    const workspaceRoot = this.sessionStartInputs.get(sessionId)?.config.cwd;
+    return executor && workspaceRoot ? { executor, workspaceRoot } : undefined;
   }
 
   private sendPrompt(
@@ -4775,6 +4794,7 @@ function codePracticesPrompt(
 export async function developmentUserInput(
   input: DevelopmentPromptInput,
   attachmentDirectory: string,
+  storage?: DevelopmentAttachmentStorage,
 ) {
   const attachments = await fileAttachmentInputs(
     [
@@ -4783,6 +4803,7 @@ export async function developmentUserInput(
     ],
     attachmentDirectory,
     input.apiConnection,
+    storage,
   );
   if (input.feedbackOnly) {
     return {
@@ -4956,6 +4977,7 @@ async function fileAttachmentInputs(
   attachments: NonNullable<StartDevelopmentSessionInput["fileAttachments"]>,
   attachmentDirectory: string,
   apiConnection?: ApiConnection,
+  storage?: DevelopmentAttachmentStorage,
 ) {
   const userImages: string[] = [];
   const userFiles: string[] = [];
@@ -4969,24 +4991,16 @@ async function fileAttachmentInputs(
         return;
       }
       userFiles.push(
-        await writeFileAttachment(attachment, attachmentDirectory, content),
+        await writeDevelopmentAttachment(
+          attachment.name,
+          content,
+          attachmentDirectory,
+          storage,
+        ),
       );
     }),
   );
   return { userFiles, userImages };
-}
-
-async function writeFileAttachment(
-  attachment: NonNullable<
-    StartDevelopmentSessionInput["fileAttachments"]
-  >[number],
-  attachmentDirectory: string,
-  content: Buffer,
-) {
-  await mkdir(attachmentDirectory, { recursive: true });
-  const path = join(attachmentDirectory, attachmentFileName(attachment.name));
-  await writeFile(path, content);
-  return path;
 }
 
 async function fileAttachmentContent(
@@ -5061,11 +5075,6 @@ function attachmentResponseValue(value: unknown) {
   return data && typeof data === "object"
     ? (data as Record<string, unknown>)
     : record;
-}
-
-function attachmentFileName(name: string) {
-  const normalizedName = name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  return `${randomUUID()}-${normalizedName || "attachment"}`;
 }
 
 function newAttachmentDirectory(cwd: string) {

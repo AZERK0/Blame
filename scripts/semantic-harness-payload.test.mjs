@@ -40,6 +40,14 @@ test("standalone payload executes navigation and command dependencies", async ()
     });
     assert.equal(edited.status, "ok", JSON.stringify(edited));
     assert.match(await readFile(join(workspaceRoot, "module.ts"), "utf8"), /return 2/u);
+    const content = Buffer.from("# Context from completed US-001\n\nHéros validé.\n");
+    const attachment = await executeRunner(packageRoot, workspaceRoot, {
+      tool: "store_attachment",
+      input: { name: "context-from-us-001.md", contentBase64: content.toString("base64") },
+    });
+    assert.equal(attachment.status, "ok", JSON.stringify(attachment));
+    assert.ok(attachment.data.path.startsWith(join(workspaceRoot, ".blame", "attachments")));
+    assert.deepEqual(await readFile(attachment.data.path), content);
   });
 });
 

@@ -15,6 +15,21 @@ test("preserves stored attachment references while editing", () => {
   const [pending] = pendingFileAttachments([attachment])
 
   assert.equal(pending?.file.size, 0)
+  assert.equal(pending?.previewUrl, undefined)
+  assert.equal(pending?.storedAttachment, attachment)
+})
+
+test("uses an image preview only for image attachments", () => {
+  const attachment = {
+    downloadUrl: "https://storage.example/image",
+    id: "image-id",
+    name: "preview.png",
+    size: 42,
+    type: "image/png",
+  }
+
+  const [pending] = pendingFileAttachments([attachment])
+
   assert.equal(pending?.previewUrl, attachment.downloadUrl)
   assert.equal(pending?.storedAttachment, attachment)
 })

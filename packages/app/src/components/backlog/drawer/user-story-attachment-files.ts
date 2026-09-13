@@ -19,7 +19,9 @@ export function pendingFileAttachments(attachments: UserStoryFileAttachment[]) {
     aiContextMarkdown: attachment.aiContextMarkdown,
     file: fileFromAttachment(attachment),
     id: attachment.id,
-    previewUrl: attachment.downloadUrl,
+    previewUrl: attachment.type.startsWith("image/")
+      ? attachment.downloadUrl
+      : undefined,
     storedAttachment: attachment.content === undefined ? attachment : undefined,
   }))
 }

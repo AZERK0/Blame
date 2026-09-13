@@ -164,7 +164,7 @@ test("injects selected project memory into the first deferred prompt", async () 
   }
 });
 
-test("deferred VM development prompts journal remotely before reaching the model", async () => {
+test("deferred VM development prompts store attachments and journal remotely before reaching the model", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-remote-journal-"));
   const remoteRoot = join(root, "vm");
   const hostPath = join(root, "unmounted", "worktree");
@@ -175,10 +175,15 @@ test("deferred VM development prompts journal remotely before reaching the model
   );
   const originalFetch = globalThis.fetch;
   let sentPrompt = "";
+  let sentFiles: string[] = [];
+  const stored: Array<{ name: string; path: string }> = [];
+  const context = "# Context from completed US-001\n\nLe héros validé.\n";
+  const binary = Buffer.from([0, 255, 128, 10, 13, 42]);
   const runtime = new BlameAgentRuntime(undefined, {
     createCore: async () =>
-      deferredPromptCore((prompt) => {
+      deferredPromptCore((prompt, files) => {
         sentPrompt = prompt;
+        sentFiles = files ?? [];
       }) as never,
     lightWorkspace: async (request) => {
       assert.equal(request.workspaceRoot, hostPath);
@@ -186,10 +191,18 @@ test("deferred VM development prompts journal remotely before reaching the model
         backendMode: "remote",
         workspaceMode: "local-container",
       });
-      return executeLightWorkspaceRequest({
+      const result = await executeLightWorkspaceRequest({
         ...request,
         workspaceRoot: remoteRoot,
       });
+      if (request.tool === "store_attachment") {
+        assert.ok(result.status === "ok");
+        stored.push({
+          name: (request.input as { name: string }).name,
+          path: (result.data as { path: string }).path,
+        });
+      }
+      return result;
     },
   });
   globalThis.fetch = async () => providerCredentialResponse();
@@ -206,14 +219,44 @@ test("deferred VM development prompts journal remotely before reaching the model
       providerId: "provider",
       title: "Carousel",
       summary: "Build the carousel",
+      fileAttachments: [
+        {
+          name: "context-from-us-001.md",
+          content: Buffer.from(context).toString("base64"),
+          aiContextMarkdown: context,
+          size: Buffer.byteLength(context),
+          type: "text/markdown",
+        },
+      ],
     });
+    assert.equal(stored.length, 1);
+    assert.equal(await readFile(stored[0]!.path, "utf8"), context);
     await runtime.sessions.sendDevelopment({
       sessionId: session.sessionId,
       executionId: "vm-execution",
       title: "Carousel",
       summary: "Build the carousel",
+      feedback: "Use this document too",
+      feedbackFileAttachments: [
+        {
+          name: "../design.pdf",
+          content: binary.toString("base64"),
+          size: binary.length,
+          type: "application/pdf",
+        },
+      ],
     });
     assert.match(sentPrompt, /Build the carousel/);
+    assert.equal(stored.length, 2);
+    assert.deepEqual(sentFiles, [stored[1]!.path]);
+    assert.ok(stored.every(({ path }) =>
+      path.startsWith(join(remoteRoot, ".blame", "attachments")),
+    ));
+    assert.deepEqual(await readFile(sentFiles[0]!), binary);
+    assert.equal(
+      await readFile(join(root, "unmounted"), "utf8"),
+      "VM path is unavailable on the host",
+    );
     const journalPath = join(
       remoteRoot,
       ".blame",
@@ -856,7 +899,7 @@ function providerCredentialResponse(providerId = "provider") {
   );
 }
 
-function deferredPromptCore(capture: (prompt: string) => void) {
+function deferredPromptCore(capture: (prompt: string, files?: string[]) => void) {
   return {
     async abort() {},
     async dispose() {},
@@ -866,8 +909,8 @@ function deferredPromptCore(capture: (prompt: string) => void) {
     async list() {
       return [];
     },
-    async send(input: { prompt: string }) {
-      capture(input.prompt);
+    async send(input: { prompt: string; userFiles?: string[] }) {
+      capture(input.prompt, input.userFiles);
       return { finishReason: "completed", outputText: "Completed" };
     },
     async start(input: ClineCoreStartInput) {
