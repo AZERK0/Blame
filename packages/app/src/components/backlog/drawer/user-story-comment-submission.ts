@@ -9,7 +9,7 @@ type Submission = {
   story: UserStory
   input: CommentInput
   createComment: (input: CommentInput) => Promise<UserStoryComment>
-  requestChanges: (comment: UserStoryComment) => Promise<UserStory>
+  requestChanges: (comment: UserStoryComment) => Promise<UserStory | undefined>
 }
 
 export function createUserStoryCommentSubmission() {
@@ -36,9 +36,9 @@ export function createUserStoryCommentSubmission() {
           recoverableComment(story, key) ??
           (await createComment(input))
         saved = { storyId: story.id, key, comment }
-        if (story.status === "in-review") {
+        if (story.status === "in-review" || story.status === "in-progress") {
           const nextStory = await requestChanges(comment)
-          if (nextStory.status !== "in-progress") return false
+          if (nextStory?.status !== "in-progress") return false
         }
         saved = undefined
         return true
@@ -50,20 +50,27 @@ export function createUserStoryCommentSubmission() {
 }
 
 function recoverableComment(story: UserStory, key: string) {
-  if (story.status !== "in-review") return undefined
+  if (story.status !== "in-review" && story.status !== "in-progress")
+    return undefined
   const runs = story.agentRuns ?? []
   const latestRunCreatedAt = Math.max(
     0,
     ...runs.map((run) => Date.parse(run.createdAt))
   )
-  return [...(story.comments ?? [])]
+  return [...commentsWithoutAgentRun(story)]
     .reverse()
     .find(
       (comment) =>
         Date.parse(comment.createdAt) >= latestRunCreatedAt &&
-        !runs.some((run) => run.commentId === comment.id) &&
         commentKey(comment) === key
     )
+}
+
+export function commentsWithoutAgentRun(
+  story: Pick<UserStory, "comments" | "agentRuns">
+) {
+  const linked = new Set((story.agentRuns ?? []).map((run) => run.commentId))
+  return (story.comments ?? []).filter((comment) => !linked.has(comment.id))
 }
 
 function commentKey(input: CommentInput) {

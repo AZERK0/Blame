@@ -61,7 +61,7 @@ export type UserStoryDrawerProps = {
     commentId: string,
     codeSelectionAttachments: UserStoryComment["codeSelectionAttachments"],
     fileAttachments: UserStoryComment["fileAttachments"]
-  ) => Promise<UserStory>
+  ) => Promise<UserStory | undefined>
   reviewDiffEmpty?: boolean
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUndoUserStoryComment: (

@@ -961,14 +961,14 @@ export function BacklogPage() {
           description: "This user story has no active worktree.",
           position: "bottom-right",
         })
-        return story
+        return undefined
       }
       if (!story.clineSessionId) {
         toast.error("Unable to request changes", {
           description: "This user story has no existing Cline session.",
           position: "bottom-right",
         })
-        return story
+        return undefined
       }
       const agent = platform.agent
       if (!agent) {
@@ -976,10 +976,15 @@ export function BacklogPage() {
           description: "Desktop agent runtime is not available.",
           position: "bottom-right",
         })
-        return story
+        return undefined
       }
       let session: { executionId: string; sessionId: string; storyId: string }
       try {
+        if (story.status === "in-progress") {
+          // Wait for the current execution to stop before starting the feedback turn.
+          // A failed stop must preserve the saved comment and composer draft.
+          await agent.sessions.abort(story.clineSessionId)
+        }
         session = await startStoryDevelopmentSession(story, {
           feedback,
           feedbackCodeSelectionAttachments: codeSelectionAttachments ?? [],
@@ -992,7 +997,7 @@ export function BacklogPage() {
           description: errorMessage(error),
           position: "bottom-right",
         })
-        return story
+        return undefined
       }
       const sessionId = session.sessionId
       const run = await backlog.createAgentRun(story, {

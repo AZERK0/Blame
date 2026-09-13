@@ -1,7 +1,10 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 import type { UserStory, UserStoryComment } from "../data/backlog-data.ts"
-import { createUserStoryCommentSubmission } from "./user-story-comment-submission.ts"
+import {
+  commentsWithoutAgentRun,
+  createUserStoryCommentSubmission,
+} from "./user-story-comment-submission.ts"
 
 const story: UserStory = {
   id: "story",
@@ -157,4 +160,79 @@ test("editing the feedback or its attachments creates a new comment", async () =
     },
   })
   assert.equal(creates, 3)
+})
+
+test("feedback while the agent is running waits for its handoff before clearing the composer", async () => {
+  const submission = createUserStoryCommentSubmission()
+  let resolveHandoff!: (value: UserStory | undefined) => void
+  const ids: string[] = []
+  const result = submission.submit({
+    story: started,
+    input: comment,
+    createComment: async () => comment,
+    requestChanges: (saved) => {
+      ids.push(saved.id)
+      return new Promise((resolve) => {
+        resolveHandoff = resolve
+      })
+    },
+  })
+  await Promise.resolve()
+  assert.equal(submission.pending, true)
+  assert.deepEqual(ids, [comment.id])
+  resolveHandoff(started)
+  assert.equal(await result, true)
+  assert.equal(submission.pending, false)
+})
+
+test("failed feedback handoff during a running story retains the saved comment for retry", async () => {
+  const submission = createUserStoryCommentSubmission()
+  let creates = 0
+  let reject = true
+  const options = {
+    story: started,
+    input: comment,
+    createComment: async () => {
+      creates++
+      return comment
+    },
+    requestChanges: async () => (reject ? undefined : started),
+  }
+  assert.equal(await submission.submit(options), false)
+  reject = false
+  assert.equal(await submission.submit(options), true)
+  assert.equal(creates, 1)
+})
+
+test("a saved comment without a run stays visible and can be reused after reopening", async () => {
+  const linkedComment = { ...comment, id: "delivered" }
+  const current: UserStory = {
+    ...started,
+    comments: [linkedComment, comment],
+    agentRuns: [
+      {
+        id: "run",
+        userStoryId: story.id,
+        commentId: linkedComment.id,
+        kind: "change-request",
+        status: "running",
+        createdAt: comment.createdAt,
+      },
+    ],
+  }
+  assert.deepEqual(commentsWithoutAgentRun(current), [comment])
+  assert.deepEqual(commentsWithoutAgentRun({ comments: [comment] }), [comment])
+  assert.equal(
+    await createUserStoryCommentSubmission().submit({
+      story: current,
+      input: comment,
+      createComment: async () =>
+        assert.fail("saved comment must not be duplicated"),
+      requestChanges: async (saved) => {
+        assert.equal(saved.id, comment.id)
+        return current
+      },
+    }),
+    true
+  )
 })

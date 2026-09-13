@@ -37,6 +37,7 @@ import {
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useLatestCallback } from "@/lib/use-latest-callback"
+import { commentsWithoutAgentRun } from "./user-story-comment-submission"
 
 const commentComposerBlurMask = {
   maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
@@ -330,6 +331,7 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
   return (
     <AgentConversationTimeline
       comments={userStory?.comments ?? []}
+      unsentComments={commentsWithoutAgentRun(userStory ?? {})}
       loadChangedFileDiffs={loadChangedFileDiffs}
       loadChangedFiles={loadChangedFiles}
       onFileLinkClick={onFileLinkClick}

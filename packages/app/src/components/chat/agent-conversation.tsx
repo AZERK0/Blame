@@ -148,6 +148,7 @@ type AgentConversationVisibleMessage =
 
 export function AgentConversationTimeline({
   comments,
+  unsentComments = [],
   loadChangedFiles,
   loadChangedFileDiffs,
   onChangedFileClick,
@@ -158,6 +159,7 @@ export function AgentConversationTimeline({
   runs,
 }: {
   comments: AgentConversationComment[]
+  unsentComments?: AgentConversationComment[]
   loadChangedFiles?: (
     sessionId: string,
     checkpointRunCount: number,
@@ -203,7 +205,7 @@ export function AgentConversationTimeline({
     [runs]
   )
 
-  if (runs.length === 0) return null
+  if (runs.length === 0 && unsentComments.length === 0) return null
 
   return (
     <div
@@ -225,6 +227,14 @@ export function AgentConversationTimeline({
           onUserMessageUndo={onUserMessageUndo}
           responseHeader={responseHeader}
           run={run}
+        />
+      ))}
+      {unsentComments.map((comment) => (
+        <RunCommentItem
+          key={comment.id}
+          alwaysVisible
+          comment={comment}
+          onFileLinkClick={onFileLinkClick}
         />
       ))}
     </div>
@@ -628,9 +638,9 @@ function RunCommentItem({
   comment?: AgentConversationComment
   onFileLinkClick?: (path: string) => void
   onUndo?: (comment: AgentConversationComment) => Promise<void> | void
-  run: AgentConversationRun
+  run?: AgentConversationRun
 }) {
-  if (run.kind === "initial") return null
+  if (run?.kind === "initial") return null
   if (!comment) return null
 
   return (
@@ -650,6 +660,11 @@ function RunCommentItem({
           />
         </div>
         <div className="flex items-center justify-end gap-2">
+          {!run ? (
+            <span className="text-xs text-muted-foreground">
+              Saved · not sent to agent
+            </span>
+          ) : null}
           <span className="text-xs text-muted-foreground">
             {commentDateLabel(comment.createdAt)}
           </span>
@@ -657,7 +672,7 @@ function RunCommentItem({
             alwaysVisible={alwaysVisible}
             markdown={comment.body}
             onUndo={onUndo ? () => onUndo(comment) : undefined}
-            undoDisabled={run.status === "running"}
+            undoDisabled={run?.status === "running"}
           />
         </div>
       </div>

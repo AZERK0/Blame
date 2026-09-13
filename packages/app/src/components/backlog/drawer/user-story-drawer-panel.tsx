@@ -167,7 +167,7 @@ export function UserStoryDrawerPanel({
     commentId: string,
     codeSelectionAttachments: UserStoryComment["codeSelectionAttachments"],
     fileAttachments: UserStoryComment["fileAttachments"]
-  ) => Promise<UserStory>
+  ) => Promise<UserStory | undefined>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUndoUserStoryComment: (
