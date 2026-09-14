@@ -84,7 +84,10 @@ import { UserStoryPreviewWarmup } from "@/components/backlog/drawer/user-story-p
 import { stopManagedCloudPreview } from "@/components/backlog/drawer/use-user-story-preview-runner"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
-import { assessAndRepairProjectInitializationImpact } from "@/pages/backlog/project-initialization-impact"
+import {
+  assessAndRepairProjectInitializationImpact,
+  type ProjectInitializationImpactRepairResult,
+} from "@/pages/backlog/project-initialization-impact"
 import {
   parseProjectPreviewRepairCandidate,
   type ProjectPreviewRepairCandidate,
@@ -1807,31 +1810,55 @@ async function checkProjectInitializationImpact(
 
 function showInitializationImpactResult(
   toastId: string,
-  result:
-    | Awaited<ReturnType<typeof assessAndRepairProjectInitializationImpact>>
-    | undefined
+  result: ProjectInitializationImpactRepairResult | undefined
 ) {
-  if (!result) {
-    toast.dismiss(toastId)
-    return
-  }
+  const options = { id: toastId, position: "bottom-right" as const }
+  if (!result) return void toast.dismiss(toastId)
   if (result.repair?.classification === "repairable_initialization") {
-    toast.success("Initialization artifacts updated", {
-      description: result.repair.reason,
-      id: toastId,
-      position: "bottom-right",
+    toast.success("Initialization successfully updated", {
+      ...options,
+      description:
+        "Your project initialization is up to date with the merged changes.",
     })
     return
   }
+  if (showUnchangedInitializationImpactResult(toastId, result)) return
   if (result.assessment.classification === "initialization_update_required") {
     toast.error("Story merged, initialization update failed", {
+      ...options,
       description: result.repair?.reason ?? result.assessment.reason,
-      id: toastId,
-      position: "bottom-right",
     })
     return
   }
   toast.dismiss(toastId)
+}
+
+function showUnchangedInitializationImpactResult(
+  toastId: string,
+  result: ProjectInitializationImpactRepairResult
+) {
+  const classification =
+    result.repair?.classification ?? result.assessment.classification
+  if (
+    classification !== "unknown" &&
+    classification !== "initialization_still_valid"
+  ) {
+    return false
+  }
+  const unconfirmed = classification === "unknown"
+  toast.info(
+    unconfirmed
+      ? "Initialization kept unchanged"
+      : "Initialization already up to date",
+    {
+      description: unconfirmed
+        ? "The review did not confirm a needed update. Your current configuration was kept."
+        : "Your current configuration is compatible with the merged changes.",
+      id: toastId,
+      position: "bottom-right",
+    }
+  )
+  return true
 }
 
 async function inactiveStoryCleanup(
