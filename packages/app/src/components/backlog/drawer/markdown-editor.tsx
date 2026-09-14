@@ -1796,6 +1796,7 @@ export const MarkdownEditor = React.forwardRef<
   HTMLDivElement,
   {
     animateAppend?: boolean
+    appearance?: "bubble" | "subtle"
     markdown: string
     maxHeight?: string
     minHeight: string
@@ -1817,6 +1818,7 @@ export const MarkdownEditor = React.forwardRef<
 >(function MarkdownEditor(
   {
     animateAppend,
+    appearance = "bubble",
     codeSelectionAttachments,
     fileAttachments,
     markdown,
@@ -2520,6 +2522,8 @@ export const MarkdownEditor = React.forwardRef<
           }}
           className={cn(
             "relative max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/50 p-1 shadow-xl ring-1 shadow-black/10 ring-foreground/20 transition-colors dark:bg-muted/50",
+            appearance === "subtle" &&
+              "rounded-none bg-transparent p-0 text-muted-foreground shadow-none ring-0 dark:bg-transparent",
             fileDropActive && "ring-2 ring-primary"
           )}
           onBlur={() => requestAnimationFrame(() => updateMention())}
@@ -2545,7 +2549,10 @@ export const MarkdownEditor = React.forwardRef<
           {readOnly ? (
             <MarkdownPreview
               animateAppend={animateAppend}
-              className={cn(minHeight, "px-4 py-3.5")}
+              className={cn(
+                minHeight,
+                appearance === "subtle" ? "py-2" : "px-4 py-3.5"
+              )}
               markdown={value}
               onFileLinkClick={onFileLinkClick}
               onTaskToggle={readOnly ? undefined : toggleTaskLine}

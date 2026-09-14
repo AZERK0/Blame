@@ -1056,6 +1056,16 @@ function AgentActivityLeafItem({
   runningToolActivityId?: string
   value: string
 }) {
+  if (activity.kind === "reasoning") {
+    return (
+      <AgentReasoning
+        activity={activity}
+        onLoadDetail={onLoadDetail}
+        onFileLinkClick={onFileLinkClick}
+        runActive={runActive}
+      />
+    )
+  }
   if (activity.kind === "message") {
     const specialistAppearance = specialistAgentAppearance(activity)
     return (
@@ -1080,6 +1090,43 @@ function AgentActivityLeafItem({
       runActive={runActive}
       runningToolActivityId={runningToolActivityId}
       value={value}
+    />
+  )
+}
+
+function AgentReasoning({
+  activity,
+  onLoadDetail,
+  onFileLinkClick,
+  runActive,
+}: {
+  activity: UserStoryAgentActivity
+  onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  onFileLinkClick?: (path: string) => void
+  runActive: boolean
+}) {
+  const [detail, setDetail] = React.useState<string>()
+  React.useEffect(() => {
+    if (!activity.detailTruncated || activity.status === "running") return
+    let cancelled = false
+    void onLoadDetail(activity)
+      .then((text) => {
+        if (!cancelled) setDetail(text)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [activity, onLoadDetail])
+  return (
+    <MarkdownEditor
+      appearance="subtle"
+      animateAppend={runActive && activity.status === "running"}
+      markdown={detail ?? activity.detail}
+      minHeight="min-h-0"
+      placeholder=""
+      readOnly
+      onFileLinkClick={onFileLinkClick}
     />
   )
 }
