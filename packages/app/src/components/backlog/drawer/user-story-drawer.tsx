@@ -106,6 +106,7 @@ export const UserStoryDrawer = React.memo(function UserStoryDrawer({
     mode,
     userStory?.id ?? "draft",
     initialDraftKey(initialDraft),
+    status === "in-progress" || status === "in-review" ? "active" : status,
     initialTab,
     initialDevelopmentTab,
     focusComment ? "comment" : "default",
