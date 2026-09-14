@@ -1,6 +1,6 @@
 import * as React from "react"
 import type { AgentEvent } from "@blame/agent-runtime"
-import { WrenchIcon } from "lucide-react"
+import { QuickChatEmptyState } from "@/components/chat/quick-chat-empty-state"
 import { toast } from "sonner"
 
 import type { Platform } from "@/context/platform"
@@ -1124,6 +1124,7 @@ function QuickChatProjectPage() {
                 <div className="mx-auto w-full max-w-4xl">
                   {emptyConversation ? <QuickChatEmptyState /> : null}
                   <AgentConversationComposer
+                    speechSessionKey={draftStorageKey}
                     minHeight={emptyConversation ? "min-h-44" : "min-h-24"}
                     agentRunning={agentRunning}
                     cancelingAgent={cancelingAgent}
@@ -1213,27 +1214,6 @@ function QuickChatStatus({
   return (
     <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
       Loading quick chats.
-    </div>
-  )
-}
-
-function QuickChatEmptyState() {
-  return (
-    <div className="grid place-items-center pb-6">
-      <div className="grid max-w-md justify-items-center gap-3 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full border bg-muted text-muted-foreground shadow-sm">
-          <WrenchIcon className="size-5" />
-        </span>
-        <div className="grid gap-1">
-          <h2 className="font-heading text-xl font-semibold">
-            What would you like to adjust?
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Fix a bug, tweak a detail, or ask about your code. Chat is for
-            focused changes; use the backlog to plan larger features.
-          </p>
-        </div>
-      </div>
     </div>
   )
 }

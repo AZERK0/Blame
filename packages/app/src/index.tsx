@@ -1,3 +1,4 @@
+import { SpeechToTextProvider } from "@/components/backlog/drawer/speech-to-text-provider"
 import { StrictMode } from "react"
 import { createRoot, type Root } from "react-dom/client"
 
@@ -49,7 +50,9 @@ export function mountApp(element: HTMLElement, options?: MountAppOptions) {
             <ProjectProvider>
               <ThemeProvider>
                 <PerformanceDiagnosticsProfiler id="app">
-                  <App />
+                  <SpeechToTextProvider>
+                    <App />
+                  </SpeechToTextProvider>
                 </PerformanceDiagnosticsProfiler>
               </ThemeProvider>
             </ProjectProvider>

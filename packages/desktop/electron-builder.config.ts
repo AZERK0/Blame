@@ -261,7 +261,11 @@ const config: Configuration = {
   },
   mac: {
     category: "public.app-category.developer-tools",
+    entitlements: macosInheritedEntitlements,
     entitlementsInherit: macosInheritedEntitlements,
+    extendInfo: {
+      NSMicrophoneUsageDescription: "Blame uses your microphone to turn your voice into text in the editor.",
+    },
     forceCodeSigning: Boolean(releaseVersion),
     hardenedRuntime: true,
     icon: "icons/prod/icon.icns",

@@ -26,6 +26,7 @@ mountApp(root, {
     windowControls: window.blame.windowControls,
     openDirectoryPickerDialog: (options) => window.blame.openDirectoryPicker(options),
     openExternalLink: (url) => window.blame.openExternalLink(url),
+    requestMicrophoneAccess: () => window.blame.requestMicrophoneAccess(),
     openPath: (path) => window.blame.openPath(path),
   },
 })

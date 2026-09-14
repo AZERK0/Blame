@@ -74,7 +74,7 @@ import {
   type MarkdownWysiwygLine,
   type MarkdownWysiwygSegment,
 } from "@/components/backlog/drawer/markdown-wysiwyg-parser"
-import { SpeechToTextControl } from "@/components/backlog/drawer/speech-to-text-control"
+import { SpeechToTextControl } from "@/components/backlog/drawer/speech-to-text-provider"
 import {
   Command,
   CommandEmpty,
@@ -1796,6 +1796,7 @@ export const MarkdownEditor = React.forwardRef<
   HTMLDivElement,
   {
     animateAppend?: boolean
+    speechSessionKey?: string
     appearance?: "bubble" | "subtle"
     markdown: string
     maxHeight?: string
@@ -1819,6 +1820,7 @@ export const MarkdownEditor = React.forwardRef<
   {
     animateAppend,
     appearance = "bubble",
+    speechSessionKey,
     codeSelectionAttachments,
     fileAttachments,
     markdown,
@@ -2572,6 +2574,7 @@ export const MarkdownEditor = React.forwardRef<
                 )}
                 <div className="pointer-events-auto shrink-0">
                   <SpeechToTextControl
+                    sessionKey={speechSessionKey}
                     disabled={optimizing || optimizingAttachments}
                     onStartRecording={rememberSpeechSelection}
                     onTranscription={insertSpeechTranscription}

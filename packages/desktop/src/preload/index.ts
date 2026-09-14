@@ -117,6 +117,7 @@ const api: BlameDesktopApi = {
   },
   openDirectoryPicker: (options) =>
     ipcRenderer.invoke("dialog:open-directory", options),
+  requestMicrophoneAccess: () => ipcRenderer.invoke("media:request-microphone"),
   openExternalLink: (url) => ipcRenderer.send("shell:open-external", url),
   openPath: (path) => ipcRenderer.invoke("shell:open-path", path),
   backlogStatusPip: {

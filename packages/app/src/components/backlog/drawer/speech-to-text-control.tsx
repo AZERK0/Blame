@@ -1,8 +1,9 @@
 import * as React from "react"
-import { CheckIcon, LoaderCircleIcon, MicIcon, XIcon } from "lucide-react"
+import { CheckIcon, LoaderCircleIcon, XIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { usePlatform } from "@/context/platform"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { createCloudApi } from "@/lib/cloud-api"
 import { useLatestCallback } from "@/lib/use-latest-callback"
@@ -16,16 +17,15 @@ type RecordedAudio = {
   format: string
 }
 
-export function SpeechToTextControl({
-  disabled,
-  onStartRecording,
+export function SpeechRecordingControl({
+  onFinished,
   onTranscription,
 }: {
-  disabled?: boolean
-  onStartRecording?: () => void
+  onFinished: () => void
   onTranscription: (text: string) => void
 }) {
   const { apiConnection } = useCloudAuth()
+  const platform = usePlatform()
   const [status, setStatus] = React.useState<RecordingStatus>("idle")
   const [elapsedMs, setElapsedMs] = React.useState(0)
   const [analyser, setAnalyser] = React.useState<AnalyserNode | null>(null)
@@ -43,6 +43,14 @@ export function SpeechToTextControl({
       }
     | undefined
   >(undefined)
+
+  const start = useLatestCallback(startRecording)
+  const startedRef = React.useRef(false)
+  React.useEffect(() => {
+    if (startedRef.current) return
+    startedRef.current = true
+    void start()
+  }, [start])
 
   function stopRecording() {
     const recorder = mediaRecorderRef.current
@@ -93,6 +101,7 @@ export function SpeechToTextControl({
     } finally {
       setElapsedMs(0)
       setStatus("idle")
+      onFinished()
     }
   })
 
@@ -119,16 +128,26 @@ export function SpeechToTextControl({
   )
 
   async function startRecording() {
-    if (disabled || status !== "idle") return
+    if (status !== "idle") return
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
       toast.error("Voice input is not supported in this environment.")
+      onFinished()
       return
     }
 
-    onStartRecording?.()
     setStatus("starting")
     try {
+      if (
+        platform.requestMicrophoneAccess &&
+        !(await platform.requestMicrophoneAccess())
+      ) {
+        throw new DOMException(
+          "Microphone permission denied",
+          "NotAllowedError"
+        )
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaStreamRef.current = stream
       const mimeType = supportedMimeType()
       const recorder = mimeType
         ? new MediaRecorder(stream, { mimeType })
@@ -147,6 +166,7 @@ export function SpeechToTextControl({
         stopPromiseRef.current = undefined
         releaseCapture()
         setStatus("idle")
+        onFinished()
         toast.error("The voice recording could not be completed.")
       }
       recorder.onstop = () => {
@@ -171,8 +191,11 @@ export function SpeechToTextControl({
     } catch (error) {
       releaseCapture()
       setStatus("idle")
+      onFinished()
       if (isPermissionError(error)) {
-        toast.error("Microphone access is required for voice input.")
+        toast.error(
+          "Microphone access is required. Allow Blame in your system or browser microphone settings, then try again."
+        )
       } else {
         toast.error("Unable to start voice input.")
       }
@@ -184,6 +207,7 @@ export function SpeechToTextControl({
     await stopRecording()
     setElapsedMs(0)
     setStatus("idle")
+    onFinished()
   }
 
   function connectAnalyser(stream: MediaStream) {
@@ -208,24 +232,7 @@ export function SpeechToTextControl({
     setAnalyser(nextAnalyser)
   }
 
-  const canStart = !disabled && status === "idle"
-  if (status === "idle") {
-    return (
-      <Button
-        aria-label="Start voice input"
-        className="rounded-xl border-transparent text-muted-foreground hover:!border-transparent hover:!bg-transparent hover:text-foreground"
-        disabled={!canStart}
-        size="icon-sm"
-        title="Start voice input"
-        type="button"
-        variant="ghost"
-        onClick={() => void startRecording()}
-        onPointerDown={(event) => event.preventDefault()}
-      >
-        <MicIcon className="size-3.5" />
-      </Button>
-    )
-  }
+  if (status === "idle") return null
 
   if (status === "starting") {
     return (

@@ -1,4 +1,4 @@
-import type { BrowserWindow } from "electron";
+import { ipcMain, systemPreferences, type BrowserWindow } from "electron";
 import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc";
 import { registerCloudAuthIpcHandlers } from "./cloud-auth-ipc";
@@ -48,6 +48,11 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   );
   const deploy = new DeployService(options.packaged);
   options.registerCoreHandlers();
+  ipcMain.handle("media:request-microphone", () =>
+    process.platform === "darwin"
+      ? systemPreferences.askForMediaAccess("microphone")
+      : true,
+  );
   registerCloudAuthIpcHandlers({
     mainWindow: options.mainWindow,
     packaged: options.packaged,

@@ -113,6 +113,7 @@ export type Platform = {
   openDirectoryPickerDialog?(
     options?: OpenDirectoryPickerOptions
   ): Promise<PickerPaths>
+  requestMicrophoneAccess?(): Promise<boolean>
   openExternalLink?(url: string): void
   openPath?(path: string): Promise<string>
 }

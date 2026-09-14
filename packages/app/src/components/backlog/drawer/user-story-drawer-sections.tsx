@@ -108,6 +108,7 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   summaryRef: React.RefObject<HTMLDivElement | null>
   userStory?: UserStory
 }) {
+  const project = useProjects().activeProject
   const mentionDirectory = useFileMentionDirectory(status, userStory)
   const editable = isEditable(mode, status)
   const stableLoadChangedFiles = useLatestCallback(
@@ -137,6 +138,7 @@ export const UserStoryContent = React.memo(function UserStoryContent({
     <>
       <div className="group/message grid gap-3">
         <MarkdownEditor
+          speechSessionKey={`backlog-summary:${project?.id}:${userStory?.id ?? "new"}`}
           codeSelectionAttachments={summaryCodeSelectionAttachments}
           fileAttachments={summaryFileAttachments}
           mentionDirectory={mentionDirectory}
@@ -243,6 +245,7 @@ function UserStoryCommentComposer({
   status,
   userStory,
 }: UserStoryCommentComposerProps) {
+  const project = useProjects().activeProject
   const mentionDirectory = useFileMentionDirectory(status, userStory)
   const metricsTarget = agentTurnMetricsTarget(
     userStory?.comments ?? [],
@@ -257,6 +260,7 @@ function UserStoryCommentComposer({
 
   return (
     <AgentConversationComposer
+      speechSessionKey={`backlog-comment:${project?.id}:${userStory?.id}`}
       codeSelectionAttachments={commentCodeSelectionAttachments}
       disabled={status === "done"}
       submitting={commentSubmitting}

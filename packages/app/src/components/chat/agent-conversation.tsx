@@ -482,6 +482,7 @@ export function AgentConversationComposer({
   codeSelectionAttachments,
   disabled,
   submitting = false,
+  speechSessionKey,
   editorKey,
   editorRef,
   fileAttachments,
@@ -506,6 +507,7 @@ export function AgentConversationComposer({
   codeSelectionAttachments: PendingCodeSelectionAttachment[]
   disabled?: boolean
   submitting?: boolean
+  speechSessionKey?: string
   editorKey: number
   editorRef: React.RefObject<HTMLDivElement | null>
   fileAttachments: PendingFileAttachment[]
@@ -563,6 +565,7 @@ export function AgentConversationComposer({
       <div className="relative">
         {turnMetrics ? <AgentTurnIndicator metrics={turnMetrics} /> : null}
         <MarkdownEditor
+          speechSessionKey={speechSessionKey}
           key={editorKey}
           codeSelectionAttachments={codeSelectionAttachments}
           fileAttachments={fileAttachments}
