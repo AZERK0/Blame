@@ -1,6 +1,6 @@
 import * as React from "react"
 import type { AgentEvent } from "@blame/agent-runtime"
-import { SendIcon } from "lucide-react"
+import { WrenchIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import type { Platform } from "@/context/platform"
@@ -1048,6 +1048,9 @@ function QuickChatProjectPage() {
     setDraftEditorKey((key) => key + 1)
   }
 
+  const emptyConversation =
+    activeConversationLoaded && !activeConversation?.agentRuns?.length
+
   return (
     <>
       <div className="flex h-svh min-h-0 min-w-0 flex-col overflow-hidden md:h-[calc(100svh_-_1rem)]">
@@ -1096,22 +1099,32 @@ function QuickChatProjectPage() {
                         responseHeader={responseHeader}
                         runs={activeConversation.agentRuns}
                       />
-                    ) : activeConversationLoaded ? (
-                      <QuickChatEmptyState />
                     ) : null}
                   </MessageScrollerContent>
                 </MessageScrollerViewport>
                 <MessageScrollerButton className="bottom-40 md:bottom-44" />
               </MessageScroller>
             </MessageScrollerProvider>
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 pt-10 md:pt-12">
+            <div
+              className={
+                emptyConversation
+                  ? "absolute inset-0 z-20 flex flex-col justify-center overflow-y-auto px-3 pt-[calc(var(--header-height)+1rem)] pb-5 md:px-5"
+                  : "pointer-events-none absolute inset-x-0 bottom-0 z-20 pt-10 md:pt-12"
+              }
+            >
               <div
-                className="absolute inset-0 bg-background/40 backdrop-blur-xl"
+                className={
+                  emptyConversation
+                    ? "hidden"
+                    : "absolute inset-0 bg-background/40 backdrop-blur-xl"
+                }
                 style={bottomBlurMask}
               />
               <div className="pointer-events-auto relative px-3 pb-3 md:px-5 md:pb-5">
-                <div className="mx-auto max-w-4xl">
+                <div className="mx-auto w-full max-w-4xl">
+                  {emptyConversation ? <QuickChatEmptyState /> : null}
                   <AgentConversationComposer
+                    minHeight={emptyConversation ? "min-h-44" : "min-h-24"}
                     agentRunning={agentRunning}
                     cancelingAgent={cancelingAgent}
                     codeSelectionAttachments={draftCodeAttachments}
@@ -1206,18 +1219,18 @@ function QuickChatStatus({
 
 function QuickChatEmptyState() {
   return (
-    <div className="grid min-h-[18rem] place-items-center">
+    <div className="grid place-items-center pb-6">
       <div className="grid max-w-md justify-items-center gap-3 text-center">
         <span className="flex size-12 items-center justify-center rounded-full border bg-muted text-muted-foreground shadow-sm">
-          <SendIcon className="size-5" />
+          <WrenchIcon className="size-5" />
         </span>
         <div className="grid gap-1">
           <h2 className="font-heading text-xl font-semibold">
-            Start with a small change
+            What would you like to adjust?
           </h2>
           <p className="text-sm text-muted-foreground">
-            Keep it focused, attach files when useful, and the thread stays in
-            this project history.
+            Fix a bug, tweak a detail, or ask about your code. Chat is for
+            focused changes; use the backlog to plan larger features.
           </p>
         </div>
       </div>

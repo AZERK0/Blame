@@ -487,6 +487,7 @@ export function AgentConversationComposer({
   fileAttachments,
   mentionDirectory,
   message,
+  minHeight = "min-h-24",
   onCodeSelectionAttachmentRemove,
   onFileAttachmentRemove,
   onFileAttachmentsAdd,
@@ -509,6 +510,7 @@ export function AgentConversationComposer({
   editorRef: React.RefObject<HTMLDivElement | null>
   fileAttachments: PendingFileAttachment[]
   mentionDirectory?: string
+  minHeight?: string
   message: string
   onCodeSelectionAttachmentRemove: (id: string) => void
   onFileAttachmentRemove: (id: string) => void
@@ -574,7 +576,7 @@ export function AgentConversationComposer({
           onFileLinkClick={onFileLinkClick}
           readOnly={disabled || submitting}
           placeholder={placeholder}
-          minHeight="min-h-24"
+          minHeight={minHeight}
           maxHeight="max-h-80"
           onSubmitShortcut={submitMessage}
           primaryAction={
