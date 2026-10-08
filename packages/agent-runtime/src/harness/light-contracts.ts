@@ -81,6 +81,9 @@ export const lightRunTaskInputSchema = z.discriminatedUnion("kind", [
       kind: z.literal("project"),
       task: z.string().trim().min(1).max(300),
       packagePath: relativePath.optional(),
+      args: z.array(z.string().min(1).max(2_048).refine((value) => !value.includes("\0")))
+        .max(32).optional()
+        .describe("Extra argv for a test task, such as filters or --run. Keep task equal to its catalog ID; arguments are passed literally, without shell expansion."),
     })
     .strict(),
   z

@@ -28,6 +28,7 @@ export type JournalCompletionSnapshot = {
 };
 
 export type JournalValidation = {
+  args?: string[];
   check?: import("./check-observation.js").CheckObservation;
   category?: "code" | "command" | "environment";
   command?: string;
@@ -254,6 +255,7 @@ export class SessionJournal {
         JSON.stringify([
           validation.cwd ?? ".",
           validation.taskId ?? validation.command,
+          validation.args ?? [],
         ]),
         validation,
       );
@@ -329,6 +331,7 @@ function publicChange(change: JournalChange) {
 
 function publicValidation(validation: JournalValidation) {
   return {
+    ...(validation.args?.length ? { args: [...validation.args] } : {}),
     check: validation.check,
     category: validation.category,
     command: validation.command,

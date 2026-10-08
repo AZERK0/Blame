@@ -73,15 +73,19 @@ export async function readTaskCatalog(
   ].sort((left, right) => left.task_id.localeCompare(right.task_id));
 }
 
-export function taskInvocation(task: TaskCatalogItem): TaskInvocation {
-  if (task.invocation) return task.invocation;
+export function taskInvocation(task: TaskCatalogItem, args: string[] = []): TaskInvocation {
+  if (args.length && task.kind !== "test")
+    throw new Error("Extra arguments are supported only for project test tasks.");
+  if (task.invocation) return args.length
+    ? { ...task.invocation, args: [...task.invocation.args, ...args] }
+    : task.invocation;
   if (!task.package_manager)
     throw new Error(`No command for task ${task.task_id}.`);
   if (task.kind === "dependencies") return dependencyInvocation(task);
   const script = task.script ?? task.task_id;
   return taskCommand(
     task.package_manager,
-    ["run", script],
+    ["run", script, ...(args.length && task.package_manager === "npm" ? ["--"] : []), ...args],
     task.cwd,
     task.package_manager_version,
   );

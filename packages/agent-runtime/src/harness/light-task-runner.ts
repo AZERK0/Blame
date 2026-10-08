@@ -56,6 +56,7 @@ type ManagedRun = {
 };
 
 type ValidationMetadata = {
+  args?: string[];
   check?: CheckObservation;
   cwd?: string;
   sourceRevisionId?: string;
@@ -136,7 +137,7 @@ export class LightTaskRunner {
       const task = await this.resolveProjectTask(input);
       if (task.kind === "service" && this.commandEnvironment?.managedPreview !== false)
         return managedServiceResult(task.task_id);
-      return await this.executeProjectTask(task, context);
+      return await this.executeProjectTask(task, context, input.args);
     } catch (error) {
       const category =
         error instanceof TaskSelectionError ? "input" : "environment";
@@ -147,8 +148,9 @@ export class LightTaskRunner {
   private async executeProjectTask(
     task: TaskCatalogItem,
     context: RunnerContext,
+    args: string[] = [],
   ) {
-    const declaredInvocation = taskInvocation(task);
+    const declaredInvocation = taskInvocation(task, args);
     const report = await managedTestReport(
       task,
       declaredInvocation,
@@ -162,12 +164,13 @@ export class LightTaskRunner {
       invocation.executable,
       invocation.args,
       cwd,
-      report?.command ?? task.command,
+      report?.command ?? [task.command, ...args.map((arg) => `'${arg.replaceAll("'", "'\\''")}'`)].join(" "),
       context,
       {
         cwd: task.cwd,
         taskId: task.task_id,
         taskKind: task.kind,
+        ...(args.length ? { args } : {}),
         ...(report ? { report } : {}),
       },
     );
@@ -503,6 +506,7 @@ export class LightTaskRunner {
       taskId: metadata.taskId,
       taskKind: metadata.taskKind,
       check: metadata.check,
+      ...(metadata.args?.length ? { args: metadata.args } : {}),
       ...(failure
         ? { category: failure.category, recovery: failure.recovery }
         : {}),
@@ -524,6 +528,8 @@ export class LightTaskRunner {
     const candidates = matchingTasks(scoped, input.task);
     if (candidates.length !== 1)
       throw new TaskSelectionError(taskSelectionError(input.task, candidates));
+    if (input.args?.length && candidates[0]!.kind !== "test")
+      throw new TaskSelectionError("Extra arguments are supported only for project test tasks.");
     return candidates[0]!;
   }
 }
