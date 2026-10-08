@@ -1,4 +1,5 @@
 import * as React from "react"
+import { createDebouncedUpdateQueue } from "@/lib/debounced-update-queue"
 import type { AgentEvent } from "@blame/agent-runtime"
 import { QuickChatEmptyState } from "@/components/chat/quick-chat-empty-state"
 import { toast } from "sonner"
@@ -53,7 +54,6 @@ import {
   useAgentTurnMetrics,
 } from "@/components/chat/agent-turn-metrics"
 import {
-  clearPendingQuickChatAgentUpdates,
   completedQuickChatClineLog,
   definedQuickChatUpdate,
   immediateQuickChatAgentEvent,
@@ -66,7 +66,6 @@ import {
   quickChatClineLogRelativePath,
   quickChatExpiredAuthenticationToken,
   recoverableQuickChatAgentRun,
-  type PendingQuickChatAgentUpdate,
   type QueuedQuickChatAgentUpdate,
 } from "@/components/chat/data/quick-chat-agent-flow"
 import {
@@ -171,7 +170,9 @@ function QuickChatProjectPage() {
   const chatsRef = React.useRef(quickChats.chats)
   const quickChatsRef = React.useRef(quickChats)
   const pendingAgentUpdates = React.useRef(
-    new Map<string, PendingQuickChatAgentUpdate>()
+    createDebouncedUpdateQueue<QueuedQuickChatAgentUpdate>(
+      agentEventPersistDelayMs
+    )
   )
   const agentEventUnsubscribers = React.useRef(new Map<string, () => void>())
   const agentStreamCoordinators = React.useRef(
@@ -331,7 +332,7 @@ function QuickChatProjectPage() {
     const unsubscribers = agentEventUnsubscribers.current
     const coordinators = agentStreamCoordinators.current
     return () => {
-      clearPendingQuickChatAgentUpdates(updates)
+      updates.clear()
       unsubscribers.forEach((unsubscribe) => unsubscribe())
       unsubscribers.clear()
       coordinators.forEach((coordinator) => {
@@ -499,15 +500,12 @@ function QuickChatProjectPage() {
     runInput: QuickChatAgentRunUpdate
   ) {
     const pending = pendingAgentUpdates.current.get(chat.id)
-    if (pending) window.clearTimeout(pending.timer)
     const update = pendingQuickChatAgentUpdate(pending, input, run, runInput)
-    const timer = window.setTimeout(() => {
-      pendingAgentUpdates.current.delete(chat.id)
-      void persistQueuedAgentUpdate(chat, update).catch(
+    pendingAgentUpdates.current.schedule(chat.id, update, (queued) => {
+      void persistQueuedAgentUpdate(chat, queued).catch(
         reportAgentPersistenceError
       )
-    }, agentEventPersistDelayMs)
-    pendingAgentUpdates.current.set(chat.id, { ...update, timer })
+    })
   }
 
   function flushAgentUpdate(
@@ -516,9 +514,7 @@ function QuickChatProjectPage() {
     input: QuickChatUpdate,
     runInput: QuickChatAgentRunUpdate
   ) {
-    const pending = pendingAgentUpdates.current.get(chat.id)
-    if (pending) window.clearTimeout(pending.timer)
-    pendingAgentUpdates.current.delete(chat.id)
+    const pending = pendingAgentUpdates.current.take(chat.id)
     return persistQueuedAgentUpdate(
       chat,
       pendingQuickChatAgentUpdate(pending, input, run, runInput)

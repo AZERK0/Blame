@@ -1,17 +1,6 @@
-import { imageAwareCompaction } from "./image-compaction.js";
-import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
-import {
-  access,
-  appendFile,
-  mkdir,
-  readFile,
-  rm,
-} from "node:fs/promises";
-import {
-  writeDevelopmentAttachment,
-  type DevelopmentAttachmentStorage,
-} from "./development-attachments.js";
+import { randomUUID } from "node:crypto";
+import { access, readFile, rm } from "node:fs/promises";
 import {
   basename,
   dirname,
@@ -22,31 +11,9 @@ import {
   sep,
 } from "node:path";
 import { promisify } from "node:util";
-import { fileURLToPath } from "node:url";
+import { imageAwareCompaction } from "./image-compaction.js";
 
-import type {
-  ClineCore,
-  ClineCoreOptions,
-  ClineCoreStartInput,
-  CoreCompactionConfig,
-  CoreSessionConfig,
-  CoreSessionEvent,
-  OAuthCredentials as ClineOAuthCredentials,
-  OAuthLoginCallbacks,
-  OAuthPrompt,
-  OAuthProviderInterface,
-  OAuthServerListeningInfo,
-  RemoteOptions as ClineRemoteOptions,
-  SessionUsageSummary,
-} from "@cline/sdk";
 import type { ExecutionTerminalReason } from "@blame/harness-core";
-import {
-  buildWorkspaceMetadata,
-  createDelegatedAgentConfigProvider,
-  createSpawnAgentTool,
-  getClineDefaultSystemPrompt,
-  mergeRulesForSystemPrompt,
-} from "@cline/sdk";
 import {
   extractClineFreeModelLimitResetTime,
   getClinePassSubscriptionUrl,
@@ -60,58 +27,130 @@ import {
   isClinePassLimitError,
   isClinePassLimitMessage,
 } from "@cline/llms";
+import type {
+  ClineCore,
+  ClineCoreStartInput,
+  OAuthCredentials as ClineOAuthCredentials,
+  CoreSessionEvent,
+  OAuthLoginCallbacks,
+  OAuthPrompt,
+  OAuthProviderInterface,
+  OAuthServerListeningInfo,
+} from "@cline/sdk";
 
-import {
-  getBlameTelemetry,
-  type Context,
-  withoutTelemetryEnvironment,
-} from "@blame/telemetry";
+import { withoutTelemetryEnvironment, type Context } from "@blame/telemetry";
 
+import { AgentTelemetry } from "./agent-telemetry.js";
 import {
-  lightReadToolNames,
-  lightSemanticHarnessTools,
-} from "./harness/light-tools.js";
-import { createFinishTaskTool } from "./harness/finish-task.js";
+  assertTargetChangesRestorable,
+  restoreTargetChanges as restoreStashedTargetChanges,
+  stashTargetChanges,
+  type TargetChangesStash,
+} from "./approve-merge-git.js";
 import {
-  lightCompletionToolName,
-  type LightCompletionNotification,
-  type LightValidationActivity,
-} from "./harness/light-completion.js";
-import type { LightTaskContract } from "./harness/light-contracts.js";
+  codePracticesConfig,
+  codePracticesPrompt,
+  collectProjectInitializationAttempt,
+  collectProjectInitializationRepairAttempt,
+  combinedTaskBriefing,
+  initializationConfig,
+  initializationCorrection,
+  initializationPrompt,
+  parseProjectInitializationAttempt,
+  parseProjectInitializationRepairAttempt,
+  parsedCodePracticesAttempt,
+  projectCodePracticesSubmitTool,
+  projectInitializationRepairSubmitTool,
+  projectInitializationSubmitTool,
+  type AgentTool,
+  type CodePracticesAttemptOutcome,
+  type InitializationCorrection,
+  type ProjectCodePracticesAttempt,
+  type ProjectInitializationRepairAttempt,
+  type RuntimeClineResult,
+  type RuntimeSessionSummary,
+} from "./cline-initialization.js";
 import {
-  managedLightWorkspaceExecutor,
-  type LightWorkspaceExecutor,
-  type SessionJournalInput,
-  writeSessionJournal,
-} from "./harness/light-executor.js";
+  backendKey,
+  blameNativePluginPath,
+  clineDefaultToolPolicies,
+  codePracticesToolPolicies,
+  commitMessageConfig,
+  coreBackendOptions,
+  extensionContext,
+  initializationImpactConfig,
+  initializationRepairConfig,
+  initializationToolPolicies,
+  mergeConflictConfig,
+  mergeConflictToolPolicies,
+  newProjectGenerationConfig,
+  newProjectGenerationToolPolicies,
+  productionLogger,
+  toolPolicies,
+  withConfigExtensions,
+  type CommitMessageRuntimeInput,
+  type MergeConflictRuntimeInput,
+} from "./cline-runtime-configuration.js";
 import {
-  selectProjectMemory,
-  type ProjectMemoryPersistence,
-  type ProjectMemorySelection,
-} from "./harness/project-memory.js";
+  asRecord,
+  clineSessionSpawnAgentPhase,
+  clineSessionToolEvent,
+  completionFailureEvent,
+  doneResultPayload,
+  duplicateEventSignature,
+  errorMessage,
+  errorType,
+  eventLogPayload,
+  eventTokenCount,
+  eventUsageSummary,
+  incompleteResultStatus,
+  lightTerminalState,
+  nextSpawnAgentActiveCount,
+  normalizeAgentUsageSummary,
+  normalizeEvent,
+  normalizedToolPhase,
+  numberValue,
+  removeOldEventSignatures,
+  resultStatus,
+  retryableModelTransportFailure,
+  sendResultLogPayload,
+  shouldDisplayClineSessionEvent,
+  streamingAgentEvent,
+  stringValue,
+  terminalLifecycleState,
+  terminalProductMessage,
+  terminalStateFromResult,
+  terminalToolEvent,
+  transportFailureEventMessage,
+} from "./cline-runtime-events.js";
 import {
-  appendInitialTaskBriefing,
-  createInitialTaskBriefing,
-} from "./harness/initial-task-briefing.js";
-import { sha256 } from "./harness/light-identity.js";
-import { createTextWebFetchExecutor, describeTextWebFetch } from "./web-fetch.js";
+  appendLog,
+  approveMergeLogPath,
+  blameTelemetry,
+  commitMessageLogPath,
+  mergeConflictLogPath,
+  sessionLogPath,
+  startLogPath,
+} from "./cline-runtime-log.js";
 import {
-  RunLifecycleRegistry,
-  completionAwareTerminalState,
-  type RunTerminalState,
-} from "./harness/run-lifecycle.js";
+  buildDevelopmentSystemPrompt,
+  clineDefaultSystemPrompt,
+  developmentUserInput,
+  newAttachmentDirectory,
+  newProjectGenerationMaxIterations,
+  newProjectGenerationPrompt,
+} from "./cline-runtime-prompts.js";
 import {
-  blockedCommandParts,
-  initializationFallbackReadTools,
-  legacyDirectWorkspaceTools,
-  readTools,
-  writeTools,
-} from "./cline-tool-policy.js";
-import {
-  blameSpecialistRoutingSystemPrompt,
-  developmentSpecialistConsultEnabled,
-} from "./specialist-agents.js";
-import { createConsultSpecialistTool } from "./specialist-consult-tool.js";
+  blockedToolReason,
+  readOnlyRuntimeTools,
+  runtimeConsultSpecialistTool,
+  runtimeTools,
+  toApprovalRequest,
+  type RuntimeOptions,
+  type RuntimeStartSessionInput,
+  type ToolApprovalRequest,
+} from "./cline-runtime-tools.js";
+import { writeTools } from "./cline-tool-policy.js";
 import {
   deleteProviderCredential,
   listProjectMemories,
@@ -121,92 +160,85 @@ import {
   saveProjectMemory,
   saveProviderCredential,
 } from "./cloud-api.js";
+import { fallbackCommitSubject } from "./commit-message.js";
+import { createContextProjectionExtension } from "./context-projection.js";
 import {
-  projectInitializationCorrectionPrompt,
-  parseProjectInitializationPayload,
-  parseProjectInitializationResult,
-  projectInitializationResultSchema,
-  projectInitializationPrompt,
-  scanProjectForInitialization,
-} from "./project-initialization.js";
+  appendInitialTaskBriefing,
+  createInitialTaskBriefing,
+} from "./harness/initial-task-briefing.js";
 import {
-  projectCodePracticesCorrectionPrompt,
-  projectCodePracticesPrompt,
-  projectCodePracticesResultSchema,
-  resolveProjectCodePracticesResult,
-} from "./project-code-practices.js";
+  type LightCompletionNotification,
+  type LightValidationActivity,
+} from "./harness/light-completion.js";
+import {
+  managedLightWorkspaceExecutor,
+  writeSessionJournal,
+  type LightWorkspaceExecutor,
+  type SessionJournalInput,
+} from "./harness/light-executor.js";
+import { sha256 } from "./harness/light-identity.js";
+import {
+  selectProjectMemory,
+  type ProjectMemoryPersistence,
+  type ProjectMemorySelection,
+} from "./harness/project-memory.js";
+import {
+  RunLifecycleRegistry,
+  completionAwareTerminalState,
+  type RunTerminalState,
+} from "./harness/run-lifecycle.js";
+import {
+  previewDevtoolsMcpTools,
+  previewRuntimeContext,
+  type PreviewRuntimeContext,
+} from "./preview-harness-tools.js";
+import type { ProductionSessionContext } from "./production.js";
+import {
+  appendProductionConfig,
+  applyProductionEnvironment,
+  assertRepositoryPath,
+  assertWorkspacePath,
+  blameCheckpointConfig,
+  blameCompactionConfig,
+  loadProductionConfig,
+  promptMetadata,
+  runtimeConfigExtensions,
+  runtimePluginPaths,
+  shouldAbortForUsage,
+  summarizeUsage,
+  usageLimitMessage,
+} from "./production.js";
 import {
   scanProjectCodePractices,
   type ProjectCodePracticesScan,
 } from "./project-code-practices-scan.js";
-import { scanSecurityAuditRepository } from "./security-audit-scan.js";
-import {
-  runSecurityDiscovery,
-  runSecurityValidation,
-} from "./security-audit-runtime.js";
-import {
-  parseProjectInitializationRepairPayload,
-  parseProjectInitializationRepairResult,
-  projectInitializationRepairPrompt,
-  projectInitializationRepairResultSchema,
-} from "./project-initialization-repair.js";
 import {
   collectProjectInitializationImpactDiagnostics,
   deterministicInitializationImpact,
   parseProjectInitializationImpactResult,
   projectInitializationImpactPrompt,
 } from "./project-initialization-impact.js";
-import { optimizeUserStoryPrompt } from "./prompt-optimization.js";
-import { generateTitle } from "./title-generation.js";
-import { loadPrompt } from "./prompt-loader.js";
-import { createProviderCompatibleFetch } from "./provider-schema-compatibility.js";
-import { supplementalModelConfig } from "./supplemental-model-config.js";
-import { fallbackCommitSubject } from "./commit-message.js";
-import {
-  assertTargetChangesRestorable,
-  restoreTargetChanges as restoreStashedTargetChanges,
-  stashTargetChanges,
-  type TargetChangesStash,
-} from "./approve-merge-git.js";
-import { AgentTelemetry } from "./agent-telemetry.js";
-import { BlameUserInstructionServices } from "./user-instruction-services.js";
-import { taskComplexityBucket } from "./telemetry-cohorts.js";
-import { createContextProjectionExtension } from "./context-projection.js";
-import {
-  previewContainerLogsTool,
-  previewDevtoolsMcpTools,
-  previewDevtoolsTool,
-  previewInitializationRepairTool,
-  previewRuntimeContext,
-  type PreviewRuntimeContext,
-  type PreviewToolRuntimeOptions,
-} from "./preview-harness-tools.js";
-import {
-  applyProductionEnvironment,
-  appendProductionConfig,
-  assertRepositoryPath,
-  assertWorkspacePath,
-  blameCheckpointConfig,
-  blameCompactionConfig,
-  createProductionLogger,
-  loadProductionConfig,
-  promptMetadata,
-  runtimeConfigExtensions,
-  runtimePluginPaths,
-  safeLogPayload,
-  shouldAbortForUsage,
-  summarizeUsage,
-  usageLimitMessage,
-} from "./production.js";
+import { projectInitializationRepairPrompt } from "./project-initialization-repair.js";
 import type { ProjectInitializationScan } from "./project-initialization.js";
-import type { ProductionSessionContext } from "./production.js";
+import { scanProjectForInitialization } from "./project-initialization.js";
+import { loadPrompt } from "./prompt-loader.js";
+import { optimizeUserStoryPrompt } from "./prompt-optimization.js";
+import { createProviderCompatibleFetch } from "./provider-schema-compatibility.js";
 import { reasoningConfig } from "./reasoning.js";
+import {
+  runSecurityDiscovery,
+  runSecurityValidation,
+} from "./security-audit-runtime.js";
+import { scanSecurityAuditRepository } from "./security-audit-scan.js";
+import { developmentSpecialistConsultEnabled } from "./specialist-agents.js";
+import { taskComplexityBucket } from "./telemetry-cohorts.js";
+import { generateTitle } from "./title-generation.js";
 import type {
   AgentApprovalRequest,
   AgentBackendConfig,
   AgentEvent,
-  AgentRuntimePrewarmInput,
   AgentRuntimeEvents,
+  AgentRuntimePrewarmInput,
   AgentUsageSummary,
   AnalyzeProjectCodePracticesInput,
   AnalyzeProjectCodePracticesResult,
@@ -230,11 +262,6 @@ import type {
   OAuthCredentials,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
-  PreviewManifest,
-  ProjectCodePracticeKey,
-  ProjectCodePracticePreference,
-  ProjectInitializationDatabaseMode,
-  ProjectRunConfiguration,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
@@ -250,6 +277,34 @@ import type {
   StartSessionInput,
   ValidateSecurityAuditInput,
 } from "./types.js";
+import { BlameUserInstructionServices } from "./user-instruction-services.js";
+import {
+  createTextWebFetchExecutor,
+  describeTextWebFetch,
+} from "./web-fetch.js";
+
+export {
+  backendKey,
+  blameNativePluginPath,
+  clineDefaultToolPolicies,
+  coreBackendOptions,
+  initializationToolPolicies,
+  newProjectGenerationToolPolicies,
+} from "./cline-runtime-configuration.js";
+
+export {
+  buildDevelopmentSystemPrompt,
+  developmentUserInput,
+} from "./cline-runtime-prompts.js";
+
+export {
+  duplicateEventSignature,
+  nextSpawnAgentActiveCount,
+  normalizeClineAgentPayload,
+  retryableModelTransportFailure,
+  shouldDisplayClineSessionEvent,
+  terminalToolEvent,
+} from "./cline-runtime-events.js";
 
 const execFileAsync = promisify(execFile);
 const defaultSessionMaxIterations = 32;
@@ -260,29 +315,11 @@ const runtimeArtifactPaths = [".blame", ".blame-preview", ".pnpm-store"];
 const runtimeArtifactPathspecs = runtimeArtifactPaths.map(
   (path) => `:!${path}`,
 );
-const productionLogger = createProductionLogger();
-const blameTelemetry = getBlameTelemetry();
 const openAICompatibleProviderID = "openai-compatible";
 const runtimePrewarmSessionId = "blame-runtime-prewarm";
 const cloudProjectMemoryPersistence: ProjectMemoryPersistence = {
   list: listProjectMemories,
   save: saveProjectMemory,
-};
-
-type MergeConflictRuntimeInput =
-  | ApproveAndMergeInput
-  | ResolveMergeConflictsInput;
-type CommitMessageRuntimeInput =
-  | ApproveAndMergeInput
-  | GenerateCommitMessageInput;
-const attachmentDirectoryName = ".blame/attachments";
-
-type ToolApprovalRequest = {
-  toolName?: string;
-  name?: string;
-  sessionId?: string;
-  reason?: string;
-  input?: unknown;
 };
 
 type ToolApprovalResult = {
@@ -297,23 +334,10 @@ type RuntimeCredentialInput = {
 };
 
 type ClineSdk = typeof import("@cline/sdk");
-type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
 
 type PendingApproval = {
   request: AgentApprovalRequest;
   resolve(result: ToolApprovalResult): void;
-};
-
-type RuntimeStartSessionInput = StartSessionInput & {
-  clineDefaultTools?: boolean;
-  compaction?: CoreCompactionConfig;
-  enableAgentTeams?: boolean;
-  enableBuiltInSkills?: boolean;
-  enableSpecialistConsult?: boolean;
-  enableSpawnAgent?: boolean;
-  nativeCompletion?: boolean;
-  taskObjective?: string;
-  projectInitialization?: StartDevelopmentSessionInput["projectInitialization"];
 };
 
 type DevelopmentPreviewInitialization = NonNullable<
@@ -324,49 +348,10 @@ type DevelopmentPreviewState = {
   initialization: DevelopmentPreviewInitialization;
 };
 
-type RuntimeSessionSummary = {
-  sessionId?: string;
-};
-
-type RuntimeClineResult = {
-  result?: Record<string, unknown> & { text?: string };
-  sessionId: string;
-};
-
-type InitializationCorrection = {
-  previousResult: string;
-  validationError: string;
-};
-
-type StructuredResultSubmitTool = {
-  tool: AgentTool;
-  input?: unknown;
-};
-
 type InitializationCredential = {
   apiKey: string;
   authMethod?: string;
   baseUrl: string | null;
-};
-
-type ProjectInitializationAttempt = {
-  result: unknown;
-  sessionId: string;
-  submittedInput?: unknown;
-};
-
-type ProjectCodePracticesAttempt = {
-  input: unknown;
-  sessionId: string;
-};
-
-type CodePracticesAttemptOutcome =
-  | { complete: true; result: AnalyzeProjectCodePracticesResult }
-  | { complete: false; correction: InitializationCorrection };
-
-type ProjectInitializationRepairAttempt = {
-  result: unknown;
-  sessionId: string;
 };
 
 type StoryMergePreparation = {
@@ -375,50 +360,6 @@ type StoryMergePreparation = {
   targetBranch: string;
   targetClean: boolean;
   upstream?: GitUpstream;
-};
-
-type DevelopmentUserInput = {
-  prompt: string;
-  userFiles: string[];
-  userImages: string[];
-};
-
-type DevelopmentAttachmentInput = Pick<
-  DevelopmentUserInput,
-  "userFiles" | "userImages"
->;
-type DevelopmentPromptInput = Pick<
-  StartDevelopmentSessionInput,
-  | "codeSelectionAttachments"
-  | "feedback"
-  | "feedbackCodeSelectionAttachments"
-  | "feedbackFileAttachments"
-  | "fileAttachments"
-  | "summary"
-  | "title"
-> &
-  Partial<Pick<StartDevelopmentSessionInput, "apiConnection">> &
-  Pick<SendDevelopmentSessionInput, "feedbackOnly">;
-
-type RuntimeOptions = PreviewToolRuntimeOptions & {
-  applyPreviewInitialization?(input: {
-    databaseMode: ProjectInitializationDatabaseMode;
-    reason: string;
-    repairSessionId: string;
-    previewManifest: PreviewManifest;
-    runConfigurations: ProjectRunConfiguration[];
-    scope?: string;
-    storyId?: string;
-    workspaceMode?: "local-container" | "cloud-mirror";
-    worktree: string;
-  }): Promise<{ status: "applied" | "unavailable" }>;
-  createCore?(backend?: AgentBackendConfig): Promise<ClineCore>;
-  developmentHarness?: "blame" | "cline";
-  openExternalUrl?(url: string): void;
-  git?(cwd: string, args: string[]): Promise<string>;
-  lightWorkspace?: LightWorkspaceExecutor;
-  modelInactivityTimeoutMs?: number;
-  projectMemoryPersistence?: ProjectMemoryPersistence;
 };
 
 type SessionTermination = {
@@ -489,7 +430,10 @@ export class BlameAgentRuntime {
     string,
     LightCompletionNotification
   >();
-  private sessionNativeFinish = new Map<string, (summary: string) => Promise<unknown>>();
+  private sessionNativeFinish = new Map<
+    string,
+    (summary: string) => Promise<unknown>
+  >();
   private sessionMemoryWrites = new Map<string, Promise<void>>();
   private sessionDeferredTaskBriefings = new Map<string, string>();
   private sessionTerminalDrains = new Map<string, Promise<void>>();
@@ -828,8 +772,10 @@ export class BlameAgentRuntime {
         : requestedConfigExtensions;
       const taskObjective = input.taskObjective ?? input.prompt;
       const taskContract = {
-        environment: { isolated: input.isolatedEnvironment === true,
-          managedPreview: Boolean(input.previewDevtoolsScope) },
+        environment: {
+          isolated: input.isolatedEnvironment === true,
+          managedPreview: Boolean(input.previewDevtoolsScope),
+        },
         acceptance_criteria: [taskObjective],
         effect_requirement: "none" as const,
         session_id: sessionId,
@@ -900,9 +846,14 @@ export class BlameAgentRuntime {
             taskBriefing,
           );
       const finish = standardTools?.find((tool) => tool.name === "finish_task");
-      if (finish) this.sessionNativeFinish.set(sessionId, async (summary) =>
-        finish.execute({ summary }, { sessionId, conversationId: sessionId,
-          toolCallId: "native-finish" } as Parameters<typeof finish.execute>[1]));
+      if (finish)
+        this.sessionNativeFinish.set(sessionId, async (summary) =>
+          finish.execute({ summary }, {
+            sessionId,
+            conversationId: sessionId,
+            toolCallId: "native-finish",
+          } as Parameters<typeof finish.execute>[1]),
+        );
       else this.sessionNativeFinish.delete(sessionId);
       const specialistTool = input.enableSpecialistConsult
         ? runtimeConsultSpecialistTool({
@@ -926,9 +877,15 @@ export class BlameAgentRuntime {
       ];
       const systemPrompt =
         input.systemPrompt ?? loadPrompt("default-agent-system");
-      const requestedCompaction = input.compaction ?? blameCompactionConfig(this.productionConfig);
-      const compactionConfig = input.clineDefaultTools ? requestedCompaction :
-        imageAwareCompaction(requestedCompaction, input.providerId, input.modelId);
+      const requestedCompaction =
+        input.compaction ?? blameCompactionConfig(this.productionConfig);
+      const compactionConfig = input.clineDefaultTools
+        ? requestedCompaction
+        : imageAwareCompaction(
+            requestedCompaction,
+            input.providerId,
+            input.modelId,
+          );
       const contextProjectionExtension =
         input.nativeCompletion && compactionConfig.enabled !== false
           ? createContextProjectionExtension({
@@ -950,7 +907,11 @@ export class BlameAgentRuntime {
           : undefined;
       const startInput = {
         ...(!input.clineDefaultTools
-          ? { capabilities: { toolExecutors: { webFetch: createTextWebFetchExecutor() } } }
+          ? {
+              capabilities: {
+                toolExecutors: { webFetch: createTextWebFetchExecutor() },
+              },
+            }
           : {}),
         ...(autoSendPrompt
           ? {
@@ -1000,7 +961,9 @@ export class BlameAgentRuntime {
           }),
         },
         localRuntime: {
-          ...(!input.clineDefaultTools ? { hooks: { beforeModel: describeTextWebFetch } } : {}),
+          ...(!input.clineDefaultTools
+            ? { hooks: { beforeModel: describeTextWebFetch } }
+            : {}),
           ...(configExtensions ? { configExtensions } : {}),
           ...(userInstructionService ? { userInstructionService } : {}),
           ...(pluginPaths ? { pluginPaths } : {}),
@@ -1254,7 +1217,9 @@ export class BlameAgentRuntime {
     );
     await this.writeSessionJournal(input.sessionId, {
       kind: "request",
-      id: input.executionId ?? `user-message://${sha256(developmentInput.prompt)}`,
+      id:
+        input.executionId ??
+        `user-message://${sha256(developmentInput.prompt)}`,
       text: developmentInput.prompt,
     });
     const briefing = this.sessionDeferredTaskBriefings.get(input.sessionId);
@@ -1600,23 +1565,33 @@ export class BlameAgentRuntime {
     )
       return;
     let nativeFailure: string | undefined;
-    if (input.terminalState === "succeeded" && !this.sessionSubmittedSummaries.has(input.sessionId)) {
+    if (
+      input.terminalState === "succeeded" &&
+      !this.sessionSubmittedSummaries.has(input.sessionId)
+    ) {
       const finish = this.sessionNativeFinish.get(input.sessionId);
       if (finish) {
-        const summary = stringValue(asRecord(input.event?.payload).text) ?? "Task completed.";
-        try { await finish(summary); }
-        catch (error) { nativeFailure = errorMessage(error); }
+        const summary =
+          stringValue(asRecord(input.event?.payload).text) ?? "Task completed.";
+        try {
+          await finish(summary);
+        } catch (error) {
+          nativeFailure = errorMessage(error);
+        }
       }
     }
     const notification = this.sessionSubmittedSummaries.get(input.sessionId);
     const completion = notification?.completion;
-    const terminalState = nativeFailure ? "failed" : completionAwareTerminalState(
-      input.terminalState,
-      completion,
-    );
+    const terminalState = nativeFailure
+      ? "failed"
+      : completionAwareTerminalState(input.terminalState, completion);
     await this.recordSessionJournalTerminal(input.sessionId, terminalState);
     const event = nativeFailure
-      ? this.sessionFailureEvent(input.sessionId, input.executionId, nativeFailure)
+      ? this.sessionFailureEvent(
+          input.sessionId,
+          input.executionId,
+          nativeFailure,
+        )
       : terminalState === input.terminalState
         ? input.event && this.withSubmittedSummary(input.sessionId, input.event)
         : completionFailureEvent(input.sessionId, notification);
@@ -3885,10 +3860,13 @@ export class BlameAgentRuntime {
   }
 
   private developmentAttachmentStorage(input: StartDevelopmentSessionInput) {
-    const executor = managedLightWorkspaceExecutor(this.options.lightWorkspace, {
-      backendMode: input.backend?.mode,
-      workspaceMode: input.workspaceMode,
-    });
+    const executor = managedLightWorkspaceExecutor(
+      this.options.lightWorkspace,
+      {
+        backendMode: input.backend?.mode,
+        workspaceMode: input.workspaceMode,
+      },
+    );
     return executor ? { executor, workspaceRoot: input.cwd } : undefined;
   }
 
@@ -4074,1248 +4052,8 @@ export class BlameAgentRuntime {
   }
 }
 
-function streamingAgentEvent(event: AgentEvent) {
-  return event.type === "text" || event.type === "reasoning";
-}
-
-function normalizeEvent(
-  sessionId: string,
-  event: CoreSessionEvent,
-): AgentEvent {
-  if (event.type === "chunk") {
-    const parsed = parseChunkEvent(event.payload.chunk);
-    if (event.payload.stream === "agent" && parsed) {
-      return normalizeClineAgentPayload(
-        parsed,
-        event.payload.sessionId,
-        parsed,
-      );
-    }
-    return {
-      type: event.payload.stream === "agent" ? "text" : "notice",
-      sessionId: event.payload.sessionId,
-      payload: {
-        text: event.payload.chunk,
-        stream: event.payload.stream,
-        ts: event.payload.ts,
-      },
-    };
-  }
-  if (event.type === "hook") return normalizeHookEvent(event, sessionId);
-  if (event.type === "ended")
-    return incompleteTerminalStatus(event.payload.reason)
-      ? terminalProductError(event.payload.sessionId, event.payload.reason)
-      : {
-          type: "done",
-          sessionId: event.payload.sessionId,
-          payload: event.payload,
-        };
-  if (event.type === "status")
-    return {
-      type: "notice",
-      sessionId: event.payload.sessionId,
-      payload: event.payload,
-    };
-  if (event.type === "agent_event")
-    return normalizeAgentEvent(event, sessionId);
-  return { type: "raw", sessionId, payload: event };
-}
-
-export function shouldDisplayClineSessionEvent(
-  event: CoreSessionEvent,
-  spawnAgentActive = false,
-) {
-  if (event.type === "agent_event") {
-    const payload = asRecord(event.payload.event);
-    if (stringValue(payload.type) === "usage") return true;
-    if (event.payload.teamRole === "teammate") return false;
-    if (stringValue(payload.parentAgentId)) return false;
-  }
-  if (event.type === "hook") {
-    if (stringValue(event.payload.parentAgentId)) return false;
-  }
-  if (spawnAgentActive) {
-    return clineSessionSpawnAgentPhase(event) !== undefined;
-  }
-  return true;
-}
-
-function clineSessionSpawnAgentPhase(event: CoreSessionEvent) {
-  const tool = clineSessionToolEvent(event);
-  if (tool?.toolName !== "spawn_agent") return undefined;
-  return tool.phase;
-}
-
-function clineSessionToolEvent(event: CoreSessionEvent) {
-  if (event.type === "agent_event") {
-    const payload = asRecord(event.payload.event);
-    if (stringValue(payload.contentType) !== "tool") return undefined;
-    const type = stringValue(payload.type);
-    const phase =
-      type === "content_start"
-        ? "started"
-        : type === "content_end"
-          ? "finished"
-          : undefined;
-    return clineToolActivity(payload, "agent_event", phase);
-  }
-  if (event.type !== "hook") return undefined;
-  const phase =
-    event.payload.hookEventName === "tool_call"
-      ? "started"
-      : event.payload.hookEventName === "tool_result"
-        ? "finished"
-        : undefined;
-  return clineToolActivity(asRecord(event.payload), "hook", phase);
-}
-
-function clineToolActivity(
-  payload: Record<string, unknown>,
-  source: "agent_event" | "hook",
-  phase: "started" | "finished" | undefined,
-) {
-  if (!phase) return undefined;
-  const toolName = stringValue(payload.toolName);
-  if (!toolName) return undefined;
-  const toolCallId =
-    stringValue(payload.toolCallId) ??
-    stringValue(asRecord(payload.toolCall).id) ??
-    `${source}:${toolName}`;
-  return { phase, toolCallId, toolName };
-}
-
-export function nextSpawnAgentActiveCount(
-  current: number,
-  phase: "started" | "finished",
-) {
-  if (phase === "started") return current + 1;
-  return Math.max(0, current - 1);
-}
-
-function toolPolicies(
-  autoApproveWriteTools: boolean,
-  additionalAutoApprovedTools: string[] = [],
-) {
-  return Object.fromEntries([
-    ...legacyDirectWorkspaceTools.map((name) => [
-      name,
-      { enabled: false, autoApprove: false },
-    ]),
-    ...readTools.map((name) => [name, { autoApprove: true }]),
-    ...additionalAutoApprovedTools.map((name) => [name, { autoApprove: true }]),
-    ...writeTools.map((name) => [name, { autoApprove: autoApproveWriteTools }]),
-  ]);
-}
-
-export function clineDefaultToolPolicies() {
-  return Object.fromEntries([
-    ["*", { autoApprove: true }],
-    ...legacyDirectWorkspaceTools.map((name) => [
-      name,
-      { enabled: true, autoApprove: true },
-    ]),
-    ["ask_question", { enabled: false, autoApprove: false }],
-  ]);
-}
-
-export function newProjectGenerationToolPolicies() {
-  return Object.fromEntries([
-    ...legacyDirectWorkspaceTools.map((name) => [
-      name,
-      { enabled: true, autoApprove: true },
-    ]),
-    ["skills", { enabled: false, autoApprove: false }],
-    ["ask_question", { enabled: false, autoApprove: false }],
-  ]);
-}
-
-function mergeConflictToolPolicies() {
-  return {
-    ...Object.fromEntries(
-      [...readTools, ...writeTools].map((name) => [
-        name,
-        { enabled: false, autoApprove: false },
-      ]),
-    ),
-    ...Object.fromEntries(
-      legacyDirectWorkspaceTools.map((name) => [
-        name,
-        { enabled: true, autoApprove: true },
-      ]),
-    ),
-    ask_question: { enabled: false, autoApprove: false },
-    skills: { enabled: false, autoApprove: false },
-  };
-}
-
-export function backendKey(backend?: AgentBackendConfig) {
-  if (backend?.key) return backend.key;
-  if (!backend) return "local";
-  if (backend.mode === "remote") return `remote:${backend.endpoint ?? ""}`;
-  if (backend.mode === "hub") return `hub:${backend.endpoint ?? "default"}`;
-  return backend.mode;
-}
-
-export function coreBackendOptions(
-  backend?: AgentBackendConfig,
-): ClineCoreOptions {
-  if (!backend) return { backendMode: "local" };
-  if (backend.mode === "remote") {
-    if (!backend.endpoint)
-      throw new Error("Remote Cline backend endpoint is required.");
-    return {
-      backendMode: "remote",
-      remote: remoteConnectionOptions(backend, backend.endpoint),
-    };
-  }
-  if (backend.mode === "hub") {
-    return {
-      backendMode: "hub",
-      hub: hubConnectionOptions(backend, backend.endpoint),
-    };
-  }
-  return { backendMode: backend.mode };
-}
-
-function remoteConnectionOptions(
-  backend: AgentBackendConfig,
-  endpoint: string,
-): ClineRemoteOptions {
-  return {
-    endpoint,
-    ...(backend.authToken ? { authToken: backend.authToken } : {}),
-    ...(backend.cwd ? { cwd: backend.cwd } : {}),
-    ...(backend.workspaceRoot ? { workspaceRoot: backend.workspaceRoot } : {}),
-    clientType: "blame-desktop",
-    displayName: "Blame",
-  };
-}
-
-function hubConnectionOptions(
-  backend: AgentBackendConfig,
-  endpoint: string | undefined,
-) {
-  return {
-    ...(endpoint ? { endpoint } : {}),
-    ...(backend.authToken ? { authToken: backend.authToken } : {}),
-    ...(backend.cwd ? { cwd: backend.cwd } : {}),
-    ...(backend.workspaceRoot ? { workspaceRoot: backend.workspaceRoot } : {}),
-    clientType: "blame-desktop",
-    displayName: "Blame",
-  };
-}
-
-function initializationConfig(
-  input: InitializeProjectInput,
-  credential: { apiKey: string; baseUrl: string | null },
-  submitTool?: AgentTool,
-) {
-  return appendProductionConfig({
-    providerId: input.providerId,
-    modelId: input.modelId,
-    apiKey: credential.apiKey,
-    baseUrl: credential.baseUrl ?? undefined,
-    ...reasoningConfig(input.reasoningEffort),
-    systemPrompt: loadPrompt("project-initialization-system"),
-    cwd: input.cwd,
-    workspaceRoot: input.workspaceRoot,
-    enableTools: true,
-    enableSpawnAgent: false,
-    enableAgentTeams: false,
-    extraTools: submitTool ? [submitTool] : undefined,
-    maxIterations: 8,
-  });
-}
-
-function codePracticesConfig(
-  input: AnalyzeProjectCodePracticesInput,
-  credential: { apiKey: string; baseUrl: string | null },
-  submitTool: AgentTool,
-) {
-  return appendProductionConfig({
-    providerId: input.providerId,
-    modelId: input.modelId,
-    apiKey: credential.apiKey,
-    baseUrl: credential.baseUrl ?? undefined,
-    ...reasoningConfig(input.reasoningEffort),
-    systemPrompt: loadPrompt("project-code-practices-system"),
-    cwd: input.cwd,
-    workspaceRoot: input.workspaceRoot,
-    enableTools: true,
-    enableSpawnAgent: false,
-    enableAgentTeams: false,
-    extraTools: [submitTool],
-    maxIterations: 4,
-  });
-}
-
-function projectCodePracticesSubmitTool(): StructuredResultSubmitTool {
-  const submit: StructuredResultSubmitTool = {
-    input: undefined,
-    tool: {
-      name: "submit_project_code_practices",
-      description: "Submit the complete project code practice analysis.",
-      inputSchema: projectCodePracticesResultSchema,
-      lifecycle: { completesRun: true },
-      execute(input: unknown) {
-        submit.input = input;
-        return { accepted: true };
-      },
-    },
-  };
-  return submit;
-}
-
-function projectInitializationSubmitTool(): StructuredResultSubmitTool {
-  const submit: StructuredResultSubmitTool = {
-    input: undefined,
-    tool: {
-      name: "submit_project_initialization",
-      description:
-        "Submit the complete Blame project initialization result for validation.",
-      inputSchema: projectInitializationResultSchema,
-      lifecycle: { completesRun: true },
-      execute(input: unknown) {
-        submit.input = input;
-        return { accepted: true };
-      },
-    },
-  };
-  return submit;
-}
-
-function projectInitializationRepairSubmitTool(): StructuredResultSubmitTool {
-  const submit: StructuredResultSubmitTool = {
-    input: undefined,
-    tool: {
-      name: "submit_project_initialization_repair",
-      description: "Submit the complete project initialization diagnosis.",
-      inputSchema: projectInitializationRepairResultSchema,
-      lifecycle: { completesRun: true },
-      execute(input: unknown) {
-        submit.input = input;
-        return { accepted: true };
-      },
-    },
-  };
-  return submit;
-}
-
-function collectProjectInitializationRepairAttempt(
-  session: RuntimeClineResult,
-  submitTool: StructuredResultSubmitTool,
-): ProjectInitializationRepairAttempt {
-  const result =
-    submitTool.input ??
-    structuredResultInputFromResult(
-      session.result,
-      "submit_project_initialization_repair",
-    ) ??
-    session.result?.text;
-  if (!result)
-    throw new Error(
-      "Project initialization repair agent did not return a result",
-    );
-  return { result, sessionId: session.sessionId };
-}
-
-async function collectProjectInitializationAttempt(
-  cline: ClineCore,
-  session: RuntimeClineResult,
-  submitTool: StructuredResultSubmitTool,
-): Promise<ProjectInitializationAttempt> {
-  const submittedInput =
-    submitTool.input ??
-    projectInitializationInputFromResult(session.result) ??
-    (await projectInitializationInputFromMessages(cline, session.sessionId));
-  const result = submittedInput ?? session.result?.text;
-  if (!result)
-    throw new Error("Project initialization agent did not return a result");
-  return { result, sessionId: session.sessionId, submittedInput };
-}
-
-function parseProjectInitializationAttempt(
-  attempt: ProjectInitializationAttempt,
-  scan: ProjectInitializationScan,
-  input: InitializeProjectInput,
-) {
-  const initialization = attempt.submittedInput
-    ? parseProjectInitializationPayload(
-        attempt.submittedInput,
-        scan,
-        input.preferences,
-      )
-    : parseProjectInitializationResult(
-        String(attempt.result),
-        scan,
-        input.preferences,
-      );
-  return {
-    sessionId: attempt.sessionId,
-    previewManifest: initialization.previewManifest,
-    setupScript: initialization.setupScript,
-    dockerCompose: initialization.dockerCompose,
-    runConfigurations: initialization.runConfigurations,
-  };
-}
-
-function parsedCodePracticesAttempt(
-  attempt: { input: unknown; sessionId: string },
-  scan: ProjectCodePracticesScan,
-): AnalyzeProjectCodePracticesResult {
-  return {
-    sessionId: attempt.sessionId,
-    practices: resolveProjectCodePracticesResult(attempt.input, scan.commits),
-  };
-}
-
-function parseProjectInitializationRepairAttempt(
-  attempt: ProjectInitializationRepairAttempt,
-  scan: ProjectInitializationScan,
-  input: RepairProjectInitializationInput,
-) {
-  const repair =
-    typeof attempt.result === "string"
-      ? parseProjectInitializationRepairResult(
-          attempt.result,
-          scan,
-          input.preferences,
-        )
-      : parseProjectInitializationRepairPayload(
-          attempt.result,
-          scan,
-          input.preferences,
-        );
-  return {
-    sessionId: attempt.sessionId,
-    ...repair,
-  };
-}
-
-function initializationCorrection(
-  previousResult: unknown,
-  error: unknown,
-): InitializationCorrection {
-  const serializedResult =
-    typeof previousResult === "string"
-      ? previousResult
-      : JSON.stringify(previousResult);
-  return {
-    previousResult: serializedResult ?? String(previousResult),
-    validationError: errorMessage(error),
-  };
-}
-
-function combinedTaskBriefing(
-  initialTaskBriefing?: string,
-  projectMemoryBriefing?: string,
-) {
-  const briefing = [initialTaskBriefing, projectMemoryBriefing]
-    .filter((value): value is string => Boolean(value))
-    .join("\n");
-  return briefing || undefined;
-}
-
-function runtimeTools(
-  options: RuntimeOptions,
-  worktree?: string,
-  previewContext?: PreviewRuntimeContext,
-  taskContract?: LightTaskContract,
-  executor?: LightWorkspaceExecutor,
-  completion?: {
-    conversationId: string;
-    onComplete(notification: LightCompletionNotification): void;
-    onValidationActivity(activity: LightValidationActivity): Promise<void>;
-  },
-  previewMcpTools: AgentTool[] = [],
-  initialTaskBriefing?: string,
-) {
-  void initialTaskBriefing;
-  const tools = [
-    ...lightSemanticHarnessTools(worktree, {
-      executor,
-      taskContract,
-      ...(options.refreshPreviewDependencies && previewContext
-        ? {
-            refreshPreviewDependencies: () =>
-              Promise.resolve(
-                options.refreshPreviewDependencies!(previewContext),
-              ),
-          }
-        : {}),
-    }),
-    ...(completion
-      ? [
-          createFinishTaskTool({
-            conversationId: completion.conversationId,
-            executor,
-            taskContract,
-            workspaceRoot: worktree ?? "",
-            onComplete: completion.onComplete,
-            onValidationActivity: completion.onValidationActivity,
-          }),
-        ]
-      : []),
-    previewDevtoolsTool(options, previewContext),
-    previewInitializationRepairTool(options, previewContext),
-    previewContainerLogsTool(options, previewContext),
-    ...previewMcpTools,
-  ].filter((tool): tool is AgentTool => Boolean(tool));
-  return tools.length ? tools : undefined;
-}
-
-function readOnlyRuntimeTools(
-  options: RuntimeOptions,
-  worktree: string,
-  previewContext: PreviewRuntimeContext,
-  taskContract: LightTaskContract,
-  executor?: LightWorkspaceExecutor,
-  initialTaskBriefing?: string,
-) {
-  const allowedTools = new Set([
-    ...lightReadToolNames,
-    "get_preview_devtools",
-    "get_preview_container_logs",
-  ]);
-  return (
-    runtimeTools(
-      options,
-      worktree,
-      previewContext,
-      taskContract,
-      executor,
-      undefined,
-      [],
-      initialTaskBriefing,
-    ) ?? []
-  ).filter((tool) => allowedTools.has(tool.name));
-}
-
-function runtimeConsultSpecialistTool(options: {
-  credential: {
-    apiKey: string;
-    baseUrl: string | null;
-  };
-  input: RuntimeStartSessionInput;
-  initialTaskBriefing?: string;
-  objective?: string;
-  readOnlyTools: AgentTool[];
-}) {
-  return createConsultSpecialistTool({
-    capsule: specialistCapsuleProvider(options),
-    objective: options.objective,
-    spawnTool: specialistSpawnTool(options),
-    storyId: options.input.storyId,
-    timeoutMs: adaptiveSpecialistTimeoutMs(
-      specialistReasoningEffort(options.input.reasoningEffort),
-    ),
-  });
-}
-
-function specialistSpawnTool(options: {
-  credential: { apiKey: string; baseUrl: string | null };
-  input: RuntimeStartSessionInput;
-  readOnlyTools: AgentTool[];
-}) {
-  const configProvider = createDelegatedAgentConfigProvider(supplementalModelConfig({
-    providerId: options.input.providerId,
-    modelId: options.input.modelId,
-    apiKey: options.credential.apiKey,
-    baseUrl: options.credential.baseUrl ?? undefined,
-    ...reasoningConfig(
-      specialistReasoningEffort(options.input.reasoningEffort),
-    ),
-    cwd: options.input.cwd,
-    maxIterations: 16,
-  }));
-  const spawnTool = createSpawnAgentTool({
-    configProvider,
-    defaultMaxIterations: 16,
-    subAgentTools: options.readOnlyTools,
-    toolPolicies: Object.fromEntries(
-      options.readOnlyTools.map((tool) => [
-        tool.name,
-        { enabled: true, autoApprove: true },
-      ]),
-    ),
-    logger: productionLogger,
-  });
-  return spawnTool;
-}
-
-function specialistCapsuleProvider(options: {
-  input: RuntimeStartSessionInput;
-  initialTaskBriefing?: string;
-  objective?: string;
-}) {
-  return async (consultation: { task: string }) => {
-    const briefing = options.initialTaskBriefing
-      ? `<runtime_task_briefing>\n${options.initialTaskBriefing}\n</runtime_task_briefing>`
-      : undefined;
-    const request = JSON.stringify({
-      objective: options.objective,
-      specialistTask: consultation.task,
-    });
-    return [`<specialist_request>${request}</specialist_request>`, briefing]
-      .filter(Boolean)
-      .join("\n\n");
-  };
-}
-
-function specialistReasoningEffort(
-  effort: RuntimeStartSessionInput["reasoningEffort"],
-) {
-  return effort === "xhigh" || effort === "max" ? "high" : effort;
-}
-
-async function projectInitializationInputFromMessages(
-  cline: ClineCore,
-  sessionId: string,
-) {
-  try {
-    return projectInitializationInputFromMessageList(
-      await cline.readLiveMessages(sessionId),
-    );
-  } catch {
-    return undefined;
-  }
-}
-
-function projectInitializationInputFromResult(result: unknown) {
-  return structuredResultInputFromResult(
-    result,
-    "submit_project_initialization",
-  );
-}
-
-function structuredResultInputFromResult(result: unknown, toolName: string) {
-  const payload = asRecord(result);
-  const toolCalls = Array.isArray(payload.toolCalls) ? payload.toolCalls : [];
-  for (const call of toolCalls) {
-    const record = asRecord(call);
-    if (record.name === toolName) {
-      return record.input;
-    }
-  }
-  return structuredResultInputFromMessageList(payload.messages, toolName);
-}
-
-function projectInitializationInputFromMessageList(value: unknown) {
-  return structuredResultInputFromMessageList(
-    value,
-    "submit_project_initialization",
-  );
-}
-
-function structuredResultInputFromMessageList(
-  value: unknown,
-  toolName: string,
-) {
-  const messages = Array.isArray(value) ? value : asRecord(value).messages;
-  if (!Array.isArray(messages)) return undefined;
-  for (const message of messages) {
-    const content = asRecord(message).content;
-    if (!Array.isArray(content)) continue;
-    for (const part of content) {
-      const input = structuredResultInputFromMessagePart(part, toolName);
-      if (input) return input;
-    }
-  }
-  return undefined;
-}
-
-function structuredResultInputFromMessagePart(
-  value: unknown,
-  toolName: string,
-) {
-  const part = asRecord(value);
-  const name =
-    stringValue(part.name) ??
-    stringValue(part.toolName) ??
-    stringValue(asRecord(part.toolCall).name) ??
-    stringValue(asRecord(part.toolCall).toolName);
-  if (name !== toolName) return undefined;
-  return part.input ?? asRecord(part.toolCall).input;
-}
-
-function initializationRepairConfig(
-  input: RepairProjectInitializationInput,
-  credential: { apiKey: string; baseUrl: string | null },
-  submitTool: AgentTool,
-) {
-  return appendProductionConfig({
-    providerId: input.providerId,
-    modelId: input.modelId,
-    apiKey: credential.apiKey,
-    baseUrl: credential.baseUrl ?? undefined,
-    ...reasoningConfig(input.reasoningEffort),
-    systemPrompt: loadPrompt("project-initialization-repair-system"),
-    cwd: input.cwd,
-    workspaceRoot: input.workspaceRoot,
-    enableTools: true,
-    enableSpawnAgent: false,
-    enableAgentTeams: false,
-    extraTools: [submitTool],
-    maxIterations: 4,
-  });
-}
-
-function initializationImpactConfig(
-  input: AssessProjectInitializationImpactInput,
-  credential: { apiKey: string; baseUrl: string | null },
-) {
-  return appendProductionConfig({
-    providerId: input.providerId,
-    modelId: input.modelId,
-    apiKey: credential.apiKey,
-    baseUrl: credential.baseUrl ?? undefined,
-    ...reasoningConfig(input.reasoningEffort),
-    systemPrompt: loadPrompt("project-initialization-impact-system"),
-    cwd: input.cwd,
-    workspaceRoot: input.workspaceRoot,
-    enableTools: false,
-    enableSpawnAgent: false,
-    enableAgentTeams: false,
-    maxIterations: 4,
-  });
-}
-
-function commitMessageConfig(
-  input: CommitMessageRuntimeInput,
-  credential: { apiKey: string; baseUrl: string | null },
-) {
-  return appendProductionConfig({
-    providerId: input.providerId,
-    modelId: input.modelId,
-    apiKey: credential.apiKey,
-    baseUrl: credential.baseUrl ?? undefined,
-    ...reasoningConfig(input.reasoningEffort),
-    systemPrompt: developmentPracticePrompt(
-      input.codePractices ?? [],
-      "commit_message_convention",
-    ),
-    cwd: input.worktree,
-    workspaceRoot: input.worktree,
-    enableTools: false,
-    enableSpawnAgent: false,
-    enableAgentTeams: false,
-    maxIterations: 4,
-  });
-}
-
-function mergeConflictConfig(
-  input: MergeConflictRuntimeInput,
-  credential: { apiKey: string; baseUrl: string | null },
-) {
-  return appendProductionConfig({
-    providerId: input.providerId,
-    modelId: input.modelId,
-    apiKey: credential.apiKey,
-    baseUrl: credential.baseUrl ?? undefined,
-    ...reasoningConfig(input.reasoningEffort),
-    systemPrompt: loadPrompt("merge-conflict-resolution"),
-    cwd: input.worktree,
-    workspaceRoot: input.worktree,
-    enableTools: true,
-    enableSpawnAgent: false,
-    enableAgentTeams: false,
-    maxIterations: 16,
-  });
-}
-
-function initializationPrompt(
-  scan: ProjectInitializationScan,
-  correction?: InitializationCorrection,
-  preferences?: InitializeProjectInput["preferences"],
-) {
-  if (!correction) return projectInitializationPrompt(scan, preferences);
-  return projectInitializationCorrectionPrompt(scan, correction, preferences);
-}
-
-function codePracticesPrompt(
-  scan: ProjectCodePracticesScan,
-  correction?: InitializationCorrection,
-) {
-  if (!correction) return projectCodePracticesPrompt(scan);
-  return projectCodePracticesCorrectionPrompt(scan, correction);
-}
-
-export async function developmentUserInput(
-  input: DevelopmentPromptInput,
-  attachmentDirectory: string,
-  storage?: DevelopmentAttachmentStorage,
-) {
-  const attachments = await fileAttachmentInputs(
-    [
-      ...(input.fileAttachments ?? []),
-      ...(input.feedbackFileAttachments ?? []),
-    ],
-    attachmentDirectory,
-    input.apiConnection,
-    storage,
-  );
-  if (input.feedbackOnly) {
-    return {
-      prompt: developmentFeedbackPrompt(input, attachments),
-      userFiles: attachments.userFiles,
-      userImages: attachments.userImages,
-    };
-  }
-  return {
-    prompt: developmentStoryPrompt(input, attachments),
-    userFiles: attachments.userFiles,
-    userImages: attachments.userImages,
-  };
-}
-
-function developmentFeedbackPrompt(
-  input: DevelopmentPromptInput,
-  attachments: DevelopmentAttachmentInput,
-) {
-  const prompt = [input.feedback?.trim()].filter(Boolean);
-  const feedbackAttachments = codeSelectionAttachmentsMarkdown(
-    input.feedbackCodeSelectionAttachments,
-  );
-  if (feedbackAttachments) prompt.push(feedbackAttachments);
-  const feedbackFiles = fileAttachmentReferences(input.feedbackFileAttachments);
-  if (feedbackFiles) prompt.push(feedbackFiles);
-  const attachmentReferences = clineAttachmentReferences(attachments);
-  if (attachmentReferences) prompt.push(attachmentReferences);
-  return prompt.join("\n\n");
-}
-
-function developmentStoryPrompt(
-  input: DevelopmentPromptInput,
-  attachments: DevelopmentAttachmentInput = { userFiles: [], userImages: [] },
-) {
-  const prompt = [`Backlog item: ${input.title}`, "", input.summary];
-  const storyAttachments = codeSelectionAttachmentsMarkdown(
-    input.codeSelectionAttachments,
-  );
-  if (storyAttachments) {
-    prompt.push("", "Attached code selections:", "", storyAttachments);
-  }
-  const storyFiles = fileAttachmentReferences(input.fileAttachments);
-  if (storyFiles) {
-    prompt.push("", "Attached files:", "", storyFiles);
-  }
-  if (input.feedback?.trim()) {
-    prompt.push("", "Review feedback:", "", input.feedback.trim());
-  }
-  const feedbackAttachments = codeSelectionAttachmentsMarkdown(
-    input.feedbackCodeSelectionAttachments,
-  );
-  if (feedbackAttachments) {
-    prompt.push(
-      "",
-      "Review feedback code selections:",
-      "",
-      feedbackAttachments,
-    );
-  }
-  const feedbackFiles = fileAttachmentReferences(input.feedbackFileAttachments);
-  if (feedbackFiles) {
-    prompt.push("", "Review feedback files:", "", feedbackFiles);
-  }
-  if (attachments.userImages.length) {
-    prompt.push(
-      "",
-      `Images attached for model vision: ${attachments.userImages.length}`,
-    );
-  }
-  if (attachments.userFiles.length) {
-    prompt.push(
-      "",
-      "Files attached for Cline context:",
-      "",
-      attachments.userFiles.join("\n"),
-    );
-  }
-  prompt.push(
-    "",
-    "Work in the current worktree when code changes are clearly required.",
-    "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files.",
-    "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it.",
-    "Preview verification requires application_ready for the current source and environment revisions; browser_ready alone is transport state. A blocking compiler error or HTTP 500 returns immediately with its diagnostic.",
-  );
-  return prompt.join("\n");
-}
-
-function clineAttachmentReferences(attachments: DevelopmentAttachmentInput) {
-  const references: string[] = [];
-  if (attachments.userImages.length) {
-    references.push(
-      `Images attached for model vision: ${attachments.userImages.length}`,
-    );
-  }
-  if (attachments.userFiles.length) {
-    references.push(
-      `Files attached for Cline context: ${attachments.userFiles.length}`,
-    );
-  }
-  return references.join("\n");
-}
-
-function codeSelectionAttachmentsMarkdown(
-  attachments: StartDevelopmentSessionInput["codeSelectionAttachments"],
-) {
-  if (!attachments?.length) return "";
-  return attachments.map(codeSelectionAttachmentMarkdown).join("\n\n");
-}
-
-function codeSelectionAttachmentMarkdown(
-  attachment: NonNullable<
-    StartDevelopmentSessionInput["codeSelectionAttachments"]
-  >[number],
-) {
-  const fence = markdownFence(attachment.content);
-  return [
-    `### ${attachment.path} (${codeSelectionLineLabel(attachment)})`,
-    "",
-    fence,
-    attachment.content,
-    fence,
-  ].join("\n");
-}
-
-function codeSelectionLineLabel(
-  attachment: Pick<
-    NonNullable<
-      StartDevelopmentSessionInput["codeSelectionAttachments"]
-    >[number],
-    "endLine" | "startLine"
-  >,
-) {
-  if (attachment.startLine === attachment.endLine)
-    return `Line ${attachment.startLine}`;
-  return `Lines ${attachment.startLine}-${attachment.endLine}`;
-}
-
-function markdownFence(content: string) {
-  const longestFence = content
-    .match(/`{3,}/g)
-    ?.reduce((longest, fence) => Math.max(longest, fence.length), 2);
-  return "`".repeat((longestFence ?? 2) + 1);
-}
-
-function fileAttachmentReferences(
-  attachments: StartDevelopmentSessionInput["fileAttachments"],
-) {
-  if (!attachments?.length) return "";
-  return attachments.map(fileAttachmentReference).join("\n");
-}
-
-function fileAttachmentReference(
-  attachment: NonNullable<
-    StartDevelopmentSessionInput["fileAttachments"]
-  >[number],
-) {
-  const label = `${attachment.name} (${attachment.type || "application/octet-stream"}, ${attachment.size} bytes)`;
-  if (!attachment.aiContextMarkdown?.trim()) return `- ${label}`;
-  const fence = markdownFence(attachment.aiContextMarkdown);
-  return [
-    `- ${label}`,
-    "",
-    `${fence}markdown`,
-    attachment.aiContextMarkdown.trim(),
-    fence,
-  ].join("\n");
-}
-
-async function fileAttachmentInputs(
-  attachments: NonNullable<StartDevelopmentSessionInput["fileAttachments"]>,
-  attachmentDirectory: string,
-  apiConnection?: ApiConnection,
-  storage?: DevelopmentAttachmentStorage,
-) {
-  const userImages: string[] = [];
-  const userFiles: string[] = [];
-  await Promise.all(
-    attachments.map(async (attachment) => {
-      const content = await fileAttachmentContent(attachment, apiConnection);
-      if (attachment.type.startsWith("image/")) {
-        userImages.push(
-          `data:${attachment.type};base64,${content.toString("base64")}`,
-        );
-        return;
-      }
-      userFiles.push(
-        await writeDevelopmentAttachment(
-          attachment.name,
-          content,
-          attachmentDirectory,
-          storage,
-        ),
-      );
-    }),
-  );
-  return { userFiles, userImages };
-}
-
-async function fileAttachmentContent(
-  attachment: NonNullable<
-    StartDevelopmentSessionInput["fileAttachments"]
-  >[number],
-  apiConnection?: ApiConnection,
-) {
-  if (attachment.content !== undefined) {
-    return Buffer.from(attachment.content, "base64");
-  }
-  const response = await attachmentDownloadResponse(attachment, apiConnection);
-  if (!response.ok) {
-    throw new Error(`Unable to download attachment ${attachment.name}`);
-  }
-  const content = Buffer.from(await response.arrayBuffer());
-  if (content.byteLength !== attachment.size) {
-    throw new Error(
-      `Downloaded attachment ${attachment.name} has an invalid size`,
-    );
-  }
-  return content;
-}
-
-async function attachmentDownloadResponse(
-  attachment: NonNullable<
-    StartDevelopmentSessionInput["fileAttachments"]
-  >[number],
-  apiConnection?: ApiConnection,
-) {
-  if (attachment.downloadUrl) {
-    const response = await fetch(attachment.downloadUrl);
-    if (response.ok || !attachment.id || !apiConnection) return response;
-  }
-  return fetch(
-    await authorizedAttachmentDownloadUrl(attachment, apiConnection),
-  );
-}
-
-async function authorizedAttachmentDownloadUrl(
-  attachment: NonNullable<
-    StartDevelopmentSessionInput["fileAttachments"]
-  >[number],
-  apiConnection?: ApiConnection,
-) {
-  if (!attachment.id || !apiConnection) {
-    throw new Error(`Attachment ${attachment.name} has no content source`);
-  }
-  const response = await fetch(
-    `${apiConnection.url.replace(/\/$/, "")}/attachments/${encodeURIComponent(attachment.id)}`,
-    {
-      headers: apiConnection.token
-        ? { Authorization: `Bearer ${apiConnection.token}` }
-        : undefined,
-    },
-  );
-  if (!response.ok) {
-    throw new Error(`Unable to authorize attachment ${attachment.name}`);
-  }
-  const payload = (await response.json()) as { data?: unknown };
-  const value = attachmentResponseValue(payload);
-  if (!value || typeof value.downloadUrl !== "string") {
-    throw new Error(`Attachment ${attachment.name} has no download URL`);
-  }
-  return value.downloadUrl;
-}
-
-function attachmentResponseValue(value: unknown) {
-  if (!value || typeof value !== "object") return undefined;
-  const record = value as Record<string, unknown>;
-  const data = record.data;
-  return data && typeof data === "object"
-    ? (data as Record<string, unknown>)
-    : record;
-}
-
-function newAttachmentDirectory(cwd: string) {
-  return join(cwd, attachmentDirectoryName, randomUUID());
-}
-
-export async function buildDevelopmentSystemPrompt(
-  input: StartDevelopmentSessionInput,
-) {
-  const metadata = await buildWorkspaceMetadata(input.cwd);
-  const practices = input.codePractices ?? [];
-  return renderPrompt(loadPrompt("code-agent-system"), {
-    BLAME_ENVIRONMENT: input.isolatedEnvironment
-      ? "Commands run inside an isolated task environment. Apply the authorized environment changes there and verify that requested setup or services are active."
-      : "Commands use the current process permissions. Keep their effects within the user's authorized scope and preserve unrelated state.",
-    BLAME_PRACTICES: developmentPracticePrompts(practices),
-    BLAME_PREVIEW: developmentPreviewPrompt(input),
-    BLAME_SPECIALISTS: developmentSpecialistConsultEnabled(input)
-      ? blameSpecialistRoutingSystemPrompt()
-      : "",
-    CURRENT_DATE: new Date().toISOString().slice(0, 10),
-    CWD: input.cwd,
-    IDE_NAME: "Blame",
-    PLATFORM_NAME: process.platform,
-    WORKSPACE_METADATA: metadata,
-    WORKSPACE_NAME: basename(input.workspaceRoot),
-    WORKSPACE_ROOT: input.workspaceRoot,
-  });
-}
-
-function developmentPreviewPrompt(input: StartDevelopmentSessionInput) {
-  if (!input.previewDevtoolsScope) return "";
-  return "After final UI edits, use get_preview_devtools with waitFor=ready once when available. Preview services, databases, containers, and dev servers are managed by Blame and must not be started manually. If preview infrastructure is unavailable, continue with local validation and report it.";
-}
-
-async function clineDefaultSystemPrompt(input: StartDevelopmentSessionInput) {
-  return getClineDefaultSystemPrompt({
-    ide: "Cline",
-    metadata: await buildWorkspaceMetadata(input.cwd),
-    mode: "act",
-    platform: process.platform,
-    providerId: input.providerId,
-    workspaceName: basename(input.workspaceRoot),
-    workspaceRoot: input.workspaceRoot,
-  });
-}
-
 export function createClineBaselineRuntime(events?: AgentRuntimeEvents) {
   return new BlameAgentRuntime(events, { developmentHarness: "cline" });
-}
-
-export function blameNativePluginPath() {
-  return fileURLToPath(
-    new URL("./plugins/blame-native/index.js", import.meta.url),
-  );
-}
-
-function withConfigExtensions(
-  extensions: StartSessionInput["configExtensions"],
-  ...required: NonNullable<StartSessionInput["configExtensions"]>
-) {
-  return Array.from(new Set([...(extensions ?? []), ...required]));
-}
-
-function developmentPracticePrompts(
-  practices: ProjectCodePracticePreference[],
-) {
-  return [
-    developmentPracticePrompt(practices, "coding_style"),
-    developmentPracticePrompt(practices, "layered_architecture"),
-    developmentPracticePrompt(practices, "unit_tests"),
-  ].join("\n\n");
-}
-
-function renderPrompt(template: string, values: Record<string, string>) {
-  return template.replace(/{{([A-Z_]+)}}/g, (placeholder, key) => {
-    return values[key] ?? placeholder;
-  });
-}
-
-async function newProjectGenerationConfig(
-  input: StartNewProjectGenerationInput,
-  credential: { apiKey: string; baseUrl: string | null },
-  sessionId: string,
-  productionConfig: ReturnType<typeof loadProductionConfig>,
-) {
-  const metadata = await buildWorkspaceMetadata(input.cwd);
-  return appendProductionConfig({
-    sessionId,
-    providerId: input.providerId,
-    modelId: input.modelId,
-    apiKey: credential.apiKey,
-    baseUrl: credential.baseUrl ?? undefined,
-    ...reasoningConfig(input.reasoningEffort),
-    systemPrompt: getClineDefaultSystemPrompt({
-      ide: "Blame",
-      metadata,
-      mode: "yolo",
-      platform: process.platform,
-      providerId: input.providerId,
-      rules: mergeRulesForSystemPrompt(
-        undefined,
-        loadPrompt("new-project-generation-system"),
-      ),
-      workspaceName: input.projectName,
-      workspaceRoot: input.workspaceRoot,
-    }),
-    cwd: input.cwd,
-    workspaceRoot: input.workspaceRoot,
-    mode: "yolo",
-    maxIterations: newProjectGenerationMaxIterations(),
-    compaction: blameCompactionConfig(productionConfig),
-    enableTools: true,
-    enableSpawnAgent: false,
-    enableAgentTeams: false,
-    extensionContext: {
-      client: { name: "blame" },
-      logger: productionLogger,
-      workspace: {
-        cwd: input.cwd,
-        ide: "Blame",
-        mode: "yolo",
-        platform: process.platform,
-        rootPath: input.workspaceRoot,
-        workspaceName: input.projectName,
-      },
-    },
-  });
-}
-
-function newProjectGenerationPrompt(input: StartNewProjectGenerationInput) {
-  const authRequested = input.configuration.advancedOptions.includes("auth");
-  return [
-    `Generate a new Blame project named ${input.projectName}.`,
-    "",
-    "The current working directory is already the empty target project directory. Initialize the codebase in this directory; do not create a nested project folder unless the selected architecture explicitly needs sub-app folders such as apps/web.",
-    "",
-    "Scope constraints:",
-    "- Initialize the selected framework starter with canonical CLI commands whenever possible.",
-    "- Keep the generated app close to the default framework starter.",
-    "- Do not create a custom homepage, dashboard, demo feature, CRUD flow, domain model, mock data, or marketing content.",
-    "- Do not add authentication, users, sessions, protected routes, or authorization unless auth is requested.",
-    authRequested
-      ? "- Auth is requested: add only the smallest working auth scaffold appropriate for the selected stack."
-      : "- Auth is not requested: do not add auth-related dependencies, screens, routes, schemas, or services.",
-    "- Add only files required by selected advanced options.",
-    "- Do not downgrade or upgrade framework versions after the CLI creates the starter.",
-    "- Keep framework config file extensions compatible with the installed framework version.",
-    "- Do not chase build, lint, peer dependency, or framework warnings during project creation.",
-    "- Do not read files at the end to verify coherence. Stop after dependency installation and final required file writes.",
-    "- After all scaffold and installation commands, create or update the root .gitignore without replacing existing entries. It must exclude dependencies, framework build output, Blame runtime artifacts, and runtime .env files while keeping .env templates trackable.",
-    "",
-    "Wizard brief (normalized JSON):",
-    JSON.stringify(
-      {
-        projectName: input.projectName,
-        targetPath: input.cwd,
-        configuration: input.configuration,
-      },
-      null,
-      2,
-    ),
-    "",
-    "Compatibility and recommendation rules:",
-    "- Treat this normalized wizard configuration as the user's source of intent.",
-    "- Respect frontend/backend/database/ORM/UI compatibility implied by the selected values.",
-    "- If an exact combination has no mature canonical integration, choose the smallest coherent starter and document the trade-off in README.md.",
-    "- Advanced options are explicit requirements when present: monorepo, auth, unitTests, e2eTests, githubActions, envExample, readme, typescriptAlias, standardScripts.",
-    "- Ignore docker, dockerCompose, and blamePreview during project creation because Blame handles them during initialization.",
-    "- Blame will generate setup and Docker Compose preview artifacts after creation through a separate initialization agent.",
-    "- Do not create .blame/setup.sh, setup.sh, docker-compose.yml, compose.yml, or Blame preview metadata.",
-    "",
-    "Blame readiness requirements:",
-    "- Make dependency installation non-interactive and reproducible.",
-    "- Provide scripts named dev and build; also lint/test when requested or when quality/test options require them.",
-    "- Provide .env.example, README.md, tests, GitHub Actions, aliases, and auth only when requested.",
-    "- Avoid blocking prompts; pass non-interactive flags or create files manually when CLIs are interactive.",
-    "- Do not use sudo and do not require global installs.",
-    "",
-    "Verification before completion:",
-    "- Install dependencies once using the selected package manager/runtime.",
-    "- Do not run build, lint, test, dev servers, preview commands, or long-running processes.",
-    "- Do not inspect generated source files after installation unless dependency installation failed and the exact file must be fixed.",
-    "- Read and finalize the root .gitignore after commands have completed.",
-    "- Fix only errors that prevent the framework starter from being created or dependencies from being installed.",
-    "- Finish with a concise summary of scaffolded files, dependency installation result, and any caveats.",
-  ].join("\n");
-}
-
-function newProjectGenerationMaxIterations() {
-  const value = Number(process.env.BLAME_AGENT_NEW_PROJECT_MAX_ITERATIONS);
-  return Number.isFinite(value) && value > 0 ? value : 16;
 }
 
 async function generatedProjectReadinessError(cwd: string) {
@@ -5357,47 +4095,6 @@ async function fileExists(path: string) {
 
 function createBlameSessionId() {
   return `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`;
-}
-
-function extensionContext(input: StartSessionInput) {
-  return {
-    client: { name: "blame" },
-    logger: productionLogger,
-    workspace: {
-      cwd: input.cwd,
-      ide: "Blame",
-      mode: input.mode ?? "act",
-      platform: process.platform,
-      rootPath: input.workspaceRoot,
-      workspaceName: basename(input.workspaceRoot),
-    },
-  };
-}
-
-function developmentPracticePrompt(
-  practices: ProjectCodePracticePreference[],
-  practice: ProjectCodePracticeKey,
-) {
-  const enabled = practices.find((item) => item.practice === practice)?.enabled;
-  if (practice === "unit_tests" && enabled === undefined) return "";
-  if (practice === "coding_style") {
-    return loadPrompt(
-      `practices/coding-style/${enabled ? "standard" : "match-codebase"}`,
-    );
-  }
-  if (practice === "layered_architecture") {
-    return loadPrompt(
-      `practices/architecture/${enabled ? "standard" : "match-codebase"}`,
-    );
-  }
-  if (practice === "commit_message_convention") {
-    return loadPrompt(
-      `practices/commit-message/${enabled ? "standard" : "match-codebase"}`,
-    );
-  }
-  return loadPrompt(
-    `practices/unit-tests/${enabled ? "standard" : "disabled"}`,
-  );
 }
 
 async function assertGitRepository(cwd: string) {
@@ -5944,18 +4641,6 @@ function truncateText(value: string, limit: number) {
   return `${value.slice(0, limit)}\n[truncated]`;
 }
 
-function approveMergeLogPath(worktree: string) {
-  return join(worktree, ".blame", "logs", "approve-merge.log");
-}
-
-function commitMessageLogPath(worktree: string) {
-  return join(worktree, ".blame", "logs", "commit-message.log");
-}
-
-function mergeConflictLogPath(worktree: string) {
-  return join(worktree, ".blame", "logs", "merge-conflicts.log");
-}
-
 function approveMergeContext(input: ApproveAndMergeInput) {
   return {
     providerId: input.providerId,
@@ -5965,10 +4650,6 @@ function approveMergeContext(input: ApproveAndMergeInput) {
     worktree: input.worktree,
     storyBranch: input.storyBranch,
   };
-}
-
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
 }
 
 async function settleWithTimeout(
@@ -6153,24 +4834,6 @@ function adaptiveModelInactivityTimeoutMs(
   return defaultModelInactivityTimeoutMs;
 }
 
-function adaptiveSpecialistTimeoutMs(reasoningEffort: unknown) {
-  const effort = String(reasoningEffort ?? "").toLowerCase();
-  if (effort === "ultra") return 360_000;
-  if (effort === "max") return 300_000;
-  if (effort === "xhigh") return 240_000;
-  if (effort === "high") return 180_000;
-  if (effort === "medium") return 120_000;
-  return 90_000;
-}
-
-function startLogPath(cwd: string) {
-  return join(cwd, ".blame", "logs", "cline-start.log");
-}
-
-function sessionLogPath(cwd: string, sessionId: string) {
-  return join(cwd, ".blame", "logs", `cline-${sessionId}.log`);
-}
-
 export function workspaceSessionIds(
   sessionLogFiles: ReadonlyMap<string, string>,
   workspace: string,
@@ -6190,46 +4853,6 @@ function pathInsideWorkspace(path: string, workspace: string) {
   );
 }
 
-async function appendLog(
-  file: string,
-  message: string,
-  payload?: unknown,
-  activeContext?: import("@blame/telemetry").Context,
-) {
-  try {
-    await mkdir(dirname(file), { recursive: true });
-    await appendFile(
-      file,
-      `${JSON.stringify(logLine(message, safeLogPayload(payload), activeContext))}\n`,
-      "utf8",
-    );
-  } catch {
-    console.warn("[blame-agent]", "log write failed");
-  }
-}
-
-function logLine(
-  message: string,
-  payload?: unknown,
-  activeContext?: import("@blame/telemetry").Context,
-) {
-  return blameTelemetry.structuredLog(
-    logSeverity(payload),
-    logEventName(message),
-    safeLogPayload(payload),
-    activeContext,
-  );
-}
-
-function logEventName(message: string) {
-  return `blame.agent.${message.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
-}
-
-function logSeverity(payload: unknown) {
-  const status = stringValue(asRecord(payload).status);
-  return status === "failed" || status === "error" ? "error" : "info";
-}
-
 export function resultFailureMessage(result: unknown) {
   const payload = asRecord(result);
   const status = incompleteResultStatus(payload);
@@ -6247,856 +4870,6 @@ function resultFailureDetail(result: unknown) {
   );
 }
 
-function resultStatus(payload: Record<string, unknown>) {
-  return (
-    stringValue(payload.status) ??
-    stringValue(payload.state) ??
-    stringValue(payload.finishReason) ??
-    stringValue(payload.reason)
-  );
-}
-
-export function initializationToolPolicies() {
-  return Object.fromEntries([
-    ["submit_project_initialization", { autoApprove: true }],
-    ["submit_project_initialization_repair", { autoApprove: true }],
-    ...legacyDirectWorkspaceTools.map((name) => [
-      name,
-      initializationFallbackReadTools.has(name)
-        ? { enabled: true, autoApprove: true }
-        : { enabled: false, autoApprove: false },
-    ]),
-    ...readTools.map((name) => [name, { enabled: false, autoApprove: false }]),
-    ...writeTools.map((name) => [name, { enabled: false, autoApprove: false }]),
-  ]);
-}
-
-function codePracticesToolPolicies() {
-  return Object.fromEntries([
-    ["submit_project_code_practices", { autoApprove: true }],
-    ...legacyDirectWorkspaceTools.map((name) => [
-      name,
-      { enabled: false, autoApprove: false },
-    ]),
-    ...readTools.map((name) => [name, { enabled: false, autoApprove: false }]),
-    ...writeTools.map((name) => [name, { enabled: false, autoApprove: false }]),
-  ]);
-}
-
-function normalizeHookEvent(
-  event: Extract<CoreSessionEvent, { type: "hook" }>,
-  fallbackSessionId: string,
-): AgentEvent {
-  if (event.payload.hookEventName === "agent_error") {
-    return normalizedErrorEvent(
-      event.payload.sessionId ?? fallbackSessionId,
-      asRecord(event.payload),
-      event.payload,
-    );
-  }
-  return {
-    type: "tool",
-    sessionId: event.payload.sessionId ?? fallbackSessionId,
-    payload: event.payload,
-  };
-}
-
-function normalizeAgentEvent(
-  event: Extract<CoreSessionEvent, { type: "agent_event" }>,
-  fallbackSessionId: string,
-): AgentEvent {
-  const payload = asRecord(event.payload.event);
-  return normalizeClineAgentPayload(
-    payload,
-    event.payload.sessionId ?? fallbackSessionId,
-    event.payload.event,
-  );
-}
-
-export function normalizeClineAgentPayload(
-  payload: Record<string, unknown>,
-  sessionId: string,
-  raw: unknown,
-): AgentEvent {
-  const type = stringValue(payload.type);
-
-  if (type === "error") {
-    return normalizedErrorEvent(sessionId, payload, raw);
-  }
-
-  if (type === "content_start" || type === "content_update") {
-    return normalizeContentEvent(payload, sessionId, raw);
-  }
-
-  if (type === "content_end") {
-    return normalizeContentEndEvent(payload, sessionId, raw);
-  }
-
-  if (type === "done") {
-    const finishReason = stringValue(payload.finishReason);
-    const incompleteStatus = incompleteResultStatus(payload);
-    const reason =
-      stringValue(payload.reason) ??
-      finishReason ??
-      stringValue(payload.status);
-    if (incompleteStatus)
-      return terminalProductError(
-        sessionId,
-        incompleteStatus,
-        payload.iteration,
-      );
-    return {
-      type: "done",
-      sessionId,
-      payload: {
-        finishReason,
-        reason,
-        status: stringValue(payload.status),
-        text: stringValue(payload.text),
-        usage: doneUsagePayload(payload.usage),
-        raw,
-      },
-    };
-  }
-
-  if (type === "usage") {
-    return {
-      type: "usage",
-      sessionId,
-      payload: { usage: payload, raw },
-    };
-  }
-
-  if (type === "iteration_start" || type === "iteration_end") {
-    return {
-      type: "notice",
-      sessionId,
-      payload: {
-        message:
-          type === "iteration_start"
-            ? "Agent iteration started."
-            : "Agent iteration completed.",
-        iteration: numberValue(payload.iteration),
-        raw,
-      },
-    };
-  }
-
-  if (type === "assistant-reasoning-delta") {
-    return {
-      type: "reasoning",
-      sessionId,
-      payload: {
-        text: stringValue(payload.text) ?? "",
-        accumulatedText: stringValue(payload.accumulatedText),
-        iteration: numberValue(payload.iteration),
-        raw,
-      },
-    };
-  }
-
-  if (type === "assistant-text-delta") {
-    return {
-      type: "text",
-      sessionId,
-      payload: {
-        text: stringValue(payload.text) ?? "",
-        accumulatedText: stringValue(payload.accumulatedText),
-        iteration: numberValue(payload.iteration),
-        raw,
-      },
-    };
-  }
-
-  if (type === "assistant-message") {
-    return {
-      type: "text",
-      sessionId,
-      payload: {
-        accumulatedText: agentMessageText(asRecord(payload.message)),
-        finishReason: stringValue(payload.finishReason),
-        iteration: numberValue(payload.iteration),
-        raw,
-      },
-    };
-  }
-
-  if (
-    type === "tool-started" ||
-    type === "tool-updated" ||
-    type === "tool-finished"
-  ) {
-    return {
-      type: "tool",
-      sessionId,
-      payload: {
-        phase: type.replace("tool-", ""),
-        iteration: numberValue(payload.iteration),
-        toolCall: payload.toolCall,
-        update: payload.update,
-        raw,
-      },
-    };
-  }
-
-  if (type === "usage-updated") {
-    return {
-      type: "usage",
-      sessionId,
-      payload: { usage: payload.usage, raw },
-    };
-  }
-
-  if (type === "status-notice") {
-    return {
-      type: "notice",
-      sessionId,
-      payload: {
-        message: stringValue(payload.message) ?? "Agent status updated.",
-        metadata: payload.metadata,
-        raw,
-      },
-    };
-  }
-
-  if (type === "run-finished") {
-    const result = asRecord(payload.result);
-    const status = stringValue(result.status);
-    const incompleteStatus = incompleteResultStatus(result);
-    if (incompleteStatus)
-      return terminalProductError(sessionId, incompleteStatus);
-    return {
-      type: "done",
-      sessionId,
-      payload: {
-        text: stringValue(result.outputText),
-        status,
-        raw,
-      },
-    };
-  }
-
-  if (type === "run-failed") {
-    return {
-      type: "error",
-      sessionId,
-      payload: normalizedErrorPayload(payload, raw),
-    };
-  }
-
-  if (toolPayload(payload, type)) {
-    return { type: "raw", sessionId, payload };
-  }
-
-  const text =
-    stringValue(payload.text) ??
-    stringValue(payload.content) ??
-    stringValue(payload.delta);
-
-  if (text) {
-    return {
-      type: "text",
-      sessionId,
-      payload: { text, raw },
-    };
-  }
-
-  return {
-    type: "raw",
-    sessionId,
-    payload,
-  };
-}
-
-function toolPayload(payload: Record<string, unknown>, type?: string) {
-  return (
-    type?.includes("tool") === true ||
-    Boolean(stringValue(payload.toolName)) ||
-    Boolean(stringValue(payload.toolCallId))
-  );
-}
-
-function normalizedErrorPayload(
-  payload: Record<string, unknown>,
-  raw: unknown,
-) {
-  const error = asRecord(payload.error);
-  return {
-    iteration: numberValue(payload.iteration),
-    message:
-      stringValue(error.message) ??
-      stringValue(payload.message) ??
-      stringValue(payload.error) ??
-      "Agent session failed.",
-    recoverable: booleanValue(payload.recoverable),
-    raw,
-  };
-}
-
-function normalizedErrorEvent(
-  sessionId: string,
-  payload: Record<string, unknown>,
-  raw: unknown,
-): AgentEvent {
-  const error = normalizedErrorPayload(payload, raw);
-  return {
-    type: error.recoverable === true ? "notice" : "error",
-    sessionId,
-    payload: error,
-  };
-}
-
-function terminalProductError(
-  sessionId: string,
-  status: unknown,
-  iteration?: unknown,
-): AgentEvent {
-  const terminalStatus = stringValue(status) ?? "incomplete";
-  return {
-    type: "error",
-    sessionId,
-    payload: {
-      iteration: numberValue(iteration),
-      message: terminalProductMessage(terminalStatus),
-      recoverable: false,
-      terminalStatus,
-    },
-  };
-}
-
-function terminalProductMessage(status: string) {
-  const normalized = status.replaceAll("-", "_").toLowerCase();
-  if (normalized === "max_iterations")
-    return "Agent stopped after reaching its work-step limit before submitting a final response.";
-  if (normalized === "mistake_limit")
-    return "Agent stopped after repeated unsuccessful actions before submitting a final response.";
-  if (normalized === "aborted" || normalized === "cancelled")
-    return "Agent work was interrupted before a final response was submitted.";
-  return "Agent stopped before submitting a final response.";
-}
-
-function completionFailureEvent(
-  sessionId: string,
-  notification: LightCompletionNotification | undefined,
-): AgentEvent {
-  return {
-    type: "error",
-    sessionId,
-    payload: {
-      completion: notification?.completion,
-      message:
-        notification?.summary ??
-        "Completion was blocked because required evidence was unavailable.",
-      recoverable: false,
-      terminalStatus: "failed",
-    },
-  };
-}
-
-function terminalLifecycleState(
-  event: AgentEvent,
-): RunTerminalState | undefined {
-  if (event.type === "done") {
-    const payload = asRecord(event.payload);
-    return terminalStateFromStatus(
-      stringValue(payload.status) ??
-        stringValue(payload.reason) ??
-        stringValue(payload.finishReason),
-      "succeeded",
-    );
-  }
-  if (event.type !== "error") return undefined;
-  const payload = asRecord(event.payload);
-  if (payload.recoverable === true) return undefined;
-  return terminalStateFromStatus(
-    stringValue(payload.terminalStatus) ?? stringValue(payload.status),
-    "failed",
-  );
-}
-
-function transportFailureEventMessage(event: AgentEvent) {
-  if (event.type !== "error") return undefined;
-  const payload = asRecord(event.payload);
-  const error = asRecord(payload.error);
-  const message =
-    stringValue(payload.message) ??
-    stringValue(error.message) ??
-    stringValue(payload.error);
-  return message && retryableModelTransportFailure(message)
-    ? message
-    : undefined;
-}
-
-export function retryableModelTransportFailure(error: unknown) {
-  const value = asRecord(error);
-  const cause = asRecord(value.cause);
-  const message = [
-    errorMessage(error),
-    stringValue(value.code),
-    stringValue(cause.code),
-    stringValue(cause.message),
-  ]
-    .filter(Boolean)
-    .join(" ");
-  if (nonRetryableProviderFailure(message)) return false;
-  return transportInterruption(message) || transientProviderFailure(message);
-}
-
-function transportInterruption(message: string) {
-  return /(?:UND_ERR_(?:SOCKET|BODY_TIMEOUT|CONNECT_TIMEOUT|HEADERS_TIMEOUT)|ECONNRESET|EPIPE|ERR_STREAM_PREMATURE_CLOSE|terminated[^\n]*socket|socket[^\n]*other side closed)/iu.test(
-    message,
-  );
-}
-
-function transientProviderFailure(message: string) {
-  return /(?:an error occurred while processing your request[\s\S]{0,500}(?:retry|request id)|internal server error|service temporarily unavailable|provider[^\n]*(?:overloaded|unavailable)|(?:http|status(?: code)?)\s*50[0234]\b)/iu.test(
-    message,
-  );
-}
-
-function nonRetryableProviderFailure(message: string) {
-  return /(?:\b(?:401|403|429)\b|api[_ -]?key|authentication|authorization|billing|content policy|insufficient quota|invalid request|rate limit)/iu.test(
-    message,
-  );
-}
-
-function terminalStateFromResult(result: unknown): RunTerminalState {
-  const payload = asRecord(result);
-  return terminalStateFromStatus(incompleteResultStatus(payload), "failed");
-}
-
-function terminalStateFromStatus(
-  status: string | undefined,
-  fallback: RunTerminalState,
-): RunTerminalState {
-  const normalized = status?.replaceAll("-", "_").toLowerCase();
-  if (normalized === "max_iterations" || normalized === "mistake_limit")
-    return "failed";
-  if (
-    normalized === "aborted" ||
-    normalized === "cancelled" ||
-    normalized === "canceled"
-  )
-    return "cancelled";
-  if (normalized === "failed" || normalized === "error") return "failed";
-  return fallback;
-}
-
-function eventTokenCount(event: CoreSessionEvent) {
-  const usage = findUsageRecord(event);
-  const totals =
-    (numberValue(usage.totalInputTokens) ?? 0) +
-    (numberValue(usage.totalOutputTokens) ?? 0) +
-    (numberValue(usage.totalCacheWriteTokens) ?? 0);
-  if (totals > 0) return totals;
-  return (
-    (numberValue(usage.inputTokens) ?? 0) +
-    (numberValue(usage.outputTokens) ?? 0) +
-    (numberValue(usage.cacheWriteTokens) ?? 0)
-  );
-}
-
-function findUsageRecord(value: unknown, depth = 0): Record<string, unknown> {
-  if (depth > 6 || !value || typeof value !== "object") return {};
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const found = findUsageRecord(item, depth + 1);
-      if (Object.keys(found).length) return found;
-    }
-    return {};
-  }
-  const record = value as Record<string, unknown>;
-  if (
-    Object.keys(record).some((key) =>
-      /^(?:total)?(?:input|output|cacheWrite)Tokens$/u.test(key),
-    )
-  )
-    return record;
-  for (const item of Object.values(record)) {
-    const found = findUsageRecord(item, depth + 1);
-    if (Object.keys(found).length) return found;
-  }
-  return {};
-}
-
-function incompleteTerminalStatus(status: unknown) {
-  const value = stringValue(status)?.replaceAll("-", "_").toLowerCase();
-  return [
-    "aborted",
-    "cancelled",
-    "error",
-    "failed",
-    "max_iterations",
-    "mistake_limit",
-  ].includes(value ?? "");
-}
-
-function incompleteResultStatus(payload: Record<string, unknown>) {
-  return [payload.status, payload.state, payload.finishReason, payload.reason]
-    .map(stringValue)
-    .find(incompleteTerminalStatus);
-}
-
-function eventLogPayload(event: AgentEvent) {
-  const payload = asRecord(event.payload);
-  if (event.type === "usage")
-    return summarizeUsage({ aggregateUsage: asRecord(payload.usage) as never });
-  if (event.type === "tool") return toolLogPayload(payload);
-  if (event.type === "done") return doneLogPayload(payload);
-  if (event.type === "error") return errorLogPayload(payload);
-  return {
-    sessionId: event.sessionId,
-    status: event.type,
-  };
-}
-
-export function duplicateEventSignature(event: AgentEvent) {
-  if (event.type === "raw") return undefined;
-  if (event.type === "text" || event.type === "reasoning") return undefined;
-  const payload = asRecord(event.payload);
-  const tool = toolNameFromPayload(payload);
-  if (tool === "spawn_agent") return undefined;
-  if (event.type === "tool") {
-    const toolCallId =
-      stringValue(payload.toolCallId) ??
-      stringValue(asRecord(payload.toolCall).id);
-    const phase = stringValue(payload.phase);
-    const sequenceNumber = numberValue(payload.sequenceNumber);
-    if (!toolCallId || !phase || sequenceNumber === undefined) return undefined;
-    return [event.sessionId, toolCallId, phase, sequenceNumber].join(":");
-  }
-  const text = eventText(payload);
-  const value =
-    text || tool || stringValue(payload.reason) || stringValue(payload.status);
-  if (!value) return undefined;
-  return [event.type, event.sessionId, value].join(":");
-}
-
-function normalizedToolPhase(payload: Record<string, unknown>) {
-  const current = stringValue(payload.phase);
-  if (current === "updated" || current === "progress") return "progress";
-  if (current === "cancelled" || toolEventStatus(payload) === "cancelled")
-    return "cancelled";
-  if (current === "failed" || toolEventStatus(payload) === "failed")
-    return "failed";
-  if (current === "finished") return "finished";
-  if (payload.hookEventName === "tool_result") return "finished";
-  return "started";
-}
-
-function toolEventStatus(payload: Record<string, unknown>) {
-  const output = asRecord(payload.output ?? payload.result);
-  if (booleanValue(output.isError)) return "failed";
-  const status = stringValue(output.status) ?? stringValue(payload.status);
-  if (status === "cancelled" || status === "canceled") return "cancelled";
-  return status === "error" ? "failed" : undefined;
-}
-
-function removeOldEventSignatures(
-  signatures: Map<string, number>,
-  now: number,
-) {
-  for (const [signature, timestamp] of signatures.entries()) {
-    if (now - timestamp > 1_000) signatures.delete(signature);
-  }
-}
-
-function eventText(payload: Record<string, unknown>) {
-  return (
-    stringValue(payload.text) ??
-    stringValue(payload.message) ??
-    stringValue(payload.accumulatedText)
-  );
-}
-
-function lightTerminalState(state: RunTerminalState) {
-  if (state === "succeeded") return "completed";
-  if (state === "cancelled") return "cancelled";
-  return "harness_failure";
-}
-
-function toolNameFromPayload(payload: Record<string, unknown>) {
-  const toolCall = asRecord(payload.toolCall);
-  return (
-    stringValue(toolCall.name) ??
-    stringValue(toolCall.toolName) ??
-    stringValue(payload.toolName)
-  );
-}
-
-export function terminalToolEvent(event: AgentEvent) {
-  return (
-    event.type === "tool" &&
-    toolNameFromPayload(asRecord(event.payload)) === lightCompletionToolName
-  );
-}
-
-function eventUsageSummary(event: AgentEvent): AgentUsageSummary | undefined {
-  if (event.type !== "usage" && event.type !== "done") return undefined;
-  const payload = asRecord(event.payload);
-  const usage = asRecord(payload.usage);
-  if (!Object.keys(usage).length) return undefined;
-  return { aggregateUsage: usage as never };
-}
-
-function doneUsagePayload(value: unknown) {
-  const usage = asRecord(value);
-  if (!Object.keys(usage).length || usageHasTotals(usage)) return value;
-  return {
-    totalCacheReadTokens: usage.cacheReadTokens,
-    totalCacheWriteTokens: usage.cacheWriteTokens,
-    totalCost: usage.totalCost,
-    totalInputTokens: usage.inputTokens,
-    totalOutputTokens: usage.outputTokens,
-  };
-}
-
-function usageHasTotals(usage: Record<string, unknown>) {
-  return (
-    usage.totalInputTokens !== undefined ||
-    usage.totalOutputTokens !== undefined ||
-    usage.totalCacheReadTokens !== undefined ||
-    usage.totalCacheWriteTokens !== undefined
-  );
-}
-
-function normalizeAgentUsageSummary(
-  summary: SessionUsageSummary | undefined,
-): AgentUsageSummary | undefined {
-  if (!summary) return undefined;
-  return {
-    usage: normalizeAgentUsageTotals(summary.usage),
-    aggregateUsage: normalizeAgentUsageTotals(summary.aggregateUsage),
-  };
-}
-
-function normalizeAgentUsageTotals(
-  usage: SessionUsageSummary["usage"] | undefined,
-) {
-  if (!usage) return undefined;
-  const totalUsage = usage as SessionUsageSummary["usage"] & {
-    totalCacheReadTokens?: number;
-    totalCacheWriteTokens?: number;
-    totalInputTokens?: number;
-    totalOutputTokens?: number;
-  };
-  return {
-    cacheReadTokens: usage.cacheReadTokens,
-    cacheWriteTokens: usage.cacheWriteTokens,
-    inputTokens: usage.inputTokens,
-    outputTokens: usage.outputTokens,
-    totalCacheReadTokens:
-      totalUsage.totalCacheReadTokens ?? usage.cacheReadTokens,
-    totalCacheWriteTokens:
-      totalUsage.totalCacheWriteTokens ?? usage.cacheWriteTokens,
-    totalCost: usage.totalCost,
-    totalInputTokens: totalUsage.totalInputTokens ?? usage.inputTokens,
-    totalOutputTokens: totalUsage.totalOutputTokens ?? usage.outputTokens,
-  };
-}
-
-function toolLogPayload(payload: Record<string, unknown>) {
-  return {
-    durationMs: numberValue(payload.durationMs),
-    status: stringValue(payload.phase),
-    success: stringValue(payload.phase) !== "failed",
-    toolName: toolNameFromPayload(payload),
-  };
-}
-
-function doneLogPayload(payload: Record<string, unknown>) {
-  return {
-    finishReason:
-      stringValue(payload.reason) ?? stringValue(payload.finishReason),
-    status: stringValue(payload.status) ?? "done",
-    ...summarizeUsage({ aggregateUsage: asRecord(payload.usage) as never }),
-  };
-}
-
-function errorLogPayload(payload: Record<string, unknown>) {
-  const error = asRecord(payload.error);
-  return {
-    errorType: stringValue(error.name) ?? "Error",
-    message: stringValue(payload.message) ?? stringValue(error.message),
-    status: "failed",
-  };
-}
-
-function sendResultLogPayload(result: unknown, durationMs: number) {
-  const payload = asRecord(result);
-  return {
-    durationMs,
-    finishReason:
-      stringValue(payload.finishReason) ?? stringValue(payload.reason),
-    status: resultStatus(payload) ?? "completed",
-    ...summarizeUsage({ aggregateUsage: asRecord(payload.usage) as never }),
-  };
-}
-
-function doneResultPayload(result: unknown) {
-  const payload = asRecord(result);
-  const status = resultStatus(payload);
-  const finishReason = stringValue(payload.finishReason);
-  const incompleteStatus = incompleteResultStatus(payload);
-  return {
-    finishReason,
-    iterations: numberValue(payload.iterations),
-    reason: stringValue(payload.reason) ?? finishReason ?? status,
-    status,
-    text: incompleteStatus
-      ? undefined
-      : (stringValue(payload.text) ?? stringValue(payload.outputText)),
-    usage: payload.usage,
-  };
-}
-
-function normalizeContentEvent(
-  payload: Record<string, unknown>,
-  sessionId: string,
-  raw: unknown,
-): AgentEvent {
-  const contentType = stringValue(payload.contentType);
-  if (contentType === "tool") {
-    return {
-      type: "tool",
-      sessionId,
-      payload: {
-        phase:
-          stringValue(payload.type) === "content_update"
-            ? "progress"
-            : "started",
-        toolCall: {
-          id: stringValue(payload.toolCallId),
-          name: stringValue(payload.toolName),
-          input: payload.input,
-        },
-        raw,
-      },
-    };
-  }
-  if (contentType === "reasoning" || contentType === "thinking") {
-    return {
-      type: "reasoning",
-      sessionId,
-      payload: {
-        text: stringValue(payload.reasoning) ?? stringValue(payload.text) ?? "",
-        phase: "started",
-        redacted: booleanValue(payload.redacted),
-        raw,
-      },
-    };
-  }
-  return {
-    type: "text",
-    sessionId,
-    payload: {
-      text: stringValue(payload.text) ?? "",
-      phase: "started",
-      raw,
-    },
-  };
-}
-
-function normalizeContentEndEvent(
-  payload: Record<string, unknown>,
-  sessionId: string,
-  raw: unknown,
-): AgentEvent {
-  if (stringValue(payload.contentType) === "tool") {
-    return {
-      type: "tool",
-      sessionId,
-      payload: {
-        durationMs: numberValue(payload.durationMs),
-        output: payload.output,
-        phase: "finished",
-        toolCall: {
-          id: stringValue(payload.toolCallId),
-          name: stringValue(payload.toolName),
-          input: payload.input,
-        },
-        raw,
-      },
-    };
-  }
-  if (
-    stringValue(payload.contentType) === "reasoning" ||
-    stringValue(payload.contentType) === "thinking"
-  ) {
-    return {
-      type: "reasoning",
-      sessionId,
-      payload: { phase: "finished", raw },
-    };
-  }
-  return {
-    type: "text",
-    sessionId,
-    payload: { phase: "finished", raw },
-  };
-}
-
-function agentMessageText(message: Record<string, unknown>) {
-  const content = message.content;
-  if (!Array.isArray(content)) return "";
-  return content.map(agentMessagePartText).join("");
-}
-
-function agentMessagePartText(value: unknown) {
-  const part = asRecord(value);
-  if (stringValue(part.type) !== "text") return "";
-  return stringValue(part.text) ?? "";
-}
-
-function toApprovalRequest(
-  request: ToolApprovalRequest,
-  toolName: string,
-): AgentApprovalRequest {
-  return {
-    id: randomUUID(),
-    sessionId: request.sessionId,
-    toolName,
-    reason: request.reason,
-    input: request.input,
-  };
-}
-
-function blockedToolReason(toolName: string, input: unknown) {
-  if (toolName !== "run_commands") return undefined;
-  const command = stringValue(asRecord(input).command);
-  if (!command) return undefined;
-  return blockedCommandParts.some((part) => command.includes(part))
-    ? "Command blocked by security policy"
-    : undefined;
-}
-
-function asRecord(value: unknown) {
-  if (value && typeof value === "object")
-    return value as Record<string, unknown>;
-  return {};
-}
-
-function stringValue(value: unknown) {
-  return typeof value === "string" ? value : undefined;
-}
-
-function numberValue(value: unknown) {
-  return typeof value === "number" ? value : undefined;
-}
-
-function booleanValue(value: unknown) {
-  return typeof value === "boolean" ? value : undefined;
-}
-
-function parseChunkEvent(value: string) {
-  try {
-    const parsed = JSON.parse(value);
-    return asRecord(parsed);
-  } catch {
-    return undefined;
-  }
-}
-
 function toBlameOAuthCredentials(
   credentials: ClineOAuthCredentials,
 ): OAuthCredentials {
@@ -7108,8 +4881,4 @@ function toBlameOAuthCredentials(
     email: credentials.email,
     metadata: credentials.metadata,
   };
-}
-
-function errorType(error: unknown) {
-  return error instanceof Error ? error.constructor.name : "Error";
 }

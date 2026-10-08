@@ -1,9 +1,0 @@
-{
-  "trials": 24,
-  "recordedToolStarts": 721,
-  "recordedToolFinishes": 721,
-  "candidateMatches": 0,
-  "confirmedOracleAccess": 0,
-  "confirmedVerifierTampering": 0,
-  "limitations": "Pattern scan, input URL inventory and diagnosed traces. URLs inside code or document text do not necessarily represent network access. The analyst consulted the upstream Raman reference solely for diagnosis after recorded attempts, never in evaluated agent context. Post-campaign edit replays execute no reference solution or provider request. No guarantee of absence of contamination."
-}

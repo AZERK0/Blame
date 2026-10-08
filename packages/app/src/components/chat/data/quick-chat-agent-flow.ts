@@ -25,10 +25,6 @@ export type QueuedQuickChatAgentUpdate = {
   runInput: QuickChatAgentRunUpdate
 }
 
-export type PendingQuickChatAgentUpdate = QueuedQuickChatAgentUpdate & {
-  timer: number
-}
-
 const agentCompletionRecoveryGraceMs = 15_000
 
 export function quickChatAgentEventUpdate(
@@ -165,13 +161,6 @@ export function quickChatAgentRunMetadataUpdate(
   void agentActivity
   void agentActivityUpdates
   return metadata
-}
-
-export function clearPendingQuickChatAgentUpdates(
-  updates: Map<string, PendingQuickChatAgentUpdate>
-) {
-  updates.forEach((update) => window.clearTimeout(update.timer))
-  updates.clear()
 }
 
 export function pendingQuickChatAgentUpdate(

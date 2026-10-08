@@ -1,0 +1,99 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=25mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\title{Blame: Refactoring Summary}
+\author{Blame Engineering}
+\date{October 7, 2026}
+\begin{document}
+\maketitle
+
+\section{Purpose}
+The first refactoring pass separates responsibilities in the largest agent,
+workspace, backlog, editor, conversation, and preview files. Public entry points
+and existing product behavior are retained. The work creates smaller boundaries
+for further maintenance and open-source preparation; it does not change the
+licensing model or implement subscription-independent self-hosting.
+
+\section{Extracted responsibilities}
+\subsection{Agent SDK adapter}
+\code{cline-runtime.ts} remains the session coordinator.
+\code{cline-runtime-events.ts} owns SDK event normalization, terminal event
+interpretation, duplicate signatures, transport failure classification, and
+usage normalization. \code{cline-runtime-prompts.ts} builds development and
+generation prompts and attachment context. \code{cline-runtime-configuration.ts}
+owns backend options, tool policies, and SDK configuration builders.
+\code{cline-runtime-tools.ts} assembles harness, preview, completion, and
+specialist tools through the existing ports and maps approval requests.
+\code{cline-runtime-log.ts} owns log paths, serialization, and file appends;
+the coordinator still owns write sequencing.
+\code{cline-initialization.ts} owns structured initialization and code-practice
+submission, parsing, and correction. Existing exported helpers remain available
+through the original runtime module.
+
+\subsection{Desktop workspace operations}
+\code{workspaces/workspace-git-service.ts} owns Git status, log, diff, conflict,
+staging, commit, push, and repository fingerprint operations.
+\code{workspace-ipc.ts} retains transport handlers, write barriers, and workspace
+orchestration. Lower-level command and runtime adapters remain in the existing
+Git and workspace runtime modules. The extracted service does not register IPC
+handlers or import the IPC coordinator.
+
+\subsection{React composition}
+\code{markdown-preview.tsx} owns Markdown preview blocks, streaming reveals,
+tables, inline formatting, and file links. Editing, attachments, selection, and
+input controls remain in \code{markdown-editor.tsx}.
+\code{native-preview.tsx} owns native browser panels, lifecycle hooks, retained
+sessions, bounds synchronization, screenshots, and ambilight. The story preview
+component composes the runner, native browser, iframe, controls, and logs.
+\code{agent-activity-presentation.ts} interprets tool detail payloads and maps
+edited or inspected files into display data. Conversation components retain
+timeline and interaction responsibilities.
+
+\subsection{Backlog and conversation persistence}
+\code{user-story-agent-updates.ts} owns activity coalescing, metadata filtering,
+and event-to-story/run updates. Authentication error notifications stay in the
+page instead of the data mapper. \code{backlog-title-generation.ts} owns queued
+title generation and run-configuration selection.
+Both backlog and chat use \code{debounced-update-queue.ts}: independent keys,
+replacement of pending updates, cancellation before terminal persistence, and
+cleanup on unmount. A stale timer cannot consume a newer entry. The backlog
+terminal outbox and chat snapshot finalization paths retain their existing
+storage and retry semantics.
+
+\section{Behavioral checks}
+Queue regression tests cover coalescing independent targets, cancelled terminal
+writes, stale callbacks, unmount cleanup, and reentrant persistence. Story
+mapping tests cover activity ordering and replacement, authentication pause,
+and successful review transitions. Existing application, agent-runtime, and
+workspace tests are used to check the extracted boundaries.
+
+The validation snapshot includes 258 passing application tests, 118 passing
+focused runtime tests, and 45 passing focused workspace tests. The runtime
+TypeScript build and frontend bundle succeed. App and desktop type checking
+still report the same shared runtime errors as the pre-change baseline. Broader
+suites expose command timing, formatter, and archive synchronization failures;
+baseline probes reproduce failures in those paths. The six targeted files now
+meet their existing line ceilings, while other repository files still exceed
+their budgets. Linux tests do not
+establish physical macOS/Lima, Windows/WSL, Electron browser, or live cloud
+provider coverage. The repository-wide line-budget check remains a separate
+constraint, including legacy files outside this pass. The native LaTeX
+editor/compiler requests did not return a result in this environment: sources
+have been checked for balanced braces and document environments, but PDF
+compilation remains unverified.
+
+\section{Remaining work}
+The runtime session coordinator and workspace coordinator are still large.
+Future passes should isolate per-session lifecycle state and teardown, then
+workspace setup and recovery workflows. Markdown DOM selection and editor
+interaction, conversation rendering, and backlog orchestration remain further
+extraction candidates. Each pass should preserve cancellation, write ownership,
+terminal finalization, preview retention, and acknowledgment ordering.
+
+The documentation directory now contains a small set of English, standalone
+LaTeX summaries. Historical specifications and benchmark outputs are removed
+from the current tree and remain recoverable from Git history. Development
+fixtures and production resources outside that directory are retained.
+\end{document}

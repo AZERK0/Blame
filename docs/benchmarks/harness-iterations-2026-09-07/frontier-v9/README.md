@@ -1,9 +1,0 @@
-# V9 independent confirmation
-
-Twenty-four trials on the six tasks selected in ../next-confirmation/holdout-selection-v3.json. Registry preflight is archived there. collect.py, timing.py and audit.py are unchanged copies of the V7/V6 scripts. V9 changes the common benchmark wrapper deadline; production harness logic is V8. No raw traces, credentials or provider errors are published.
-
-Completed 2026-09-07 23:14:20 UTC: Blame 6/12, native integrated Cline 7/12. Agent time is 4452.141468 versus 4524.871309 seconds. Five trials have incomplete provider usage. The four complete task clusters retain Raman failures and yield token/cost ratios 0.7286694453/0.8409006494. These are selected subsets, not exact global savings. Results from older campaign versions are not pooled with V9.
-
-Integrity verifies 74 frozen inputs, 24 event hashes and 12 image observations. The bounded scan covers 721 recorded tools; no oracle or verifier tampering is confirmed and no recorded tool starts after verifier start. See adjudication.json and diagnosis-notes.json for limitations, including analyst-only inspection of the upstream Raman reference. Evaluated agents never receive that material.
-
-patch-effect-replay-before.json records the original refusal. The two *-after.json files replay proposals independently after V9 with the subsequent fd533a53 patch fix; they are not new benchmark attempts or corrected rewards. patch-effect-replay.mjs runs from the workspace root against retained private traces and the built runtime: pass event line 199 or 205. It reconstructs the target through three successful recorded edits and enumerates possible exact file results without executing commands, a reference solution or a provider request. New production behavior and the 500c743a description clarification are not attributed to the frozen V9 bundle.

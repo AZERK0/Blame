@@ -1,28 +1,32 @@
+import { createDebouncedUpdateQueue } from "@/lib/debounced-update-queue"
+import type { AgentEvent, ReasoningSelection } from "@blame/agent-runtime"
 import * as React from "react"
-import type {
-  AgentEvent,
-  ProjectRunConfiguration,
-  ReasoningSelection,
-} from "@blame/agent-runtime"
 import { toast } from "sonner"
 
-import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
-import {
-  backlogColumns,
-  userStoryDisplayId,
-} from "@/components/backlog/data/backlog-data"
+import type {
+  RejectChoice,
+  StopAgentChoice,
+} from "@/components/backlog/actions/story-action-dialogs"
+import { BacklogColumn } from "@/components/backlog/board/backlog-column"
+import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
+import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
 import {
   agentEventText,
-  agentFlowUpdate,
-  cancelledAgentRun,
   completedAgentRun,
-  failedAgentRun,
-  resumableAgentFailure,
   shouldPersistAgentEvent,
   terminalAgentRunEvent,
-  type AgentFlowUpdate,
 } from "@/components/backlog/data/agent-flow"
-import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
+import { persistAgentRunDiffEndRef } from "@/components/backlog/data/agent-run-diff-end-ref"
+import {
+  agentRunFinalization,
+  agentRunOwnsStory,
+  agentUpdateKey,
+} from "@/components/backlog/data/agent-run-lifecycle"
+import {
+  pendingAgentRunSnapshots,
+  persistAgentSnapshot,
+  replayAgentSnapshots,
+} from "@/components/backlog/data/agent-snapshot-outbox"
 import {
   agentPersistenceEvent,
   AgentStreamCoordinator,
@@ -30,35 +34,12 @@ import {
 } from "@/components/backlog/data/agent-stream-coordinator"
 import { agentStreamStore } from "@/components/backlog/data/agent-stream-store"
 import { persistTerminalAgentUpdate } from "@/components/backlog/data/agent-terminal-outbox"
-import {
-  pendingAgentRunSnapshots,
-  persistAgentSnapshot,
-  replayAgentSnapshots,
-} from "@/components/backlog/data/agent-snapshot-outbox"
 import { replayTerminalAgentUpdates } from "@/components/backlog/data/agent-terminal-replay"
-import {
-  agentRunFinalization,
-  agentRunOwnsStory,
-  agentUpdateKey,
-} from "@/components/backlog/data/agent-run-lifecycle"
-import { boundedAgentMessage } from "@/components/backlog/data/agent-update-limits"
-import { persistAgentRunDiffEndRef } from "@/components/backlog/data/agent-run-diff-end-ref"
 import { afterRendererPaint } from "@/components/backlog/data/agent-transition-scheduling"
-import {
-  changedFilesFromDiff,
-  completedStoryContextAttachment,
-} from "@/components/backlog/data/user-story-context"
-import { useBacklogStore } from "@/components/backlog/data/backlog-store"
-import {
-  selectBacklogStory,
-  selectedBacklogStoryId,
-  subscribeToBacklogStorySelection,
-} from "@/components/backlog/data/backlog-navigation"
 import type {
   BacklogAction,
   BacklogColumnId,
   UserStory,
-  UserStoryAgentActivity,
   UserStoryAgentRun,
   UserStoryAgentRunUpdate,
   UserStoryCodeSelectionAttachment,
@@ -66,41 +47,35 @@ import type {
   UserStoryFileAttachment,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
-import type {
-  RejectChoice,
-  StopAgentChoice,
-} from "@/components/backlog/actions/story-action-dialogs"
-import { useModelSelection } from "@/components/model/model-selector"
-import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
-import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpers"
-import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
-import { BacklogColumn } from "@/components/backlog/board/backlog-column"
-import { KanbanBoard } from "@/components/shared/kanban-board"
-import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
+import {
+  backlogColumns,
+  userStoryDisplayId,
+} from "@/components/backlog/data/backlog-data"
+import {
+  selectBacklogStory,
+  selectedBacklogStoryId,
+  subscribeToBacklogStorySelection,
+} from "@/components/backlog/data/backlog-navigation"
+import { useBacklogStore } from "@/components/backlog/data/backlog-store"
+import {
+  changedFilesFromDiff,
+  completedStoryContextAttachment,
+} from "@/components/backlog/data/user-story-context"
 import { useUserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
-import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
-import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
-import { UserStoryPreviewWarmup } from "@/components/backlog/drawer/user-story-preview"
 import { stopManagedCloudPreview } from "@/components/backlog/drawer/use-user-story-preview-runner"
-import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
-import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
+import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
+import { UserStoryPreviewWarmup } from "@/components/backlog/drawer/user-story-preview"
+import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpers"
+import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
+import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
+import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
+import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
+import { useModelSelection } from "@/components/model/model-selector"
 import {
-  assessAndRepairProjectInitializationImpact,
-  type ProjectInitializationImpactRepairResult,
-} from "@/pages/backlog/project-initialization-impact"
-import {
-  parseProjectPreviewRepairCandidate,
-  type ProjectPreviewRepairCandidate,
-} from "@/pages/backlog/project-initialization-database"
-import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
-import { currentReviewDiffEmpty } from "@/pages/backlog/review-diff-evidence"
-import { activeStory, inactiveStoryFields } from "./story-runtime-state"
-import {
-  abortStoryAgent,
-  deleteUserStoryWithRuntime,
-  removeStoryWorktree,
-  stopStoryProjectSetup,
-} from "./story-runtime-cleanup"
+  projectInitializing,
+  useProjectInitialization,
+} from "@/components/project-initialization/use-project-initialization"
+import { KanbanBoard } from "@/components/shared/kanban-board"
 import { useCloudAuth } from "@/context/cloud-auth"
 import {
   usePlatform,
@@ -108,24 +83,54 @@ import {
   type Platform,
 } from "@/context/platform"
 import { useProjects } from "@/context/projects"
-import { projectCodePractices } from "@/lib/project-code-practices"
-import { useRuntimePreference } from "@/lib/runtime-preference"
-import { showSystemNotification } from "@/lib/system-notifications"
-import { generateAgentTitleSelection } from "@/lib/agent-title-generation"
-import {
-  projectInitializing,
-  useProjectInitialization,
-} from "@/components/project-initialization/use-project-initialization"
 import {
   measurePerformanceOperation,
   recordPerformanceCount,
   recordPerformanceEvent,
   recordPerformanceMetric,
 } from "@/lib/performance-diagnostics"
+import { projectCodePractices } from "@/lib/project-code-practices"
+import { useRuntimePreference } from "@/lib/runtime-preference"
+import { showSystemNotification } from "@/lib/system-notifications"
+import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
+import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
+import {
+  parseProjectPreviewRepairCandidate,
+  type ProjectPreviewRepairCandidate,
+} from "@/pages/backlog/project-initialization-database"
+import {
+  assessAndRepairProjectInitializationImpact,
+  type ProjectInitializationImpactRepairResult,
+} from "@/pages/backlog/project-initialization-impact"
+import { currentReviewDiffEmpty } from "@/pages/backlog/review-diff-evidence"
+import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
+import {
+  agentEventUpdate,
+  agentMetadataUpdate,
+  agentRunEventUpdate,
+  agentRunMetadataUpdate,
+  definedUpdate,
+  expiredAuthenticationToken,
+  immediateAgentEvent,
+  pausedAgentUpdate,
+  pendingAgentUpdate,
+  type QueuedAgentUpdate,
+} from "../../components/backlog/data/user-story-agent-updates"
+import {
+  queuedUserStoryTitleRequest,
+  runQueuedStoryTitleGeneration,
+  titleGenerationStoryIds,
+} from "./backlog-title-generation"
+import {
+  abortStoryAgent,
+  deleteUserStoryWithRuntime,
+  removeStoryWorktree,
+  stopStoryProjectSetup,
+} from "./story-runtime-cleanup"
+import { activeStory, inactiveStoryFields } from "./story-runtime-state"
 
 const agentEventPersistDelayMs = 1_500
 const terminalAgentRetryIntervalMs = 60_000
-const untitledUserStoryTitle = "Untitled user story"
 
 export function BacklogPage() {
   recordPerformanceCount("backlog.render")
@@ -163,7 +168,7 @@ export function BacklogPage() {
     Map<string, BacklogColumnId> | undefined
   >(undefined)
   const pendingAgentUpdates = React.useRef(
-    new Map<string, PendingAgentUpdate>()
+    createDebouncedUpdateQueue<QueuedAgentUpdate>(agentEventPersistDelayMs)
   )
   const agentStreamClosers = React.useRef(new Map<string, () => void>())
   const retryingTerminalAgentUpdates = React.useRef(false)
@@ -212,7 +217,7 @@ export function BacklogPage() {
 
   React.useEffect(
     () => () => {
-      clearPendingAgentUpdates(pendingAgentUpdates.current)
+      pendingAgentUpdates.current.clear()
       agentStreamClosers.current.forEach((close) => close())
       agentStreamClosers.current.clear()
     },
@@ -493,13 +498,10 @@ export function BacklogPage() {
     ) => {
       const key = agentUpdateKey(story, run)
       const pending = pendingAgentUpdates.current.get(key)
-      if (pending) window.clearTimeout(pending.timer)
       const update = pendingAgentUpdate(pending, input, run, runInput)
-      const timer = window.setTimeout(() => {
-        pendingAgentUpdates.current.delete(key)
-        void persistQueuedAgentUpdate(story, update).catch(() => undefined)
-      }, agentEventPersistDelayMs)
-      pendingAgentUpdates.current.set(key, { ...update, timer })
+      pendingAgentUpdates.current.schedule(key, update, (queued) => {
+        void persistQueuedAgentUpdate(story, queued).catch(() => undefined)
+      })
     },
     [persistQueuedAgentUpdate]
   )
@@ -511,9 +513,7 @@ export function BacklogPage() {
       runInput: UserStoryAgentRunUpdate
     ) => {
       const key = agentUpdateKey(story, run)
-      const pending = pendingAgentUpdates.current.get(key)
-      if (pending) window.clearTimeout(pending.timer)
-      pendingAgentUpdates.current.delete(key)
+      const pending = pendingAgentUpdates.current.take(key)
       const update = pendingAgentUpdate(pending, input, run, runInput)
       return persistTerminalAgentUpdate(
         window.localStorage,
@@ -571,9 +571,15 @@ export function BacklogPage() {
       prepared?: AgentStreamSnapshotPersistence
     ) => {
       const currentStory = activeStory(story, storiesRef.current)
+      const text = agentEventText(event)
+      if (expiredAuthenticationToken(text)) {
+        toast.error("Agent authentication expired", {
+          description: `${text} Reconnect the selected provider, then restart the story.`,
+          position: "bottom-right",
+        })
+      }
       const update = agentEventUpdate(currentStory, event, prepared?.update)
       if (!shouldPersistAgentEvent(event, update)) return
-      const text = agentEventText(event)
       const runInput = agentRunEventUpdate(update, event, text)
       if (run) {
         runInput.persistenceEvent =
@@ -1657,111 +1663,6 @@ async function runPromptOptimizer(request: OptimizeUserStoryPromptRequest) {
   return result.markdown
 }
 
-type QueuedUserStoryTitleRequest = {
-  story: UserStory
-  auth: ReturnType<typeof useCloudAuth>
-  platform: ReturnType<typeof usePlatform>
-  projectPath?: string
-  model: ReturnType<typeof useModelSelection>["currentModel"]
-  reasoningEffort: ReturnType<typeof useModelSelection>["currentVariant"]
-  runConfigurations: ProjectRunConfiguration[]
-  updateStory: (
-    story: UserStory,
-    input: UserStoryUpdate,
-    options?: { cleanup?: boolean }
-  ) => Promise<UserStory>
-}
-
-function queuedUserStoryTitleRequest(request: QueuedUserStoryTitleRequest) {
-  if (!queuedStoryNeedsGeneratedTitle(request)) return undefined
-  if (queuedStoryTitleGenerationBlocked(request)) return undefined
-  return request
-}
-
-function queuedStoryTitleGenerationBlocked(
-  request: QueuedUserStoryTitleRequest
-) {
-  return (
-    !request.story.summary.trim() ||
-    !request.projectPath ||
-    request.auth.status !== "authenticated" ||
-    !request.model ||
-    !request.platform.agent?.promptOptimizer.generateTitle
-  )
-}
-
-async function runQueuedStoryTitleGeneration(
-  request: QueuedUserStoryTitleRequest
-) {
-  const title = await generatedQueuedStoryTitle(request)
-  return persistGeneratedQueuedStoryTitle(request, title)
-}
-
-async function generatedQueuedStoryTitle(request: QueuedUserStoryTitleRequest) {
-  return generateAgentTitleSelection(
-    request.platform.agent!.promptOptimizer.generateTitle,
-    queuedStoryTitleGenerationInput(request)
-  )
-}
-
-async function persistGeneratedQueuedStoryTitle(
-  request: QueuedUserStoryTitleRequest,
-  generated: { title: string; runConfigurationId?: string | null }
-) {
-  return request.updateStory(
-    request.story,
-    {
-      title: missingUserStoryTitle(request.story.title)
-        ? generated.title
-        : request.story.title,
-      runConfigurationId: generated.runConfigurationId ?? null,
-    },
-    { cleanup: false }
-  )
-}
-
-function queuedStoryTitleGenerationInput(request: QueuedUserStoryTitleRequest) {
-  return {
-    apiConnection: request.auth.apiConnection,
-    context: "user-story" as const,
-    providerId: request.model!.provider.id,
-    modelId: request.model!.id,
-    credentialLabel: request.model!.credentialLabel,
-    reasoningEffort: request.reasoningEffort,
-    prompt: request.story.summary,
-    runConfigurations: request.runConfigurations,
-    workspace: request.projectPath!,
-  }
-}
-
-function queuedStoryNeedsGeneratedTitle(request: QueuedUserStoryTitleRequest) {
-  if (request.story.status !== "ready") return false
-  if (missingUserStoryTitle(request.story.title)) return true
-  if (!request.runConfigurations.length) return false
-  return !request.runConfigurations.some(
-    ({ id }) => id === request.story.runConfigurationId
-  )
-}
-
-function titleGenerationStoryIds(
-  current: Set<string>,
-  storyId: string,
-  generating: boolean
-) {
-  const next = new Set(current)
-  if (generating) next.add(storyId)
-  else next.delete(storyId)
-  return next.size === current.size &&
-    next.has(storyId) === current.has(storyId)
-    ? current
-    : next
-}
-
-function missingUserStoryTitle(title: string) {
-  const value = title.trim()
-  return !value || value.toLowerCase() === untitledUserStoryTitle.toLowerCase()
-}
-
 type CheckInitializationImpactInput = {
   auth: ReturnType<typeof useCloudAuth>
   platform: ReturnType<typeof usePlatform>
@@ -2131,201 +2032,12 @@ function reportStatusPipRequestError(error: unknown) {
   })
 }
 
-type QueuedAgentUpdate = {
-  activities: UserStoryAgentActivity[]
-  input: UserStoryUpdate
-  run?: UserStoryAgentRun
-  runInput: UserStoryAgentRunUpdate
-}
-
-type PendingAgentUpdate = QueuedAgentUpdate & {
-  timer: number
-}
-
-function clearPendingAgentUpdates(updates: Map<string, PendingAgentUpdate>) {
-  updates.forEach((update) => window.clearTimeout(update.timer))
-  updates.clear()
-}
-
-function definedUpdate(input: object) {
-  return Object.fromEntries(
-    Object.entries(input).filter(([, value]) => value !== undefined)
-  )
-}
-
-function pendingAgentUpdate(
-  pending: QueuedAgentUpdate | undefined,
-  input: UserStoryUpdate,
-  run: UserStoryAgentRun | undefined,
-  runInput: UserStoryAgentRunUpdate
-): QueuedAgentUpdate {
-  return {
-    activities: nextAgentActivities(
-      pending?.activities ?? [],
-      activityUpdates(input)
-    ),
-    input: { ...pending?.input, ...input },
-    run: pending?.run ?? run,
-    runInput: { ...pending?.runInput, ...runInput },
-  }
-}
-
-function nextAgentActivities(
-  activities: UserStoryAgentActivity[],
-  updates: UserStoryAgentActivity[]
-) {
-  return updates.reduce(upsertAgentActivity, activities)
-}
-
-function activityUpdates(input: UserStoryUpdate) {
-  return input.agentActivityUpdates ?? activityUpdateList(input.agentActivity)
-}
-
-function activityUpdateList(
-  activity: UserStoryAgentActivity | null | undefined
-) {
-  return activity ? [activity] : []
-}
-
-function upsertAgentActivity(
-  activities: UserStoryAgentActivity[],
-  activity: UserStoryAgentActivity
-) {
-  const exists = activities.some((item) => item.id === activity.id)
-  if (!exists) return [...activities, activity]
-  return activities.map((item) => (item.id === activity.id ? activity : item))
-}
-
-function agentMetadataUpdate(input: UserStoryUpdate): UserStoryUpdate {
-  const { agentActivities, agentActivity, agentActivityUpdates, ...metadata } =
-    input
-  void agentActivities
-  void agentActivity
-  void agentActivityUpdates
-  return metadata
-}
-
-function pausedAgentUpdate(input: UserStoryUpdate) {
-  return input.status === "in-progress" && input.agentStatus === "Paused"
-}
-
-function agentRunMetadataUpdate(
-  input: UserStoryAgentRunUpdate
-): UserStoryAgentRunUpdate {
-  const { activities, agentActivity, agentActivityUpdates, ...metadata } = input
-  void activities
-  void agentActivity
-  void agentActivityUpdates
-  return metadata
-}
-
-function agentRunEventUpdate(
-  input: UserStoryUpdate,
-  event: AgentEvent,
-  text: string
-): UserStoryAgentRunUpdate {
-  const update: UserStoryAgentRunUpdate = {}
-  if (input.agentActivity) update.agentActivity = input.agentActivity
-  if (input.agentActivityUpdates)
-    update.agentActivityUpdates = input.agentActivityUpdates
-  if (input.agentFinalResponse !== undefined)
-    update.finalResponse = input.agentFinalResponse
-  if (input.agentUsage !== undefined) update.usage = input.agentUsage
-  if (input.agentSessionSummary !== undefined)
-    update.sessionSummary = input.agentSessionSummary
-  if (completedAgentRun(event)) {
-    update.status = "completed"
-    update.completedAt = new Date().toISOString()
-  } else if (cancelledAgentRun(event)) {
-    update.status = "cancelled"
-    update.completedAt = new Date().toISOString()
-    if (!update.finalResponse && text) update.finalResponse = text
-  } else if (failedAgentRun(event)) {
-    update.status = "failed"
-    update.completedAt = new Date().toISOString()
-    if (!update.finalResponse && text) update.finalResponse = text
-  }
-  return update
-}
-
-function immediateAgentEvent(event: AgentEvent) {
-  return (
-    terminalAgentRunEvent(event) ||
-    expiredAuthenticationToken(agentEventText(event))
-  )
-}
-
 function clineLogPath(worktree: string, sessionId: string) {
   return `${worktree}/.blame/logs/cline-${sessionId}.log`
 }
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
-}
-
-function agentEventUpdate(
-  story: UserStory,
-  event: AgentEvent,
-  preparedFlowUpdate?: AgentFlowUpdate
-): UserStoryUpdate {
-  const text = agentEventText(event)
-  const flowUpdate = preparedFlowUpdate ?? agentFlowUpdate(story, event)
-  if (expiredAuthenticationToken(text)) {
-    toast.error("Agent authentication expired", {
-      description: `${text} Reconnect the selected provider, then restart the story.`,
-      position: "bottom-right",
-    })
-    return {
-      ...flowUpdate,
-      agentLastError: boundedAgentMessage(text, "Agent authentication failed"),
-      agentLastEvent: boundedAgentMessage(text, "Agent authentication failed"),
-      agentStatus: "Paused",
-    }
-  }
-  if (completedAgentRun(event)) {
-    return {
-      ...flowUpdate,
-      agentLastError: null,
-      agentLastEvent: "Agent completed. Ready for review.",
-      agentStatus: null,
-      status: "in-review",
-    }
-  }
-  if (cancelledAgentRun(event)) {
-    return {
-      ...flowUpdate,
-      agentLastError: null,
-      agentLastEvent: boundedAgentMessage(text, "Agent stopped."),
-      agentStatus: null,
-      status: "in-review",
-    }
-  }
-  if (failedAgentRun(event)) {
-    const resumable = resumableAgentFailure(text)
-    return {
-      ...flowUpdate,
-      agentLastError: boundedAgentMessage(text, "Agent session failed"),
-      agentLastEvent: boundedAgentMessage(text, "Agent session failed"),
-      agentStatus: resumable ? "Paused" : null,
-      status: resumable ? "in-progress" : "in-review",
-    }
-  }
-  return {
-    ...flowUpdate,
-    agentLastError:
-      event.type === "error"
-        ? boundedAgentMessage(text, "Agent session failed")
-        : undefined,
-    agentLastEvent: boundedAgentMessage(text, event.type),
-  }
-}
-
-function expiredAuthenticationToken(message: string) {
-  const normalized = message.toLowerCase()
-  return (
-    normalized.includes("authentication token") &&
-    normalized.includes("invalidated")
-  )
 }
 
 function resumeAgentFeedback(story: UserStory, diffSummary: string) {

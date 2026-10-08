@@ -1,0 +1,117 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=25mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\title{Blame: Architecture Summary}
+\author{Blame Engineering}
+\date{October 7, 2026}
+\begin{document}
+\maketitle
+
+\section{System boundaries}
+Blame combines a React application, an Electron desktop host, an AdonisJS
+backend, and a Cline SDK adapter. The application renders backlog, conversation,
+review, and preview state. It accesses desktop capabilities through the platform
+interface and the preload bridge. Electron IPC registration is assembled by
+\code{packages/desktop/src/main/ipc.ts}; workspace handlers delegate Git
+operations to the workspace service. Renderer code must not introduce direct
+Electron or host filesystem dependencies.
+
+\code{packages/agent-runtime} adapts SDK events and coordinates agent sessions,
+approvals, tools, cancellation, and delivery. SDK-specific configuration and
+payload normalization stay in that adapter layer. \code{packages/harness-core}
+contains framework-independent harness contracts and reference authorities.
+\code{packages/preview-contract} defines shared preview contracts, while
+\code{packages/preview-runtime} implements lifecycle coordination and provider
+adapters. The backend owns authentication, persisted project and conversation
+data, encrypted provider credentials, and hosted integrations.
+
+Dependencies should point from UI and infrastructure towards application
+contracts and domain rules. Transport handlers translate requests; services
+coordinate side effects; domain rules determine outcomes. Structure should
+follow an actual responsibility rather than a file's length.
+
+\section{Current Light Semantic Harness}
+\subsection{Model interface and runtime ownership}
+The configured Light path exposes five core primitives:
+\code{search_code}, \code{read_code}, \code{edit_code},
+\code{run_task}, and \code{finish_task}. Preview and other configured tools
+may extend a session. The runtime owns target resolution, observations,
+source revisions, guarded effects, and execution. Local operations use
+\code{LightWorkspace}; managed operations use a shared executor port.
+
+Syntax adapters supply declarations and byte ranges. Reference search currently
+uses lexical fallback; this is not a compiler-level reference graph.
+Aliases bind observed targets to content hashes. Changed target bodies require
+fresh observation, while unchanged declarations can relocate after neighboring
+changes. Read coverage is scoped to content and context generation.
+
+\subsection{Results, edits, and recovery}
+The production tool envelope is \code{LightToolResult}, with
+\code{ok}, \code{blocked}, and \code{failed} outcomes. Command observations
+must be read separately from transport success. A journal persists changes,
+validations, aliases, coverage, and terminal state.
+
+\code{edit_code} prepares and validates a batch before revision and preimage
+checks. A cooperating lock, durable pending record, atomic file updates, and
+owned rollback support interrupted-write recovery. Recovery preserves detected
+newer external changes. These controls do not establish global filesystem
+isolation against programs that ignore the lock.
+
+\subsection{Validation and completion}
+Completion differs from SDK termination. The finish service considers current
+effects and relevant checks already requested in the session. Fresh code-check
+failures remain blocking; missing admitted validation yields unverified delivery.
+It does not invent an unrelated build. Test execution, selected scope, freshness,
+and admitted verification are distinct: observed passing tests currently retain
+unknown validation status when selection and freshness are not established.
+
+The inspected default task contract permits no source effect. Free-text
+acceptance criteria are not mechanically solved by the finish service.
+Verified delivery means coverage under the current validation policy, not
+proof of arbitrary functional requirements.
+
+\subsection{Historical reference contracts}
+The core package retains authority, result, transaction, and evidence-planner
+reference contracts from earlier designs. Execution lifecycle functionality
+is integrated, and completion contracts are shared as types. The Light result
+envelope and finish path do not invoke the core evidence planner or instantiate
+the archived four-authority protocol. Exported reference implementations must
+not be presented as proof of production wiring.
+
+The detailed analysis, evidence limits, benchmark results, and recommendations
+are in \code{docs/semantic-harness-study.tex}.
+
+\section{Workspace and preview execution}
+Local execution uses native worktrees on Linux, Lima on macOS, and WSL on
+Windows. Cloud-preview work keeps the agent and worktree native and explicitly
+synchronizes a snapshot to a Vercel Sandbox. Transport or browser readiness is
+insufficient to prove that the application is ready for the current source and
+environment revisions. Preview contracts and lifecycle services remain the
+boundary for provider-specific behavior.
+
+Deploying to a user's Vercel account is a separate integration from managed
+sandbox previews. The backend handles account authorization and protected
+credentials; deployment snapshot and preview access rules remain explicit.
+These integrations must not become assumptions of the portable domain layer.
+
+\section{Persistence and presentation}
+Streaming projections update the UI immediately. Backlog and quick-chat writes
+are coalesced per target through a shared delayed queue. Terminal writes retain
+their durable outbox, finalization, acknowledgment, and replay paths. A queue is
+a timing mechanism; it does not replace persistence ownership or retry policy.
+
+Markdown editing and preview rendering have separate modules. Native browser
+sessions retain a shared registry so warm-up and visible panels can reuse a
+session. The registry controls reference counts, creation, hiding, retention,
+and destruction. Conversation presentation interprets tool details before
+rendering them; presentation must not redefine runtime evidence or completion.
+
+\section{Documentation scope}
+This summary replaces historical architecture drafts, including the
+decommissioned Semantic Workspace Harness proposal. The current production
+direction is the Light Semantic Harness. Historical benchmark traces are kept
+in Git history and are not treated as new live-provider measurements.
+Source code and executable tests determine implemented behavior.
+\end{document}

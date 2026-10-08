@@ -1,0 +1,123 @@
+import type { ProjectRunConfiguration } from "@blame/agent-runtime"
+
+import type {
+  UserStory,
+  UserStoryUpdate,
+} from "@/components/backlog/data/backlog-data"
+
+import type { useModelSelection } from "@/components/model/model-selector"
+
+import type { useCloudAuth } from "@/context/cloud-auth"
+
+import type { usePlatform } from "@/context/platform"
+
+import { generateAgentTitleSelection } from "@/lib/agent-title-generation"
+
+const untitledUserStoryTitle = "Untitled user story"
+
+type QueuedUserStoryTitleRequest = {
+  story: UserStory
+  auth: ReturnType<typeof useCloudAuth>
+  platform: ReturnType<typeof usePlatform>
+  projectPath?: string
+  model: ReturnType<typeof useModelSelection>["currentModel"]
+  reasoningEffort: ReturnType<typeof useModelSelection>["currentVariant"]
+  runConfigurations: ProjectRunConfiguration[]
+  updateStory: (
+    story: UserStory,
+    input: UserStoryUpdate,
+    options?: { cleanup?: boolean }
+  ) => Promise<UserStory>
+}
+
+export function queuedUserStoryTitleRequest(
+  request: QueuedUserStoryTitleRequest
+) {
+  if (!queuedStoryNeedsGeneratedTitle(request)) return undefined
+  if (queuedStoryTitleGenerationBlocked(request)) return undefined
+  return request
+}
+
+function queuedStoryTitleGenerationBlocked(
+  request: QueuedUserStoryTitleRequest
+) {
+  return (
+    !request.story.summary.trim() ||
+    !request.projectPath ||
+    request.auth.status !== "authenticated" ||
+    !request.model ||
+    !request.platform.agent?.promptOptimizer.generateTitle
+  )
+}
+
+export async function runQueuedStoryTitleGeneration(
+  request: QueuedUserStoryTitleRequest
+) {
+  const title = await generatedQueuedStoryTitle(request)
+  return persistGeneratedQueuedStoryTitle(request, title)
+}
+
+async function generatedQueuedStoryTitle(request: QueuedUserStoryTitleRequest) {
+  return generateAgentTitleSelection(
+    request.platform.agent!.promptOptimizer.generateTitle,
+    queuedStoryTitleGenerationInput(request)
+  )
+}
+
+async function persistGeneratedQueuedStoryTitle(
+  request: QueuedUserStoryTitleRequest,
+  generated: { title: string; runConfigurationId?: string | null }
+) {
+  return request.updateStory(
+    request.story,
+    {
+      title: missingUserStoryTitle(request.story.title)
+        ? generated.title
+        : request.story.title,
+      runConfigurationId: generated.runConfigurationId ?? null,
+    },
+    { cleanup: false }
+  )
+}
+
+function queuedStoryTitleGenerationInput(request: QueuedUserStoryTitleRequest) {
+  return {
+    apiConnection: request.auth.apiConnection,
+    context: "user-story" as const,
+    providerId: request.model!.provider.id,
+    modelId: request.model!.id,
+    credentialLabel: request.model!.credentialLabel,
+    reasoningEffort: request.reasoningEffort,
+    prompt: request.story.summary,
+    runConfigurations: request.runConfigurations,
+    workspace: request.projectPath!,
+  }
+}
+
+function queuedStoryNeedsGeneratedTitle(request: QueuedUserStoryTitleRequest) {
+  if (request.story.status !== "ready") return false
+  if (missingUserStoryTitle(request.story.title)) return true
+  if (!request.runConfigurations.length) return false
+  return !request.runConfigurations.some(
+    ({ id }) => id === request.story.runConfigurationId
+  )
+}
+
+export function titleGenerationStoryIds(
+  current: Set<string>,
+  storyId: string,
+  generating: boolean
+) {
+  const next = new Set(current)
+  if (generating) next.add(storyId)
+  else next.delete(storyId)
+  return next.size === current.size &&
+    next.has(storyId) === current.has(storyId)
+    ? current
+    : next
+}
+
+function missingUserStoryTitle(title: string) {
+  const value = title.trim()
+  return !value || value.toLowerCase() === untitledUserStoryTitle.toLowerCase()
+}

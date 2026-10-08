@@ -1,6 +1,0 @@
-{
-  "status": "superseded_before_execution",
-  "trialsExecuted": 0,
-  "at": "2026-09-07T17:08:07.127155+00:00",
-  "reason": "The confirmation exposed disk exhaustion and post-timeout execution. V5 uses a dedicated rootless engine and verified adapter cancellation; no V4 result exists or is replaced."
-}

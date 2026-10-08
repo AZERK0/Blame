@@ -1,0 +1,79 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=25mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\title{Blame: Open-Source Readiness}
+\author{Blame Engineering}
+\date{October 7, 2026}
+\begin{document}
+\maketitle
+
+\section{Release direction and current status}
+A public codebase can support a paid managed service. Users can run the software
+with their own infrastructure and provider credentials, while the hosted offer
+charges for operation, convenience, and metered services funded by the operator.
+This is a proposed product direction. The current refactoring improves code
+boundaries; it does not implement that entitlement model or declare the project
+ready for unrestricted self-hosting.
+
+A license decision is still required. A noncommercial restriction makes code
+source-available rather than open source under the Open Source Definition.
+A copyleft license such as AGPLv3 permits commercial use while imposing sharing
+obligations in its applicable circumstances. The public license, contributor
+terms, dependency compatibility, trademarks, and hosted-service terms must be
+settled explicitly before release. No license choice is introduced by this pass.
+
+\section{Separate the application from managed services}
+Core projects, backlog, conversations, local worktrees, and local previews should
+be usable without an operator subscription. Authentication, authorization, and
+data ownership must still apply. Managed previews, operator-funded transcription,
+or other paid provider calls should use explicit capabilities, quotas, and
+usage accounting. Paid access should follow the service being consumed.
+
+The application currently has a global subscription screen and backend license
+middleware around core routes. Those checks still need to be separated from
+managed-service entitlement checks. A complete open-source distribution does
+not require hiding these checks in a closed repository: the managed server can
+enforce its own policies even when its implementation is public.
+
+\section{Self-hosting dependencies to resolve}
+\begin{itemize}
+\item Make the backend origin and desktop authentication callback flow
+configurable. Packaged clients currently assume the Blame cloud origin, with
+development exceptions.
+\item Replace the development command's personal SSH database tunnel with
+documented local services and environment templates.
+\item Document MySQL setup and migrations. The backend uses MySQL-specific
+queries, JSON behavior, and locking; SQLite is not an interchangeable default.
+\item Provide durable object storage configuration. The existing encrypted S3
+adapter and ephemeral memory implementation do not constitute a durable local
+filesystem adapter.
+\item Make email delivery and verification setup explicit. Production
+authentication currently requires email verification and an email provider.
+\item Review required telemetry configuration so running a private instance
+does not require the project's hosted telemetry account.
+\item Expose the availability and configuration of speech transcription. The
+current backend integration uses an operator OpenRouter credential; it is not
+yet a local speech engine or a per-user transcription adapter.
+\item Document cloud preview and Vercel deployment credentials separately.
+Sandbox previews and deployment to a user's account are different workflows.
+\end{itemize}
+
+Local previews and user-supplied AI credentials already provide useful portable
+capabilities. Deployment instructions should state which features run locally,
+which require external credentials, and which are offered by the managed
+service. They must not promise zero infrastructure or inference cost.
+
+\section{Practical release sequence}
+First remove the global billing dependency from core flows and introduce
+capability-specific service checks. Then establish a reproducible local backend
+setup, configurable origins, storage, email, and telemetry. Verify the default
+clone-to-development workflow without personal infrastructure. Finally choose
+the license, document contribution and security reporting, and validate desktop
+packaging and provider setup across supported platforms.
+
+The code refactoring is the initial maintainability step in that sequence.
+Self-hosting, billing changes, public release, and hosted-service publication
+remain separate implementation and release work.
+\end{document}

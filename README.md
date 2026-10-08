@@ -220,3 +220,18 @@ packages/
   app/              React and Vite web application
   desktop/          Electron shell with IPC bridge
   agent-runtime/    Cline SDK runtime wrapper
+  harness-core/     Framework-independent harness contracts and authorities
+  preview-contract/ Shared preview contracts
+  preview-runtime/  Preview lifecycle and provider adapters
+```
+
+## Engineering Documentation
+
+The documentation is maintained as four standalone English LaTeX documents:
+
+- [Semantic harness study](docs/semantic-harness-study.tex): current architecture, edit and validation guarantees, historical benchmark evidence, limitations, and prioritized recommendations.
+- [Architecture summary](docs/architecture-summary.tex): package boundaries, the current Light harness, and workspace execution.
+- [Refactoring summary](docs/refactoring-summary.tex): extracted responsibilities, preserved behavior, validation, and follow-up work.
+- [Open-source readiness](docs/open-source-readiness.tex): self-hosting dependencies and the remaining release decisions.
+
+Each document can be compiled independently. Historical specifications and benchmark traces are available in Git history; current behavior is defined by the source code and tests.
