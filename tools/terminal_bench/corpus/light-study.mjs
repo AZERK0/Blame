@@ -289,10 +289,18 @@ async function analyze() {
     } catch {
       /* retained missing */
     }
+    let eventParseErrors = 0;
     const events = raw
       .split("\n")
       .filter(Boolean)
-      .map((s) => JSON.parse(s).event);
+      .flatMap((line) => {
+        try {
+          return [JSON.parse(line).event];
+        } catch {
+          eventParseErrors++;
+          return [];
+        }
+      });
     const tools = events
       .filter((e) => e.type === "tool")
       .map((e) => ({
@@ -310,6 +318,10 @@ async function analyze() {
       events.filter((e) => e.type === "usage").map((e) => e.payload?.usage),
       requests,
     );
+    if (eventParseErrors) {
+      usage.complete = false;
+      usage.tokensCostReconciled = false;
+    }
     const finishedTools = tools.filter((t) => t.phase === "finished");
     const candidates = finishedTools.filter((t) =>
       /https?:\/\/|scenario-checks\.mjs|reference.patch|rescore-corpus|\/docs\/experiments\//iu.test(
@@ -335,6 +347,7 @@ async function analyze() {
     rows.push({
       ...trial,
       status: result.status ?? "missing",
+      eventParseErrors,
       error: result.error ?? null,
       qualityScore: score.qualityScore,
       functionalSuccess: functional,
