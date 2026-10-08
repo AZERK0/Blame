@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineSource": "adb745967bb9d1abae5d5722cad46db0dd1eed15",
-  "intervention": "Optional bounded argv for catalogued project tasks; no automatic script rewriting or proof promotion",
+  "intervention": "Optional bounded argv for catalogued project test tasks; no automatic script rewriting or proof promotion",
   "hypotheses": [
     {
       "id": "H1",
