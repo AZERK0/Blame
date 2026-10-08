@@ -87,7 +87,9 @@ export function useBacklogRotation(
   const platform = usePlatform()
   const projects = useProjects()
   const selection = useModelSelection({ role: "agent" })
-  const runtimePreference = useRuntimePreference()
+  const runtimePreference = useRuntimePreference(
+    auth.license?.licensed === true
+  )
   const ensureProjectPreviewUrl = platform.workspace?.ensureProjectPreviewUrl
   const startingStoryIds = React.useRef(new Set<string>())
   const blockedStories = React.useRef(new Map<string, number>())

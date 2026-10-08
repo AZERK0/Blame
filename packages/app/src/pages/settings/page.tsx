@@ -58,6 +58,7 @@ import { useSystemNotificationsEnabled } from "@/lib/system-notifications"
 import { cn } from "@/lib/utils"
 import { McpSettingsPanel } from "./mcp-settings-panel"
 import { AccountPrivacyPanel } from "./account-privacy-panel"
+import { navigate } from "@/components/navigation/navigation"
 
 type SettingsSectionId = "general" | "models" | "mcp" | "desktop" | "account"
 
@@ -767,6 +768,19 @@ function AccountSettingsPanel() {
 
   return (
     <SettingsPanel>
+      <SettingsGroup
+        title="Blame Premium"
+        description="Local development and your own AI providers are available without a Blame subscription."
+      >
+        <SettingsRow
+          title={auth.license?.licensed ? "Premium active" : "Free"}
+          description="Cloud voice transcription, managed previews, and hosted file uploads."
+        >
+          <Button variant="outline" onClick={() => navigate("/premium")}>
+            {auth.license?.licensed ? "Manage Premium" : "View Premium"}
+          </Button>
+        </SettingsRow>
+      </SettingsGroup>
       <SettingsGroup
         title="Session"
         description="Review the signed-in user and end the current session."

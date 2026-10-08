@@ -59,7 +59,7 @@ async function migrateOwner(
   owner: LegacyOwner
 ) {
   const inputs = legacyAttachments(owner.file_attachments)
-  const attachments = await service.resolveInputs(owner.user_id, inputs)
+  const attachments = await service.resolveInputs(owner.user_id, inputs, { migrateExisting: true })
   await db.transaction(async (transaction) => {
     await service.syncOwner(owner.user_id, source.ownerType, owner.id, attachments, transaction)
     await transaction.from(source.table).where('id', owner.id).update({ file_attachments: null })

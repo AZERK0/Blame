@@ -3,6 +3,8 @@ import type { DeployTarget, ProjectDeployment } from "@blame/deploy-contract"
 import { toast } from "sonner"
 import { DeploymentSource } from "./deploy-source"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useCloudAuth } from "@/context/cloud-auth"
+import { navigate } from "@/components/navigation/navigation"
 
 import {
   BuildLogsDialog,
@@ -20,6 +22,7 @@ import {
 } from "./use-deploy-page"
 
 export function DeployPage() {
+  const auth = useCloudAuth()
   const deploy = useDeployPage()
   const [confirmOpen, setConfirmOpen] = React.useState(false)
   const [targetOpen, setTargetOpen] = React.useState(false)
@@ -42,6 +45,12 @@ export function DeployPage() {
   }
 
   const prepareDeployment = async () => {
+    if (!auth.license?.licensed) {
+      toast.info("Hosted deployment uploads require Blame Premium.", {
+        action: { label: "View Premium", onClick: () => navigate("/premium") },
+      })
+      return
+    }
     try {
       const preflight = await deploy.refreshPreflight()
       if (!preflight) {

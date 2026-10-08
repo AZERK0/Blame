@@ -8,24 +8,27 @@ import { LegalLink } from "@/components/legal/legal-link"
 import { Button } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/sonner"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { navigate } from "@/components/navigation/navigation"
 
 const billingOptions = {
-  monthly: { label: "Monthly", price: "€13", suffix: "/month" },
-  yearly: { label: "Yearly", price: "€120", suffix: "/year" },
+  monthly: { label: "Monthly", price: "$20", suffix: "/month" },
+  yearly: { label: "Yearly", price: "See checkout", suffix: "" },
 } as const
 
 const licenseFacts = [
-  "1 developer license",
-  "Windows, macOS & Linux",
-  "Product updates included",
-  "Use your own AI provider",
+  "Cloud voice transcription",
+  "Managed cloud previews",
+  "Hosted file uploads",
+  "Existing usage limits apply",
   "Cancel anytime",
 ] as const
 
 type BillingCycle = keyof typeof billingOptions
-type PendingAction = BillingCycle | "refresh"
+type PendingAction = BillingCycle | "refresh" | "portal"
 
-export function LicenseScreen() {
+export function PremiumScreen() {
+  const auth = useCloudAuth()
+  const premium = auth.license?.licensed === true
   const actions = useLicenseActions()
   const [billingCycle, setBillingCycle] =
     React.useState<BillingCycle>("monthly")
@@ -39,14 +42,18 @@ export function LicenseScreen() {
         <div className="max-w-md md:pt-10">
           <LicensePageHeader />
           <LicenseActions actions={actions} />
+          <Button variant="link" onClick={() => navigate("/backlog")}>
+            Continue using Blame
+          </Button>
         </div>
         <div className="flex w-full [zoom:.8] flex-col items-center justify-self-end">
           <PricingCard
             billingCycle={billingCycle}
-            loading={actions.pending === billingCycle}
+            premium={premium}
+            loading={actions.pending === (premium ? "portal" : billingCycle)}
             disabled={actions.pending !== null}
             onBillingCycleChange={setBillingCycle}
-            onCheckout={actions.checkout}
+            onCheckout={premium ? () => actions.manage() : actions.checkout}
           />
           <LicenseError error={actions.error} />
         </div>
@@ -59,11 +66,11 @@ function LicensePageHeader() {
   return (
     <header className="animate-in text-left duration-700 ease-out fade-in-0 fill-mode-both slide-in-from-bottom-4 motion-reduce:animate-none">
       <h1 className="font-heading text-4xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">
-        Welcome to Blame
+        Blame Premium
       </h1>
       <p className="mt-4 max-w-sm text-base leading-7 text-[#111]/60">
-        Choose the billing cycle that works for you and unlock the full desktop
-        experience.
+        Add cloud voice transcription, managed previews, and hosted file
+        uploads. Local development and your own AI providers remain free.
       </p>
     </header>
   )
@@ -73,6 +80,7 @@ function PricingCard({
   billingCycle,
   disabled,
   loading,
+  premium,
   onBillingCycleChange,
   onCheckout,
 }: PricingCardProps) {
@@ -90,6 +98,7 @@ function PricingCard({
         <CheckoutButton
           billingCycle={billingCycle}
           loading={loading}
+          premium={premium}
           disabled={disabled}
           onCheckout={onCheckout}
         />
@@ -110,10 +119,10 @@ function PricingCardHeader() {
         className="size-12 object-contain"
       />
       <h2 className="mt-7 font-heading text-2xl font-semibold tracking-[-0.04em]">
-        Blame License
+        Premium cloud services
       </h2>
       <p className="mt-3 text-base leading-6 text-[#111]/70">
-        Full access to the Blame desktop app.
+        Services hosted and funded by Blame.
       </p>
     </header>
   )
@@ -153,7 +162,13 @@ function PriceSummary({ billingCycle }: { billingCycle: BillingCycle }) {
   return (
     <div>
       <div className="mt-7 flex items-end gap-2">
-        <span className="text-6xl leading-none font-semibold tracking-[-0.08em]">
+        <span
+          className={
+            billingCycle === "monthly"
+              ? "text-6xl leading-none font-semibold tracking-[-0.08em]"
+              : "text-3xl leading-none font-semibold tracking-tight"
+          }
+        >
           {selectedBilling.price}
         </span>
         <span className="pb-2 text-lg text-[#111]/54">
@@ -163,7 +178,7 @@ function PriceSummary({ billingCycle }: { billingCycle: BillingCycle }) {
       <p
         className={`mt-2 min-h-5 text-sm font-medium text-[#111]/54 ${billingCycle === "yearly" ? "visible" : "invisible"}`}
       >
-        Save €36 every year.
+        The annual price is confirmed in checkout.
       </p>
     </div>
   )
@@ -173,6 +188,7 @@ function CheckoutButton({
   billingCycle,
   disabled,
   loading,
+  premium,
   onCheckout,
 }: CheckoutButtonProps) {
   return (
@@ -183,7 +199,11 @@ function CheckoutButton({
         onClick={() => onCheckout(billingCycle)}
       >
         {loading ? <LoaderCircleIcon className="animate-spin" /> : null}
-        {loading ? "Opening checkout" : "Get Blame"}
+        {loading
+          ? "Opening billing"
+          : premium
+            ? "Manage subscription"
+            : "Get Premium"}
       </Button>
       <PurchaseLegalLinks />
       <p className="mt-3 text-center text-xs leading-5 text-[#111]/54">
@@ -282,6 +302,7 @@ function useLicenseActions(): LicenseActionState {
     error,
     pending,
     checkout: (cycle) => void run(cycle, () => auth.startCheckout(cycle)),
+    manage: () => void run("portal", () => auth.openBillingPortal()),
     refresh: () =>
       void run("refresh", async () => {
         const license = await auth.refreshLicense()
@@ -313,6 +334,7 @@ function errorMessage(cause: unknown) {
 }
 
 type PricingCardProps = {
+  premium: boolean
   billingCycle: BillingCycle
   disabled: boolean
   loading: boolean
@@ -322,10 +344,11 @@ type PricingCardProps = {
 
 type CheckoutButtonProps = Pick<
   PricingCardProps,
-  "billingCycle" | "disabled" | "loading" | "onCheckout"
+  "billingCycle" | "disabled" | "loading" | "onCheckout" | "premium"
 >
 
 type LicenseActionState = {
+  manage(): void
   error: string | null
   pending: PendingAction | null
   checkout(cycle: BillingCycle): void

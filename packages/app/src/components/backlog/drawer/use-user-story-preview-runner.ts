@@ -32,6 +32,8 @@ import {
   subscribeCloudPreviewSession,
 } from "@/components/backlog/drawer/cloud-preview-session-store"
 import { usePlatform } from "@/context/platform"
+import { useCloudAuth } from "@/context/cloud-auth"
+import { navigate } from "@/components/navigation/navigation"
 import {
   recordRuntimeSessionState,
   useRuntimePreference,
@@ -54,8 +56,13 @@ export function useUserStoryPreviewRunner(
   options: PreviewRunnerOptions = {}
 ) {
   const platform = usePlatform()
+  const auth = useCloudAuth()
   const workspace = platform.workspace
-  const preference = useRuntimePreference()
+  const premium = auth.license?.licensed === true
+  const preference = useRuntimePreference(premium)
+  const autoStart =
+    Boolean(options.autoStart) &&
+    (premium || preference.profile === "local-container")
   const [runtime, setRuntime] = React.useState<ProjectPreviewRuntimeState>()
   const [selection, setSelection] = React.useState<{
     configurationId: string
@@ -72,7 +79,7 @@ export function useUserStoryPreviewRunner(
     preference.profile === "local-container"
       ? "local-container"
       : "cloud-mirror",
-    Boolean(options.autoStart),
+    autoStart,
     runtime?.configurations.length,
     setRuntime
   )
@@ -83,7 +90,8 @@ export function useUserStoryPreviewRunner(
     preference,
     userStoryId,
     worktree,
-    autoStart: options.autoStart,
+    autoStart,
+    premium,
   })
   const cloudControl = cloud.control
   const cloudPendingOperation = cloud.pendingOperation
@@ -93,7 +101,7 @@ export function useUserStoryPreviewRunner(
   const autoStartAttemptRef = React.useRef<string | undefined>(undefined)
   React.useEffect(() => {
     if (
-      !options.autoStart ||
+      !autoStart ||
       !enabled ||
       !userStoryId ||
       !worktree ||
@@ -124,7 +132,7 @@ export function useUserStoryPreviewRunner(
     cloudRuntime?.configurations,
     cloudPreviewIsReady,
     enabled,
-    options.autoStart,
+    autoStart,
     options.autoStartConfigurationId,
     platform.previewRuntime,
     preference.confirmedCloudUploadAt,
@@ -191,6 +199,7 @@ function useCloudPreviewRuntime(input: {
   userStoryId?: string
   worktree?: string | null
   autoStart?: boolean
+  premium: boolean
 }) {
   const [session, setSession] = React.useState<PreviewSessionView>()
   const [error, setError] = React.useState<string>()
@@ -349,6 +358,15 @@ function useCloudPreviewRuntime(input: {
 
   const control = React.useCallback(
     async (action: PreviewRunnerAction, configurationId?: string) => {
+      if (action !== "stop" && !input.premium) {
+        toast.info("Cloud previews require Blame Premium.", {
+          action: {
+            label: "View Premium",
+            onClick: () => navigate("/premium"),
+          },
+        })
+        return undefined
+      }
       if (
         !client ||
         !input.worktree ||
@@ -536,6 +554,7 @@ function useCloudPreviewRuntime(input: {
       input.localRuntime,
       input.platform.workspace,
       input.autoStart,
+      input.premium,
       input.preference.confirmedCloudUploadAt,
       input.userStoryId,
       input.worktree,

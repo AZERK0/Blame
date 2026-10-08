@@ -8,7 +8,7 @@ const workspaceInput: AppWindowRoleInput = {
   activeProject: { id: "project" },
   aiPreferences: {},
   authStatus: "authenticated",
-  licensed: true,
+  premiumOpen: false,
   statusPipOpen: false,
 }
 
@@ -27,7 +27,7 @@ test("uses compact windows for every screen outside the application layout", () 
   const compactInputs: AppWindowRoleInput[] = [
     { ...workspaceInput, authStatus: "unauthenticated" },
     { ...workspaceInput, accountPrivacyOpen: true },
-    { ...workspaceInput, licensed: false },
+    { ...workspaceInput, premiumOpen: true },
     { ...workspaceInput, aiPreferences: null },
     { ...workspaceInput, activeProject: undefined },
   ]

@@ -1,40 +1,41 @@
-import { HelpCircle } from 'lucide-react'
+import { HelpCircle } from "lucide-react";
 
-import { LandingRevealStyles } from '@/components/landing-reveal-styles'
-import { PricingCard } from '@/components/pricing-card'
-import { SceneWarmup } from '@/components/scene-warmup'
-import { SiteHeader } from '@/components/site-header'
-import { HeroScene } from '@/app/scene/hero-scene'
-import { createIndexablePageMetadata } from '@/lib/seo'
+import { LandingRevealStyles } from "@/components/landing-reveal-styles";
+import { PricingCard } from "@/components/pricing-card";
+import { SceneWarmup } from "@/components/scene-warmup";
+import { SiteHeader } from "@/components/site-header";
+import { HeroScene } from "@/app/scene/hero-scene";
+import { createIndexablePageMetadata } from "@/lib/seo";
 
 export const metadata = createIndexablePageMetadata({
-  title: 'Pricing · Blame',
-  description: 'Simple pricing for Blame: one plan for agentic development workflows.',
-  canonicalPath: '/pricing',
-})
+  title: "Pricing · Blame",
+  description:
+    "Free local development with optional Blame Premium cloud services at $20 per month.",
+  canonicalPath: "/pricing",
+});
 
 const faqItems = [
   {
-    question: 'What is included in the plan?',
+    question: "What is free and what requires Premium?",
     answer:
-      'The plan includes the Blame desktop workflow, isolated agent worktrees, live previews, diff review, synced backlog state, and project-level coding practices.',
+      "Projects, backlog, conversations, local worktrees, local previews, and your own AI providers are available without a Blame subscription. Premium covers cloud voice transcription, managed Vercel previews, and new hosted file uploads, including deployment source archives. Existing transcription and preview quotas apply.",
   },
   {
-    question: 'Can I switch between monthly and yearly billing?',
+    question: "Can I switch between monthly and yearly billing?",
     answer:
-      'Yes. You can choose monthly billing at €13 per month or yearly billing at €120 per year and switch when your subscription renews.',
+      "Monthly Premium is $20 per month. Annual pricing is confirmed in checkout. You can manage your existing subscription from Blame.",
   },
   {
-    question: 'Does Blame run code in the cloud?',
+    question: "Does Blame run code in the cloud?",
     answer:
-      'No. Code execution stays local in your worktrees. The cloud syncs your control plane: backlog, user stories, practices, and workspace state.',
+      "Local previews run in your own environment. Premium also supports managed cloud previews on Vercel, subject to the existing usage limits and your cloud upload consent.",
   },
   {
-    question: 'Do I need a separate AI provider account?',
+    question: "Do I need a separate AI provider account?",
     answer:
-      'Yes. Blame orchestrates the development workflow around your AI coding agents and providers, so provider usage may be billed separately by those providers.',
+      "Yes. Blame orchestrates the development workflow around your AI coding agents and providers, so provider usage may be billed separately by those providers.",
   },
-]
+];
 
 export default function PricingPage() {
   return (
@@ -59,13 +60,14 @@ export default function PricingPage() {
               id="pricing-title"
               className="landing-reveal landing-reveal-title text-balance text-[clamp(3.2rem,8vw,7.5rem)] font-semibold leading-[0.9] tracking-tighter text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)] sm:leading-32"
             >
-              One plan.
+              Free to build.
               <br />
-              Full agent control.
+              Premium for the cloud.
             </h1>
             <p className="landing-reveal landing-reveal-copy mx-auto mt-7 max-w-2xl text-balance text-base leading-7 text-white/76 sm:text-lg md:text-xl">
-              Everything you need to run AI coding agents in isolated worktrees,
-              preview their output, and merge only when the work is ready.
+              Run AI coding agents with your own providers, preview locally, and
+              review your changes for free. Add Premium for services hosted by
+              Blame.
             </p>
           </div>
 
@@ -98,7 +100,10 @@ export default function PricingPage() {
 
           <div className="mt-12 divide-y divide-white/10 overflow-hidden rounded-[2rem] border border-white/12 bg-white/[0.045] shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl">
             {faqItems.map((item) => (
-              <details key={item.question} className="group p-6 open:bg-white/[0.025] sm:p-7">
+              <details
+                key={item.question}
+                className="group p-6 open:bg-white/[0.025] sm:p-7"
+              >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-left text-lg font-semibold tracking-[-0.025em] text-white marker:hidden">
                   {item.question}
                   <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/12 bg-white/[0.055] text-white/56 transition duration-200 group-open:rotate-45 group-open:text-[#d7d2ff]">
@@ -114,5 +119,5 @@ export default function PricingPage() {
         </div>
       </section>
     </main>
-  )
+  );
 }

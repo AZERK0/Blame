@@ -123,8 +123,9 @@ test.group('file attachments', (group) => {
     await assert.rejects(() => attachmentObjectStorage().content(`${user.id}/${id}`))
   })
 
-  test('migrates legacy inline attachments once', async ({ assert }) => {
+  test('migrates existing legacy attachments without a subscription, once', async ({ assert }) => {
     const user = await createUser()
+    await UserSubscription.query().where('userId', user.id).delete()
     const project = await createProject(user.id)
     const story = await UserStory.create({
       legacyFileAttachments: [

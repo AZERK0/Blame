@@ -8,6 +8,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import * as React from "react"
+import { toast } from "sonner"
 
 import {
   Popover,
@@ -15,6 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
+import { navigate } from "@/components/navigation/navigation"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import {
@@ -73,7 +75,8 @@ export const RuntimeProfileSelector = React.memo(
   function RuntimeProfileSelector() {
     const auth = useCloudAuth()
     const platform = usePlatform()
-    const preference = useRuntimePreference()
+    const premium = auth.license?.licensed === true
+    const preference = useRuntimePreference(premium)
     const [open, setOpen] = React.useState(false)
     const cloudAvailable = Boolean(
       platform.previewRuntime && auth.status === "authenticated"
@@ -81,6 +84,16 @@ export const RuntimeProfileSelector = React.memo(
     const selected = runtimeOption(preference.profile)
 
     const selectProfile = (profile: RuntimeProfileId) => {
+      if (profile === "vercel-compose" && !premium) {
+        setOpen(false)
+        toast.info("Cloud previews require Blame Premium.", {
+          action: {
+            label: "View Premium",
+            onClick: () => navigate("/premium"),
+          },
+        })
+        return
+      }
       if (profile === preference.profile) {
         setOpen(false)
         return
@@ -143,6 +156,7 @@ export const RuntimeProfileSelector = React.memo(
                 }
                 key={option.profile}
                 option={option}
+                premium={premium}
                 selected={option.profile === preference.profile}
                 onSelect={selectProfile}
               />
@@ -158,11 +172,13 @@ function RuntimeProfileOption({
   disabled,
   onSelect,
   option,
+  premium,
   selected,
 }: {
   disabled: boolean
   onSelect: (profile: RuntimeProfileId) => void
   option: RuntimeOption
+  premium: boolean
   selected: boolean
 }) {
   const Icon = option.icon
@@ -188,7 +204,9 @@ function RuntimeProfileOption({
         <span className="block text-xs text-muted-foreground">
           {disabled
             ? "Sign in from the desktop app to use cloud previews."
-            : option.description}
+            : option.profile === "vercel-compose" && !premium
+              ? "Available with Blame Premium."
+              : option.description}
         </span>
       </span>
       {selected ? (

@@ -18,7 +18,7 @@ import {
   subscribeToNavigation,
 } from "@/components/navigation/navigation"
 import { LoadingScreen } from "@/components/onboarding/loading-screen"
-import { LicenseScreen } from "@/components/onboarding/license-screen"
+import { PremiumScreen } from "@/pages/premium/page"
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen"
 import { ProjectInitializationRunner } from "@/components/project-initialization/project-initialization-runner"
 import { ProjectCodePracticesRunner } from "@/components/practices/project-code-practices-runner"
@@ -39,6 +39,7 @@ import {
 import { appWindowRole } from "@/lib/app-window-role"
 
 const settingsPath = "/settings"
+const premiumPath = "/premium"
 const accountPrivacyPath = "/account/privacy"
 const backlogStatusPipPath = "/backlog-status-pip"
 
@@ -115,6 +116,7 @@ export function App() {
   )
   const route = resolveRoute(pathname)
   const settingsOpen = pathname === settingsPath
+  const premiumOpen = pathname === premiumPath
   const accountPrivacyOpen = pathname === accountPrivacyPath
   const statusPipOpen = pathname === backlogStatusPipPath
   const previousRoute = resolvePreviousRoute(previousPathname)
@@ -124,7 +126,7 @@ export function App() {
     accountPrivacyOpen,
     aiPreferences: auth.aiPreferences,
     authStatus: auth.status,
-    licensed: auth.license?.licensed ?? false,
+    premiumOpen,
     statusPipOpen,
   })
 
@@ -158,7 +160,7 @@ export function App() {
       </TooltipProvider>
     )
   }
-  if (!auth.license?.licensed) return <LicenseScreen />
+  if (premiumOpen) return <PremiumScreen />
   if (statusPipOpen) {
     return (
       <TooltipProvider>

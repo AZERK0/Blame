@@ -15,19 +15,19 @@ const content = {
   success: {
     title: "Checkout complete",
     description:
-      "Open Blame to verify your subscription and refresh workspace access.",
+      "Open Blame to verify your subscription and activate Premium cloud services.",
     action: "Open Blame and verify",
   },
   cancelled: {
     title: "Checkout closed.",
     description:
-      "No payment was made and your license remains unchanged.",
+      "Your Premium subscription remains unchanged. You can continue using Blame for free.",
     action: "Return to Blame",
   },
   portal: {
     title: "Portal closed.",
     description:
-      "Open Blame to refresh your license after reviewing your billing settings.",
+      "Open Blame to refresh your Premium status after reviewing your billing settings.",
     action: "Open Blame and refresh",
   },
 } as const;
@@ -45,7 +45,10 @@ export function BillingReturnPage({
         aria-labelledby="billing-return-title"
         className="hero-stage relative isolate min-h-screen overflow-hidden px-5 pb-24 pt-24 sm:px-8 lg:px-10"
       >
-        <HeroScene terrainPreset="download" celebration={variant === "success"} />
+        <HeroScene
+          terrainPreset="download"
+          celebration={variant === "success"}
+        />
         <SceneWarmup />
         <div className="pointer-events-none absolute -inset-8 -z-10 backdrop-blur-[12px] [mask-image:radial-gradient(ellipse_at_center,transparent_0%,transparent_48%,black_78%)]" />
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.1)_0%,rgba(2,4,10,0.26)_42%,rgba(2,4,10,0.58)_74%,rgba(2,4,10,0.9)_100%)]" />
@@ -60,7 +63,13 @@ export function BillingReturnPage({
               id="billing-return-title"
               className={`landing-reveal landing-reveal-title mx-auto max-w-4xl text-balance text-[clamp(3.2rem,8vw,7.5rem)] font-semibold leading-[0.9] tracking-tighter text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)] sm:leading-32 ${variant === "success" ? "billing-success-title" : ""}`}
             >
-              <span className={variant === "success" ? "billing-success-title-text" : undefined}>
+              <span
+                className={
+                  variant === "success"
+                    ? "billing-success-title-text"
+                    : undefined
+                }
+              >
                 {page.title}
               </span>
             </h1>

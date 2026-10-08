@@ -72,24 +72,32 @@ router
       })
       .prefix('integrations/vercel')
       .as('integrations.vercel')
-      .use([middleware.auth(), middleware.license()])
+      .use(middleware.auth())
 
     router
       .group(() => {
         router.get('/', [PreviewSessionsController, 'index'])
-        router.post('/', [PreviewSessionsController, 'store'])
+        router
+          .post('/', [PreviewSessionsController, 'store'])
+          .use(middleware.premium({ feature: 'cloud_preview' }))
         router.get('/:id', [PreviewSessionsController, 'show'])
         router.post('/:id/actions', [PreviewSessionsController, 'action'])
-        router.post('/:id/source/import', [PreviewSessionsController, 'sourceImport'])
+        router
+          .post('/:id/source/import', [PreviewSessionsController, 'sourceImport'])
+          .use(middleware.premium({ feature: 'cloud_preview' }))
         router.post('/:id/source/export', [PreviewSessionsController, 'sourceExport'])
         router.get('/:id/logs', [PreviewSessionsController, 'logs'])
         router.get('/:id/events', [PreviewSessionsController, 'events'])
-        router.post('/:id/access-ticket', [PreviewSessionsController, 'accessTicket'])
-        router.post('/:id/bridge-grant', [PreviewSessionsController, 'bridgeGrant'])
+        router
+          .post('/:id/access-ticket', [PreviewSessionsController, 'accessTicket'])
+          .use(middleware.premium({ feature: 'cloud_preview' }))
+        router
+          .post('/:id/bridge-grant', [PreviewSessionsController, 'bridgeGrant'])
+          .use(middleware.premium({ feature: 'cloud_preview' }))
       })
       .prefix('preview-sessions')
       .as('preview_sessions')
-      .use([middleware.auth(), middleware.license()])
+      .use(middleware.auth())
 
     router
       .group(() => {
@@ -171,18 +179,22 @@ router
         router.get('/:projectId/deploy-target', [DeployTargetsController, 'show'])
         router.put('/:projectId/deploy-target', [DeployTargetsController, 'update'])
         router.get('/:projectId/deployments', [ProjectDeploymentsController, 'index'])
-        router.post('/:projectId/deployments', [ProjectDeploymentsController, 'store'])
+        router
+          .post('/:projectId/deployments', [ProjectDeploymentsController, 'store'])
+          .use(middleware.premium({ feature: 'cloud_storage' }))
         router.get('/:projectId/deployments/:id', [ProjectDeploymentsController, 'show'])
-        router.post('/:projectId/deployments/:id/source/complete', [
-          ProjectDeploymentsController,
-          'completeSource',
-        ])
+        router
+          .post('/:projectId/deployments/:id/source/complete', [
+            ProjectDeploymentsController,
+            'completeSource',
+          ])
+          .use(middleware.premium({ feature: 'cloud_storage' }))
         router.get('/:projectId/deployments/:id/logs', [ProjectDeploymentsController, 'logs'])
         router.post('/:projectId/deployments/:id/cancel', [ProjectDeploymentsController, 'cancel'])
       })
       .prefix('projects')
       .as('projects')
-      .use([middleware.auth(), middleware.license()])
+      .use(middleware.auth())
 
     router
       .group(() => {
@@ -195,7 +207,7 @@ router
       })
       .prefix('providers')
       .as('providers')
-      .use([middleware.auth(), middleware.license()])
+      .use(middleware.auth())
 
     router
       .group(() => {
@@ -203,17 +215,19 @@ router
       })
       .prefix('speech')
       .as('speech')
-      .use([middleware.auth(), middleware.license()])
+      .use([middleware.auth(), middleware.premium({ feature: 'speech_transcription' })])
 
     router
       .group(() => {
-        router.post('/uploads', [FileAttachmentsController, 'createUpload'])
+        router
+          .post('/uploads', [FileAttachmentsController, 'createUpload'])
+          .use(middleware.premium({ feature: 'cloud_storage' }))
         router.post('/:id/complete', [FileAttachmentsController, 'complete'])
         router.get('/:id', [FileAttachmentsController, 'show'])
       })
       .prefix('attachments')
       .as('attachments')
-      .use([middleware.auth(), middleware.license()])
+      .use(middleware.auth())
 
     router
       .group(() => {
@@ -238,7 +252,7 @@ router
       })
       .prefix('projects/quick-chats')
       .as('projects.quick_chats')
-      .use([middleware.auth(), middleware.license()])
+      .use(middleware.auth())
 
     router
       .group(() => {
@@ -264,7 +278,7 @@ router
       })
       .prefix('projects/user-stories')
       .as('projects.user_stories')
-      .use([middleware.auth(), middleware.license()])
+      .use(middleware.auth())
   })
   .prefix('/api/v1')
 

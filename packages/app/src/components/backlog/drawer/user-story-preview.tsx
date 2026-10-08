@@ -48,6 +48,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { usePlatform } from "@/context/platform"
+import { useCloudAuth } from "@/context/cloud-auth"
 import {
   pruneRuntimeSessionStates,
   useRuntimePreference,
@@ -177,7 +178,8 @@ export const UserStoryPreviewWarmup = React.memo(
     userStories: UserStory[]
   }) {
     const platform = usePlatform()
-    const preference = useRuntimePreference()
+    const auth = useCloudAuth()
+    const preference = useRuntimePreference(auth.license?.licensed === true)
     const previewBrowser = platform.previewBrowser
     const stories = React.useMemo(
       () =>

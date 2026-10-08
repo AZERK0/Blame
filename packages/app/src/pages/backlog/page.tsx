@@ -138,7 +138,9 @@ export function BacklogPage() {
   const auth = useCloudAuth()
   const platform = usePlatform()
   const projects = useProjects()
-  const runtimePreference = useRuntimePreference()
+  const runtimePreference = useRuntimePreference(
+    auth.license?.licensed === true
+  )
   const agentSelection = useModelSelection({ role: "agent" })
   const alternativeSelection = useModelSelection({ role: "alternative" })
   const rotation = useBacklogRotation(backlog)

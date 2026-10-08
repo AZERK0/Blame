@@ -4,7 +4,7 @@ import { BillingReturnPage } from "@/components/billing-return-page";
 
 export const metadata: Metadata = {
   title: "Billing updated · Blame",
-  description: "Return to Blame and securely refresh your license.",
+  description: "Return to Blame and refresh your Premium subscription status.",
   robots: { index: false, follow: false },
 };
 

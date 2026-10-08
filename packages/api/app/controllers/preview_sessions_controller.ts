@@ -1,4 +1,5 @@
 import PreviewSessionService from '#services/preview_sessions/preview_session_service'
+import PremiumService, { previewCommandRequiresPremium } from '#services/premium_service'
 import {
   PreviewRuntimeError,
   isRuntimeProfileId,
@@ -71,10 +72,18 @@ export default class PreviewSessionsController {
   async action(context: HttpContext) {
     try {
       const body = objectBody(context.request.all())
+      const command = previewCommand(body.command)
+      if (previewCommandRequiresPremium(command)) {
+        const denial = await new PremiumService().denial(
+          context.auth.getUserOrFail().id,
+          'cloud_preview'
+        )
+        if (denial) return context.response.paymentRequired(denial)
+      }
       return await service.command(
         context.auth.getUserOrFail().id,
         context.params.id,
-        previewCommand(body.command),
+        command,
         requiredString(body.operationId ?? context.request.header('idempotency-key'), 'operationId')
       )
     } catch (error) {

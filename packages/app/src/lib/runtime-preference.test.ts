@@ -5,6 +5,7 @@ import {
   pruneRuntimeSessionStates,
   recordRuntimeSessionState,
   runtimeProfileSwitchBlockReason,
+  runtimePreferenceForPremium,
 } from "./runtime-preference.ts"
 
 class TestStorage {
@@ -24,6 +25,41 @@ class TestStorage {
 }
 
 let storage: TestStorage
+
+test("uses the local runtime when a saved cloud preference loses Premium access", () => {
+  const preference = {
+    profile: "vercel-compose" as const,
+    source: "account-default" as const,
+    confirmedCloudUploadAt: "2026-10-09T10:00:00Z",
+  }
+  assert.deepEqual(runtimePreferenceForPremium(preference, false), {
+    profile: "local-container",
+    source: "account-default",
+  })
+  assert.equal(runtimePreferenceForPremium(preference, true), preference)
+  assert.equal(preference.profile, "vercel-compose")
+})
+
+test("keeps local runtime preferences independent of Premium", () => {
+  const preference = {
+    profile: "local-container" as const,
+    source: "account-default" as const,
+  }
+  assert.equal(runtimePreferenceForPremium(preference, false), preference)
+  assert.equal(runtimePreferenceForPremium(preference, true), preference)
+})
+
+test("retains active cloud preview controls after Premium expires", () => {
+  const preference = {
+    profile: "vercel-compose" as const,
+    source: "account-default" as const,
+  }
+  assert.equal(runtimePreferenceForPremium(preference, false, true), preference)
+  assert.equal(
+    runtimePreferenceForPremium(preference, false, false).profile,
+    "local-container"
+  )
+})
 
 test.beforeEach(() => {
   storage = new TestStorage()

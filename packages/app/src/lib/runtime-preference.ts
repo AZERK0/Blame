@@ -80,8 +80,20 @@ export function runtimeProfileSwitchBlockReason(profile: RuntimeProfileId) {
     : undefined
 }
 
-export function useRuntimePreference(): RuntimePreference {
-  return React.useSyncExternalStore(
+export function runtimePreferenceForPremium(
+  preference: RuntimePreference,
+  premium: boolean,
+  activeCloudPreview = false
+): RuntimePreference {
+  return preference.profile === "vercel-compose" &&
+    !premium &&
+    !activeCloudPreview
+    ? defaultRuntimePreference
+    : preference
+}
+
+export function useRuntimePreference(premium: boolean): RuntimePreference {
+  const preference = React.useSyncExternalStore(
     (callback) => {
       window.addEventListener(eventName, callback)
       window.addEventListener("storage", callback)
@@ -93,6 +105,22 @@ export function useRuntimePreference(): RuntimePreference {
     readRuntimePreference,
     () => defaultRuntimePreference
   )
+  const activeCloudPreview = React.useSyncExternalStore(
+    (callback) => {
+      window.addEventListener(eventName, callback)
+      window.addEventListener("storage", callback)
+      return () => {
+        window.removeEventListener(eventName, callback)
+        window.removeEventListener("storage", callback)
+      }
+    },
+    () =>
+      Object.values(activeRuntimeSessions()).some(
+        ({ profile }) => profile === "vercel-compose"
+      ),
+    () => false
+  )
+  return runtimePreferenceForPremium(preference, premium, activeCloudPreview)
 }
 
 function activeRuntimeSessions() {
@@ -142,4 +170,5 @@ function saveActiveRuntimeSessions(
   } else {
     localStorage.removeItem(activeSessionsKey)
   }
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(eventName))
 }

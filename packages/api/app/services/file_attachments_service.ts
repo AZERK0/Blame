@@ -1,5 +1,6 @@
 import type { FileAttachmentReference } from '#lib/file_attachment'
 import FileAttachment from '#models/file_attachment'
+import PremiumService from '#services/premium_service'
 import {
   attachmentObjectStorage,
   type AttachmentObjectMetadata,
@@ -37,6 +38,7 @@ export default class FileAttachmentsService {
   private storage = attachmentObjectStorage()
 
   async createUpload(userId: string, input: CreateUploadInput) {
+    await new PremiumService().assert(userId, 'cloud_storage')
     this.validateMetadata(input)
     const existing = await FileAttachment.find(input.id)
     if (existing) return this.existingUpload(userId, existing, input)
@@ -70,10 +72,16 @@ export default class FileAttachmentsService {
     return this.deliver(await this.findReadyForUser(userId, id))
   }
 
-  async resolveInputs(userId: string, inputs: FileAttachmentReference[] | null | undefined) {
+  async resolveInputs(
+    userId: string,
+    inputs: FileAttachmentReference[] | null | undefined,
+    options: { migrateExisting?: boolean } = {}
+  ) {
     if (!inputs?.length) return []
     const resolved: FileAttachment[] = []
-    for (const input of inputs) resolved.push(await this.resolveInput(userId, input))
+    for (const input of inputs) {
+      resolved.push(await this.resolveInput(userId, input, options.migrateExisting === true))
+    }
     return resolved
   }
 
@@ -156,12 +164,20 @@ export default class FileAttachmentsService {
     )
   }
 
-  private async resolveInput(userId: string, input: FileAttachmentReference) {
-    if (input.content !== undefined) return this.ingestInline(userId, input)
+  private async resolveInput(
+    userId: string,
+    input: FileAttachmentReference,
+    migrateExisting: boolean
+  ) {
+    if (input.content !== undefined) return this.ingestInline(userId, input, migrateExisting)
     return this.findReadyForUser(userId, input.id)
   }
 
-  private async ingestInline(userId: string, input: FileAttachmentReference) {
+  private async ingestInline(
+    userId: string,
+    input: FileAttachmentReference,
+    migrateExisting: boolean
+  ) {
     const content = decodeBase64(input.content ?? '')
     const checksumSha256 = sha256(content)
     const upload = { ...input, checksumSha256 }
@@ -169,6 +185,7 @@ export default class FileAttachmentsService {
     if (content.byteLength !== input.size) throw invalidAttachment('Attachment size does not match')
     const existing = await FileAttachment.find(input.id)
     if (existing) return this.assertExisting(userId, existing, upload)
+    if (!migrateExisting) await new PremiumService().assert(userId, 'cloud_storage')
     return this.storeInline(userId, upload, content)
   }
 

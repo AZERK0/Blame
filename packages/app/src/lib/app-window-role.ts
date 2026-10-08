@@ -5,7 +5,7 @@ export type AppWindowRoleInput = {
   activeProject: unknown
   aiPreferences: unknown
   authStatus: "authenticated" | "loading" | "unauthenticated"
-  licensed: boolean
+  premiumOpen: boolean
   statusPipOpen: boolean
 }
 
@@ -15,7 +15,7 @@ export function appWindowRole(
   if (input.statusPipOpen || input.authStatus === "loading") return
   if (input.authStatus === "unauthenticated") return "compact"
   if (input.accountPrivacyOpen) return "compact"
-  if (!input.licensed) return "compact"
+  if (input.premiumOpen) return "compact"
   if (input.aiPreferences === null) return "compact"
   return input.activeProject ? "workspace" : "compact"
 }

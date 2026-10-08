@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button"
 import { SpeechRecordingControl } from "./speech-to-text-control"
 import { createSpeechSessionStore } from "./speech-session-store"
 import { useLatestCallback } from "@/lib/use-latest-callback"
+import { useCloudAuth } from "@/context/cloud-auth"
+import { navigate } from "@/components/navigation/navigation"
+import { toast } from "sonner"
 
 const SpeechContext = React.createContext<ReturnType<
   typeof useSpeechSession
@@ -88,11 +91,18 @@ type SpeechControlProps = {
 }
 
 export function SpeechToTextControl(properties: SpeechControlProps) {
+  const auth = useCloudAuth()
   const session = React.useContext(SpeechContext)!
   const fallbackKey = React.useId()
   const key = properties.sessionKey ?? fallbackKey
   const slot = useSpeechSlot(key, properties.onTranscription)
   const startRecording = () => {
+    if (!auth.license?.licensed) {
+      toast.info("Cloud voice transcription requires Blame Premium.", {
+        action: { label: "View Premium", onClick: () => navigate("/premium") },
+      })
+      return
+    }
     properties.onStartRecording?.()
     session.setActiveKey(key)
   }
