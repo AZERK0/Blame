@@ -254,7 +254,7 @@ runtime harness/context/schema and benchmark-runner checks passed 465 tests
 with two existing skips after isolating one pre-existing formatter failure.
 The initial broader run recorded 465 passes, one failure and two skips;
 the same formatter assertion fails on the frozen reference. TypeScript
-compilation, changed-file ESLint and ten corpus tests pass.
+compilation, changed-file ESLint, ten corpus tests and two accounting tests pass.
 
 Mechanical baseline replay: a synthetic task ID and structured arguments
 are refused, while shell fallback succeeds. Modified replay: the structured
@@ -273,7 +273,10 @@ three arms yield 18 planned trials, at most 288 iterations and 6,480 agent
 seconds. Task budgets are 12/300 s, 18/420 s and 18/360 s respectively.
 Use the configured \code{gpt-5.6-luna} high model, API/provider, Linux worker,
 SDK 0.0.82 and fresh identical fixtures. The script cycles arm order and
-reverses it in repetition two. Cache cannot be reset; no memory or solution
+reverses it in repetition two. Blame command timeout is 120 s; native Cline keeps its 30 s SDK command
+default (60 s tool wrapper). The protocol's singular tool-timeout field
+is clarified in \code{protocol-clarifications.json}, after source inspection;
+no trial policy changed. Cache cannot be reset; no memory or solution
 retrieval is allowed. The baseline retains shell fallback. Cline uses its
 native SDK prompt/tools; equality concerns model, task and budgets, not
 identical schemas across intrinsically different harnesses.
@@ -289,9 +292,90 @@ are not added as elapsed time. Keep original corpus quality scores, runtime
 status, admitted verification and independently audited task obligations
 as separate fields. A score of 100 alone is not audited acceptance.
 
-% PILOT_RESULTS
-The model pilot is in progress. Final trial accounting, independent audit and
-decision will be inserted after all planned trials are retained.
+\subsection{Completed pilot: favorable and unfavorable outcomes}
+All 18 planned trials were executed without replacement, from October 8
+22:47 to 23:01 UTC (October 9 in the client's timezone). Review covered all
+142 completed tool calls, source diffs and command/order evidence. No
+published solution or verifier retrieval was observed. This is a bounded
+trace audit, not proof of absence outside recorded actions.
+\begin{center}\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule & Reference & Modified & Cline SDK \\
+\midrule
+Audited instruction success & 6/6 & 5/6 & 6/6 \\
+Runtime succeeded & 5/6 & 5/6 & 6/6 \\
+Confirmation CSV success & 2/2 & 2/2 & 2/2 \\
+Summed runner seconds & 518.532 & 118.534 & 129.285 \\
+Outer agent seconds & 528.768 & 128.762 & 139.227 \\
+Observed input + output & $\geq$131,967 & $\geq$129,665 & 113,688 \\
+SDK-reported USD & $\geq$0.02045248 & $\geq$0.01889648 & 0.02599712 \\
+Token/cost reconciled trials & 5/6 & 5/6 & 6/6 \\
+Full request/cache reconciliation & 0/6 & 0/6 & 0/6 \\
+\bottomrule
+\end{tabular}\end{center}
+
+The reference's first freshness task completed both source effects and the
+required build--edit--build sequence, then stalled during its final model
+iteration. Runtime timeout at 420 s reduced its original weighted corpus
+score to 95; functional and audited obligations still passed. The modified
+arm's first freshness task suffered a socket closure during response
+processing (\code{UND_ERR_SOCKET}), with no source effect; original score
+25 and audited failure remain. Both trials have one started iteration without
+usage. Their observed totals are lower bounds. Neither failure is attributed
+to argv mechanics; neither is removed as an infrastructure exception.
+
+All other original weighted scores are 100. The corpus functional scorer and
+audited instruction outcomes coincide here, but runtime termination and
+Blame's proof fields do not. Native Cline's absent \code{verified} field is not
+an audited failure. The diagnostic argument task reuses the existing
+separator functional scorer; its surrogate root-build harness check is
+retained separately and is not its acceptance condition.
+
+H1's argument field was used in both modified diagnostic runs. Reference and
+Cline used shell fallback; all six diagnostic runs complied with the requested
+filter. No arm had a task-selection refusal. Modified versus reference on this
+pair: 35,962 versus 35,475 input-plus-output tokens, 25.200 versus 25.013 runner
+seconds, and reported USD 0.00398520 versus 0.00450160. Equal audited quality
+therefore coincided with slightly more tokens/time and less estimated cost;
+there was no reduction in model requests (9 each). Two pairs, unknown cache
+fields and uncontrolled cache state do not establish a stable cost benefit.
+The six CSV confirmation runs all passed; they do not exercise test argv.
+
+The overall quality requirement is not met: modified success is 5/6 versus
+6/6 in both controls. Its large apparent time saving against reference is
+mostly the reference timeout. Excluding the entire freshness task leaves
+79.247 versus 75.860 seconds, unfavorable to modified. These are descriptive
+observations, not reasons to remove that task from the primary result.
+
+There is direct new evidence for the acceptance boundary: modified CSV
+repetition one passed build and typecheck after an intermediate patch which
+trimmed quoted spaces incorrectly. An independent replay returns
+\code{kept} instead of \code{  kept  }. The model corrected it before finishing;
+the final code passed. See \code{intermediate-validation-replay.json} and
+zero-based tool-ledger positions 3, 5, 6 and 7. Technical verification did not
+establish this user criterion, and its correction was a model decision, not
+an effect demonstrated for H1.
+
+\subsection{Decision and next experiments}
+Retain the bounded test-argv interface for its demonstrated contract behavior
+and actual use, without claiming an improvement in task success or overall
+efficiency. Local tests find no introduced source regression; the model
+campaign's adverse outcome and measurement gaps remain material. Abandon the
+automatic Vitest rewriting proposal in the tested noninteractive setting.
+Deepen H1 on new, preselected Maven/.NET/Node repositories requiring test
+filters; measure refusals and fallback recovery before optimizing tokens.
+Use new confirmation tasks, not these now-familiar diagnostics.
+
+Next, investigate the shared transport's socket closure and final-iteration
+stall separately, preserving bounded cleanup and interrupted usage. Then
+implement one H2 admission mechanism in an isolated test environment, with
+explicit invocation, source, installed environment and selection scope;
+keep arbitrary user acceptance distinct. Add a behavioral acceptance fixture
+like the intermediate CSV counterexample before any stronger verified claim.
+Compiler/LSP references, broader read-granularity changes and memory ablations
+remain lower priorities until a concrete current failure and representative
+confirmation tasks justify them. No longitudinal memory, cross-platform,
+large external-repository or new Terminal-Bench confirmation was executed.
 
 \section{Reproduction and evidence map}
 Build core, model catalog, runtime (including prompt-resource copy) and
@@ -302,11 +386,14 @@ dependency or lockfile change was needed. Freeze the built reference checkout
 with \code{node tools/terminal_bench/corpus/light-study.mjs freeze baseline},
 then the intervention checkout with \code{freeze modified}; both snapshots
 share unchanged core/dependency packages. Use \code{run} once, then
-\code{analyze}. Direct replay uses \code{light-study-replay.mjs} with a compiled
+\code{analyze}. Run \code{light-study-audit.mjs}, review its candidates and all
+traces, save adjudication, then use \code{light-study-publish.mjs} to export
+unchanged compressed traces/diffs and their inventory. Direct replay uses \code{light-study-replay.mjs} with a compiled
 runtime directory and output JSON. Existing corpus preparation, scoring and
 headless CLI are reused. Runtime artifacts and raw events stay under
 \code{.blame/research}; compact results, hashes and review evidence accompany
-the protocol. Credentials are never archived.
+the protocol as \code{results.json}, \code{summary.json},
+\code{adjudication.json}, \code{tool-ledger.json} and \code{inventory.json}. Credentials are never archived.
 
 \begin{description}
 \item[Current sources] Under \code{packages/agent-runtime/src/harness}:
