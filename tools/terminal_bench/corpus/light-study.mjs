@@ -17,7 +17,7 @@ import {
   workspaceDiff,
 } from "./corpus-utils.mjs";
 import { scoreRun } from "./score-run.mjs";
-import { auditSdkUsage } from "../../../packages/agent-runtime/dist/usage-audit.js";
+import { reconcileUsage } from "./light-study-accounting.mjs";
 
 const study = join(repositoryRoot, "docs/experiments/light-harness-2026-10-09");
 const root = join(repositoryRoot, ".blame/research");
@@ -293,41 +293,23 @@ async function analyze() {
       .split("\n")
       .filter(Boolean)
       .map((s) => JSON.parse(s).event);
-    const tools = events.filter((e) => e.type === "tool").map((e) => e.payload);
+    const tools = events
+      .filter((e) => e.type === "tool")
+      .map((e) => ({
+        ...e.payload,
+        tool: e.payload.toolCall?.name ?? e.payload.tool,
+        input: e.payload.toolCall?.input ?? e.payload.input,
+      }));
     const requests = events.filter(
       (e) =>
         e.type === "notice" &&
         e.payload?.message === "Agent iteration started.",
     ).length;
-    const usages = events
-      .filter((e) => e.type === "usage")
-      .map((e) => auditSdkUsage(e.payload?.usage));
-    const usage = auditSdkUsage(result.usage);
-    const reconciliation = {};
-    for (const field of [
-      "input",
-      "output",
-      "cacheRead",
-      "cacheWrite",
-      "cost",
-    ]) {
-      const sum =
-        usages.length && usages.every((u) => u[field] !== null)
-          ? usages.reduce((s, u) => s + u[field], 0)
-          : null;
-      reconciliation[field] = {
-        sum,
-        aggregate: usage[field],
-        matches:
-          sum !== null &&
-          usage[field] !== null &&
-          Math.abs(sum - usage[field]) <= Math.max(1e-9, Math.abs(sum) * 1e-8),
-      };
-    }
-    const complete =
-      requests > 0 &&
-      requests === usages.length &&
-      Object.values(reconciliation).every((x) => x.matches);
+    const usage = reconcileUsage(
+      result.usage,
+      events.filter((e) => e.type === "usage").map((e) => e.payload?.usage),
+      requests,
+    );
     const finishedTools = tools.filter((t) => t.phase === "finished");
     const candidates = finishedTools.filter((t) =>
       /https?:\/\/|scenario-checks\.mjs|reference.patch|rescore-corpus|\/docs\/experiments\//iu.test(
@@ -361,15 +343,13 @@ async function analyze() {
       verified: result.verified ?? null,
       completion: result.completion ?? null,
       checks: score.checks,
-      harnessChecks: score.harnessChecks,
+      harnessChecks:
+        trial.id === "project-arguments" ? [] : score.harnessChecks,
+      ...(trial.id === "project-arguments"
+        ? { surrogateHarnessChecks: score.harnessChecks }
+        : {}),
       unexpectedPaths: score.unexpectedPaths,
-      usage: {
-        ...usage,
-        complete,
-        requests,
-        reports: usages.length,
-        reconciliation,
-      },
+      usage,
       durationMs: result.durationMs ?? null,
       argsUsed,
       taskSelectionRefusals: refusals,
@@ -381,6 +361,7 @@ async function analyze() {
   }
   await writeJson(join(campaign, "analysis.json"), {
     provenance,
+    analysisDriverSha256: sha(await readFile(new URL(import.meta.url))),
     planned: provenance.order.length,
     completed: rows.length,
     rows,

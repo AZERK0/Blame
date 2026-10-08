@@ -1,877 +1,336 @@
 \documentclass[11pt,a4paper]{article}
-\usepackage[margin=25mm]{geometry}
+\usepackage[margin=24mm]{geometry}
 \usepackage[T1]{fontenc}
-\usepackage{array}
-\usepackage{booktabs}
-\usepackage{longtable}
-\usepackage{amsmath}
+\usepackage{booktabs,longtable,array,amsmath}
 \usepackage[hidelinks]{hyperref}
 \setlength{\emergencystretch}{3em}
 \newcommand{\code}[1]{\texttt{\detokenize{#1}}}
 \newcommand{\filepath}[1]{\path{#1}}
-\newcommand{\src}[1]{\textbf{[S#1]}}
-\newcommand{\hist}[1]{\textbf{[H#1]}}
-\title{Blame's Semantic Harness\\Architecture, Guarantees, and Empirical Evidence}
-\author{Repository Engineering Study}
-\date{October 7, 2026}
+\title{Light Semantic Harness: Applied Study}
+\author{Blame Repository Engineering Study}
+\date{October 9, 2026}
 \begin{document}
 \maketitle
-
 \begin{abstract}
-Blame's current Light Semantic Harness gives a coding agent five core
-primitives: search, read, edit, execute, and finish. Its distinctive contribution
-is the combination of syntax-aware targeting with runtime-owned observation,
-freshness checks, recoverable edits, and explicit completion decisions.
-This study examines the implementation and the historical measurements,
-separating executable behavior from archived proposals and proposed improvements.
-
-The design provides useful controls over source changes. Its navigation is
-primarily syntactic, reference search is lexical, and its completion policy does
-not establish arbitrary acceptance criteria. Historical experiments show some
-mechanical improvements, but the largest frozen comparison does not establish
-general superiority over the integrated Cline SDK. The recommendation is to
-retain the small tool interface, strengthen validation provenance and task
-contracts, and measure quality before making efficiency claims.
+Improve independently assessed task success and truthful results first;
+compare tokens, cost and duration only at comparable quality. Blame's Light
+harness provides five core primitives with syntax-aware navigation, guarded
+edits and runtime-owned completion. It does not provide compiler reference
+resolution or general acceptance proofs. Historical performance remains
+mixed. This follow-up verifies historical diagnoses against current code,
+adds bounded arguments to catalogued test tasks, and runs a separately
+registered three-arm pilot. Mechanical evidence and model outcomes are
+reported separately; neither constitutes a global superiority claim.
 \end{abstract}
 
-\tableofcontents
-\newpage
+\section{Method and evidence boundaries}
+The reference is \code{adb745967bb9d1abae5d5722cad46db0dd1eed15}.
+The intervention is \code{feat(harness): pass bounded argv to project test tasks}
+(commit \code{44e1e9dc}; built before rebase as \code{b44fe410}). The runtime
+sources of those two commits are identical. The rebase preserves a concurrent
+billing change; it does not enter the frozen runtimes. Compiled snapshots,
+prompt resources, schemas, task instructions and dependency lockfile are
+hashed before trials. Current source is the authority for implementation;
+archive reports are evidence about the versions they measured.
 
-\section{Scope and method}
-\subsection{What is being studied}
-A harness is the runtime between a model and its working environment: it exposes
-actions, records observations and effects, enforces preconditions, manages
-execution, and decides which completion claims it can support. The model still
-chooses what to investigate and how to solve the task. A semantic harness makes
-code structure usable in this loop, rather than treating every file only as
-undifferentiated text.
+The October 7 study ran 112 focused runtime tests and 13 core contract tests.
+Those are historical validation results, not today's campaign. Historical
+reports and their event-line diagnoses are recoverable at
+\code{8a6ce6a5a6dc51d1b340c8360234fb8f9add0068}. Original global and external
+application raw traces referenced under another machine's \code{.blame}
+directory are absent here. Thus this investigation can inspect tracked CSVs,
+reports, adjudications and mechanical diagnoses, but cannot independently
+reconstruct every historical model decision. It makes no causal attribution
+from a success-rate difference alone.
 
-This study covers the configured Light Semantic Harness path in
-\code{packages/agent-runtime}. The five primitives are its core vocabulary,
-not necessarily the entire tool list of a product session: preview, MCP,
-specialist, and other configured tools may be added. Cline SDK native tools
-remain a separate configurable path. UI, billing, deployment, and preview
-providers are discussed only where they affect this harness's boundaries.
-
-\subsection{Evidence and reproducibility}
-The implementation was inspected in the October 7 working tree based on commit
-\code{8a6ce6a5a6dc51d1b340c8360234fb8f9add0068}. That tree includes the preceding
-module-extraction refactor; this study adds documentation and does not change
-the harness implementation. Current behavior is traced through tool assembly,
-workspace operations, aliases, edit commit/recovery, commands, the journal,
-finish policy, and provider context projection. Source references appear in
-Appendix~\ref{sec:sources}.
-
-Historical evidence was recovered from the same commit's Git history, including
-the former large harness study, the September 6 global measurement, and two
-September 8 analysis files. Their measured bundles differ from today's working
-tree. Historical results are attributed to those campaigns, not presented as
-fresh measurements of the current version. This is a repository-based
-engineering study, not a new systematic literature review or live-provider
-benchmark.
-
-The runtime TypeScript compiler and seven focused test files were run during
-this study: 112 tests passed, with no failures or skips. The core package was
-also compiled and its 13 contract tests passed. These results establish the
-tested behaviors in this Linux environment, not universal correctness or
-cross-platform, live-provider, or distributed-executor equivalence.
-
-\subsection{An important historical distinction}
-The former Semantic Workspace Harness and its larger protocol were
-decommissioned. The historical study explicitly makes the Light design and
-later corrections authoritative over its earlier proposals.
-
-\code{packages/harness-core} still exports authorities, an evidence planner,
-transaction contracts, and richer result types. In the inspected runtime,
-the execution lifecycle actually imports core runtime functionality; completion
-and terminal-reason contracts also appear as types. The Light tool envelope and
-finish service do not invoke the core evidence planner or establish the old
-four-authority architecture. Passing core tests does not prove those reference
-implementations are wired into the production tool path. \src{1}, \src{8},
-\src{11}, \hist{1}.
-
-\section{Current architecture}
-\subsection{A small model interface with runtime-owned mechanics}
-The model selects targets, transformations, and checks. The runtime owns
-canonical paths, byte offsets, content hashes, source revisions, locks, recovery,
-receipts, and process observation. Keeping this bookkeeping out of model
-arguments reduces opportunities to invent stale identifiers or mishandle
-transaction details.
-
-\begin{longtable}{@{}p{0.18\linewidth}p{0.35\linewidth}p{0.39\linewidth}@{}}
+\section{Implemented behavior}
+\begin{longtable}{@{}p{.19\linewidth}p{.73\linewidth}@{}}
 \toprule
-Primitive & Main responsibility & Important boundary \\
-\midrule
-\endhead
-\code{search_code} &
-Find symbols, text, or likely references in a bounded scope. &
-Symbol results use syntax; reference results declare
-\code{lexical_fallback}. Limited results are not an exhaustive graph. \\
-\code{read_code} &
-Expose paths, outlines, symbols, ranges, changes, or capabilities. &
-Observation is tied to content and context generation. An outline does
-not authorize replacing an unseen body. \\
-\code{edit_code} &
-Apply symbol operations, focused patches, or new-file content. &
-Prepare and validate the batch before a revision-checked commit.
-Patches remain a normal supported operation. \\
-\code{run_task} &
-Run project tasks, commands, dependency operations, or inspect a
-running command. &
-Observe execution and source effects; exit zero is not proof that
-tests ran or that acceptance criteria hold. \\
-\code{finish_task} &
-Submit a summary and obtain a runtime completion decision. &
-Reuse or refresh relevant checks already requested. Missing validation
-can yield explicitly unverified delivery. \\
+Primitive & Actual responsibility and boundary \\
+\midrule\endhead
+\code{search_code} & Syntax-derived declarations and bounded lexical search.
+References explicitly use \code{lexical_fallback}; results are candidates,
+not a compiler/LSP dependency graph. \\
+\code{read_code} & Files, ranges, symbols, signatures/outlines, changes,
+capabilities and supported images. Small automatic reads expose whole files;
+large supported files route to outlines. Explicit ranges and symbol bodies
+remain available. Observation is tied to exact bytes and context generation;
+a signature does not authorize replacement of an unseen body. \\
+\code{edit_code} & Symbol operations, focused patches and new files.
+Resolve observed targets, reject ambiguity/stale preimages, validate a batch
+and commit with cooperating locks and crash recovery. Both symbolic edits
+and patches are normal routes. \\
+\code{run_task} & Catalogued tasks, literal commands, Node dependency
+operations and inspection of running handles. Capture process outcome,
+source effects and bounded diagnostics. A successful transport is distinct
+from a successful command or test. Project test tasks now accept bounded
+literal \code{args}; other project tasks reject extra arguments. \\
+\code{finish_task} & Reuse current checks or refresh relevant checks already
+requested; reject known current code failures. Report delivery and
+verification separately. It does not independently establish arbitrary
+functional acceptance criteria. \\
 \bottomrule
 \end{longtable}
 
-Four tools are built by \code{lightSemanticHarnessTools}; the finish tool is
-assembled separately. Local calls operate through \code{LightWorkspace}.
-Managed execution uses a \code{LightWorkspaceExecutor} port with the same
-request/result vocabulary, backend metadata, context, and cancellation.
-Briefing, journal retrieval, and attachment storage are executor operations,
-not additional public coding primitives. \src{1}, \src{2}.
+Tool assembly is in \code{light-tools.ts}, with finish assembled separately.
+\code{LightWorkspace} coordinates navigation, aliases, coverage, edits,
+commands and journal persistence. The \code{LightWorkspaceExecutor} port
+carries the same operations, metadata and cancellation to managed execution.
+Configured preview, skills, MCP or specialist tools may supplement the five
+primitives. Native Cline SDK tools are a separate runtime configuration.
 
-\subsection{Results and authority}
-The current \code{LightToolResult} distinguishes \code{ok},
-\code{blocked}, and \code{failed}. Successful results carry data and optionally
-a receipt or image content. Blocked results identify categories such as input,
-code, command, environment, or external failure, with recovery guidance where
-available. Harness failures can explicitly report that an effect was already
-applied and that recovery is required.
+Syntax adapters use ast-grep/Tree-sitter and report whether they actually
+load. An alias identifies an observed declaration using path, qualified name,
+byte ranges and hashes. A unique unchanged target may relocate after a
+neighboring edit; ambiguity or changed observed content requires a fresh read.
+Coverage is consumer/context-generation specific. Compaction does not create
+observation of source bytes it merely mentions.
 
-This result format is smaller than the richer core reference result contract.
-A successful tool transport does not necessarily mean a successful check:
-\code{run_task} can return an observed command failure in an \code{ok}
-result. Consumers must inspect the operation's data, validation, and check
-fields. Conversely, a post-commit journal failure must not be interpreted as
-permission to replay the edit. \src{1}, \src{5}, \src{7}.
+\code{LightCommitService} checks workspace revision and file preimages,
+writes a durable pending record and applies individual atomic writes.
+Recovery preserves a conflicting third-party state instead of overwriting it.
+Cooperating readers use the same lock. This is recoverable batch behavior,
+not isolation from all editors, processes or external services. Post-commit
+receipt failures identify an already-applied effect; blindly repeating that
+edit is unsafe.
 
-The session journal is the persisted record of requests, aliases, read coverage,
-changes, validations, and terminal states. Its JSONL file is scoped by a hash
-of the session identifier under \code{.blame/harness/light}. Filesystem state
-is re-observed when calculating freshness and current delivery. The journal
-is not a general database transaction covering every possible host effect.
+\code{workspace-command-process.ts} bounds capture, drains inherited output
+for a bounded interval and terminates process groups on abnormal interruption.
+Intentional detached services may survive normal parent exit. Running handles
+are session-local memory, not restart-persistent processes. The benchmark
+runner separately bounds abort, usage collection and shutdown. Command policy
+uses actual isolation/managed-preview metadata; it is not a universal shell
+sandbox.
 
-\subsection{A concrete request lifecycle}
-For a request to change a function's behavior, the normal loop is:
+The stable provider projection preserves previously sent blocks while the
+canonical prefix remains unchanged. Canonical resets/compaction create a new
+basis. Responses function schemas default to \code{strict: false} so optional
+arguments stay optional; local schema validation still applies. Context bytes
+are not billed tokens. Project memory uses bounded retrieval and current
+file hashes; no longitudinal benefit is established by this pilot.
 
-\begin{enumerate}
-\item Search a relevant scope and locate the declaration.
-\item Read its body and needed surrounding code. The runtime issues an alias
-and records which exact bytes were exposed.
-\item Submit a symbol-body replacement or a focused patch.
-\item Resolve the target against current code, reject ambiguity or changed
-observed content, validate the proposed content, and commit the prepared batch.
-\item Request the relevant project check; inspect a running handle if needed.
-\item Finish with a factual summary. The runtime evaluates current effects,
-known failures, and available validation separately from SDK termination.
-\end{enumerate}
+\subsection{Validation is deliberately conservative}
+Keep four distinct claims: tests executed, tests passed, validation admitted,
+and user criteria satisfied. \code{observeCheck} records process state,
+counts/outcome, scope, selection, freshness and evidence origin. Interrupted
+green output, zero tests and silent exit-zero runs cannot establish passing
+tests. Managed pytest, VSTest and Surefire reports are invocation-attributed;
+old reports are not discovered as new evidence.
 
-If another writer changes only a neighboring declaration between steps 2 and
-3, an unchanged target can be relocated. If the target body changes, the edit
-requires a new observation. If source changes while a check runs, the old
-check cannot establish current verification. If the task is an explanation,
-the loop can end without a source mutation.
+Tests with a passing observed outcome still have unknown selection and,
+without detected changes, unknown freshness. The task runner records their
+validation status as unknown. They do not promote delivery to verified.
+Failed tests remain failed. Builds/typechecks can supply admitted source-based
+coverage; that does not mean behavioral tests or user criteria passed.
+The journal requires matching source revision and covered file hashes.
+Environment revision hashes Node manifests/lockfiles, not installed tools,
+runtime variables, services or the full execution environment, and is not
+bound as a complete validation provenance record.
 
-\section{How semantic the harness is}
-\subsection{Syntax-level structure is useful, but bounded}
-The implementation uses ast-grep/Tree-sitter parsing to extract declarations,
-qualified names, signatures, and UTF-8 ranges. Capability probes cover symbol
-adapters for TypeScript/TSX, JavaScript/JSX, Python, Rust, Go, Java, C\#,
-C, and C++. HTML, CSS, Vue, and Svelte have structural adapters. Configuration
-and unsupported formats retain raw reads, ranges, and patches.
+The default session contract stores the objective as free-text criteria and
+sets \code{effect_requirement: none}. Explicit \code{source_change} contracts
+require an effect, but default acceptance does not prove an implementation
+request was fulfilled. \code{harness-core} exports richer authorities,
+evidence-planner and transaction contracts; the Light finish path does not
+invoke that evidence planner. Core lifecycle integration and shared types do
+not imply integration of the historical four-authority protocol.
 
-Capabilities report whether an adapter actually loads and parses a sample;
-language recognition alone is not sufficient. Navigation capability must also
-be distinguished from syntax-validation authority, particularly for C/C++
-and their build-dependent language features. \src{3}.
-
-These mechanisms help select declaration boundaries and preserve wrappers
-such as exports, decorators, and templates. They do not establish type
-correctness, resolve overloads throughout a project, prove rename safety,
-or reconstruct every dependency. The current references mode explicitly
-returns lexical fallback. It can find useful candidates, but identical names
-may refer to different entities, and computed or generated references may
-remain invisible.
-
-\subsection{Aliases encode observation, not permanent identity}
-Aliases such as \code{s1} carry a path, qualified name, kind, byte range,
-file hash, target-content hash, and observed intervals. If the file is
-unchanged, the byte target remains directly usable. If the file changed, the
-runtime attempts to resolve the declaration again by identity.
-
-A unique relocated declaration with unchanged observed content can still be
-edited. Changed content requires a fresh read; multiple candidates produce
-an explicit resolution problem instead of a guess. This is a practical local
-rebase mechanism, not a stable compiler symbol ID across arbitrary renames,
-duplicate declarations, macro expansion, or generated code. \src{4}.
-
-The coverage check matters as much as the name: seeing a declaration signature
-does not establish observation of the whole body. The runtime tracks observed
-byte intervals and requires the affected span to be covered for the relevant
-symbol operation. This prevents a compact outline from becoming implicit
-authorization to discard code the agent has never seen.
-
-\subsection{Observation and context freshness}
-Read coverage is keyed by consumer, context generation, path, and content
-hash. Intervals can merge and repeated reads can return uncovered portions
-or a covered receipt. Context generation is obtained from explicit metadata
-or a compaction-summary identity. File mutations invalidate relevant coverage.
-
-This separates exposure of exact bytes from permission to omit them in a
-particular context. Neither claim proves the model understood or retained
-the code. A compaction summary must not create source knowledge merely by
-mentioning a symbol. Coverage and alias restoration are bounded, which limits
-memory growth but also means the harness is not an unbounded persistent
-knowledge graph. \src{4}, \src{9}.
-
-\subsection{When symbols help, and when patches are appropriate}
-Symbol edits are most useful for an already observed, clearly bounded
-declaration: replacing a body, inserting around a declaration, or deleting
-one unambiguously resolved entity. Focused patches remain appropriate for
-small changes within a declaration, mixed markup, imports, configuration,
-or edits that do not map cleanly to one supported symbol.
-
-Forcing every edit through a symbol API would add friction without establishing
-more correctness. The frozen global campaign recorded only six requested
-symbol operations against 101 patches. That campaign therefore tests the
-overall harness loop more than it isolates the value of semantic editing.
-Keep both routes, expose which engine produced a target, and measure their
-use and rejection reasons separately. \hist{2}.
-
-\section{Edit correctness, concurrency, and recovery}
-\subsection{Preparation and commit}
-An edit batch is planned against one source snapshot. Target resolution,
-overlap checks, observed-content preconditions, and applicable content
-validation happen before committing the changes. Scoped patches must agree
-with the target path and stay within the allowed declaration boundary.
-
-The commit service takes an exclusive cooperating lock under
-\code{.blame/harness/light-write}, recovers a pending interrupted write,
-checks the expected source revision, and checks each file's preimage.
-It writes a durable pending record, applies individual file updates
-atomically, and removes the pending record on completion. Controlled
-failures trigger rollback. No-op content changes are filtered. \src{5}.
-
-The important invariant is that a prepared edit may not silently replace
-different current source. The implementation checks both a workspace revision
-and per-file content. The global revision is conservative: unrelated source
-changes can invalidate a preparation even when the target itself is unchanged.
-
-\subsection{Recovery preserves ownership}
-Recovery accepts a path only when its current content matches the recorded
-before or after image. A newer third state is a conflict; the runtime preserves
-it rather than overwriting it with a rollback. Harness readers acquire the
-same lock and wait until the controlled batch or recovery completes.
-
-A receipt-persistence failure after the write is materially different from
-a preparation failure. The former can leave the requested source effect in
-place. The result must expose that fact and a recovery requirement so the
-agent does not retry a mutation that already happened. Targeted tests exercise
-this distinction as well as interrupted multi-file recovery and concurrent
-user edits.
-
-\subsection{The atomicity claim has limits}
-This is recoverable batch behavior for cooperating harness operations,
-not a filesystem-wide transaction respected by every program. Individual file
-updates are atomic, but an editor, build process, or shell command that ignores
-the lock can observe intermediate files or race a check and write. Recovery
-checks also cannot make a noncooperating writer participate retroactively.
-
-Commands run against the actual worktree and may create effects outside the
-source snapshot, including external services. They are not universally executed
-inside the old proposal's ephemeral overlay. Source rollback must not be
-described as rollback of all command effects.
-
-The right guarantee to publish is precise: revision and preimage checks,
-serialized cooperating access, crash recovery, and preservation of detected
-concurrent changes. Stronger isolation requires a separate execution boundary
-and dedicated adversarial testing.
-
-\section{Execution and validation evidence}
-\subsection{Command execution is an observed operation}
-\code{run_task} supports ordinary commands, recognized project tasks,
-Node dependency changes, and inspection of a running command. Source snapshots
-before and after execution detect mutations even when a command fails.
-Known project checks have task IDs and package scopes; a generic successful
-inspection command is not automatically a validation.
-
-A longer command can return a running handle and output cursor. Inspection
-continues that command rather than launching it again. The active process map
-is in memory: journal durability does not imply a process handle survives
-replacement of its runner. The executor protocol carries cancellation,
-but cancellation must also work at the operating-system process and output
-capture levels. \src{2}, \src{6}.
-
-Command policy accounts for managed preview ownership and some side-effect
-restrictions. This does not establish a universal shell sandbox. Deterministic
-formatter effects and supported dependency operations are tracked through
-the relevant services; other ecosystem operations remain commands.
-
-\subsection{Exit, execution, outcome, and proof are different}
-The check observation deliberately separates:
-
-\begin{itemize}
-\item process state: exited, timed out, cancelled, or running;
-\item execution: tests observed, zero tests, or no execution observed;
-\item outcome: passed, failed, or unknown;
-\item selected scope and whether selection is confirmed;
-\item freshness and evidence origin, including invocation-attributed reports.
-\end{itemize}
-
-An exit-zero command with no observed tests stays unknown. A green fragment
-before interruption does not establish a passing run. Old report files cannot
-validate a silent new invocation. Counts and diagnostics are taken from bounded
-final summaries or invocation-attributed reports. \src{7}.
-
-There is a particularly important current limitation: \code{observeCheck}
-leaves selection unknown and, absent detected changes, freshness unknown.
-Pre/post source equality alone cannot exclude external writers. Even a
-successfully observed test run is recorded by the task runner as validation
-status unknown; failed tests are recorded as failed. Such test observations
-therefore do not currently promote delivery to verified through the generic
-passing-validation path.
-
-This is conservative and prevents unsupported claims. It also means a useful
-test execution and a formally admitted validation are visibly different.
-Users and downstream UI must not turn \code{outcome: passed} into a blanket
-verified badge. Conversely, verified delivery obtained from a build or
-typecheck does not imply behavioral tests or acceptance criteria passed.
-
-\subsection{Freshness is mostly source-based}
-The journal admits current validation only when its source revision and
-covered file hashes match current source. Package scope prevents a check in
-one package from automatically covering another. The global revision can
-invalidate evidence after an unrelated change, trading precision for simpler
-conservative behavior.
-
-The separate workspace environment revision hashes Node manifests and
-lockfiles; dependency readiness largely checks for the root
-\code{node_modules} directory when dependencies are declared. This is not
-a fingerprint of the installed dependency graph, runtime version, operating
-system, environment variables, database state, or remote services.
-The Light journal's validation record does not bind a complete environment
-revision. \src{6}, \src{7}.
-
-Consequently, unchanged source is not sufficient to prove that a later
-environment is equivalent. A future validation receipt should distinguish
-source identity, command/task identity, selected scope, invocation identity,
-and the relevant environment identity without exposing secret values.
-
-\section{Completion: what finish actually means}
-\subsection{Current policy}
-The finish service obtains current source effects and fresh journal
-validations. Known fresh code-validation failures block completion.
-It considers relevant tasks that were already requested in the session,
-reuses available current passing validation, and can refresh selected stale
-checks. It does not introduce a new unrelated build merely because one
-exists in the task catalog. \src{8}.
-
-This policy addresses a measured failure mode: in two historical Material UI
-runs, an additional build imposed at finish failed even on the intact
-repository, although the first submitted patch already passed the required
-external tests. The resulting loop added 34 and 32 model requests and 11 and
-10 refusals. Limiting finish to previously requested checks fixed that
-mechanical cause without adding a repository-specific exception.
-\hist{1}, section 21.62.
-
-\subsection{Delivery, verification, and acceptance}
-Accepted completion has separate fields for delivery and verification.
-Changed source with admitted passing validation covering the changed paths
-can be verified. Changed source without such validation is unverified with
-a reservation. No current mutation can yield verification not applicable.
-Task termination in the SDK is not by itself this domain decision.
-
-However, the inspected session setup puts the objective into a free-text
-acceptance-criteria array and sets \code{effect_requirement: none}.
-The finish service does not interpret those arbitrary criteria into
-independently demonstrated obligations. Its decision marks delivery satisfied
-without solving functional acceptance. An explicit
-\code{source_change} contract would require an effect, but the inspected
-default does not supply one. \src{1}, \src{8}.
-
-Two consequences follow. First, the harness can correctly accept explanations
-without manufacturing edits. Second, an empty effect is not a mechanical proof
-that an implementation request was fulfilled. Verified means coverage under
-the admitted validation policy, not correctness under every user requirement.
-The core reference evidence planner must not be cited as filling this gap:
-it is not called by this finish path.
-
-\subsection{Where the policy should evolve}
-Keep finish small and deterministic. Improve explicit task intent and proof
-admission before introducing a general obligation solver. A task can specify
-whether a source effect is required and which externally checkable obligations
-matter. Checks that are unavailable should remain unavailable; the runtime
-must not invent success, silently erase a failure, or repeatedly select new
-checks while trying to make a terminal decision.
-
-The useful target is a truthful completion statement: what changed, what
-actually executed, which source/environment it observed, which scope it
-covered, and what remains unverified.
-
-\section{Context, cache behavior, and memory}
-\subsection{Stable projection instead of rewriting every old message}
-The canonical transcript and provider projection serve different purposes.
-The current stable message builder retains projected blocks already sent
-while the canonical prefix remains unchanged and appends new projected
-content. A real canonical reset or compaction creates a new projection basis.
-Fresh observations are still exposed. \src{9}.
-
-This avoids rewriting historical tool results on every later read or
-validation, which can disrupt provider prefix caching. It does not minimize
-all context bytes: retaining a useful earlier observation can be preferable
-to repeatedly rebuilding a shorter prefix. Overlapping reads can project
-novel content while preserving necessary exact source and metadata.
-Multimedia and compaction tests exercise preservation across these paths.
-
-Reported context byte counts measure the projection, not billed tokens.
-Tokenization, cached-input accounting, transport behavior, and prices belong
-to provider observations. A smaller transcript is not automatically a cheaper
-or more successful run.
-
-\subsection{Optional tool arguments are part of the effective interface}
-Provider schema handling affects whether an agent can actually omit optional
-arguments. The Responses compatibility layer supplies \code{strict: false}
-when a function tool has no explicit strict setting; local schema validation
-still controls the harness input.
-
-In a historical diagnostic campaign, candidate reads omitted optional ranges
-45 times out of 64, compared with zero out of 90 before the correction.
-The same campaign associated stable prefixes with higher reported cache use.
-Several changes were bundled together, and complete historical HTTP bodies
-were not reconstructed; these are not isolated causal estimates. \src{9},
-\hist{1}, section 21.56.
-
-\subsection{Project memory is bounded retrieval}
-Verified completion can generate a memory candidate containing the objective,
-summary, changed-file hashes, symbols, and a validation identifier. Retrieval
-scores relevance and checks current file hashes before constructing a small
-briefing; the implementation bounds the number and size of selected memories.
-This is useful reuse of previous engineering facts, not a learned global
-semantic model. \src{10}.
-
-The inspected archives do not establish a longitudinal performance gain from
-memory. Hash freshness also does not prove that a remembered summary is
-complete or still relevant under every unchanged-file dependency. Memory
-benefits require a separate repeated-task experiment with leakage controls.
-
-\section{What the historical measurements establish}
-\subsection{Why campaigns must remain separate}
-The archive contains successive diagnostic campaigns and frozen comparisons.
-They use different versions, tasks, and policies. Summing them into one
-success rate would mix version selection with confirmation and would double
-count familiar tasks. Provider cost is reported or SDK-estimated cost, not
-an independently verified invoice. Failed and interrupted trials remain part
-of quality measurement.
-
-\subsection{A positive diagnostic result}
-The five-task before/candidate campaign in historical section 21.56 had
-one trial per version per task, ten trials total, and complete reconciled
-usage. Both versions passed four out of five tasks.
-
-\begin{center}
-\begin{tabular}{@{}lrr@{}}
+\section{Diagnosis: historical observation versus current mechanism}
+\begin{longtable}{@{}p{.22\linewidth}p{.36\linewidth}p{.34\linewidth}@{}}
 \toprule
-Metric & Before & Candidate \\
-\midrule
-Successful tasks & 4/5 & 4/5 \\
-Model requests & 153 & 117 \\
-Input tokens, cache included & 8,083,656 & 5,856,302 \\
-Output tokens & 60,850 & 49,231 \\
-Reported cost, USD & 0.43397904 & 0.22763680 \\
-Summed runner time, seconds & 1,641.849 & 1,338.790 \\
-Rejected/completed patch calls & 11/23 & 0/12 \\
+Category & Evidence & Current status \\
+\midrule\endhead
+Model solution/acceptance & Global CSV: \code{cancel-async-tasks} and
+\code{query-optimize}, final 0/2, Cline 2/2. Report attributes one cancellation
+solution to double cancellation and SQL failure to the official performance
+threshold. & These are task-solution defects, not evidence of an AST failure.
+Raw solutions/replays are unavailable here; persistence in new solutions is
+unestablished. Runtime success cannot certify their acceptance. \\
+Missing information & Global report: Blame's image reads were UTF-8 text;
+Cline received PNG blocks on G-code. Both failed that repetition. & Supported
+local image blocks exist now in \code{light-images.ts}, with tests. Historical
+absence is corrected; vision alone was never shown sufficient. \\
+Navigation/edit friction & Global identical-file replay: outer patch target
+silently overrode its header. & Current file headers are authoritative; headerless hunks use the supplied
+path. \code{light-patch-targets.test.ts} verifies this corrected authority. Other context-mismatch
+refusals remain justified. Lexical references remain a limitation, with no
+isolated outcome evidence justifying a graph intervention yet. \\
+Task-selection friction & External mechanical diagnoses: Jackson
+\code{vT8ZpKP}, event 91, and Serilog \code{WjEQup2}, event 102: arguments
+embedded in task IDs were refused. & Maven/.NET catalogs now exist, but the
+reference project schema still has no argument field. Local replay rejects
+both synthetic IDs and structured argv; shell fallback works. This is the
+selected intervention. \\
+Validation/finish & External Material UI report: first submitted patches
+passed required external tests; an unsolicited build triggered 34/32 further
+model requests and 11/10 finish refusals. & Finish now selects only previously
+requested tasks. That historical loop is corrected. Unknown test admission,
+incomplete environment binding and free-text acceptance remain explicit
+limitations, addressed by proposed H2 only. \\
+Commands/cancellation & Global Mailman: inherited-output replay took
+3.264 s; cancellation still returned success at 3.282 s. Native Cline
+cancelled at about 0.301 s; one Cline Mailman run recovered after its command
+timeout. & Bounded process capture and interruption-first classification now
+exist. Focused command tests pass. Former unconditional managed-preview
+service/Git refusals now depend on environment metadata. \\
+Environment/watch & External Vue diagnostics \code{gDXBExk} event 194 and
+\code{AMDbBHp} event 127: tests passed but watch timed out at 120 s. & Current
+noninteractive Vitest 3.2.4 replay: bare invocation exits normally; explicit
+watch times out. Automatic addition of \code{--run} is not justified by this
+replay. Historical runner/configuration details are not reconstructed. \\
 \bottomrule
-\end{tabular}
-\end{center}
+\end{longtable}
 
-Reported cost decreased 47.5\% and runner time 18.5\%, with equal observed
-success. This is evidence that the candidate corrected costly local
-trajectories on those known tasks. It is not a contemporaneous Cline comparison.
-Two later small follow-ups had higher candidate costs, so the favorable
-diagnostic cannot support a general efficiency claim. \hist{1}.
-
-\subsection{The main frozen global comparison}
-The September 6--7 campaign ran 18 Terminal-Bench tasks, three arms, and two
-repetitions: 108 trials, or 36 per arm. It used
-\code{gpt-5.6-luna} at high reasoning effort and the integrated Cline SDK
-0.0.81 as the control. The current repository declares SDK 0.0.82;
-neither result should be described as a comparison with today's standalone
+\section{Historical measurements: keep versions separate}
+The September 6--7 frozen global campaign used 18 tasks, two repetitions,
+three arms, \code{gpt-5.6-luna} high and integrated Cline SDK 0.0.81.
+Today's dependency is 0.0.82; these are not measurements of today's standalone
 Cline extension.
-
-\begin{center}
-\small
+\begin{center}\small
 \begin{tabular}{@{}lrrr@{}}
-\toprule
-Metric & Blame before & Blame final & Cline SDK \\
+\toprule & Blame before & Blame final & Cline SDK \\
 \midrule
 Audited successes & 19/36 & 21/36 & 28/36 \\
-Summed agent time, seconds & 15,228.4 & 13,572.3 & 13,015.4 \\
-Observed token lower bound & $\geq$10,804,180 & $\geq$12,646,404 & $\geq$16,696,027 \\
-Reported cost lower bound, USD & $\geq$0.91985 & $\geq$0.94401 & $\geq$1.21172 \\
-Trials with incomplete usage & 5 & 4 & 3 \\
+Summed agent seconds & 15,228.4 & 13,572.3 & 13,015.4 \\
+Observed tokens, lower bound & $\geq$10,804,180 & $\geq$12,646,404 & $\geq$16,696,027 \\
+Reported USD, lower bound & $\geq$0.91985 & $\geq$0.94401 & $\geq$1.21172 \\
+Incomplete usage trials & 5 & 4 & 3 \\
 \bottomrule
-\end{tabular}
-\end{center}
+\end{tabular}\end{center}
+Final versus Cline had seven fewer successes and 4.3\% more total agent time;
+the time interval was [-27.7\%, +54.9\%]. Final versus before saved 10.9\%
+time, but removing FEAL reduced the saving to 0.4\%. The global archive records
+six symbol operations versus 101 patches. It does not isolate semantic
+editing or establish general resource savings; partial token totals are not
+exact comparative costs.
 
-Final versus before improved observed success by two trials and reduced summed
-agent time 10.9\%. The paired 95\% interval for time change was
-[-32.3\%, +10.2\%]. Removing the FEAL task left only a 0.4\% time saving:
-much of the gain came from a control trajectory blocked on orphan computation.
+Other campaigns stay separate. The five-task diagnostic before/candidate
+comparison passed 4/5 in both arms, with reported cost -47.5\% and time -18.5\%;
+subsequent small diagnostics were less favorable. The external six-repository
+September 8 campaign had official required-test success 12/12 Blame versus
+11/12 Cline, but independently audited success 7/12 versus 8/12 after public
+solution retrieval. Some complete-case token savings therefore coincided
+with lower independent quality. The later finish-policy comparison used
+three familiar tasks and is diagnostic, not a holdout. None is pooled with
+this follow-up.
 
-Final versus Cline had seven fewer successes, a 19.4 percentage-point observed
-deficit, and 4.3\% more summed agent time. The time interval was
-[-27.7\%, +54.9\%], and time changed sign between repetitions
-(-4.9\% and +14.6\%). The per-metric success interval was unfavorable;
-the report's six-comparison sensitivity touched zero. This neither establishes
-universal inferiority nor supplies evidence of stable superiority.
+\section{Testable priorities and implemented intervention}
+\paragraph{H1: separate test identity from arguments.}
+Cause: arguments in IDs cause refusals or force shell fallback. Compare frozen
+reference Blame, modified Blame and integrated native Cline. Measure actual
+argv use, task-selection refusals and audited success first; then resources.
+Risks are argument order, package-manager forwarding and conflating a filtered
+check with full-scope validation. Shell fallback remains possible in all arms,
+so H1 is an interface-friction hypothesis, not a claim of previously impossible
+capability.
 
-Twelve trials had incomplete usage. The token and cost entries above are
-lower bounds, not complete comparable totals. A secondary complete-block
-analysis can describe those blocks, but missingness was associated with long
-or interrupted trajectories; excluding them does not establish overall savings.
-Inference used paired task blocks preserving repetitions and arms, rather
-than treating all repeated trials as independent tasks. \hist{2}.
+Implemented: optional \code{args}, at most 32 nonempty strings of at most
+2,048 characters, excluding NUL. Pass them as literal argv after the declared
+native invocation or package script; npm receives its \code{--} separator.
+Only test tasks accept nonempty extra arguments, to avoid admitting a filtered
+build as full coverage. Defaults, task identity and scripts remain unchanged.
+Journal records retain argv and distinguish selections: a passing selected
+run cannot erase a known full-suite failure. Test proof remains unknown.
+Filtered pytest currently falls back from its strict managed-report adapter;
+full invocation-attributed pytest remains available. Maven/.NET adapters
+retain their existing reporting behavior. No general scope proof is added.
 
-The tested scope was a headless CPU container runtime. It did not exercise
-desktop review, managed preview, or merging. Few symbolic operations and no
-completed compaction were observed, limiting conclusions about the specifically
-semantic and long-context mechanisms.
+\paragraph{H2: explicit proof admission, proposed only.}
+Cause: useful passing observations remain unknown; source equality does not
+identify the execution environment or test selection. Compare the current
+conservative policy with one isolated provenance/admission change, first in
+replays with stale source, changed dependencies, interrupted output and scoped
+checks. Measure false verified and false unknown decisions, then audited task
+success. Risk: false assurance from external writers, missing dependencies or
+unproven scope. Do not restore the archived obligation solver or infer user
+acceptance from a test count. H2 is not implemented in this campaign.
 
-\subsection{External application tasks and the corrected finish policy}
-The September 8 external-application comparison had six tasks with two
-repetitions per arm. Audit reduced Cline from 11/12 nominal successes to
-8/12 and Light from 12/12 to 7/12. Some trajectories accessed subsequent
-public solution material. The distinction between official test success and
-independently solved success materially changes the conclusion.
+\section{New local measurements and registered model pilot}
+The new project-argv tests pass (4/4), including actual Node test execution,
+literal arguments containing spaces, quotes and shell metacharacters, native
+order and package-manager forwarding, non-test refusal, unknown verification
+and persistence of full-suite failures after filtered success. The broader
+runtime harness/context/schema and benchmark-runner checks passed 465 tests
+with two existing skips after isolating one pre-existing formatter failure.
+The initial broader run recorded 465 passes, one failure and two skips;
+the same formatter assertion fails on the frozen reference. TypeScript
+compilation, changed-file ESLint and ten corpus tests pass.
 
-Cline's total token and cost usage was incomplete in one trial; the complete
-Light totals cannot be turned into a precise global savings claim against
-that incomplete control. Agent times were 3,145.36 seconds for Cline and
-3,074.92 for Light. These small differences on six known tasks are not a
-confirmation of general performance. \hist{3}.
+Mechanical baseline replay: a synthetic task ID and structured arguments
+are refused, while shell fallback succeeds. Modified replay: the structured
+call executes one passing selected test, with validation still unknown.
+The shell fallback observation remains unknown because the wrapper command
+is not itself a recognized runner invocation. This is improved observation
+and ergonomics, not stronger proof. The Vitest preflight measured bare
+0.475 s and explicit run 0.497 s; explicit watch timed out at 3.007 s.
+Different timings are single local observations, not an acceleration estimate.
 
-A separate frozen comparison of the corrected finish policy used three known
-tasks, three arms, and two repetitions. The corrected version passed 5/6,
-while both the preceding Blame and Cline passed 6/6. It reduced requests from
-138 to 75 and time by 32.5\% against preceding Blame, addressing the measured
-finish loop. Against Cline, it used 37.1\% fewer tokens and 32.3\% less reported
-cost, but took 40.7\% more agent time and had lower observed quality.
-Efficiency at unequal quality is not a dominance result. \hist{4}.
+The registered protocol is \filepath{docs/experiments/light-harness-2026-10-09/protocol.json}.
+It fixes three tasks before model outcomes: \code{project-arguments} and
+\code{proof-freshness} are diagnostics; \code{csv-parser} is a separate
+confirmation task not used to select this intervention. Two repetitions and
+three arms yield 18 planned trials, at most 288 iterations and 6,480 agent
+seconds. Task budgets are 12/300 s, 18/420 s and 18/360 s respectively.
+Use the configured \code{gpt-5.6-luna} high model, API/provider, Linux worker,
+SDK 0.0.82 and fresh identical fixtures. The script cycles arm order and
+reverses it in repetition two. Cache cannot be reset; no memory or solution
+retrieval is allowed. The baseline retains shell fallback. Cline uses its
+native SDK prompt/tools; equality concerns model, task and budgets, not
+identical schemas across intrinsically different harnesses.
 
-\subsection{Rejected changes and verifier instability are evidence too}
-The latest archived prompt experiment increased time, requests, tokens, and
-cost against its control and was reverted. It improved some observed test
-execution without improving the overall diagnostic trajectory.
+Input includes cache; output includes reasoning. Do not add either again.
+Preserve per-request usage, SDK aggregates, started-iteration counts and
+missing fields. Event \code{total*} counters are cumulative, not per-request
+amounts. Reconcile input/output/cost and report cache missingness separately.
+Reported cost is an SDK estimate, not an invoice. Keep failures and socket
+interruptions without replacement trials. Report preparation, runner,
+verification and outer agent wall time separately; parallel tool durations
+are not added as elapsed time. Keep original corpus quality scores, runtime
+status, admitted verification and independently audited task obligations
+as separate fields. A score of 100 alone is not audited acceptance.
 
-The archive also records a benchmark-title issue identifier leading through
-a web redirect to a later merged solution. Neutral benchmark titles and
-accurate final-response URLs were then corrected. These corrections followed
-the frozen campaign and must not be retroactively credited to its scores.
-An asynchronous Vue verifier also failed different checks on replay before
-passing the same captured patch; original scores were retained.
+% PILOT_RESULTS
+The model pilot is in progress. Final trial accounting, independent audit and
+decision will be inserted after all planned trials are retained.
 
-These findings favor transparent provenance audits and fixed versions over
-selecting only favorable reruns. The four later campaigns' 96 trials across
-12 distinct tasks must remain separate. General stable superiority over Cline
-remained unproven in the latest historical conclusion. \hist{1}, section 21.64.
-
-\section{Evidence assessment}
-\begin{longtable}{@{}p{0.23\linewidth}p{0.31\linewidth}p{0.38\linewidth}@{}}
-\toprule
-Claim & Evidence available & Assessment \\
-\midrule
-\endhead
-Observed symbol edits reject stale target bodies &
-Implementation and focused invariant tests &
-Implemented and tested in the covered cases; arbitrary language constructs
-remain outside this proof. \\
-Controlled multi-file edits recover safely &
-Pending journal, lock, rollback checks, recovery tests &
-Supported for cooperating harness operations; not global isolation against
-all host writers. \\
-Exit zero cannot fabricate passing tests &
-Check-observation logic and adversarial report tests &
-Implemented; model prose can still overstate an unknown result. Presentation
-must preserve the distinction. \\
-Finish proves the task's acceptance criteria &
-Free-text criteria and covered-check completion policy &
-Not established. Delivery acceptance is not a general functional proof. \\
-The four-authority planner is the current runtime &
-Core exports and historical architecture &
-Incorrect for the inspected Light path; reference contracts are not evidence
-of runtime wiring. \\
-Stable context always lowers token cost &
-Projection tests and selected historical diagnostics &
-Not established. Cache stability, content retention, and total trajectory
-length must be measured together. \\
-Semantic tools outperform Cline overall &
-Frozen comparisons and audited external tasks &
-Not demonstrated; the main frozen comparison has lower observed success. \\
-Project memory improves later tasks &
-Bounded retrieval and freshness checks &
-Implemented mechanism; longitudinal benefit unmeasured. \\
-\bottomrule
-\end{longtable}
-
-\section{Recommendations}
-\subsection{Priority 0: truthful validation and completion}
-First, document and expose the existing proof distinctions consistently:
-process exit, observed assertions, selected scope, freshness, admitted
-validation, and functional acceptance. Unknown evidence must remain unknown
-through the journal, notifications, UI, and final summaries.
-
-Next, make task effect intent explicit at the application boundary. Use
-\code{source_change} where an implementation task actually requires an effect,
-while preserving no-effect explanations and justified already-satisfied tasks.
-Do not infer a complicated acceptance contract from arbitrary text at finish.
-Any already-satisfied path needs an explicit explanation and relevant evidence.
-
-Finally, design proof admission for real test invocations. A proposed receipt
-should bind the selected task, invocation ID, source snapshot, relevant
-environment, executed counts, final process state, and scope. Prefer an
-isolated immutable source snapshot when claiming current freshness.
-Do not promote today's unknown observations merely by changing a label.
-
-Success criteria: silent exit-zero tests stay unverified; interrupted green
-output stays unverified; stale or wrong-package checks cannot verify changed
-code; known relevant code failures remain blocking; no unrelated check is
-invented during finish.
-
-\subsection{Priority 1: execution and recovery contracts}
-Retain the existing preimage and pending-journal protections. Clarify which
-callers participate in the lock, which effects are outside source tracking,
-and how callers respond to committed-but-unrecorded results.
-
-Prioritize process supervision and cancellation across inherited output
-descriptors, child processes, and managed executor replacement. Historical
-timeouts and orphan workers affected measured outcomes more directly than
-adding another semantic abstraction. Extend durable execution identity only
-if continuation across runner replacement is a supported product requirement;
-do not imply that in-memory handles already provide it.
-
-Success criteria: cancellation returns within a specified bound, child processes
-are handled under a declared policy, missing handles produce factual recovery
-guidance, and rollback never knowingly overwrites a newer user edit.
-
-\subsection{Priority 1: reproducible evidence for an open repository}
-Keep a small English documentation set, but make experimental conclusions
-reproducible. Preserve campaign IDs, frozen commit/bundle hashes, task lists,
-verifier identities, usage completeness, and analysis commands in a compact
-manifest. Large traces can live in a versioned artifact release or retained
-Git history; a summary should point to them and retain negative results.
-
-Before claiming a portable open-source harness, document its real local
-execution contract and optional managed-executor requirements. A local core
-path exists, but this study does not validate a clean end-to-end self-hosted
-product install. License and paid-service decisions are separate from these
-architectural guarantees.
-
-\subsection{Priority 2: deeper semantics where demand justifies it}
-Add compiler/LSP reference resolution through an optional capability port
-only for measured high-value cases, such as ambiguous cross-file references
-or safe renames. Preserve lexical and raw fallbacks with declared engine
-identity. A language server introduces lifecycle, configuration, environment,
-and stale-index problems of its own.
-
-Measure target ambiguity, wrong-scope candidates, patch rejection causes,
-and reread cost before investing in a project-wide graph. Keep the five
-core primitives unless a demonstrated workflow cannot be expressed clearly
-through them.
-
-\subsection{Refactoring boundaries worth preserving}
-The previous SDK module extraction helps navigation through the coordinator,
-but file-size reduction is not the harness study's main conclusion.
-The remaining useful boundaries are:
-
-\begin{itemize}
-\item model/SDK adaptation versus the Light operation port;
-\item workspace observation and target resolution versus edit preparation;
-\item recoverable source commit versus command/process supervision;
-\item raw check observation versus proof admission;
-\item proof admission versus completion policy;
-\item canonical transcript versus provider context projection.
-\end{itemize}
-
-Keep application services dependent on explicit ports and DTOs, with provider,
-filesystem, parser, and process details in adapters. Avoid a new monolithic
-semantic manager or a second competing evidence authority. A future
-promotion of core reference contracts into production requires explicit
-adapter wiring and migration tests, not just shared type names.
-
-\section{A proposed confirmation protocol}
-No new paid-model campaign was run for this study. The next comparison should
-be specified before results and should evaluate one frozen implementation.
-
-\begin{enumerate}
-\item Freeze runtime, prompt, schemas, model, effort, task set, dependency
-images, verifier, budgets, and both arms' versions. Declare per-tool timing
-policies and shared lifecycle components.
-\item Select tasks before execution across language, repository size,
-multi-file scope, environment dependency, and context length. Keep a genuine
-holdout separate from diagnostic tasks used to choose the version.
-\item Pair arms close in time, balance their order, and repeat by task.
-Treat each task and its repeated arms as one inference block.
-\item Retain failures, timeouts, missing usage, and original verifier scores.
-Predeclare replay rules for infrastructure and flaky-verifier investigation.
-\item Audit for solution leakage, including titles, issue identifiers,
-redirected pages, and retrieved reference patches. Separate nominal test
-success from audited independent success.
-\item Measure audited success first; then compare cost and time under a
-predeclared quality requirement. Record actual provider input/output/cache
-usage without counting cached or reasoning tokens twice.
-\item Report agent time, environment preparation, verification time, command
-waits, finish requests, mutation types, rejection reasons, and compaction.
-Do not add parallel tool durations as though they were elapsed time.
-\item Use paired intervals, state missingness, and keep complete-case resource
-analyses secondary. Do not pool versions or convert incomplete totals into
-exact savings.
-\end{enumerate}
-
-For a semantic claim, include tasks requiring cross-file resolution and
-measure whether structural operations actually occur. For a compaction claim,
-include tasks that actually compact. For memory, compare repeated task
-sequences with memory on and off under leakage controls. These are distinct
-experiments, not properties demonstrated by one overall benchmark score.
-
-\section{Engineering judgment}
-Retain the Light Semantic Harness as a small, inspectable control layer.
-Its strongest supported value is safer interaction with a changing worktree:
-observed targets, guarded effects, recoverable writes, and honest separation
-of execution from verification.
-
-Prioritize validation provenance, explicit task intent, and process supervision
-before adding a broad semantic graph or restoring the archived protocol.
-Publish performance claims only when a frozen comparison preserves audited
-quality and has complete resource accounting. The existing evidence supports
-specific mechanical improvements; it does not support a general claim that
-this harness is faster, cheaper, or more capable than Cline.
-
-\appendix
-\section{Source map}\label{sec:sources}
-Paths below are relative to the repository root. Symbols identify the inspected
-behavior; line numbers are intentionally omitted because the working tree
-contains a module-extraction refactor.
+\section{Reproduction and evidence map}
+Build core, model catalog, runtime (including prompt-resource copy) and
+benchmark runner with the pinned workspace toolchain. The worker's global
+pnpm was 11.19.0 and attempted an incompatible automatic install; the successful
+build used the already installed TypeScript compiler directly. No repository
+dependency or lockfile change was needed. Freeze the built reference checkout
+with \code{node tools/terminal_bench/corpus/light-study.mjs freeze baseline},
+then the intervention checkout with \code{freeze modified}; both snapshots
+share unchanged core/dependency packages. Use \code{run} once, then
+\code{analyze}. Direct replay uses \code{light-study-replay.mjs} with a compiled
+runtime directory and output JSON. Existing corpus preparation, scoring and
+headless CLI are reused. Runtime artifacts and raw events stay under
+\code{.blame/research}; compact results, hashes and review evidence accompany
+the protocol. Credentials are never archived.
 
 \begin{description}
-\item[\src{1} Interface and assembly]
-\code{packages/agent-runtime/src/harness/light-contracts.ts},
-\code{harness/light-tools.ts}, \code{harness/finish-task.ts},
-\code{cline-runtime-tools.ts}, and \code{cline-runtime.ts}, all under the same
-\code{packages/agent-runtime/src} prefix. Inspect \code{LightToolResult},
-\code{LightTaskContract}, \code{lightSemanticHarnessTools},
-\code{runtimeTools}, and session task-contract construction.
-
-\item[\src{2} Local and managed execution]
-Under \code{packages/agent-runtime/src/harness}:
-\code{light-workspace.ts}, \code{light-executor.ts},
-\code{semantic-harness-runner.ts}, and \code{environment-adapter.ts}.
-
-\item[\src{3} Syntax and search]
-Under the same harness directory:
-\code{code-intelligence.ts}, \code{light-capabilities.ts},
-\code{light-navigation.ts}, \code{lexical-search.ts}, and
-\code{content-validation.ts}. Inspect capability probes and
-\code{textSearchResult}'s references engine.
-
-\item[\src{4} Observation and target identity]
-\code{light-aliases.ts}, \code{read-coverage.ts}, and
-\code{light-workspace.ts}. Inspect \code{LightAliasRegistry},
-observed intervals, alias resolution, and \code{contextGeneration}.
-
-\item[\src{5} Edit effects and recovery]
-\code{light-edit.ts}, \code{light-patch.ts}, and \code{light-commit.ts}.
-Inspect \code{LightEditService} and \code{LightCommitService}, especially
-preparation, pending writes, owned rollback, and post-commit failure reporting.
-
-\item[\src{6} Source, environment, and execution]
-\code{workspace-files.ts}, \code{workspace-revisions.ts},
-\code{light-task-runner.ts}, \code{workspace-command-process.ts},
-\code{command-policy.ts}, \code{command-changes.ts}, and
-\code{task-catalog.ts}.
-
-\item[\src{7} Validation facts]
-\code{session-journal.ts}, \code{check-observation.ts},
-\code{managed-test-report.ts}, \code{test-report.ts}, and
-\code{validation-scope.ts}. Inspect \code{JournalValidation},
-\code{observeCheck}, and \code{LightTaskRunner.recordedResult}.
-
-\item[\src{8} Completion]
-\code{light-finish-service.ts}, \code{light-completion.ts}, and
-\code{run-lifecycle.ts}. Inspect \code{validationInputs},
-\code{hasPassingValidation}, \code{completionDecision}, and
-\code{assertNoFailedValidation}.
-
-\item[\src{9} Provider context]
-Under \code{packages/agent-runtime/src}:
-\code{context-projection.ts}, \code{read-overlap-projection.ts},
-\code{provider-schema-compatibility.ts}, \code{image-context.ts}, and
-\code{image-compaction.ts}. Inspect the stable message builder and Responses
-function strictness handling.
-
-\item[\src{10} Memory]
-\code{packages/agent-runtime/src/harness/project-memory.ts} and completion
-memory construction in \code{light-finish-service.ts}.
-
-\item[\src{11} Core reference contracts]
-Under \code{packages/harness-core/src}:
-\code{authorities.ts}, \code{evidence-planner.ts}, \code{result.ts},
-\code{completion.ts}, \code{transaction.ts}, and \code{lifecycle.ts}.
-Runtime imports, not exports alone, determine which mechanisms are integrated.
-\end{description}
-
-\section{Historical evidence map}
-These documents were removed from the working-tree documentation cleanup,
-but are recoverable at the base commit
-\code{8a6ce6a5a6dc51d1b340c8360234fb8f9add0068}.
-For example, run \code{git show} with that commit, a colon, and the path below.
-The recovered study and reports include additional artifact and bundle
-provenance; not every referenced local trace is necessarily tracked in Git.
-
-\begin{description}
-\item[\hist{1} Historical study]
-\code{docs/Etude-harness-agentique.md}.
-Relevant sections: 21.30 (Light design), 21.46 and 21.58 (corrections),
-21.56 (stable context and optionality), 21.57 (global comparison),
-21.62--21.64 (finish, leakage, rejected prompt, verifier variability).
-
-\item[\hist{2} Frozen global measurement]
-\code{docs/harness-global-measurement-2026-09-06.md}.
-The report records the 108-trial protocol, complete quality results,
-partial resource accounting, intervals, and execution diagnostics.
-
-\item[\hist{3} External applications]
-\filepath{docs/benchmarks/harness-confirmation-2026-09-08/external-app/analysis.json}.
-Use its summary and audited comparisons, including incomplete control usage.
-
-\item[\hist{4} Finish policy comparison]
+\item[Current sources] Under \code{packages/agent-runtime/src/harness}:
+\code{light-contracts.ts}, \code{light-tools.ts}, \code{light-workspace.ts},
+\code{light-navigation.ts}, \code{light-aliases.ts}, \code{read-coverage.ts},
+\code{light-edit.ts}, \code{light-patch.ts}, \code{light-commit.ts},
+\code{task-catalog.ts}, \code{light-task-runner.ts}, \code{session-journal.ts},
+\code{check-observation.ts}, \code{managed-test-report.ts},
+\code{workspace-revisions.ts}, \code{workspace-command-process.ts},
+\code{command-policy.ts}, \code{light-finish-service.ts} and
+\code{project-task-arguments.test.ts}. Assembly/default contract are in
+\code{cline-runtime.ts}; stable context and optionality are in
+\code{context-projection.ts} and \code{provider-schema-compatibility.ts}.
+\item[Historical global] At \code{8a6ce6a5}:
+\filepath{docs/harness-global-measurement-2026-09-06.md} and
+\filepath{docs/benchmarks/harness-global-2026-09-06/trials.csv}.
+\item[Historical external] At the same commit, under
+\filepath{docs/benchmarks/harness-confirmation-2026-09-08/external-app/}:
+\code{report.md}, \code{mechanical-diagnoses.json}, \code{trials.csv},
+\code{adjudication.json} and \code{mui-first-finish-replay.json}.
+\item[Other historical campaigns] \code{docs/Etude-harness-agentique.md},
+sections 21.56--21.64, and
 \filepath{docs/benchmarks/harness-confirmation-2026-09-08/finish-intent-comparison/analysis.json}.
-Use its separate before, final, and Cline summaries; do not pool this campaign
-with the external-application comparison.
+Recover with \code{git show <commit>:<path>}; local trace paths in those
+reports do not imply that their raw traces are tracked.
 \end{description}
-
-\section{Validation performed for this study}
-The seven runtime test files were \code{context-projection.test.ts} and,
-under \code{src/harness}, \code{light-invariants.test.ts},
-\code{light-recovery.test.ts}, \code{light-patch-effects.test.ts},
-\code{frontier.test.ts}, \code{light-executor.test.ts}, and
-\code{light-search.test.ts}. After compiling the runtime, their compiled
-JavaScript was run with Node's test runner at concurrency one.
-All 112 tests passed. The core compiler and \code{dist/*.test.js} supplied
-13 additional passing contract tests.
-
-The cases cover stale-body rejection, unchanged-target relocation,
-unobserved-body refusal, declaration boundaries, Unicode and line endings,
-batch recovery, cooperating readers, concurrent-edit preservation,
-receipt failure after a commit, wrong-package checks, interrupted or silent
-tests, old reports, finish without an invented build, executor transport,
-bounded lexical results, and stable provider projection.
-
-These focused checks do not rerun the whole application, resolve previously
-reported repository-wide baseline failures, or constitute fresh model
-benchmarking. They do not establish complete test-proof admission, arbitrary
-acceptance validation, or noncooperating filesystem isolation.
 \end{document}
