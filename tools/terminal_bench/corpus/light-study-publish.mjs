@@ -43,6 +43,8 @@ for (const arm of ["baseline", "modified", "cline"]) {
     runtimeSucceeded: rows.filter((r) => r.status === "succeeded").length,
     runtimeFailed: rows.filter((r) => r.status === "failed").length,
     runtimeTimedOut: rows.filter((r) => r.status === "timed_out").length,
+    outerProcessWatchdog: rows.filter((r) => r.exit?.watchdog).length,
+    runtimeSucceededBeforeOuterWatchdog: rows.filter((r) => r.status === "succeeded" && r.exit?.watchdog).length,
     tokensCostReconciled: rows.filter((r) => r.usage.tokensCostReconciled)
       .length,
     allUsageReconciled: rows.filter((r) => r.usage.complete).length,
@@ -211,6 +213,8 @@ function conditionResources(rows) {
     tokensCostReconciled: rows.filter((row) => row.usage.tokensCostReconciled)
       .length,
     allUsageReconciled: rows.filter((row) => row.usage.complete).length,
+    outerProcessWatchdog: rows.filter((row) => row.exit?.watchdog).length,
+    runtimeSucceededBeforeOuterWatchdog: rows.filter((row) => row.status === "succeeded" && row.exit?.watchdog).length,
     summedRunnerSeconds:
       rows.reduce((sum, row) => sum + (row.durationMs ?? 0), 0) / 1000,
     outerAgentSeconds:
