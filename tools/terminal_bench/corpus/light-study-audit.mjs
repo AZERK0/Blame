@@ -2,6 +2,9 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
+const corpusTasks = new Set(JSON.parse(await readFile(new URL("./manifest.json", import.meta.url), "utf8"))
+  .scenarios.map((scenario) => scenario.id));
+
 const campaign = resolve(process.argv[2] ?? ".blame/research/pilot");
 const analysis = JSON.parse(
   await readFile(join(campaign, "analysis.json"), "utf8"),
@@ -62,15 +65,7 @@ for (const row of analysis.rows) {
     evidence = [between, final]
       .filter(Boolean)
       .map((c) => ({ toolIndex: c.index, command: c.command }));
-  } else if (
-    [
-      "csv-parser",
-      "window-boundaries",
-      "slug-contract",
-      "stable-pagination",
-      "webhook-idempotency",
-    ].includes(row.id)
-  ) {
+  } else if (corpusTasks.has(row.id)) {
     const edits = mutations;
     const final = commands.find(
       (c) =>

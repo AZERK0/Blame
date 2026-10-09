@@ -20,8 +20,10 @@ resolution or general acceptance proofs. Historical performance remains
 mixed. This follow-up verifies historical diagnoses against current code,
 adds bounded arguments to catalogued test tasks, and runs a separately
 registered three-arm pilot. A further reliability experiment isolates
-bounded recovery of noninteractive provider interruptions. Mechanical evidence and model outcomes are
-reported separately; neither constitutes a global superiority claim.
+bounded recovery of noninteractive provider interruptions. In a 48-trial
+panel with 50\% controlled outages, expanded audited success is 15/16 modified,
+8/16 reference and 7/16 Cline. Ordinary quality remains uncertain; a separate
+complete-corpus comparison is registered. No population superiority is claimed.
 \end{abstract}
 
 \section{Method and evidence boundaries}
@@ -434,7 +436,7 @@ Two repetitions, three arms and two conditions give 48 trials, at most
 816 iterations and 16,560 agent seconds. The configured model/effort,
 SDK, fixture, prompts, schemas, lockfile and compiled versions are recorded
 before execution; no replacement trials or solution retrieval are allowed.
-The per-trial SDK estimated-cost limit is USD 0.05 and the panel stops starting
+The per-trial production estimated-cost guard is USD 0.05 and the panel stops starting
 trials at USD 2.40 observed reported cost. These post-request estimates do not
 constitute invoice caps, particularly when usage is interrupted.
 
@@ -455,6 +457,82 @@ outage frequency or population performance. Compare resources only at
 comparable audited quality. Retain the mechanism only if recovery improves
 the interrupted pairs with no observed ordinary quality regression, and
 inspect completed tool inputs/diffs for lost or repeated effects.
+
+\subsection{New measured results and adverse evidence}
+All 48 planned trials completed; none was replaced or dropped. The supervising
+research agent inspected every recorded input and full source change separately
+from the task agents, without blinding. Original corpus maximum score (100),
+functional checks, registered build obligations and expanded instruction audit
+remain different outcomes. ``Official'' in these artifacts means the corpus
+score, not an external Terminal-Bench certification.
+\begin{center}\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule & Reference & Modified & Cline SDK \\
+\midrule
+Expanded audit, ordinary & 8/8 & 7/8 & 7/8 \\
+Expanded audit, interrupted & 0/8 & 8/8 & 0/8 \\
+Expanded audit, fixed combined panel & 8/16 & 15/16 & 7/16 \\
+Registered functional/build obligations & 8/16 & 16/16 & 8/16 \\
+Original score 100 & 8/16 & 16/16 & 8/16 \\
+Original functional checks & 12/16 & 16/16 & 14/16 \\
+\bottomrule
+\end{tabular}\end{center}
+The combined observed gain over reference is seven audited successes
+(43.75 percentage points), entirely driven by interruption recovery. All eight
+modified interrupted runs restart once within their original iteration limits;
+four retain an already-applied edit, with no completed edit repeated in the
+recorded inputs. All ordinary runs have zero recovery activations.
+One modified pagination run includes a real HTTP 503 between two injected cuts,
+rather than three injected cuts; it is retained as a protocol deviation.
+The other seven modified interrupted runs all pass with exactly three cuts.
+One native window run also attempts a nonexistent patch path before failure:
+not every control failure is explained solely by the outage.
+
+Source inspection selected an additional webhook interleaving after outcomes:
+old handler pending, clear, new handler pending, old handler rejects, duplicate
+arrives. Uniform replay of all twelve webhook solutions finds duplicate handler
+execution in the first ordinary modified and Cline solutions, despite score 100
+and successful builds. This exploratory replay reduces the expanded audit
+without rewriting the registered endpoint. Light's admitted fresh build still
+reports \code{verified} on the affected modified solution; that proves the
+admitted validation obligation, not arbitrary functional acceptance. Wrong
+\code{replace_body} operation kinds and a mistaken patch \code{target} also
+remain model/interface friction, usually corrected later in these trials.
+
+Ordinary runner seconds sum to 227.977/206.435/208.939 for reference/modified/Cline;
+observed input plus output tokens are 210,844/215,797/186,046 and estimated USD
+0.035995/0.03738936/0.03959756. Modified's lower time versus reference accompanies
+lower audited quality, so it is not an efficiency gain. Cache exposure and
+ordinary model variation also prevent attributing the small cost difference
+versus Cline to recovery. Interrupted usage is incomplete in all 24 trials:
+71 actual upstream bodies are discarded, with unknown charges. The whole
+panel's observed USD 0.18105876 is a lower bound, below the configured observed
+stop; the largest observed trial is USD 0.00902048. Request/cache fields remain
+incomplete even in the 24 ordinary trials whose observable tokens/cost reconcile.
+
+Decision: deepen H3, retaining its bounded implementation for review and its
+demonstrated outage mechanism. The expanded ordinary no-regression gate is not
+established; ordinary provider inputs are unchanged and recovery is inactive,
+so the one lost clean success is not evidence of a causal recovery defect.
+Prioritize acceptance counterexamples beyond build admission, followed by
+compaction/late-stream/side-effect recovery and a broader ordinary comparison.
+Do not claim ordinary global savings from the artificial 50\% mixture.
+Raw evidence, independent decisions, deviations and iteration/effect inspection
+are in \code{results.json}, \code{adjudication.json}, \code{webhook-replay.json}
+and \code{mechanism-audit.json} beside the frozen protocol.
+
+\subsection{Registered ordinary complete-corpus follow-up}
+The separate protocol at
+\filepath{docs/experiments/light-harness-global-2026-10-09/}
+fixes all 25 existing corpus tasks, two repetitions and the same three compiled
+arms: 150 ordinary trials, at most 2,556 iterations and 55,080 agent seconds.
+Six already inspected tasks remain diagnostics; the other nineteen are
+confirmation tasks, not historically unseen holdouts. The production estimated
+cost guard is USD 0.05 per trial and USD 1.80 observed panel stop; missing charges
+remain missing. No runtime change or synthetic fault is added. The previous
+webhook counterexample applies uniformly. The campaign is running; its outcomes
+are not pooled with the outage panel. Without recovery activation, ordinary arm
+variation cannot establish a causal H3 efficiency gain.
 
 \section{Reproduction and evidence map}
 Build core, model catalog, runtime (including prompt-resource copy) and
