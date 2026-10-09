@@ -21,6 +21,7 @@ for (const row of analysis.rows) {
   if (!decision || decision.review !== "reviewed")
     throw new Error(`Unreviewed ${name}`);
   row.auditedSuccess = decision.independentSuccess;
+  row.officialSuccess = row.qualityScore === 100;
 }
 const summary = {
   definition:
@@ -32,6 +33,7 @@ for (const arm of ["baseline", "modified", "cline"]) {
   summary.arms[arm] = {
     trials: rows.length,
     functionalSuccess: rows.filter((r) => r.functionalSuccess).length,
+    officialSuccess: rows.filter((r) => r.officialSuccess).length,
     auditedSuccess: rows.filter((r) => r.auditedSuccess).length,
     runtimeSucceeded: rows.filter((r) => r.status === "succeeded").length,
     runtimeFailed: rows.filter((r) => r.status === "failed").length,
@@ -57,6 +59,23 @@ for (const arm of ["baseline", "modified", "cline"]) {
           auditedSuccess: rows.filter(
             (r) => r.partition === partition && r.auditedSuccess,
           ).length,
+          officialSuccess: rows.filter(
+            (r) => r.condition === condition && r.officialSuccess,
+          ).length,
+          functionalSuccess: rows.filter(
+            (r) => r.condition === condition && r.functionalSuccess,
+          ).length,
+          tokensCostReconciled: rows.filter(
+            (r) => r.condition === condition && r.usage.tokensCostReconciled,
+          ).length,
+          summedRunnerSeconds:
+            rows
+              .filter((r) => r.condition === condition)
+              .reduce((sum, r) => sum + (r.durationMs ?? 0), 0) / 1000,
+          outerAgentSeconds:
+            rows
+              .filter((r) => r.condition === condition)
+              .reduce((sum, r) => sum + r.outerAgentMs, 0) / 1000,
         },
       ]),
     ),
@@ -89,13 +108,12 @@ for (const arm of ["baseline", "modified", "cline"]) {
   };
   const data = summary.arms[arm];
   for (const field of ["input", "output", "cacheRead", "cacheWrite", "cost"]) {
-    data[field] = {
-      observed: rows.reduce((s, r) => s + (r.usage[field] ?? 0), 0),
-      missingAggregates: rows.filter((r) => r.usage[field] === null).length,
-      incompleteTrialAccounting: rows.filter(
-        (r) => !r.usage.tokensCostReconciled,
-      ).length,
-    };
+    data[field] = usageTotal(rows, field);
+    for (const [condition, stats] of Object.entries(data.conditions ?? {}))
+      stats[field] = usageTotal(
+        rows.filter((r) => r.condition === condition),
+        field,
+      );
   }
 }
 await mkdir(join(destination, "traces"), { recursive: true });
@@ -165,3 +183,12 @@ for (const [name, value] of Object.entries({
     JSON.stringify(value, null, 2) + "\n",
   );
 console.log(JSON.stringify(summary));
+
+function usageTotal(rows, field) {
+  return {
+    observed: rows.reduce((s, r) => s + (r.usage[field] ?? 0), 0),
+    missingAggregates: rows.filter((r) => r.usage[field] === null).length,
+    incompleteTrialAccounting: rows.filter((r) => !r.usage.tokensCostReconciled)
+      .length,
+  };
+}
