@@ -19,7 +19,8 @@ edits and runtime-owned completion. It does not provide compiler reference
 resolution or general acceptance proofs. Historical performance remains
 mixed. This follow-up verifies historical diagnoses against current code,
 adds bounded arguments to catalogued test tasks, and runs a separately
-registered three-arm pilot. Mechanical evidence and model outcomes are
+registered three-arm pilot. A further reliability experiment isolates
+bounded recovery of noninteractive provider interruptions. Mechanical evidence and model outcomes are
 reported separately; neither constitutes a global superiority claim.
 \end{abstract}
 
@@ -377,6 +378,84 @@ remain lower priorities until a concrete current failure and representative
 confirmation tasks justify them. No longitudinal memory, cross-platform,
 large external-repository or new Terminal-Bench confirmation was executed.
 
+\section{Follow-up: noninteractive transport recovery}
+\subsection{H3 and implemented mechanism}
+The follow-up reference is \code{c103d04b}, retaining the argv improvement;
+the isolated intervention is \code{23b454d5}. Do not pool it with the first
+pilot. The observed socket failure motivated H3: a bounded recovery could
+improve audited delivery after transient transport failure without changing
+ordinary model inputs, tool schemas or acceptance admission.
+
+The current runtime already recovers one recognized interruption in an
+interactive session. Its original noninteractive path deliberately stopped
+instead: SDK 0.0.82 destroys that session when its run ends, so calling
+\code{send} on it cannot implement recovery. Light automatic development
+now restarts the same session from canonical persisted messages and compaction
+state, with the original config and a recovery instruction. It subtracts
+observed consumed iterations from the original maximum and offsets subsequent
+iteration events; the benchmark's original wall deadline is retained.
+Initial attachments are not emitted again. Native Cline retains its existing
+behavior, as do non-Light sessions without \code{finish_task}.
+
+Recovery is refused for permanent provider errors, unknown/exhausted iteration
+budgets, cancellation, active tools, submitted completion and a second
+interruption. Every observed completed tool ID must have its result in the
+persisted history; missing history or a missing result prevents a model call.
+Cancellation is checked again after asynchronous history loading. This guards
+against restarting with unknown prior effects; it does not make arbitrary
+external commands idempotent or prove that the model will never repeat an
+action. The existing journal, command and edit policies remain in force.
+
+Ten added runtime tests exercise history/effect retention, remaining budget,
+event numbering, single recovery, permanent errors, native-control exclusion,
+active tools, cancellation during history loading and missing receipts.
+The targeted runtime/runner selection passes 102/102. The entire runtime
+package selection passes 671 tests with two existing environment/platform
+skips; the previously reproduced formatter failure is excluded separately.
+Three accounting/injection tests pass; compilation and changed-file ESLint pass.
+
+\subsection{Diagnostic preflights and fixed confirmation panel}
+Real-SDK preflights on the known freshness task found no treatment activation
+from either a single before-body cut or a 64-byte-prefix cut: both controls
+and modified completed. Source inspection of \code{@cline/llms} establishes
+three internal attempts for classified network interruption before converted
+model output. A separate three-attempt outage burst then produced failure
+in reference and Cline, and one successful restart in modified. All nine
+preflight trials remain diagnostics and are kept separately from confirmation.
+The fault protocol was amended before any confirmation trial, retaining its
+task selection, repetitions, arms and budgets. See \code{preflight-amendment.json}.
+
+The frozen confirmation protocol is under
+\filepath{docs/experiments/light-harness-recovery-2026-10-09/}.
+Four existing corpus tasks, not used to select H3, are fixed:
+\code{window-boundaries}, \code{slug-contract}, \code{stable-pagination}
+and \code{webhook-idempotency}. They are not claimed historically unseen.
+Two repetitions, three arms and two conditions give 48 trials, at most
+816 iterations and 16,560 agent seconds. The configured model/effort,
+SDK, fixture, prompts, schemas, lockfile and compiled versions are recorded
+before execution; no replacement trials or solution retrieval are allowed.
+The per-trial SDK estimated-cost limit is USD 0.05 and the panel stops starting
+trials at USD 2.40 observed reported cost. These post-request estimates do not
+constitute invoice caps, particularly when usage is interrupted.
+
+The controlled condition interrupts three consecutive actual upstream response
+bodies beginning with model request three, then restores healthy transport.
+It exhausts the SDK's pre-output retry policy and tests the additional runtime
+mechanism. Credential/auth calls are excluded by model-input matching.
+The discarded upstream bodies may have incurred unreported usage; preserve
+that missingness even when event and SDK counters reconcile. Ordinary runs
+are reported separately; their reconciliation is between observable SDK events
+and aggregates, not an invoice audit or proof that hidden provider retries
+incurred no charge. Cache missingness remains independent.
+
+Primary outcomes are audited obligations in each condition, with runtime
+termination, scorer results and admitted verification separate. The combined
+panel has a fixed 50\% interruption weight; it is not an estimate of ordinary
+outage frequency or population performance. Compare resources only at
+comparable audited quality. Retain the mechanism only if recovery improves
+the interrupted pairs with no observed ordinary quality regression, and
+inspect completed tool inputs/diffs for lost or repeated effects.
+
 \section{Reproduction and evidence map}
 Build core, model catalog, runtime (including prompt-resource copy) and
 benchmark runner with the pinned workspace toolchain. The worker's global
@@ -394,6 +473,11 @@ headless CLI are reused. Runtime artifacts and raw events stay under
 \code{.blame/research}; compact results, hashes and review evidence accompany
 the protocol as \code{results.json}, \code{summary.json},
 \code{adjudication.json}, \code{tool-ledger.json} and \code{inventory.json}. Credentials are never archived.
+The follow-up uses the same driver with \code{BLAME_STUDY_DIRECTORY} pointing
+to its registered directory and \code{BLAME_STUDY_WORK_DIRECTORY} pointing
+to a new workspace-artifact root. Freeze from each built checkout before
+\code{run}. Its experimental \code{light-study-fault.mjs} preload is used
+only in controlled trials, never imported by production.
 
 \begin{description}
 \item[Current sources] Under \code{packages/agent-runtime/src/harness}:
