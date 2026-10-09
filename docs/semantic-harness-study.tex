@@ -23,8 +23,11 @@ registered three-arm pilot. A further reliability experiment isolates
 bounded recovery of noninteractive provider interruptions. In a 48-trial
 panel with 50\% controlled outages, webhook-expanded audited success is 15/16
 modified, 8/16 reference and 7/16 Cline; a later chronological-format sensitivity
-reduces these to 13/16, 7/16 and 6/16. Ordinary quality remains uncertain; a separate
-complete-corpus comparison is registered. No population superiority is claimed.
+reduces these to 13/16, 7/16 and 6/16. A separate 150-trial ordinary internal
+corpus gives 48/50 audited completed tasks in both Light arms versus 41/50
+Cline. Recovery never activates there; modified Light uses 31\% more total
+tokens on matched completed successes versus Cline. No population superiority
+or causal ordinary H3 efficiency gain is claimed.
 \end{abstract}
 
 \section{Method and evidence boundaries}
@@ -247,8 +250,12 @@ Cause: useful passing observations remain unknown; source equality does not
 identify the execution environment or test selection. Compare the current
 conservative policy with one isolated provenance/admission change, first in
 replays with stale source, changed dependencies, interrupted output and scoped
-checks. Measure false verified and false unknown decisions, then audited task
-success. Risk: false assurance from external writers, missing dependencies or
+checks. The ordinary motion trial additionally motivates explicit requested
+scope and an honest blocked/unverified completion path: a known failing
+unrelated check must remain visible, without forcing repeated attempts or
+turning into a verified success. Measure false verified/unknown decisions,
+completion refusals and audited completed-task success. Risk: false assurance
+from external writers, missing dependencies or
 unproven scope. Do not restore the archived obligation solver or infer user
 acceptance from a test count. H2 is not implemented in this campaign.
 
@@ -537,7 +544,7 @@ Raw evidence, independent decisions, deviations and iteration/effect inspection
 are in \code{results.json}, \code{adjudication.json}, \code{webhook-replay.json}
 and \code{mechanism-audit.json} beside the frozen protocol.
 
-\subsection{Registered ordinary complete-corpus follow-up}
+\subsection{New ordinary complete-corpus measurements}
 The separate protocol at
 \filepath{docs/experiments/light-harness-global-2026-10-09/}
 fixes all 25 existing corpus tasks, two repetitions and the same three compiled
@@ -546,9 +553,105 @@ Six already inspected tasks remain diagnostics; the other nineteen are
 confirmation tasks, not historically unseen holdouts. The production estimated
 cost guard is USD 0.05 per trial and USD 1.80 observed panel stop; missing charges
 remain missing. No runtime change or synthetic fault is added. The previous
-webhook counterexample applies uniformly. The campaign is running; its outcomes
-are not pooled with the outage panel. Without recovery activation, ordinary arm
-variation cannot establish a causal H3 efficiency gain.
+webhook counterexample applies uniformly. All 150 trials completed without
+replacement. Every effective tool input and source change was independently
+reviewed without blinding; raw lifecycle inspection found no additional orphan
+or changed-input calls beyond the reviewed ledger. All 600 compressed raw
+artifacts pass byte-count/SHA-256 checks. These internal TS/TSX/CSS/Prisma tasks
+do not replicate the historical external campaign and are not pooled with it
+or the outage panel. SDK 0.0.82 includes the repository patch, unlike the
+historical 0.0.81 control.
+
+\begin{center}\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule & Reference & Modified & Cline SDK \\
+\midrule
+Original functional checks & 50/50 & 50/50 & 47/50 \\
+Original score 100 & 50/50 & 49/50 & 41/50 \\
+Registered functional/build obligations & 50/50 & 50/50 & 41/50 \\
+Expanded audited instruction criteria & 48/50 & 49/50 & 41/50 \\
+Audited criteria AND runtime completion & 48/50 & 48/50 & 41/50 \\
+Diagnostic completed successes & 10/12 & 11/12 & 9/12 \\
+Confirmation completed successes & 38/38 & 37/38 & 32/38 \\
+Runtime timeouts / failures & 0 / 0 & 0 / 1 & 7 / 0 \\
+\bottomrule
+\end{tabular}\end{center}
+The observed whole-panel completed-success gain of each Light arm over native
+is seven trials (14 percentage points). It remains five with undefined optional
+fields allowed, or six when that convention also assumes normalized timestamps.
+All four convention combinations are in \code{criterion-sensitivity.json}.
+The Light arms tie on completed success; modified's single ordinary finish
+failure prevents an observed no-regression conclusion on confirmation tasks.
+No automatic recovery activates in any ordinary arm, so none of these ordinary
+differences identifies an effect of H3.
+
+Adverse evidence remains explicit. Seven native runs stop emitting recorded
+progress until their fixed deadline, with no final usage or terminal event;
+six have correct source but omit requested post-edit validation, and one has
+no edits. There is no HTTP wire observation and no proved thrown transport
+exception: provider versus SDK cause is unresolved. Modified motion has correct
+CSS and passing root checks, but unnecessarily invokes the fixture's unrelated
+\code{corpus-web:build} (exit 9), receives four finish refusals and exhausts its
+iterations. A no-model replay reproduces this sticky failure in both frozen
+versions with identical finish-service hashes. Criteria satisfaction, admission
+and runtime completion remain distinct; no failed suite is silently ignored.
+
+The known webhook clear/reject interleaving fails one reference solution.
+The prospective analogous cache replay passes all six cache solutions.
+The later uniform pagination replay fails both second-repetition Light
+solutions on valid different-offset/equal-instant ISO timestamps. Uniform
+reducer replay passes value-level behavior in all six solutions, while both
+native solutions retain optional properties with undefined values and fail
+the original physical-absence convention. Original scores remain unchanged.
+One audit extractor initially misses a command-created file; the recorded
+\code{run_task} source-change paths and subsequent build justify correcting
+that candidate. The original extraction and correction are retained separately;
+the other 149 candidates are unchanged. No task-agent feedback or source repair
+is performed.
+
+Whole-panel runner seconds are 1,500.242/1,355.812/3,563.636;
+observed input plus output tokens are 1,494,693/1,500,726/1,015,829 and estimated
+USD 0.24306260/0.23178524/0.23785912, in reference/modified/native order.
+Seven native token/cost records are incomplete; cache/request accounting is
+incomplete in all 150. The observed panel USD 0.71270696 and maximum trial
+USD 0.01947352 stay below the configured observed guards, not invoice caps.
+SDK tariffs per million tokens are input 0.20, output 1.20, cached read 0.02
+and cache write 0.25; cached input is already included in input. Reported output
+includes reasoning; no additional reasoning bucket is charged here.
+
+Comparable-quality resource analysis additionally requires successful runtime
+completion in both members of each task/repetition pair. This qualification
+was added after the motion refusal; the original criteria-only analysis is
+preserved alongside it. The exploratory 95\% intervals resample whole task
+clusters (two repetitions together), with 10,000 draws and fixed seed 20261009.
+All comparisons, partitions and resource fields remain published.
+\begin{center}\small
+\begin{tabular}{@{}lrccc@{}}
+\toprule Left / right & Pairs & Tokens ratio [95\%] & SDK USD ratio [95\%] & Seconds ratio [95\%] \\
+\midrule
+Modified / reference & 47 & 0.981 [0.897,1.077] & 0.924 [0.851,1.016] & 0.857 [0.734,1.007] \\
+Modified / native & 40 & 1.311 [1.030,1.669] & 0.904 [0.777,1.066] & 0.882 [0.746,1.033] \\
+Reference / native & 39 & 1.313 [1.019,1.678] & 0.968 [0.831,1.141] & 1.046 [0.816,1.343] \\
+\bottomrule
+\end{tabular}\end{center}
+Light's higher matched total tokens contradict a general token-saving claim.
+Lower modified cost/time estimates have intervals containing equality; lower
+output tokens alone do not establish overall efficiency. Failure-inclusive
+duration improves against native largely because of its seven timeouts, rather
+than proving faster execution at equal success. Cache, provider latency/retries,
+trial-specific paths and the served revision behind the pinned model alias
+remain uncontrolled. This conditional analysis is not a population-equivalence
+or invoice certificate.
+
+Decision: retain bounded recovery for its demonstrated interruption mechanism;
+ordinary superiority of the change is unestablished. Next prioritize one H2
+requested-scope/admission or honest blocked-completion intervention, then H3
+inactivity/compaction/late-effect supervision, each on separately registered
+confirmation tasks with three arms. Keep known failures visible and prevent
+repeated effects. H1 filter ergonomics needs new multi-runner confirmation;
+compiler references and read/memory ablations remain deferred. Evidence and
+limits are in \code{checks.json}, \code{completed-paired-comparison.json},
+\code{criterion-sensitivity.json} and \code{reproduction-limits.json}.
 
 \section{Reproduction and evidence map}
 Build core, model catalog, runtime (including prompt-resource copy) and
