@@ -144,6 +144,8 @@ function commandFacts(tool) {
   return [];
 }
 function mutationPaths(tool) {
+  if (tool.tool === "run_task" && tool.output?.status === "ok" && tool.output.data?.changed)
+    return tool.output.data.paths ?? [];
   if (
     tool.tool === "edit_code" &&
     tool.output?.status === "ok" &&
