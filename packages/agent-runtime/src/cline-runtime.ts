@@ -32,6 +32,8 @@ import type {
   ClineCoreStartInput,
   OAuthCredentials as ClineOAuthCredentials,
   CoreSessionEvent,
+  ContentBlock,
+  Message,
   OAuthLoginCallbacks,
   OAuthPrompt,
   OAuthProviderInterface,
@@ -388,6 +390,7 @@ type SessionInactivityWatchdog = {
 type SessionTransportRecovery = {
   attempts: number;
   executionId: string;
+  iterationOffset?: number;
   message: string;
 };
 
@@ -426,6 +429,7 @@ export class BlameAgentRuntime {
   private sessionExecutionIds = new Map<string, string>();
   private sessionToolInputs = new Map<string, unknown>();
   private sessionToolSequences = new Map<string, number>();
+  private sessionCompletedToolIds = new Map<string, Set<string>>();
   private sessionSubmittedSummaries = new Map<
     string,
     LightCompletionNotification
@@ -2735,6 +2739,11 @@ export class BlameAgentRuntime {
           );
           return;
         }
+        if (toolActivity?.phase === "finished" && toolActivity.toolCallId) {
+          const completed = this.sessionCompletedToolIds.get(sessionId) ?? new Set<string>();
+          completed.add(toolActivity.toolCallId);
+          this.sessionCompletedToolIds.set(sessionId, completed);
+        }
         this.agentTelemetry.observeCoreEvent(sessionId, payload);
         if (this.shouldSkipFallbackChunk(sessionId, payload)) return;
         const spawnAgentPhase = clineSessionSpawnAgentPhase(payload);
@@ -2853,8 +2862,18 @@ export class BlameAgentRuntime {
     error: unknown,
   ) {
     if (!retryableModelTransportFailure(error)) return false;
-    if (this.sessionStartInputs.get(sessionId)?.interactive !== true)
-      return false;
+    const start = this.sessionStartInputs.get(sessionId);
+    if (start?.interactive !== true) {
+      // A noninteractive SDK run is destroyed when it ends. Only Light
+      // development runs can restart their persisted conversation, and only
+      // when the observed iteration count leaves an explicit remaining budget.
+      const consumed = this.sessionIterations.get(sessionId);
+      const maximum = start?.config.maxIterations;
+      if (start?.interactive !== false || this.clineDefaultSessions.has(sessionId) ||
+        !start.config.extraTools?.some((tool: AgentTool) => tool.name === "finish_task") ||
+        consumed === undefined || consumed < 1 || maximum === undefined ||
+        consumed >= maximum) return false;
+    }
     if (!this.runLifecycles.canInvoke(sessionId, executionId)) return false;
     if (this.sessionSubmittedSummaries.has(sessionId)) return false;
     if ((this.sessionActiveTools.get(sessionId)?.size ?? 0) > 0) return false;
@@ -2865,7 +2884,7 @@ export class BlameAgentRuntime {
     );
   }
 
-  private resumeTransportInterruption(
+  private async resumeTransportInterruption(
     cline: ClineCore,
     sessionId: string,
     executionId: string,
@@ -2878,6 +2897,29 @@ export class BlameAgentRuntime {
       executionId,
       message: current?.message ?? "Provider stream interrupted",
     });
+    const start = this.sessionStartInputs.get(sessionId);
+    let restart: ClineCoreStartInput | undefined;
+    if (start?.interactive === false) {
+      const consumed = this.sessionIterations.get(sessionId)!;
+      const [initialMessages, initialCompactionState] = await Promise.all([
+        cline.readMessages(sessionId), cline.readSessionCompactionState(sessionId),
+      ]);
+      if (!this.runLifecycles.canInvoke(sessionId, executionId)) return;
+      if (!initialMessages.length)
+        throw new Error("Provider recovery requires persisted conversation history.");
+      const persistedResults = new Set<string>(initialMessages.flatMap((message: Message) =>
+        Array.isArray(message.content) ? message.content.flatMap((block: ContentBlock) =>
+          block.type === "tool_result" ? [block.tool_use_id] : []) : []));
+      if ([...(this.sessionCompletedToolIds.get(sessionId) ?? [])].some((id) => !persistedResults.has(id)))
+        throw new Error("Provider recovery refused: persisted history omits a completed tool result.");
+      restart = { ...start, prompt: transportRecoveryPrompt, initialMessages,
+        initialCompactionState, userImages: undefined, userFiles: undefined,
+        config: { ...start.config, maxIterations: start.config.maxIterations! - consumed } };
+      this.sessionTransportRecoveries.set(sessionId, {
+        attempts, executionId, iterationOffset: consumed,
+        message: current?.message ?? "Provider stream interrupted",
+      });
+    }
     void this.logSession(sessionId, "provider transport recovery started", {
       attempt: attempts,
       status: "recovering",
@@ -2886,6 +2928,14 @@ export class BlameAgentRuntime {
       sessionId,
       "Provider connection interrupted. Blame is resuming from the persisted session state.",
     );
+    if (restart) {
+      this.agentTelemetry.startModelRequest(sessionId);
+      this.armSessionInactivityWatchdog(sessionId, executionId, cline);
+      const session = await this.agentTelemetry.withinSession(sessionId,
+        () => cline.start(restart!) as Promise<RuntimeClineResult>);
+      await this.completeSessionStartResult(cline, session, executionId);
+      return session.result;
+    }
     return this.sendPrompt(
       cline,
       sessionId,
@@ -2943,8 +2993,14 @@ export class BlameAgentRuntime {
   }
 
   private withSessionIteration(sessionId: string, event: AgentEvent) {
-    const payload = asRecord(event.payload);
-    const eventIteration = numberValue(payload.iteration);
+    let payload = asRecord(event.payload);
+    let eventIteration = numberValue(payload.iteration);
+    const offset = this.sessionTransportRecoveries.get(sessionId)?.iterationOffset;
+    if (eventIteration !== undefined && offset !== undefined) {
+      eventIteration += offset;
+      payload = { ...payload, iteration: eventIteration };
+      event = { ...event, payload };
+    }
     if (eventIteration !== undefined)
       this.sessionIterations.set(sessionId, eventIteration);
     if (
@@ -3284,6 +3340,7 @@ export class BlameAgentRuntime {
     this.sessionEventSignatures.delete(sessionId);
     if (!terminationActive) this.sessionExecutionIds.delete(sessionId);
     this.sessionIterations.delete(sessionId);
+    this.sessionCompletedToolIds.delete(sessionId);
     this.sessionSubmittedSummaries.delete(sessionId);
     this.sessionNativeFinish.delete(sessionId);
     this.sessionDeferredTaskBriefings.delete(sessionId);

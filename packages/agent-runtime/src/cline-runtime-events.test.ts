@@ -1715,10 +1715,139 @@ type TransportTestRuntime = {
     executionId: string,
   ): Promise<unknown>;
   sessionExecutionIds: Map<string, string>;
+  sessionIterations: Map<string, number>;
+  sessionCompletedToolIds: Map<string, Set<string>>;
+  clineDefaultSessions: Set<string>;
+  sessionActiveTools: Map<string, Set<string>>;
   sessionStartInputs: Map<string, { config: object; interactive: boolean }>;
   sessionTerminalDrains: Map<string, Promise<void>>;
   subscribeCoreSession(sessionId: string, core: unknown): Promise<void>;
 };
+
+test("restarts noninteractive Light transport failure with persisted effects and remaining iterations", async () => {
+  const fixture = await noninteractiveRecoveryFixture();
+  try {
+    fixture.publishFailure();
+    await fixture.internals.completeSessionStartResult(fixture.core,
+      { sessionId: "session", result: { finishReason: "error" } }, "execution");
+    assert.equal(fixture.starts.length, 1);
+    const restart = fixture.starts[0]!;
+    assert.equal(restart.interactive, false);
+    assert.equal(restart.config.maxIterations, 3);
+    assert.deepEqual(restart.initialMessages, fixture.messages);
+    assert.deepEqual(restart.initialCompactionState, fixture.compaction);
+    assert.equal(restart.userImages, undefined);
+    assert.equal(restart.userFiles, undefined);
+    assert.match(restart.prompt ?? "", /without repeating completed reads or mutations/u);
+    assert.equal(fixture.prompts.length, 0, "A destroyed noninteractive SDK session cannot receive send");
+    assert.equal(fixture.emitted.filter(isTransportRecoveryNotice).length, 1);
+    assert.equal(fixture.emitted.some((event) => event.type === "error"), false);
+    assert.equal(fixture.internals.runLifecycles.state("session")?.state, "succeeded");
+    assert.ok(fixture.emitted.some((event) =>
+      (event.payload as { iteration?: number }).iteration === 3));
+  } finally { await fixture.runtime.shutdown(); }
+});
+
+for (const guard of ["exhausted", "unknown", "native", "active", "cancelled", "permanent"] as const) {
+  test(`does not restart a noninteractive session when recovery is ${guard}`, async () => {
+    const fixture = await noninteractiveRecoveryFixture();
+    try {
+      if (guard === "exhausted") fixture.internals.sessionIterations.set("session", 5);
+      if (guard === "unknown") fixture.internals.sessionIterations.delete("session");
+      if (guard === "native") fixture.internals.clineDefaultSessions.add("session");
+      if (guard === "active") fixture.internals.sessionActiveTools.set("session", new Set(["tool"]));
+      if (guard === "cancelled") fixture.internals.runLifecycles.stopping("session", "execution");
+      if (guard !== "permanent") fixture.publishFailure();
+      await fixture.internals.completeSessionStartResult(fixture.core,
+        { sessionId: "session", result: { finishReason: "error", error: {
+          message: guard === "permanent" ? "HTTP 401 invalid API key" : "UND_ERR_SOCKET" } } }, "execution");
+      assert.equal(fixture.starts.length, 0);
+      assert.equal(fixture.emitted.filter(isTransportRecoveryNotice).length, 0);
+    } finally { await fixture.runtime.shutdown(); }
+  });
+}
+
+test("cancellation while reading persisted history prevents the recovery model call", async () => {
+  const fixture = await noninteractiveRecoveryFixture();
+  let release: (messages: typeof fixture.messages) => void = () => undefined;
+  fixture.core.readMessages = async () => new Promise((done) => { release = done; });
+  try {
+    fixture.publishFailure();
+    const recovery = fixture.internals.completeSessionStartResult(fixture.core,
+      { sessionId: "session", result: { finishReason: "error" } }, "execution");
+    await new Promise((done) => setImmediate(done));
+    fixture.internals.runLifecycles.stopping("session", "execution");
+    release(fixture.messages);
+    await recovery;
+    assert.equal(fixture.starts.length, 0);
+    assert.equal(fixture.emitted.filter(isTransportRecoveryNotice).length, 0);
+  } finally { await fixture.runtime.shutdown(); }
+});
+
+test("a second noninteractive transport failure terminates after one restart", async () => {
+  const fixture = await noninteractiveRecoveryFixture(true);
+  try {
+    fixture.publishFailure();
+    await fixture.internals.completeSessionStartResult(fixture.core,
+      { sessionId: "session", result: { finishReason: "error" } }, "execution");
+    assert.equal(fixture.starts.length, 1);
+    assert.equal(fixture.internals.runLifecycles.state("session")?.state, "failed");
+    assert.equal(fixture.emitted.filter((event) => event.type === "error").length, 1);
+  } finally { await fixture.runtime.shutdown(); }
+});
+
+test("refuses a restart if persisted history omits an observed completed tool", async () => {
+  const fixture = await noninteractiveRecoveryFixture();
+  try {
+    fixture.internals.sessionCompletedToolIds.set("session", new Set(["unpersisted-edit"]));
+    fixture.publishFailure();
+    await assert.rejects(fixture.internals.completeSessionStartResult(fixture.core,
+      { sessionId: "session", result: { finishReason: "error" } }, "execution"), /omits a completed tool/u);
+    assert.equal(fixture.starts.length, 0);
+    assert.equal(fixture.emitted.filter(isTransportRecoveryNotice).length, 0);
+  } finally { await fixture.runtime.shutdown(); }
+});
+
+async function noninteractiveRecoveryFixture(repeated = false) {
+  const fixture = await transportEventFixture(false);
+  const starts: ClineCoreStartInput[] = [];
+  const messages = [{ role: "user" as const, content: "Implement feature" },
+    { role: "assistant" as const, content: [{ type: "tool_use" as const, id: "edit", name: "edit_code", input: {} }] },
+    { role: "user" as const, content: [{ type: "tool_result" as const, tool_use_id: "edit", content: "already applied" }] }];
+  const compaction = { conversation_id: "session", source_message_count: 3 };
+  const core = Object.assign(fixture.core, {
+    readMessages: async () => messages,
+    readSessionCompactionState: async () => compaction,
+    async start(input: ClineCoreStartInput) {
+      starts.push(input);
+      // Emit through the same subscribed callback as a real restarted SDK.
+      if (repeated) fixture.publishFailure();
+      else publishDone();
+      return { sessionId: "session", result: repeated ?
+        { finishReason: "error", error: { message: "UND_ERR_SOCKET" } } :
+        { finishReason: "completed", outputText: "Recovered" } };
+    },
+  });
+  let publishDone: () => void = () => undefined;
+  await fixture.internals.subscribeCoreSession("session", {
+    ...core, async subscribe(listener: (event: CoreSessionEvent) => void) {
+      publishDone = () => {
+        listener(agentEvent({ type: "iteration_start", iteration: 1 }));
+        listener(agentEvent({ type: "done", reason: "completed", text: "Recovered" }));
+      };
+      // Keep the original fixture's failure publisher connected too.
+      await core.subscribe(listener);
+      return () => undefined;
+    },
+  });
+  fixture.internals.sessionExecutionIds.set("session", "execution");
+  fixture.internals.runLifecycles.begin("session", "execution");
+  fixture.internals.sessionIterations.set("session", 2);
+  fixture.internals.sessionCompletedToolIds.set("session", new Set(["edit"]));
+  fixture.internals.sessionStartInputs.set("session", { interactive: false, config: {
+    maxIterations: 5, extraTools: [{ name: "finish_task" }] } });
+  return { ...fixture, core, starts, messages, compaction };
+}
 
 type TransportTestState = {
   earlyNotices: number;

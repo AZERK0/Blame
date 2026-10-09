@@ -49,8 +49,8 @@
   "fault": {
     "condition": "interrupted",
     "modelRequest": 3,
-    "count": 1,
-    "location": "Fetch response body before any bytes are delivered from the third model request, after the actual upstream request has been made; typed UND_ERR_SOCKET. Never inject into credential or auth calls.",
+    "count": 3,
+    "location": "Three consecutive response bodies, starting at model request three, interrupted before bytes are delivered. SDK 0.0.82 retries at most three attempts before any model output; the injected burst exhausts that policy, then service recovers.",
     "interpretation": "Controlled diagnostic intervention, not a real outage frequency estimate. Preserve charged/missing usage from the interrupted upstream request."
   },
   "model": "gpt-5.6-luna",

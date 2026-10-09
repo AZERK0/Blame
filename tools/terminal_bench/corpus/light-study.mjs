@@ -483,6 +483,7 @@ function execute(args, seconds, trial, directory) {
           ...(inject
             ? {
                 BLAME_STUDY_FAULT_REQUEST: String(protocol.fault.modelRequest),
+                BLAME_STUDY_FAULT_COUNT: String(protocol.fault.count ?? 1),
                 BLAME_STUDY_FAULT_LOG: join(directory, "fault.jsonl"),
               }
             : {}),
