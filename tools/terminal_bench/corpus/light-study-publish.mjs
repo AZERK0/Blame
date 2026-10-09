@@ -22,10 +22,12 @@ for (const row of analysis.rows) {
     throw new Error(`Unreviewed ${name}`);
   row.auditedSuccess = decision.independentSuccess;
   row.officialSuccess = row.qualityScore === 100;
+  if (typeof decision.registeredObligationsSuccess === "boolean")
+    row.registeredObligationsSuccess = decision.registeredObligationsSuccess;
 }
 const summary = {
   definition:
-    "Original functional scorer, audited instruction obligations, runtime termination and admitted verification are separate. Missing request/cache usage remains missing; totals with unreconciled trials are observed lower bounds.",
+    "Official success here means the original corpus weighted score equals 100, not an external Terminal-Bench certification. Functional scorer, registered obligations, expanded audited instruction compliance, runtime termination and admitted verification are separate. Missing request/cache usage remains missing; totals with unreconciled trials are observed lower bounds.",
   arms: {},
 };
 for (const arm of ["baseline", "modified", "cline"]) {
@@ -35,6 +37,9 @@ for (const arm of ["baseline", "modified", "cline"]) {
     functionalSuccess: rows.filter((r) => r.functionalSuccess).length,
     officialSuccess: rows.filter((r) => r.officialSuccess).length,
     auditedSuccess: rows.filter((r) => r.auditedSuccess).length,
+    ...(rows.some((r) => typeof r.registeredObligationsSuccess === "boolean")
+      ? { registeredObligationsSuccess: rows.filter((r) => r.registeredObligationsSuccess).length }
+      : {}),
     runtimeSucceeded: rows.filter((r) => r.status === "succeeded").length,
     runtimeFailed: rows.filter((r) => r.status === "failed").length,
     runtimeTimedOut: rows.filter((r) => r.status === "timed_out").length,
@@ -198,6 +203,9 @@ function usageTotal(rows, field) {
 
 function conditionResources(rows) {
   return {
+    ...(rows.some((row) => typeof row.registeredObligationsSuccess === "boolean")
+      ? { registeredObligationsSuccess: rows.filter((row) => row.registeredObligationsSuccess).length }
+      : {}),
     officialSuccess: rows.filter((row) => row.officialSuccess).length,
     functionalSuccess: rows.filter((row) => row.functionalSuccess).length,
     tokensCostReconciled: rows.filter((row) => row.usage.tokensCostReconciled)
