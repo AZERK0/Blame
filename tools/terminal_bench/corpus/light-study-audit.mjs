@@ -11,7 +11,7 @@ const ledger = JSON.parse(
 );
 const decisions = [];
 for (const row of analysis.rows) {
-  const name = `${row.repetition}-${row.id}-${row.arm}`;
+  const name = row.name ?? `${row.repetition}-${row.id}-${row.arm}`;
   const tools = ledger.find((entry) => entry.name === name).tools;
   const commands = tools.flatMap((tool, index) =>
     commandFacts(tool).map((fact) => ({ ...fact, index })),
@@ -62,8 +62,16 @@ for (const row of analysis.rows) {
     evidence = [between, final]
       .filter(Boolean)
       .map((c) => ({ toolIndex: c.index, command: c.command }));
-  } else if (row.id === "csv-parser") {
-    const edits = mutations.filter((m) => m.paths.includes("src/csv.ts"));
+  } else if (
+    [
+      "csv-parser",
+      "window-boundaries",
+      "slug-contract",
+      "stable-pagination",
+      "webhook-idempotency",
+    ].includes(row.id)
+  ) {
+    const edits = mutations;
     const final = commands.find(
       (c) =>
         c.success &&

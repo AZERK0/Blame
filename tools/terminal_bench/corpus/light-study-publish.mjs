@@ -16,7 +16,7 @@ const adjudication = JSON.parse(
 if (analysis.completed !== analysis.planned)
   throw new Error("Retain all planned trials before publication");
 for (const row of analysis.rows) {
-  const name = `${row.repetition}-${row.id}-${row.arm}`;
+  const name = row.name ?? `${row.repetition}-${row.id}-${row.arm}`;
   const decision = adjudication.decisions.find((x) => x.name === name);
   if (!decision || decision.review !== "reviewed")
     throw new Error(`Unreviewed ${name}`);
@@ -60,6 +60,32 @@ for (const arm of ["baseline", "modified", "cline"]) {
         },
       ]),
     ),
+    ...(rows.some((row) => row.condition)
+      ? {
+          conditions: Object.fromEntries(
+            ["clean", "interrupted"].map((condition) => [
+              condition,
+              {
+                trials: rows.filter((r) => r.condition === condition).length,
+                auditedSuccess: rows.filter(
+                  (r) => r.condition === condition && r.auditedSuccess,
+                ).length,
+                runtimeSucceeded: rows.filter(
+                  (r) => r.condition === condition && r.status === "succeeded",
+                ).length,
+                faultActivated: rows.filter(
+                  (r) =>
+                    r.condition === condition &&
+                    r.faultEvents?.some((event) => event.injected),
+                ).length,
+                recoveryActivated: rows.filter(
+                  (r) => r.condition === condition && r.recoveryNotices > 0,
+                ).length,
+              },
+            ]),
+          ),
+        }
+      : {}),
   };
   const data = summary.arms[arm];
   for (const field of ["input", "output", "cacheRead", "cacheWrite", "cost"]) {
@@ -75,12 +101,13 @@ for (const arm of ["baseline", "modified", "cline"]) {
 await mkdir(join(destination, "traces"), { recursive: true });
 const inventory = [];
 for (const row of analysis.rows) {
-  const name = `${row.repetition}-${row.id}-${row.arm}`;
+  const name = row.name ?? `${row.repetition}-${row.id}-${row.arm}`;
   for (const filename of [
     "events.jsonl",
     "workspace.diff",
     "result.json",
     "instruction.txt",
+    ...(row.condition === "interrupted" ? ["fault.jsonl"] : []),
   ]) {
     let raw;
     try {

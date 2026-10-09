@@ -19,8 +19,14 @@ import {
 import { scoreRun } from "./score-run.mjs";
 import { reconcileUsage } from "./light-study-accounting.mjs";
 
-const study = join(repositoryRoot, "docs/experiments/light-harness-2026-10-09");
-const root = join(repositoryRoot, ".blame/research");
+const study = resolve(
+  process.env.BLAME_STUDY_DIRECTORY ??
+    join(repositoryRoot, "docs/experiments/light-harness-2026-10-09"),
+);
+const root = resolve(
+  process.env.BLAME_STUDY_WORK_DIRECTORY ??
+    join(repositoryRoot, ".blame/research"),
+);
 const frozen = join(root, "frozen");
 const campaign = join(root, "pilot");
 const protocol = JSON.parse(
@@ -116,6 +122,18 @@ async function run() {
       await readFile(join(corpusRoot, "scenario-checks.mjs")),
     ),
     driverSha256: sha(await readFile(new URL(import.meta.url))),
+    ...(protocol.fault
+      ? {
+          faultLoaderSha256: sha(
+            await readFile(
+              join(
+                repositoryRoot,
+                "tools/terminal_bench/corpus/light-study-fault.mjs",
+              ),
+            ),
+          ),
+        }
+      : {}),
     model: protocol.model,
     effort: protocol.effort,
     provider: process.env.BLAME_PROVIDER_ID,
@@ -154,12 +172,37 @@ async function run() {
           : await readFile(join(corpusRoot, scenario.instruction), "utf8")) +
         suffix;
       provenance.instructionHashes[task.id] = sha(instruction);
-      for (const arm of arms)
-        provenance.order.push({ id: task.id, repetition, arm });
+      const conditions = protocol.conditions ?? [undefined];
+      for (const condition of repetition === 2
+        ? [...conditions].reverse()
+        : conditions)
+        for (const arm of arms)
+          provenance.order.push({
+            id: task.id,
+            repetition,
+            arm,
+            ...(condition ? { condition } : {}),
+          });
     }
   }
   await writeJson(join(campaign, "provenance.json"), provenance);
   for (const trial of provenance.order) {
+    if (protocol.budget.panelObservedCostStopUsd) {
+      try {
+        const previous = JSON.parse(
+          await readFile(join(campaign, "analysis.json"), "utf8"),
+        );
+        if (
+          previous.rows.reduce((sum, row) => sum + (row.usage.cost ?? 0), 0) >=
+          protocol.budget.panelObservedCostStopUsd
+        )
+          throw new Error(
+            "Observed campaign cost ceiling reached; remaining planned trials stay unexecuted",
+          );
+      } catch (error) {
+        if (error.code !== "ENOENT") throw error;
+      }
+    }
     for (const arm of ["baseline", "modified"])
       if (
         (await treeDigest(join(frozen, arm, "agent-runtime/dist"))) !==
@@ -177,7 +220,7 @@ async function run() {
 }
 
 async function executeTrial(trial, scenario) {
-  const name = `${trial.repetition}-${trial.id}-${trial.arm}`;
+  const name = trialName(trial);
   const directory = join(campaign, name),
     workspace = join(directory, "workspace");
   await mkdir(directory);
@@ -233,7 +276,7 @@ async function executeTrial(trial, scenario) {
   ];
   process.stdout.write(`START ${name}\n`);
   start = performance.now();
-  const exit = await execute(args, scenario.timeoutSeconds);
+  const exit = await execute(args, scenario.timeoutSeconds, trial, directory);
   const outerAgentMs = performance.now() - start;
   start = performance.now();
   const scoringScenario =
@@ -264,7 +307,7 @@ async function analyze() {
     await readFile(join(campaign, "provenance.json"), "utf8"),
   );
   for (const planned of provenance.order) {
-    const name = `${planned.repetition}-${planned.id}-${planned.arm}`,
+    const name = trialName(planned),
       directory = join(campaign, name);
     let trial;
     try {
@@ -318,6 +361,21 @@ async function analyze() {
       events.filter((e) => e.type === "usage").map((e) => e.payload?.usage),
       requests,
     );
+    let faultEvents = [];
+    try {
+      faultEvents = (await readFile(join(directory, "fault.jsonl"), "utf8"))
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => JSON.parse(line));
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+    if (faultEvents.some((event) => event.providerUsageLost)) {
+      usage.complete = false;
+      usage.tokensCostReconciled = false;
+      usage.controlledUpstreamUsageMissing = true;
+    }
     if (eventParseErrors) {
       usage.complete = false;
       usage.tokensCostReconciled = false;
@@ -346,8 +404,10 @@ async function analyze() {
       score.unexpectedPaths.length === 0;
     rows.push({
       ...trial,
+      name,
       status: result.status ?? "missing",
       eventParseErrors,
+      ...(trial.condition ? { faultEvents } : {}),
       error: result.error ?? null,
       qualityScore: score.qualityScore,
       functionalSuccess: functional,
@@ -365,6 +425,13 @@ async function analyze() {
       usage,
       durationMs: result.durationMs ?? null,
       argsUsed,
+      recoveryNotices: events.filter(
+        (event) =>
+          event.type === "notice" &&
+          /resuming from the persisted session state/u.test(
+            event.payload?.message ?? "",
+          ),
+      ).length,
       taskSelectionRefusals: refusals,
       eventsSha256: sha(raw),
       diffSha256: sha(await readFile(join(directory, "workspace.diff"))),
@@ -382,19 +449,48 @@ async function analyze() {
   await writeJson(join(campaign, "tool-ledger.json"), ledger);
 }
 
-function execute(args, seconds) {
+function execute(args, seconds, trial, directory) {
   return new Promise((done) => {
-    const child = spawn(process.execPath, args, {
-      cwd: repositoryRoot,
-      env: {
-        ...process.env,
-        BLAME_HEADLESS_DEV: "true",
-        NODE_ENV: "development",
-        NODE_USE_ENV_PROXY: "1",
+    const inject = trial.condition === protocol.fault?.condition;
+    const child = spawn(
+      process.execPath,
+      [
+        ...(inject
+          ? [
+              "--import",
+              resolve(
+                repositoryRoot,
+                "tools/terminal_bench/corpus/light-study-fault.mjs",
+              ),
+            ]
+          : []),
+        ...args,
+      ],
+      {
+        cwd: repositoryRoot,
+        env: {
+          ...process.env,
+          BLAME_HEADLESS_DEV: "true",
+          NODE_ENV: "development",
+          NODE_USE_ENV_PROXY: "1",
+          ...(protocol.budget.perTrialSdkCostLimitUsd
+            ? {
+                BLAME_AGENT_MAX_SESSION_COST_USD: String(
+                  protocol.budget.perTrialSdkCostLimitUsd,
+                ),
+              }
+            : {}),
+          ...(inject
+            ? {
+                BLAME_STUDY_FAULT_REQUEST: String(protocol.fault.modelRequest),
+                BLAME_STUDY_FAULT_LOG: join(directory, "fault.jsonl"),
+              }
+            : {}),
+        },
+        detached: true,
+        stdio: ["ignore", "ignore", "pipe"],
       },
-      detached: true,
-      stdio: ["ignore", "ignore", "pipe"],
-    });
+    );
     let stderr = "",
       watchdog = false;
     child.stderr.on("data", (chunk) => {
@@ -422,6 +518,10 @@ function execute(args, seconds) {
       });
     });
   });
+}
+
+function trialName(trial) {
+  return `${trial.repetition}-${trial.id}-${trial.arm}${trial.condition ? `-${trial.condition}` : ""}`;
 }
 
 async function treeDigest(directory) {
