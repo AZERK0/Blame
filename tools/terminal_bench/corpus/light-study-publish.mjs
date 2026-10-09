@@ -21,6 +21,7 @@ for (const row of analysis.rows) {
   if (!decision || decision.review !== "reviewed")
     throw new Error(`Unreviewed ${name}`);
   row.auditedSuccess = decision.independentSuccess;
+  row.auditedCompletion = row.auditedSuccess && row.status === "succeeded";
   row.officialSuccess = row.qualityScore === 100;
   if (typeof decision.registeredObligationsSuccess === "boolean")
     row.registeredObligationsSuccess = decision.registeredObligationsSuccess;
@@ -37,6 +38,7 @@ for (const arm of ["baseline", "modified", "cline"]) {
     functionalSuccess: rows.filter((r) => r.functionalSuccess).length,
     officialSuccess: rows.filter((r) => r.officialSuccess).length,
     auditedSuccess: rows.filter((r) => r.auditedSuccess).length,
+    auditedCompletion: rows.filter((r) => r.auditedCompletion).length,
     ...(rows.some((r) => typeof r.registeredObligationsSuccess === "boolean")
       ? { registeredObligationsSuccess: rows.filter((r) => r.registeredObligationsSuccess).length }
       : {}),
@@ -65,6 +67,9 @@ for (const arm of ["baseline", "modified", "cline"]) {
           trials: rows.filter((r) => r.partition === partition).length,
           auditedSuccess: rows.filter(
             (r) => r.partition === partition && r.auditedSuccess,
+          ).length,
+          auditedCompletion: rows.filter(
+            (r) => r.partition === partition && r.auditedCompletion,
           ).length,
           officialSuccess: rows.filter(
             (r) => r.partition === partition && r.officialSuccess,
@@ -98,6 +103,9 @@ for (const arm of ["baseline", "modified", "cline"]) {
                 trials: rows.filter((r) => r.condition === condition).length,
                 auditedSuccess: rows.filter(
                   (r) => r.condition === condition && r.auditedSuccess,
+                ).length,
+                auditedCompletion: rows.filter(
+                  (r) => r.condition === condition && r.auditedCompletion,
                 ).length,
                 runtimeSucceeded: rows.filter(
                   (r) => r.condition === condition && r.status === "succeeded",
