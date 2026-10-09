@@ -60,21 +60,21 @@ for (const arm of ["baseline", "modified", "cline"]) {
             (r) => r.partition === partition && r.auditedSuccess,
           ).length,
           officialSuccess: rows.filter(
-            (r) => r.condition === condition && r.officialSuccess,
+            (r) => r.partition === partition && r.officialSuccess,
           ).length,
           functionalSuccess: rows.filter(
-            (r) => r.condition === condition && r.functionalSuccess,
+            (r) => r.partition === partition && r.functionalSuccess,
           ).length,
           tokensCostReconciled: rows.filter(
-            (r) => r.condition === condition && r.usage.tokensCostReconciled,
+            (r) => r.partition === partition && r.usage.tokensCostReconciled,
           ).length,
           summedRunnerSeconds:
             rows
-              .filter((r) => r.condition === condition)
+              .filter((r) => r.partition === partition)
               .reduce((sum, r) => sum + (r.durationMs ?? 0), 0) / 1000,
           outerAgentSeconds:
             rows
-              .filter((r) => r.condition === condition)
+              .filter((r) => r.partition === partition)
               .reduce((sum, r) => sum + r.outerAgentMs, 0) / 1000,
         },
       ]),
@@ -85,6 +85,9 @@ for (const arm of ["baseline", "modified", "cline"]) {
             ["clean", "interrupted"].map((condition) => [
               condition,
               {
+                ...conditionResources(
+                  rows.filter((r) => r.condition === condition),
+                ),
                 trials: rows.filter((r) => r.condition === condition).length,
                 auditedSuccess: rows.filter(
                   (r) => r.condition === condition && r.auditedSuccess,
@@ -190,5 +193,19 @@ function usageTotal(rows, field) {
     missingAggregates: rows.filter((r) => r.usage[field] === null).length,
     incompleteTrialAccounting: rows.filter((r) => !r.usage.tokensCostReconciled)
       .length,
+  };
+}
+
+function conditionResources(rows) {
+  return {
+    officialSuccess: rows.filter((row) => row.officialSuccess).length,
+    functionalSuccess: rows.filter((row) => row.functionalSuccess).length,
+    tokensCostReconciled: rows.filter((row) => row.usage.tokensCostReconciled)
+      .length,
+    allUsageReconciled: rows.filter((row) => row.usage.complete).length,
+    summedRunnerSeconds:
+      rows.reduce((sum, row) => sum + (row.durationMs ?? 0), 0) / 1000,
+    outerAgentSeconds:
+      rows.reduce((sum, row) => sum + row.outerAgentMs, 0) / 1000,
   };
 }
