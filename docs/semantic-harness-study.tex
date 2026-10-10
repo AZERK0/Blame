@@ -677,8 +677,9 @@ editing, proof admission and recovery remain unchanged; native Cline receives
 no suffix. Explicit skill requests take precedence, uncertain relevance permits
 inspection, and oversized scope records are omitted whole with a notice that
 the tool remains available. Startup metadata is a snapshot, not a promise of
-live scope synchronization. Risks are missed useful skills, stale metadata and
-prefix overhead. Priority hypotheses are now T1, H2 and H3; H1 is retained as
+live scope synchronization. The suffix combines scope descriptions with a relevance reminder; this
+experiment cannot identify their individual contributions. Risks are missed
+useful skills, stale metadata and prefix overhead. Priority hypotheses are now T1, H2 and H3; H1 is retained as
 historical evidence.
 
 The implementation is \code{2e4e9dce}; reference runtime is the immutable
@@ -724,6 +725,13 @@ strips only a slash-prefixed manifest suffix, missing the root filename.
 The runner-source hashes are identical in both arms. Observed agents recover
 with the literal root command. This is a separate, locally reproduced selector
 candidate; it is not changed during T1 and is not attributed as a new regression.
+
+Source inspection also identifies an extended-diacritic counterexample: removing
+only \code{U+0300--036F} leaves combining accents \code{U+1AB0}/\code{U+FE20}
+to become separators rather than disappear. This diagnostic is discovered after
+first-repetition outcomes, unlike the registered date/reducer conventions.
+A separate, uniformly applied exploratory replay and sensitivity overlay retain
+the original score and primary endpoint; no solution is repaired or fed back.
 
 \section{Reproduction and evidence map}
 Build core, model catalog, runtime (including prompt-resource copy) and

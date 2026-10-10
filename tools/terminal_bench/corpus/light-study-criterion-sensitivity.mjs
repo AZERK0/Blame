@@ -7,6 +7,8 @@ import { execFileSync } from 'node:child_process';
 const directory=resolve(process.argv[2]);
 const raw=await readFile(join(directory,'results.json'));const original=JSON.parse(raw);
 const decisions=JSON.parse(await readFile(join(directory,'adjudication.json'),'utf8')).decisions;
+const extendedMarks=process.argv.includes('--exploratory-slug');
+const slug=extendedMarks?JSON.parse(await readFile(join(directory,'slug-replay.json'),'utf8')):null;
 const comparisons=[];
 for(const expandedDates of [true,false])for(const physicalAbsence of [true,false]) {
  const results=structuredClone(original);const counts={};
@@ -14,6 +16,11 @@ for(const expandedDates of [true,false])for(const physicalAbsence of [true,false
   const d=decisions.find(d=>d.name===row.name);let criteria=d.independentSuccess;
   if(!expandedDates&&row.id==='stable-pagination')criteria=d.normalizedTimestampSensitivitySuccess;
   if(!physicalAbsence&&row.id==='stale-save-reducer')criteria=d.valueSemanticsSensitivitySuccess;
+  if(extendedMarks&&row.id==='slug-contract') {
+   const replay=slug.rows.find(r=>r.name===row.name);
+   assertBoolean(replay?.passed,row.name+' extended diacritics');
+   criteria&&=replay.passed;
+  }
   assertBoolean(criteria,row.name);
   counts[row.arm]??={trials:0,auditedCriteria:0,auditedCompletion:0};const c=counts[row.arm];c.trials++;c.auditedCriteria+=Number(criteria);c.auditedCompletion+=Number(criteria&&row.status==='succeeded');
   row.auditedSuccess=criteria&&row.status==='succeeded';
@@ -26,7 +33,8 @@ for(const expandedDates of [true,false])for(const physicalAbsence of [true,false
   comparisons.push({timestampConvention:expandedDates?'valid ISO offsets/equal instants':'canonical normalized timestamps',optionalFields:physicalAbsence?'physical absence':'undefined value allowed',counts,paired:paired.comparisons});
  } finally {await rm(temporary,{recursive:true,force:true});}
 }
-const result={selection:'All four previously identified convention combinations, registered before this campaign outcomes, applied uniformly. Original score and strict primary audit remain unchanged. Both-success resource comparisons additionally require runtime completion; no favorable convention selected.',originalResultsSha256:createHash('sha256').update(raw).digest('hex'),comparisons};
-await writeFile(join(directory,'criterion-sensitivity.json'),JSON.stringify(result,null,2)+'\n');
+const selection=extendedMarks?'Exploratory extended-diacritic counterexamples discovered after first-repetition source inspection, overlaid uniformly on all four registered convention combinations. Not preregistered; original scores and primary endpoints remain unchanged. Both-success resources require runtime completion.': 'All four previously identified convention combinations, registered before this campaign outcomes, applied uniformly. Original score and strict primary audit remain unchanged. Both-success resource comparisons additionally require runtime completion; no favorable convention selected.';
+const result={selection,originalResultsSha256:createHash('sha256').update(raw).digest('hex'),comparisons};
+await writeFile(join(directory,extendedMarks?'exploratory-slug-sensitivity.json':'criterion-sensitivity.json'),JSON.stringify(result,null,2)+'\n');
 console.log(JSON.stringify(comparisons.map(({timestampConvention,optionalFields,counts})=>({timestampConvention,optionalFields,counts}))));
 function assertBoolean(value,name){if(typeof value!=='boolean')throw new Error(`Missing criterion convention for ${name}`);}
