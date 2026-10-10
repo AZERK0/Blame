@@ -637,8 +637,12 @@
     }
   ],
   "originalResultsSha256": "72f46de555d2d4ac25aa7eb769517895aec39c9e8f203bf918b7af5e6e6fec98",
-  "selection": "Instruction criteria AND successful runtime completion registered before this T1 campaign outcomes. The shared helper originally introduced this qualification retrospectively in the previous H3 campaign; its algorithm is unchanged.",
+  "selection": "Instruction criteria AND successful runtime completion registered before this campaign outcomes. Computation unchanged; the shared helper first introduced this qualification retrospectively in the previous H3 campaign.",
   "baseMethod": "Left/right summed resource ratio on prespecified task-matched, independently audited both-success pairs. Tokens/estimated cost additionally require reconciled observed usage. All failures and missing usage remain in full-panel results; conditional cohorts are not a population efficiency or quality equivalence certificate. Exploratory 95% percentile intervals resample task clusters (both repetitions together), 10000 draws, fixed seed 20261009; no model resampling.",
   "excludedDespiteAuditedCriteria": [],
-  "endpointProtocolSha256": "05c417f0393cf0a82ec2abefc7e92ec6a6d933adc2aad5fdd913a76cec696523"
+  "inheritedHelperSelection": "Exploratory additional qualification after observing criteria fulfilled but runtime completion refused. Original frozen score, audit-criteria endpoint and paired comparison remain unchanged. All comparisons/partitions retained.",
+  "registration": {
+    "registeredAt": "2026-10-10T21:39:13.587077+00:00",
+    "protocolSha256": "05c417f0393cf0a82ec2abefc7e92ec6a6d933adc2aad5fdd913a76cec696523"
+  }
 }
