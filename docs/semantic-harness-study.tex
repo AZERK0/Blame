@@ -715,6 +715,16 @@ defects, accept behavioral examples independently of object-key order and
 bound hanging programs. The USD 0.30 observed estimate guard is separate.
 No new runtime modification is introduced.
 
+Local selector replays retain another pre-existing friction: both immutable
+Light versions reject \code{packagePath: "package.json"} and
+\code{"./package.json"}, accept \code{"."}/\code{"./"}, and correctly select
+the deliberately failing child task through its directory or manifest path.
+\code{resolveProjectTask} normalizes the path before \code{packageMatches}
+strips only a slash-prefixed manifest suffix, missing the root filename.
+The runner-source hashes are identical in both arms. Observed agents recover
+with the literal root command. This is a separate, locally reproduced selector
+candidate; it is not changed during T1 and is not attributed as a new regression.
+
 \section{Reproduction and evidence map}
 Build core, model catalog, runtime (including prompt-resource copy) and
 benchmark runner with the pinned workspace toolchain. The worker's global
