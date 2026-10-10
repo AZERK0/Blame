@@ -1,6 +1,6 @@
 {
   "sourceResultsSha256": "72f46de555d2d4ac25aa7eb769517895aec39c9e8f203bf918b7af5e6e6fec98",
-  "method": "All recorded trials, including failures. Skill calls and repeated context category bytes describe the proposed mechanism. Bytes are not billed tokens; native composition was not instrumented and remains null. Runtime completion and reconciled resource cohorts are computed separately.",
+  "method": "All recorded trials, including failures. Skill calls and repeated context category bytes describe the proposed mechanism. Supplemental unused native run_commands fields and blocked-edit categories were added during source review, not preregistered causal endpoints. Frozen SDK executes the commands field only; unused-field bytes describe recorded arguments, not billed-token attribution or a reason to subtract usage. Bytes are not billed tokens; native composition was not instrumented and remains null. Missing request/tool counters are counted explicitly; sums are observed. Runtime completion and reconciled resource cohorts are computed separately.",
   "summaries": {
     "baseline": {
       "trials": 4,
@@ -8,6 +8,11 @@
       "skillCalls": 3,
       "modelRequests": 22,
       "toolCalls": 32,
+      "missingModelRequestTrials": 0,
+      "missingToolCallTrials": 0,
+      "nativeRunCommandsUnusedKeys": null,
+      "nativeRunCommandsUnusedBytes": null,
+      "blockedEditsByCategory": {},
       "repeatedSkillResultBytes": 183543
     },
     "modified": {
@@ -16,6 +21,11 @@
       "skillCalls": 1,
       "modelRequests": 18,
       "toolCalls": 31,
+      "missingModelRequestTrials": 0,
+      "missingToolCallTrials": 0,
+      "nativeRunCommandsUnusedKeys": null,
+      "nativeRunCommandsUnusedBytes": null,
+      "blockedEditsByCategory": {},
       "repeatedSkillResultBytes": 49608
     },
     "cline": {
@@ -24,6 +34,11 @@
       "skillCalls": 0,
       "modelRequests": 18,
       "toolCalls": 25,
+      "missingModelRequestTrials": 0,
+      "missingToolCallTrials": 0,
+      "nativeRunCommandsUnusedKeys": 6,
+      "nativeRunCommandsUnusedBytes": 13047,
+      "blockedEditsByCategory": {},
       "repeatedSkillResultBytes": null
     }
   },
@@ -42,6 +57,9 @@
       ],
       "modelRequests": 6,
       "toolCalls": 6,
+      "nativeRunCommandsUnusedKeys": null,
+      "nativeRunCommandsUnusedBytes": null,
+      "blockedEditsByCategory": {},
       "repeatedComposedBytes": 146726,
       "repeatedMessageBytes": 84260,
       "repeatedCategoryBytes": {
@@ -66,6 +84,9 @@
       "skills": [],
       "modelRequests": 5,
       "toolCalls": 7,
+      "nativeRunCommandsUnusedKeys": null,
+      "nativeRunCommandsUnusedBytes": null,
+      "blockedEditsByCategory": {},
       "repeatedComposedBytes": 80924,
       "repeatedMessageBytes": 24304,
       "repeatedCategoryBytes": {
@@ -90,6 +111,9 @@
       "skills": [],
       "modelRequests": 4,
       "toolCalls": 7,
+      "nativeRunCommandsUnusedKeys": 3,
+      "nativeRunCommandsUnusedBytes": 12752,
+      "blockedEditsByCategory": {},
       "repeatedComposedBytes": null,
       "repeatedMessageBytes": null,
       "repeatedCategoryBytes": null
@@ -103,6 +127,9 @@
       "skills": [],
       "modelRequests": 4,
       "toolCalls": 6,
+      "nativeRunCommandsUnusedKeys": null,
+      "nativeRunCommandsUnusedBytes": null,
+      "blockedEditsByCategory": {},
       "repeatedComposedBytes": 62871,
       "repeatedMessageBytes": 17647,
       "repeatedCategoryBytes": {
@@ -125,6 +152,9 @@
       "skills": [],
       "modelRequests": 4,
       "toolCalls": 5,
+      "nativeRunCommandsUnusedKeys": 0,
+      "nativeRunCommandsUnusedBytes": 0,
+      "blockedEditsByCategory": {},
       "repeatedComposedBytes": null,
       "repeatedMessageBytes": null,
       "repeatedCategoryBytes": null
@@ -143,6 +173,9 @@
       ],
       "modelRequests": 5,
       "toolCalls": 7,
+      "nativeRunCommandsUnusedKeys": null,
+      "nativeRunCommandsUnusedBytes": null,
+      "blockedEditsByCategory": {},
       "repeatedComposedBytes": 121539,
       "repeatedMessageBytes": 69574,
       "repeatedCategoryBytes": {
@@ -167,6 +200,9 @@
       "skills": [],
       "modelRequests": 4,
       "toolCalls": 5,
+      "nativeRunCommandsUnusedKeys": 1,
+      "nativeRunCommandsUnusedBytes": 21,
+      "blockedEditsByCategory": {},
       "repeatedComposedBytes": null,
       "repeatedMessageBytes": null,
       "repeatedCategoryBytes": null
@@ -180,6 +216,9 @@
       "skills": [],
       "modelRequests": 4,
       "toolCalls": 5,
+      "nativeRunCommandsUnusedKeys": null,
+      "nativeRunCommandsUnusedBytes": null,
+      "blockedEditsByCategory": {},
       "repeatedComposedBytes": 58827,
       "repeatedMessageBytes": 17195,
       "repeatedCategoryBytes": {
@@ -202,6 +241,9 @@
       "skills": [],
       "modelRequests": 4,
       "toolCalls": 8,
+      "nativeRunCommandsUnusedKeys": null,
+      "nativeRunCommandsUnusedBytes": null,
+      "blockedEditsByCategory": {},
       "repeatedComposedBytes": 68260,
       "repeatedMessageBytes": 22976,
       "repeatedCategoryBytes": {
@@ -231,6 +273,9 @@
       ],
       "modelRequests": 7,
       "toolCalls": 14,
+      "nativeRunCommandsUnusedKeys": null,
+      "nativeRunCommandsUnusedBytes": null,
+      "blockedEditsByCategory": {},
       "repeatedComposedBytes": 204745,
       "repeatedMessageBytes": 131763,
       "repeatedCategoryBytes": {
@@ -262,6 +307,9 @@
       ],
       "modelRequests": 5,
       "toolCalls": 10,
+      "nativeRunCommandsUnusedKeys": null,
+      "nativeRunCommandsUnusedBytes": null,
+      "blockedEditsByCategory": {},
       "repeatedComposedBytes": 133883,
       "repeatedMessageBytes": 77188,
       "repeatedCategoryBytes": {
@@ -286,6 +334,9 @@
       "skills": [],
       "modelRequests": 6,
       "toolCalls": 8,
+      "nativeRunCommandsUnusedKeys": 2,
+      "nativeRunCommandsUnusedBytes": 274,
+      "blockedEditsByCategory": {},
       "repeatedComposedBytes": null,
       "repeatedMessageBytes": null,
       "repeatedCategoryBytes": null
