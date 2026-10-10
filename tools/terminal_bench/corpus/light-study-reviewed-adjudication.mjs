@@ -24,6 +24,11 @@ for (const d of candidates.decisions) {
   for(const [filename,field] of [['events.jsonl','eventsSha256'],['workspace.diff','diffSha256']]) {
     const actual=createHash('sha256').update(await readFile(join(root,d.name,filename))).digest('hex');assert.equal(actual,review[field]);assert.equal(actual,row[field]);
   }
+  if(typeof review.taskObligationsOverride==='boolean') {
+    assert.ok(review.overrideEvidence);
+    d.originalTaskObligations=d.taskObligations;
+    d.taskObligations=review.taskObligationsOverride;
+  }
   Object.assign(d,review,{registeredObligationsSuccess:d.functionalSuccess&&d.taskObligations,independentSuccess:d.independentSuccessCandidate,retrievalObserved:review.retrievalObserved===true});
   if(typeof review.criteriaOverride==='boolean') {assert.ok(review.overrideEvidence);d.independentSuccess=review.criteriaOverride;}
   d.independentSuccess&&=!d.retrievalObserved;
