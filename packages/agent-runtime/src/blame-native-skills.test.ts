@@ -8,7 +8,7 @@ import {
 } from "@cline/sdk";
 
 import { blameNativePluginPath } from "./cline-runtime.js";
-import { BlameUserInstructionServices } from "./user-instruction-services.js";
+import { BlameUserInstructionServices, skillScopeSystemPrompt } from "./user-instruction-services.js";
 
 test("discovers and invokes Impeccable through Cline native skills", async () => {
   const skillDirectories = resolvePluginSkillDirectoriesFromPaths([
@@ -28,6 +28,10 @@ test("discovers and invokes Impeccable through Cline native skills", async () =>
     assert.match(records[0]?.item.description ?? "", /frontend task/);
     assert.match(records[0]?.item.description ?? "", /Mandatory/);
     assert.match(records[0]?.item.description ?? "", /before making design/);
+    const prompt = skillScopeSystemPrompt(service);
+    assert.match(prompt, /"name":"impeccable"/);
+    assert.match(prompt, /Not for backend-only/);
+    assert.doesNotMatch(prompt, /# Impeccable for Blame/);
 
     const executor = service.createSkillsExecutor?.();
     assert.ok(executor);
@@ -44,6 +48,34 @@ test("discovers and invokes Impeccable through Cline native skills", async () =>
   } finally {
     service.stop();
   }
+});
+
+test("skill scope discovery omits disabled skills and leaves full loading available", () => {
+  let invoked = false;
+  const executor = Object.assign(() => { invoked = true; }, {
+    configuredSkills: [
+      { name: "enabled", description: "Use for the requested API migration." },
+      { name: "disabled", description: "Do not expose", disabled: true },
+    ],
+  });
+  const service = { createSkillsExecutor: () => executor } as unknown as UserInstructionConfigService;
+  const prompt = skillScopeSystemPrompt(service);
+  assert.match(prompt, /requested API migration/);
+  assert.doesNotMatch(prompt, /disabled|Do not expose/);
+  assert.equal(invoked, false);
+  assert.equal(skillScopeSystemPrompt(), "");
+});
+
+test("skill scope snapshot is bounded without truncating a descriptor into a false scope", () => {
+  const service = { createSkillsExecutor: () => ({ configuredSkills: [
+    { name: "first", description: "Use only for deployment." },
+    { name: "long", description: "x".repeat(20_000) + " Never use for deployment." },
+  ] }) } as unknown as UserInstructionConfigService;
+  const prompt = skillScopeSystemPrompt(service);
+  assert.match(prompt, /Use only for deployment/);
+  assert.match(prompt, /skills tool remains available/);
+  assert.doesNotMatch(prompt, /"name":"long"/);
+  assert.ok(prompt.length < 17_000);
 });
 
 test("keeps session startup available when the skill service fails", async () => {

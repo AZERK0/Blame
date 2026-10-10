@@ -568,6 +568,9 @@ test("starts development sessions with native skills and private specialist cons
       .map((record: { item: { name: string } }) => record.item.name);
     assert.ok(skillNames.includes("impeccable"));
     assert.ok(skillNames.includes("workspace-skill"));
+    assert.match(capturedStart.config.systemPrompt ?? "", /## Skill selection/);
+    assert.match(capturedStart.config.systemPrompt ?? "", /Workspace-owned regression fixture/);
+    assert.match(capturedStart.config.systemPrompt ?? "", /Not for backend-only/);
     const toolNames = capturedStart.config.extraTools?.map(
       (tool: { name: string }) => tool.name,
     );

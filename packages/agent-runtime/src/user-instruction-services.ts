@@ -13,6 +13,30 @@ type StartUserInstructionServiceInput = {
 
 type UserInstructionServiceFactory = typeof createUserInstructionConfigService;
 
+export function skillScopeSystemPrompt(service?: UserInstructionConfigService) {
+  const configured: Array<{ name: string; description?: string; disabled?: boolean }> =
+    service?.createSkillsExecutor?.().configuredSkills ?? [];
+  const skills = configured.filter((skill) => !skill.disabled);
+  if (!skills.length) return "";
+  const descriptions: string[] = [];
+  let remaining = 16_384;
+  for (const skill of skills) {
+    const description = JSON.stringify({
+      name: skill.name,
+      description: skill.description?.trim() || "Scope unavailable; inspect the skill when relevance is uncertain.",
+    });
+    if (description.length > remaining) {
+      descriptions.push("Further descriptions exceed this snapshot's limit; the skills tool remains available.");
+      break;
+    }
+    descriptions.push(description);
+    remaining -= description.length + 1;
+  }
+  return "\n\n## Skill selection\n" +
+    "Invoke explicitly requested skills. Otherwise load a skill when its described scope applies to the current request; frontend files elsewhere in the workspace do not make a backend or mechanical task frontend design work. These descriptions are a startup snapshot; the skills tool loads current instructions. Inspect the skill if relevance is uncertain.\n" +
+    descriptions.join("\n");
+}
+
 export class BlameUserInstructionServices {
   private readonly createService: UserInstructionServiceFactory;
   private readonly services = new Map<string, UserInstructionConfigService>();

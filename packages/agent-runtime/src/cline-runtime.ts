@@ -279,7 +279,7 @@ import type {
   StartSessionInput,
   ValidateSecurityAuditInput,
 } from "./types.js";
-import { BlameUserInstructionServices } from "./user-instruction-services.js";
+import { BlameUserInstructionServices, skillScopeSystemPrompt } from "./user-instruction-services.js";
 import {
   createTextWebFetchExecutor,
   describeTextWebFetch,
@@ -880,7 +880,10 @@ export class BlameAgentRuntime {
         ...(specialistTool ? [specialistTool] : []),
       ];
       const systemPrompt =
-        input.systemPrompt ?? loadPrompt("default-agent-system");
+        (input.systemPrompt ?? loadPrompt("default-agent-system")) +
+        (input.nativeCompletion && !input.clineDefaultTools
+          ? skillScopeSystemPrompt(userInstructionService)
+          : "");
       const requestedCompaction =
         input.compaction ?? blameCompactionConfig(this.productionConfig);
       const compactionConfig = input.clineDefaultTools
