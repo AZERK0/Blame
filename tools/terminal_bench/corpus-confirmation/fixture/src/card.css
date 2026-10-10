@@ -1,0 +1,13 @@
+.project-card {
+  background: #fff;
+  color: #777;
+  padding: 4px;
+  border-radius: 0;
+}
+.project-card__title {
+  font-size: 12px;
+  margin: 0;
+}
+.project-card__action {
+  color: #777;
+}

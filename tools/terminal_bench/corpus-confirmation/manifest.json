@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "cents-allocation",
+      "instruction": "instructions/01-allocation.md",
+      "allowedPaths": [
+        "src/allocation.ts"
+      ],
+      "maxIterations": 16,
+      "timeoutSeconds": 300
+    },
+    {
+      "id": "revision-guard",
+      "instruction": "instructions/02-revision.md",
+      "allowedPaths": [
+        "src/revision.ts"
+      ],
+      "maxIterations": 16,
+      "timeoutSeconds": 300
+    },
+    {
+      "id": "retry-backoff",
+      "instruction": "instructions/03-backoff.md",
+      "allowedPaths": [
+        "src/backoff.ts"
+      ],
+      "maxIterations": 16,
+      "timeoutSeconds": 300
+    },
+    {
+      "id": "card-hierarchy",
+      "instruction": "instructions/04-card.md",
+      "allowedPaths": [
+        "src/card.css"
+      ],
+      "maxIterations": 16,
+      "timeoutSeconds": 300
+    }
+  ]
+}
