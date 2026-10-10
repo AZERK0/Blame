@@ -16,7 +16,11 @@ Three separately registered campaigns use gpt-5.6-luna/high and integrated SDK 0
 
 Per-trial SDK estimate limit is USD 0.05; these limits are not invoice caps. Confirmation cases were selected after partial canary inspection but before their own outcomes and before global execution. They do not select the runtime intervention. Their fixture/evaluator are separate; exact card CSS criteria do not certify aesthetic quality. Grader self-check examples never enter agent workspaces.
 
-Canary: all arms achieve 4/4 audited completed successes. Modified tokens are 72,931 versus 101,476 reference and 71,388 Cline: a 28% reference gain, **2% more than Cline**. Modified preserves the applicable accessibility skill invocation. Global and confirmation results are pending. Do not infer superiority from a favorable subset.
+Canary: all arms achieve 4/4 audited completed successes. Modified tokens are 72,931 versus 101,476 reference and 71,388 Cline: a 28% reference gain, **2% more than Cline**. Modified preserves the applicable accessibility skill invocation.
+
+Global: all 150 trials and 600 compressed artifacts reviewed/verified. Audited completed tasks are reference 46/50, modified 47/50 and Cline 41/50. Matched completed-success total-token ratios are modified/reference 0.647 [0.579,0.719] (43 reconciled pairs), modified/Cline **1.118 [1.014,1.250]** (38 pairs). Modified/Cline estimated-cost ratio is 0.740 [0.668,0.829], duration 0.831 [0.704,0.972] (39 pairs). This establishes a reference token gain and finite-panel quality/cost/time gains versus the configured native control, while contradicting native token superiority. Exploratory completion-difference intervals include zero; no population noninferiority claim.
+
+Skill loads fall from 36/50 to 4/50. All-arm failure-inclusive usage remains published: one modified and seven native token/cost records are unreconciled; every cache/request record is incomplete. The extended-diacritic diagnostic reduces modified completed success to 45/50 versus reference 46/50 and native 40/50. Keep this adverse quality result and all four registered criterion conventions. Decision: retain scope metadata's measured reference resource mechanism and investigate semantic misses/read-edit round trips. Confirmation results are pending; campaigns remain separate.
 
 Reproduction uses the existing installed toolchain and inherited provider environment, with no credential logging:
 

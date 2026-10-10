@@ -12,8 +12,12 @@ for (const row of results.rows) {
   const skills=tools.filter(x=>x.tool==='skills').map(x=>x.input);
   const unused=tools.filter(x=>x.tool==='run_commands').map(x=>Object.fromEntries(Object.entries(x.input).filter(([key])=>key!=='commands'))).filter(x=>Object.keys(x).length);
   const blockedEditsByCategory={};
-  for(const tool of tools.filter(x=>x.tool==='edit_code'&&x.output?.status==='blocked')) {
-    const category=tool.output.category??'unspecified';blockedEditsByCategory[category]=(blockedEditsByCategory[category]??0)+1;
+  const records=gunzipSync(await readFile(join(directory,'traces',`${row.name}.events.jsonl.gz`))).toString().trim().split('\n').filter(Boolean).map(line=>JSON.parse(line));
+  for(const {event} of records.filter(({event})=>event?.type==='tool'&&event.payload.phase==='finished')) {
+    const tool=event.payload.toolCall?.name??event.payload.tool;
+    const output=event.payload.output??event.payload.result;
+    if(tool!=='edit_code'||output?.status!=='blocked')continue;
+    const category=output.category??'unspecified';blockedEditsByCategory[category]=(blockedEditsByCategory[category]??0)+1;
   }
   const context=execution.metrics?.context;
   rows.push({name:row.name,id:row.id,repetition:row.repetition,arm:row.arm,

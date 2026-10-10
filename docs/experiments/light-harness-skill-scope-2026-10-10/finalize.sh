@@ -31,6 +31,7 @@ if [[ "$panel" == global ]]; then
   node tools/terminal_bench/corpus/light-study-criterion-sensitivity.mjs "$dest" --original-css-build
 fi
 node tools/terminal_bench/corpus/light-study-skill-mechanism.mjs "$dest"
-node tools/terminal_bench/corpus/light-study-recovery-inspection.mjs "$dest"
+node tools/terminal_bench/corpus/light-study-recovery-inspection.mjs "$pilot"
+cp "$pilot/recovery-inspection.json" "$dest/"
 node tools/terminal_bench/corpus/light-study-quality-uncertainty.mjs "$dest"
 node tools/terminal_bench/corpus/light-study-integrity.mjs "$dest"
