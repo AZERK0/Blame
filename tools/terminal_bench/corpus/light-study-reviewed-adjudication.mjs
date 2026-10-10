@@ -1,4 +1,4 @@
-// Assemble an audit only after a human supervising agent has inspected every trace.
+// Assemble an audit only after the supervising agent has inspected every trace.
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -24,8 +24,9 @@ for (const d of candidates.decisions) {
   for(const [filename,field] of [['events.jsonl','eventsSha256'],['workspace.diff','diffSha256']]) {
     const actual=createHash('sha256').update(await readFile(join(root,d.name,filename))).digest('hex');assert.equal(actual,review[field]);assert.equal(actual,row[field]);
   }
-  Object.assign(d,review,{registeredObligationsSuccess:d.functionalSuccess&&d.taskObligations,independentSuccess:d.independentSuccessCandidate,retrievalObserved:false});
+  Object.assign(d,review,{registeredObligationsSuccess:d.functionalSuccess&&d.taskObligations,independentSuccess:d.independentSuccessCandidate,retrievalObserved:review.retrievalObserved===true});
   if(typeof review.criteriaOverride==='boolean') {assert.ok(review.overrideEvidence);d.independentSuccess=review.criteriaOverride;}
+  d.independentSuccess&&=!d.retrievalObserved;
   if(supplements[row.id]) {
     const {file,field,data}=supplements[row.id],r=data.rows.find(r=>r.name===d.name);assert.ok(r);
     d.supplementalReplay={artifact:file,passed:r[field],sourceSha256:r.sourceSha256};
