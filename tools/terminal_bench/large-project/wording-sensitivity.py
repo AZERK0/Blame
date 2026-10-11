@@ -49,3 +49,23 @@ result = {"selectedAfterTraceInspection": True,
           "verifierSha256": hashlib.sha256(verifier.read_bytes()).hexdigest(),
           "rows": output}
 destination.write_text(json.dumps(result, indent=2) + "\n")
+published = destination.parent
+original = json.loads((published / "results.json").read_text())
+secondary = published / "wording-sensitivity"
+secondary.mkdir(exist_ok=True)
+for row in original["rows"]:
+    sensitivity = next(item for item in output if item["name"] == row["name"])
+    row["registeredAuditedCompletion"] = row["auditedCompletion"]
+    row["auditedSuccess"] = sensitivity["wordingAuditedCompletion"]
+    row["auditedCompletion"] = sensitivity["wordingAuditedCompletion"]
+original["endpoint"] = "Exploratory post-selected minimum-eight wording sensitivity, not the registered T5 endpoint."
+(secondary / "results.json").write_text(json.dumps(original, indent=2) + "\n")
+subprocess.run(["node", "tools/terminal_bench/corpus/light-study-compare.mjs", str(secondary)],
+               check=True, stdout=subprocess.DEVNULL)
+result["summary"] = {
+    arm: {"trials": sum(row["arm"] == arm for row in output),
+          "wordingFunctionalSuccess": sum(row["arm"] == arm and row["wordingFunctionalSuccess"] for row in output),
+          "wordingAuditedCompletion": sum(row["arm"] == arm and row["wordingAuditedCompletion"] for row in output)}
+    for arm in ["baseline", "modified", "cline"]
+}
+destination.write_text(json.dumps(result, indent=2) + "\n")
