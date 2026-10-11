@@ -959,6 +959,48 @@ test("run_task applies explicit Prettier files as one journaled edit", async () 
   );
 });
 
+for (const prefix of ["npx --no-install prettier", "npm exec --no -- prettier"]) {
+  test(prefix + " formats atomically and rolls back failed batches", async () => {
+    const note = "# Note\n\nSource text\n";
+    await withFormatterWorkspace(
+      { "first.ts": "export const first={value:1}\n", "NOTE.md": note,
+        "invalid.ts": "export const INVALID = ;\n" },
+      async (root) => {
+        const manifest = await readFile(join(root, "package.json"));
+        const workspace = lightWorkspace(root, "npm-formatter");
+        const result = await workspace.tasks.run({
+          kind: "command", command: prefix + " --write first.ts NOTE.md",
+        });
+        assert.equal(result.status, "ok", JSON.stringify(result));
+        assert.equal(data(result).mutation, "deterministic_format");
+        assert.equal(await readFile(join(root, "first.ts"), "utf8"),
+          "export const first = { value: 1 };\n");
+        assert.equal(await readFile(join(root, "NOTE.md"), "utf8"), note);
+        assert.deepEqual(await readFile(join(root, "package.json")), manifest);
+        const journal = new SessionJournal(root, "npm-formatter");
+        const before = await journal.completionSnapshot();
+        assert.equal(record(before.validations.at(-1)).evidenceOrigin, "formatter_output");
+        assert.equal(before.validations.at(-1)?.sourceRevisionId, before.sourceRevisionId);
+        const failed = await workspace.tasks.run({
+          kind: "command", command: prefix + " --write first.ts invalid.ts",
+        });
+        assert.equal(failed.status, "blocked");
+        const after = await journal.completionSnapshot();
+        assert.equal(after.sourceRevisionId, before.sourceRevisionId);
+        assert.deepEqual(after.validations, before.validations);
+        assert.equal(await readFile(join(root, "invalid.ts"), "utf8"), "export const INVALID = ;\n");
+        assert.equal(await readFile(join(root, "first.ts"), "utf8"),
+          "export const first = { value: 1 };\n");
+        const combined = await workspace.tasks.run({
+          kind: "command", command: prefix + " --write first.ts && echo changed",
+        });
+        assert.equal(combined.status, "blocked");
+        assert.equal((await journal.completionSnapshot()).sourceRevisionId, before.sourceRevisionId);
+      },
+    );
+  });
+}
+
 test("run_task never writes package-manager progress into formatted Markdown", async () => {
   const original = "# Note\n\nProgress: source text\n";
   await withFormatterWorkspace({ "NOTE.md": original }, async (root) => {

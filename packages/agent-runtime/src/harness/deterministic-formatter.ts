@@ -37,7 +37,7 @@ export class DeterministicFormatter {
 
   recovery(command: string) {
     if (!/\bprettier\b[^\n]*\s--write(?:\s|$)/u.test(command)) return undefined;
-    return "This request combines or ambiguously scopes Prettier. Submit `pnpm exec prettier --write <explicit existing files>` alone; it will be applied as one atomic journaled edit.";
+    return "This request combines or ambiguously scopes Prettier. Submit `pnpm exec prettier --write <explicit existing files>` alone; for npm projects use `npx --no-install prettier --write <explicit existing files>` or `npm exec --no -- prettier --write <explicit existing files>`. It will be applied as one atomic journaled edit.";
   }
 
   async format(request: FormatterCommand, cwd: string, signal?: AbortSignal) {
@@ -173,6 +173,8 @@ function errorMessage(error: unknown) {
 }
 
 const formatterPrefixes = [
+  ["npx", "--no-install", "prettier"],
+  ["npm", "exec", "--no", "--", "prettier"],
   ["pnpm", "exec", "prettier"],
   ["pnpm", "prettier"],
   ["yarn", "prettier"],
