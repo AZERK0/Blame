@@ -26,6 +26,7 @@ async function bindings() {
   const inputs = {};
   for (const path of [
     "tools/terminal_bench/large-project/run.mjs", "tools/terminal_bench/large-project/feature-checks.ts",
+    "tools/terminal_bench/large-project/run-panels.py",
     "tools/terminal_bench/corpus/light-study-accounting.mjs",
     "docs/experiments/light-harness-large-project-2026-10-11/protocol.json",
     "pnpm-lock.yaml", "packages/agent-runtime/dist/usage-audit.js",

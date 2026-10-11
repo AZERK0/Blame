@@ -1,0 +1,8 @@
+{
+  "differences": [
+    "harness/light-tools.js"
+  ],
+  "singleProductionDescriptionChange": true,
+  "sameToolInputSchemas": true,
+  "checkedBeforeModelCalls": true
+}

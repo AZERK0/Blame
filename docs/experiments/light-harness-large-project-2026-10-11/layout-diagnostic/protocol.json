@@ -7,19 +7,19 @@
   "tasks": [
     {
       "id": "issue-tag",
-      "partition": "confirmation",
+      "partition": "diagnostic",
       "maxIterations": 18,
       "timeoutSeconds": 300
     },
     {
       "id": "priority-score",
-      "partition": "confirmation",
+      "partition": "diagnostic",
       "maxIterations": 18,
       "timeoutSeconds": 300
     },
     {
       "id": "receipt-summary",
-      "partition": "confirmation",
+      "partition": "diagnostic",
       "maxIterations": 18,
       "timeoutSeconds": 300
     }
@@ -50,16 +50,16 @@
     "panelObservedCostStopUsd": 0.15,
     "policy": "Existing USD 0.05 per-trial SDK estimate guard; stop starting trials at the registered panel observed estimate. Canary and global guards are separate. Not invoice caps; keep all missing usage and unexecuted planned trials."
   },
-  "ordering": "Registered existing driver: original task order; rotate arms by task index; one repetition; no replacement.",
-  "quality": "Primary audited full instruction compliance AND successful runtime completion. Fresh cases independently require behavior, signature/outside-code preservation, multiline two-space top-level body statements and actual root build after last edit. Known global semantic checks extended Unicode marks, valid percent and the four literal-percent family conventions now primary uniformly; original official/base endpoints and all timestamp/optional-field sensitivities retained. No solution retrieval/feedback or recovery of answers.",
+  "ordering": "Original task order and arm rotation; one repetition; sequential, no replacement.",
+  "quality": "Known T4 behavior/layout diagnostics reused uniformly, not fresh confirmation. Require all bounded behavior, public signature/outside-code preservation, exact requested two-space top-level statements and actual declared root build after last edit, plus runtime completion and no solution retrieval. Record scorer success, technical admitted verification and full audited compliance separately.",
   "accounting": "Observe input+output tokens as primary efficiency, with task-matched audited-completion AND usage-reconciled pairs, plus whole-panel success/failure resources. Cache tokens are subsets of input; reasoning is a subset of output; do not double count. Preserve timeouts and missing request/cache/provider usage. Report task-cluster paired uncertainty. Category bytes measure repeated context exposure, not billed tokens; native categories absent.",
   "decision": "T5 retention requires a directly observed prevented normalization mistake or successful requested layout route and compatible quality across all three known layout diagnostics and new real-project tasks. Keep all unfavorable comparisons; one small panel cannot prove population noninferiority.",
-  "mechanism": "Count accepted no-op tool outputs, repeated identical no-op edit input sequences, SDK identical-call/mistake loop aborts, edited/reviewed source, independent body layout in fresh cases, false completion with unmet criteria, total tools/model requests. Data hints are exposure, not success. Fewer no-ops and loop aborts must precede causal recovery inference.",
+  "mechanism": "Upfront description exposure must precede explicit braced body or permitted patch that satisfies layout. Count unbraced normalization mistakes, accepted no-ops, blocked edits, layout recovery and false completed criteria. A compliant edit is not proof that the hint caused the choice; compare paired reference and native and inspect actual route.",
   "risk": [
     "Hint might encourage premature finish while behavior/style or required validation is still unmet.",
     "Tokens/latency overhead on benign no-ops; no loop-limit relaxation.",
     "Repeated selected studies can overfit the known corpus; fresh selected mechanism cases are not an external population sample."
   ],
   "versionBindingAt": "2026-10-11T18:20:29.045690+00:00",
-  "baselineComposition": "Retained T1/T2/H3 plus F1 formatter isolation; T3 annotation restored to 6ab reference before both arms. Clean committed runtime."
+  "baselineComposition": "Retained T1/T2/H3 plus F1-F5 local repairs, T3/T4 retired. Clean committed runtime."
 }
