@@ -2649,7 +2649,7 @@ test("edit receipts omit echoed diffs and unrelated aliases", async () => {
   });
 });
 
-test("accepted no-op guidance preserves source and journal while allowing layout edits", async () => {
+test("no-op edits preserve source and journal while allowing explicit body layout", async () => {
   const initial = 'export function response() {\n  return {\n      id: "p",\n    };\n}\n';
   await withWorkspace({ "response.ts": initial }, async (root) => {
     const workspace = lightWorkspace(root, "noop-guidance");
@@ -2670,10 +2670,7 @@ test("accepted no-op guidance preserves source and journal while allowing layout
     assert.equal(after.sourceRevisionId, before.sourceRevisionId);
     assert.deepEqual(after.changedPaths, []);
     assert.deepEqual(after.validations, []);
-    const guidance = String(record(data(result)).guidance);
-    assert.match(guidance, /Do not repeat/u);
-    assert.match(guidance, /remaining criteria/u);
-    assert.match(guidance, /required checks/u);
+    assert.equal(record(data(result)).guidance, undefined);
     const changed = await workspace.editCode({ operations: [{
       kind: "symbol",
       target: "response.ts#response",
