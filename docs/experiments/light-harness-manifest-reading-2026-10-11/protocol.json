@@ -72,5 +72,7 @@
   "decision": "Retain only if scoped route actually appears, all tasks retained show compatible audited quality and paired summed token ratio below one with task-cluster interval entirely below one; no weaker scope or validation. Otherwise retire or deepen. Native comparisons kept regardless of direction. Three reused task clusters are diagnostic and cannot certify global or population efficiency.",
   "baselineSource": "To be bound after T5 decision, before any T6 calls",
   "selectionKind": "diagnostic",
-  "risk": "Overhead of an unnecessary search on small manifests or omission of dependency/export context; raw access and exact current-source coverage remain available."
+  "risk": "Overhead of an unnecessary search on small manifests or omission of dependency/export context; raw access and exact current-source coverage remain available.",
+  "descriptionAppend": "For sections of a large package.json, first search_code for the key within that file, then read its short line range; a raw prefix may omit scripts.",
+  "descriptionRegisteredAt": "2026-10-11T18:40:52.830854+00:00"
 }
