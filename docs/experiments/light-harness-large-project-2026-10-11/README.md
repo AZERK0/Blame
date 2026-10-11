@@ -1,0 +1,5 @@
+Larger real-project benchmark, registered before model calls.
+
+The user questioned whether small fixtures expose semantic navigation savings. date-fns v4.1.0 is the first selected real TS repository, pinned at 313b902b9a72c64501074db9bc2b9897d2db5140. Three new feature requests and two repetitions compare clean retained Light, one upfront body-layout description change, and integrated Cline SDK 0.0.82. All three tasks remain in the panel regardless of outcome. Repository size is a stressor, not an efficacy result.
+
+Upstream lock installation succeeded; 250 test files report 3140 passed and 18 skipped, selected scripts 141 passed, and root types succeeds. Existing skipped tests are retained. No model trials have started. Runtime/evaluator/driver hashes and immutable execution bindings will be fixed before calls. The original small-corpus T4 campaign continues separately. See protocol.json for exact requests, criteria, accounting and USD 0.30 observed estimate guard with USD 0.05 per-trial SDK guard.
