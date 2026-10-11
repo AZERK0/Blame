@@ -57,7 +57,7 @@
   "provider": "openai-codex",
   "apiUrl": "https://api.blame.so/api/v1",
   "sdk": "0.0.82",
-  "intervention": "T5 only: upfront edit_code description explains that unbraced replace_body content inherits existing indentation whereas an explicitly braced body preserves layout. Runtime semantics and all read/guard/completion/cache behavior stay identical. Baseline and modified both include retained F1-F5, T1/T2/H3; T4 retention will be settled before runtime binding and calls.",
+  "intervention": "T5 only: upfront edit_code description explains that unbraced replace_body content inherits existing indentation whereas an explicitly braced body preserves layout. Runtime semantics and all read/guard/completion/cache behavior stay identical. Baseline and modified both include retained F1-F5, T1/T2/H3; T4 was retired after its completed 192-call gate; it is absent from both frozen T5 arms.",
   "budgets": {
     "perTrialSdkCostLimitUsd": 0.05,
     "panelObservedCostStopUsd": 0.3,
@@ -69,5 +69,7 @@
   "quality": "Record official runtime completion separately from independently executed existing tests, independently held-out feature behavior, audited request compliance and no solution retrieval. Required selected tests and types must actually succeed after last edit in agent trace; grader reruns cannot replace agent proof. Full 250-file suite is also rerun by independent grader. Retain all failures/timeouts/unexecuted and missing consumption. Manual SHA-bound trace/final source review required before audited completion.",
   "accounting": "Input+output tokens without double counting cache/reasoning; per-request aggregate reconciliation, cache completeness separate. Estimated API cost is not invoice. Runner and outer, preparation and verifier durations separate. Report whole panel lower bounds and task-matched audited-completion plus reconciled consumption pairs; task-cluster uncertainty with only three clusters is exploratory. Compare modified/reference, modified/native and reference/native; no pooling with earlier campaigns.",
   "mechanism": "Inspect symbol/range/raw reads, returned-source bytes, repeated contextual exposure and model requests. Tool description is an exposure, not a causal benefit. Count accepted no-ops, layout corrections, blocked edits and unchanged loop stops. Larger source size alone does not prove token savings.",
-  "decision": "Retain T5 only with actual mechanism recovery, compatible quality on known layout diagnostics and fresh real-project tasks, and no scope/validation regression. A favorable model sample cannot establish universal noninferiority or no remaining margin. Publish negative/inconclusive native comparisons unchanged."
+  "decision": "Retain T5 only with actual mechanism recovery, compatible quality on known layout diagnostics and fresh real-project tasks, and no scope/validation regression. A favorable model sample cannot establish universal noninferiority or no remaining margin. Publish negative/inconclusive native comparisons unchanged.",
+  "baselineSource": "3e5186a7",
+  "versionBindingAt": "2026-10-11T18:20:29.045301+00:00"
 }

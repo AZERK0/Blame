@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "registeredAt": "2026-10-11T18:10:35.027527+00:00",
-  "baselineSource": "Committed retained runtime including F1-F5, after settling T4; hashes bound before T5 calls.",
+  "baselineSource": "3e5186a7",
   "modifiedSource": "T5 only upfront body-layout description, identical runtime semantics.",
   "intervention": "Clarify brace-delimited replace_body normalization before editing in edit_code description; no mutation, schema, guard, layout algorithm or validation changes.",
   "tasks": [
@@ -60,6 +60,6 @@
     "Tokens/latency overhead on benign no-ops; no loop-limit relaxation.",
     "Repeated selected studies can overfit the known corpus; fresh selected mechanism cases are not an external population sample."
   ],
-  "versionBindingAt": "2026-10-11T16:04:32.196572+00:00",
+  "versionBindingAt": "2026-10-11T18:20:29.045690+00:00",
   "baselineComposition": "Retained T1/T2/H3 plus F1 formatter isolation; T3 annotation restored to 6ab reference before both arms. Clean committed runtime."
 }
