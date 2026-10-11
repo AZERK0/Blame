@@ -980,8 +980,9 @@ test("run_task never writes package-manager progress into formatted Markdown", a
 
 test("run_task leaves every file unchanged when Prettier fails", async () => {
   const original = "export const first={value:1}\n";
+  const invalid = "export const INVALID = ;\n";
   await withFormatterWorkspace(
-    { "first.ts": original, "invalid.ts": "INVALID\n" },
+    { "first.ts": original, "invalid.ts": invalid },
     async (root) => {
       const workspace = lightWorkspace(root, "formatter-rollback");
       const result = await workspace.tasks.run({
@@ -991,6 +992,12 @@ test("run_task leaves every file unchanged when Prettier fails", async () => {
       assert.equal(result.status, "blocked");
       if (result.status === "blocked") assert.equal(result.category, "code");
       assert.equal(await readFile(join(root, "first.ts"), "utf8"), original);
+      assert.equal(await readFile(join(root, "invalid.ts"), "utf8"), invalid);
+      assert.deepEqual(
+        (await new SessionJournal(root, "formatter-rollback").completionSnapshot())
+          .changedPaths,
+        [],
+      );
     },
   );
 });

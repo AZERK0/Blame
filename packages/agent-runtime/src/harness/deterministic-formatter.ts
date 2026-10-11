@@ -102,9 +102,14 @@ async function runFormatter(
   cwd: string,
   signal?: AbortSignal,
 ) {
+  // stdout becomes source text; package-manager progress must stay out of it.
+  const args =
+    request.executable === "pnpm"
+      ? ["--reporter=silent", ...request.args]
+      : request.args;
   return execa(
     request.executable,
-    [...request.args, "--stdin-filepath", path],
+    [...args, "--stdin-filepath", path],
     {
       cancelSignal: signal,
       cwd,
