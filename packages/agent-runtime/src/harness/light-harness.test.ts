@@ -1816,6 +1816,53 @@ test("mismatched patches return bounded current context", async () => {
   });
 });
 
+test("scoped patch refusals retain recovery without widening the target", async () => {
+  for (const ambiguous of [false, true]) {
+    const body = ambiguous
+      ? "{\n  void 1;\n  void 1;\n  return 1;\n}"
+      : "{ return 1; }";
+    const source = `export function amount() ${body}\nexport function neighbor() { return 9; }\n`;
+    await withWorkspace({ "functions.ts": source }, async (root) => {
+      const workspace = lightWorkspace(root, "scoped-recovery");
+      const alias = await symbolAlias(workspace, "amount");
+      const journal = new SessionJournal(root, "scoped-recovery");
+      const before = await journal.completionSnapshot();
+      const result = await workspace.editCode({ operations: [{
+        kind: "patch",
+        target: alias,
+        patch: applyPatch("functions.ts", ambiguous
+          ? ["-  void 1;", "+  void 2;"]
+          : ["-export function amount() { return 1; }", "+export function amount() { return 2; }"]),
+      }] });
+      assert.equal(result.status, "blocked");
+      if (result.status === "blocked")
+        assert.match(result.recovery ?? "", ambiguous
+          ? /Do not resend the same patch/u : /current text/u);
+      assert.equal(await readFile(join(root, "functions.ts"), "utf8"), source);
+      const after = await journal.completionSnapshot();
+      assert.equal(after.sourceRevisionId, before.sourceRevisionId);
+      assert.deepEqual(after.changedPaths, []);
+      assert.deepEqual(after.validations, []);
+      const outside = await workspace.editCode({ operations: [{
+        kind: "patch",
+        target: alias,
+        patch: applyPatch("functions.ts", [
+          "-function neighbor() { return 9; }", "+function neighbor() { return 99; }",
+        ]),
+      }] });
+      assert.equal(outside.status, "blocked");
+      assert.equal(await readFile(join(root, "functions.ts"), "utf8"), source);
+      const repaired = await workspace.editCode({ operations: [{
+        kind: "symbol", target: alias, action: "replace_body", content: "{ return 2; }",
+      }] });
+      assert.equal(repaired.status, "ok");
+      assert.equal(data(repaired).changed, true);
+      assert.equal(await readFile(join(root, "functions.ts"), "utf8"),
+        "export function amount() { return 2; }\nexport function neighbor() { return 9; }\n");
+    });
+  }
+});
+
 test("aliases survive workspace reload and ambiguous relocation never writes", async () => {
   const source = "export function target() { return 1 }\n";
   await withWorkspace({ "target.ts": source }, async (root) => {

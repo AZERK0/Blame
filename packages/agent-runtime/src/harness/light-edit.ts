@@ -816,16 +816,18 @@ function invalidParseResult(file: FinalFile): LightToolResult<unknown> {
 
 function editFailure(error: unknown): LightToolResult<unknown> {
   const diagnosticId = `edit-${Date.now().toString(36)}`;
-  if (error instanceof SymbolResolutionError)
+  if (error instanceof SymbolResolutionError) {
+    const recovery = error.candidates.length
+      ? JSON.stringify(error.candidates)
+      : patchFailureRecovery(error.message);
     return {
       status: "blocked",
       category: "input",
       message: error.message,
-      ...(error.candidates.length
-        ? { recovery: JSON.stringify(error.candidates) }
-        : {}),
+      ...(recovery ? { recovery } : {}),
       diagnosticId,
     };
+  }
   const message = errorMessage(error);
   const recovery = patchFailureRecovery(message);
   return {
