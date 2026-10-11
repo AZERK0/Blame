@@ -31,7 +31,8 @@ export function requiredBuildEvidence(tools, scenario, workspaceRoot) {
     }] : [];
     for (const {command,passed} of commands) {
       if (!passed) continue;
-      let directory = cwd(tool.input.cwd);
+      // Frozen native SDK executes only commands; an extra cwd key is inert.
+      let directory = tool.tool === 'run_task' ? cwd(tool.input.cwd) : '.';
       // Bounded evidence extractor; unknown shell forms remain unknown for manual review.
       for (const segment of command.split(/\s*&&\s*/u)) {
         const cd = segment.match(/^cd\s+(.+)$/u);

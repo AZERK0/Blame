@@ -16,4 +16,6 @@ assert.equal(inspect([edit,native(['node -e "console.log(\'npm run build\')"'])]
 for (const masked of ['npm run build ; true', 'npm run build || true', 'npm run build | cat', 'npm run build & true'])
   assert.equal(inspect([edit,native([masked,'cd /fixture/packages/labels && npm run build'])]),false);
 assert.equal(inspect([edit,native(['npm run build && npm --prefix packages/labels run build'])]),true);
-console.log('Required root/child checks, failure, freshness, inert metadata and masked-exit controls passed.');
+const inertCwd={...native(['npm run build']),input:{commands:['npm run build'],cwd:'packages/labels'}};
+assert.equal(inspect([edit,build('build'),inertCwd]),false);
+console.log('Required root/child checks, failure, freshness, inert metadata/cwd and masked-exit controls passed.');
