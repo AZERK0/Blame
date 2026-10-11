@@ -1,0 +1,6 @@
+{
+  "name": "noop-confirmation",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "tsc --noEmit", "typecheck": "tsc --noEmit" }
+}
