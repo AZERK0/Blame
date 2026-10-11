@@ -970,6 +970,7 @@ test("run_task never writes package-manager progress into formatted Markdown", a
     assert.equal(result.status, "ok", JSON.stringify(result));
     assert.equal(await readFile(join(root, "NOTE.md"), "utf8"), original);
     assert.equal(record(data(result)).changed, false);
+    assert.equal(record(data(result)).guidance, undefined);
     const completion = await new SessionJournal(
       root,
       "formatter-source-channel",
@@ -2509,6 +2510,45 @@ test("edit receipts omit echoed diffs and unrelated aliases", async () => {
       [target],
     );
     assert.match(String(receipt.sourceRevisionId), /^src_/u);
+  });
+});
+
+test("accepted no-op guidance preserves source and journal while allowing layout edits", async () => {
+  const initial = 'export function response() {\n  return {\n      id: "p",\n    };\n}\n';
+  await withWorkspace({ "response.ts": initial }, async (root) => {
+    const workspace = lightWorkspace(root, "noop-guidance");
+    await workspace.readCode({ target: "response.ts#response", view: "symbol" }, {});
+    const journal = new SessionJournal(root, "noop-guidance");
+    const before = await journal.completionSnapshot();
+    const result = await workspace.editCode({ operations: [{
+      kind: "symbol",
+      target: "response.ts#response",
+      action: "replace_body",
+      content: 'return {\n    id: "p",\n  };',
+    }] });
+    assert.equal(result.status, "ok");
+    assert.equal(record(data(result)).changed, false);
+    assert.equal(await readFile(join(root, "response.ts"), "utf8"), initial);
+    assert.equal("receipt" in result, false);
+    const after = await journal.completionSnapshot();
+    assert.equal(after.sourceRevisionId, before.sourceRevisionId);
+    assert.deepEqual(after.changedPaths, []);
+    assert.deepEqual(after.validations, []);
+    const guidance = String(record(data(result)).guidance);
+    assert.match(guidance, /Do not repeat/u);
+    assert.match(guidance, /remaining criteria/u);
+    assert.match(guidance, /required checks/u);
+    const changed = await workspace.editCode({ operations: [{
+      kind: "symbol",
+      target: "response.ts#response",
+      action: "replace_body",
+      content: '{\n  return {\n    id: "p",\n  };\n}',
+    }] });
+    assert.equal(changed.status, "ok");
+    assert.equal(record(data(changed)).changed, true);
+    assert.equal(record(data(changed)).guidance, undefined);
+    assert.equal(await readFile(join(root, "response.ts"), "utf8"),
+      'export function response() {\n  return {\n    id: "p",\n  };\n}\n');
   });
 });
 

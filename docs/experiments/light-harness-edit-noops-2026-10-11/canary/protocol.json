@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "registeredAt": "2026-10-11T15:56:19.751579+00:00",
-  "baselineSource": "Actual retained reference after T3 decision plus F1; clean committed runtime bound and frozen before any T4 calls.",
+  "baselineSource": "eac7c950da1170769746f552c547737857ee4631",
   "modifiedSource": "Clean committed single accepted-no-op guidance change in light-edit.ts; artifact hashes bound before calls.",
   "intervention": "T4: add explicit guidance to accepted edit_code no-op data only. Keep changed=false, unchanged source/revision/receipts/validations, observations, parse guards, formatter, mutation semantics, SDK loop limits and finish admission unchanged. No hint on a changed or blocked edit.",
   "tasks": [
@@ -65,5 +65,7 @@
     "Hint might encourage premature finish while behavior/style or required validation is still unmet.",
     "Tokens/latency overhead on benign no-ops; no loop-limit relaxation.",
     "Repeated selected studies can overfit the known corpus; fresh selected mechanism cases are not an external population sample."
-  ]
+  ],
+  "versionBindingAt": "2026-10-11T16:04:32.196054+00:00",
+  "baselineComposition": "Retained T1/T2/H3 plus F1 formatter isolation; T3 annotation restored to 6ab reference before both arms. Clean committed runtime."
 }

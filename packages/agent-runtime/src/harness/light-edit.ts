@@ -98,7 +98,19 @@ export class LightEditService {
     try {
       const snapshot = await this.files.snapshot(context.signal);
       const plans = await this.plan(input, snapshot);
-      return await this.applyPlans(plans, snapshot, context.signal);
+      const result = await this.applyPlans(plans, snapshot, context.signal);
+      if (result.status === "ok" && typeof result.data === "object" &&
+          result.data !== null && "changed" in result.data &&
+          result.data.changed === false)
+        return {
+          ...result,
+          data: {
+            ...result.data,
+            guidance:
+              "No files changed. Do not repeat this edit. Compare the current source with the user's remaining criteria. For layout changes, read a range and use a file patch or an explicit braced body. If the criteria are met, run any required checks on the final source, then finish_task.",
+          },
+        };
+      return result;
     } catch (error) {
       return editFailure(error);
     }
