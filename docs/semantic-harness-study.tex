@@ -849,6 +849,44 @@ required declarations. Uniform six-trial review accepts this recorded validation
 the original build candidate and stricter-build sensitivity remain published.
 This changes no agent action, source, official score or instruction.
 
+\section{Edit grammar follow-up: implemented, measurements pending}
+The current Light arm in the skill-scope campaign records five invalid
+\code{kind} discriminator attempts in 50 global trials and two in eight
+confirmation trials. Those earlier confirmation cases are now known diagnostics.
+For example, \code{1-permission-matrix-modified-clean}, tool 3, supplies
+\code{kind: "replace_body"}; the schema correctly expects
+\code{kind: "symbol", action: "replace_body"}. Source-coverage refusals and
+patch-context mismatches are separate mechanisms. Reading a symbol already
+returns its body; this is not a missing-symbol-body implementation defect.
+
+T2 clarifies only the \code{edit_code} description, with the existing
+\code{kind}/\code{action} distinction and one symbolic JSON example.
+Runtime commit \code{bcfdce53} is compared with \code{550d4fb2}, which already
+includes T1 and H3. Only compiled \code{harness/light-tools.js} differs.
+Schemas, guarded executor, read routing, skill bodies and recovery are unchanged.
+The causal hypothesis is fewer invalid discriminator attempts and consequently
+fewer correction round trips. Added prefix cost, excessive body replacement
+and changed patch selection are regression risks. Contract replays retain
+atomic rejection of an invalid batch, rejection of unobserved bodies and
+successful observed-body editing. Both arms pass 237 of 238 focused checks;
+the same previously documented Prettier test fails in both. Builds and
+changed-file lint pass.
+
+Before T2 outcomes, a 24-trial canary selects three known invalid-kind tasks
+and a CSS control; the global campaign fixes all 25 known corpus tasks with
+two repetitions and three arms (150 trials). The existing runner uses
+\code{gpt-5.6-luna}/high and SDK 0.0.82, with separate USD 0.30/1.80 observed
+estimate guards and USD 0.05 per-trial guards. No unseen confirmation is
+claimed. Invalid discriminator attempts per retained trial are the mechanism
+endpoint; audited completed quality and matched reconciled resources remain
+separate. Known extended-diacritic and adapted-motion diagnostics are registered
+for this new campaign, while original scores and extraction candidates remain
+visible. Artifacts are under
+\filepath{docs/experiments/light-harness-edit-grammar-2026-10-11/}.
+Model measurements and the retain/abandon decision are pending. The next three
+active axes are T2 edit grammar, semantic acceptance beyond builds, and quiet
+request supervision; further T1 ablation and compiler-reference work are deferred.
+
 \section{Reproduction and evidence map}
 Build core, model catalog, runtime (including prompt-resource copy) and
 benchmark runner with the pinned workspace toolchain. The worker's global
