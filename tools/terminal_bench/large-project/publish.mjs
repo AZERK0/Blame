@@ -8,6 +8,8 @@ import { execFileSync } from "node:child_process";
 
 const campaign = resolve(process.argv[2]);
 const destination = resolve(process.argv[3]);
+const partition = process.argv[4] ?? "confirmation";
+assert.ok(["confirmation", "diagnostic"].includes(partition));
 const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const json = async (path) => JSON.parse(await readFile(path, "utf8"));
 const writeJson = (path, value) => writeFile(path, JSON.stringify(value, null, 2) + "\n");
@@ -30,9 +32,12 @@ for (const row of analysis.rows) {
   row.auditedCompletion = row.auditedCriteria && row.status === "succeeded";
   // Compatibility for the existing paired helper: explicitly require runtime completion.
   row.auditedSuccess = row.auditedCompletion;
-  row.partition = "confirmation";
+  row.partition = partition;
+  row.agentRequiredChecksPassed = decision.agentRequiredChecksPassed;
+  row.fullRequestCriteriaPassed = decision.fullRequestCriteriaPassed;
+  row.noSolutionRetrieval = decision.noSolutionRetrieval;
 }
-const summary = { definition: "Internal newly authored real-repository panel, not an external benchmark certification. Official runtime success, independent feature/existing-suite success, actual required agent validation and full audited completion are separate. Cache tokens subset input, reasoning subset output; incomplete usage is never zero-filled.",
+const summary = { partition, definition: "Internal real-repository panel, not an external benchmark certification. Official runtime success, frozen independent feature/existing-suite success, actual required agent validation and full audited completion are separate. Post-selected wording sensitivity never replaces the registered endpoint. Cache tokens subset input, reasoning subset output; incomplete usage is never zero-filled.",
   planned: analysis.planned, completed: analysis.completed, unexecuted: analysis.planned - analysis.completed, arms: {} };
 for (const arm of ["baseline", "modified", "cline"]) {
   const rows = analysis.rows.filter((row) => row.arm === arm);
@@ -45,6 +50,8 @@ for (const arm of ["baseline", "modified", "cline"]) {
   summary.arms[arm] = { trials: rows.length, planned: analysis.provenance.order.filter((trial) => trial.arm === arm).length,
     officialRuntimeSuccess: rows.filter((row) => row.officialRuntimeSuccess).length,
     independentFunctionalSuccess: rows.filter((row) => row.independentFunctionalSuccess).length,
+    agentRequiredChecksPassed: rows.filter((row) => row.agentRequiredChecksPassed).length,
+    manuallyReviewedRequestCriteriaPassed: rows.filter((row) => row.fullRequestCriteriaPassed).length,
     auditedCriteria: rows.filter((row) => row.auditedCriteria).length,
     auditedCompletion: rows.filter((row) => row.auditedCompletion).length,
     timeouts: rows.filter((row) => row.status === "timed_out").length,
