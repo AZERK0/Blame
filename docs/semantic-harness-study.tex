@@ -8,7 +8,7 @@
 \newcommand{\filepath}[1]{\path{#1}}
 \title{Light Semantic Harness: Applied Study}
 \author{Blame Repository Engineering Study}
-\date{October 10, 2026}
+\date{October 11, 2026}
 \begin{document}
 \maketitle
 \begin{abstract}
@@ -17,22 +17,23 @@ compare tokens, cost and duration only at comparable quality. Blame's Light
 harness provides five core primitives with syntax-aware navigation, guarded
 edits and runtime-owned completion. It does not provide compiler reference
 resolution or general acceptance proofs. Historical performance remains
-mixed. This follow-up verifies historical diagnoses against current code,
-adds bounded arguments to catalogued test tasks, and runs a separately
-registered three-arm pilot. A further reliability experiment isolates
-bounded recovery of noninteractive provider interruptions. In a 48-trial
-panel with 50\% controlled outages, webhook-expanded audited success is 15/16
-modified, 8/16 reference and 7/16 Cline; a later chronological-format sensitivity
-reduces these to 13/16, 7/16 and 6/16. A separate 150-trial ordinary internal
-corpus gives 48/50 audited completed tasks in both Light arms versus 41/50
-Cline. Recovery never activates there; modified Light uses 31\% more total
-tokens on matched completed successes versus Cline. No population superiority
-or causal ordinary H3 efficiency gain is claimed.
+mixed. Historical defects, the bounded-argument pilot and controlled
+interruption recovery remain separate from current measurements. The latest
+single change exposes enabled-skill scope before loading long instructions.
+A registered 150-trial internal panel gives 47/50 modified audited completed
+tasks, 46/50 reference and 41/50 integrated Cline. A subsequently discovered
+Unicode counterexample changes these to 45/50, 46/50 and 40/50. Matched
+completed successes use 35\% fewer modified tokens than reference, but 12\%
+more than native, with lower estimated cost and duration. A separate 24-trial
+confirmation gives 8/8, 8/8 and 7/8 completed tasks; native total-token
+superiority is again unestablished. Failures, criterion sensitivities and
+incomplete usage remain published. These finite, unblinded internal panels
+do not certify population equivalence, aesthetic quality or reconciled invoices.
 \end{abstract}
 
 \section{Method and evidence boundaries}
-The reference is \code{adb745967bb9d1abae5d5722cad46db0dd1eed15}.
-The intervention is \code{feat(harness): pass bounded argv to project test tasks}
+The initial H1 reference was \code{adb745967bb9d1abae5d5722cad46db0dd1eed15}.
+Its intervention was \code{feat(harness): pass bounded argv to project test tasks}
 (commit \code{44e1e9dc}; built before rebase as \code{b44fe410}). The runtime
 sources of those two commits are identical. The rebase preserves a concurrent
 billing change; it does not enter the frozen runtimes. Compiled snapshots,
@@ -787,6 +788,42 @@ superiority is inferred from CSS checks. Grader self-checks reject seeded
 defects, accept behavioral examples independently of object-key order and
 bound hanging programs. The USD 0.30 observed estimate guard is separate.
 No new runtime modification is introduced.
+
+All 24 confirmation trials and 96 compressed artifacts complete and pass
+integrity review. Reference/modified/native official and audited completed
+successes are 8/8, 8/8 and 7/8; functional checks are 8/8 in every arm.
+The native card timeout preserves correct CSS but lacks its required final
+build and completion. It is retained, with incomplete token/cost accounting;
+no recovery activates. Observed full-panel tokens are 164,892/143,160/114,678,
+SDK USD 0.021382/0.019794/0.026648 and runner seconds 141.7/130.3/549.1.
+Panel USD 0.067823 and maximum trial USD 0.005607 remain below the registered
+estimate guards. Cache/request accounting is incomplete in all 24.
+
+\begin{center}\small
+\begin{tabular}{@{}lrccc@{}}
+\toprule Left/right & Pairs & Tokens ratio [95\%] & SDK USD ratio [95\%] & Seconds ratio [95\%] \\
+\midrule
+Modified/reference & 8 & 0.868 [0.689,1.086] & 0.926 [0.739,1.084] & 0.920 [0.682,1.235] \\
+Modified/native & 7 & 1.099 [0.958,1.365] & 0.689 [0.583,0.871] & 0.462 [0.269,0.957] \\
+Reference/native & 7 & 1.306 [1.063,1.540] & 0.754 [0.635,0.922] & 0.495 [0.359,0.955] \\
+\bottomrule
+\end{tabular}\end{center}
+Skill loads are 5/8 reference versus 2/8 modified; both modified loads address
+the relevant design case. Input-blocked edits remain one reference and two
+modified. This small confirmation supports the scope-selection mechanism and
+lower native matched cost/time; it does not replicate a decisive reference
+token reduction or prove future noninferiority. Its four clusters and
+degenerate all-success quality interval are not a population certificate.
+Do not pool these cases with the known 25-task diagnostic corpus.
+
+Next priorities remain three: T1 description-only/reminder-only ablation and
+external confirmation with blinded, preregistered Unicode/behavior criteria;
+H2 requested-scope/source/environment admission with honest incomplete
+verification and read-coverage diagnostics; H3 instrumented quiet-request
+supervision with cancellation and repeated-effect fences. Compiler-reference,
+memory and broad read-granularity changes remain deferred. Retain the measured
+resource improvement, retain its adverse semantic counterexamples, and do not
+describe higher output-token savings as a native total-token win.
 
 Local selector replays retain another pre-existing friction: both immutable
 Light versions reject \code{packagePath: "package.json"} and
