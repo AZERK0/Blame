@@ -1,7 +1,7 @@
 {
   "checkedAt": "2026-10-11T14:47:39.260927+00:00",
   "path": "/workspace/Blame/docs/semantic-harness-study.tex",
-  "sourceSha256": "6e3f551f92d954176a28c882cf8f956309d3f67fe8aaa663c3f9e01b92b9e593",
+  "sourceSha256": "cca254dd04310729474d27fa3f4aa39a91dcbfd20a03b2a6d724f0eb7603c176",
   "compiler": "desktop native LaTeX editor",
   "result": {
     "kind": "success",
@@ -9,8 +9,8 @@
   },
   "stage": "T3 canary complete plus post-outcome formatter environment diagnosis; global and confirmation not finalized",
   "repair": "No additional repair; updated canary source compiled successfully.",
-  "previousVerifiedSource": "663e5988089b7072ea5a3b66c80216606f6753faf0e55c6b3f95813443e90f88",
-  "verifiedAt": "2026-10-11T15:54:22.064421+00:00",
+  "previousVerifiedSource": "6e3f551f92d954176a28c882cf8f956309d3f67fe8aaa663c3f9e01b92b9e593",
+  "verifiedAt": "2026-10-11T16:04:29.807505+00:00",
   "kind": "success",
   "method": "Native desktop editor compiler confirms current saved source. Kept open."
 }

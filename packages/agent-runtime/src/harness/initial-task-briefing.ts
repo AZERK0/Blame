@@ -76,10 +76,9 @@ type PackageSummary = {
 };
 
 function briefingLines(input: BriefingFacts) {
-  const visibleTasks = input.tasks
+  const scripts = input.tasks
     .filter(({ kind }) => kind !== "dependencies" && kind !== "service")
-    .slice(0, 16);
-  const scripts = visibleTasks
+    .slice(0, 16)
     .map(({ task_id }) => task_id)
     .join(", ");
   const git = input.snapshot.git
@@ -93,13 +92,6 @@ function briefingLines(input: BriefingFacts) {
     `Package manager: ${input.manager ?? "not detected"}; ${input.managerAvailability}.`,
     ...(input.environment ? [`Runtime variables: ${input.environment}.`] : []),
     `Task IDs: ${scripts || "none detected"}; pass listed IDs directly to run_task.`,
-    ...(visibleTasks.some(({ cwd }) => cwd !== ".")
-      ? [
-          `Task scopes (execution directories): ${visibleTasks
-            .map(({ task_id, cwd }) => `${task_id} -> ${cwd}`)
-            .join("; ")}.`,
-        ]
-      : []),
     `Git: ${git}.`,
     lightCapabilityDescription(),
     ...(input.candidates.length
