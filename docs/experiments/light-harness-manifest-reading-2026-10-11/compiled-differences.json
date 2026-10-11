@@ -1,0 +1,6 @@
+{
+  "agent-runtime": [
+    "harness/light-tools.js"
+  ],
+  "benchmark-runner": []
+}
