@@ -595,7 +595,7 @@ function matchingTasks(tasks: TaskCatalogItem[], requested: string) {
 
 function packageMatches(task: TaskCatalogItem, packagePath: string) {
   const normalized =
-    packagePath.replace(/\/package\.json$/u, "").replace(/\/$/u, "") || ".";
+    packagePath.replace(/(?:^|\/)package\.json$/u, "").replace(/\/$/u, "") || ".";
   return task.cwd === normalized || task.task_id.startsWith(`${normalized}:`);
 }
 

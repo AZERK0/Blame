@@ -1221,7 +1221,7 @@ test("project selectors accept the root manifest without selecting a child", asy
     }
     for (const packagePath of ["foo-package.json", "../package.json"])
       assert.equal((await workspace.tasks.run({ kind: "project", task: "build", packagePath })).status, "blocked");
-    const validations = await new SessionJournal(root, "root-manifest-selector").validationEvents();
+    const { validations } = await new SessionJournal(root, "root-manifest-selector").completionSnapshot();
     assert.ok(validations.some(value => value.taskId === "web:build" && value.status === "failed"));
   });
 });

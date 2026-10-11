@@ -1135,7 +1135,7 @@ restoring only the briefing source. Preserve the favorable known-task quality
 difference for independent replication: absent targeted mechanism and unchanged
 small fresh sample do not prove zero effect. Retained T1/T2/H3 and F1 remain.
 
-\section{Local correctness and information repairs (F1--F4)}
+\section{Local correctness and information repairs (F1--F5)}
 A further isolated replay finds a current source-integrity defect: Markdown
 has no supported parse guard, so pnpm installation progress is committed along
 with formatted text and derived lint evidence passes. This does not prove
@@ -1197,6 +1197,19 @@ No completion is invoked: derived lint lacks a task ID and does not itself
 admit verified completion. Legacy evidence, model quality and full
 invocation/environment lineage remain unchanged or unmeasured; F4 is absent
 from immutable T4 versions.
+
+F5 fixes root manifest task selection: \code{package.json} and
+\code{./package.json} fail after normalization while root directories and child
+manifests work. Register a zero-model real-command diagnostic before changing
+the exact-basename matching regex. Identical tests pass 244/245 versus 245/245;
+the sole baseline failure is the new selector fixture. Root variants accepted
+rise 2/4 to 4/4; child selectors still execute their failed exit-9 commands,
+lookalike/outside paths stay blocked and failed-child evidence remains.
+Mechanical finish replay retains failed-check refusal in both arms.
+Builds/ESLint pass; only executable \code{light-task-runner.js} changes.
+Retain under \filepath{docs/experiments/light-harness-root-selector-2026-10-11/};
+no model task-success/resources or general acceptance proof is established.
+F2--F5 are absent from immutable T4 versions.
 
 \section{Accepted no-op recovery experiment (T4, registered)}
 Two T3 reference failures have correct source and fresh checks followed by four
