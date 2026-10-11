@@ -15,7 +15,15 @@ const json = async (path) => JSON.parse(await readFile(path, "utf8"));
 const writeJson = (path, value) => writeFile(path, JSON.stringify(value, null, 2) + "\n");
 const analysis = await json(join(campaign, "analysis.json"));
 const review = await json(join(campaign, "source-review.json"));
+const protocol = await json(join(destination, "protocol.json"));
+const lifecycle = await json(join(campaign, "tool-lifecycle-inspection.json"));
 const decisions = review.decisions;
+assert.equal(new Set(decisions.map(decision => decision.name)).size, analysis.completed);
+assert.equal(decisions.length, analysis.completed);
+assert.equal(lifecycle.trials.length, analysis.completed);
+assert.equal(sha(await readFile(join(destination, "protocol.json"))), analysis.provenance.protocolSha256);
+assert.deepEqual(analysis.rows.map(({ repetition, id, arm }) => ({ repetition, id, arm })),
+  analysis.provenance.order.slice(0, analysis.completed));
 for (const row of analysis.rows) {
   const decision = decisions.find((decision) => decision.name === row.name);
   assert.equal(decision?.review, "reviewed", row.name);
@@ -27,6 +35,23 @@ for (const row of analysis.rows) {
   assert.equal(typeof decision.agentRequiredChecksPassed, "boolean");
   assert.equal(typeof decision.noSolutionRetrieval, "boolean");
   assert.equal(typeof decision.fullRequestCriteriaPassed, "boolean");
+  const calls = lifecycle.trials.find(trial => trial.name === row.name);
+  assert.equal(calls.eventsSha256, row.eventsSha256);
+  if (calls.missingIds.length || calls.startedWithoutFinish.length ||
+      calls.finishedWithoutStart.length || calls.differentInputs.length)
+    assert.ok(decision.lifecycleAdditionalReview, row.name + ": orphan/changed input needs explicit review");
+  let execution;
+  try { execution = await json(join(campaign, row.name, "result.json")); }
+  catch (error) { if (error.code !== "ENOENT") throw error; }
+  if (execution) {
+    assert.equal(execution.modelId, protocol.model);
+    assert.equal(execution.reasoningEffort, protocol.effort);
+    assert.equal(execution.providerId, protocol.provider);
+    assert.equal(execution.maxIterations, protocol.budgets.maxIterations);
+    assert.equal(execution.timeoutMs, protocol.budgets.timeoutSeconds * 1000);
+    assert.equal(execution.harness, row.arm === "cline" ? "cline" : "blame");
+    assert.equal(execution.status, row.status);
+  }
   row.auditedCriteria = row.independentFunctionalSuccess && decision.fullRequestCriteriaPassed &&
     decision.agentRequiredChecksPassed && decision.noSolutionRetrieval;
   row.auditedCompletion = row.auditedCriteria && row.status === "succeeded";
@@ -86,6 +111,8 @@ await writeJson(join(destination, "summary.json"), summary);
 await writeJson(join(destination, "source-review.json"), review);
 await writeJson(join(destination, "inventory.json"), inventory);
 await writeFile(join(destination, "tool-ledger.json"), await readFile(join(campaign, "tool-ledger.json")));
+await writeFile(join(destination, "tool-lifecycle-inspection.json"),
+  await readFile(join(campaign, "tool-lifecycle-inspection.json")));
 if (analysis.completed === analysis.planned) {
   execFileSync(process.execPath, [resolve("tools/terminal_bench/corpus/light-study-compare.mjs"), destination],
     { stdio: "ignore" });
@@ -97,6 +124,7 @@ if (analysis.completed === analysis.planned) {
 const integrity = { reviewedTraces: decisions.length, rawArtifacts: inventory.filter((entry) => !entry.missing).length,
   missingArtifacts: inventory.filter((entry) => entry.missing).length, rawByteSha256Verified: true,
   allPlannedRetained: analysis.provenance.order.length === analysis.planned,
+  frozenOrderModelEffortBudgetsVerified: true, allRecordedToolInputsReviewed: true,
   planned: analysis.planned, completed: analysis.completed, unexecuted: analysis.planned - analysis.completed,
   observedEstimatedUsd: analysis.rows.reduce((sum, row) => sum + (row.usage.cost ?? 0), 0),
   tokenCostReconciled: analysis.rows.filter((row) => row.usage.tokensCostReconciled).length,
