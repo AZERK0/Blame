@@ -1135,7 +1135,7 @@ restoring only the briefing source. Preserve the favorable known-task quality
 difference for independent replication: absent targeted mechanism and unchanged
 small fresh sample do not prove zero effect. Retained T1/T2/H3 and F1 remain.
 
-\section{Local correctness and information repairs (F1--F3)}
+\section{Local correctness and information repairs (F1--F4)}
 A further isolated replay finds a current source-integrity defect: Markdown
 has no supported parse guard, so pnpm installation progress is committed along
 with formatted text and derived lint evidence passes. This does not prove
@@ -1182,6 +1182,21 @@ repair preserving a neighbor in both arms. Identical tests pass 242/243 versus
 \code{light-edit.js} changes. Retain response consistency under
 \filepath{docs/experiments/light-harness-scoped-recovery-2026-10-11/};
 model quality/resources are unmeasured and T4 frozen versions are untouched.
+
+F4 fixes misleading provenance: two actual formatter invocations use
+\code{--stdin-filepath}, while the journal invents two \code{prettier --check}
+labels. Register before implementation, zero model budget; the deterministic
+formatter echoes already formatted bytes, testing routing rather than formatting
+quality. Replace invented commands with \code{evidenceOrigin=formatter_output};
+preserve source/output binding and scope-specific grouping after rehydration.
+Identical tests pass 243/244 versus 244/244; synthetic labels become 0/2,
+explicit origins 2/2, and both unchanged scopes survive. Builds/ESLint pass;
+only executable \code{light-task-runner.js} and \code{session-journal.js} change.
+Retain under \filepath{docs/experiments/light-harness-formatter-origin-2026-10-11/}.
+No completion is invoked: derived lint lacks a task ID and does not itself
+admit verified completion. Legacy evidence, model quality and full
+invocation/environment lineage remain unchanged or unmeasured; F4 is absent
+from immutable T4 versions.
 
 \section{Accepted no-op recovery experiment (T4, registered)}
 Two T3 reference failures have correct source and fresh checks followed by four

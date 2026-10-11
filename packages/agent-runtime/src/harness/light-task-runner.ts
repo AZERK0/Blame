@@ -260,7 +260,7 @@ export class LightTaskRunner {
     const paths = replacements.map(({ path }) => path);
     const sourceRevisionId = snapshot.revision.source_revision_id;
     await this.journal.recordValidation({
-      command: `prettier --check ${paths.join(" ")}`,
+      evidenceOrigin: "formatter_output",
       paths,
       sourceRevisionId,
       status: "passed",

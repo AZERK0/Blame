@@ -979,6 +979,35 @@ test("run_task never writes package-manager progress into formatted Markdown", a
   });
 });
 
+test("formatter evidence is derived and retains distinct unchanged scopes", async () => {
+  const sources = {
+    "first.ts": "export const first = { value: 1 };\n",
+    "second.ts": "export const second = { value: 2 };\n",
+  };
+  await withFormatterWorkspace(sources, async (root) => {
+    const workspace = lightWorkspace(root, "formatter-origin");
+    for (const [path, original] of Object.entries(sources)) {
+      const result = await workspace.tasks.run({
+        kind: "command", command: "pnpm exec prettier --write " + path,
+      });
+      assert.equal(result.status, "ok");
+      assert.equal(data(result).changed, false);
+      assert.equal(await readFile(join(root, path), "utf8"), original);
+    }
+    const completion = await new SessionJournal(root, "formatter-origin").completionSnapshot();
+    assert.equal(completion.validations.length, 2);
+    assert.deepEqual(completion.validations.flatMap(check => check.paths).sort(), Object.keys(sources).sort());
+    assert.deepEqual(completion.changedPaths, []);
+    for (const check of completion.validations) {
+      assert.equal(record(check).evidenceOrigin, "formatter_output");
+      assert.equal(check.command, undefined);
+      assert.equal(check.check, undefined);
+      assert.equal(check.status, "passed");
+      assert.equal(check.sourceRevisionId, completion.sourceRevisionId);
+    }
+  });
+});
+
 for (const variant of ["markdown", "typescript"]) {
   test("formatter evidence excludes post-commit external " + variant + " source", async () => {
     const path = variant === "markdown" ? "NOTE.md" : "value.ts";

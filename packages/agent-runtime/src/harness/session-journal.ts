@@ -33,6 +33,7 @@ export type JournalValidation = {
   category?: "code" | "command" | "environment";
   command?: string;
   cwd?: string;
+  evidenceOrigin?: "formatter_output";
   files: JournalFileState[];
   id: string;
   paths: string[];
@@ -107,12 +108,14 @@ export class SessionJournal {
   async recordValidation(input: ValidationInput) {
     const paths = input.paths ?? this.changedPaths();
     const terminal = input.terminal ?? validationTerminal(input.status);
+    const identity = input.command ?? input.taskId ??
+      (input.evidenceOrigin ? JSON.stringify([input.evidenceOrigin, paths]) : undefined);
     const event = {
       type: "validation" as const,
       ...input,
       id:
         input.id ??
-        `validation://${sha256(`${input.command ?? input.taskId}\0${now()}`)}`,
+        `validation://${sha256(`${identity}\0${now()}`)}`,
       paths,
       terminal,
       files: await this.fileStates(paths),
@@ -254,7 +257,8 @@ export class SessionJournal {
       latest.set(
         JSON.stringify([
           validation.cwd ?? ".",
-          validation.taskId ?? validation.command,
+          validation.taskId ?? validation.command ??
+            (validation.evidenceOrigin ? [validation.evidenceOrigin, validation.paths] : undefined),
           validation.args ?? [],
         ]),
         validation,
@@ -336,6 +340,7 @@ function publicValidation(validation: JournalValidation) {
     category: validation.category,
     command: validation.command,
     cwd: validation.cwd,
+    ...(validation.evidenceOrigin ? { evidenceOrigin: validation.evidenceOrigin } : {}),
     id: validation.id,
     paths: [...validation.paths],
     recovery: validation.recovery,
