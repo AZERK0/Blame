@@ -1,18 +1,18 @@
 {
   "checkedAt": "2026-10-11T14:47:39.260927+00:00",
   "path": "/workspace/Blame/docs/semantic-harness-study.tex",
-  "sourceSha256": "2b27df15b88e9624a03f93b8caedc5c83375f6d39c87e3998f293575f031f8f6",
+  "sourceSha256": "663e5988089b7072ea5a3b66c80216606f6753faf0e55c6b3f95813443e90f88",
   "compiler": "desktop native LaTeX editor",
-  "result": "success",
-  "stage": "T3 canary complete; global/confirmation not finalized",
+  "result": {
+    "kind": "success",
+    "message": "The current source compiled successfully with the desktop editor compiler."
+  },
+  "stage": "T3 canary complete plus post-outcome formatter environment diagnosis; global and confirmation not finalized",
   "repair": "No additional repair; updated canary source compiled successfully.",
   "previousVerifiedSource": {
-    "checkedAt": "2026-10-11T14:08:00.498361+00:00",
-    "path": "/workspace/Blame/docs/semantic-harness-study.tex",
-    "sourceSha256": "14848ceddce2874f1f4f388808a444420adaf661c25572fb7ffeaffd127bc630",
-    "compiler": "desktop native LaTeX editor",
-    "result": "success",
-    "stage": "T3 canary in progress; not final campaign report",
-    "repair": "Raw percent in an earlier T2 code macro consumed its closing brace; changed that literal to verbatim. Compiler then confirmed the current full source."
-  }
+    "sha256": "2b27df15b88e9624a03f93b8caedc5c83375f6d39c87e3998f293575f031f8f6",
+    "verifiedAt": null,
+    "stage": "T3 canary complete; global/confirmation not finalized"
+  },
+  "verifiedAt": "2026-10-11T15:04:47.642352+00:00"
 }

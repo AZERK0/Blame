@@ -1075,6 +1075,12 @@ inventory was recorded after canary launch and one result, before confirmation.
 The narrow initial artifact assertion needed a declaration-map correction;
 neither frozen executable files nor the intervention changed.
 
+A post-outcome direct replay explains the shared Prettier test failure: with
+pnpm 11.19.0, launcher installation progress precedes formatter stdout.
+Atomic parse validation rejects the combined text and preserves requested source
+in both frozen versions. \filepath{formatter-output-diagnostic.json} binds the
+replay and isolated logs; no formatter correction enters T3.
+
 The completed canary retains all 24 trials and 96 compressed raw artifacts,
 with complete tool lifecycles and source/input review. Reference/modified/native
 official and functional successes are 8/8/8; registered audited completed
