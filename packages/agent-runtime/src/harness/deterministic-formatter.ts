@@ -134,7 +134,7 @@ function formatterFailure(result: {
   return (
     boundedDiagnostic(
       redactSecuritySecrets(`${result.stdout}\n${result.stderr}`),
-    ) || `Formatter exited with code ${result.exitCode}.`
+    ).trim() || `Formatter exited with code ${result.exitCode}.`
   );
 }
 

@@ -8,7 +8,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import test from "node:test";
 import {
   capabilityParseAvailability,
@@ -1108,6 +1108,51 @@ test("run_task leaves every file unchanged when Prettier fails", async () => {
     },
   );
 });
+
+for (const output of ["", " \n\t"]) {
+  test("silent formatter failure reports its exit code " + JSON.stringify(output), async () => {
+    const original = "export const value=1\n";
+    const executable = [
+      "#!/usr/bin/env node",
+      "process.stdin.resume();",
+      "process.stdin.on('end', () => {",
+      "  process.stdout.write(" + JSON.stringify(output) + ");",
+      "  process.stderr.write(" + JSON.stringify(output) + ");",
+      "  process.exit(7);",
+      "});",
+    ].join("\n");
+    await withWorkspace({
+      "package.json": JSON.stringify({ devDependencies: { prettier: "3.0.0" } }),
+      "node_modules/.bin/prettier": executable,
+      "value.ts": original,
+    }, async (root) => {
+      await chmod(join(root, "node_modules/.bin/prettier"), 0o755);
+      const workspace = lightWorkspace(root, "silent-formatter");
+      const journal = new SessionJournal(root, "silent-formatter");
+      const before = await journal.completionSnapshot();
+      const previousPath = process.env.PATH;
+      process.env.PATH = join(root, "node_modules/.bin") + delimiter + previousPath;
+      let result;
+      try {
+        result = await workspace.tasks.run({
+          kind: "command",
+          command: "prettier --write value.ts",
+        });
+      } finally {
+        restoreEnvironment("PATH", previousPath);
+      }
+      assert.equal(result.status, "blocked");
+      if (result.status !== "blocked") return;
+      assert.equal(result.category, "code");
+      assert.equal(result.message, "Formatter exited with code 7.");
+      assert.equal(await readFile(join(root, "value.ts"), "utf8"), original);
+      const after = await journal.completionSnapshot();
+      assert.equal(after.sourceRevisionId, before.sourceRevisionId);
+      assert.deepEqual(after.changedPaths, []);
+      assert.deepEqual(after.validations, before.validations);
+    });
+  });
+}
 
 test("run_task explains how to separate a combined Prettier mutation", async () => {
   await withWorkspace({ "value.ts": "const value=1\n" }, async (root) => {
