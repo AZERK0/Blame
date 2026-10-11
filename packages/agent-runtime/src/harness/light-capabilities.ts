@@ -155,6 +155,7 @@ export function lightCapabilityDescription() {
     `Structural read/edit: ${structural.join(" ") || "unavailable"}`,
     `Raw/range/patch: ${rawExtensions.join(" ")} and all unsupported formats`,
     "JS/TS references: configured TypeScript project; query a symbol alias or path#qualifiedName with mode references. Other languages/unavailable projects use labeled lexical candidates.",
+    'JS/TS rename: edit_code symbol action "rename", content = new identifier; fully read target, configured complete project, one operation, up to 50 files. Compiler-derived edits use guarded commit; static guards are not validation evidence.',
   ].join("\n");
 }
 

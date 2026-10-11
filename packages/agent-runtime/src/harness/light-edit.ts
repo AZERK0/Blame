@@ -25,6 +25,9 @@ import type { SessionJournal } from "./session-journal.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
 import { symbolsTouchedByPatch } from "./patch-symbol-attribution.js";
 import { sha256 } from "./light-identity.js";
+import { planSemanticRename } from "./light-semantic-rename.js";
+import { referenceFootprintIsCurrent } from "./semantic-reference-client.js";
+import type { ReferenceFootprint } from "./semantic-reference-types.js";
 import { pythonBodyRange, pythonBodyReplacement } from "./python-body.js";
 
 type Replacement = {
@@ -35,6 +38,8 @@ type Replacement = {
 };
 
 type PlannedFile = {
+  footprint?: ReferenceFootprint;
+  semanticRename?: { config: string; compilerVersion: string; identifierEdits: number };
   fileMode?: number;
   initial: Buffer | null;
   mutation?: "add" | "delete";
@@ -97,7 +102,7 @@ export class LightEditService {
   ): Promise<LightToolResult<unknown>> {
     try {
       const snapshot = await this.files.snapshot(context.signal);
-      const plans = await this.plan(input, snapshot);
+      const plans = await this.plan(input, snapshot, context.signal);
       return await this.applyPlans(plans, snapshot, context.signal);
     } catch (error) {
       return editFailure(error);
@@ -144,6 +149,9 @@ export class LightEditService {
     signal?: AbortSignal,
   ): Promise<LightToolResult<unknown>> {
     const finalFiles = await this.finalize(plans);
+    const footprint = plans.find((plan) => plan.footprint)?.footprint;
+    if (footprint && !(await referenceFootprintIsCurrent(footprint, signal)))
+      throw new LightCommitConflict("Semantic rename source or dependency changed before commit.");
     const invalid = finalFiles.find(({ parse }) => parse.status === "failed");
     if (invalid) return invalidParseResult(invalid);
     const result: LightCommitResult | LightEditFailure = await this.commit(
@@ -152,7 +160,17 @@ export class LightEditService {
       signal,
     ).catch(commitFailure);
     if (isLightFailure(result)) return result;
-    try { return await this.mapResult(result, finalFiles, snapshot); }
+    try {
+      const mapped = await this.mapResult(result, finalFiles, snapshot);
+      const rename = plans.find((plan) => plan.semanticRename)?.semanticRename;
+      return rename && mapped.status === "ok" ? { ...mapped, data: {
+        ...(mapped.data as Record<string, unknown>), semanticRename: {
+          ...rename, engine: "typescript_language_service", scope: "configured_project",
+          staticGuard: "no_new_diagnostics_in_changed_files",
+          guidance: "Compiler-derived identifier edits preserve existing aliases. Static checks do not establish behavioral equivalence or satisfy required test/validation criteria; run required checks after editing.",
+        },
+      } } : mapped;
+    }
     catch (error) {
       return { status: "failed", category: "harness", applied: true,
         recovery: "recovery_required", paths: result.changedPaths,
@@ -161,7 +179,24 @@ export class LightEditService {
     }
   }
 
-  private async plan(input: LightEditCodeInput, snapshot: WorkspaceSnapshot) {
+  private async plan(input: LightEditCodeInput, snapshot: WorkspaceSnapshot, signal?: AbortSignal) {
+    const rename = input.operations.find((operation) => operation.kind === "symbol" && operation.action === "rename");
+    if (rename?.kind === "symbol") {
+      if (input.operations.length !== 1) throw new Error("Semantic rename must be the only operation in a batch.");
+      const derived = await planSemanticRename(this.aliases, this.files, snapshot, rename.target, rename.content!, signal);
+      const plans = new Map<string, PlannedFile>();
+      for (const location of derived.reply.locations) {
+        const file = await this.filePlan(plans, location.path, derived.sources.get(location.path));
+        file.footprint = derived.reply.footprint;
+        file.semanticRename = { config: derived.reply.project.config,
+          compilerVersion: derived.reply.project.compilerVersion, identifierEdits: derived.reply.locations.length };
+        if (file.path === derived.targetPath) file.symbols.push(derived.oldQualifiedName, derived.newQualifiedName);
+        file.replacements.push({ start: location.range[0], end: location.range[1],
+          replacement: location.replacement!, source: `semantic rename ${rename.target}` });
+      }
+      for (const file of plans.values()) file.symbols.push(...symbolsTouchedByPatch(file.path, file.initial, { mode: "update", replacements: file.replacements }));
+      return [...plans.values()];
+    }
     const files = new Map<string, PlannedFile>();
     let operationCount = 0;
     for (const operation of input.operations) {
@@ -533,6 +568,7 @@ function symbolReplacement(
     { kind: "symbol" }
   >,
 ): Replacement {
+  if (operation.action === "rename") throw new Error("Semantic rename requires the compiler planner.");
   const replacement = operation.content ?? "";
   const source = `${operation.action} ${operation.target}`;
   if (operation.action === "replace_body")

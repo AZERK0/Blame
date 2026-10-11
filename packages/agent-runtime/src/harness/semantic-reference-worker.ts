@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { parentPort, workerData } from "node:worker_threads";
 import ts from "typescript";
+import { compilerRenamePlan } from "./semantic-rename-plan.js";
 import {
   semanticReferenceLimits as limits,
   type SemanticReferenceReply,
@@ -90,15 +91,18 @@ function query(): SemanticReferenceReply {
   const text = host.readFile(targetPath);
   if (text === undefined || digest(text) !== request.target.hash)
     return { status: "unavailable", reason: "source_changed" };
+  const overlay = new Map<string, string>();
+  let projectVersion = 0;
   const scriptHost: ts.LanguageServiceHost = {
     ...host,
     useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
     readDirectory: (...args) => [...ts.sys.readDirectory(...args)],
     getCompilationSettings: () => parsed.options,
     getScriptFileNames: () => parsed.fileNames,
-    getScriptVersion: () => "0",
+    getScriptVersion: (path) => (overlay.has(resolve(path)) ? "1" : "0"),
+    getProjectVersion: () => String(projectVersion),
     getScriptSnapshot: (path) => {
-      const source = host.readFile(path);
+      const source = overlay.get(resolve(path)) ?? host.readFile(path);
       return source === undefined
         ? undefined
         : ts.ScriptSnapshot.fromString(source);
@@ -148,7 +152,7 @@ function query(): SemanticReferenceReply {
       return { status: "unavailable", reason: "unresolved_target" };
     if (references.length > limits.locations)
       return { status: "unavailable", reason: "reference_budget_exceeded" };
-    const locations = references.flatMap((entry) => {
+    let locations = references.flatMap((entry) => {
       if (
         !local(entry.fileName) ||
         entry.fileName.split(/[\\/]/u).includes("node_modules")
@@ -216,6 +220,59 @@ function query(): SemanticReferenceReply {
           unresolved = true;
     }
     if (unresolved) warnings.push("unresolved_imports");
+    if (request.renameTo !== undefined) {
+      const shadowExtensions = targetPath.endsWith(".cjs")
+        ? [".cts"]
+        : targetPath.endsWith(".mjs")
+          ? [".mts"]
+          : targetPath.endsWith(".jsx")
+            ? [".tsx"]
+            : targetPath.endsWith(".js")
+              ? [".ts", ".tsx"]
+              : [];
+      if (
+        shadowExtensions.some((extension) =>
+          host.fileExists(targetPath.replace(/\.[^.]+$/u, extension)),
+        )
+      )
+        throw new Error("ambiguous_js_ts_source_shadow");
+      if (warnings.length)
+        throw new Error(`incomplete_rename_project: ${warnings.join(",")}`);
+      const renamed = compilerRenamePlan(
+        service,
+        program!,
+        targetPath,
+        position,
+        name.text,
+        request.renameTo,
+        host.readFile,
+        (path) => local(path) && !path.split(/[\\/]/u).includes("node_modules"),
+        (changed) => {
+          for (const [path, text] of changed) overlay.set(resolve(path), text);
+          projectVersion++;
+        },
+      );
+      locations = renamed.map((entry) => {
+        const content = host.readFile(entry.fileName)!;
+        const from = entry.textSpan.start,
+          to = from + entry.textSpan.length;
+        const line = content.slice(0, from).split("\n").length;
+        return {
+          path: relative(root, entry.fileName).split("\\").join("/"),
+          range: [
+            Buffer.byteLength(content.slice(0, from)),
+            Buffer.byteLength(content.slice(0, to)),
+          ],
+          lines: [line, line],
+          snippet: content.slice(from, to),
+          isWrite: true,
+          replacement:
+            (entry.prefixText ?? "") +
+            request.renameTo! +
+            (entry.suffixText ?? ""),
+        };
+      });
+    }
     return {
       status: "ok",
       locations,

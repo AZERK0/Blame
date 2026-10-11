@@ -52,6 +52,18 @@ test("standalone payload executes navigation and command dependencies", async ()
     assert.equal(references.status, "ok", JSON.stringify(references));
     assert.equal(references.data.engine, "typescript_language_service", JSON.stringify(references));
     assert.equal(references.data.referenceCount, 2);
+    await executeRunner(packageRoot, workspaceRoot, {
+      tool: "read_code", input: { target: "module.ts#target", view: "symbol" },
+    });
+    const renamed = await executeRunner(packageRoot, workspaceRoot, {
+      tool: "edit_code", input: { operations: [
+        { kind: "symbol", target: "module.ts#target", action: "rename", content: "updatedTarget" },
+      ] },
+    });
+    assert.equal(renamed.status, "ok", JSON.stringify(renamed));
+    assert.equal(renamed.data.semanticRename.engine, "typescript_language_service");
+    assert.match(await readFile(join(workspaceRoot, "module.ts"), "utf8"), /function updatedTarget/u);
+    assert.match(await readFile(join(workspaceRoot, "consumer.ts"), "utf8"), /updatedTarget as aliased/u);
     const content = Buffer.from("# Context from completed US-001\n\nHéros validé.\n");
     const attachment = await executeRunner(packageRoot, workspaceRoot, {
       tool: "store_attachment",

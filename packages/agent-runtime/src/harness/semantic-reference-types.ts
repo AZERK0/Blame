@@ -1,5 +1,6 @@
 export type SemanticReferenceRequest = {
   root: string;
+  renameTo?: string;
   target: {
     path: string;
     name: string;
@@ -15,6 +16,7 @@ export type SemanticReferenceLocation = {
   lines: [number, number];
   snippet: string;
   isWrite: boolean;
+  replacement?: string;
 };
 
 export type ReferenceFootprint = {
@@ -40,6 +42,7 @@ export type SemanticReferenceReply =
 
 export const semanticReferenceLimits = {
   timeoutMs: 8_000,
+  renameTimeoutMs: 12_000,
   workerHeapMb: 512,
   rootFiles: 2_000,
   observedFiles: 6_000,

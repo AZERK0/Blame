@@ -34,6 +34,7 @@ const symbolEdit = z
     action: z.enum([
       "replace",
       "replace_body",
+      "rename",
       "insert_before",
       "insert_after",
       "delete",

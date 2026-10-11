@@ -37,3 +37,19 @@ Reproduce local tool output with `node tools/terminal_bench/semantic-references/
 ## Decision and next intervention
 
 Keep F9 if the guarded local mechanisms remain correct; an optional useful query does not prove a global efficiency improvement. The next evidence-driven step is either cheaper source-bound repeated queries or a semantic rename planner routed through existing observed-source/preimage/commit safeguards. Measure either separately, including cold graph cost, partial configuration and concurrent-source controls. Extend other languages through a backend adapter only after equivalent contracts and confirmation exist. Task tests, admitted verification and user acceptance remain distinct throughout.
+
+## F9 model outcomes (separate completed diagnostic)
+
+All nine registered trials completed; each arm has 3/3 official runtime successes, independent functional successes and SHA-bound audited completions, without solution retrieval. Each final diff is identical across the three arms for its task. Required agent checks and independent compiler/seven-file/full-suite checks pass. Cline's rounding trial initially damaged test structure and an assertion, then restored both after actual failing checks; those intermediate failures remain in the trace. A running Light compiler check is counted only after its completed inspect reports zero exit.
+
+| Frozen arm | Audited completion | Input + output tokens | Estimated USD | Runner seconds |
+| --- | --- | ---: | ---: | ---: |
+| Prior Light (`0b50d10c`) | 3/3 | 159,289 | 0.02028752 | 129.660 |
+| F9 references (`8f79dff6`, published identical-tree `c0a68a18`) | 3/3 | 226,812 | 0.02850876 | 155.238 |
+| Integrated Cline SDK 0.0.82 | 3/3 | 435,911 | 0.04202072 | 175.584 |
+
+F9 uses **42.4% more tokens, 40.5% more estimated cost and 19.7% more runner time than prior Light**. Relative to this Cline panel it uses 48.0% fewer tokens and 32.2% less estimated cost, with equal observed completion; this does not rescue the adverse intervention comparison. Identity reference exposure is three calls across two tasks. Traces retain repeated lexical search, truncated reference display, whole-caller reads and manually generated multi-file patches. The local control never invokes the new backend yet varies, showing model/trajectory variability. One repetition of three known tasks cannot establish global superiority or causality for every resource difference.
+
+Request counts/tokens/estimated cost reconcile in 9/9 trials; full cache accounting reconciles in 0/9. Missing cache fields stay missing, never zero-filled. Provider costs are estimates, not invoices; hidden retries remain unestablished. `summary.json`, `paired-comparison.json`, `source-review.json`, `checks.json`, `inventory.json` and 54 unchanged compressed raw artifacts preserve every outcome and request. Exploratory three-task cluster intervals are broad.
+
+Decision: retain the correct optional identity capability, **reject an F9 efficiency-gain claim**. Measure a native guarded rename alone as F10 against the exact frozen F9 runtime; no cache/file-index change is bundled. Repeat-known diagnostics and future unseen confirmation remain separate.
