@@ -22,6 +22,7 @@ node tools/terminal_bench/corpus/light-study-reviewed-adjudication.mjs "$pilot" 
 node tools/terminal_bench/corpus/light-study-semantic-endpoint.mjs "$pilot" "$dest"
 node tools/terminal_bench/corpus/light-study-publish.mjs "$pilot" "$dest"
 cp "$pilot/original-audit-candidates.json" "$pilot/base-adjudication.json" "$pilot/tool-lifecycle-inspection.json" "$pilot/inactivity-diagnostics.json" "$pilot/provenance.json" "$dest/"
+if [[ -f "$pilot/seed-source-proof.json" ]]; then cp "$pilot/seed-source-proof.json" "$dest/"; fi
 if [[ "$panel" != confirmation ]]; then
   for artifact in webhook-replay pagination-replay cache-replay reducer-replay seed-audit slug-replay motion-validation-review storage-percent-replay storage-percent-family-replay; do cp "$pilot/$artifact.json" "$dest/"; done
 fi
@@ -31,6 +32,8 @@ if [[ "$panel" != confirmation ]]; then
   node tools/terminal_bench/corpus/light-study-criterion-sensitivity.mjs "$dest" --original-css-build
   node tools/terminal_bench/corpus/light-study-percent-family-sensitivity.mjs "$dest"
 fi
-for helper in skill-mechanism edit-mechanism task-scope-mechanism recovery-inspection quality-uncertainty integrity; do
+node tools/terminal_bench/corpus/light-study-recovery-inspection.mjs "$pilot"
+cp "$pilot/recovery-inspection.json" "$dest/"
+for helper in skill-mechanism edit-mechanism task-scope-mechanism quality-uncertainty integrity; do
   node "tools/terminal_bench/corpus/light-study-$helper.mjs" "$dest"
 done

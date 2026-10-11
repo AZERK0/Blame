@@ -8,7 +8,7 @@ Previously discovered extended marks and valid-percent storage cases are now pri
 
 Proposed admission filtering was deferred: LightTaskContract lacks an explicit required-task contract and the current package-ownership rule does not prove dependency independence. T3 measures task selection without weakening guards. Three fresh cases exercise root-only changes, a required child build and a shared-package consumer, with an unrelated failing package retained.
 
-Status: local verification and runtime freeze complete. Canary running; all traces require source/input review before publication. Global and confirmation remain planned. No quality/efficiency or retention conclusion yet.
+Status: canary complete, all 24 traces audited and 96 raw artifacts verified; global running, confirmation planned. Primary audited completion reference/modified/native is 8/8, 8/8, 7/8. Modified/reference matched tokens are 1.121 [0.909,1.415], cost 0.957 [0.806,1.176], duration 0.799 [0.585,1.119]: no reference efficiency gain established. Both Light arms avoid unrelated child checks and finish refusals, so that mechanism has no opportunity to distinguish them here. No retention decision yet.
 
 Runtime versions are 6ab141ff / bbeba32c; the sole executable difference is initial-task-briefing.js, plus its non-executable declaration source map. An initial narrow artifact assertion needed that metadata correction without changing frozen files. Evaluator sources and controls were committed before models; confirmation/execution-bindings.json hashes were inventoried after canary launch and one result, before confirmation. This timing is retained explicitly.
 
