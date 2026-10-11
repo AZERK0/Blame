@@ -1,21 +1,21 @@
 {
-  "checkedAt": "2026-10-11T14:19:51.019750+00:00",
-  "sourceCommitBeforeConfirmationModels": "e6a52b156f0108dd13e13c97f3b0b21d2fc5921d",
+  "checkedAt": "2026-10-11T14:24:31.546522+00:00",
+  "sourceCommitBeforeConfirmationModels": "f00acb0525774bfac0bbc67d9aef078a1c83e7d6",
   "confirmationModelsStarted": 0,
   "supersedes": "execution-bindings.json only for the two helper hashes listed; original preserved",
   "changedFiles": [
     "tools/terminal_bench/corpus-scope-confirmation/required-builds.mjs",
     "tools/terminal_bench/corpus-scope-confirmation/check-build-evaluator.mjs"
   ],
-  "reason": "Code inspection demonstrated that an outer shell success could mask a build failure. Admit only complete simple build segments; reject masked exits before any fresh model outcomes. No runtime, instruction, criterion, canary/global evaluator or outcome changed.",
-  "selfCheck": "Seed negatives/independent positives/hang bound and required build success/failure/freshness/inert/masked-exit controls all pass.",
+  "reason": "Before fresh models, controls reject masked build exits and inert native cwd metadata. Frozen native SDK executes commands only; actual cwd changes must appear inside commands. Runtime/instructions/criteria/canary/global graders and outcomes unchanged.",
+  "selfCheck": "Required root/child success/failure/freshness, inert commands/cwd and masked-exit controls all pass; independent functional positives/negatives and timeout passed before models.",
   "sha256": {
     "tools/terminal_bench/corpus-scope-confirmation/manifest.json": "86bd6054c49d8e5b49eace0bfc9bf225574a6ebac0e601a2f85401971ba153ee",
-    "tools/terminal_bench/corpus-scope-confirmation/required-builds.mjs": "68ef5ef854e855380116b3bf7ad548d1e68a05953a1b539fe0dae262caf7c48f",
+    "tools/terminal_bench/corpus-scope-confirmation/required-builds.mjs": "abe4b6abae5cd8de3e3b37b61eb091dd77f82a3d89dc5bfd5c175f139b05f4f5",
     "tools/terminal_bench/corpus-scope-confirmation/check-evaluator.mjs": "be82239dc8af1973150b2a8fcb5b9b8cb47dfcc69686efcaa40abb7bece6ad25",
     "tools/terminal_bench/corpus-scope-confirmation/corpus-utils.mjs": "4003e535fb3efe6bd6a4d4f3b898b5572c4ee625dc0b3fcc4377daf61ef3ec52",
     "tools/terminal_bench/corpus-scope-confirmation/scenario-checks.mjs": "01046e462d94e0babdfeb5e98d858af2dc44897cabc3047b495afddeab5d57ed",
-    "tools/terminal_bench/corpus-scope-confirmation/check-build-evaluator.mjs": "f333bf38da4065e80b25ce4e4f5cb00d50cc65d56135a8253bf4c5988fb312c9",
+    "tools/terminal_bench/corpus-scope-confirmation/check-build-evaluator.mjs": "8eb11a8db6c55b944aee5a631ff4ddc615c89483293f2bc5095a7698c7eb16bd",
     "tools/terminal_bench/corpus-scope-confirmation/light-study.mjs": "b9cf721e70f50e5bb2ff9a38a4fe10c2f5afba99a0d49eaa6ed26f9f27766334",
     "tools/terminal_bench/corpus-scope-confirmation/fixture/tsconfig.json": "67a55619fdd83f239913468eca595e5f42a54cccaffc98ecc33567c8c7484353",
     "tools/terminal_bench/corpus-scope-confirmation/fixture/package.json": "5b24ce436d16da01239b8295c9c00300a2b5e8a67b8a910f790bed640f47d190",
@@ -37,5 +37,7 @@
     "tools/terminal_bench/corpus/light-study-accounting.mjs": "1d896d5860ca3fec057b02487010fcab39e42ed4f1c9f78e2cff7d004298de16",
     "tools/terminal_bench/corpus/corpus-utils.mjs": "52cbc863496350da7a46dab2b41e73420c1a5fb097c75adac7ca479d898314ba",
     "tools/terminal_bench/corpus/light-study-semantic-endpoint.mjs": "71ec0f14584a35967a5ca07a10dcc805a408ea832fc4125acb18d66b377457d3"
-  }
+  },
+  "previousBindingSha256": "42fe8facb8c616b9645fe0397d54c033e9118ec66c18403b8830ea3e989ed1e5",
+  "previousBinding": "evaluator-rebinding-v1.json; original execution-bindings.json also preserved"
 }
