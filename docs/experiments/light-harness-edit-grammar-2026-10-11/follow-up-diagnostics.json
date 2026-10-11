@@ -57,6 +57,14 @@
       "mechanism": "Functionally correct implementation and successful fresh root build. git diff --check identifies an extra EOF blank line outside the function symbol. Patch addressed to s1 cannot match that external blank line; five whole-symbol replacements return changed=false and the next tool is blocked by SDK consecutive-mistake limit. No finish, actual runtime failure retained. Observed current symbol boundary and unhelpful repeated no-op behavior; cannot attribute causal regression solely to T2 from one stochastic trial. Reference uses file-path patch to remove its analogous blank line and finishes.",
       "existsInCurrentCode": true,
       "trialInstructionMatchKnownDiagnostic": true
+    },
+    {
+      "trial": "2-filter-accessibility-modified-clean",
+      "eventsSha256": "0536788097115cef0d3c2f92dff0a8e380b70a15d32140cadb50603065fac193",
+      "diffSha256": "6b26f86186c8c8e440bc66dad245321a3954dbb1b7e0d4fbc0b87c9499283b05",
+      "mechanism": "Same irrelevant child-build failure as reference repetition one: correct accessibility source, fresh root build/typecheck, unnecessary corpus-web:build exit 9, four blocked finish attempts. Current shared policy globally considers code failures despite unrelated task scope. Modifier uses valid edit kind/action, demonstrating that T2 grammar cannot fix this preexisting validation mechanism. Actual runtime failure retained, no repair.",
+      "existsInCurrentCode": true,
+      "trialInstructionMatchKnownDiagnostic": true
     }
   ],
   "sourceReferences": [
