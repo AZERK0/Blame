@@ -269,5 +269,6 @@
   "observedEstimatedUsd": 0.17132544000000002,
   "accounting": "17/18 token/cost reconciled; 0/18 full request/cache accounting. Native timeout has two requested iterations and one reported usage, so aggregate is an observed lower bound.",
   "resultsSha256": "d9531513c0b4931081214e7a002efaabba81c217714a5af65f52aaf259a38179",
-  "next": "Registered T6 fresh confirmation remains unexecuted. Independently registered F6 confirmation may use its still-unexposed requests, same source/features, different sole intervention."
+  "next": "Registered T6 fresh confirmation remains unexecuted. Independently registered F6 confirmation may use its still-unexposed requests, same source/features, different sole intervention.",
+  "environmentActivity": "F6/F7 local builds, formatter replays and focused tests overlapped some immutable T6 model trials. This can affect elapsed time; no timing improvement is attributed to T6 and both mechanism/interval gates fail. Frozen code/environment versions were checked before every trial."
 }
