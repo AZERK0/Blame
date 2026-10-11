@@ -1157,6 +1157,20 @@ tokens, cache, cost and duration are unmeasured. The synthetic
 \code{prettier --check} journal label remains derived, not an executed check;
 invocation lineage is a separate proposal.
 
+A separate F2 controlled replay finds another current defect: after a genuine
+formatter commit, an external Markdown or syntactically invalid TS change is
+freshly admitted as passed derived lint, because validation snapshots the new
+source without binding it to formatter output. Register a zero-model-budget
+source-binding repair before implementation; keep T4 frozen versions unchanged.
+Compare snapshot file hashes with exact formatted replacements before recording
+passed evidence. A mismatch returns stale validation and preserves the external
+source and genuine edit receipt. Identical tests improve from 240/242 to
+242/242; controlled false fresh admissions fall from 2/2 to 0/2, and normal
+formatting/rollback/source-change/completion invariants pass. Only
+\code{light-task-runner.js} changes executably. Retain this local correctness
+repair under \filepath{docs/experiments/light-harness-formatter-freshness-2026-10-11/};
+no completed user task, model-quality or resource gain is established.
+
 \section{Accepted no-op recovery experiment (T4, registered)}
 Two T3 reference failures have correct source and fresh checks followed by four
 successful identical no-op edits, then an SDK loop abort. Current unbraced

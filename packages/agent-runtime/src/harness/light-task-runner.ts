@@ -16,7 +16,8 @@ import {
   LightDependencyService,
 } from "./light-dependencies.js";
 import { boundedDiagnostic } from "./light-diagnostic.js";
-import type { LightEditService } from "./light-edit.js";
+import type { FormattedFileReplacement, LightEditService } from "./light-edit.js";
+import { sha256 } from "./light-identity.js";
 import type { SessionJournal } from "./session-journal.js";
 import {
   readTaskCatalog,
@@ -236,13 +237,28 @@ export class LightTaskRunner {
     const result = await edits.replaceFiles(replacements, context);
     if (result.status !== "ok") return result;
     const paths = replacements.map(({ path }) => path);
-    await this.recordFormatterValidation(paths);
-    return formattedResult(result, paths);
+    const current = await this.recordFormatterValidation(replacements);
+    const formatted = formattedResult(result, paths);
+    if (current) return formatted;
+    return {
+      ...formatted,
+      data: {
+        ...record(formatted.data),
+        validation: {
+          status: "stale",
+          reason: "Source changed after formatting; run a check on the current source.",
+        },
+      },
+    };
   }
 
-  private async recordFormatterValidation(paths: string[]) {
-    const sourceRevisionId = (await this.files.snapshot()).revision
-      .source_revision_id;
+  private async recordFormatterValidation(replacements: FormattedFileReplacement[]) {
+    const snapshot = await this.files.snapshot();
+    if (replacements.some(({ path, content }) =>
+      snapshot.fileStates.find(file => file.path === path)?.hash !== sha256(content)))
+      return false;
+    const paths = replacements.map(({ path }) => path);
+    const sourceRevisionId = snapshot.revision.source_revision_id;
     await this.journal.recordValidation({
       command: `prettier --check ${paths.join(" ")}`,
       paths,
@@ -250,6 +266,7 @@ export class LightTaskRunner {
       status: "passed",
       taskKind: "lint",
     });
+    return true;
   }
 
   private async dependency(
@@ -812,7 +829,7 @@ function isValidationKind(
 function formattedResult(
   result: Extract<LightToolResult<unknown>, { status: "ok" }>,
   paths: string[],
-): LightToolResult<unknown> {
+): Extract<LightToolResult<unknown>, { status: "ok" }> {
   return {
     ...result,
     data: {

@@ -979,6 +979,41 @@ test("run_task never writes package-manager progress into formatted Markdown", a
   });
 });
 
+for (const variant of ["markdown", "typescript"]) {
+  test("formatter evidence excludes post-commit external " + variant + " source", async () => {
+    const path = variant === "markdown" ? "NOTE.md" : "value.ts";
+    const before = variant === "markdown"
+      ? "# Note\n\nA paragraph"
+      : "export const value={value:1}\n";
+    const external = variant === "markdown"
+      ? "# Changed externally\n\nA paragraph    \n"
+      : "export const value = ;\n";
+    await withFormatterWorkspace({ [path]: before }, async (root) => {
+      const workspace = lightWorkspace(root, "formatter-freshness");
+      const replaceFiles = workspace.edits.replaceFiles.bind(workspace.edits);
+      let committedRevision: unknown;
+      workspace.edits.replaceFiles = async (...args) => {
+        const result = await replaceFiles(...args);
+        assert.equal(result.status, "ok");
+        committedRevision = record(data(result)).sourceRevisionId;
+        await writeFile(join(root, path), external);
+        return result;
+      };
+      const result = await workspace.tasks.run({
+        kind: "command",
+        command: "pnpm exec prettier --write " + path,
+      });
+      assert.equal(result.status, "ok");
+      assert.equal(await readFile(join(root, path), "utf8"), external);
+      const snapshot = await new SessionJournal(root, "formatter-freshness").completionSnapshot();
+      assert.notEqual(snapshot.sourceRevisionId, committedRevision);
+      assert.equal(snapshot.validations.some(check => check.status === "passed"), false);
+      assert.equal(record(record(data(result)).validation).status, "stale");
+      assert.equal("receipt" in result, true);
+    });
+  });
+}
+
 test("run_task leaves every file unchanged when Prettier fails", async () => {
   const original = "export const first={value:1}\n";
   const invalid = "export const INVALID = ;\n";
