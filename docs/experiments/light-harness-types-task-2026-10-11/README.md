@@ -1,0 +1,9 @@
+F8 local compiler classification repair: retained; no model calls.
+
+T6 and the distinct F6 confirmation return unverified Light receipts despite actual successful final compiler execution. Actual isolated reference replay also accepts finish after known TS2322 failures in both command/project routes. Generic journal records already exist: the initial protocol wording saying no records is too strong; discovery.json corrects that observation and keeps the failed helper preflight. No registered model endpoint changes.
+
+Only task-catalog classification changes in production: exact lowercase types alias plus standalone tsc --noEmit (horizontal whitespace only). Shell compounds and label-only scripts remain custom. Existing dependency, source freshness, failure, scope and finish rules apply. The preinstalled compiler executes without manifest changes.
+
+Across two routes and passing/failing/stale source, reference current compiler proof admission is 0/2, known failure blocks 0/2 and stale-source compiler rechecks 0/2. Modified is 2/2 for all three. All six compiler cases preserve source and manifest; both custom/compound scripts per arm invent no compiler proof. Reference regression tests pass 2/8; modified four focused suites pass 257/257. After restricting whitespace to exclude internal command newlines, the eight relevant actual-process controls pass again and the final actual replay is archived. Builds and changed-file ESLint pass.
+
+A verified receipt now means technical compiler evidence for current source. It does not certify new-feature behavior or arbitrary user acceptance. No model-success, token, cache, cost or duration gain is claimed. F8 is absent from all frozen T6 and F6 model arms. Replay: node tools/terminal_bench/corpus/light-study-types-task-replay.mjs <frozen-reference-runtime> packages/agent-runtime. Bindings, actual outputs, source revisions and unfavorable preflight/test logs are preserved.
