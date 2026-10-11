@@ -8,7 +8,7 @@
 \newcommand{\filepath}[1]{\path{#1}}
 \title{Light Semantic Harness: Applied Study}
 \author{Blame Repository Engineering Study}
-\date{October 11, 2026}
+\date{October 12, 2026}
 \begin{document}
 \maketitle
 \begin{abstract}
@@ -61,8 +61,10 @@ from a success-rate difference alone.
 Primitive & Actual responsibility and boundary \\
 \midrule\endhead
 \code{search_code} & Syntax-derived declarations and bounded lexical search.
-References explicitly use \code{lexical_fallback}; results are candidates,
-not a compiler/LSP dependency graph. \\
+Explicit JS/TS symbol-alias or \code{path#qualifiedName} references now use a
+bounded configured-project TypeScript service. Bare names, unsupported languages
+and unavailable projects retain labeled \code{lexical_fallback} candidates.
+Neither route proves runtime callers, edit coverage or successful validation. \\
 \code{read_code} & Files, ranges, symbols, signatures/outlines, changes,
 capabilities and supported images. Small automatic reads expose whole files;
 large supported files route to outlines. Explicit ranges and symbol bodies
@@ -780,9 +782,43 @@ global superiority claim. A later rename planner must use that guarded commit
 path. Cold/warm setup, project completeness and extra tool context belong in
 future resource accounting.
 
+\section{F9: compiler identity behind the Light interface}
+The next implementation combines Serena's observed identity mechanism with
+Light's guarded effects: \code{search_code} accepts symbol aliases/qualified
+targets in reference mode, using the existing TypeScript 5.9.3 dependency.
+No new production dependency, external LSP process, semantic rename or
+validation-admission change is introduced. A disposable worker limits graph
+work (8 seconds, 512 MiB heap, 2,000 roots, 64 MiB reads); cancellation stops
+it. Exact compiler source/configuration/dependency reads and file-existence
+observations are rechecked, plus the workspace revision. Results expose
+project scope, omissions/warnings and truncation; bare names never choose
+homonyms silently. Missing/unsupported/failed projects explicitly fall back.
+Search grants no unseen-body edit coverage. The packaged runtime ships and
+executes its worker rather than relying on a static-import assumption.
+
+Sixteen dedicated controls and 193 combined focused runtime tests pass,
+as do three actual packaged-runtime tests, compilation and changed-module
+ESLint. The unchanged prior alias/homonym fixture now yields the expected two
+semantic consumer lines on an explicit identity query; bare queries stay
+lexical and both arms block stale edits. A pinned real date-fns project loads
+1,519 roots/2,057 compiler files, returning 26/41 helper-reference lines with
+bounded display. Fresh-worker single observations take about 3.3--3.5 seconds
+on a warm filesystem: repeated graph construction is an adverse cost, not a
+latency victory. Compiler recognition of ambient modules corrects a prototype
+false missing-import warning. Navigation remains separate from validation.
+
+The preselected three-request real-project diagnostic and independent lexical
+token audit are in
+\filepath{docs/experiments/light-harness-semantic-references-2026-10-12/README.md}.
+Preserve its pre-model test-import clarification, negative verifier controls
+and separately frozen reference/candidate/native runtimes. Model outcome and
+resource benefit require actual route exposure, audited criteria and reconciled
+accounting; local identity success alone is not that evidence. Subsequent cache
+or guarded rename changes must be measured separately.
+
 \section{Next testable priorities: proposals only}
 \begin{enumerate}
-\item Test an optional read-only compiler/LSP reference provider behind
+\item Measure F9's read-only compiler reference provider behind
 \code{search_code}: the Serena diagnostic exposes alias/homonym ambiguity
 that lexical search cannot resolve. First compare queries only, with explicit
 engine, project scope and incomplete-index/fallback reporting, on frozen

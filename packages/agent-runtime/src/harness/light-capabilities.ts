@@ -154,6 +154,7 @@ export function lightCapabilityDescription() {
     `Symbol read/edit: ${symbolic.join(" ") || "unavailable"}`,
     `Structural read/edit: ${structural.join(" ") || "unavailable"}`,
     `Raw/range/patch: ${rawExtensions.join(" ")} and all unsupported formats`,
+    "JS/TS references: configured TypeScript project; query a symbol alias or path#qualifiedName with mode references. Other languages/unavailable projects use labeled lexical candidates.",
   ].join("\n");
 }
 

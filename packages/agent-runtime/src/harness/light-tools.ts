@@ -98,7 +98,7 @@ function searchCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "search_code",
     description:
-      "Find source by path, text, symbol, or references. Lexical hits inside supported symbols become editable sN aliases. Whitespace separates search terms; punctuation stays literal. Scope accepts paths and *, **, ?, or {a,b} globs. Returns up to eight short results; generated outputs and node_modules are excluded.",
+      "Find source by path, text, symbol, or references. For JS/TS semantic references, set mode to references and query to a symbol sN alias or path#qualifiedName; results state compiler project scope and any lexical fallback. Other queries find lexical candidates. Search results do not authorize edits: read the target first. Whitespace separates search terms; punctuation stays literal. Scope accepts paths and *, **, ?, or {a,b} globs. Returns up to eight short results; generated outputs and node_modules are excluded.",
     schema: lightSearchCodeInputSchema,
     execute: (input, context) => workspace.searchCode(input, context.signal),
   });

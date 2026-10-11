@@ -61,6 +61,7 @@ import {
   type TextSearchResults,
 } from "./light-navigation.js";
 import { LightTaskRunner } from "./light-task-runner.js";
+import { LightReferenceSearch } from "./light-reference-search.js";
 import {
   searchWithRipgrep,
   type LexicalSearchMatch,
@@ -106,6 +107,7 @@ export class LightWorkspace {
   readonly edits: LightEditService;
   readonly tasks: LightTaskRunner;
   private readonly aliases = new LightAliasRegistry();
+  private readonly references: LightReferenceSearch;
   private readonly coverage = new ReadCoverage();
   private readonly files: WorkspaceFiles;
   private readonly journal: SessionJournal;
@@ -115,6 +117,7 @@ export class LightWorkspace {
 
   constructor(workspaceRoot: string, options: LightWorkspaceOptions) {
     this.files = new WorkspaceFiles(workspaceRoot);
+    this.references = new LightReferenceSearch(this.files, this.aliases);
     this.commits = new LightCommitService(this.files);
     this.journal = new SessionJournal(workspaceRoot, options.sessionId);
     this.options = options;
@@ -237,14 +240,21 @@ export class LightWorkspace {
       snapshot.files,
       input.scope,
     );
+    const semantic = input.mode === "references"
+      ? await this.references.search(input, snapshot.files, candidates, snapshot.revision.source_revision_id, signal)
+      : undefined;
+    if (semantic && "status" in semantic) return this.persistAliases(semantic);
     const result = await this.searchResult(
-      input,
+      semantic ? { ...input, query: semantic.lexicalQuery } : input,
       searchMode(input),
       candidates,
       snapshot.revision.source_revision_id,
       signal,
     );
-    const expanded = await this.expandSearch(result, snapshot.revision.source_revision_id);
+    const labeled = semantic && result.status === "ok" ? { ...result, data: { ...recordValue(result.data),
+      semanticFallback: semantic.fallback,
+      guidance: "Lexical candidates only. For configured JS/TS semantic references, query a symbol sN alias or path#qualifiedName with mode references. Read before editing." } } : result;
+    const expanded = await this.expandSearch(labeled, snapshot.revision.source_revision_id);
     return this.persistAliases(expanded);
   }
 

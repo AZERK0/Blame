@@ -111,7 +111,9 @@ async function packArchive(directory, destination) {
 }
 
 async function copyRuntimeModules(staging) {
-  const pending = [join(agentRuntimeDist, "harness/semantic-harness-runner.js")];
+  // Worker entry points are reached through URLs rather than static imports.
+  const pending = [join(agentRuntimeDist, "harness/semantic-harness-runner.js"),
+    join(agentRuntimeDist, "harness/semantic-reference-worker.js")];
   const copied = new Set();
   while (pending.length) {
     const source = pending.pop();

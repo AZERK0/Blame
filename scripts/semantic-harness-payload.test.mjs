@@ -40,6 +40,18 @@ test("standalone payload executes navigation and command dependencies", async ()
     });
     assert.equal(edited.status, "ok", JSON.stringify(edited));
     assert.match(await readFile(join(workspaceRoot, "module.ts"), "utf8"), /return 2/u);
+    await writeFile(join(workspaceRoot, "consumer.ts"),
+      'import { target as aliased } from "./module.js";\nexport const value = aliased();\n');
+    await writeFile(join(workspaceRoot, "tsconfig.json"), JSON.stringify({
+      compilerOptions: { noEmit: true, strict: true, types: [], module: "NodeNext", moduleResolution: "NodeNext" },
+      include: ["*.ts"],
+    }));
+    const references = await executeRunner(packageRoot, workspaceRoot, {
+      tool: "search_code", input: { mode: "references", query: "module.ts#target" },
+    });
+    assert.equal(references.status, "ok", JSON.stringify(references));
+    assert.equal(references.data.engine, "typescript_language_service", JSON.stringify(references));
+    assert.equal(references.data.referenceCount, 2);
     const content = Buffer.from("# Context from completed US-001\n\nHéros validé.\n");
     const attachment = await executeRunner(packageRoot, workspaceRoot, {
       tool: "store_attachment",
