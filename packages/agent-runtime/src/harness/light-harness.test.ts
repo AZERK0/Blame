@@ -959,6 +959,25 @@ test("run_task applies explicit Prettier files as one journaled edit", async () 
   );
 });
 
+test("run_task never writes package-manager progress into formatted Markdown", async () => {
+  const original = "# Note\n\nProgress: source text\n";
+  await withFormatterWorkspace({ "NOTE.md": original }, async (root) => {
+    const workspace = lightWorkspace(root, "formatter-source-channel");
+    const result = await workspace.tasks.run({
+      kind: "command",
+      command: "pnpm exec prettier --write NOTE.md",
+    });
+    assert.equal(result.status, "ok", JSON.stringify(result));
+    assert.equal(await readFile(join(root, "NOTE.md"), "utf8"), original);
+    assert.equal(record(data(result)).changed, false);
+    const completion = await new SessionJournal(
+      root,
+      "formatter-source-channel",
+    ).completionSnapshot();
+    assert.deepEqual(completion.changedPaths, []);
+  });
+});
+
 test("run_task leaves every file unchanged when Prettier fails", async () => {
   const original = "export const first={value:1}\n";
   await withFormatterWorkspace(
