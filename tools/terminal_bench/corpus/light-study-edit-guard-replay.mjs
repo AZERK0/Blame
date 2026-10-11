@@ -21,10 +21,12 @@ try {
   assert.equal(invalid.status, 'blocked');
   assert.match(invalid.message, /Invalid discriminator/);
   assert.equal(await readFile(path,'utf8'),source);
+  assert.equal((await invoke('read_code',{target:'value.ts',view:'outline'},'outline')).status,'ok');
   const unobserved = await invoke('edit_code', {operations:[
     {kind:'symbol',target:'value.ts#value',action:'replace_body',content:'return 2;'},
   ]}, 'unobserved');
   assert.equal(unobserved.status,'blocked');
+  assert.match(unobserved.message, /before replacing unobserved source/);
   assert.equal(await readFile(path,'utf8'),source);
   assert.equal((await invoke('read_code',{target:'value.ts#value',view:'symbol'},'read')).status,'ok');
   const accepted = await invoke('edit_code',{operations:[

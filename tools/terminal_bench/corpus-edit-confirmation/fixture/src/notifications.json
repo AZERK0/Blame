@@ -1,0 +1,15 @@
+{
+  "delivery": {
+    "retryLimit": 1,
+    "timeoutMs": 1000,
+    "channel": "email"
+  },
+  "features": {
+    "digest": false,
+    "marketing": false
+  },
+  "metadata": {
+    "owner": "operations",
+    "schemaVersion": 1
+  }
+}

@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 panel="$1"
-[[ "$panel" == global || "$panel" == canary ]] || { echo 'Expected global or canary' >&2; exit 2; }
+[[ "$panel" == global || "$panel" == canary || "$panel" == confirmation ]] || { echo 'Expected global, canary or confirmation' >&2; exit 2; }
 work=".blame/research/edit-grammar/$panel"
 pilot="$work/pilot"
 dest="docs/experiments/light-harness-edit-grammar-2026-10-11/$panel"
 export BLAME_STUDY_DIRECTORY="$dest" BLAME_STUDY_WORK_DIRECTORY="$work"
-node tools/terminal_bench/corpus/light-study-audit.mjs "$pilot"
+if [[ "$panel" == confirmation ]]; then
+  node tools/terminal_bench/corpus-edit-confirmation/light-study.mjs audit
+else
+  node tools/terminal_bench/corpus/light-study-audit.mjs "$pilot"
+fi
 for helper in webhook-replay pagination-replay cache-replay reducer-replay seed-audit slug-replay motion-validation; do
   node "tools/terminal_bench/corpus/light-study-$helper.mjs" "$pilot"
 done
@@ -32,4 +36,6 @@ cp "$pilot/recovery-inspection.json" "$dest/"
 node tools/terminal_bench/corpus/light-study-quality-uncertainty.mjs "$dest"
 node tools/terminal_bench/corpus/light-study-integrity.mjs "$dest"
 node tools/terminal_bench/corpus/light-study-edit-mechanism.mjs "$dest"
-node tools/terminal_bench/corpus/light-study-register-known-diagnostics.mjs "$dest"
+if [[ "$panel" != confirmation ]]; then
+  node tools/terminal_bench/corpus/light-study-register-known-diagnostics.mjs "$dest"
+fi

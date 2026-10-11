@@ -1,0 +1,3 @@
+In src/intervals.ts: Merge closed numeric intervals in `mergeRanges`: return fresh sorted intervals, combining overlapping intervals and intervals with equal touching endpoints. Do not merge disjoint intervals, even integer-adjacent ones. Empty input returns an empty array. Both endpoints must be safe integers and start must be <= end; otherwise throw RangeError. Negative endpoints are valid. Do not mutate or reuse any input tuple. Preserve the exported Range type and function signature.
+
+Modify only src/intervals.ts. Work independently; do not retrieve published solutions or benchmark verifier source. Run the declared root build after the final edit and report its result.

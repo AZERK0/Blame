@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "interval-union",
+      "instruction": "instructions/01-interval-union.md",
+      "allowedPaths": [
+        "src/intervals.ts"
+      ],
+      "maxIterations": 16,
+      "timeoutSeconds": 300
+    },
+    {
+      "id": "duration-format",
+      "instruction": "instructions/02-duration-format.md",
+      "allowedPaths": [
+        "src/duration.ts"
+      ],
+      "maxIterations": 16,
+      "timeoutSeconds": 300
+    },
+    {
+      "id": "notification-config",
+      "instruction": "instructions/03-notification-config.md",
+      "allowedPaths": [
+        "src/notifications.json"
+      ],
+      "maxIterations": 16,
+      "timeoutSeconds": 300
+    }
+  ]
+}
