@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "root-backoff",
+      "instruction": "instructions/01-root-backoff.md",
+      "allowedPaths": [
+        "src/backoff.ts"
+      ],
+      "requiredBuilds": [
+        {
+          "id": "build",
+          "cwd": "."
+        }
+      ],
+      "maxIterations": 18,
+      "timeoutSeconds": 300
+    },
+    {
+      "id": "child-label",
+      "instruction": "instructions/02-child-label.md",
+      "allowedPaths": [
+        "packages/labels/src/label.ts"
+      ],
+      "requiredBuilds": [
+        {
+          "id": "build",
+          "cwd": "."
+        },
+        {
+          "id": "scope-labels:build",
+          "cwd": "packages/labels"
+        }
+      ],
+      "maxIterations": 18,
+      "timeoutSeconds": 300
+    },
+    {
+      "id": "shared-batch",
+      "instruction": "instructions/03-shared-batch.md",
+      "allowedPaths": [
+        "packages/settings/src/settings.ts"
+      ],
+      "requiredBuilds": [
+        {
+          "id": "build",
+          "cwd": "."
+        },
+        {
+          "id": "scope-settings:build",
+          "cwd": "packages/settings"
+        }
+      ],
+      "maxIterations": 18,
+      "timeoutSeconds": 300
+    }
+  ]
+}

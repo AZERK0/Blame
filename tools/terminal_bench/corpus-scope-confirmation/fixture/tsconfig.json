@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "strict": true,
+    "target": "ES2022"
+  },
+  "include": [
+    "src/**/*.ts",
+    "packages/**/*.ts"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "scope-settings",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit"
+  }
+}

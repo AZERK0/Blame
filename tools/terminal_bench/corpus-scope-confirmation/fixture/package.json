@@ -1,0 +1,12 @@
+{
+  "name": "scope-confirmation-root",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "scope-settings": "workspace:*"
+  }
+}
