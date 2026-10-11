@@ -118,7 +118,7 @@ function editCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "edit_code",
     description:
-      "Atomically apply symbol operations or focused Cline patches. Set patch target to an observed sN alias to restrict one Update File to that symbol; the header must match its file. Choose the smaller precise edit: replace_body replaces the entire observed body. For a new file, patch may contain complete raw text; existing files require Cline patch syntax. Do not combine a parent with its containedBy child. The runtime handles freshness, overlaps, and supported syntax checks.",
+      'Atomically apply symbol operations or focused Cline patches. Each operation uses kind "symbol" or "patch"; symbol edits put the edit action in action. Example: {"operations":[{"kind":"symbol","target":"s1","action":"replace_body","content":"return 2;"}]}. Set patch target to an observed sN alias to restrict one Update File to that symbol; the header must match its file. Choose the smaller precise edit: replace_body replaces the entire observed body. For a new file, patch may contain complete raw text; existing files require Cline patch syntax. Do not combine a parent with its containedBy child. The runtime handles freshness, overlaps, and supported syntax checks.',
     schema: lightEditCodeInputSchema,
     execute: (input, context) =>
       workspace.editCode(input, {
