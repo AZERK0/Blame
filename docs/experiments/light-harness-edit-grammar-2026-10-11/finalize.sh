@@ -16,6 +16,7 @@ for helper in webhook-replay pagination-replay cache-replay reducer-replay seed-
 done
 if [[ "$panel" == global ]]; then
   node tools/terminal_bench/corpus/light-study-storage-percent-replay.mjs "$pilot"
+  node tools/terminal_bench/corpus/light-study-seed-source-proof.mjs "$pilot"
 fi
 cp "$pilot/audit-candidates.json" "$pilot/original-audit-candidates.json"
 node tools/terminal_bench/corpus/light-study-tool-lifecycle.mjs "$pilot"
@@ -26,6 +27,7 @@ cp "$pilot/original-audit-candidates.json" "$dest/"
 cp "$pilot/tool-lifecycle-inspection.json" "$pilot/inactivity-diagnostics.json" "$dest/"
 if [[ "$panel" == global ]]; then
   cp "$pilot/storage-percent-replay.json" "$dest/"
+  cp "$pilot/seed-source-proof.json" "$dest/"
 fi
 if [[ "$panel" == global || "$panel" == canary ]]; then
   for artifact in webhook-replay pagination-replay cache-replay reducer-replay seed-audit slug-replay motion-validation-review; do cp "$pilot/$artifact.json" "$dest/"; done
