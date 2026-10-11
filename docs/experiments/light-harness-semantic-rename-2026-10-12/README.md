@@ -21,3 +21,21 @@ Fourteen dedicated native controls within 349 focused runtime/provider tests pas
 Build the runtime and runner from the recorded source, copy the F9 frozen modified runtime byte-for-byte to this campaign's baseline, freeze F10 separately through `tools/terminal_bench/corpus/light-study.mjs`, and bind before running `python tools/terminal_bench/semantic-rename/run.py`. All frozen runtime/runner/prompts, model/effort/provider, protocol, lockfiles, source, verifier, budgets and environment versions are SHA-bound by `execution-bindings.json`. The driver retains all outcomes/timeouts and uses independent compiler, selected/full existing suites, lexical-token/source-scope and source/trace audit without retrieving solutions.
 
 F10 has its own USD 0.15 observed stop, USD 0.05 per-trial SDK ceiling/reserve, 24-iteration/480-second deadline plus process-group watchdog, within a shared USD 0.30 study ceiling. F9 observed estimate is USD 0.090817. Missing cost reserves the full ceiling. Cached tokens are subsets of input, reasoning subsets of output; missing fields stay missing. Compare quality-matched reconciled resources, preserving adverse trials and separating official/functional/audited success. One repetition of known tasks cannot certify global advantage; any confirmation must use separately selected unseen requests.
+
+## Completed F10 diagnostic
+
+All nine registered trials complete with 3/3 official, independent and audited completions per arm, actual required agent checks and no solution retrieval. Final diffs are byte-identical across arms and to F9's mechanical endpoint; the runtime is separately frozen. Native rename is actually used once on each cross-file task and never on the local control.
+
+| Exact frozen arm | Audited completion | Input + output tokens | Estimated USD | Runner seconds |
+| --- | --- | ---: | ---: | ---: |
+| F9 baseline | 3/3 | 172,039 | 0.02381048 | 164.586 |
+| F9 + F10 | 3/3 | 165,295 | 0.01697468 | 115.979 |
+| Integrated Cline SDK 0.0.82 | 3/3 | 244,226 | 0.03085860 | 144.921 |
+
+Versus F9, the observed panel saves 3.9% tokens, 28.7% estimated cost and 29.5% runner time. Versus Cline it saves 32.3%, 45.0% and 20.0%, respectively. Output tokens fall 53.2% against F9, consistent with avoiding model-generated multi-file patches; input changes only slightly. These are summed matched-panel observations, not proof that every trajectory difference is causal or that population performance improves. Three-task exploratory token-ratio intervals versus F9 span 0.653–1.677; all resource ratios preserve their broad intervals.
+
+Adverse outcomes matter: the timezone task uses 20.0% more tokens than F9 despite lower estimated cost; the unused local control uses 67.7% more tokens and about 95.0% more estimated cost. A scoped export-prefix patch is blocked before the model corrects it. Models still issue redundant searches and misinterpret scope `*`; native rename alone does not remove navigation friction. Targeted project-test verification can remain `unknown` even when the actual requested tests exit successfully; neither a static guard nor unknown scope is relabeled as admitted test evidence. Actual agent checks, technical admission and independently audited criteria stay separate.
+
+Tokens/cost reconcile in 9/9, complete per-request cache accounting in 0/9. Observed aggregate cache reads are 116,224 / 116,224 / 158,720 tokens (subsets of input); missing request fields and hidden retries remain unestablished. `checks.json`, `summary.json`, `paired-comparison.json`, `source-review.json`, `inventory.json` and 54 unchanged raw artifacts retain all outcomes. `pre-confirmation-budget-analysis.json` preserves the precise pre-review accounting snapshot used by the subsequent shared-budget reservation.
+
+Decision: **keep guarded native rename for its correct local contracts and observed diagnostic efficiency**, while retaining the adverse controls and rejecting a global-superiority claim. A separately preregistered new-request confirmation compares combined F9+F10 to original prior-production Light and Cline. Future priorities are clearer scope/route presentation, honest validation obligations, and broader language/graph coverage; each requires a separate intervention or confirmation.
