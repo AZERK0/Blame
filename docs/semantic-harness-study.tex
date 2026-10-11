@@ -909,7 +909,9 @@ Partial global trace diagnosis already identifies independent current limitation
 Reference \code{1-filter-accessibility} produces correct source and passes root
 checks, then invokes an irrelevant, intentionally failing child build; the current
 \code{assertNoFailedValidation} checks code-category failures without filtering
-by delivered paths and blocks three finish attempts. Modified
+by delivered paths and blocks three finish attempts. Toy process-exit replays
+reproduce this in both frozen arms while retaining refusal of a failing root
+check; they are policy diagnostics, not source-quality evidence. Modified
 \code{1-storage-traversal} passes functional checks and a fresh build, but tries
 to remove an EOF blank outside its symbol scope; a rejected patch followed by
 repeated no-op symbol replacements exhausts SDK mistake recovery. Reference
