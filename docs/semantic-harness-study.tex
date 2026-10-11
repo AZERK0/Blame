@@ -30,6 +30,9 @@ conditional reference/native token savings, adverse intervention costs and
 unexposed mechanisms; they do not establish a universal semantic advantage.
 Finite, unblinded panels cannot establish population equivalence or exhaust
 improvement margin.
+An independent current-Serena comparison confirms LSP alias-aware references
+and rename, while Light guards stale observed edits; this local diagnostic
+contains no model-efficiency or task-success measurement.
 \end{abstract}
 
 \section{Method and evidence boundaries}
@@ -731,15 +734,63 @@ budget; it is proposed, not executed. Do not select a benchmark after seeing
 which one makes Blame win. Detailed prerequisites and accounting are in
 \code{docs/experiments/light-harness-large-project-next-2026-10-11/PROPOSAL.md}.
 
+\section{Current Serena comparison: implementation and local diagnostics}
+Compare Light at \code{963c6952} with Serena \code{1de556f71569f3acfc0743e526dd60aca40a545e}
+(\code{2.0.0.dev0}); no production intervention. Serena augments an existing
+agent through MCP; its host owns task tests and completion. The open-source
+LSP backend supplies project symbol identity, aliased references and rename;
+the paid JetBrains backend additionally offers move/inline and broader
+dependency/type navigation. Only LSP is executed here. Tool exposure is
+configurable, including an optional progressive-disclosure REPL, so five
+Light primitives versus all optional Serena tools is not a prompt-cost proof.
+Serena's LSP editor applies workspace-edit operations sequentially; no equivalent
+Light observation-bound pending/recovery contract is established in this path.
+Automatic per-edit LSP diagnostics are disabled by default; explicit diagnostics
+remain available. No crash-atomicity or JetBrains transaction test is claimed.
+
+A registered three-file TypeScript fixture includes an exported function,
+an aliased import/call and unrelated homonym/literal/comment. Serena returns
+the expected two consumer lines in three entries (duplicate import context),
+falling back to file-level groups; native rename changes only the expected
+definition/import. Light returns six lexical candidates, misses the aliased
+call and includes unrelated names. These are explicitly lexical candidates,
+not asserted semantic references. Human-selected Light patches produce the
+same rename; native semantic discovery is not inferred. After a fresh body
+read and external source change, Light blocks stale replacement and preserves
+that source; filesystem-synchronized Serena applies the requested replacement.
+This distinguishes freshness contracts, not a violation of an unconditional
+replacement API. Both arms pass the actual strict TypeScript 5.9.3 compiler
+after rename and stale-edit handling: four invocations, four zero exits.
+Compilation proves neither preservation of external intent nor user acceptance.
+
+Preserve the initial Light empty-search preparation failure: a fixture inside
+ignored \code{.blame} inherited the parent Git root. An amendment registered
+isolated Git roots for both arms before repeat calls; sources, queries and
+expected identities stay fixed. Eleven audited result/source assertions pass.
+All outputs, hashes and unfavorable observations accompany
+\filepath{docs/experiments/light-harness-serena-comparison-2026-10-11/README.md}.
+No model calls, billed/cache-token comparison, controlled latency benchmark,
+or JetBrains execution occurs. Serena's published evaluations all use
+JetBrains, let the executing agent select concrete category instances and
+exclude misuse/silent-failure traps, while retaining applicable adverse cases;
+these workflow evaluations do not establish comparable audited global success.
+Decision: investigate read-only semantic references behind Light's existing
+interface, preserving guarded effects and validation; no replacement or
+global superiority claim. A later rename planner must use that guarded commit
+path. Cold/warm setup, project completeness and extra tool context belong in
+future resource accounting.
+
 \section{Next testable priorities: proposals only}
 \begin{enumerate}
-\item If further navigation work is justified, test bounded manifest-section
-locations in actual returned large-file results: T6 wording never activates the
-available scoped route. Preserve explicit raw access and authorize edits only
-for observed source, not location metadata. Measure exposed information,
-actual choices, completed criteria and reconciled resources on fixed diagnostics
-and new requests. Incorrect locations or omitted dependency/export context are
-regression risks; a byte reduction alone is not model efficiency.
+\item Test an optional read-only compiler/LSP reference provider behind
+\code{search_code}: the Serena diagnostic exposes alias/homonym ambiguity
+that lexical search cannot resolve. First compare queries only, with explicit
+engine, project scope and incomplete-index/fallback reporting, on frozen
+cross-file tasks plus unseen confirmation. Measure identity precision/coverage,
+audited completion and all reconciled resources, including cold/warm indexing
+and schema/context overhead; byte reduction is not model efficiency. Incomplete
+project graphs, false completeness, startup cost and additional dependencies
+are regression risks. No semantic-edit intervention is bundled into this test.
 \item Identify required validation obligations and admit honest unverified or
 blocked delivery. Unrelated-child failures currently poison completion;
 package ownership alone proves no dependency scope. Replay required root,
@@ -756,8 +807,9 @@ solutions. Measure false success claims, tests actually executed/passed,
 admitted verification and audited completion separately, then request/cache
 costs. Extra work and overstating incomplete provenance are regression risks.
 \end{enumerate}
-Compiler/LSP references, other reading-granularity changes and memory/cache
-ablations remain deferred: current traces do not isolate their outcome benefit.
+Bounded manifest-section locations (T6 never activates the available route),
+other reading-granularity changes and memory/cache ablations remain deferred.
+The LSP diagnostic isolates a capability gap, not its model outcome benefit.
 Finite measurements cannot prove exhausted improvement margin; local repairs
 do not establish global model benefit. Keep unfavorable experiments explicit.
 
