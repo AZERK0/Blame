@@ -40,7 +40,9 @@ export function requiredBuildEvidence(tools, scenario, workspaceRoot) {
           directory = segment.includes(workspaceRoot) || segment.includes('<fixture>') ? next : posix.normalize(posix.join(directory,next));
           continue;
         }
-        if (!/^(?:npm|pnpm|yarn)\s+(?:(?:--prefix|--dir|-C)\s+\S+\s+)?(?:run\s+)?build(?:\s|$)/u.test(segment)) continue;
+        // A wrapper's zero exit cannot certify a masked subcommand failure.
+        // Admit only complete simple build segments; other forms need manual evidence.
+        if (!/^(?:npm|pnpm|yarn)\s+(?:(?:--prefix|--dir|-C)\s+\S+\s+)?(?:run\s+)?build$/u.test(segment.trim())) continue;
         const prefix = segment.match(/(?:--prefix|--dir|-C)\s+(['"]?[^'"\s]+['"]?)/u);
         const scope = prefix ? cwd(prefix[1]) : directory;
         const item = scenario.requiredBuilds.find(item => item.cwd === scope);

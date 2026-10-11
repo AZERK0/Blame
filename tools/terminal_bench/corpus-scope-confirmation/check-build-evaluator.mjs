@@ -13,4 +13,7 @@ const native=commands=>({tool:'run_commands',input:{commands,unused:{commands:['
 assert.equal(inspect([edit,native(['cd /fixture && npm run build','cd /fixture/packages/labels && npm run build'])]),true);
 assert.equal(inspect([edit,native(['cd /fixture && npm run build'])]),false);
 assert.equal(inspect([edit,native(['node -e "console.log(\'npm run build\')"'])]),false);
-console.log('Required root/child checks, failure, freshness and inert metadata controls passed.');
+for (const masked of ['npm run build ; true', 'npm run build || true', 'npm run build | cat', 'npm run build & true'])
+  assert.equal(inspect([edit,native([masked,'cd /fixture/packages/labels && npm run build'])]),false);
+assert.equal(inspect([edit,native(['npm run build && npm --prefix packages/labels run build'])]),true);
+console.log('Required root/child checks, failure, freshness, inert metadata and masked-exit controls passed.');
