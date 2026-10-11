@@ -11,6 +11,7 @@ const directory = resolve(process.argv[2]);
 const bytes = await readFile(join(directory, 'results.json'));
 const original = JSON.parse(bytes);
 const decisions = JSON.parse(await readFile(join(directory, 'adjudication.json'))).decisions;
+const inventory = JSON.parse(await readFile(join(directory, 'inventory.json')));
 const percentBytes = await readFile(join(directory, 'storage-percent-replay.json'));
 const percent = JSON.parse(percentBytes);
 const slug = JSON.parse(await readFile(join(directory, 'slug-replay.json')));
@@ -32,7 +33,9 @@ for (const extendedMarks of [false, true]) for (const expandedDates of [true, fa
       if (row.id === 'storage-traversal') {
         const check = percent.rows.find(r => r.name === row.name);
         assert.equal(typeof check?.passed, 'boolean');
-        assert.equal(check.instructionSha256, row.instructionSha256);
+        const instruction = inventory.find(item => item.artifact === `${row.name}.instruction.txt.gz`);
+        assert.ok(instruction, 'Published instruction binding missing');
+        assert.equal(check.instructionSha256, instruction.sha256);
         assert.equal(check.diffSha256, row.diffSha256);
         criteria &&= check.passed;
       }
