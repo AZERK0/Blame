@@ -6,6 +6,7 @@ import {
   open,
   readFile,
   rm,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -16,6 +17,7 @@ import { blockedCommandReason } from "./command-policy.js";
 import { LightCommitService } from "./light-commit.js";
 import type { LightCompletionNotification } from "./light-completion.js";
 import { LightFinishService } from "./light-finish-service.js";
+import type { LightRunTaskInput, LightToolResult } from "./light-contracts.js";
 import { lightSemanticHarnessTools } from "./light-tools.js";
 import { LightWorkspace } from "./light-workspace.js";
 import { completionAwareTerminalState } from "./run-lifecycle.js";
@@ -448,3 +450,102 @@ test("finish refreshes the requested stale test without selecting a new build", 
     assert.equal(notifications[0]?.verified, false);
   });
 });
+
+for (const route of ["command", "project"] as const) {
+  for (const outcome of ["pass", "fail", "stale"] as const) {
+    test(`actual types compiler ${outcome} controls completion via ${route}`, async () => {
+      await typesFixture("tsc --noEmit", async (root, workspace) => {
+        await editTypedValue(root, workspace, outcome === "fail" ? '"broken"' : "2");
+        const result = await settledTask(workspace, route === "project"
+          ? { kind: "project", task: "types" }
+          : { kind: "command", command: "npm run types" });
+        const journal = new SessionJournal(root, "invariants");
+        const before = await journal.completionSnapshot();
+        const notifications: LightCompletionNotification[] = [];
+        if (outcome === "fail") {
+          assert.ok(result.status === "blocked", JSON.stringify(result));
+          assert.match(result.message, /TS2322/u);
+          assert.equal(result.category, "code");
+          await assert.rejects(finisher(root, notifications).finish("Complete", {} as never),
+            /Current validation is still failing/u);
+        } else {
+          assert.equal(result.status, "ok", JSON.stringify(result));
+          if (outcome === "stale") {
+            await editTypedValue(root, workspace, '"broken"');
+            await assert.rejects(finisher(root, notifications).finish("Complete", {} as never),
+              /TS2322|Current validation is still failing/u);
+            const after = await journal.completionSnapshot();
+            assert.notEqual(after.sourceRevisionId, before.sourceRevisionId);
+            assert.ok(after.validations.some(check => check.taskKind === "typecheck" &&
+              check.terminal === "failed" && check.sourceRevisionId === after.sourceRevisionId));
+          } else {
+            await finisher(root, notifications).finish("Complete", {} as never);
+            assert.equal(notifications[0]?.verified, true);
+            assert.equal(notifications[0]?.completion.verification, "verified");
+            assert.ok(before.validations.some(check => check.taskKind === "typecheck" &&
+              check.status === "passed" && check.sourceRevisionId === before.sourceRevisionId));
+          }
+        }
+        if (outcome !== "pass") assert.deepEqual(notifications, []);
+      });
+    });
+  }
+}
+
+for (const command of ['node -e "process.exit(0)"', 'tsc --noEmit && node -e "process.exit(0)"']) {
+  test(`types alias does not admit compiler evidence for ${command}`, async () => {
+    await typesFixture(command, async (root, workspace) => {
+      await editTypedValue(root, workspace, "2");
+      const result = await settledTask(workspace, { kind: "command", command: "npm run types" });
+      assert.equal(result.status, "ok", JSON.stringify(result));
+      const notifications: LightCompletionNotification[] = [];
+      await finisher(root, notifications).finish("Complete", {} as never);
+      assert.equal(notifications[0]?.verified, false);
+      assert.equal(notifications[0]?.completion.verification, "unverified");
+      assert.deepEqual(notifications[0]?.completion.satisfied_obligations, []);
+    });
+  });
+}
+
+async function typesFixture(
+  command: string,
+  run: (root: string, workspace: LightWorkspace) => Promise<void>,
+) {
+  const installed = join(import.meta.dirname, "../../node_modules");
+  const compiler = JSON.parse(await readFile(join(installed, "typescript/package.json"), "utf8")).version;
+  const manifest = JSON.stringify({ scripts: { types: command }, packageManager: "npm",
+    devDependencies: { typescript: compiler } });
+  await fixture({
+    "a.ts": "export const value: number = 1;\n",
+    "package.json": manifest,
+    "tsconfig.json": JSON.stringify({ compilerOptions: { strict: true, noEmit: true,
+      types: [], target: "ES2022", skipLibCheck: true }, include: ["a.ts"] }),
+  }, async (root, workspace) => {
+    await symlink(installed, join(root, "node_modules"));
+    await run(root, workspace);
+    assert.equal(await readFile(join(root, "package.json"), "utf8"), manifest);
+    const snapshot = await new SessionJournal(root, "invariants").completionSnapshot();
+    assert.deepEqual(snapshot.changedPaths, ["a.ts"]);
+  });
+}
+
+async function editTypedValue(root: string, workspace: LightWorkspace, value: string) {
+  await workspace.readCode({ target: "a.ts", view: "raw" }, {});
+  const before = (await readFile(join(root, "a.ts"), "utf8")).trimEnd();
+  const result = await workspace.editCode({ operations: [{ kind: "patch", path: "a.ts",
+    patch: `*** Begin Patch\n*** Update File: a.ts\n@@\n-${before}\n+export const value: number = ${value};\n*** End Patch` }] });
+  assert.equal(result.status, "ok", JSON.stringify(result));
+}
+
+async function settledTask(workspace: LightWorkspace, input: LightRunTaskInput) {
+  let result: LightToolResult<unknown> = await workspace.runTask(input, {});
+  const deadline = Date.now() + 30_000;
+  while (result.status === "ok") {
+    const data = result.data as { process?: string; run?: string; cursor?: string };
+    if (data.process !== "running") break;
+    assert.ok(Date.now() < deadline, "Compiler process did not settle");
+    await delay(25);
+    result = await workspace.runTask({ kind: "inspect", run: data.run!, cursor: data.cursor }, {});
+  }
+  return result;
+}

@@ -83,7 +83,8 @@ for (const requested of process.argv.slice(2)) {
       const result = await completed(workspace, { kind: "command", command: "npm run types" });
       const snapshot = await new SessionJournal(root, "custom-types").completionSnapshot();
       assert.equal(result.status, "ok");
-      assert.equal(snapshot.validations.some(check => check.status === "passed"), false);
+      assert.equal(result.data?.validation, undefined);
+      assert.equal(snapshot.validations.some(check => check.taskKind === "typecheck"), false);
       rows.push({ runtime, kind: "custom", command, taskKind, result, validations: snapshot.validations,
         noCompilerEvidenceInvented: true });
     } finally { await rm(root, { recursive: true, force: true }); }

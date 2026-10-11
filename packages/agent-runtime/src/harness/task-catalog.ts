@@ -320,7 +320,11 @@ function taskKind(name: string, command: string): TaskCatalogItem["kind"] {
     return "service";
   if (/test/i.test(name)) return "test";
   if (/lint/i.test(name)) return "lint";
-  if (/typecheck|check:type/i.test(name)) return "typecheck";
+  if (
+    /typecheck|check:type/i.test(name) ||
+    (name === "types" && /^tsc[ \t]+--noEmit$/u.test(command.trim()))
+  )
+    return "typecheck";
   if (/build/i.test(name)) return "build";
   return "custom";
 }
