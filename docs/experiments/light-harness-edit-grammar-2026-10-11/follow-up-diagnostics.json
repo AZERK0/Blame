@@ -49,11 +49,21 @@
       "mechanism": "Auxiliary seed assertion fails then a later wc masks its exit in the same shell invocation. Agent subsequently reruns a standalone assertion (fails), independently corrects its counting and validates all records. Exact final-source AST and fresh root build pass. Shared shell interpretation limitation, not T2-specific.",
       "existsInCurrentCode": true,
       "trialInstructionMatchKnownDiagnostic": true
+    },
+    {
+      "trial": "1-storage-traversal-modified-clean",
+      "eventsSha256": "4b103f07c307f6622fa0683d4aa0dac913420c691015193588283c2d039d11d0",
+      "diffSha256": "fe614aa20368bb83ea90c7f830213d9109eae3f5c5985df9ea560a7c17938602",
+      "mechanism": "Functionally correct implementation and successful fresh root build. git diff --check identifies an extra EOF blank line outside the function symbol. Patch addressed to s1 cannot match that external blank line; five whole-symbol replacements return changed=false and the next tool is blocked by SDK consecutive-mistake limit. No finish, actual runtime failure retained. Observed current symbol boundary and unhelpful repeated no-op behavior; cannot attribute causal regression solely to T2 from one stochastic trial. Reference uses file-path patch to remove its analogous blank line and finishes.",
+      "existsInCurrentCode": true,
+      "trialInstructionMatchKnownDiagnostic": true
     }
   ],
   "sourceReferences": [
     "packages/agent-runtime/src/harness/light-finish-service.ts:95",
     "packages/agent-runtime/src/harness/light-finish-service.ts:370",
-    "packages/agent-runtime/src/harness/light-harness.test.ts:691"
+    "packages/agent-runtime/src/harness/light-harness.test.ts:691",
+    "packages/agent-runtime/src/harness/light-edit.ts:294",
+    "packages/agent-runtime/src/harness/light-edit.ts:360"
   ]
 }
