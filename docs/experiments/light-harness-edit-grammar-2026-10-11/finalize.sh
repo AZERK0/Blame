@@ -14,6 +14,9 @@ fi
 for helper in webhook-replay pagination-replay cache-replay reducer-replay seed-audit slug-replay motion-validation; do
   node "tools/terminal_bench/corpus/light-study-$helper.mjs" "$pilot"
 done
+if [[ "$panel" == global ]]; then
+  node tools/terminal_bench/corpus/light-study-storage-percent-replay.mjs "$pilot"
+fi
 cp "$pilot/audit-candidates.json" "$pilot/original-audit-candidates.json"
 node tools/terminal_bench/corpus/light-study-tool-lifecycle.mjs "$pilot"
 node tools/terminal_bench/corpus/light-study-inactivity.mjs "$pilot"
@@ -21,8 +24,14 @@ node tools/terminal_bench/corpus/light-study-reviewed-adjudication.mjs "$pilot" 
 node tools/terminal_bench/corpus/light-study-publish.mjs "$pilot" "$dest"
 cp "$pilot/original-audit-candidates.json" "$dest/"
 cp "$pilot/tool-lifecycle-inspection.json" "$pilot/inactivity-diagnostics.json" "$dest/"
+if [[ "$panel" == global ]]; then
+  cp "$pilot/storage-percent-replay.json" "$dest/"
+fi
 if [[ "$panel" == global || "$panel" == canary ]]; then
   for artifact in webhook-replay pagination-replay cache-replay reducer-replay seed-audit slug-replay motion-validation-review; do cp "$pilot/$artifact.json" "$dest/"; done
+fi
+if [[ "$panel" == global ]]; then
+  node tools/terminal_bench/corpus/light-study-storage-percent-sensitivity.mjs "$dest"
 fi
 node tools/terminal_bench/corpus/light-study-registered-analysis.mjs "$dest"
 if [[ "$panel" == global || "$panel" == canary ]]; then
