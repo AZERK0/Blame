@@ -1201,6 +1201,31 @@ test("run_task prefers an exact build script over prebuild", async () => {
   );
 });
 
+test("project selectors accept the root manifest without selecting a child", async () => {
+  await withWorkspace({
+    "package.json": JSON.stringify({ scripts: { build: 'node -e "process.stdout.write(process.cwd())"' } }),
+    "apps/web/package.json": JSON.stringify({ name: "web", scripts: { build: 'node -e "process.exit(9)"' } }),
+  }, async (root) => {
+    const workspace = lightWorkspace(root, "root-manifest-selector");
+    for (const packagePath of [".", "./", "package.json", "./package.json"]) {
+      const result = await workspace.tasks.run({ kind: "project", task: "build", packagePath });
+      assert.equal(result.status, "ok", packagePath);
+      assert.equal(data(result).exitCode, 0);
+      assert.ok(String(data(result).output).includes(root));
+      assert.equal(record(data(result).validation).taskId, "build");
+    }
+    for (const packagePath of ["apps/web", "apps/web/package.json"]) {
+      const result = await workspace.tasks.run({ kind: "project", task: "build", packagePath });
+      assert.equal(result.status, "blocked");
+      if (result.status === "blocked") assert.match(result.message, /code 9/u);
+    }
+    for (const packagePath of ["foo-package.json", "../package.json"])
+      assert.equal((await workspace.tasks.run({ kind: "project", task: "build", packagePath })).status, "blocked");
+    const validations = await new SessionJournal(root, "root-manifest-selector").validationEvents();
+    assert.ok(validations.some(value => value.taskId === "web:build" && value.status === "failed"));
+  });
+});
+
 test("run_task prefers an exact task id over nested scripts with the same name", async () => {
   await withWorkspace(
     {
