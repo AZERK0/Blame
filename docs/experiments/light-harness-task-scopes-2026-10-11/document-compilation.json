@@ -1,0 +1,9 @@
+{
+  "checkedAt": "2026-10-11T14:08:00.498361+00:00",
+  "path": "/workspace/Blame/docs/semantic-harness-study.tex",
+  "sourceSha256": "14848ceddce2874f1f4f388808a444420adaf661c25572fb7ffeaffd127bc630",
+  "compiler": "desktop native LaTeX editor",
+  "result": "success",
+  "stage": "T3 canary in progress; not final campaign report",
+  "repair": "Raw percent in an earlier T2 code macro consumed its closing brace; changed that literal to verbatim. Compiler then confirmed the current full source."
+}
