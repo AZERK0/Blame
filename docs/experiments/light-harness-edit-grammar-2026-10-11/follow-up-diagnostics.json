@@ -1,0 +1,59 @@
+{
+  "status": "Partial diagnostic evidence; not campaign outcomes or an intervention decision. No feedback or repair supplied to task agents.",
+  "productionIntervention": "Only edit_code description at bcfdce531cf6aad7d693ee7092f662c842f894c9",
+  "rows": [
+    {
+      "trial": "1-task-selection-baseline-clean",
+      "eventsSha256": "67a99825cc1ef3fdf752880f00c4c5206e031febcd7826ac59b1ca7bba97e144",
+      "diffSha256": "543ea9b913c1eaaede416a421d225853c2c1b597fd891d7871e79fd6b0b485a2",
+      "mechanism": "Shared H3 recovery after a recognized provider interruption before any source effect. Runtime succeeds; 5 requests versus 4 usage reports means token/cost reconciliation fails. Duration retained. Not caused by the isolated T2 description change; no HTTP wire attribution.",
+      "existsInCurrentCode": true,
+      "trialInstructionMatchKnownDiagnostic": true
+    },
+    {
+      "trial": "1-permission-matrix-baseline-clean",
+      "eventsSha256": "fa49f16d20a6412ba3590ad7907f277caa640b638829472852b9fffab66d57a7",
+      "diffSha256": "21d72a4878bb8381156865bd82a472ba09cf888a166246eb87e727516e25cd64",
+      "mechanism": "Model admits editor delete on draft despite successful build and finish; source criteria fail. Valid symbol-operation grammar, so no invalid-discriminator explanation.",
+      "existsInCurrentCode": true,
+      "trialInstructionMatchKnownDiagnostic": true
+    },
+    {
+      "trial": "1-permission-matrix-modified-clean",
+      "eventsSha256": "68627655634b6b8268fc4397362f17eb4518053f51182bf28e9d8c328f11fcf7",
+      "diffSha256": "11232ee098eccb16912023fb75cdb4279a9e84f679437d11f45402e94da2cf66",
+      "mechanism": "Model denies archived editor view despite successful build and finish; source criteria fail. Valid symbol-operation grammar; this is a known semantic miss, not evidence of a changed runtime guard.",
+      "existsInCurrentCode": true,
+      "trialInstructionMatchKnownDiagnostic": true
+    },
+    {
+      "trial": "1-filter-accessibility-baseline-clean",
+      "eventsSha256": "7c75830903b95863f50d51159b0f5519373c950ed07c018f57251d6f04e54896",
+      "diffSha256": "2fa0c54aef4a1ba4eff5c41b3ed78eb5127672e9dad904545c70df50278c9664",
+      "mechanism": "Correct final accessibility source plus successful post-edit root build/typecheck. Model additionally executes known failing apps/web build outside changed source scope; assertNoFailedValidation globally blocks three finish attempts. Current implementation checks code-category failures without filtering to delivered paths; relevance-selection and completion-scope follow-up needed, without silently accepting required failures.",
+      "existsInCurrentCode": true,
+      "trialInstructionMatchKnownDiagnostic": true
+    },
+    {
+      "trial": "1-large-create-modified-clean",
+      "eventsSha256": "5b2f4243a9e143940f5300526abd32f9500a62a5af0c6b1a8d9eef68aa97392d",
+      "diffSha256": "0f68a3aa64aaf4030db4fa036495d377b0e272528a0e6daba240eac0980d7299",
+      "mechanism": "Earlier auxiliary Python check raises SyntaxError but a later successful git status masks its exit code in the same shell command. Source AST verifies all 120 exact records and root build passes. Pipeline pipefail test does not cover sequential-command masking; do not interpret overall exit zero as every component passing.",
+      "existsInCurrentCode": true,
+      "trialInstructionMatchKnownDiagnostic": true
+    },
+    {
+      "trial": "1-large-create-cline-clean",
+      "eventsSha256": "79a06817a22f4afa9b45e79ce32d9745a150097d1f60fff9bf84a9369b5b55f1",
+      "diffSha256": "0476ccf827878b791749d82b895ff5e413a7778aac5a4d1ece63ea5325102802",
+      "mechanism": "Auxiliary seed assertion fails then a later wc masks its exit in the same shell invocation. Agent subsequently reruns a standalone assertion (fails), independently corrects its counting and validates all records. Exact final-source AST and fresh root build pass. Shared shell interpretation limitation, not T2-specific.",
+      "existsInCurrentCode": true,
+      "trialInstructionMatchKnownDiagnostic": true
+    }
+  ],
+  "sourceReferences": [
+    "packages/agent-runtime/src/harness/light-finish-service.ts:95",
+    "packages/agent-runtime/src/harness/light-finish-service.ts:370",
+    "packages/agent-runtime/src/harness/light-harness.test.ts:691"
+  ]
+}
