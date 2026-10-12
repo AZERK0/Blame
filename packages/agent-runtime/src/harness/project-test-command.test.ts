@@ -1,0 +1,77 @@
+import assert from "node:assert/strict";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import test from "node:test";
+import { pathToFileURL } from "node:url";
+import { projectTestCommand } from "./project-test-command.js";
+import type { TaskCatalogItem } from "./task-catalog.js";
+
+const task = { cwd: ".", task_id: "test", script: "test", package_manager: "npm", kind: "test" } as TaskCatalogItem;
+test("literal npm tests retain script and exact quoted argv", () => {
+  for (const command of ['npm test -- --run "space file.ts"', "npm run test -- --run 'space file.ts'"])
+    assert.deepEqual(projectTestCommand(command, ".", [task]), {
+      taskId: "test", taskKind: "test", args: ["--run", "space file.ts"],
+    });
+  assert.deepEqual(projectTestCommand("npm test -- '--test-name-pattern=foo.*' '$literal'", ".", [task]), {
+    taskId: "test", taskKind: "test", args: ["--test-name-pattern=foo.*", "$literal"],
+  });
+  assert.deepEqual(projectTestCommand("npm run test:unit -- --run", "child", [
+    { ...task, cwd: "child", task_id: "child:test:unit", script: "test:unit" },
+  ]), { taskId: "child:test:unit", taskKind: "test", args: ["--run"] });
+});
+
+test("ambiguous scope, shell expansion, options and oversized selections remain unidentified", () => {
+  for (const command of [
+    'npm test -- "$FILE"', "npm test -- $(echo file.ts)", "npm test -- `echo file.ts`",
+    "npm test -- *.ts", "npm test -- a\\ b.ts", "npm test -- a.ts && echo done",
+    "npm test -- a.ts; echo done", "npm test -- a.ts | cat", "npm test -- a.ts > out",
+    "npm test -- a.ts # comment", "X=1 npm test -- a.ts", "env npm test -- a.ts",
+    "npm test -- a.ts &", "npm run test --run", "npm --prefix child test -- file.ts",
+    "pnpm test -- file.ts", "node test/test.js", "npm run build -- file.ts",
+    "npm test -- ''", 'npm test -- "a\\nb"', "npm test -- " + "a ".repeat(33),
+    "npm test -- " + "a".repeat(2049), "npm test -- 'unterminated",
+  ]) assert.equal(projectTestCommand(command, ".", [task]), undefined, command);
+  assert.equal(projectTestCommand("npm test -- file.ts", "child", [task]), undefined);
+  assert.equal(projectTestCommand("npm test -- file.ts", ".", [task, task]), undefined);
+});
+
+// Compare immutable F13/F14 runtime modules using identical real shell and source inputs.
+const runtime = process.env.BLAME_TEST_COMMAND_RUNTIME;
+const load = <T>(name: string) => import(runtime
+  ? pathToFileURL(join(runtime, "harness", name + ".js")).href : "./" + name + ".js") as Promise<T>;
+const { LightWorkspace } = await load<typeof import("./light-workspace.js")>("light-workspace");
+const { LightFinishService } = await load<typeof import("./light-finish-service.js")>("light-finish-service");
+const { SessionJournal } = await load<typeof import("./session-journal.js")>("session-journal");
+
+test("raw npm selected test is refreshed after final description edit and current build", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-npm-selection-"));
+  try {
+    await writeFile(join(root, "package.json"), JSON.stringify({ scripts: { test: "node --test", build: "node --check value.cjs" } }));
+    await writeFile(join(root, "value.cjs"), "exports.value=1;\n");
+    await writeFile(join(root, "selected suite.test.cjs"), "const {test}=require('node:test');const assert=require('node:assert/strict');const {value}=require('./value.cjs');\ntest('selected',()=>assert.equal(value,2));test('unrelated',()=>assert.fail('excluded'));\n");
+    const workspace = new LightWorkspace(root, { sessionId: "npm-selection" });
+    const patch = (path: string, before: string, after: string) => workspace.editCode({ operations: [
+      { kind: "patch", path, patch: `*** Begin Patch\n*** Update File: ${path}\n@@\n-${before}\n+${after}\n*** End Patch` },
+    ] });
+    await patch("value.cjs", "exports.value=1;", "exports.value=2;");
+    const result = await workspace.runTask({ kind: "command", command: 'npm test -- --test-name-pattern=selected "selected suite.test.cjs"' }, {});
+    assert.equal(result.status, "ok", JSON.stringify(result));
+    const old = "test('selected',()=>assert.equal(value,2));test('unrelated',()=>assert.fail('excluded'));";
+    assert.equal((await patch("selected suite.test.cjs", old, old.replace("'selected'", "'selected regression'"))).status, "ok");
+    await workspace.runTask({ kind: "project", task: "build" }, {});
+    const activities: unknown[] = [];
+    const service = new LightFinishService({ conversationId: "npm-selection", workspaceRoot: root,
+      onValidationActivity: value => { if (value.phase === "started") activities.push(value.input); } });
+    await service.finish("done", {} as never);
+    assert.deepEqual(activities, [{ kind: "project", task: "test", args: ["--test-name-pattern=selected", "selected suite.test.cjs"] }]);
+    const final = await new SessionJournal(root, "npm-selection").completionSnapshot();
+    const tests = final.validations.filter(v => v.taskKind === "test");
+    assert.equal(tests.length, 1);
+    assert.equal(tests[0]?.check?.counts?.executed, 1);
+    assert.equal(tests[0]?.check?.outcome, "passed");
+    assert.equal(tests[0]?.status, "unknown");
+    assert.equal(tests[0]?.check?.selection, "unknown");
+    assert.equal(tests[0]?.sourceRevisionId, final.sourceRevisionId);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});

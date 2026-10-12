@@ -27,7 +27,7 @@ async function bindings() {
   const inputs = {};
   for (const path of [
     "tools/terminal_bench/validation-refresh/run.mjs", "tools/terminal_bench/validation-refresh/feature-checks.mjs",
-    "tools/terminal_bench/validation-refresh/freeze.py", "packages/agent-runtime/src/harness/light-final-tests.test.ts", "tools/terminal_bench/validation-refresh/run.py",
+    "tools/terminal_bench/validation-refresh/freeze.py", "packages/agent-runtime/src/harness/light-final-tests.test.ts", "packages/agent-runtime/src/harness/project-test-command.test.ts", "tools/terminal_bench/validation-refresh/historical-replay.mjs", "tools/terminal_bench/validation-refresh/run.py",
     "tools/terminal_bench/corpus/identifier-token-audit.mjs",
     "tools/terminal_bench/corpus/light-study-accounting.mjs",
     `docs/experiments/light-harness-validation-refresh-${panel}-2026-10-12/protocol.json`,
@@ -211,7 +211,7 @@ async function run() {
     await prepareWorkspace(workspace,task);
     await writeFile(join(directory, "instruction.txt"), task.instruction);
     const preparationMs = performance.now() - started;
-    const runner = join(work, "frozen", trial.arm === "baseline" ? "baseline" : "modified",
+    const runner = join(work, "frozen", trial.arm === "modified" ? "modified" : "baseline",
       "benchmark-runner/dist/cli.js");
     const args = [runner, "run", "--workspace", workspace, "--instruction-file", join(directory, "instruction.txt"),
       "--task-id", task.id, "--events", join(directory, "events.jsonl"), "--result", join(directory, "result.json"),

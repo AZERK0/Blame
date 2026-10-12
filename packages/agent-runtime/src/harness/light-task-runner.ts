@@ -28,6 +28,7 @@ import {
   startWorkspaceCommand,
   type WorkspaceCommandResult,
 } from "./workspace-command-process.js";
+import { projectTestCommand } from "./project-test-command.js";
 import { validationScopePaths } from "./validation-scope.js";
 import { validationOutput, type ValidationOutput } from "./validation-output.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
@@ -431,7 +432,8 @@ export class LightTaskRunner {
           command === `${item.package_manager} run ${item.script}` ||
           command === `${item.package_manager} ${item.script}`),
     );
-    return task ? { taskId: task.task_id, taskKind: task.kind } : {};
+    return task ? { taskId: task.task_id, taskKind: task.kind }
+      : projectTestCommand(command, cwd, tasks) ?? {};
   }
 
   private async recordedResult(
