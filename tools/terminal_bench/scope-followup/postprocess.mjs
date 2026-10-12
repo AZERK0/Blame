@@ -1,6 +1,6 @@
 // Read-only extraction after trials. No source repairs, new scores or oracle feedback.
 import { createHash } from "node:crypto";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, readdir, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 const campaign=resolve(process.argv[2]),study=resolve(process.argv[3]);
@@ -10,7 +10,7 @@ const analysis=await json(join(campaign,"analysis.json"));
 const ledger=await json(join(campaign,"tool-ledger.json"));
 const bindings=await json(join(study,"execution-bindings.json"));
 const protocol=await json(join(study,"protocol.json"));
-const mechanisms=[],validation=[],addedSources=[];
+const mechanisms=[],validation=[],addedSources=[],journals=[];
 for(const row of analysis.rows){
   const task=protocol.tasks.find(t=>t.id===row.id);
   const tools=ledger.find(t=>t.name===row.name).tools;
@@ -23,12 +23,24 @@ for(const row of analysis.rows){
     emptySearches:searches.filter(t=>t.output?.status==="ok"&&t.output?.data?.results?.length===0).length,
     blockedSearches:searches.filter(t=>t.output?.status==="blocked").length,
     repeatedIdenticalSearchInputs:[...counts.values()].reduce((n,c)=>n+Math.max(0,c-1),0),
-    readCalls:tools.filter(t=>t.tool==="read_code"||t.tool==="read_file").length,
+    readCalls:tools.filter(t=>t.tool==="read_code"||t.tool==="read_files").length,
+    readTargets:tools.filter(t=>t.tool==="read_code"||t.tool==="read_files")
+      .reduce((n,t)=>n+(t.tool==="read_files"?(t.input.files?.length??0):1),0),
     nativeRenameCalls:row.semanticRenameCalls,compilerReferenceCalls:row.semanticReferenceCalls,
     blockedEdits:tools.filter(t=>t.tool==="edit_code"&&t.output?.status==="blocked").length,
     searchInputs:searches.map(t=>({input:t.input,status:t.output?.status,resultCount:t.output?.data?.results?.length??null})),
     eventsSha256:row.eventsSha256});
   const score=await json(join(campaign,row.name,"score.json"));
+  const journalRoot=join(campaign,row.name,"workspace/.blame/harness/light");
+  try{
+    for(const name of (await readdir(journalRoot)).filter(n=>n.endsWith(".jsonl")).sort()){
+      const bytes=await readFile(join(journalRoot,name));
+      const artifact="journals/"+row.name+"."+name+".gz";
+      await mkdir(join(study,"journals"),{recursive:true});
+      await writeFile(join(study,artifact),gzipSync(bytes,{mtime:0}));
+      journals.push({name:row.name,file:name,artifact,bytes:bytes.length,sha256:sha(bytes)});
+    }
+  }catch(error){if(error.code!=="ENOENT")throw error;}
   if(task.newTest){
     try{
       const bytes=await readFile(join(campaign,row.name,"workspace",task.newTest));
@@ -67,5 +79,5 @@ await writeFile(join(study,"validation-provenance.json"),JSON.stringify({
 // the original recorded workspace.diff or its endpoint hash.
 const addedArtifact=gzipSync(JSON.stringify({method:"Unchanged final added tests, matched to frozen score source hashes. Supplement the original tracked diff; no model source repair.",sources:addedSources}),{mtime:0});
 await writeFile(join(study,"added-test-sources.json.gz"),addedArtifact);
-await writeFile(join(study,"supplemental-inventory.json"),JSON.stringify({artifact:"added-test-sources.json.gz",sha256:sha(addedArtifact),sources:addedSources.map(({content,...metadata})=>metadata)},null,2)+"\n");
+await writeFile(join(study,"supplemental-inventory.json"),JSON.stringify({artifact:"added-test-sources.json.gz",sha256:sha(addedArtifact),sources:addedSources.map(({content,...metadata})=>metadata),journals},null,2)+"\n");
 console.log(JSON.stringify({completed:analysis.completed,planned:analysis.planned,mechanisms:mechanisms.map(({name,searchCalls,rootStarCalls})=>({name,searchCalls,rootStarCalls}))}));
