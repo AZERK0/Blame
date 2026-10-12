@@ -35,6 +35,18 @@ test("rejects an unknown benchmark harness", async () => {
   });
 });
 
+test("loads bounded literal required checks and rejects command-shaped metadata", async () => {
+  await withInstruction(async (directory, instructionPath) => {
+    const checksPath = join(directory, "checks.json");
+    const checks = [{ id: "selected", task: "test", args: ["some.test.ts", "--test-name-pattern=literal value"] }];
+    await writeFile(checksPath, JSON.stringify(checks));
+    const args = ["run", "--instruction-file", instructionPath, "--required-checks-file", checksPath];
+    assert.deepEqual((await parseBenchmarkCommand(args, environment(), directory)).config.requiredChecks, checks);
+    await writeFile(checksPath, JSON.stringify([{ ...checks[0], command: "echo untrusted" }]));
+    await assert.rejects(parseBenchmarkCommand(args, environment(), directory));
+  });
+});
+
 test("passes an optional project identity to longitudinal runs", async () => {
   await withInstruction(async (directory, instructionPath) => {
     const parsed = await parseBenchmarkCommand(

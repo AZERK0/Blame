@@ -20,6 +20,7 @@ Required option:
   --instruction-file <path>
 
 Options:
+  --required-checks-file <path> (trusted JSON catalog task IDs and literal test argv)
   --workspace <path>
   --task-id <id>
   --events <path>

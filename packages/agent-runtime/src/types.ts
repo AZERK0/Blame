@@ -166,7 +166,10 @@ export type LoginOAuthProviderInput = {
   baseUrl?: string | null;
 };
 
+export type RequiredProjectCheck = import("./harness/light-contracts.js").RequiredProjectCheck;
+
 export type StartSessionInput = {
+  requiredChecks?: RequiredProjectCheck[];
   isolatedEnvironment?: boolean;
   apiConnection: ApiConnection;
   providerId: string;
@@ -216,6 +219,7 @@ export type FileAttachment = {
 };
 
 export type StartDevelopmentSessionInput = {
+  requiredChecks?: RequiredProjectCheck[];
   isolatedEnvironment?: boolean;
   apiConnection: ApiConnection;
   providerId: string;

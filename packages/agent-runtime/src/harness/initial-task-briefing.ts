@@ -1,6 +1,6 @@
 import { lightCapabilityDescription } from "./light-capabilities.js";
 import { parseCode } from "./code-intelligence.js";
-import type { LightTaskContract } from "./light-contracts.js";
+import { lightRequiredChecksSchema, type LightTaskContract } from "./light-contracts.js";
 import type { LightWorkspaceExecutor } from "./light-executor.js";
 import { routedView } from "./light-navigation.js";
 import { readTaskCatalog } from "./task-catalog.js";
@@ -43,7 +43,7 @@ async function localBriefing(input: InitialTaskBriefingInput) {
     candidates,
     input.taskContract?.objective,
   );
-  return briefingLines({
+  return [...briefingLines({
     candidates: targets,
     keyFiles: briefingKeyFiles(snapshot.files),
     manager: dependencyTask?.package_manager,
@@ -53,7 +53,14 @@ async function localBriefing(input: InitialTaskBriefingInput) {
     projectMap: projectMap(snapshot.files),
     snapshot,
     tasks,
-  }).join("\n");
+  }), ...requiredCheckBriefing(input.taskContract)].join("\n");
+}
+
+function requiredCheckBriefing(contract?: LightTaskContract) {
+  const checks = lightRequiredChecksSchema.parse(contract?.required_checks ?? []);
+  return checks.length ? [
+    `Required final-source checks: ${JSON.stringify(checks)}. finish_task runs missing selections. Passing test execution does not establish scope coverage or satisfy every user criterion.`,
+  ] : [];
 }
 
 type BriefingFacts = {

@@ -14,6 +14,7 @@ export type BenchmarkConfig = {
   credentialLabel?: string;
   harness: BenchmarkHarness;
   instruction: string;
+  requiredChecks?: StartDevelopmentSessionInput["requiredChecks"];
   maxIterations: number;
   modelId: string;
   projectMemoryFile?: string;

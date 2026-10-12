@@ -10,6 +10,7 @@ import type {
   LightTaskContract,
   LightToolResult,
 } from "./light-contracts.js";
+import { lightRequiredChecksSchema } from "./light-contracts.js";
 import { LightTaskRunner } from "./light-task-runner.js";
 import { LightCommitService } from "./light-commit.js";
 import { createProjectMemoryCandidate } from "./project-memory.js";
@@ -90,17 +91,25 @@ export class LightFinishService {
     const validation = await this.validateIfNeeded(initial, context);
     const current = await this.completionSnapshot();
     assertNoFailedValidation(current);
-    const verified = hasPassingValidation(
+    const required = validation.required ?? [];
+    const obligations = required.map(({ id, input, cwd, taskKind }) => ({
+      id: `check:${id}`,
+      passed: current.validations.some((item) => sameInvocation(item, input, cwd) && passedExecution(item, taskKind)),
+    }));
+    const scopeVerified = current.changedPaths.length ? hasPassingValidation(
       current.validations,
       current.changedPaths,
       validation.taskIds,
-    );
-    const unavailable = current.changedPaths.length > 0 && !verified;
+    ) : required.length > 0 && required.every(({ input, cwd }) =>
+      current.validations.some((item) => sameInvocation(item, input, cwd) && item.status === "passed" && item.terminal === "passed"));
+    const verified = scopeVerified && obligations.every(({ passed }) => passed);
+    const unavailable = (current.changedPaths.length > 0 || required.length > 0) && !verified;
     const decision = completionDecision(
       current.sourceRevisionId,
       verified,
       unavailable,
-      current.changedPaths.length === 0,
+      current.changedPaths.length === 0 && required.length === 0,
+      obligations,
     );
     await this.recordCompletion(
       summary,
@@ -132,9 +141,13 @@ export class LightFinishService {
     state: Awaited<ReturnType<SessionJournal["completionSnapshot"]>>,
     context: AgentToolContext,
   ) {
-    if (!state.changedPaths.length)
+    const required = await this.requiredValidationInputs();
+    if (!state.changedPaths.length && !required.length)
       return { outcome: "not_applicable" as const };
     const inputs = await this.validationInputs(state.changedPaths);
+    for (const selection of required)
+      if (!inputs.some(({ input, cwd }) => sameInvocation({ taskId: input.task, args: input.args, cwd }, selection.input, selection.cwd)))
+        inputs.push({ ...selection, paths: state.changedPaths });
     const pendingTests = inputs.filter(({ input, cwd }) =>
       input.args !== undefined && !state.validations.some((item) => sameInvocation(item, input, cwd)),
     );
@@ -142,9 +155,15 @@ export class LightFinishService {
       throw new Error("Automatic validation refresh is limited to 16 test selections. Refresh the requested tests with run_task before finishing.");
     for (const { input, paths, cwd } of inputs) {
       const matching = state.validations.filter((item) => sameInvocation(item, input, cwd));
-      if (hasPassingValidation(matching, paths, [input.task]))
+      const requirement = required.find((selection) => sameInvocation({ taskId: input.task, args: input.args, cwd }, selection.input, selection.cwd));
+      if (requirement && matching.some((item) => passedExecution(item, requirement.taskKind)))
+        continue;
+      if (!requirement && hasPassingValidation(matching, paths, [input.task]))
         continue;
       if (hasUnavailableValidation(matching, paths, input.task))
+        continue;
+      if (requirement &&
+        matching.some((item) => item.category === "environment" && item.status === "failed" && item.terminal === "failed"))
         continue;
       if (matching.some((validation) => validation.status === "unknown"))
         continue;
@@ -162,7 +181,25 @@ export class LightFinishService {
     return {
       outcome: "checked" as const,
       taskIds: inputs.map(({ input }) => input.task),
+      required,
     };
+  }
+
+  private async requiredValidationInputs() {
+    const checks = lightRequiredChecksSchema.parse(this.options.taskContract?.required_checks ?? []);
+    if (!checks.length) return [];
+    const snapshot = await this.files.snapshot();
+    const catalog = await readTaskCatalog(this.files.root, snapshot.files);
+    return checks.map(({ id, task, args }) => {
+      const matches = catalog.filter(({ task_id }) => task_id === task);
+      const item = matches[0];
+      if (matches.length !== 1 || !item || !["build", "test", "typecheck", "lint"].includes(item.kind))
+        throw new Error(`Required check ${id} needs an exact build/test/typecheck/lint catalog ID: ${task}.`);
+      if (args?.length && item.kind !== "test")
+        throw new Error(`Required check ${id}: extra argv is supported only for test tasks.`);
+      return { id, cwd: item.cwd, taskKind: item.kind, input: { kind: "project" as const, task,
+        ...(item.kind === "test" ? { args: args ?? [] } : {}) } };
+    });
   }
 
   private async validationInputs(changedPaths: string[]) {
@@ -328,12 +365,20 @@ function validationTaskScore(
 }
 
 function sameInvocation(
-  validation: Awaited<ReturnType<SessionJournal["completionSnapshot"]>>["validations"][number],
+  validation: { taskId?: string; args?: string[]; cwd?: string },
   input: Extract<LightRunTaskInput, { kind: "project" }>,
   cwd: string,
 ) {
   return validation.taskId === input.task && (validation.cwd ?? ".") === cwd &&
     JSON.stringify(validation.args ?? []) === JSON.stringify(input.args ?? []);
+}
+
+/** Satisfies an execution obligation only; it never promotes unknown test scope. */
+function passedExecution(validation: Awaited<ReturnType<SessionJournal["completionSnapshot"]>>["validations"][number], taskKind: string) {
+  if (validation.taskKind !== taskKind) return false;
+  if (taskKind === "test") return validation.check?.process === "exited" &&
+    validation.check.execution === "observed" && validation.check.outcome === "passed";
+  return validation.status === "passed" && validation.terminal === "passed";
 }
 
 function hasPassingValidation(
@@ -379,6 +424,7 @@ function completionDecision(
   verified: boolean,
   unavailable: boolean,
   nonMutating: boolean,
+  obligations: Array<{ id: string; passed: boolean }>,
 ): CompletionDecision {
   return {
     source_revision_id:
@@ -389,11 +435,16 @@ function completionDecision(
       : nonMutating
         ? "not_applicable"
         : "unverified",
-    satisfied_obligations: verified ? ["validation"] : [],
-    missing_obligations: [],
+    satisfied_obligations: [...(verified ? ["validation"] : []), ...obligations.filter(({ passed }) => passed).map(({ id }) => id)],
+    missing_obligations: obligations.filter(({ passed }) => !passed).map(({ id }) => id),
     failed_obligations: [],
-    reservations:
-      unavailable && !nonMutating
+    reservations: [
+      ...(obligations.some(({ passed }) => !passed) ? [{
+        code: "REQUIRED_CHECK_UNCONFIRMED",
+        message: "A required final-source invocation has no observed passing execution. User acceptance criteria remain a separate assessment.",
+        obligation_ids: obligations.filter(({ passed }) => !passed).map(({ id }) => id),
+      }] : []),
+      ...(unavailable && !nonMutating
         ? [
             {
               code: "VALIDATION_UNAVAILABLE",
@@ -401,7 +452,8 @@ function completionDecision(
               obligation_ids: [],
             },
           ]
-        : [],
+        : []),
+    ],
   };
 }
 

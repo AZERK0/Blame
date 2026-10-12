@@ -38,7 +38,8 @@ test("runs one development session and returns benchmark metrics", async () => {
   const recorder = new MemoryRecorder();
   const inputs: StartDevelopmentSessionInput[] = [];
   let shutdown = false;
-  const result = await runBenchmark(benchmarkConfig(), {
+  const requiredChecks = [{ id: "selected", task: "test", args: ["some.test.ts"] }];
+  const result = await runBenchmark({ ...benchmarkConfig(), requiredChecks }, {
     createRecorder: () => recorder,
     createRuntime: (events) =>
       successfulRuntime(events, inputs, () => {
@@ -52,6 +53,7 @@ test("runs one development session and returns benchmark metrics", async () => {
   assert.equal(result.metrics.tools.calls, 0);
   assert.equal(result.usage?.aggregateUsage?.totalInputTokens, 12);
   assert.equal(inputs[0]?.summary, "Fix the task");
+  assert.deepEqual(inputs[0]?.requiredChecks, requiredChecks);
   assert.equal(inputs[0]?.projectId, "project-1");
   assert.equal(inputs[0]?.isolatedEnvironment, true);
   assert.equal(result.isolatedEnvironment, true);

@@ -117,9 +117,20 @@ export type LightReadCodeInput = z.infer<typeof lightReadCodeInputSchema>;
 export type LightEditCodeInput = z.infer<typeof lightEditCodeInputSchema>;
 export type LightRunTaskInput = z.infer<typeof lightRunTaskInputSchema>;
 
+/** Trusted caller requirements, never commands inferred from acceptance prose. */
+export const lightRequiredChecksSchema = z.array(z.object({
+  id: z.string().regex(/^[A-Za-z0-9_.:-]{1,120}$/u),
+  task: z.string().trim().min(1).max(300),
+  args: z.array(z.string().min(1).max(2_048).refine((value) => !value.includes("\0"))).max(32).optional(),
+}).strict()).max(16).refine((checks) => new Set(checks.map(({ id }) => id)).size === checks.length,
+  "Required check IDs must be unique.");
+
+export type RequiredProjectCheck = z.infer<typeof lightRequiredChecksSchema>[number];
+
 export type LightTaskContract = {
   environment?: { isolated: boolean; managedPreview: boolean };
   acceptance_criteria?: string[];
+  required_checks?: RequiredProjectCheck[];
   effect_requirement?: "none" | "source_change";
   objective?: string;
   session_id?: string;

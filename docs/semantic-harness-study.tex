@@ -1141,6 +1141,37 @@ Unattempted user requirements, unknown dependency scopes and unmatched Lodash
 commands remain outside these fixes. Never equate their generic verification
 with satisfaction of every requested criterion.
 
+\section{Explicit required checks (F15, local evidence)}
+The current \code{LightTaskContract} had no required-check descriptors;
+\code{LightFinishService.validationInputs} considered attempted catalog tasks
+only. An admitted build could verify delivery while a requested failing suite
+was never invoked. F15 adds an opt-in trusted caller contract: stable check ID,
+exact catalog task and literal test argv (at most 16 checks). Public development
+and runtime inputs, the managed executor, initial briefing and headless runner
+carry it. No commands are inferred from free-text criteria. Existing callers
+without this metadata retain their prior behavior.
+
+Finish executes missing final-source selections, including explicit child
+checks and nonmutating requests. Code failures block; zero tests, unobserved
+reports or unavailable checks leave execution obligations missing and downgrade
+verification without automatic retry loops. \code{check:ID} means observed
+passing execution only: unknown selection, freshness and test scope stay unknown.
+Generic verification still requires admitted scope; full user criteria require
+independent review. Source revision, cwd and argv must match. Environment
+fingerprinting, arbitrary command requirements and dependency scope are deferred.
+
+On the immutable \code{d08138cd} runtime, 15 of 16 direct finish controls expose
+missing behavior; all 16 pass with F15. One separate current managed/briefing
+integration passes, giving 17 candidate controls. Full runtime checks before
+the final legacy/nonmutating guards pass 754 tests with two preexisting skips;
+runner checks pass 29. Final guards receive separate targeted verification.
+Retain the initial misclassified environment fixture and missing dependency
+symlink replay as setup failures, outside the mechanism comparison.
+Preregister one known same-day diagnostic and one previously unexecuted same-hour
+confirmation in date-fns: two repetitions of reference, F15 and integrated Cline,
+identical user instructions and metadata transport, USD 0.24 total ceiling.
+Model results are pending; these controls establish no model-success gain.
+
 \section{Next testable priorities: proposals only}
 \begin{enumerate}
 \item Clarify editing route and batch base only when relevant: new traces show
@@ -1152,9 +1183,10 @@ retries, successful precise edits, criteria and reconciled resources. F11's
 broad scope description is retired; excess prompt tokens and misleading
 coverage are risks. Independently confirm F12's latency/cost tradeoff on
 previously unexecuted command durations before generalizing.
-\item Bind explicit required checks, including never-attempted selections, to
-final source and admit honest unverified or blocked delivery. F13/F14 refresh
-already attempted known routes, not all prose requirements.
+\item Confirm F15's opt-in required-check execution on models and real callers.
+F13/F14 refresh attempted known routes; free-text requirements still need a
+trusted explicit contract. Bind further environment and dependency evidence
+before extending admission.
 Unrelated-child failures currently poison completion;
 package ownership alone proves no dependency scope. Replay required root,
 child/dependency failures, unknown scope, external changes and interrupted

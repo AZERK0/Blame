@@ -143,6 +143,7 @@ export type {
   StartNewProjectGenerationInput,
   StartDevelopmentSessionInput,
   StartSessionInput,
+  RequiredProjectCheck,
   SecurityAttackPathStep,
   SecurityAudit,
   SecurityAuditDiscoveryResult,

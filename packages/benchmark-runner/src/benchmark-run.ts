@@ -129,6 +129,7 @@ function sessionInput(config: BenchmarkConfig): BenchmarkSessionInput {
     projectId: config.projectId,
     reasoningEffort: config.reasoningEffort,
     summary: config.instruction,
+    ...(config.requiredChecks ? { requiredChecks: config.requiredChecks } : {}),
     title: "Requested task",
     workspaceRoot: config.workspaceRoot,
   };
