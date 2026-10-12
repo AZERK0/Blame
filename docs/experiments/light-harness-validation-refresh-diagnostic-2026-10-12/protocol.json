@@ -1,0 +1,67 @@
+{
+  "model": "gpt-5.6-luna",
+  "effort": "high",
+  "provider": "openai-codex",
+  "apiUrl": "https://api.blame.so/api/v1",
+  "arms": [
+    "baseline",
+    "modified",
+    "cline"
+  ],
+  "clientDate": "2026-10-12",
+  "quality": "Preregistered independent syntax/source-integrity and behavioral criteria, explicit per-task selected argv, full required suites, actual post-final-edit agent checks, source/trace/no-retrieval review. Runtime success and admitted scope remain separate.",
+  "accounting": "Reuse reconcileUsage; missing costs reserve per-trial ceiling, missing cache stays missing. All planned outcomes, including failed/timeout/unexecuted, remain. Primary comparisons require both audited success; report panel success first. Repetitions are nested within tasks, not independent task samples.",
+  "taskOrder": "Registered order; rotate arms by task index; reverse task/arm order on repetition two; no concurrency.",
+  "registeredAtUTC": "2026-10-12T01:50:09.877638+00:00",
+  "hypothesis": "F13: replaying each previously requested relevant catalog test with its original literal argv after source changes prevents selected-test freshness gaps without widening scope or admitting unknown test coverage.",
+  "intervention": "Only finish-time selection/reuse of known project test invocations changes. Keep source freshness, test observation/admission, failed checks, command matching, model prompts and tool schemas unchanged. Raw unmatched commands are not guessed or replayed.",
+  "baselineSource": "d1e85f6350b3c898add6efa9495f59a7e6b8d103, current production F9+F10+F12, retired F11.",
+  "repetitions": 2,
+  "budgets": {
+    "perTrialSdkCostLimitUsd": 0.02,
+    "panelObservedCostStopUsd": 0.12,
+    "sharedStudyObservedCostStopUsd": 0.24,
+    "maxIterations": 24,
+    "timeoutSeconds": 480,
+    "outerWatchdogExtraSeconds": 25
+  },
+  "budgetScope": "New validation-refresh phase, capped at USD 0.24 for twelve planned model runs; all prior completed campaigns remain separate. Conservative reservation and missing-cost per-trial cap apply.",
+  "decision": "Keep for demonstrated final-source test refresh with literal selection preserved, no false admission in local controls, and no audited regression in model panels. If the model mechanism is unexposed, retain only the tested local reliability claim and report resource variation without attribution.",
+  "upstreams": {
+    "date-fns": {
+      "commit": "313b902b9a72c64501074db9bc2b9897d2db5140",
+      "version": "4.1.0",
+      "sourceRoot": ".blame/research/npm-formatter-confirmation/date-fns"
+    }
+  },
+  "partition": "diagnostic",
+  "tasks": [
+    {
+      "id": "date-fns-reversed-clamp",
+      "project": "date-fns",
+      "kind": "behavior",
+      "allowedPaths": [
+        "src/clamp/index.ts",
+        "src/clamp/reversed/test.ts"
+      ],
+      "mutableFunctions": {
+        "src/clamp/index.ts": [
+          "clamp"
+        ]
+      },
+      "newTest": "src/clamp/reversed/test.ts",
+      "selectedTests": [
+        "src/clamp/test.ts",
+        "src/clamp/reversed/test.ts",
+        "src/isWithinInterval/test.ts"
+      ],
+      "instruction": "Extend clamp so interval bounds may be reversed: use the earlier endpoint as the lower bound and the later endpoint as the upper bound. Preserve ordered intervals, input immutability, invalid-date propagation, generics and context/date-subclass behavior. Add regression tests in src/clamp/reversed/test.ts covering dates before, inside and after a reversed interval. Change only src/clamp/index.ts and that new test file. After the final edit run npm run types and npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks src/clamp/test.ts src/clamp/reversed/test.ts src/isWithinInterval/test.ts. Preserve existing test assertions and cases, public behavior outside the request, package manifests, dependencies and generated files. Limit production code changes to the clamp function declarations; preserve other declarations and imports. Documentation comments may be updated. The added regression tests must fail under the previous behavior and pass after the extension. Work independently; do not retrieve published solutions, reference patches, prior unmodified source revisions or benchmark verifier source.\n",
+      "selectedSourceSha256": {
+        "src/clamp/index.ts": "10476be7368df2c89b659c92f5af23a467f72ba7d223b04d014b1af7438b9034"
+      },
+      "partition": "Previously failed final-source workflow diagnostic; no fresh-confirmation claim."
+    }
+  ],
+  "priorCampaigns": [],
+  "selection": "One known reversed-clamp workflow diagnostic and one new same-day seeded bug, two repetitions per arm, registered before outcomes. Constructed tasks in a 1,479-TS-file real upstream; not representative external issue sampling."
+}

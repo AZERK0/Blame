@@ -1,0 +1,73 @@
+{
+  "model": "gpt-5.6-luna",
+  "effort": "high",
+  "provider": "openai-codex",
+  "apiUrl": "https://api.blame.so/api/v1",
+  "arms": [
+    "baseline",
+    "modified",
+    "cline"
+  ],
+  "clientDate": "2026-10-12",
+  "quality": "Preregistered independent syntax/source-integrity and behavioral criteria, explicit per-task selected argv, full required suites, actual post-final-edit agent checks, source/trace/no-retrieval review. Runtime success and admitted scope remain separate.",
+  "accounting": "Reuse reconcileUsage; missing costs reserve per-trial ceiling, missing cache stays missing. All planned outcomes, including failed/timeout/unexecuted, remain. Primary comparisons require both audited success; report panel success first. Repetitions are nested within tasks, not independent task samples.",
+  "taskOrder": "Registered order; rotate arms by task index; reverse task/arm order on repetition two; no concurrency.",
+  "registeredAtUTC": "2026-10-12T01:50:09.877638+00:00",
+  "hypothesis": "F13: replaying each previously requested relevant catalog test with its original literal argv after source changes prevents selected-test freshness gaps without widening scope or admitting unknown test coverage.",
+  "intervention": "Only finish-time selection/reuse of known project test invocations changes. Keep source freshness, test observation/admission, failed checks, command matching, model prompts and tool schemas unchanged. Raw unmatched commands are not guessed or replayed.",
+  "baselineSource": "d1e85f6350b3c898add6efa9495f59a7e6b8d103, current production F9+F10+F12, retired F11.",
+  "repetitions": 2,
+  "budgets": {
+    "perTrialSdkCostLimitUsd": 0.02,
+    "panelObservedCostStopUsd": 0.12,
+    "sharedStudyObservedCostStopUsd": 0.24,
+    "maxIterations": 24,
+    "timeoutSeconds": 480,
+    "outerWatchdogExtraSeconds": 25
+  },
+  "budgetScope": "New validation-refresh phase, capped at USD 0.24 for twelve planned model runs; all prior completed campaigns remain separate. Conservative reservation and missing-cost per-trial cap apply.",
+  "decision": "Keep for demonstrated final-source test refresh with literal selection preserved, no false admission in local controls, and no audited regression in model panels. If the model mechanism is unexposed, retain only the tested local reliability claim and report resource variation without attribution.",
+  "upstreams": {
+    "date-fns": {
+      "commit": "313b902b9a72c64501074db9bc2b9897d2db5140",
+      "version": "4.1.0",
+      "sourceRoot": ".blame/research/npm-formatter-confirmation/date-fns"
+    }
+  },
+  "partition": "confirmation",
+  "tasks": [
+    {
+      "id": "date-fns-same-day-bug",
+      "project": "date-fns",
+      "kind": "behavior",
+      "allowedPaths": [
+        "src/isSameDay/index.ts",
+        "src/isSameDay/regression/test.ts"
+      ],
+      "mutableFunctions": {
+        "src/isSameDay/index.ts": [
+          "isSameDay"
+        ]
+      },
+      "newTest": "src/isSameDay/regression/test.ts",
+      "seed": {
+        "path": "src/isSameDay/index.ts",
+        "before": "return +startOfDay(dateLeft_) === +startOfDay(dateRight_);",
+        "after": "return +dateLeft_ === +dateRight_;"
+      },
+      "selectedSourceSha256": {
+        "src/isSameDay/index.ts": "d7c3642a3934973e6a1fa92cdec7a22f5344fa23c095d0b76ee1cc665d1a1bc6"
+      },
+      "selectedTests": [
+        "src/isSameDay/test.ts",
+        "src/isSameDay/regression/test.ts"
+      ],
+      "instruction": "Fix isSameDay: two different times on the same local calendar day currently compare as different. Preserve month/year/day distinctions, invalid dates, input immutability, timestamp/string inputs and timezone/context normalization. Add src/isSameDay/regression/test.ts with at least three meaningful regression cases. Change only the isSameDay function implementation and this new test file. After the final edit run npm run types and npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks src/isSameDay/test.ts src/isSameDay/regression/test.ts. Preserve existing tests, imports, other declarations, manifests, dependencies and generated files. Work independently; do not retrieve published solutions, reference patches, prior unmodified source revisions or benchmark verifier source.\n",
+      "partition": "Previously unexecuted constructed behavior confirmation; seeded input disclosed."
+    }
+  ],
+  "priorCampaigns": [
+    ".blame/research/validation-refresh/diagnostic/analysis.json"
+  ],
+  "selection": "One known reversed-clamp workflow diagnostic and one new same-day seeded bug, two repetitions per arm, registered before outcomes. Constructed tasks in a 1,479-TS-file real upstream; not representative external issue sampling."
+}
