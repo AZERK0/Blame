@@ -1,4 +1,4 @@
-import { lstat, mkdir, readFile, readdir, realpath } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readFile, readdir, realpath } from "node:fs/promises";
 import { basename, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sha256 } from "./light-identity.js";
@@ -31,14 +31,14 @@ export async function managedTestReport(
   );
   if (version.failed || !adapter.supported(version.all))
     return undefined;
-  const directory = join(
+  const parent = join(
     workspaceRoot,
     ".blame",
     "harness",
     "test-results",
-    `${adapter.name}-${process.pid}-${sequence}`,
   );
-  await mkdir(directory, { recursive: true });
+  await mkdir(parent, { recursive: true });
+  const directory = await mkdtemp(join(parent, `${adapter.name}-${process.pid}-${sequence}-`));
   const reportPath = join(directory, adapter.file);
   const args = adapter.args(invocation.args, directory, reportPath);
   return {

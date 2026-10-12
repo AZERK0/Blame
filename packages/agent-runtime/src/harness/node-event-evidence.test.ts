@@ -120,3 +120,17 @@ test("incomplete, unsupported, duplicate and inconsistent events never upgrade t
   [header,events[1],{type:"summary",counts:{...count,passed:0}},events[3]]])assert.equal(parse(bad),undefined);
  assert.equal(parse([header,events[2],events[1],events[3]]),undefined);
 });
+
+test("restarting a runner sequence cannot expose a previous invocation report",async()=>{
+ await fixture(async(root)=>{
+  const task=(await readTaskCatalog(root)).find(t=>t.task_id==="test")!;
+  const invocation=taskInvocation(task,["named.test.cjs"]);
+  const first=await managedTestReport(task,invocation,root,1);assert.ok(first);
+  const result=await executeWorkspaceCommand(first.invocation.executable,first.invocation.args,{cwd:root});
+  assert.equal(result.exitCode,0);assert.equal(typeof await first.read(),"string");
+  const [second,third]=await Promise.all([managedTestReport(task,invocation,root,1),managedTestReport(task,invocation,root,1)]);
+  assert.ok(second);assert.ok(third);assert.notEqual(second.command,first.command);assert.notEqual(second.command,third.command);
+  assert.equal(await second.read(),undefined);assert.equal(await third.read(),undefined);
+ });
+});
+
