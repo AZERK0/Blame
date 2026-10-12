@@ -3,6 +3,7 @@ import test from "node:test";
 import { createHandler } from "@cline/llms";
 
 import { lightSemanticHarnessTools } from "./harness/light-tools.js";
+import { appendProductionConfig } from "./production.js";
 
 import {
   createProviderCompatibleFetch,
@@ -389,7 +390,7 @@ function sdkFetchCapture() {
   return { bodies, request };
 }
 
-function offlineCodexHandler(request: typeof fetch) {
+function offlineCodexHandler(request: typeof fetch, maxOutputTokens?: number) {
   return createHandler({
     providerId: "openai-codex",
     modelId: "gpt-5.6-luna",
@@ -397,5 +398,20 @@ function offlineCodexHandler(request: typeof fetch) {
     accessToken: "offline-placeholder",
     baseUrl: "https://offline.invalid",
     fetch: createProviderCompatibleFetch(request),
+    ...(maxOutputTokens !== undefined ? { maxOutputTokens } : {}),
   });
 }
+
+test("the real Codex request builder sends the configured output cap before a paid request", async () => {
+  const { bodies, request } = sdkFetchCapture();
+  const config = appendProductionConfig({ providerId: "openai-codex", modelId: "gpt-5.6-luna", maxTokensPerTurn: 128_000 },
+    { requestMaxOutputTokens: 8192 });
+  // CoreModelConfig documents maxTokensPerTurn and the installed SDK maps it
+  // to the handler's maxOutputTokens. Exercise that actual provider serializer.
+  const handler = offlineCodexHandler(request, config.maxTokensPerTurn);
+  try { for await (const part of handler.createMessage("Inspect.", [{ role: "user", content: "Read a symbol." }]))
+    assert.ok(part.type === "error" || part.type === "done");
+  } catch (error) { assert.match(String(error), /Offline capture/u); }
+  assert.equal(bodies.length, 1);
+  assert.equal(JSON.parse(bodies[0]!).max_output_tokens, 8192);
+});
