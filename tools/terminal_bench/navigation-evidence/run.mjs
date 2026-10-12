@@ -27,7 +27,7 @@ async function bindings() {
   const inputs = {};
   for (const path of [
     "tools/terminal_bench/navigation-evidence/run.mjs", "tools/terminal_bench/navigation-evidence/feature-checks.mjs",
-    "tools/terminal_bench/navigation-evidence/freeze.py", "packages/agent-runtime/src/harness/light-edit-recovery.test.ts", "packages/benchmark-runner/src/config.ts", "packages/benchmark-runner/src/benchmark-run.ts", "tools/terminal_bench/navigation-evidence/run.py",
+    "tools/terminal_bench/navigation-evidence/freeze.py", "tools/terminal_bench/navigation-evidence/controls.mjs", "packages/agent-runtime/src/harness/light-edit-recovery.test.ts", "packages/benchmark-runner/src/config.ts", "packages/benchmark-runner/src/benchmark-run.ts", "tools/terminal_bench/navigation-evidence/run.py",
     "tools/terminal_bench/corpus/identifier-token-audit.mjs",
     "tools/terminal_bench/corpus/light-study-accounting.mjs",
     `docs/experiments/light-harness-navigation-evidence-${panel}-2026-10-13/protocol.json`,
