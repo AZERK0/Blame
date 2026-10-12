@@ -12,5 +12,12 @@
   "noModelSourceRepair": true,
   "noSolutionRetrieval": true,
   "credentialScan": "Configured credential absent in all study artifacts, decompressed files and decoded additive test sources. Values never printed or archived.",
-  "latex": "Native compilation initially lost its connection; subsequent editor/compiler attempts are still awaiting responses. Saved source retained."
+  "latex": {
+    "status": "unverified",
+    "source": "docs/semantic-harness-study.tex",
+    "sourceSha256": "cc693c22b8bf1fe3499d80a1e8c09afc5c579fd4ff450e4a914ad6f633d5d3df",
+    "method": "Built-in editor/compiler attempted; no plugin or local TeX installation. Saved source retained.",
+    "failure": "connection closed before server request was answered",
+    "diagnostics": "No source diagnostics returned; no verified updated PDF."
+  }
 }
