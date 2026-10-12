@@ -135,12 +135,14 @@ test("restarting a runner sequence cannot expose a previous invocation report",a
 });
 
 test("the final model-facing count excludes a worker counted in the raw Node summary",async()=>{
+ for (const failingLifecycle of [false, true])
  await fixture(async(_root,workspace)=>{
   const result=await workspace.runTask({kind:"project",task:"test",args:["named.test.cjs","empty.test.cjs"]},{});
   assert.equal(result.status,"ok");const data=(result as {data:{output:string;check:{counts:{passed:number}}}}).data;
   assert.equal(data.check.counts.passed,1);
   assert.match(data.output,/pass 2/u);
   assert.match(data.output,/Active Node case results: 1 passed, 0 failed, 0 skipped\/todo/u);
+  assert.match(data.output, new RegExp(`Command outcome: ${failingLifecycle ? "failed" : "passed"}`, "u"));
   assert.ok(data.output.indexOf("Active Node case results")>data.output.indexOf("pass 2"));
- });
+ }, failingLifecycle ? {test:"node --test",posttest:"node -e \"process.exit(7)\""} : undefined);
 });
