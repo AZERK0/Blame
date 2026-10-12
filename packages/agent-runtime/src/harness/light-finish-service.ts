@@ -68,6 +68,7 @@ export class LightFinishService {
   private readonly journal: SessionJournal;
   private readonly options: LocalFinishOptions;
   private readonly tasks: LightTaskRunner;
+  private validationSequence = 0;
 
   constructor(options: LocalFinishOptions) {
     this.options = options;
@@ -107,7 +108,9 @@ export class LightFinishService {
       verified,
       unavailable,
       current,
-      validation.taskIds?.length === 1 ? validation.taskIds[0] : undefined,
+      validation.taskIds?.find((taskId) =>
+        hasPassingValidation(current.validations, current.changedPaths, [taskId]),
+      ),
     );
     return summary;
   }
@@ -207,7 +210,7 @@ export class LightFinishService {
     input: Extract<LightRunTaskInput, { kind: "project" }>,
     context: AgentToolContext,
   ): Promise<LightToolResult<unknown>> {
-    const toolCallId = `${context.toolCallId ?? "finish"}:validation`;
+    const toolCallId = `${context.toolCallId ?? "finish"}:validation:${++this.validationSequence}`;
     await this.options.onValidationActivity?.({
       input,
       phase: "started",

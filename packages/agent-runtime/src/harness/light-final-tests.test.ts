@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { LightWorkspace } from "./light-workspace.js";
 import { SessionJournal } from "./session-journal.js";
+import type { LightCompletionNotification } from "./light-completion.js";
 
 // An immutable baseline module can replay these same controls without changing production.
 const { LightFinishService } = await import(
@@ -40,12 +41,16 @@ async function check(workspace: LightWorkspace, args?: string[]) {
 }
 function finish(root: string) {
   const activities: unknown[] = [];
-  const notifications: Array<{ verified: boolean }> = [];
+  const activityIds: Array<{ id: string; phase: string }> = [];
+  const notifications: LightCompletionNotification[] = [];
   const service = new LightFinishService({ workspaceRoot: root, conversationId: "refresh",
-    onValidationActivity: activity => { if (activity.phase === "started") activities.push(activity.input); },
+    onValidationActivity: activity => {
+      activityIds.push({ id: activity.toolCallId, phase: activity.phase });
+      if (activity.phase === "started") activities.push(activity.input);
+    },
     onComplete: notification => { notifications.push(notification); },
   });
-  return { service, activities, notifications };
+  return { service, activities, notifications, activityIds };
 }
 
 test("final edit refreshes both exact requested test selections despite a current build", async () => {
@@ -54,8 +59,12 @@ test("final edit refreshes both exact requested test selections despite a curren
     await check(workspace, alpha); await check(workspace, beta);
     await edit(workspace, 2, 3);
     await workspace.runTask({ kind: "project", task: "build" }, {});
-    const { service, activities, notifications } = finish(root);
+    const { service, activities, notifications, activityIds } = finish(root);
     await service.finish("done", {} as never);
+    const starts = activityIds.filter(a => a.phase === "started");
+    assert.equal(new Set(starts.map(a => a.id)).size, 2, "Automatic invocations need distinct observer identities.");
+    for (const start of starts)
+      assert.deepEqual(activityIds.filter(a => a.id === start.id).map(a => a.phase), ["started", "finished"]);
     assert.deepEqual(activities, [
       { kind: "project", task: "test", args: alpha },
       { kind: "project", task: "test", args: beta },
@@ -71,6 +80,8 @@ test("final edit refreshes both exact requested test selections despite a curren
       assert.equal(validation.sourceRevisionId, snapshot.sourceRevisionId);
     }
     assert.equal(notifications[0]?.verified, true); // The build, never test coverage.
+    assert.equal(notifications[0]?.memory?.validationTaskId, "build",
+      "Unknown test selections must not suppress memory tied to an admitted build.");
     await service.finish("done again", {} as never);
     assert.equal(activities.length, 2, "Current unknown observations must not loop.");
   });

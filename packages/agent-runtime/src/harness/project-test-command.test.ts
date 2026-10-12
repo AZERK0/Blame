@@ -8,7 +8,7 @@ import { projectTestCommand } from "./project-test-command.js";
 import type { TaskCatalogItem } from "./task-catalog.js";
 
 const task = { cwd: ".", task_id: "test", script: "test", package_manager: "npm", kind: "test" } as TaskCatalogItem;
-test("literal npm tests retain script and exact quoted argv", () => {
+test("literal npm tests retain script and exact quoted argv", { skip: process.platform === "win32" }, () => {
   for (const command of ['npm test -- --run "space file.ts"', "npm run test -- --run 'space file.ts'"])
     assert.deepEqual(projectTestCommand(command, ".", [task]), {
       taskId: "test", taskKind: "test", args: ["--run", "space file.ts"],
@@ -44,7 +44,7 @@ const { LightWorkspace } = await load<typeof import("./light-workspace.js")>("li
 const { LightFinishService } = await load<typeof import("./light-finish-service.js")>("light-finish-service");
 const { SessionJournal } = await load<typeof import("./session-journal.js")>("session-journal");
 
-test("raw npm selected test is refreshed after final description edit and current build", async () => {
+test("raw npm selected test is refreshed after final description edit and current build", { skip: process.platform === "win32" }, async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-npm-selection-"));
   try {
     await writeFile(join(root, "package.json"), JSON.stringify({ scripts: { test: "node --test", build: "node --check value.cjs" } }));
@@ -73,5 +73,35 @@ test("raw npm selected test is refreshed after final description edit and curren
     assert.equal(tests[0]?.status, "unknown");
     assert.equal(tests[0]?.check?.selection, "unknown");
     assert.equal(tests[0]?.sourceRevisionId, final.sourceRevisionId);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+
+test("cmd.exe commands never acquire Bash-derived test identity", () => {
+  assert.equal(projectTestCommand('npm test -- "space file.ts"', ".", [task], "win32"), undefined);
+  assert.deepEqual(projectTestCommand('npm test -- "space file.ts"', ".", [task], "linux"), {
+    taskId: "test", taskKind: "test", args: ["space file.ts"],
+  });
+});
+
+test("a raw npm failure blocks completion despite a passing build", { skip: process.platform === "win32" }, async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-npm-failure-"));
+  try {
+    await writeFile(join(root, "package.json"), JSON.stringify({ scripts: { test: "node --test", build: "node --check value.cjs" } }));
+    await writeFile(join(root, "value.cjs"), "exports.value=1;\n");
+    await writeFile(join(root, "failed.test.cjs"), "require('node:test').test('failure',()=>require('node:assert/strict').fail('required regression'));\n");
+    const workspace = new LightWorkspace(root, { sessionId: "npm-failure" });
+    const edit = await workspace.editCode({ operations: [{ kind: "patch", path: "value.cjs",
+      patch: "*** Begin Patch\n*** Update File: value.cjs\n@@\n-exports.value=1;\n+exports.value=2;\n*** End Patch" }] });
+    assert.equal(edit.status, "ok");
+    await workspace.runTask({ kind: "project", task: "build" }, {});
+    await workspace.runTask({ kind: "command", command: "npm test -- failed.test.cjs" }, {});
+    let completed = false;
+    const service = new LightFinishService({ workspaceRoot: root, conversationId: "npm-failure",
+      onComplete: () => { completed = true; } });
+    await assert.rejects(service.finish("done", {} as never), /still failing/u);
+    assert.equal(completed, false);
+    const snapshot = await new SessionJournal(root, "npm-failure").completionSnapshot();
+    assert.ok(snapshot.validations.some(v => v.taskKind === "test" && v.terminal === "failed" && v.category === "code"));
   } finally { await rm(root, { recursive: true, force: true }); }
 });

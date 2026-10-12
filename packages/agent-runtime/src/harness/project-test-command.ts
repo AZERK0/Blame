@@ -2,7 +2,9 @@ import { parseCode } from "./code-intelligence.js";
 import type { TaskCatalogItem } from "./task-catalog.js";
 
 /** Identify a literal npm test selection; never interpret shell expansion or compound commands. */
-export function projectTestCommand(command: string, cwd: string, tasks: TaskCatalogItem[]) {
+export function projectTestCommand(command: string, cwd: string, tasks: TaskCatalogItem[], platform = process.platform) {
+  // The raw command uses cmd.exe on Windows; Bash quote semantics do not apply.
+  if (platform === "win32") return undefined;
   const root = parseCode("command.sh", Buffer.from(command)).trees[0]?.root;
   const nodes = root?.children();
   if (nodes?.length !== 1 || nodes[0]!.kind() !== "command" || nodes[0]!.text() !== command.trim())
