@@ -29,6 +29,7 @@ import {
   type WorkspaceCommandResult,
 } from "./workspace-command-process.js";
 import { projectTestCommand } from "./project-test-command.js";
+import { environmentManifestEvidence } from "./workspace-revisions.js";
 import { validationScopePaths } from "./validation-scope.js";
 import { validationOutput, type ValidationOutput } from "./validation-output.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
@@ -66,6 +67,7 @@ type ValidationMetadata = {
   taskId?: string;
   taskKind?: string;
   report?: ManagedTestReport;
+  invocationEnvironment?: Awaited<ReturnType<typeof environmentManifestEvidence>>;
 };
 
 type FailureAssessment = {
@@ -397,6 +399,8 @@ export class LightTaskRunner {
     const validation = metadata.taskId
       ? metadata
       : await this.commandValidation(command, directory, snapshot.files);
+    const invocationEnvironment = validation.report?.nodeEvents
+      ? await environmentManifestEvidence(this.files, snapshot.files) : undefined;
     const { result, after, changedPaths } = await observeCommand(this.files, this.journal,
       snapshot, () => {
         const handle = startWorkspaceCommand(executable, args, {
@@ -414,6 +418,7 @@ export class LightTaskRunner {
         ...validation,
         cwd: directory,
         sourceRevisionId: snapshot.revision.source_revision_id,
+        ...(invocationEnvironment ? { invocationEnvironment } : {}),
       },
       after,
       changedPaths,
@@ -453,9 +458,20 @@ export class LightTaskRunner {
       // Counts come from this process's output, interpreted using the exact
       // catalog script when a known npm wrapper obscures the runner name.
       // Keep the original command/argv in the journal and execute it unchanged.
+      const report = await metadata.report?.read();
       const check = observeCheck(metadata.taskCommand ?? command, { ...result, all: output }, metadata.cwd ?? ".",
         snapshot.revision.source_revision_id !== metadata.sourceRevisionId,
-        await metadata.report?.read());
+        metadata.report?.nodeEvents ? undefined : report,
+        metadata.report?.nodeEvents ? { ...metadata.report.nodeEvents,
+          ...(typeof report === "string" ? { report } : {}) } : undefined);
+      if (check.evidence) check.evidence = { ...check.evidence,
+        command, cwd: metadata.cwd ?? ".", taskId: metadata.taskId, args: metadata.args ?? [],
+        invocationSourceRevisionId: metadata.sourceRevisionId,
+        completedSourceRevisionId: snapshot.revision.source_revision_id,
+        ...(metadata.invocationEnvironment ? { manifestEnvironment: {
+          before: metadata.invocationEnvironment,
+          after: await environmentManifestEvidence(this.files, snapshot.files),
+        } } : {}) };
       const failure = check.outcome === "failed" ? await commandFailureAssessment(output, this.files, "test") : undefined;
       await this.recordCommandValidation(command,
         check.outcome === "failed" ? "failed" : "unknown", snapshot,

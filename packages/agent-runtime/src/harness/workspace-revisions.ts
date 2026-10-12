@@ -20,13 +20,20 @@ export async function currentWorkspaceRevisionState(workspaceRoot: string) {
 }
 
 async function environmentRevision(files: WorkspaceFiles, paths: string[]) {
+  return (await environmentManifestEvidence(files, paths)).revisionId;
+}
+
+/** Manifest/lock bytes only; never claims installed dependency or complete environment identity. */
+export async function environmentManifestEvidence(files: WorkspaceFiles, paths: string[]) {
   const entries = await Promise.all(
     paths.filter(environmentPath).map(async (path) => {
       const content = (await files.read(path)).content;
-      return `${path}\0${sha256(content)}`;
+      return { path, sha256: sha256(content) };
     }),
   );
-  return `env_${sha256(entries.sort().join("\n")).slice(0, 32)}`;
+  return { revisionId: `env_${sha256(entries.map(entry => `${entry.path}\0${entry.sha256}`).sort().join("\n")).slice(0, 32)}`,
+    manifests: entries.slice(0, 128), truncated: entries.length > 128,
+    boundary: "Manifest and lockfile bytes; installed dependencies, services, other variables and dependency coverage remain unknown." };
 }
 
 async function dependenciesReady(files: WorkspaceFiles, paths: string[]) {

@@ -4,6 +4,7 @@ import {
   parseTestReports,
   type TestReport,
 } from "./test-report.js";
+import { nodeEventEvidence, type NodeEventBinding } from "./node-event-evidence.js";
 
 export type CheckObservation = {
   process: "running" | "exited" | "timed_out" | "cancelled";
@@ -19,7 +20,8 @@ export type CheckObservation = {
   scope: string;
   selection: "confirmed" | "unknown";
   freshness: "current" | "stale" | "unknown";
-  evidenceOrigin: "report" | "runner_output" | "none";
+  evidenceOrigin: "report" | "runner_output" | "node_events" | "none";
+  evidence?: Record<string, unknown>;
   note?: string;
   diagnostics?: TestReport["failures"];
 };
@@ -37,6 +39,7 @@ export function observeCheck(
   scope: string,
   sourceChanged: boolean,
   attributedReport?: string | string[],
+  nodeEvents?: NodeEventBinding,
 ): CheckObservation {
   // ANSI SGR emitted by runners is presentation, not diagnostic content.
   // eslint-disable-next-line no-control-regex
@@ -53,7 +56,9 @@ export function observeCheck(
   // wrapper from a user case named like a source path. Withhold the aggregate.
   const ambiguousNode = /\bnode\b[^;&|]*--test\b/u.test(command) &&
     output.split(/\r?\n/u).some(nodeFileWorkerLabel);
-  const counts = ambiguousNode ? undefined : report?.counts ?? runnerCounts(command, output);
+  const structured = nodeEvents ? nodeEventEvidence(nodeEvents) : undefined;
+  const counts = nodeEvents ? structured?.counts
+    : ambiguousNode ? undefined : report?.counts ?? runnerCounts(command, output);
   const interrupted = Boolean(result.interruption);
   const execution = counts
     ? counts.executed > 0
@@ -61,7 +66,7 @@ export function observeCheck(
       : "zero_tests"
     : "not_observed";
   const failed =
-    result.failed || report?.setupFailed || (counts?.failed ?? 0) > 0;
+    result.failed || structured?.failed || report?.setupFailed || (counts?.failed ?? 0) > 0;
   return {
     process:
       result.interruption === "cancelled"
@@ -83,8 +88,10 @@ export function observeCheck(
     selection: "unknown",
     // A host process can have unobserved external writers; pre/post equality is insufficient.
     freshness: sourceChanged ? "stale" : "unknown",
-    evidenceOrigin: report ? "report" : counts ? "runner_output" : "none",
-    ...(ambiguousNode ? { note: "Node text summaries can count empty file workers. Source-path labels leave the executed case count unconfirmed." } : {}),
+    evidenceOrigin: structured ? "node_events" : report ? "report" : counts ? "runner_output" : "none",
+    ...(structured ? { evidence: structured.evidence } : {}),
+    ...(nodeEvents && !structured ? { note: "Invocation-owned Node events are incomplete or unsupported; executed case count remains unconfirmed." }
+      : ambiguousNode && !structured ? { note: "Node text summaries can count empty file workers. Source-path labels leave the executed case count unconfirmed." } : {}),
     ...(report?.failures.length ? { diagnostics: report.failures } : {}),
   };
 }

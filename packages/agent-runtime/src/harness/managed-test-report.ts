@@ -1,5 +1,8 @@
 import { lstat, mkdir, readFile, readdir, realpath } from "node:fs/promises";
 import { basename, join, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
+import { sha256 } from "./light-identity.js";
+import type { NodeEventBinding } from "./node-event-evidence.js";
 import type { TaskCatalogItem, TaskInvocation } from "./task-catalog.js";
 import { executeWorkspaceCommand } from "./workspace-command-process.js";
 
@@ -7,6 +10,7 @@ export type ManagedTestReport = {
   command: string;
   invocation: TaskInvocation;
   read(): Promise<string | string[] | undefined>;
+  nodeEvents?: Omit<NodeEventBinding, "report">;
 };
 
 /** Adds a report only to a catalogued runner whose installed version was identified. */
@@ -17,11 +21,11 @@ export async function managedTestReport(
   sequence: number,
   signal?: AbortSignal,
 ): Promise<ManagedTestReport | undefined> {
-  const adapter = managedAdapter(task, invocation);
+  const adapter = managedNodeAdapter(task, invocation) ?? managedAdapter(task, invocation);
   if (!adapter) return undefined;
   const cwd = resolve(workspaceRoot, invocation.cwd);
   const version = await executeWorkspaceCommand(
-    invocation.executable,
+    adapter.versionExecutable ?? invocation.executable,
     adapter.versionArgs,
     { cwd, signal, timeoutMs: 5_000, maximumOutputBytes: 4_096 },
   );
@@ -41,6 +45,8 @@ export async function managedTestReport(
     invocation: { ...invocation, args },
     command: [invocation.executable, ...args].join(" "),
     read: () => adapter.read(directory, reportPath),
+    ...(adapter.name === "node" ? { nodeEvents: { invocationId: basename(directory),
+      reporterSha256: sha256(await readFile(fileURLToPath(new URL("./node-event-reporter.js", import.meta.url)))) } } : {}),
   };
 }
 
@@ -51,7 +57,28 @@ type ManagedAdapter = {
   read(directory: string, reportPath: string): Promise<string | string[] | undefined>;
   supported(output: string): boolean;
   versionArgs: string[];
+  versionExecutable?: string;
 };
+
+function managedNodeAdapter(task: TaskCatalogItem, invocation: TaskInvocation): ManagedAdapter | undefined {
+  if (task.kind !== "test" || invocation.args.some(arg =>
+    /^(?:--test-reporter|--test-isolation|--watch)/u.test(arg))) return undefined;
+  const native = task.invocation && basename(invocation.executable) === "node" &&
+    invocation.args[0] === "--test";
+  const npm = !task.invocation && task.package_manager === "npm" && task.command === "node --test" &&
+    invocation.args[0] === "run" && invocation.args[1] === task.script &&
+    (invocation.args.length === 2 || invocation.args[2] === "--");
+  if (!native && !npm) return undefined;
+  const reporter = fileURLToPath(new URL("./node-event-reporter.js", import.meta.url));
+  return { name: "node", file: "events.jsonl", versionExecutable: native ? invocation.executable : "node",
+    versionArgs: ["--version"], supported: output => /^v24\./u.test(output.trim()),
+    args: (args, _directory, reportPath) => {
+      const extra = ["--test-reporter=spec", `--test-reporter=${reporter}`,
+        "--test-reporter-destination=stdout", `--test-reporter-destination=${reportPath}`];
+      return native ? [args[0]!, ...extra, ...args.slice(1)]
+        : [args[0]!, args[1]!, "--", ...extra, ...args.slice(3)];
+    }, read: readOwnedReport };
+}
 
 function managedAdapter(
   task: TaskCatalogItem,
