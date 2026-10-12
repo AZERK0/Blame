@@ -1,0 +1,9 @@
+# F12 bounded initial command wait (known diagnostic)
+
+Preregister one already executed Lodash clamp bug across exact Blame 5155d3d9, a one-change candidate and integrated Cline SDK 0.0.82. This is selected after polling was observed, so it is a known diagnostic, not fresh confirmation. F11 scope guidance is separately retired and is absent in both F12 Light arms.
+
+Only the default initial wait changes from five to fifteen seconds. Actual command timeout, process groups, cancellation, output bounds, explicit overrides, session-bound handles/cursors, source effects and verification contracts remain. Commands finishing sooner return immediately; longer commands return a handle later. The longer delay before partial output on commands over fifteen seconds is a real tradeoff.
+
+Real subprocess controls compare existing explicit wait overrides before changing the production default: ten controls cover fast success, six-second completion, nonzero exit, cancellation and twenty-second handle return. The slow fixture takes two/one backend calls, never interpreted as measured model tokens. Cancellation resolves in about 7–12 ms in these uncontrolled local observations. A separate integration test observes the new actual default returning a six-second command's final outcome. Focused runtime checks pass 169 with one pre-existing skip, plus the new default test and three packaged controls.
+
+Same frozen independent behavior/source integrity, exact requested Node syntax/main suite, complete source/trace review and usage reconciliation. SDK trial cap USD 0.015, panel stop USD 0.045, and the existing shared follow-up USD 0.30 include both completed scope panels. Missing prior cost reserves each prior panel's own cap. Preserve budget stops/unexecuted tasks; never increase the cap after results. Freeze/bind before model calls and never feed grader diagnostics or recover a solution.

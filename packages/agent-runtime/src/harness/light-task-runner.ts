@@ -90,7 +90,7 @@ export class LightTaskRunner {
     this.edits = options.edits;
     this.files = options.files;
     this.journal = options.journal;
-    this.initialCommandWaitMs = options.initialCommandWaitMs ?? 5_000;
+    this.initialCommandWaitMs = options.initialCommandWaitMs ?? 15_000;
     this.environment = new EnvironmentAdapter(options.files);
     this.formatter = new DeterministicFormatter(options.files);
     this.dependencies = new LightDependencyService(options.files);
