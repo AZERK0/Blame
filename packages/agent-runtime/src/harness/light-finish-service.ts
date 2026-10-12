@@ -1,3 +1,4 @@
+import { setTimeout as delay } from "node:timers/promises";
 import type { CompletionDecision } from "@blame/harness-core";
 import type { AgentToolContext } from "@cline/sdk";
 import type {
@@ -131,12 +132,18 @@ export class LightFinishService {
     if (!state.changedPaths.length)
       return { outcome: "not_applicable" as const };
     const inputs = await this.validationInputs(state.changedPaths);
-    for (const { input, paths } of inputs) {
-      if (hasPassingValidation(state.validations, paths, [input.task]))
+    const pendingTests = inputs.filter(({ input, cwd }) =>
+      input.args !== undefined && !state.validations.some((item) => sameInvocation(item, input, cwd)),
+    );
+    if (pendingTests.length > 16)
+      throw new Error("Automatic validation refresh is limited to 16 test selections. Refresh the requested tests with run_task before finishing.");
+    for (const { input, paths, cwd } of inputs) {
+      const matching = state.validations.filter((item) => sameInvocation(item, input, cwd));
+      if (hasPassingValidation(matching, paths, [input.task]))
         continue;
-      if (hasUnavailableValidation(state.validations, paths, input.task))
+      if (hasUnavailableValidation(matching, paths, input.task))
         continue;
-      if (state.validations.some((validation) => validation.taskId === input.task && validation.status === "unknown"))
+      if (matching.some((validation) => validation.status === "unknown"))
         continue;
       const result = await this.runValidation(input, context);
       if (result.status === "blocked" && result.category === "code")
@@ -157,9 +164,8 @@ export class LightFinishService {
 
   private async validationInputs(changedPaths: string[]) {
     const snapshot = await this.files.snapshot();
-    const attempted = new Set(
-      this.journal.currentValidations().map(({ taskId }) => taskId),
-    );
+    const observations = this.journal.currentValidations();
+    const attempted = new Set(observations.map(({ taskId }) => taskId));
     const catalog = (
       await readTaskCatalog(this.files.root, snapshot.files)
     ).filter(({ task_id }) => attempted.has(task_id));
@@ -174,10 +180,26 @@ export class LightFinishService {
         failedTasks.has(item.task_id),
       );
       if (task && !required.includes(task)) required.push(task);
-      return required.map((item) => ({
-        input: { kind: "project" as const, task: item.task_id },
-        paths,
-      }));
+      // Keep every literal test selection already requested in this package.
+      // A catalog ID alone cannot represent two filters of the same test task.
+      const selections = new Map<string, {
+        input: Extract<LightRunTaskInput, { kind: "project" }>;
+        paths: string[];
+        cwd: string;
+      }>();
+      for (const item of required.filter((item) => item.kind !== "test"))
+        selections.set(item.task_id, {
+          input: { kind: "project", task: item.task_id }, paths, cwd,
+        });
+      for (const observation of observations) {
+        if (observation.cwd !== cwd || !scopedTasks.some((item) =>
+          item.task_id === observation.taskId && item.kind === "test")) continue;
+        const args = observation.args ?? [];
+        selections.set(JSON.stringify([observation.taskId, args]), {
+          input: { kind: "project", task: observation.taskId!, args: [...args] }, paths, cwd,
+        });
+      }
+      return [...selections.values()];
     });
   }
 
@@ -191,7 +213,19 @@ export class LightFinishService {
       phase: "started",
       toolCallId,
     });
-    const output = await this.tasks.run(input, context);
+    let output = await this.tasks.run(input, context);
+    // Automatic final validation owns this invocation through bounded completion.
+    // A running handle is not evidence that the requested test has finished.
+    while (output.status === "ok" && typeof recordValue(output.data).run === "string") {
+      await delay(100, undefined, { signal: context.signal });
+      const inspected = await this.tasks.run({
+        kind: "inspect", run: String(recordValue(output.data).run),
+      }, context);
+      output = inspected.status === "ok" && recordValue(inspected.data).completed
+        ? recordValue(inspected.data).completed as LightToolResult<unknown>
+        : inspected;
+    }
+    context.signal?.throwIfAborted();
     await this.options.onValidationActivity?.({
       input,
       output,
@@ -288,6 +322,15 @@ function validationTaskScore(
   const scope = task.cwd === "." ? "" : `${task.cwd}/`;
   const scoped = paths.filter((path) => path.startsWith(scope)).length;
   return scoped * 100 + (priorities.length - priorities.indexOf(task.kind));
+}
+
+function sameInvocation(
+  validation: Awaited<ReturnType<SessionJournal["completionSnapshot"]>>["validations"][number],
+  input: Extract<LightRunTaskInput, { kind: "project" }>,
+  cwd: string,
+) {
+  return validation.taskId === input.task && (validation.cwd ?? ".") === cwd &&
+    JSON.stringify(validation.args ?? []) === JSON.stringify(input.args ?? []);
 }
 
 function hasPassingValidation(
