@@ -108,7 +108,7 @@ function readCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "read_code",
     description:
-      "Read a text file or local image, compact directory, sN alias, path#qualifiedName, @changes, or @capabilities. A line range selects those lines; otherwise omit view for automatic raw/outline routing. Symbol outlines list contained declarations. Results expose editTargets and containedBy relationships. Generated outputs and node_modules are excluded.",
+      "Read a text file or local image, compact directory, sN alias, path#qualifiedName, @changes, or @capabilities. A line range selects those lines; otherwise omit view for automatic raw/outline routing. Use view signature on a symbol to inspect its declaration header without its body; read the symbol body before behavioral edits or rename. Symbol outlines list contained declarations. Results expose editTargets and containedBy relationships. Generated outputs and node_modules are excluded.",
     schema: lightReadCodeInputSchema,
     execute: (input, context) => workspace.readCode(input, context),
   });

@@ -15,7 +15,7 @@ export const lightSearchCodeInputSchema = z
 export const lightReadCodeInputSchema = z
   .object({
     target: z.string().trim().min(1).max(4_096),
-    view: z.enum(["auto", "raw", "outline", "symbol", "range"]).optional(),
+    view: z.enum(["auto", "raw", "outline", "symbol", "signature", "range"]).optional(),
     range: z
       .object({
         startLine: z.number().int().positive(),

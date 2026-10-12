@@ -585,6 +585,8 @@ export class LightWorkspace {
     const file = await this.files.read(path);
     const source = readableSource(file.content);
     const view = routedView(input, path, source.length);
+    if (view === "signature")
+      throw new Error("Signature view requires a symbol alias or path#qualifiedName. Read the file outline to choose a declaration.");
     if (view === "outline")
       return await this.readOutlinePath(path, file.content, revision, context, input.range);
     if (view === "range")
@@ -745,6 +747,8 @@ export class LightWorkspace {
       return this.readLineRange(resolved.path, resolved.content, input, revision, context);
     if (input.view === "outline")
       return this.symbolOutline(resolved, revision, context);
+    if (input.view === "signature")
+      return this.readSignature(resolved, context);
     const [start, end] = resolved.symbol.range_utf8_bytes;
     if (end - start > maximumRawCharacters) {
       let boundedEnd = start + maximumRawCharacters;
@@ -784,6 +788,21 @@ export class LightWorkspace {
       alias: registered.alias,
       materialized: registered.materialized,
     };
+  }
+
+  private async readSignature(resolved: ResolvedLightSymbol, context: ReadContext) {
+    const [start, end] = signatureRange(resolved.symbol);
+    let boundedEnd = Math.min(end, start + 4_096);
+    while (boundedEnd > start && (resolved.content[boundedEnd]! & 0xc0) === 0x80) boundedEnd--;
+    const coverage = await this.registerCoverage(resolved.path, resolved.content,
+      [[start, boundedEnd]], context);
+    return { status: "ok" as const, receipt: coverage.receipt, data: {
+      path: resolved.path, alias: resolved.alias, view: "signature",
+      qualifiedName: resolved.symbol.qualified_name,
+      signature: resolved.content.subarray(start, boundedEnd).toString("utf8"),
+      truncated: boundedEnd < end, bodyOmitted: boundedEnd < resolved.symbol.range_utf8_bytes[1],
+      guidance: "Only these header bytes were read. Use the symbol view for implementation, type members or a complete declaration before editing or rename.",
+    } };
   }
 
   private async symbolOutline(
