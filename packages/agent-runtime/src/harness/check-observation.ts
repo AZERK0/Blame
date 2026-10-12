@@ -20,6 +20,7 @@ export type CheckObservation = {
   selection: "confirmed" | "unknown";
   freshness: "current" | "stale" | "unknown";
   evidenceOrigin: "report" | "runner_output" | "none";
+  note?: string;
   diagnostics?: TestReport["failures"];
 };
 
@@ -47,7 +48,12 @@ export function observeCheck(
         ? parseTestReport(attributedReport)
         : undefined) ??
     parseTestReport(output);
-  const counts = report?.counts ?? runnerCounts(command, output);
+  // Node can count a successful empty file worker as a test, including a
+  // name filter matching no cases. Text reporters cannot distinguish that
+  // wrapper from a user case named like a source path. Withhold the aggregate.
+  const ambiguousNode = /\bnode\b[^;&|]*--test\b/u.test(command) &&
+    output.split(/\r?\n/u).some(nodeFileWorkerLabel);
+  const counts = ambiguousNode ? undefined : report?.counts ?? runnerCounts(command, output);
   const interrupted = Boolean(result.interruption);
   const execution = counts
     ? counts.executed > 0
@@ -78,6 +84,7 @@ export function observeCheck(
     // A host process can have unobserved external writers; pre/post equality is insufficient.
     freshness: sourceChanged ? "stale" : "unknown",
     evidenceOrigin: report ? "report" : counts ? "runner_output" : "none",
+    ...(ambiguousNode ? { note: "Node text summaries can count empty file workers. Source-path labels leave the executed case count unconfirmed." } : {}),
     ...(report?.failures.length ? { diagnostics: report.failures } : {}),
   };
 }
@@ -154,4 +161,10 @@ function runnerCounts(
       return { executed: passed + failed, passed, failed, skipped };
   }
   return undefined;
+}
+
+function nodeFileWorkerLabel(line: string) {
+  const label = /^\s*[✔✖]\s+(.+?)\s+\([\d.]+(?:ms|s)\)(?:\s.*)?$/u.exec(line)?.[1] ??
+    /^\s*(?:not )?ok \d+ - (.+?)(?:\s+#\s.*)?$/u.exec(line)?.[1];
+  return Boolean(label && /\.[cm]?[jt]sx?$/u.test(label.trim()));
 }
