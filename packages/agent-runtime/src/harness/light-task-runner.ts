@@ -58,6 +58,7 @@ type ManagedRun = {
 };
 
 type ValidationMetadata = {
+  taskCommand?: string;
   args?: string[];
   check?: CheckObservation;
   cwd?: string;
@@ -172,6 +173,7 @@ export class LightTaskRunner {
         cwd: task.cwd,
         taskId: task.task_id,
         taskKind: task.kind,
+        taskCommand: task.command,
         ...(args.length ? { args } : {}),
         ...(report ? { report } : {}),
       },
@@ -432,8 +434,11 @@ export class LightTaskRunner {
           command === `${item.package_manager} run ${item.script}` ||
           command === `${item.package_manager} ${item.script}`),
     );
-    return task ? { taskId: task.task_id, taskKind: task.kind }
-      : projectTestCommand(command, cwd, tasks) ?? {};
+    const identity = task ? { taskId: task.task_id, taskKind: task.kind }
+      : projectTestCommand(command, cwd, tasks);
+    if (!identity) return {};
+    const matches = tasks.filter((item) => item.task_id === identity.taskId && item.cwd === cwd);
+    return { ...identity, ...(matches.length === 1 ? { taskCommand: matches[0]!.command } : {}) };
   }
 
   private async recordedResult(
@@ -445,7 +450,10 @@ export class LightTaskRunner {
   ): Promise<LightToolResult<unknown>> {
     const output = redactedOutput(result.all);
     if (metadata.taskKind === "test" || isTestInvocation(command)) {
-      const check = observeCheck(command, { ...result, all: output }, metadata.cwd ?? ".",
+      // Counts come from this process's output, interpreted using the exact
+      // catalog script when a known npm wrapper obscures the runner name.
+      // Keep the original command/argv in the journal and execute it unchanged.
+      const check = observeCheck(metadata.taskCommand ?? command, { ...result, all: output }, metadata.cwd ?? ".",
         snapshot.revision.source_revision_id !== metadata.sourceRevisionId,
         await metadata.report?.read());
       const failure = check.outcome === "failed" ? await commandFailureAssessment(output, this.files, "test") : undefined;
