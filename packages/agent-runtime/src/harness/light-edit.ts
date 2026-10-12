@@ -251,15 +251,25 @@ export class LightEditService {
       throw new SymbolResolutionError("A scoped patch requires an observed symbol alias.");
     const resolved = await this.aliases.resolveSymbol(operation.target!, this.files,
       snapshot.revision.source_revision_id, true);
+    try {
+      await this.planResolvedScopedPatch(plans, operation, resolved);
+    } catch (error) {
+      throw new ScopedEditRecovery(errorMessage(error), resolved);
+    }
+  }
+
+  private async planResolvedScopedPatch(
+    plans: Map<string, PlannedFile>,
+    operation: Extract<LightEditCodeInput["operations"][number], { kind: "patch" }>,
+    resolved: ResolvedLightSymbol,
+  ) {
     const sections = splitLightPatch(operation.patch);
     if (sections.length !== 1 || this.files.normalizePath(sections[0]!.path) !== resolved.path ||
         (operation.path && this.files.normalizePath(operation.path) !== resolved.path))
       throw new Error("Scoped patch header must match the symbol's file and contain one Update File.");
     const [start, end] = resolved.symbol.range_utf8_bytes;
     const source = resolved.content.subarray(start, end).toString("utf8");
-    let replacements;
-    try { replacements = planScopedLightPatch(source, sections[0]!.patch, resolved.path); }
-    catch (error) { throw new SymbolResolutionError(`${errorMessage(error)}\nCurrent target ${resolved.alias} (${resolved.path}):\n${source.slice(0, 4_000)}`); }
+    const replacements = planScopedLightPatch(source, sections[0]!.patch, resolved.path);
     const file = await this.filePlan(plans, resolved.path, resolved.content);
     file.symbols.push(resolved.symbol.qualified_name);
     for (const replacement of replacements) {
@@ -840,6 +850,9 @@ function invalidParseResult(file: FinalFile): LightToolResult<unknown> {
 
 function editFailure(error: unknown): LightToolResult<unknown> {
   const diagnosticId = `edit-${Date.now().toString(36)}`;
+  if (error instanceof ScopedEditRecovery)
+    return { status: "blocked", category: "input", message: error.message,
+      recovery: error.recovery, diagnosticId };
   if (error instanceof SymbolResolutionError) {
     const recovery = error.candidates.length
       ? JSON.stringify(error.candidates)
@@ -861,6 +874,21 @@ function editFailure(error: unknown): LightToolResult<unknown> {
     ...(recovery ? { recovery } : {}),
     diagnosticId,
   };
+}
+
+class ScopedEditRecovery extends Error {
+  readonly recovery: string;
+
+  constructor(message: string, resolved: ResolvedLightSymbol) {
+    super(message);
+    const [startLine, endLine] = resolved.symbol.line_range;
+    this.recovery = "No operations in this batch were applied. Every operation uses the original source, not earlier operations in the same batch. " +
+      JSON.stringify({ target: resolved.alias, path: resolved.path,
+        declarationLines: [startLine, endLine],
+        nextRead: { target: resolved.path, view: "range",
+          range: { startLine: Math.max(1, startLine - 3), endLine: Math.min(endLine + 2, startLine + 24) } },
+        routes: "For changes inside the declaration, read the symbol then use a symbol action or a focused alias patch. For JSDoc, export wrappers or context outside it, read those lines and use a file patch. For dependent edits, commit separately and read again. These locations are hints, not observed edit coverage; refresh after source changes." });
+  }
 }
 
 function patchFailureRecovery(message: string) {

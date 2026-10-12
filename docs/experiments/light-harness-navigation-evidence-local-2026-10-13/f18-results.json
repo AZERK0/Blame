@@ -1,0 +1,19 @@
+{
+  "referenceRuntime": "0312420f09293b6542f3404fdea54d052415a176",
+  "targetedControls": {
+    "reference": {
+      "passed": 0,
+      "failed": 5
+    },
+    "candidate": {
+      "passed": 5,
+      "failed": 0
+    }
+  },
+  "regression": {
+    "passed": 149,
+    "failed": 0
+  },
+  "scope": "Five recovery-information controls, not five model task successes. Existing source/observation/batch guards stay unchanged. File patches already use exact preimages without alias coverage; do not invent a stricter historical contract.",
+  "setupFailures": "Initial 2/5 failures: incorrect file-patch coverage expectation and one-line body formatting mismatch. Corrected fixtures before models; original TAP retained."
+}
