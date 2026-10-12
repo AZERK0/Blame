@@ -22,5 +22,5 @@ for package in ('agent-runtime','benchmark-runner'):
     'commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=repo,text=True).strip(),
     'runtimeCommit':'c42da0340a7743adc1a124dae4d498b04d769e72' if arm=='baseline' else subprocess.check_output(['git','rev-parse','HEAD'],cwd=repo,text=True).strip(),
     'sourcePatch':subprocess.check_output(['git','diff','HEAD','--','packages/agent-runtime/src','packages/benchmark-runner/src'],cwd=repo,text=True),
-    'runner':'Identical newly built metadata transport in both arms; older reference ignores requiredChecks. No model-facing user prompt differences.'
+    'runner':'Identical metadata transport and F15 required-check contract/briefing in both arms. F17 changes only declared runner attribution; user instructions and tool schemas are identical.'
 },indent=2)+'\n')
