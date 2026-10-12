@@ -8,7 +8,7 @@
 \newcommand{\filepath}[1]{\path{#1}}
 \title{Light Semantic Harness: Applied Study}
 \author{Blame Repository Engineering Study}
-\date{October 12, 2026}
+\date{October 13, 2026}
 \begin{document}
 \maketitle
 \begin{abstract}
@@ -44,6 +44,11 @@ superiority claim. Eighteen separate required-check/runner-attribution trials
 confirm equal audited task success and improved execution-proof accounting,
 with adverse resources against reference and incomplete cache accounting.
 Conservative Node file-worker handling has explicit false-negative sensitivities.
+Three later interventions add targeted edit recovery, explicit signature reads
+and structured Node invocation evidence. Seventeen of eighteen planned trials
+run; two Cline cost failures and an unexecuted reference remain. A single
+128,000-output-token response overruns the soft phase budget; an offline-tested
+request output cap is added afterward. No new global causal gain is established.
 \end{abstract}
 
 \section{Method and evidence boundaries}
@@ -79,14 +84,19 @@ Neither route proves runtime callers, edit coverage or successful validation. \\
 \code{read_code} & Files, ranges, symbols, signatures/outlines, changes,
 capabilities and supported images. Small automatic reads expose whole files;
 large supported files route to outlines. Explicit ranges and symbol bodies
-remain available. Observation is tied to exact bytes and context generation;
+remain available. Explicit \code{signature} symbol reads expose at most
+4,096 header bytes, leaving body/type-member observation and editing guarded. Observation is tied to exact bytes and context generation;
 a signature does not authorize replacement of an unseen body. \\
 \code{edit_code} & Symbol operations, focused patches and new files.
 Resolve observed targets, reject ambiguity/stale preimages, validate a batch
 and commit with cooperating locks and crash recovery. Configured JS/TS
 compiler-derived rename requires a fully observed target and retains existing
 preimage/commit guards; its static checks are not admitted verification.
-Symbolic operations and focused patches remain normal routes. \\
+Symbolic operations and focused patches remain normal routes. A rejected
+resolved scoped patch now identifies the exact target, a bounded neighboring
+read and symbol/file routes; it preserves conditional retry guidance and
+the original-source atomic batch base. File patches use exact preimages;
+this is not a universal requirement for prior symbol observation. \\
 \code{run_task} & Catalogued tasks, literal commands, Node dependency
 operations and inspection of running handles. Capture process outcome,
 source effects and bounded diagnostics. The initial wait is now bounded at
@@ -146,7 +156,13 @@ and user criteria satisfied. \code{observeCheck} records process state,
 counts/outcome, scope, selection, freshness and evidence origin. Interrupted
 green output, reported zero cases and silent exit-zero runs cannot establish passing
 tests. Managed pytest, VSTest and Surefire reports are invocation-attributed;
-old reports are not discovered as new evidence.
+old reports are not discovered as new evidence. Pure supported Node 24
+project invocations now add a structured event reporter alongside readable
+output, preserving npm lifecycle. Complete per-file case summaries exclude
+empty workers/suites. Reports carry runner/version, source/cwd/argv and
+manifest/lock fingerprints; these do not prove dependency coverage or a
+complete installed environment. Fresh exclusive report directories prevent
+sequence-restart collisions. Raw/unsupported routes retain conservative fallback.
 
 Tests with a passing observed outcome still have unknown selection and,
 without detected changes, unknown freshness. The task runner records their
@@ -1221,7 +1237,7 @@ mixed observations lose unreliable counts and two setup failures remain failed.
 Two real cases named like source files also lose confirmation: an explicit
 adverse tradeoff. Unknown means unconfirmed, never zero. Other opaque labels and
 reporters remain outside this bounded guard; structured Node event evidence is
-deferred. Two end-to-end F15 false execution admissions become missing and
+deferred at this historical checkpoint; F20 below adds a bounded project route. Two end-to-end F15 false execution admissions become missing and
 unverified with F16. Twelve targeted controls pass; a broader 195-test check
 passes before the final explanatory note. F15's frozen model arms exclude F16.
 
@@ -1273,43 +1289,152 @@ Evidence lives in the separately named required-checks known/new and npm-
 observation confirmation directories; \code{obligation-audit.json} preserves
 the distinction between actual audited user checks and reported admission.
 
+\section{F18--F20: recovery, reading and invocation proof}
+Keep these separately frozen October 13 client-date panels apart from earlier
+campaigns. Each registers two tasks, one repetition per arm, the same model/high
+effort, SDK 0.0.82, common CLI and source/dependency bindings before calls.
+The SDK is the integrated patched build in the lockfile. Its configured version
+is pinned; native wire schemas, complete OS/environment and backend model
+revision are not independently established. The new phase requests USD
+0.02/trial, 0.12/panel, 0.24 shared, 24 iterations and 480 seconds plus watchdog.
+No gold recovery, supervisor model-source repair or new paid retry occurs.
+
+\paragraph{F18: targeted rejection recovery.}
+Resolved scoped failures previously printed up to 4,000 declaration characters
+and generic advice. Add current target/path, bounded neighboring lines and
+body/declaration versus file-context routes, with the original-source batch
+rule. Five information/recovery controls pass versus zero on the unchanged
+reference; this is not five task-success gains. Existing observation, stale
+source and atomic rejection guards remain. Two initial fixture failures are
+retained: an incorrect file-patch observation assumption and an indentation
+expectation. A full-suite compatibility failure reveals lost conditional
+current-text/ambiguous-retry guidance; restore it in a separate release commit.
+A same-request replay of the new reference's scoped failure preserves rejection
+and its original subsequent successful file patch in both arms, but the hint
+response grows from 665 to 873 bytes. No billed-token improvement follows.
+
+\paragraph{F19: explicit signature projection.}
+Add \code{view=signature} to symbol reads, binding only returned header bytes
+and clipping on a UTF-8 boundary. Six controls cover JS/Python, missing target,
+changed bodies, long headers and unread type members. Full-body reads remain
+available and necessary before guarded edits/rename. On six selected real
+source declarations, results use 2,459 versus 11,801 bytes ($-79.2\%$), with
+implementation/type information deliberately omitted. This is neither
+information-equivalent reading nor measured billed-token savings. Defaults
+are unchanged; no signature request occurs in either candidate model task.
+
+\paragraph{F20: actual Node case evidence.}
+For Node 24 pure project invocations, including npm scripts exactly
+\code{node --test}, capture complete invocation-sidechannel summaries. Active
+passed/failed cases, skipped/todo cases, file workers and suites stay distinct.
+Explicit reporters/isolation/watch settings, raw commands, other managers and
+script wrappers retain fallback. Preserve npm pre/post scripts and failed,
+interrupted or incomplete outcomes. Bind actual runner, reporter/report hashes,
+selected argv, source revisions and partial manifest environment, without
+admitting coverage. Fifteen direct runtime contract controls pass versus two
+on F19; many assert new provenance, not thirteen old count errors. Separate
+parser/timeout integrations also pass. One real-Lodash replay recognizes three
+passing cases versus reference unknown despite identical actual executions.
+Before any F20 model call, the common seeded manifest pins npm 11.9.0 because
+Lodash's yarn lock otherwise selects unavailable yarn. Preserve superseded
+protocol/controls; this is benchmark setup, not a production manager repair.
+
+After frozen trials, a same-process sequence restart reproduces access to the
+preceding report before a new invocation runs. Fresh exclusive directories
+repair this for all managed adapters; 147 targeted and 803 runtime checks pass
+(two preexisting skips). A candidate summary still repeats four worker-inclusive
+passes despite three structured cases. This report-accuracy sensitivity is
+retained separately from registered task criteria. A later release appends
+active case totals after raw output, with a real-process presentation control;
+its model benefit is unmeasured. Original snapshots/scores stay unchanged.
+
+\begin{center}\small
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+Panel & Arm & Audited/run & Tokens & USD & Seconds \\
+\midrule
+F18 & Reference & 2/2 & 87,065 & 0.00929328 & 75.479 \\
+F18 & Modified & 2/2 & 99,354 & 0.01046716 & 75.785 \\
+F18 & Cline & 2/2 & 102,474 & 0.01389344 & 84.880 \\
+F19 & Reference & 2/2 & 166,808 & 0.01334348 & 139.737 \\
+F19 & Modified & 2/2 & 109,743 & 0.01178072 & 92.268 \\
+F19 & Cline & 1/2 & 303,326 & 0.02374836 & 71.471 \\
+F20 & Reference & 1/1* & 78,218 & 0.00806620 & 70.203 \\
+F20 & Modified & 2/2 & 128,719 & 0.01529496 & 130.541 \\
+F20 & Cline & 1/2 & 236,062 & 0.16484328 & 567.438 \\
+\bottomrule
+\end{tabular}
+\end{center}
+*One planned F20 reference remains unexecuted. Totals include failed attempts;
+missing consumption for the unexecuted task is not zero. F18/F19 migrate
+internal helpers in date-fns and Lodash; the larger date-fns task touches nine
+files. F20 fixes two separately seeded Lodash comparisons with additive Node
+cases and an inert fixture. These are constructed internal tasks, not randomly
+sampled issues; size alone does not demonstrate semantic benefit.
+
+On comparable audited/accounting-matched pairs, F18/reference is adverse:
++14.1\% tokens/+12.6\% cost/+0.4\% time; F18/Cline is
+$-3.0\%/-24.7\%/-10.7\%$. Targeted recovery never activates in F18 candidates.
+F19/reference uses 34.2\% fewer tokens, 11.7\% less cost and 34.0\% less time,
+but the new signature mechanism is unused. Against the only Cline-matched
+F19 success (Lodash), F19 is adverse: +211.3\% tokens/+29.9\% cost/+65.0\% time.
+Cline's nine-file final source passes independent full suites, but a started
+required-check call has no finished result when cost stops; retain functional
+success separately from official/audited failure and the orphan input review.
+F20 candidate confirms three real cases and fulfills its execution ID twice,
+while generic test scope stays unadmitted. Its one matched reference pair uses
+6.5\% fewer tokens/13.4\% less time but 1.0\% more cost; its one Cline-matched
+pair saves 30.8\%/24.3\%/40.1\%. Incomplete F20 supports no complete-panel
+resource claim, and none of these small panels establishes global causality.
+
+\paragraph{Budget failure and later guard.}
+Seventeen of eighteen planned runs spend estimated USD 0.27073088, exceeding
+0.24 by 0.03073088. One Cline first response emits 128,000 output tokens,
+reports USD 0.154075 and invalid JSON in a decoded \code{parallel} call;
+source remains seeded and no new test exists. The available SDK record cannot
+separate model generation from argument/stream handling. Cost is checked only
+between responses, so the nominal per-session limit fails to bound this burst.
+The scheduler stops the last reference instead of retrying or discarding it.
+Sixteen of seventeen conservative ledgers reconcile; the failed response's
+input/output/cost sums match numerically, but an iteration-start notice without
+another usage report leaves request accounting incomplete. Full request-cache
+accounting remains absent 17/17. No model timeout is reported.
+
+Add opt-in \code{BLAME_AGENT_REQUEST_MAX_OUTPUT_TOKENS}, mapped to the SDK's
+\code{maxTokensPerTurn}. Offline actual Codex serialization proves
+\code{max_output_tokens=8192} before dispatch, rejects invalid bounds and keeps
+lower caller limits. Existing cumulative limits remain separate. This does
+not prove server enforcement, quality under the smaller cap, input-cost or
+invoice bounds; new studies must pin pricing/input reserves and common caps
+before paid calls. No paid run tests this later change. Final source passes
+807 runtime checks with two preexisting skips and 29 runner checks.
+
+Decision: retain bounded recovery, explicit signature capability and truthful
+Node execution evidence; deepen their actual use and summary accuracy rather
+than claim new global task success or efficiency. Preserve favorable and
+adverse matched results, two cost failures, budget overrun and unexecuted task.
+Evidence/reproduction is in the separately named
+\code{light-harness-navigation-evidence-local,f18,f19,f20-2026-10-13}
+directories under \code{docs/experiments/}.
+
 \section{Next testable priorities: proposals only}
 \begin{enumerate}
-\item Clarify editing route and batch base only when relevant: new traces show
-JSDoc/export context outside symbol projections, ambiguous short hunks and
-mixed batches expecting an earlier operation already applied. Compare one
-bounded range/recovery hint on known controls plus new confirmation; preserve
-observation, ambiguity and original-revision batch guards. Measure blocked
-retries, successful precise edits, criteria and reconciled resources. F11's
-broad scope description is retired; excess prompt tokens and misleading
-coverage are risks. Independently confirm F12's latency/cost tradeoff on
-previously unexecuted command durations before generalizing.
-\item Evaluate F15/F17's opt-in contract in real callers and wider tasks requiring
-multiple package validators; replace ambiguous Node text counts with structured
-invocation events before expanding admission.
-F13/F14 refresh attempted known routes; free-text requirements still need a
-trusted explicit contract. Bind further environment and dependency evidence
-before extending admission.
-Unrelated-child failures currently poison completion;
-package ownership alone proves no dependency scope. Replay required root,
-child/dependency failures, unknown scope, external changes and interrupted
-checks before comparing one policy or information change. Measure false
-admission (zero in controls), completed criteria and refusal loops. Do not
-infer relevance from paths alone or discard failed tests; missing required
-dependency checks and false verification are regression risks.
-\item Bind behavioral evidence to final source, actual invocation, selection
-and configured environment. CSV/Unicode/URI counterexamples show build
-admission is insufficient. Compare one bounded checking/evidence intervention
-on fixed diagnostics plus new confirmation, without exposing verifier
-solutions. Measure false success claims, tests actually executed/passed,
-admitted verification and audited completion separately, then request/cache
-costs. Extra work and overstating incomplete provenance are regression risks.
+\item Confirm request caps, conservative input/pricing reserves and streamed
+argument diagnostics locally, then repeat known cost failures with identical
+limits across arms. Treat them as diagnostics; preregister new confirmations.
+Smaller reasoning/output budgets may reduce quality.
+\item Activate explicit header reading on API/caller-inspection tasks that do
+not always require full target bodies. Separately ablate compiler rename on
+larger multi-file tasks. Current F19 savings do not identify a signature effect.
+Clarify range versus symbol aliases and unavailable compiler routes when needed;
+avoid adding broad prompt overhead.
+\item Confirm salient Node case summaries with models before expanding supported
+versions/scripts. Integrate trusted required checks in real callers and bind
+actual dependency/environment evidence before admitting broader coverage.
+Unknown scope, external writers and unrelated failures remain material limits.
 \end{enumerate}
-Bounded manifest-section locations (T6 never activates the available route),
-other reading-granularity changes and memory/cache ablations remain deferred.
-The LSP diagnostic isolates a capability gap, not its model outcome benefit.
-Finite measurements cannot prove exhausted improvement margin; local repairs
-do not establish global model benefit. Keep unfavorable experiments explicit.
+Finite studies cannot exhaust improvement margin. Preserve each campaign,
+version, diagnostic, confirmation and unmeasured release guard separately.
 
 \section{Reproduction and evidence map}
 Build core, model catalog, runtime (including prompt-resource copy) and
