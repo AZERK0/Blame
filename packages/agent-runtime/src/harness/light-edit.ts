@@ -883,11 +883,12 @@ class ScopedEditRecovery extends Error {
     super(message);
     const [startLine, endLine] = resolved.symbol.line_range;
     this.recovery = "No operations in this batch were applied. Every operation uses the original source, not earlier operations in the same batch. " +
+      (patchFailureRecovery(message) ? `${patchFailureRecovery(message)} ` : "") +
       JSON.stringify({ target: resolved.alias, path: resolved.path,
         declarationLines: [startLine, endLine],
         nextRead: { target: resolved.path, view: "range",
           range: { startLine: Math.max(1, startLine - 3), endLine: Math.min(endLine + 2, startLine + 24) } },
-        routes: "For changes inside the declaration, read the symbol then use a symbol action or a focused alias patch. For JSDoc, export wrappers or context outside it, read those lines and use a file patch. For dependent edits, commit separately and read again. These locations are hints, not observed edit coverage; refresh after source changes." });
+        routes: "Read the current text before retrying. For changes inside the declaration, read the symbol then use a symbol action or a focused alias patch. For JSDoc, export wrappers or context outside it, read those lines and use a file patch. For dependent edits, commit separately and read again. These locations are hints, not observed edit coverage; refresh after source changes." });
   }
 }
 
