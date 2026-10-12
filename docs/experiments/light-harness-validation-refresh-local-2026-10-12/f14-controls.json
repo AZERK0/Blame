@@ -37,5 +37,15 @@
       "bytes": 5494,
       "sha256": "a8ba3d8549ae33a2c866eac54aba055a7334e4c3b75aaf01e480e6019996c2c7"
     }
-  ]
+  ],
+  "historicalWorkflow": {
+    "baselineRefreshedTests": 0,
+    "candidateRefreshedTests": 25,
+    "sourceUnchanged": true,
+    "admission": "unknown; passing observed cases do not grant test-scope admission",
+    "artifact": "npm-workflow-replay.json.gz",
+    "bytes": 12073,
+    "sha256": "765d0b41b1ab0b7d3b38abe81514c8c2f1ad28347624550483f07b458cb9ad21",
+    "method": "New counterfactual execution of actual raw command on copied final production/new tests, a replay-only comment then removal, and current types. Original historical traces/journals/scores unchanged."
+  }
 }
