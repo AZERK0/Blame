@@ -4,7 +4,8 @@ import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile, symlink } from "node:fs/promises";
 import { join } from "node:path";
 import { repo, work, studyFor } from "./campaign-paths.mjs";
-if (process.env.BLAME_STUDY_VARIANT !== "declarations") throw Error("Use BLAME_STUDY_VARIANT=declarations");
+if (!["declarations", "declarations-eur1"].includes(process.env.BLAME_STUDY_VARIANT))
+  throw Error("Use a registered declarations study variant");
 const protocol = JSON.parse(await readFile(join(studyFor("f24"), "protocol.json"), "utf8"));
 const patchPath = "docs/experiments/light-harness-declaration-navigation-local-2026-10-13/candidate.patch";
 const patch = await readFile(join(repo, patchPath)), sha = value => createHash("sha256").update(value).digest("hex");
