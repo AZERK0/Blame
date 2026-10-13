@@ -11,7 +11,7 @@ import { getProviderCollectionSync } from "../../../packages/agent-runtime/node_
 import { reserveTrialCosts } from "./budget-accounting.mjs";
 
 const panel = process.argv[3];
-if (!["f18","f19","f20","f21","f22","f23","f24"].includes(panel)) throw new Error("Specify a registered F18--F24 panel");
+if (!["f18","f19","f20","f21","f22","f23","f24","f25"].includes(panel)) throw new Error("Specify a registered F18--F25 panel");
 const study = studyFor(panel);
 const campaign = join(work, panel);
 const protocol = JSON.parse(await readFile(join(study, "protocol.json"), "utf8"));
@@ -50,6 +50,11 @@ async function bindings() {
     "tools/terminal_bench/navigation-evidence/multifile-criteria.mjs",
     "tools/terminal_bench/navigation-evidence/prepare-declarations.mjs",
     "tools/terminal_bench/navigation-evidence/multifile-controls.mjs",
+  ]) inputs[path] = sha(await readFile(join(repo, path)));
+  if (protocol.studyKind === "compiler-rename-ablation") for (const path of [
+    "tools/terminal_bench/navigation-evidence/prepare-rename-ablation.mjs",
+    "tools/terminal_bench/navigation-evidence/rename-ablation-controls.mjs",
+    "tools/terminal_bench/navigation-evidence/multifile-criteria.mjs",
   ]) inputs[path] = sha(await readFile(join(repo, path)));
   inputs[join(study, "protocol.json").slice(repo.length + 1)] = sha(await readFile(join(study, "protocol.json")));
   if (protocol.commonPatchProtocol) for (const path of [protocol.commonPatchProtocol,

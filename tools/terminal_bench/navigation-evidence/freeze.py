@@ -1,6 +1,6 @@
 from pathlib import Path
 import json,shutil,subprocess,sys,os,re
-repo=Path(__file__).resolve().parents[3];panel,arm=sys.argv[1:3];assert panel in ('f18','f19','f20','f21','f22','f23','f24') and arm in ('baseline','modified')
+repo=Path(__file__).resolve().parents[3];panel,arm=sys.argv[1:3];assert panel in ('f18','f19','f20','f21','f22','f23','f24','f25') and arm in ('baseline','modified')
 variant=os.environ.get('BLAME_STUDY_VARIANT','');assert not variant or re.fullmatch(r'[a-z0-9][a-z0-9-]{0,40}',variant)
 root=repo/('.blame/research/navigation-evidence'+('-'+variant if variant else ''))/'frozen'/panel/arm;assert not root.exists(),'Never overwrite frozen runtime'
 source=Path(sys.argv[3]) if len(sys.argv)>3 else repo/'packages/agent-runtime/dist'
