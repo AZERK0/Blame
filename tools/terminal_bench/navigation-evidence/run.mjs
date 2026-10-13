@@ -220,7 +220,8 @@ async function prepareWorkspace(workspace,task) {
   git(["init","--quiet"],workspace);
   git(["add","."],workspace);
   git(["-c","user.name=Study","-c","user.email=study@example.invalid","commit","--quiet","-m","Frozen task input"],workspace,
-    {GIT_AUTHOR_DATE:protocol.registeredAtUTC,GIT_COMMITTER_DATE:protocol.registeredAtUTC});
+    {GIT_AUTHOR_DATE:protocol.taskInputCommitAtUTC ?? protocol.registeredAtUTC,
+      GIT_COMMITTER_DATE:protocol.taskInputCommitAtUTC ?? protocol.registeredAtUTC});
   await writeFile(join(workspace,".git/info/exclude"),".blame/\nnode_modules\n");
   await symlink(join(upstream,"node_modules"),join(workspace,"node_modules"));
 }

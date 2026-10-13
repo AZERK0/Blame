@@ -113,12 +113,14 @@ await writeJson(join(destination, "inventory.json"), inventory);
 await writeFile(join(destination, "tool-ledger.json"), await readFile(join(campaign, "tool-ledger.json")));
 await writeFile(join(destination, "tool-lifecycle-inspection.json"),
   await readFile(join(campaign, "tool-lifecycle-inspection.json")));
-if (analysis.completed === analysis.planned) {
+if (analysis.completed === analysis.planned && !protocol.continuationOf) {
   execFileSync(process.execPath, [resolve("tools/terminal_bench/corpus/light-study-compare.mjs"), destination],
     { stdio: "ignore" });
 } else {
   await writeJson(join(destination, "paired-comparison.json"), {
-    reason: "Registered panel stopped before all planned outcomes; retain unexecuted cases. No complete-panel efficiency claim.",
+    reason: protocol.continuationOf
+      ? "Administrative single-slot continuation has no contemporaneous counterpart; retain parent and tail separately. Any cross-registration comparison is descriptive and must disclose actual prompt/environment differences."
+      : "Registered panel stopped before all planned outcomes; retain unexecuted cases. No complete-panel efficiency claim.",
     comparisons: [] });
 }
 const integrity = { reviewedTraces: decisions.length, rawArtifacts: inventory.filter((entry) => !entry.missing).length,
