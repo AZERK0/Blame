@@ -1,0 +1,1 @@
+Known-task diagnostic rerun; follow ../light-harness-navigation-evidence-budget050-2026-10-13/reproduction.md with BLAME_STUDY_VARIANT=budget050. Primary audits retain intermediate check failures and inert native timeout keys. Canonical final source and successful post-final-edit commands are separate from generic admission and from the original uncapped scores.
