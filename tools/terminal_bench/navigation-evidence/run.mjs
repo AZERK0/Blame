@@ -246,6 +246,16 @@ async function run() {
       for (const arm of arms) order.push({ repetition, id: task.id, arm });
     }
   }
+  if (protocol.registeredOrder) {
+    if (protocol.registeredOrder.length !== 1 || protocol.continuationOf?.completedBeforeRegistration !== 11)
+      throw Error("Only the registered administrative single-slot continuation is allowed");
+    const previous = JSON.parse(await readFile(join(repo, protocol.continuationOf.budgetStop), "utf8"));
+    const slot = protocol.registeredOrder[0];
+    if (JSON.stringify(slot) !== JSON.stringify(previous.remainingFrom) ||
+        !protocol.tasks.some(t => t.id === slot.id) || !protocol.arms.includes(slot.arm))
+      throw Error("Continuation differs from the preassigned budget-stop tail");
+    order.splice(0, order.length, slot);
+  }
   await writeJson(join(campaign, "provenance.json"), { frozen, order,
     startedAt: new Date().toISOString(), protocolSha256: sha(await readFile(join(study, "protocol.json"))) });
   let priorObservedCost = 0;
