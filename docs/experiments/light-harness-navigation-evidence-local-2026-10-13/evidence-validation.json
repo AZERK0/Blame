@@ -14,5 +14,11 @@
   "phaseCeilingExceeded": true,
   "modelOutcomeSourcesUnmodified": true,
   "latexSourceSha256": "796e99d71f1623cd29bbcb592b54832798f102aa50986e0df849b41dca7d8ca3",
-  "nativeLatex": "Open request did not return; direct compiler request attempted separately and remains unverified. Source preserved; no source diagnostics available."
+  "nativeLatex": {
+    "status": "unverified",
+    "openAttempt": "Native source-editor opening did not acknowledge; request stopped after extended wait, source preserved",
+    "compileAttempt": "Direct native compiler requested after source edit; connection closed before server request was answered",
+    "sourceDiagnosticsAvailable": false,
+    "localInstallationAttempted": false
+  }
 }
