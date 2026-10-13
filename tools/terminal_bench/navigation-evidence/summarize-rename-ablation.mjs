@@ -22,7 +22,7 @@ for (const row of results.rows) {
     input: t.input, command: t.output?.data?.command ?? t.input.command ?? null,
     status: t.output?.status ?? null, exitCode: t.output?.data?.exitCode ?? null,
     admittedCheck: t.output?.data?.check ?? null }]
-    : t.tool === "run_commands" ? (t.input.commands ?? []).map((command, item) => ({ index, tool: t.tool,
+    : t.tool === "run_commands" ? (Array.isArray(t.input.commands) ? t.input.commands : typeof t.input.commands === "string" ? [t.input.commands] : []).map((command, item) => ({ index, tool: t.tool,
       command, success: Array.isArray(t.output) ? t.output[item]?.success ?? null : null })) : []);
   const events = (await readFile(join(campaign, row.name, "events.jsonl"), "utf8"))
     .trim().split("\n").filter(Boolean).map(line => JSON.parse(line).event);
