@@ -1,4 +1,5 @@
-// Research-only preload: observe public request contracts without changing them.
+// Research-only preload: observe contracts and optionally reject oversized
+// requests before dispatch. Never truncate or rewrite model-visible content.
 import { appendFile, writeFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { createHash } from "node:crypto";
@@ -6,6 +7,8 @@ import { createHash } from "node:crypto";
 const destination = process.env.BLAME_STUDY_WIRE_AUDIT;
 if (!destination) throw Error("Wire audit destination must be explicit");
 const original = globalThis.fetch;
+const byteLimit = Number(process.env.BLAME_STUDY_REQUEST_MAX_BYTES ?? 0);
+if (!Number.isSafeInteger(byteLimit) || byteLimit < 0) throw Error("Invalid request byte budget");
 const sha = text => createHash("sha256").update(text).digest("hex");
 const normalize = value => typeof value === "string" && process.env.BLAME_STUDY_WORKSPACE
   ? value.replaceAll(process.env.BLAME_STUDY_WORKSPACE, "<WORKSPACE>") : value;
@@ -29,11 +32,15 @@ globalThis.fetch = async function auditedFetch(input, init) {
       .catch(error => { if (error.code !== "EEXIST") throw error; });
     await writeFile(join(dirname(destination), "prompt-" + promptSha + ".json"), promptText + "\n", { flag: "wx" })
       .catch(error => { if (error.code !== "EEXIST") throw error; });
+    const requestBytes = Buffer.byteLength(raw, "utf8");
+    const budgetRejected = byteLimit > 0 && requestBytes > byteLimit;
     await appendFile(destination, JSON.stringify({ time: new Date().toISOString(), endpoint: url.origin + url.pathname,
       model: body.model, reasoning: body.reasoning ?? null,
-      maximumOutputTokens: body.max_output_tokens ?? body.max_tokens ?? null,
+      maximumOutputTokens: body.max_output_tokens ?? body.max_completion_tokens ?? body.max_tokens ?? null,
       toolsSha256: toolSha, promptSha256: promptSha, normalizedContractSha256: sha(normalized),
-      requestBodySha256: sha(raw), toolCount: Array.isArray(tools) ? tools.length : null }) + "\n");
+      requestBodySha256: sha(raw), requestBytes, byteLimit: byteLimit || null, budgetRejected,
+      toolCount: Array.isArray(tools) ? tools.length : null }) + "\n");
+    if (budgetRejected) throw Error("Research request byte budget exceeded before dispatch: " + requestBytes + " > " + byteLimit);
   }
   return original(input, init);
 };

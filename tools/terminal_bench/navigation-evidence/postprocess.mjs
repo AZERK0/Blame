@@ -24,6 +24,10 @@ for(const row of analysis.rows){
     blockedSearches:searches.filter(t=>t.output?.status==="blocked").length,
     repeatedIdenticalSearchInputs:[...counts.values()].reduce((n,c)=>n+Math.max(0,c-1),0),
     readCalls:tools.filter(t=>t.tool==="read_code"||t.tool==="read_files").length,
+    signatureRequests:tools.filter(t=>t.tool==="read_code"&&t.input.view==="signature").length,
+    signatureRendered:tools.filter(t=>t.tool==="read_code"&&t.output?.data?.bodyOmitted===true).length,
+    scopedRecoveryHints:tools.filter(t=>t.tool==="edit_code"&&JSON.stringify(t.output).includes("declarationLines")).length,
+    activeCaseCaptions:tools.filter(t=>t.tool==="run_task"&&JSON.stringify(t.output).includes("Active Node case results:")).length,
     readTargets:tools.filter(t=>t.tool==="read_code"||t.tool==="read_files")
       .reduce((n,t)=>n+(t.tool==="read_files"?(t.input.files?.length??0):1),0),
     nativeRenameCalls:row.semanticRenameCalls,compilerReferenceCalls:row.semanticReferenceCalls,
@@ -50,12 +54,13 @@ for(const row of analysis.rows){
     classifiedInvocations:classified.map(e=>({id:e.id,command:e.command,taskId:e.taskId,args:e.args??[],sourceRevisionId:e.sourceRevisionId,status:e.status,check:e.check})),
     automaticValidationInputs:tools.filter(t=>t.tool==="run_task"&&String(t.toolCall?.id??t.toolCallId??"").includes(":validation")).map(t=>t.input),
   });
-  if(task.newTest){
+  const addedPath=task.newTest ?? task.reportFile;
+  if(addedPath){
     try{
-      const bytes=await readFile(join(campaign,row.name,"workspace",task.newTest));
-      if(sha(bytes)!==score.sourceSha256[task.newTest])throw new Error("Scored added source changed");
-      addedSources.push({name:row.name,path:task.newTest,sha256:sha(bytes),bytes:bytes.length,encoding:"base64",content:bytes.toString("base64")});
-    }catch(error){if(error.code!=="ENOENT")throw error;addedSources.push({name:row.name,path:task.newTest,missing:true});}
+      const bytes=await readFile(join(campaign,row.name,"workspace",addedPath));
+      if(sha(bytes)!==score.sourceSha256[addedPath])throw new Error("Scored added source changed");
+      addedSources.push({name:row.name,path:addedPath,kind:task.reportFile?"requested-report":"added-test",sha256:sha(bytes),bytes:bytes.length,encoding:"base64",content:bytes.toString("base64")});
+    }catch(error){if(error.code!=="ENOENT")throw error;addedSources.push({name:row.name,path:addedPath,missing:true});}
   }
   const calls=tools.filter(t=>t.tool==="run_task"||t.tool==="run_commands").map(t=>{
     const data=t.output?.data;
@@ -81,13 +86,13 @@ for(const row of analysis.rows){
     limitation:"Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."});
 }
 await writeFile(join(study,"mechanism-analysis.json"),JSON.stringify({
-  method:"Finished-tool observations only, SHA-bound to raw events. Repeated inputs may be legitimate after changes; empty/root-star queries are not automatically mistakes. F17 exposure is the declared catalog runner interpreting this raw npm invocation output. Scope remains unknown. Record IDs, admission and missing obligations separately. Unchanged search statistics are descriptive only. Model sequencing and already-current checks can prevent refresh exposure.",rows:mechanisms},null,2)+"\n");
+  method:"Finished-tool observations only, SHA-bound to raw events. F21 changes only bounded rejection recovery; F22 only signature availability; F23 only the appended active-case caption, with identical structured Node evidence in both arms. Requested and rendered views differ. Record invocation IDs, admission and missing obligations separately. No natural mechanism activation means no effectiveness conclusion. Repeated inputs or empty queries are not automatically errors.",rows:mechanisms},null,2)+"\n");
 await writeFile(join(study,"validation-provenance.json"),JSON.stringify({
   bindingSha256:sha(await readFile(join(study,"execution-bindings.json"))),
   protocolSha256:sha(await readFile(join(study,"protocol.json"))),rows:validation},null,2)+"\n");
 // git diff excludes untracked new files. Preserve them separately, never amend
 // the original recorded workspace.diff or its endpoint hash.
-const addedArtifact=gzipSync(JSON.stringify({method:"Unchanged final added tests, matched to frozen score source hashes. Supplement the original tracked diff; no model source repair.",sources:addedSources}),{mtime:0});
+const addedArtifact=gzipSync(JSON.stringify({method:"Unchanged final requested reports or added tests, matched to frozen score source hashes. Supplement the original tracked diff; no model source repair. Historical artifact filename retained for compatibility; source kind is explicit.",sources:addedSources}),{mtime:0});
 await writeFile(join(study,"added-test-sources.json.gz"),addedArtifact);
 await writeFile(join(study,"supplemental-inventory.json"),JSON.stringify({artifact:"added-test-sources.json.gz",sha256:sha(addedArtifact),sources:addedSources.map(({content,...metadata})=>metadata),journals},null,2)+"\n");
 console.log(JSON.stringify({completed:analysis.completed,planned:analysis.planned,mechanisms:mechanisms.map(({name,searchCalls,rootStarCalls})=>({name,searchCalls,rootStarCalls}))}));

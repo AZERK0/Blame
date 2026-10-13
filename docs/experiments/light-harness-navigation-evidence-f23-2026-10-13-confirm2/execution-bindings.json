@@ -1,6 +1,6 @@
 {
   "inputs": {
-    "tools/terminal_bench/navigation-evidence/run.mjs": "6fa8aae14c7169b4b889af7f0420958000b92aa929bf82926764a55bd5611af2",
+    "tools/terminal_bench/navigation-evidence/run.mjs": "b05b1fa6c76c51f41b77f29d9f8dcf7ea73dbe47f50f32336077f74d21062d61",
     "tools/terminal_bench/navigation-evidence/feature-checks.mjs": "da42c5892aa2ac8b83dd6754e8aabb63120b176a7e3eb5227404b05d43443032",
     "tools/terminal_bench/navigation-evidence/campaign-paths.mjs": "384cad6969b9db7d93149d57e246d858b20724bf4a2d8f8d26fc398bb7f466a9",
     "tools/terminal_bench/navigation-evidence/prepare-rerun.py": "6a616852a150736fbdab651d09a241b068c19d03354fdad56495e4faa6258a65",
@@ -18,9 +18,9 @@
     "tools/terminal_bench/navigation-evidence/prepare-confirmation.py": "d6e1780c15d1adf3795190ea8ca684f70bf35ca14e365b73fe5ed5d47b49f9c1",
     "tools/terminal_bench/navigation-evidence/inventory-criteria.mjs": "a4db00dab158d113a34b2dd68140da243bcb4c5154931baca690ec1a032603e0",
     "tools/terminal_bench/navigation-evidence/mechanism-controls.mjs": "2e2534031e7a773c6dc2fcb2a04a8deaf2d3991b6254209e55d33adfbfa71c82",
-    "tools/terminal_bench/navigation-evidence/wire-audit.mjs": "8add3725dedcf13b8f124c1f143dfa6d025fba8ced2f286dfb6580c28fc0a031",
-    "docs/experiments/light-harness-mechanism-confirmation-2026-10-13/protocol.json": "fa509f5d410f741ba5137634818fae9803912ef6765711899277996dc2eb044c",
-    "docs/experiments/light-harness-navigation-evidence-f23-2026-10-13-confirm2/protocol.json": "4436846e4c34f86a5c6d1f5dfae025a2c4fca611f0c6259bcb20f66c4e711b0b"
+    "tools/terminal_bench/navigation-evidence/wire-audit.mjs": "6c4cfeeba1c5003dee3c73717fbbbbff6773b72a24921224294a221e009b8b85",
+    "docs/experiments/light-harness-mechanism-confirmation-2026-10-13/protocol-v2.json": "21ae0cf0fd299202ece6d0dd60ddb88de900230765c56a608b50e81cbb96ed21",
+    "docs/experiments/light-harness-navigation-evidence-f23-2026-10-13-confirm2/protocol.json": "7f63c9b8ab1d4828f258ed10d4973d7e9885759009027e608ac5efa631403073"
   },
   "versions": {
     "baseline": {
