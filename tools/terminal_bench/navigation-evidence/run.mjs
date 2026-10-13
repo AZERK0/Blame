@@ -5,6 +5,7 @@ import { resolve, join } from "node:path";
 import { performance } from "node:perf_hooks";
 import { reconcileUsage } from "../corpus/light-study-accounting.mjs";
 import { repo, work, studyFor } from "./campaign-paths.mjs";
+import { getProviderCollectionSync } from "../../../packages/agent-runtime/node_modules/@cline/llms/dist/index.js";
 
 const panel = process.argv[3];
 if (!["f18","f19","f20"].includes(panel)) throw new Error("Specify f18, f19 or f20");
@@ -34,6 +35,9 @@ async function bindings() {
     "pnpm-lock.yaml", "packages/agent-runtime/dist/usage-audit.js",
   ]) inputs[path] = sha(await readFile(join(repo, path)));
   inputs[join(study, "protocol.json").slice(repo.length + 1)] = sha(await readFile(join(study, "protocol.json")));
+  if (protocol.commonPatchProtocol) for (const path of [protocol.commonPatchProtocol,
+    join(protocol.commonPatchProtocol, "..", "common-request-cap.patch")])
+    inputs[path] = sha(await readFile(join(repo, path)));
   const versions = {};
   for (const arm of ["baseline", "modified"]) {
     const directory = join(work, "frozen", panel, arm);
@@ -55,7 +59,12 @@ async function bindings() {
     else for (const module of ["lodash","qunit-extras","qunitjs","platform"])
       projects[name][module] = JSON.parse(await readFile(join(root,"node_modules",module,"package.json"))).version;
   }
-  return { inputs, versions, sharedCore:await tree(join(repo,"packages/harness-core/dist")),
+  const settings = Object.fromEntries(Object.entries(process.env).filter(([name]) =>
+    name.startsWith("BLAME_AGENT_") || name.startsWith("CLINE_MESSAGE_BUILDER_"))
+    .sort(([a], [b]) => a.localeCompare(b)));
+  return { inputs, versions, inheritedSettingsSha256:sha(JSON.stringify(settings)),
+    registeredModelCatalog:getProviderCollectionSync(protocol.provider)?.models[protocol.model],
+    sharedCore:await tree(join(repo,"packages/harness-core/dist")),
     sdk:JSON.parse(await readFile(join(repo,"packages/agent-runtime/node_modules/@cline/sdk/package.json"))).version,
     compiler:JSON.parse(await readFile(join(repo,"packages/agent-runtime/node_modules/typescript/package.json"))).version,
     projects, node:process.version, npmVersion:execFileSync("npm",["--version"],{encoding:"utf8"}).trim() };
@@ -197,7 +206,8 @@ async function run() {
     const bytes = await readFile(join(repo, path));
     const prior = JSON.parse(bytes);
     if (prior.completed !== prior.planned) throw new Error("Prior diagnostic is incomplete; do not start confirmation");
-    const amount = prior.rows.reduce((sum, row) => sum + (row.usage.cost ?? protocol.budgets.perTrialSdkCostLimitUsd), 0);
+    const amount = prior.rows.reduce((sum, row) => sum + (row.usage.cost ??
+      (protocol.budgets.perTrialSdkCostLimitUsd + (protocol.budgets.requestOvershootReserveUsd ?? 0))), 0);
     priorObservedCost += amount;
     priorAccounting.push({ path, sha256: sha(bytes), observedOrReservedUsd: amount });
   }
@@ -207,7 +217,7 @@ async function run() {
   for (const trial of order) {
     const reservation = protocol.budgets.perTrialSdkCostLimitUsd + (protocol.budgets.requestOvershootReserveUsd ?? 0);
     if (observedCost + reservation > protocol.budgets.panelObservedCostStopUsd || priorObservedCost + observedCost + reservation > protocol.budgets.sharedStudyObservedCostStopUsd) {
-      await writeJson(join(campaign, "budget-stop.json"), { observedCost, priorObservedCost, remainingFrom: trial });
+      await writeJson(join(campaign, "budget-stop.json"), { observedCost, priorObservedCost, reservation, remainingFrom: trial });
       break;
     }
     await verifyBindings();
@@ -236,7 +246,8 @@ async function run() {
     await writeFile(join(directory, "workspace.diff"), git(["diff", "--binary", "HEAD"], workspace));
     await writeJson(join(directory, "trial.json"), { ...trial, name, exit, preparationMs, outerAgentMs, verificationMs });
     const rows = await analyze();
-    observedCost = rows.reduce((sum, row) => sum + (row.usage.cost ?? protocol.budgets.perTrialSdkCostLimitUsd), 0);
+    observedCost = rows.reduce((sum, row) => sum + (row.usage.cost ??
+      (protocol.budgets.perTrialSdkCostLimitUsd + (protocol.budgets.requestOvershootReserveUsd ?? 0))), 0);
     process.stdout.write("END " + name + " functional=" + grade.independentFunctionalSuccess + "\n");
   }
 }

@@ -18,5 +18,19 @@
   },
   "commonRequestMaxOutputTokens": 8192,
   "oldCampaigns": "Preserved separately, no overwritten trials or pooled cost/success estimates",
-  "budgetPolicy": "USD .04 SDK session limit per trial, USD .25 panel observed stop and USD .50 shared phase stop. Before each new trial reserve the .04 session allowance plus .10 for a final request overshoot. Estimates are not invoices; output cap is not an input or total financial guarantee. Missing cost reserves the whole .14 trial admission allowance. No paid retry or replacement task."
+  "budgetPolicy": "USD .04 SDK session limit per trial and USD .50 observed stop for the shared phase (each panel also stops at .50). Reserve an additional USD .23 before every trial for a final request after the SDK soft limit: catalog maxInputTokens 875900 at the maximum input/cache-write rate .25/M plus 8192 output tokens at 1.2/M is .2288054. Reserve .27 if aggregate cost is missing. This is a conservative catalog estimate, not a provider-enforced input bound or invoice guarantee. No paid retry or replacement task.",
+  "pricingReserve": {
+    "maxInputTokens": 875900,
+    "maximumInputSubsetUsdPerMillion": 0.25,
+    "outputUsdPerMillion": 1.2,
+    "cappedRequestUpperCatalogEstimateUsd": 0.2288054,
+    "requestOvershootReserveUsd": 0.23,
+    "unknowns": [
+      "provider model revision",
+      "server enforcement",
+      "invoice",
+      "hidden requests",
+      "per-request cache subsets"
+    ]
+  }
 }

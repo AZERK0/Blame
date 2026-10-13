@@ -25,15 +25,15 @@
   },
   "budgets": {
     "perTrialSdkCostLimitUsd": 0.04,
-    "panelObservedCostStopUsd": 0.25,
+    "panelObservedCostStopUsd": 0.5,
     "sharedStudyObservedCostStopUsd": 0.5,
     "maxIterations": 24,
     "timeoutSeconds": 480,
     "outerWatchdogExtraSeconds": 25,
     "requestMaxOutputTokens": 8192,
-    "requestOvershootReserveUsd": 0.1
+    "requestOvershootReserveUsd": 0.23
   },
-  "accounting": "USD .04 SDK session limit per trial, USD .25 panel observed stop and USD .50 shared phase stop. Before each new trial reserve the .04 session allowance plus .10 for a final request overshoot. Estimates are not invoices; output cap is not an input or total financial guarantee. Missing cost reserves the whole .14 trial admission allowance. No paid retry or replacement task. Report preparation and independent verification separately. Cache remains missing if unavailable. All failures, timeouts and unexecuted rows stay in the denominator.",
+  "accounting": "USD .04 SDK session limit per trial and USD .50 observed stop for the shared phase (each panel also stops at .50). Reserve an additional USD .23 before every trial for a final request after the SDK soft limit: catalog maxInputTokens 875900 at the maximum input/cache-write rate .25/M plus 8192 output tokens at 1.2/M is .2288054. Reserve .27 if aggregate cost is missing. This is a conservative catalog estimate, not a provider-enforced input bound or invoice guarantee. No paid retry or replacement task. Preparation and independent verification are separate. Missing cache is not zero. Failed, timed-out and unexecuted rows stay in the denominator.",
   "taskOrder": "Two tasks in fixed order; rotate three arms by task index, no concurrent model requests. One repetition cannot estimate within-task variance.",
   "quality": "Official runtime result, independent full defined suites and parsed source integrity, and strict final-source invocation/criteria/no-solution-retrieval audit are separate. Do not rewrite old primary scores.",
   "selection": "Exact two tasks from the historical F18/F19/F20 panel, selected before rerun outcomes. Previously observed diagnostics; not held-out confirmation. Same order, instructions, upstreams and independent criteria.",
