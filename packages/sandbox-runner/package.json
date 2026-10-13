@@ -1,6 +1,7 @@
 {
   "name": "@blame/sandbox-runner",
   "private": true,
+  "license": "AGPL-3.0-only",
   "version": "0.2.17",
   "type": "module",
   "bin": {

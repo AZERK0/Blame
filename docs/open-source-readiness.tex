@@ -5,7 +5,7 @@
 \newcommand{\code}[1]{\texttt{\detokenize{#1}}}
 \title{Blame: Open-Source Readiness}
 \author{Blame Engineering}
-\date{October 9, 2026}
+\date{October 13, 2026}
 \begin{document}
 \maketitle
 
@@ -17,12 +17,18 @@ The application now separates free core access from Premium services funded by
 Blame. This billing boundary does not yet make the project a complete,
 documented self-hosting distribution.
 
-A license decision is still required. A noncommercial restriction makes code
-source-available rather than open source under the Open Source Definition.
-A copyleft license such as AGPLv3 permits commercial use while imposing sharing
-obligations in its applicable circumstances. The public license, contributor
-terms, dependency compatibility, trademarks, and hosted-service terms must be
-settled explicitly before release. No license choice is introduced by this pass.
+Blame is licensed under the GNU Affero General Public License version 3,
+identified as \code{AGPL-3.0-only}. The complete license is stored in
+\code{LICENSE}; first-party package metadata and the README declare that choice.
+Commercial use is permitted. Distribution of covered software requires its
+corresponding source under the same license, and section 13 requires operators
+of modified network versions to offer corresponding source to their remote
+users. These obligations concern covered software, not every independent
+repository belonging to an operator.
+
+Third-party licenses and notices remain applicable to their respective
+components. Contributor terms, dependency compatibility, trademarks, and
+hosted-service terms remain release preparation work.
 
 \section{Separate the application from managed services}
 Core projects, backlog, conversations, local worktrees, local previews, and
@@ -87,9 +93,9 @@ service. They must not promise zero infrastructure or inference cost.
 The global billing dependency has been removed from core flows and replaced
 with service-specific checks. Next establish a reproducible local backend
 setup, configurable origins, storage, email, and telemetry. Verify the default
-clone-to-development workflow without personal infrastructure. Finally choose
-the license, document contribution and security reporting, and validate desktop
-packaging and provider setup across supported platforms.
+clone-to-development workflow without personal infrastructure. The public
+license is now selected. Document contribution and security reporting, and
+validate desktop packaging and provider setup across supported platforms.
 
 The code refactoring and billing boundary are completed maintainability and
 product steps in that sequence. Self-hosting configuration, public release,

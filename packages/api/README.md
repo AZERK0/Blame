@@ -212,7 +212,7 @@ This starter kit is maintained by the AdonisJS team. Found a bug or have a sugge
 
 ## 📄 License
 
-This starter kit is open-sourced software licensed under the [MIT license](LICENSE).
+This package is part of Blame and is licensed under the [GNU Affero General Public License v3.0](../../LICENSE) (`AGPL-3.0-only`). The upstream AdonisJS API starter kit is MIT-licensed; third-party licenses and notices remain applicable to their respective components.
 
 ---
 

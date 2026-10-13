@@ -7,6 +7,7 @@ Blame connects tasks, coding agents, isolated Git worktrees, previews, and code 
 [Download](https://blame.so/download) · [Website](https://blame.so) · [Features](#features) · [Development](#development) · [Documentation](#documentation) · [Contributing](#contributing)
 
 [![Quality](https://github.com/AZERK0/Blame/actions/workflows/quality.yml/badge.svg)](https://github.com/AZERK0/Blame/actions/workflows/quality.yml)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
 [![Watch the Blame demo on YouTube](packages/vitrine/public/desktop-backlog.png)](https://youtu.be/cD6jASpIKQw)
 
@@ -202,4 +203,8 @@ For questions, use [GitHub issues](https://github.com/AZERK0/Blame/issues). For 
 
 ## License
 
-A repository-wide license is still being finalized for the public release. Package metadata does not establish a license for the entire project. Third-party dependencies retain their respective licenses.
+Blame is licensed under the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`).
+
+Commercial use is permitted. When distributing covered software, you must provide its corresponding source under the same license. If you modify Blame and let users interact with it over a network, you must offer those users the corresponding source of your modified version, as required by section 13.
+
+Third-party components retain their respective licenses and notices.
