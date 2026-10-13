@@ -1,0 +1,22 @@
+{
+  "registeredAtUTC": "2026-10-13T04:37:46.321162+00:00",
+  "type": "Known-task diagnostic rerun, not held-out confirmation",
+  "userAuthorizedNewPhaseEstimatedUsd": 0.5,
+  "sourceVersions": {
+    "f18": {
+      "baseline": "0312420f09293b6542f3404fdea54d052415a176",
+      "modified": "986e1046129d6e597e75b61062247cd3a8d9ad6a"
+    },
+    "f19": {
+      "baseline": "986e1046129d6e597e75b61062247cd3a8d9ad6a",
+      "modified": "7abe6817e646f86f1ed7f48d256f2be2c343d9a3"
+    },
+    "f20": {
+      "baseline": "d7dcdfb4b12492aa85c0ee1086368de3c4f62d89",
+      "modified": "cb49073cdec3b5728d2641f836db4d28915d3448"
+    }
+  },
+  "commonRequestMaxOutputTokens": 8192,
+  "oldCampaigns": "Preserved separately, no overwritten trials or pooled cost/success estimates",
+  "budgetPolicy": "USD .04 SDK session limit per trial, USD .25 panel observed stop and USD .50 shared phase stop. Before each new trial reserve the .04 session allowance plus .10 for a final request overshoot. Estimates are not invoices; output cap is not an input or total financial guarantee. Missing cost reserves the whole .14 trial admission allowance. No paid retry or replacement task."
+}

@@ -3,13 +3,13 @@ import {readFile,writeFile,mkdir} from "node:fs/promises";
 import {createRequire} from "node:module";
 import {join,resolve} from "node:path";
 import {spawnSync} from "node:child_process";
-const repo=resolve(new URL("../../..",import.meta.url).pathname),panel=process.argv[2];
-const study=join(repo,`docs/experiments/light-harness-navigation-evidence-${panel}-2026-10-13`);
+import {repo,work,studyFor} from "./campaign-paths.mjs";
+const panel=process.argv[2],study=studyFor(panel);
 const protocol=JSON.parse(await readFile(join(study,"protocol.json"),"utf8")),rows=[];
 const ts=createRequire(join(repo,"packages/agent-runtime/package.json"))("typescript");
 const invoke=args=>{const r=spawnSync(process.execPath,args,{cwd:repo,encoding:"utf8",timeout:180000,maxBuffer:32*1024*1024});if(r.error||r.status!==0)throw Error(r.stderr+r.stdout);return r;};
 for(const task of protocol.tasks){
- const root=join(repo,".blame/research/navigation-evidence/controls",panel,task.id),score=join(root,"score");
+ const root=join(work,"controls",panel,task.id),score=join(root,"score");
  invoke(["tools/terminal_bench/navigation-evidence/run.mjs","prepare",panel,join(root,"workspace"),task.id]);
  const fail=spawnSync(process.execPath,["tools/terminal_bench/navigation-evidence/feature-checks.mjs",join(root,"workspace"),task.id,study],{cwd:repo,encoding:"utf8",timeout:10000});
  if(fail.status!==1)throw Error("Initial criteria unexpectedly fulfilled: "+task.id);

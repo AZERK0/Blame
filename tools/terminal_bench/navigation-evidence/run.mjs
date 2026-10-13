@@ -4,12 +4,11 @@ import { mkdir, readFile, writeFile, symlink, readdir } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { performance } from "node:perf_hooks";
 import { reconcileUsage } from "../corpus/light-study-accounting.mjs";
+import { repo, work, studyFor } from "./campaign-paths.mjs";
 
-const repo = resolve(new URL("../../..", import.meta.url).pathname);
 const panel = process.argv[3];
 if (!["f18","f19","f20"].includes(panel)) throw new Error("Specify f18, f19 or f20");
-const study = join(repo, `docs/experiments/light-harness-navigation-evidence-${panel}-2026-10-13`);
-const work = join(repo, ".blame/research/navigation-evidence");
+const study = studyFor(panel);
 const campaign = join(work, panel);
 const protocol = JSON.parse(await readFile(join(study, "protocol.json"), "utf8"));
 const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -27,12 +26,14 @@ async function bindings() {
   const inputs = {};
   for (const path of [
     "tools/terminal_bench/navigation-evidence/run.mjs", "tools/terminal_bench/navigation-evidence/feature-checks.mjs",
+    "tools/terminal_bench/navigation-evidence/campaign-paths.mjs",
+    "tools/terminal_bench/navigation-evidence/prepare-rerun.py", "tools/terminal_bench/navigation-evidence/wire-cap-preflight.mjs",
     "tools/terminal_bench/navigation-evidence/freeze.py", "tools/terminal_bench/navigation-evidence/controls.mjs", "packages/agent-runtime/src/harness/light-edit-recovery.test.ts", "packages/benchmark-runner/src/config.ts", "packages/benchmark-runner/src/benchmark-run.ts", "tools/terminal_bench/navigation-evidence/run.py",
     "tools/terminal_bench/corpus/identifier-token-audit.mjs",
     "tools/terminal_bench/corpus/light-study-accounting.mjs",
-    `docs/experiments/light-harness-navigation-evidence-${panel}-2026-10-13/protocol.json`,
     "pnpm-lock.yaml", "packages/agent-runtime/dist/usage-audit.js",
   ]) inputs[path] = sha(await readFile(join(repo, path)));
+  inputs[join(study, "protocol.json").slice(repo.length + 1)] = sha(await readFile(join(study, "protocol.json")));
   const versions = {};
   for (const arm of ["baseline", "modified"]) {
     const directory = join(work, "frozen", panel, arm);
@@ -79,6 +80,9 @@ async function executeModel(args, directory) {
       cwd: repo, detached: true, stdio: ["ignore", "ignore", "pipe"],
       env: { ...process.env, BLAME_HEADLESS_DEV: "true", NODE_ENV: "development",
         NODE_USE_ENV_PROXY: "1", TZ: "UTC",
+        ...(protocol.budgets.requestMaxOutputTokens ? {
+          BLAME_AGENT_REQUEST_MAX_OUTPUT_TOKENS: String(protocol.budgets.requestMaxOutputTokens),
+        } : {}),
         BLAME_AGENT_MAX_SESSION_COST_USD: String(protocol.budgets.perTrialSdkCostLimitUsd) },
     });
     let stderr = "", watchdog = false, settled = false;
@@ -201,7 +205,8 @@ async function run() {
     sharedCeilingUsd: protocol.budgets.sharedStudyObservedCostStopUsd });
   let observedCost = 0;
   for (const trial of order) {
-    if (observedCost + protocol.budgets.perTrialSdkCostLimitUsd > protocol.budgets.panelObservedCostStopUsd || priorObservedCost + observedCost + protocol.budgets.perTrialSdkCostLimitUsd > protocol.budgets.sharedStudyObservedCostStopUsd) {
+    const reservation = protocol.budgets.perTrialSdkCostLimitUsd + (protocol.budgets.requestOvershootReserveUsd ?? 0);
+    if (observedCost + reservation > protocol.budgets.panelObservedCostStopUsd || priorObservedCost + observedCost + reservation > protocol.budgets.sharedStudyObservedCostStopUsd) {
       await writeJson(join(campaign, "budget-stop.json"), { observedCost, priorObservedCost, remainingFrom: trial });
       break;
     }
