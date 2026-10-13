@@ -112,6 +112,9 @@ async function executeModel(args, directory) {
         NODE_USE_ENV_PROXY: "1", TZ: "UTC",
         ...(protocol.captureWireContracts ? { BLAME_STUDY_WIRE_AUDIT:join(directory,"wire-contracts.jsonl"),
           BLAME_STUDY_WORKSPACE:join(directory,"workspace") } : {}),
+        ...(protocol.budgets.maximumSerializedRequestBytes ? {
+          BLAME_STUDY_REQUEST_MAX_BYTES: String(protocol.budgets.maximumSerializedRequestBytes),
+        } : {}),
         ...(protocol.budgets.requestMaxOutputTokens ? {
           BLAME_AGENT_REQUEST_MAX_OUTPUT_TOKENS: String(protocol.budgets.requestMaxOutputTokens),
         } : {}),
