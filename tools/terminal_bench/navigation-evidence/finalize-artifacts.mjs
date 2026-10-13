@@ -30,7 +30,9 @@ for(const row of results.rows){
   reports.push({name:row.name,artifact,bytes:bytes.length,sha256:sha(bytes)});
  }}catch(error){if(error.code!=="ENOENT")throw error;}
 }
-await write("mechanism-analysis.json",{method:protocol.studyKind==="mechanism-confirmation"
+await write("mechanism-analysis.json",{method:protocol.studyKind==="declaration-navigation"
+ ?"Every finished input/result is SHA-bound to raw events. F24 changes only bounded exact declaration ranking; compiler references/rename, tool schemas, prompts, signatures and validation are common to both Light arms. Detailed search adoption, commands and final reports are in multifile-mechanisms.json. A changed route with identical replayed observations identifies no ranking efficacy. Preserve final-source validation and strict report criteria separately."
+ :protocol.studyKind==="mechanism-confirmation"
  ?"Every finished effective input/result, SHA-bound to raw events. F21 removes only bounded recovery, F22 only signature availability, F23 only appended active-case captions. Both F23 arms retain identical structured evidence. Natural non-activation is retained and proves no efficacy. F23 accurate final active-case counts are an explicit registered criterion, separate from functional source success. Invocation proof alone admits no test scope."
  :"Every finished effective input/result, SHA-bound to raw events. Recovery activated in F19 is common to both arms and is not a signature effect. Requested and rendered signatures are distinct. Node counts are invocation proof, not scope or user acceptance. Model verbal count sensitivity stays separate from registered task scores.",rows:mechanisms});
 await write("node-report-inventory.json",{method:"Exact invocation-sidechannel bytes; expected hashes come from unchanged model tool outputs. Missing overwritten/interrupted reports remain missing.",reports,missingExpectedReports:expectedReports.filter(e=>!reports.some(r=>r.name===e.name&&r.sha256===e.sha256))});
