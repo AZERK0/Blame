@@ -11,7 +11,7 @@ import { getProviderCollectionSync } from "../../../packages/agent-runtime/node_
 import { reserveTrialCosts } from "./budget-accounting.mjs";
 
 const panel = process.argv[3];
-if (!["f18","f19","f20","f21","f22","f23"].includes(panel)) throw new Error("Specify a registered F18--F23 panel");
+if (!["f18","f19","f20","f21","f22","f23","f24"].includes(panel)) throw new Error("Specify a registered F18--F24 panel");
 const study = studyFor(panel);
 const campaign = join(work, panel);
 const protocol = JSON.parse(await readFile(join(study, "protocol.json"), "utf8"));
@@ -46,6 +46,11 @@ async function bindings() {
   ]) inputs[path] = sha(await readFile(join(repo, path)));
   if (protocol.sharedConfirmationProtocol) inputs[protocol.sharedConfirmationProtocol] =
     sha(await readFile(join(repo, protocol.sharedConfirmationProtocol)));
+  if (protocol.studyKind === "declaration-navigation") for (const path of [
+    "tools/terminal_bench/navigation-evidence/multifile-criteria.mjs",
+    "tools/terminal_bench/navigation-evidence/prepare-declarations.mjs",
+    "tools/terminal_bench/navigation-evidence/multifile-controls.mjs",
+  ]) inputs[path] = sha(await readFile(join(repo, path)));
   inputs[join(study, "protocol.json").slice(repo.length + 1)] = sha(await readFile(join(study, "protocol.json")));
   if (protocol.commonPatchProtocol) for (const path of [protocol.commonPatchProtocol,
     join(protocol.commonPatchProtocol, "..", "common-request-cap.patch")])
@@ -337,9 +342,24 @@ if (process.argv[2] === "prepare") {
   const task = protocol.tasks.find(t=>t.id===process.argv[5]);
   await prepareWorkspace(resolve(process.argv[4]),task);
 } else if (process.argv[2] === "bind") await writeJson(join(study, "execution-bindings.json"), await bindings());
+else if (process.argv[2] === "budget") {
+  const priorAccounting = [];
+  for (const path of protocol.priorCampaigns ?? []) {
+    const previous = JSON.parse(await readFile(join(repo, path), "utf8"));
+    priorAccounting.push({ path, accounting: await campaignBudget(previous.rows, dirname(join(repo, path))) });
+  }
+  const priorObservedOrReservedUsd = priorAccounting.reduce((sum, entry) => sum + entry.accounting.accountedUsd, 0);
+  const nextAdmissionReserveUsd = protocol.budgets.perTrialSdkCostLimitUsd + (protocol.budgets.requestOvershootReserveUsd ?? 0);
+  const admitted = priorObservedOrReservedUsd + nextAdmissionReserveUsd <= protocol.budgets.sharedStudyObservedCostStopUsd &&
+    nextAdmissionReserveUsd <= protocol.budgets.panelObservedCostStopUsd;
+  const result = { paidRequests: 0, priorAccounting, priorObservedOrReservedUsd, nextAdmissionReserveUsd,
+    ceilingUsd: protocol.budgets.sharedStudyObservedCostStopUsd, admitted };
+  await writeJson(join(study, "budget-preflight.json"), result);
+  console.log(JSON.stringify({ ...result, priorAccounting: undefined }));
+}
 else if (process.argv[2] === "run") await run();
 else if (process.argv[2] === "analyze") await analyze();
 else if (process.argv[2] === "score") {
   const task = protocol.tasks.find((task) => task.id === process.argv[6]);
   await score(resolve(process.argv[4]), resolve(process.argv[5]), task);
-} else throw new Error("Use prepare|bind|run|analyze|score diagnostic|confirmation [args]");
+} else throw new Error("Use prepare|bind|budget|run|analyze|score registered-panel [args]");
