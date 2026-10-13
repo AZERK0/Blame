@@ -1,0 +1,1 @@
+This is a known-task rerun. Follow ../light-harness-navigation-evidence-budget050-2026-10-13/reproduction.md with BLAME_STUDY_VARIANT=budget050. Old uncapped evidence remains separate. Protocol controls and source bindings were committed before model calls; all final sources and recorded inputs were manually reviewed without repair or gold recovery.
