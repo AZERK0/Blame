@@ -98,6 +98,26 @@ test("a current different filter cannot suppress a stale selection", async () =>
   });
 });
 
+test("passing invocation is explained separately from unverified test scope", async () => {
+  await fixture(async (root, workspace) => {
+    await edit(workspace, 1, 2);
+    await check(workspace, alpha);
+    const { service, activities, notifications } = finish(root);
+    await service.finish("done", {} as never);
+    const state = await new SessionJournal(root, "refresh").completionSnapshot();
+    assert.equal(state.validations[0]?.check?.outcome, "passed");
+    assert.equal(state.validations[0]?.check?.counts?.executed, 1);
+    assert.equal(state.validations[0]?.check?.selection, "unknown");
+    assert.equal(state.validations[0]?.terminal, "unknown");
+    assert.deepEqual(activities, [], "Current unknown evidence must not cause an extra test invocation.");
+    assert.equal(notifications[0]?.verified, false);
+    assert.equal(notifications[0]?.completion.verification, "unverified");
+    assert.deepEqual(notifications[0]?.completion.satisfied_obligations, []);
+    assert.match(notifications[0]?.completion.reservations.find(r => r.code === "VALIDATION_UNAVAILABLE")?.message ?? "",
+      /invocation reported a passing result.*does not establish verification/u);
+  });
+});
+
 test("stale failing selection is exposed instead of being replaced by a broader task", async () => {
   await fixture(async (root, workspace) => {
     await edit(workspace, 1, 2); await check(workspace, alpha);
@@ -125,6 +145,8 @@ test("zero selected tests stay unknown and are not rerun repeatedly", async () =
     assert.equal(notifications[0]?.verified, false);
     await service.finish("done", {} as never);
     assert.equal(activities.length, 1);
+    assert.equal(notifications[0]?.completion.reservations.find(r => r.code === "VALIDATION_UNAVAILABLE")?.message,
+      "No current project validation was available.");
   }, { "suite.test.cjs": "require('node:test').test('skipped', {skip:true}, ()=>{});\n" });
 });
 
@@ -137,6 +159,8 @@ test("unmatched shell tests are observed but not guessed as project selections",
     await service.finish("done", {} as never);
     assert.deepEqual(activities, []);
     assert.equal(notifications[0]?.verified, false);
+    assert.equal(notifications[0]?.completion.reservations.find(r => r.code === "VALIDATION_UNAVAILABLE")?.message,
+      "No current project validation was available.");
   });
 });
 

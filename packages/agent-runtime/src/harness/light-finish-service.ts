@@ -110,6 +110,8 @@ export class LightFinishService {
       unavailable,
       current.changedPaths.length === 0 && required.length === 0,
       obligations,
+      current.validations.some((item) =>
+        item.sourceRevisionId === current.sourceRevisionId && passedExecution(item, "test")),
     );
     await this.recordCompletion(
       summary,
@@ -425,6 +427,7 @@ function completionDecision(
   unavailable: boolean,
   nonMutating: boolean,
   obligations: Array<{ id: string; passed: boolean }>,
+  observedPassingTest = false,
 ): CompletionDecision {
   return {
     source_revision_id:
@@ -448,7 +451,9 @@ function completionDecision(
         ? [
             {
               code: "VALIDATION_UNAVAILABLE",
-              message: "No current project validation was available.",
+              message: observedPassingTest
+                ? "A test invocation reported a passing result. Its evidence does not establish verification of the current source."
+                : "No current project validation was available.",
               obligation_ids: [],
             },
           ]
