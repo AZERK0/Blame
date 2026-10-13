@@ -91,6 +91,41 @@ const summary = { method: "Registered compiler-rename availability ablation, two
   syntaxSearchesInLight: mechanisms.filter(r => !r.name.endsWith("-cline")).reduce((n, r) => n + r.syntaxSearches, 0),
   timeouts: results.rows.filter(r => r.status === "timed_out").length, watchdogs: results.rows.filter(r => r.exit.watchdog).length,
   limitations: "Previously observed internal migrations on one reused project; only two diagnostic clusters/two repetitions. Baseline blocks compiler editing under the same advertised schema/prompt: removal includes recovery friction. Modified retains current production. Provider revision, seeds, hidden retry behavior, invoices and complete cache accounting are unavailable. Missing cached subsets are not zero-filled. Strict report wording and functional equivalence are separate tiers; no infrastructure-only or wording-only difference establishes improved migration success. Compiler-reference identity, non-rename edits, output retention, schemas and prompts are unchanged. Compare the assigned availability ablation including blocked recovery, not an optimized patch-only prompt. Do not pool old ranking results or SDK costs into causal rename effects." };
+// Preserve the concrete remaining admission gap without relaxing the runtime.
+const validationGap = [], endpoints = [];
+const journalInventory = await json(join(study, "supplemental-inventory.json"));
+const { gunzipSync } = await import("node:zlib");
+const expected = new Map();
+for (const row of results.rows) {
+  const task = protocol.tasks.find(t => t.id === row.id);
+  const score = await json(join(campaign, row.name, "score.json"));
+  if (!expected.has(row.id)) {
+    const { applyOracle } = await import("./multifile-criteria.mjs");
+    expected.set(row.id, Object.fromEntries(await Promise.all(task.allowedPaths.map(async path => {
+      const text = task.inputFiles?.[path] ?? await readFile(join(repo, protocol.upstreams[task.project].sourceRoot, path), "utf8");
+      return [path, sha(Buffer.from(applyOracle(text, task.oracle.spans[path] ?? [], task.newName)))];
+    }))));
+  }
+  endpoints.push({ name: row.name, scoreSha256: row.scoreSha256,
+    sources: score.sourceSha256, byteMatchesOracle: Object.entries(expected.get(row.id)).every(([path, hash]) => score.sourceSha256[path] === hash) });
+  if (row.arm === "cline") continue;
+  const observations = [];
+  for (const artifact of journalInventory.journals.filter(j => j.name === row.name)) {
+    const bytes = gunzipSync(await readFile(join(study, artifact.artifact))); assert.equal(sha(bytes), artifact.sha256);
+    for (const event of bytes.toString().split("\n").filter(Boolean).map(JSON.parse))
+      if (event.type === "validation" && event.taskKind === "test") observations.push({
+        id: event.id, command: event.command, args: event.args, cwd: event.cwd,
+        sourceRevisionId: event.sourceRevisionId, check: event.check,
+        recordedStatus: event.status, recordedTerminal: event.terminal,
+        sameAsCompletionSource: event.sourceRevisionId === row.completion?.source_revision_id,
+        recordedFileHashesMatchFinal: (event.files ?? []).length > 0 && event.files.every(f => score.sourceSha256[f.path] === f.hash),
+        journalSha256: artifact.sha256 });
+  }
+  validationGap.push({ name: row.name, eventsSha256: row.eventsSha256,
+    completion: row.completion, actualTestObservations: observations });
+}
+await writeFile(join(study, "final-source-endpoints.json"), JSON.stringify({ method: "All final score hashes compared with the registered private binding oracle; no agent workspace modified and no oracle feedback.", rows: endpoints }, null, 2) + "\n");
+await writeFile(join(study, "validation-gap.json"), JSON.stringify({ method: "Exact journal test observations bound to final scored files and completion revision, independently of runtime admission. An equal recorded source hash does not authenticate console output or admit runner selection; unverified stays unverified.", rows: validationGap }, null, 2) + "\n");
 await writeFile(join(study, "rename-ablation-summary.json"), JSON.stringify(summary, null, 2) + "\n");
 await writeFile(join(study, "rename-ablation-mechanisms.json"), JSON.stringify({ rows: mechanisms }, null, 2) + "\n");
 console.log(JSON.stringify({ planned: summary.planned, completed: summary.completed, arms: summary.arms,

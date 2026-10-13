@@ -34,7 +34,7 @@ const inventory = await json(join(study, "wire-inventory.json"));
 const wireBytes = await readFile(join(study, inventory.artifact));
 assert.equal(sha(wireBytes), inventory.sha256);
 const wire = JSON.parse(gunzipSync(wireBytes));
-const contracts = Object.fromEntries(["baseline", "modified"].map(arm => [arm, { tools: new Set(), prompts: new Set() }]));
+const contracts = Object.fromEntries(["baseline", "modified"].map(arm => [arm, { tools: new Set(), normalized: new Set() }]));
 let attempts = 0, missingUsage = 0, ineffectiveOutputLimits = 0;
 for (const row of results.rows) {
   assert.equal(row.partition, "diagnostic");
@@ -49,7 +49,7 @@ for (const row of results.rows) {
       if (request.maximumOutputTokens === null) ineffectiveOutputLimits++;
     }
     if (contracts[row.arm]) {
-      contracts[row.arm].tools.add(request.toolsSha256); contracts[row.arm].prompts.add(request.promptSha256);
+      contracts[row.arm].tools.add(request.toolsSha256); contracts[row.arm].normalized.add(request.normalizedContractSha256);
     }
   }
   missingUsage += Math.max(0, trial.requests.filter(r => !r.budgetRejected).length - row.usage.perRequest.length);
@@ -58,13 +58,22 @@ for (const row of results.rows) {
   const scoreBytes = gunzipSync(await readFile(scoreArtifact)); assert.equal(sha(scoreBytes), row.scoreSha256);
   assert.equal(JSON.parse(scoreBytes).independentFunctionalSuccess, row.independentFunctionalSuccess);
 }
-for (const field of ["tools", "prompts"]) assert.deepEqual([...contracts.baseline[field]].sort(), [...contracts.modified[field]].sort());
+for (const field of ["tools", "normalized"]) assert.deepEqual([...contracts.baseline[field]].sort(), [...contracts.modified[field]].sort());
+const matchedContractPairs = [];
+for (const row of results.rows.filter(r => r.arm === "baseline")) {
+  const peer = results.rows.find(r => r.arm === "modified" && r.id === row.id && r.repetition === row.repetition);
+  if (!peer) continue;
+  const hashes = name => [...new Set(wire.trials.find(t => t.name === name).requests.map(r => r.normalizedContractSha256))].sort();
+  assert.deepEqual(hashes(row.name), hashes(peer.name));
+  matchedContractPairs.push({ id: row.id, repetition: row.repetition, hashes: hashes(row.name) });
+}
 assert.equal(attempts, inventory.requests - inventory.budgetRejected);
 assert.equal(missingUsage, summary.missingWireResponseUsage);
 assert(summary.totalAccountedUsd <= protocol.budgets.sharedStudyObservedCostStopUsd);
 assert.equal(summary.totalAccountedUsd, summary.priorObservedOrReservedUsd + summary.newCampaignAccounting.accountedUsd);
 const output = { protocolTaskBindingsVerified: true, archivedRawScoreHashesVerified: true,
-  identicalObservedLightSchemasPrompts: true, savedIsolationVerified: true, priorCostsNotEfficacy: true,
+  identicalWorkspaceNormalizedLightContracts: true, savedIsolationVerified: true, priorCostsNotEfficacy: true,
+  matchedContractPairs,
   planned: results.planned, completed: results.completed, unexecuted: summary.unexecuted,
   forwardedAttempts: attempts, missingResponseUsage: missingUsage, omittedWireOutputLimits: ineffectiveOutputLimits,
   accountedUsd: summary.totalAccountedUsd, limitation: "Integrity and recorded isolation only; no required success, favorable resource result, invoice equality or generalization claim." };

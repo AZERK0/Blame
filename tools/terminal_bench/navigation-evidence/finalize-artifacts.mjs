@@ -30,7 +30,9 @@ for(const row of results.rows){
   reports.push({name:row.name,artifact,bytes:bytes.length,sha256:sha(bytes)});
  }}catch(error){if(error.code!=="ENOENT")throw error;}
 }
-await write("mechanism-analysis.json",{method:protocol.studyKind==="compiler-rename-ablation"
+await write("mechanism-analysis.json",{method:protocol.continuationOf
+ ?"Administrative single-slot continuation of F25. Keep the parent11/12 and tail1/1 separate. Frozen runtime/schema/per-invocation budgets match, but actual prompt Git HEAD differs; the tail is exploratory. See continuation-summary.json and the unchanged tool-ledger for detailed inputs/results."
+ :protocol.studyKind==="compiler-rename-ablation"
  ?"F25 single-action availability ablation, known diagnostics: baseline blocks compiler rename; modified retains current production. All other mechanisms, prompts and schemas are identical. Detailed recorded edits, commands and final reports are in rename-ablation-mechanisms.json; reporting tiers and financial accounting stay separate."
  :protocol.studyKind==="declaration-navigation"
  ?"Every finished input/result is SHA-bound to raw events. F24 changes only bounded exact declaration ranking; compiler references/rename, tool schemas, prompts, signatures and validation are common to both Light arms. Detailed search adoption, commands and final reports are in multifile-mechanisms.json. A changed route with identical replayed observations identifies no ranking efficacy. Preserve final-source validation and strict report criteria separately."

@@ -24,3 +24,13 @@ postprocessing helpers. Compare its paired modified parent outcome descriptively
 and clearly label any completed-matrix sensitivity across the two registrations.
 Original three matched Light pairs remain the primary parent result. Include all
 prior costs/reserves; native reporting defects are independent of code success.
+
+Paid driver: `57d99cad`. It uses registration time for input commit dates, so the
+actual tail prompt's Git hash differs from the parent. Preserve that outcome.
+Future registrations should freeze taskInputCommitAtUTC independently; do not
+backport it into this historical registration or report the tail as isolated.
+After SHA-bound review, use lifecycle/publish/postprocess/publish-wire/finalize
+with this root, then `node tools/terminal_bench/navigation-evidence/summarize-rename-tail.mjs`
+and verify-evidence.py. The summary compares exact frozen runtime/schema/budgets,
+final sources and the observed prompt difference; its fourth-pair sensitivity is
+explicitly exploratory. No new model request is needed for postprocessing.

@@ -86,7 +86,9 @@ for(const row of analysis.rows){
     limitation:"Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."});
 }
 await writeFile(join(study,"mechanism-analysis.json"),JSON.stringify({
-  method:protocol.studyKind === "compiler-rename-ablation"
+  method:protocol.continuationOf
+    ? "Administrative F25 budget-tail slot, one known diagnostic. Compare exact captured inputs/results and preserve original parent outcomes. Actual Git HEAD prompt metadata differs across registrations; neither normalized prompt equality nor a fourth isolated pair is established. Frozen runtime/schema/per-invocation constraints and final source match; this remains exploratory."
+    : protocol.studyKind === "compiler-rename-ablation"
     ? "F25 disables only compiler edit rename in baseline and keeps current production in modified. Same prompts, schemas, references, reads, non-rename edits and output retention. Known-task diagnostic: preserve blocked-action recovery, final source, executed checks, strict report criteria and admitted verification separately. Prior cohorts contribute financial accounting only."
     : protocol.studyKind === "declaration-navigation"
     ? "Finished-tool observations only, SHA-bound to raw events. F24 changes only bounded exact declaration ranking; compiler references/rename, schemas, prompts and validation are common to both Light arms. Distinguish requested search modes, actual activation, executed commands, admission and final-report criteria. No activation establishes no ranking efficacy; resources of the whole Light route versus native SDK do not isolate the compiler mechanism."

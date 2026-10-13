@@ -36,3 +36,28 @@ The unchanged prompt still advertises rename. Thus this estimates removal of tha
 capability including its explicit blocked-action recovery, not an optimized patch-only
 prompt. Two known task clusters and two repeats cannot establish generalization.
 Native SDK is a contemporaneous control; older cohorts contribute costs only.
+
+The original paid driver is `fe7bc5f5`; later edits are postprocessing or separate
+local fixes. Restore that driver revision to reproduce original prompt/input Git
+metadata. Actual wire prompts vary by workspace root; compare the archived
+workspace-normalized contract, never literal per-workspace hashes. Original F25
+stays11/12. Tail registration `57d99cad` is separate and has a different initial Git
+HEAD in its prompt; do not silently apply the later taskInputCommitAtUTC fix to it.
+
+```sh
+node tools/terminal_bench/corpus/light-study-tool-lifecycle.mjs .blame/research/navigation-evidence-rename-ablation/f25
+node tools/terminal_bench/large-project/publish.mjs .blame/research/navigation-evidence-rename-ablation/f25 docs/experiments/light-harness-navigation-evidence-f25-2026-10-13-rename-ablation diagnostic
+node tools/terminal_bench/navigation-evidence/postprocess.mjs .blame/research/navigation-evidence-rename-ablation/f25 docs/experiments/light-harness-navigation-evidence-f25-2026-10-13-rename-ablation
+node tools/terminal_bench/navigation-evidence/publish-wire.mjs .blame/research/navigation-evidence-rename-ablation/f25 docs/experiments/light-harness-navigation-evidence-f25-2026-10-13-rename-ablation
+node tools/terminal_bench/navigation-evidence/summarize-rename-ablation.mjs
+node tools/terminal_bench/navigation-evidence/finalize-artifacts.mjs f25
+node tools/terminal_bench/navigation-evidence/verify-rename-ablation.mjs
+python tools/terminal_bench/scope-followup/verify-evidence.py docs/experiments/light-harness-navigation-evidence-f25-2026-10-13-rename-ablation
+```
+
+All commands require `BLAME_STUDY_VARIANT=rename-ablation`. Inspect every raw
+started/finished input, complete final report, successful post-final-edit checks,
+transient patches and final source before recording SHA-bound manual decisions
+with record-review.py. The integrity verifier has no favorable-outcome requirement.
+A single administrative continuation must skip the complete three-arm paired helper;
+its own summary discloses the prompt metadata difference and preserves all fields.
