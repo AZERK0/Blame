@@ -8,6 +8,7 @@ import os from "node:os";
 import { reconcileUsage } from "../corpus/light-study-accounting.mjs";
 import { repo, work, studyFor } from "./campaign-paths.mjs";
 import { getProviderCollectionSync } from "../../../packages/agent-runtime/node_modules/@cline/llms/dist/index.js";
+import { reserveTrialCosts } from "./budget-accounting.mjs";
 
 const panel = process.argv[3];
 if (!["f18","f19","f20","f21","f22","f23"].includes(panel)) throw new Error("Specify a registered F18--F23 panel");
@@ -29,6 +30,7 @@ async function bindings() {
   const inputs = {};
   for (const path of [
     "tools/terminal_bench/navigation-evidence/run.mjs", "tools/terminal_bench/navigation-evidence/feature-checks.mjs",
+    "tools/terminal_bench/navigation-evidence/budget-accounting.mjs",
     "tools/terminal_bench/navigation-evidence/campaign-paths.mjs",
     "tools/terminal_bench/navigation-evidence/prepare-rerun.py", "tools/terminal_bench/navigation-evidence/wire-cap-preflight.mjs",
     "tools/terminal_bench/navigation-evidence/freeze.py", "tools/terminal_bench/navigation-evidence/controls.mjs", "packages/agent-runtime/src/harness/light-edit-recovery.test.ts", "packages/benchmark-runner/src/config.ts", "packages/benchmark-runner/src/benchmark-run.ts", "tools/terminal_bench/navigation-evidence/run.py",
@@ -212,6 +214,15 @@ async function prepareWorkspace(workspace,task) {
   await writeFile(join(workspace,".git/info/exclude"),".blame/\nnode_modules\n");
   await symlink(join(upstream,"node_modules"),join(workspace,"node_modules"));
 }
+async function campaignBudget(rows, root) {
+  const wireByTrial = {};
+  for (const row of rows) {
+    try { wireByTrial[row.name] = (await readFile(join(root, row.name, "wire-contracts.jsonl"), "utf8"))
+      .trim().split("\n").filter(Boolean).map(JSON.parse); }
+    catch (error) { if (error.code !== "ENOENT") throw error; }
+  }
+  return reserveTrialCosts(rows, wireByTrial, protocol.budgets);
+}
 async function run() {
   const frozen = await verifyBindings();
   await mkdir(campaign);
@@ -234,10 +245,10 @@ async function run() {
     const prior = JSON.parse(bytes);
     if (prior.completed !== prior.planned && !protocol.retainBudgetStoppedPrior)
       throw new Error("Prior diagnostic is incomplete; do not start confirmation");
-    const amount = prior.rows.reduce((sum, row) => sum + (row.usage.cost ??
-      (protocol.budgets.perTrialSdkCostLimitUsd + (protocol.budgets.requestOvershootReserveUsd ?? 0))), 0);
+    const accounting = await campaignBudget(prior.rows, dirname(join(repo,path)));
+    const amount = accounting.accountedUsd;
     priorObservedCost += amount;
-    priorAccounting.push({ path, sha256: sha(bytes), observedOrReservedUsd: amount });
+    priorAccounting.push({ path, sha256: sha(bytes), observedOrReservedUsd: amount, accounting });
   }
   await writeJson(join(campaign, "shared-budget-accounting.json"), { priorAccounting, priorObservedCost,
     sharedCeilingUsd: protocol.budgets.sharedStudyObservedCostStopUsd });
@@ -277,8 +288,9 @@ async function run() {
     await writeFile(join(directory, "workspace.diff"), git(["diff", "--binary", "HEAD"], workspace));
     await writeJson(join(directory, "trial.json"), { ...trial, name, exit, preparationMs, bindingsVerificationMs, outerAgentMs, verificationMs });
     const rows = await analyze();
-    observedCost = rows.reduce((sum, row) => sum + (row.usage.cost ??
-      (protocol.budgets.perTrialSdkCostLimitUsd + (protocol.budgets.requestOvershootReserveUsd ?? 0))), 0);
+    const accounting = await campaignBudget(rows,campaign);
+    observedCost = accounting.accountedUsd;
+    await writeJson(join(campaign,"trial-budget-accounting.json"),accounting);
     process.stdout.write("END " + name + " functional=" + grade.independentFunctionalSuccess + "\n");
   }
 }
