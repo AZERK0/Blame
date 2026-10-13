@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
 import { spawn, execFileSync, spawnSync } from "node:child_process";
-import { mkdir, readFile, writeFile, symlink, readdir } from "node:fs/promises";
+import { mkdir, readFile, writeFile, symlink, readdir, realpath } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { performance } from "node:perf_hooks";
+import { dirname } from "node:path";
+import os from "node:os";
 import { reconcileUsage } from "../corpus/light-study-accounting.mjs";
 import { repo, work, studyFor } from "./campaign-paths.mjs";
 import { getProviderCollectionSync } from "../../../packages/agent-runtime/node_modules/@cline/llms/dist/index.js";
@@ -37,7 +39,11 @@ async function bindings() {
   if (protocol.studyKind === "mechanism-confirmation") for (const path of [
     "tools/terminal_bench/navigation-evidence/prepare-confirmation.py",
     "tools/terminal_bench/navigation-evidence/inventory-criteria.mjs",
+    "tools/terminal_bench/navigation-evidence/mechanism-controls.mjs",
+    "tools/terminal_bench/navigation-evidence/wire-audit.mjs",
   ]) inputs[path] = sha(await readFile(join(repo, path)));
+  if (protocol.sharedConfirmationProtocol) inputs[protocol.sharedConfirmationProtocol] =
+    sha(await readFile(join(repo, protocol.sharedConfirmationProtocol)));
   inputs[join(study, "protocol.json").slice(repo.length + 1)] = sha(await readFile(join(study, "protocol.json")));
   if (protocol.commonPatchProtocol) for (const path of [protocol.commonPatchProtocol,
     join(protocol.commonPatchProtocol, "..", "common-request-cap.patch")])
@@ -50,6 +56,9 @@ async function bindings() {
       runner: await tree(join(directory, "benchmark-runner/dist")),
       source: JSON.parse(await readFile(join(directory, "version.json"), "utf8")),
     };
+    const override = versions[arm].source.sourceOverride;
+    if (override && sha(await readFile(join(repo, override.patchFile))) !== override.patchSha256)
+      throw Error("Archived ablation patch changed");
   }
   const projects = {};
   for (const [name, project] of Object.entries(protocol.upstreams)) {
@@ -66,7 +75,14 @@ async function bindings() {
   const settings = Object.fromEntries(Object.entries(process.env).filter(([name]) =>
     name.startsWith("BLAME_AGENT_") || name.startsWith("CLINE_MESSAGE_BUILDER_"))
     .sort(([a], [b]) => a.localeCompare(b)));
+  const sdkPackage = await realpath(join(repo,"packages/agent-runtime/node_modules/@cline/sdk/package.json"));
+  const sdkCoreRoot = await realpath(join(dirname(sdkPackage),"..","core"));
   return { inputs, versions, inheritedSettingsSha256:sha(JSON.stringify(settings)),
+    host:{platform:os.platform(),release:os.release(),arch:os.arch(),memoryBytes:os.totalmem(),
+      cpuModels:os.cpus().map(cpu=>cpu.model),executable:process.execPath},
+    sdkArtifacts:{sdkDist:await tree(join(repo,"packages/agent-runtime/node_modules/@cline/sdk/dist")),
+      coreDist:await tree(join(sdkCoreRoot,"dist")),
+      llmsDist:await tree(join(repo,"packages/agent-runtime/node_modules/@cline/llms/dist"))},
     registeredModelCatalog:getProviderCollectionSync(protocol.provider)?.models[protocol.model],
     sharedCore:await tree(join(repo,"packages/harness-core/dist")),
     sdk:JSON.parse(await readFile(join(repo,"packages/agent-runtime/node_modules/@cline/sdk/package.json"))).version,
@@ -89,10 +105,13 @@ async function verifyBindings() {
 }
 async function executeModel(args, directory) {
   return new Promise((done) => {
-    const child = spawn(process.execPath, args, {
+    const child = spawn(process.execPath, protocol.captureWireContracts
+      ? ["--import", join(repo,"tools/terminal_bench/navigation-evidence/wire-audit.mjs"), ...args] : args, {
       cwd: repo, detached: true, stdio: ["ignore", "ignore", "pipe"],
       env: { ...process.env, BLAME_HEADLESS_DEV: "true", NODE_ENV: "development",
         NODE_USE_ENV_PROXY: "1", TZ: "UTC",
+        ...(protocol.captureWireContracts ? { BLAME_STUDY_WIRE_AUDIT:join(directory,"wire-contracts.jsonl"),
+          BLAME_STUDY_WORKSPACE:join(directory,"workspace") } : {}),
         ...(protocol.budgets.requestMaxOutputTokens ? {
           BLAME_AGENT_REQUEST_MAX_OUTPUT_TOKENS: String(protocol.budgets.requestMaxOutputTokens),
         } : {}),
@@ -226,7 +245,9 @@ async function run() {
       await writeJson(join(campaign, "budget-stop.json"), { observedCost, priorObservedCost, reservation, remainingFrom: trial });
       break;
     }
+    const bindingsStarted = performance.now();
     await verifyBindings();
+    const bindingsVerificationMs = performance.now() - bindingsStarted;
     const task = protocol.tasks.find((task) => task.id === trial.id);
     const name = [trial.repetition, trial.id, trial.arm].join("-");
     const directory = join(campaign, name), workspace = join(directory, "workspace");
@@ -251,7 +272,7 @@ async function run() {
     const grade = await score(directory, workspace, task);
     const verificationMs = performance.now() - started;
     await writeFile(join(directory, "workspace.diff"), git(["diff", "--binary", "HEAD"], workspace));
-    await writeJson(join(directory, "trial.json"), { ...trial, name, exit, preparationMs, outerAgentMs, verificationMs });
+    await writeJson(join(directory, "trial.json"), { ...trial, name, exit, preparationMs, bindingsVerificationMs, outerAgentMs, verificationMs });
     const rows = await analyze();
     observedCost = rows.reduce((sum, row) => sum + (row.usage.cost ??
       (protocol.budgets.perTrialSdkCostLimitUsd + (protocol.budgets.requestOvershootReserveUsd ?? 0))), 0);

@@ -50,5 +50,13 @@
     "outerWatchdogExtraSeconds": 25
   },
   "decision": "Keep all failures/timeouts/missing usage and planned unexecuted rows. Use all assigned rows for primary success; compare resources only on audit-success/accounting-matched pairs. Report within-task repeat variation and between-task heterogeneity separately. Two tasks and two repetitions are a limited confirmation, not a population or global proof. A confidence interval crossing no improvement is inconclusive, not equivalence. Output bounds may regress long-generation quality.",
-  "accounting": "USD .27 reserved before every new trial (.04 SDK soft session allowance plus .23 conservative final catalog-request reserve); missing aggregate reserves .27. Estimates are not invoices; provider revision/enforcement/hidden retries/full cache accounting remain unknown. Fresh phase, no performance pooling with old campaigns."
+  "accounting": "USD .27 reserved before every new trial (.04 SDK soft session allowance plus .23 conservative final catalog-request reserve); missing aggregate reserves .27. Estimates are not invoices; provider revision/enforcement/hidden retries/full cache accounting remain unknown. Fresh phase, no performance pooling with old campaigns.",
+  "commonBuildConfiguration": {
+    "extends": "./tsconfig.json",
+    "exclude": [
+      "dist",
+      "src/**/*.test.ts"
+    ],
+    "reason": "All arms compile the same production module set. Feature tests calling a removed typed API are not counterfactual production modules; separate differential controls verify retained guards."
+  }
 }

@@ -79,5 +79,7 @@
       "requiredChecks": [],
       "instruction": "Rename only the private helper baseInRange to isWithinBounds in lodash.js, updating its declaration and every resolving identifier reference. Preserve strings, comments, module paths, public APIs, behavior, other declarations, existing tests, dependencies and generated files. Do not add files. Work independently; do not retrieve published solutions, reference patches, prior unmodified source revisions, previous campaign artifacts or benchmark verifier source. After the final edit, run node --check lodash.js and the complete original main suite using node test/test.js. Report actual validation outcomes.\n"
     }
-  ]
+  ],
+  "sharedConfirmationProtocol": "docs/experiments/light-harness-mechanism-confirmation-2026-10-13/protocol.json",
+  "captureWireContracts": true
 }

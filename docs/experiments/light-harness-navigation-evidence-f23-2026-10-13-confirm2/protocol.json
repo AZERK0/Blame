@@ -160,5 +160,7 @@
       },
       "instruction": "Fix the seeded isInteger predicate in lodash.js to restore its public semantics: only finite integer number values are integers; fractions, nonfinite numbers and non-number values are not. Change only the isInteger implementation; preserve other declarations, public API, tests, fixtures, manifests, dependencies and generated files. Supplied Node tests include nested cases, a real filename-shaped case, skipped/todo cases and two deliberately inert file workers. Do not add or change test cases. Work independently; do not retrieve published solutions, reference patches, prior unmodified source revisions, previous campaign artifacts or benchmark verifier source. After the final edit run node --check lodash.js, the complete original main suite using node test/test.js, and the registered test:confirmation project task with arguments [\"--test-name-pattern=^integer-regression\", \"test/confirmation.node.cjs\", \"test/empty-a.node.cjs\", \"test/empty-b.node.cjs\"]. Native tools may execute npm run test:confirmation -- --test-name-pattern=^integer-regression test/confirmation.node.cjs test/empty-a.node.cjs test/empty-b.node.cjs. In your final summary explicitly state the number of ACTIVE PASSED and FAILED CASES and SKIPPED/TODO CASES for that exact final Node selection. Exclude file workers and suites from case totals; preserve any failing/interrupted outcome. Counts reported correctly are part of this task's acceptance criteria.\n"
     }
-  ]
+  ],
+  "sharedConfirmationProtocol": "docs/experiments/light-harness-mechanism-confirmation-2026-10-13/protocol.json",
+  "captureWireContracts": true
 }

@@ -48,7 +48,6 @@ for panel in ['current','f21','f22','f23']:
         for member in tar.getmembers():
             if member.isfile() and tar.extractfile(member).read()!=(source/member.name).read_bytes():changed.append(member.name)
     assert changed==protocol['allowedAblationPaths'].get(panel,[]),changed
-    diff=subprocess.run(['git','diff','--no-index','--','/dev/null',str(source/'packages/agent-runtime/src/production.ts')],capture_output=True)
     # The runtime production/budget code is identical in all arms.
     assert (source/'packages/agent-runtime/src/production.ts').read_bytes()==subprocess.check_output(['git','show',base+':packages/agent-runtime/src/production.ts'],cwd=repo)
     patch_parts=[]
@@ -60,10 +59,15 @@ for panel in ['current','f21','f22','f23']:
     binding={'kind':'frozen-current' if panel=='current' else 'single-mechanism-ablation','baseCommit':base,
              'baseTree':subprocess.check_output(['git','rev-parse',base+'^{tree}'],cwd=repo,text=True).strip(),
              'archiveSha256':sha(archive),'changedTrackedPaths':changed,'patchFile':str((study/(panel+'-ablation.patch')).relative_to(repo)),
-             'patchSha256':sha(patch),'productionSha256':sha((source/'packages/agent-runtime/src/production.ts').read_bytes())}
+             'patchSha256':sha(patch),'productionSha256':sha((source/'packages/agent-runtime/src/production.ts').read_bytes()),
+             'commonBuildConfiguration':{'extends':'./tsconfig.json','exclude':['dist','src/**/*.test.ts']}}
     (source/'source-binding.json').write_text(json.dumps(binding,indent=2)+'\n')
     (source/'packages/agent-runtime/node_modules').symlink_to(repo/'packages/agent-runtime/node_modules',target_is_directory=True)
-    invoke(['node','node_modules/typescript/bin/tsc','-p',str(source/'packages/agent-runtime/tsconfig.json')])
+    # Tests that invoke a removed API cannot typecheck that counterfactual.
+    # The same production-only build config applies to every arm, including full.
+    build=source/'packages/agent-runtime/research-tsconfig.json'
+    build.write_text(json.dumps(binding['commonBuildConfiguration'],indent=2)+'\n')
+    invoke(['node','node_modules/typescript/bin/tsc','-p',str(build)])
     invoke(['node',str(source/'packages/agent-runtime/scripts/copy-prompt.mjs')])
 for panel in ['f21','f22','f23']:
     for arm,source_name in [('baseline',panel),('modified','current')]:
