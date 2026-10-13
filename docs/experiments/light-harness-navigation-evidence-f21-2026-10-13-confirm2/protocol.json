@@ -1,0 +1,83 @@
+{
+  "model": "gpt-5.6-luna",
+  "effort": "high",
+  "provider": "openai-codex",
+  "apiUrl": "https://api.blame.so/api/v1",
+  "upstreams": {
+    "date-fns": {
+      "commit": "313b902b9a72c64501074db9bc2b9897d2db5140",
+      "version": "4.1.0",
+      "sourceRoot": ".blame/research/npm-formatter-confirmation/date-fns"
+    },
+    "lodash": {
+      "commit": "f299b52f39486275a9e6483b60a410e06520c538",
+      "version": "4.17.21",
+      "sourceRoot": ".blame/research/scope-followup/upstreams/lodash",
+      "dependencyRoot": ".blame/research/scope-followup/lodash-dependencies"
+    }
+  },
+  "arms": [
+    "baseline",
+    "modified",
+    "cline"
+  ],
+  "registeredAtUTC": "2026-10-13T05:57:03.414814+00:00",
+  "panel": "f21",
+  "studyKind": "mechanism-confirmation",
+  "repetitions": 2,
+  "budgets": {
+    "perTrialSdkCostLimitUsd": 0.04,
+    "sharedStudyObservedCostStopUsd": 0.5,
+    "panelObservedCostStopUsd": 0.5,
+    "requestMaxOutputTokens": 8192,
+    "requestOvershootReserveUsd": 0.23,
+    "maxIterations": 24,
+    "timeoutSeconds": 480,
+    "outerWatchdogExtraSeconds": 25
+  },
+  "selection": "Six new internally constructed tasks on reused pinned real source repositories; no model has attempted these task IDs. Not random external issues or previously unseen repositories. Known diagnostics and local controls remain separate. No replacement tasks or post-result paid retries.",
+  "decision": "Keep all failures/timeouts/missing usage and planned unexecuted rows. Use all assigned rows for primary success; compare resources only on audit-success/accounting-matched pairs. Report within-task repeat variation and between-task heterogeneity separately. Two tasks and two repetitions are a limited confirmation, not a population or global proof. A confidence interval crossing no improvement is inconclusive, not equivalence. Output bounds may regress long-generation quality.",
+  "accounting": "USD .27 reserved before every new trial (.04 SDK soft session allowance plus .23 conservative final catalog-request reserve); missing aggregate reserves .27. Estimates are not invoices; provider revision/enforcement/hidden retries/full cache accounting remain unknown. Fresh phase, no performance pooling with old campaigns.",
+  "quality": "Official success, independent functional criteria, actual final-source commands, absence of solution retrieval, and full audited user criteria remain separate. F23 explicitly requires correct active-case summary counts; this is preregistered, not post-hoc wording sensitivity.",
+  "intervention": "Bounded recovery helps repair eligible scoped rejections; measure all task outcomes, rejection-to-correction steps, returned bytes and resources. No natural activation means no effectiveness conclusion; never select only exposed runs for the primary estimate.",
+  "taskOrder": "Two fixed tasks; repetition2 reverses task and arm order. Three arms serially. No model requests overlap.",
+  "clineRuntimeArm": "modified",
+  "priorCampaigns": [
+    ".blame/research/navigation-evidence-confirm2/f22/analysis.json"
+  ],
+  "retainBudgetStoppedPrior": true,
+  "tasks": [
+    {
+      "id": "lodash-baseIsNaN-confirmation",
+      "kind": "rename",
+      "project": "lodash",
+      "oldName": "baseIsNaN",
+      "newName": "isNaNValue",
+      "allowedPaths": [
+        "lodash.js"
+      ],
+      "selectedTests": [],
+      "selectedSourceSha256": {
+        "lodash.js": "4c04561befdf653aef017a42ac5addf68ea943cdfca6bdee5ce04e04e8139f54"
+      },
+      "requiredChecks": [],
+      "instruction": "Rename only the private helper baseIsNaN to isNaNValue in lodash.js, updating its declaration and every resolving identifier reference. Preserve strings, comments, module paths, public APIs, behavior, other declarations, existing tests, dependencies and generated files. Do not add files. Work independently; do not retrieve published solutions, reference patches, prior unmodified source revisions, previous campaign artifacts or benchmark verifier source. After the final edit, run node --check lodash.js and the complete original main suite using node test/test.js. Report actual validation outcomes.\n"
+    },
+    {
+      "id": "lodash-baseInRange-confirmation",
+      "kind": "rename",
+      "project": "lodash",
+      "oldName": "baseInRange",
+      "newName": "isWithinBounds",
+      "allowedPaths": [
+        "lodash.js"
+      ],
+      "selectedTests": [],
+      "selectedSourceSha256": {
+        "lodash.js": "4c04561befdf653aef017a42ac5addf68ea943cdfca6bdee5ce04e04e8139f54"
+      },
+      "requiredChecks": [],
+      "instruction": "Rename only the private helper baseInRange to isWithinBounds in lodash.js, updating its declaration and every resolving identifier reference. Preserve strings, comments, module paths, public APIs, behavior, other declarations, existing tests, dependencies and generated files. Do not add files. Work independently; do not retrieve published solutions, reference patches, prior unmodified source revisions, previous campaign artifacts or benchmark verifier source. After the final edit, run node --check lodash.js and the complete original main suite using node test/test.js. Report actual validation outcomes.\n"
+    }
+  ]
+}

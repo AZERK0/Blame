@@ -4,6 +4,7 @@ import {readFile} from "node:fs/promises";
 import {createRequire} from "node:module";
 import {join,resolve} from "node:path";
 import {identifierTokens,onlyIdentifierRename} from "../corpus/identifier-token-audit.mjs";
+import {expectedInventory,matchesInventory} from "./inventory-criteria.mjs";
 const repo=resolve(new URL("../../..",import.meta.url).pathname);
 const ts=createRequire(join(repo,"packages/agent-runtime/package.json"))("typescript");
 const [workspace,id,study]=process.argv.slice(2);
@@ -22,9 +23,20 @@ for(const [path,expected] of Object.entries(task.selectedSourceSha256)){
  let original=await readFile(join(originalRoot,path),"utf8");if(sha(original)!==expected)throw Error("Original source mismatch");
  if(task.seed?.path===path){if(original.split(task.seed.before).length!==2)throw Error("Nonunique seed");original=original.replace(task.seed.before,task.seed.after);}
  const current=await readFile(join(workspace,path),"utf8");
- const passed=task.kind==="rename" ? onlyIdentifierRename(original,current,task.oldName,task.newName)
+ const passed=task.kind==="inventory" ? current===original : task.kind==="rename" ? onlyIdentifierRename(original,current,task.oldName,task.newName)
  : JSON.stringify(masked(original,task.mutableFunctions[path]??[]))===JSON.stringify(masked(current,task.mutableFunctions[path]??[]));
  checks.push({name:"registered-source-integrity:"+path,passed,sourceSha256:sha(current)});
+}
+if(task.kind==="inventory"){
+ const expected=await expectedInventory(originalRoot,task.targets);
+ let actual;try{actual=JSON.parse(await readFile(join(workspace,task.reportFile),"utf8"));}catch(error){if(error.code!=="ENOENT"&&!(error instanceof SyntaxError))throw error;}
+ checks.push({name:"complete-exact-declaration-headers",passed:Boolean(matchesInventory(expected,actual))});
+}
+if(task.kind==="node-cases"){
+ const _=createRequire(join(workspace,"package.json"))(join(workspace,"lodash.js"));
+ const values=[undefined,null,false,true,0,-0,1,-1,1.5,-1.5,NaN,Infinity,-Infinity,"1","",[],{},Number.MAX_SAFE_INTEGER];
+ checks.push({name:"registered-public-predicate",passed:values.every(value=>_[task.subject](value)===
+   (task.subject==="isNil" ? value==null : Number.isInteger(value)))});
 }
 for(const [path,content] of Object.entries(task.inputFiles??{}))checks.push({name:"protected-task-input:"+path,passed:await readFile(join(workspace,path),"utf8")===content});
 if(task.kind==="behavior"){

@@ -8,7 +8,7 @@ import { repo, work, studyFor } from "./campaign-paths.mjs";
 import { getProviderCollectionSync } from "../../../packages/agent-runtime/node_modules/@cline/llms/dist/index.js";
 
 const panel = process.argv[3];
-if (!["f18","f19","f20"].includes(panel)) throw new Error("Specify f18, f19 or f20");
+if (!["f18","f19","f20","f21","f22","f23"].includes(panel)) throw new Error("Specify a registered F18--F23 panel");
 const study = studyFor(panel);
 const campaign = join(work, panel);
 const protocol = JSON.parse(await readFile(join(study, "protocol.json"), "utf8"));
@@ -33,6 +33,10 @@ async function bindings() {
     "tools/terminal_bench/corpus/identifier-token-audit.mjs",
     "tools/terminal_bench/corpus/light-study-accounting.mjs",
     "pnpm-lock.yaml", "packages/agent-runtime/dist/usage-audit.js",
+  ]) inputs[path] = sha(await readFile(join(repo, path)));
+  if (protocol.studyKind === "mechanism-confirmation") for (const path of [
+    "tools/terminal_bench/navigation-evidence/prepare-confirmation.py",
+    "tools/terminal_bench/navigation-evidence/inventory-criteria.mjs",
   ]) inputs[path] = sha(await readFile(join(repo, path)));
   inputs[join(study, "protocol.json").slice(repo.length + 1)] = sha(await readFile(join(study, "protocol.json")));
   if (protocol.commonPatchProtocol) for (const path of [protocol.commonPatchProtocol,
@@ -129,9 +133,10 @@ async function score(directory, workspace, task) {
     .map((check) => ({ ...check, name: "non-UTC:" + check.name }))); } catch {}
   const npmTests = paths => ["npm","test","--","--maxWorkers=1","--minWorkers=1","--pool=forks",...paths];
   const isDate = task.project === "date-fns";
-  const selected = runCheck(isDate ? npmTests(task.selectedTests) : [process.execPath,"test/test.js"],workspace);
+  const selected = runCheck(task.verifierCommands?.selected ?? (isDate ? npmTests(task.selectedTests) : [process.execPath,"test/test.js"]),workspace);
   const types = runCheck(isDate ? ["npm","run","types"] : [process.execPath,"--check","lodash.js"],workspace);
-  const full = isDate ? runCheck(npmTests([]),workspace) : selected;
+  const full = isDate ? runCheck(npmTests([]),workspace)
+    : task.verifierCommands?.selected ? runCheck([process.execPath,"test/test.js"],workspace) : selected;
   const addedTests = task.newTest ? runCheck(isDate ? npmTests([task.newTest]) : [process.execPath,task.newTest],workspace) : null;
   let testCounterexample = null;
   if (task.newTest) {
@@ -205,7 +210,8 @@ async function run() {
   for (const path of protocol.priorCampaigns ?? []) {
     const bytes = await readFile(join(repo, path));
     const prior = JSON.parse(bytes);
-    if (prior.completed !== prior.planned) throw new Error("Prior diagnostic is incomplete; do not start confirmation");
+    if (prior.completed !== prior.planned && !protocol.retainBudgetStoppedPrior)
+      throw new Error("Prior diagnostic is incomplete; do not start confirmation");
     const amount = prior.rows.reduce((sum, row) => sum + (row.usage.cost ??
       (protocol.budgets.perTrialSdkCostLimitUsd + (protocol.budgets.requestOvershootReserveUsd ?? 0))), 0);
     priorObservedCost += amount;
@@ -230,7 +236,8 @@ async function run() {
     await writeFile(join(directory, "instruction.txt"), task.instruction);
     await writeJson(join(directory, "required-checks.json"), task.requiredChecks);
     const preparationMs = performance.now() - started;
-    const runner = join(work, "frozen", panel, trial.arm === "modified" ? "modified" : "baseline",
+    const runner = join(work, "frozen", panel, trial.arm === "modified" ||
+      (trial.arm === "cline" && protocol.clineRuntimeArm === "modified") ? "modified" : "baseline",
       "benchmark-runner/dist/cli.js");
     const args = [runner, "run", "--workspace", workspace, "--instruction-file", join(directory, "instruction.txt"),
       "--required-checks-file", join(directory,"required-checks.json"), "--task-id", task.id, "--events", join(directory, "events.jsonl"), "--result", join(directory, "result.json"),

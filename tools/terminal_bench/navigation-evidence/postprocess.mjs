@@ -75,7 +75,8 @@ for(const row of analysis.rows){
       selected:score.selected,typesOrSyntax:score.types,fullDefinedSuite:score.full,
       addedTests:score.addedTests,addedTestsOnOriginalSource:score.testCounterexample},
     boundEnvironment:{node:bindings.node,project:bindings.projects[task.project],
-      defaultTZ:"UTC",secondFeatureTZ:"America/New_York",runtime:bindings.versions[row.arm==="modified"?"modified":"baseline"]},
+      defaultTZ:"UTC",secondFeatureTZ:"America/New_York",runtime:bindings.versions[row.arm==="modified" ||
+       (row.arm==="cline"&&protocol.clineRuntimeArm==="modified")?"modified":"baseline"]},
     independentFunctionalSuccess:score.independentFunctionalSuccess,
     limitation:"Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."});
 }
