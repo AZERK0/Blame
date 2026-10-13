@@ -20,3 +20,5 @@ After all SHA-bound manual audits, publish each panel with `large-project/publis
 Current results: all 18 official/audited trials pass, estimated USD0.147765. No output reaches8192 (observed peak3039); serialization is tested, causal cap activation is not. Case proof improves while F20 reference efficiency worsens; header reading remains unused. Do not merge these performance cohorts or the old campaign into one code-version claim.
 
 Native LaTeX opening failed with a closed connection; the compiler returned `No handler registered for tool: codex_app.compile_latex_document`. Source remains saved and editable. Updated PDF compilation is unverified; no local TeX installation was attempted.
+
+Later verification: fresh F22 actual OAuth wire capture omits configured8192. The offline serialization checks above used API-key authentication; they do not establish an effective output bound on the paid OAuth transport. Original protocols, outcomes and observed financial totals remain unchanged. See light-harness-mechanism-confirmation-2026-10-13/auth-budget-controls.json and protocol-v2.json for transport controls and the subsequent common byte-budget amendment.

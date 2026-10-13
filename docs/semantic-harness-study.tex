@@ -1401,9 +1401,10 @@ another usage report leaves request accounting incomplete. Full request-cache
 accounting remains absent 17/17. No model timeout is reported.
 
 Add opt-in \code{BLAME_AGENT_REQUEST_MAX_OUTPUT_TOKENS}, mapped to the SDK's
-\code{maxTokensPerTurn}. Offline actual Codex serialization proves
-\code{max_output_tokens=8192} before dispatch, rejects invalid bounds and keeps
-lower caller limits. Existing cumulative limits remain separate. This does
+\code{maxTokensPerTurn}. Offline API-key Codex serialization proves
+\code{max_output_tokens=8192} on that transport, rejects invalid bounds and keeps
+lower caller limits. F21--F23 later establishes that actual OAuth dispatch
+omits this field; the configured value is not an effective OAuth output bound. Existing cumulative limits remain separate. This does
 not prove server enforcement, quality under the smaller cap, input-cost or
 invoice bounds; new studies must pin pricing/input reserves and common caps
 before paid calls. No original F18--F20 run tests this later change. Final source passes
@@ -1417,7 +1418,7 @@ Evidence/reproduction is in the separately named
 \code{light-harness-navigation-evidence-local,f18,f19,f20-2026-10-13}
 directories under \code{docs/experiments/}.
 
-\section{F18--F20 capped diagnostic rerun}
+\section{F18--F20 diagnostic rerun with a configured output bound}
 Register a separate USD 0.50 phase at the user's request. Reuse the exact six
 tasks, fixed order, one repetition, model/high effort, prompts, SDK 0.0.82 and
 source/dependency versions. These are previously observed diagnostics, not
@@ -1428,13 +1429,17 @@ repairs are excluded, preserving each feature comparison. Original artifacts
 and failed/unexecuted outcomes remain unchanged and are not pooled.
 
 Set USD 0.04 per SDK session, USD 0.50 shared observed stop, and
-8,192 maximum output tokens per request in all arms. Before each trial reserve
+a configured 8,192 output-token setting in all arms (actual OAuth serialization
+was not captured in this campaign). Before each trial reserve
 USD 0.23 beyond its session allowance: the pinned catalog allows 875,900 input
 tokens; the maximum input/cache-write rate is USD 0.25/M and output USD 1.2/M,
-giving USD 0.2288054 for one capped request. Missing aggregate cost reserves
+giving USD 0.2288054 if the configured bound is honored. The later OAuth
+finding invalidates that assumed worst-request bound, without changing observed
+spending or outcomes. Missing aggregate cost reserves
 the full USD 0.27 admission allowance. This is a conservative catalog estimate,
 not proof of provider input enforcement or an invoice bound. Six offline
-provider-boundary checks confirm identical cap serialization; six independent
+API-key provider-boundary checks confirm identical serialization on that
+transport; six independent
 negative/positive task controls pass before paid calls. Bind inherited harness
 settings, the model catalog, common patch, source archives and compiled arms
 before dispatch. Raw request-cache omissions remain unknown.
@@ -1483,8 +1488,8 @@ watchdog, missing input/output/cost total or unexecuted task, for estimated USD 
 Only financial estimates are summed across panel versions: together with the
 separate original USD 0.27073088 phase, USD 0.41849588. All 134 request-usage
 reports reconcile input/output/cost; maximum observed request output is 3,039,
-so the cap's serialization and quality feasibility are established here but
-its activation and provider enforcement are not. Full request-cache accounting
+so these runs establish observed quality at the nominal setting. They establish
+neither an effective OAuth output bound nor its activation or provider enforcement. Full request-cache accounting
 remains missing 18/18. Verify 108 unchanged raw artifacts, 18 journals, six
 additive test sources, dependency locks and both report hashes. No recovery of
 solutions, source repair, verifier feedback or paid retry occurs.

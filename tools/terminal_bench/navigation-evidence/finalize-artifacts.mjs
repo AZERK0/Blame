@@ -7,6 +7,7 @@ import {work,studyFor} from "./campaign-paths.mjs";
 const panel=process.argv[2],study=studyFor(panel),campaign=join(work,panel);
 const json=async p=>JSON.parse(await readFile(p,"utf8")),sha=b=>createHash("sha256").update(b).digest("hex");
 const results=await json(join(study,"results.json")),ledger=await json(join(campaign,"tool-ledger.json"));
+const protocol=await json(join(study,"protocol.json"));
 const write=(name,value)=>writeFile(join(study,name),JSON.stringify(value,null,2)+"\n");
 const mechanisms=[],reports=[],expectedReports=[];
 for(const row of results.rows){
@@ -16,6 +17,7 @@ for(const row of results.rows){
  const checks=tools.filter(t=>t.tool==="run_task"&&t.output?.data?.check).map(t=>({input:t.input,command:t.output.data.command,check:t.output.data.check}));
  mechanisms.push({name:row.name,eventsSha256:row.eventsSha256,blockedEdits:tools.filter(t=>t.tool==="edit_code"&&t.output?.status==="blocked").length,
   boundedRecoveryHints:hints.length,signatureRequests:signatures.length,signatureRendered:signatures.filter(t=>t.output?.data?.view==="signature").length,
+  activeCaseCaptions:tools.filter(t=>t.tool==="run_task"&&String(t.output?.data?.output??"").includes("Active Node case results:")).length,
   observedReadBytes:tools.filter(t=>t.tool==="read_code").reduce((n,t)=>n+Buffer.byteLength(JSON.stringify(t.output)),0),
   checkInvocations:checks,structuredNodeInvocations:checks.filter(t=>t.check.evidenceOrigin==="node_events").length,
   completionAsReported:row.completion,actualModelRequests:row.metrics?.context?.modelRequests??null,driverIterationStartCount:row.usage.requests,
@@ -28,7 +30,9 @@ for(const row of results.rows){
   reports.push({name:row.name,artifact,bytes:bytes.length,sha256:sha(bytes)});
  }}catch(error){if(error.code!=="ENOENT")throw error;}
 }
-await write("mechanism-analysis.json",{method:"Every finished effective input/result, SHA-bound to raw events. Recovery activated in F19 is common to both arms and is not a signature effect. Requested and rendered signatures are distinct. Node counts are invocation proof, not scope or user acceptance. Model verbal count sensitivity stays separate from registered task scores.",rows:mechanisms});
+await write("mechanism-analysis.json",{method:protocol.studyKind==="mechanism-confirmation"
+ ?"Every finished effective input/result, SHA-bound to raw events. F21 removes only bounded recovery, F22 only signature availability, F23 only appended active-case captions. Both F23 arms retain identical structured evidence. Natural non-activation is retained and proves no efficacy. F23 accurate final active-case counts are an explicit registered criterion, separate from functional source success. Invocation proof alone admits no test scope."
+ :"Every finished effective input/result, SHA-bound to raw events. Recovery activated in F19 is common to both arms and is not a signature effect. Requested and rendered signatures are distinct. Node counts are invocation proof, not scope or user acceptance. Model verbal count sensitivity stays separate from registered task scores.",rows:mechanisms});
 await write("node-report-inventory.json",{method:"Exact invocation-sidechannel bytes; expected hashes come from unchanged model tool outputs. Missing overwritten/interrupted reports remain missing.",reports,missingExpectedReports:expectedReports.filter(e=>!reports.some(r=>r.name===e.name&&r.sha256===e.sha256))});
 const fields=rows=>({trials:rows.length,tokenCostReconciled:rows.filter(r=>r.usage.tokensCostReconciled).length,
  inputTokensObserved:rows.reduce((n,r)=>n+(r.usage.input??0),0),outputTokensObserved:rows.reduce((n,r)=>n+(r.usage.output??0),0),
