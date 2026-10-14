@@ -472,7 +472,7 @@ export class LightTaskRunner {
           before: metadata.invocationEnvironment,
           after: await environmentManifestEvidence(this.files, snapshot.files),
         } } : {}) };
-      const failure = check.outcome === "failed" ? await commandFailureAssessment(output, this.files, "test") : undefined;
+      const failure = check.outcome === "failed" ? await commandFailureAssessment(output, this.files, "test", result.exitCode) : undefined;
       await this.recordCommandValidation(command,
         check.outcome === "failed" ? "failed" : "unknown", snapshot,
         { ...metadata, taskKind: "test", check },
@@ -491,7 +491,7 @@ export class LightTaskRunner {
     const status = result.failed ? "failed" : "passed";
     const failure =
       result.interruption ? commandFailure() : result.failed
-        ? await commandFailureAssessment(output, this.files, metadata.taskKind)
+        ? await commandFailureAssessment(output, this.files, metadata.taskKind, result.exitCode)
         : undefined;
     const validatedRevisionId = snapshot.revision.source_revision_id;
     if (validatedRevisionId !== metadata.sourceRevisionId) {
@@ -663,6 +663,7 @@ async function commandFailureAssessment(
   output: string,
   files: WorkspaceFiles,
   taskKind?: string,
+  exitCode?: number,
 ): Promise<FailureAssessment> {
   const missingEnvironment = missingEnvironmentVariables(output);
   if (missingEnvironment.length)
@@ -676,6 +677,10 @@ async function commandFailureAssessment(
       return environmentDependencyFailure();
     return codeFailure();
   }
+  // POSIX sh/dash omits "command" in its missing-executable diagnostic.
+  // Require its shell-prefixed line and exit 127, not arbitrary "not found" text.
+  if (exitCode === 127 && /^(?:\/[^\s:]+\/)?(?:sh|dash):\s*(?:line\s+)?(?:\d+:\s*)?[^:\r\n]+:\s*not found\s*$/mu.test(output))
+    return environmentFailure();
   if (environmentDiagnostic(output)) return environmentFailure();
   return isValidationKind(taskKind) ? codeFailure() : commandFailure();
 }

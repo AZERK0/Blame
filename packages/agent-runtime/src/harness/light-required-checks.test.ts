@@ -154,6 +154,60 @@ test("required unavailable check downgrades build admission without repeated aut
     "environment.cjs": "if(!process.env.BLAME_REQUIRED_CONTROL_URL){console.error('Missing environment variable: BLAME_REQUIRED_CONTROL_URL');process.exit(1)}\n" });
 });
 
+for (const required of [false, true]) test(`missing POSIX lint executable stays unavailable (${required ? "required" : "optional"})`, async () => {
+  await fixture(async (root, workspace) => {
+    await edit(workspace);
+    const result = await workspace.runTask({ kind: "project", task: "lint_src" }, {});
+    assert.equal(result.status, "blocked");
+    if (result.status !== "blocked") return;
+    assert.equal(result.category, "environment", JSON.stringify(result));
+    assert.match(result.message, /blame_absent_lint_7284.*not found/u);
+    const { service, activities, notifications } = finish(root, required ? [{ id: "lint", task: "lint_src" }] : []);
+    await service.finish("Source changed; lint could not run because its executable is missing.", {} as never);
+    await service.finish("The missing-tool limitation remains.", {} as never);
+    assert.equal(activities.length, 0);
+    assert.equal(notifications[0]?.verified, false);
+    assert.equal(notifications[0]?.completion.verification, "unverified");
+    assert.deepEqual(notifications[0]?.completion.missing_obligations, required ? ["check:lint"] : []);
+    const state = await new SessionJournal(root, "required").completionSnapshot();
+    assert.ok(state.validations.some(v => v.taskId === "lint_src" && v.category === "environment" && v.terminal === "failed"));
+    assert.ok(!state.validations.some(v => v.taskId === "lint_src" && v.status === "passed"));
+  }, { "package.json": JSON.stringify({ scripts: { lint_src: "sh -c 'blame_absent_lint_7284 --version'" } }) });
+});
+
+for (const diagnostic of ["Error: symbol not found", "sh: 1: example: not found"]) test(`exit-one lint still blocks completion: ${diagnostic}`, async () => {
+  await fixture(async (root, workspace) => {
+    await edit(workspace);
+    const result = await workspace.runTask({ kind: "project", task: "lint_src" }, {});
+    assert.equal(result.status, "blocked");
+    if (result.status !== "blocked") return;
+    assert.equal(result.category, "code");
+    const { service, notifications } = finish(root);
+    await assert.rejects(service.finish("done", {} as never), /still failing/u);
+    assert.equal(notifications.length, 0);
+  }, { "package.json": JSON.stringify({ scripts: { lint_src: "node lint.cjs" } }),
+    "lint.cjs": `console.error(${JSON.stringify(diagnostic)}); process.exit(1);\n` });
+});
+
+test("missing POSIX test runner leaves the required test unconfirmed", async () => {
+  await fixture(async (root, workspace) => {
+    await edit(workspace);
+    const result = await workspace.runTask({ kind: "project", task: "test", args: [] }, {});
+    assert.equal(result.status, "ok");
+    if (result.status !== "ok") return;
+    assert.equal((result.data as { failure: { category: string } }).failure.category, "environment");
+    const { service, activities, notifications } = finish(root, [{ id: "tests", task: "test" }]);
+    await service.finish("Source changed; the test runner is missing, so tests did not pass.", {} as never);
+    await service.finish("Tests remain unavailable.", {} as never);
+    assert.equal(activities.length, 0);
+    assert.equal(notifications[0]?.completion.verification, "unverified");
+    assert.deepEqual(notifications[0]?.completion.missing_obligations, ["check:tests"]);
+    assert.deepEqual(notifications[0]?.completion.satisfied_obligations, []);
+    const state = await new SessionJournal(root, "required").completionSnapshot();
+    assert.ok(state.validations.some(v => v.taskId === "test" && v.category === "environment" && v.check?.outcome === "failed"));
+  }, { "package.json": JSON.stringify({ scripts: { test: "sh -c 'blame_absent_test_7284 --version'" } }) });
+});
+
 test("nonmutating requests still execute explicit required checks", async () => {
   await fixture(async root => {
     const { service, activities, notifications } = finish(root, [{ id: "required", task: "test" }]);
