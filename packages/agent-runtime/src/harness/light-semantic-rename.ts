@@ -69,11 +69,39 @@ export async function planSemanticRename(
   return {
     reply,
     sources,
+    receipt: semanticRenameReceipt(reply, sources, resolved.path, resolved.symbol.qualified_name, newName),
     targetPath: resolved.path,
     oldQualifiedName: resolved.symbol.qualified_name,
     newQualifiedName: resolved.symbol.qualified_name.replace(
       /[^./]+$/u,
       newName,
     ),
+  };
+}
+
+function semanticRenameReceipt(
+  reply: Extract<Awaited<ReturnType<typeof querySemanticReferences>>, { status: "ok" }>,
+  sources: Map<string, Buffer>, path: string, qualifiedName: string, newName: string,
+) {
+  const editsByFile = [...sources.keys()].sort().map((path) => ({ path,
+    identifierEdits: reply.locations.filter((location) => location.path === path).length }));
+  const examples = reply.locations.slice(0, 6).map((location) => {
+    const source = sources.get(location.path)!;
+    const [start, end] = location.range;
+    const lineStart = source.lastIndexOf(10, start - 1) + 1;
+    const newline = source.indexOf(10, end);
+    const lineEnd = newline < 0 ? source.length : newline;
+    // Bound both sides around this identifier; do not echo a giant source line.
+    const left = source.subarray(lineStart, start).toString("utf8").slice(-100);
+    const right = source.subarray(end, lineEnd).toString("utf8").slice(0, 100);
+    return { path: location.path, lines: location.lines,
+      before: left + source.subarray(start, end).toString("utf8") + right,
+      after: left + location.replacement! + right };
+  });
+  return {
+    config: reply.project.config, compilerVersion: reply.project.compilerVersion,
+    identifierEdits: reply.locations.length, from: `${path}#${qualifiedName}`,
+    to: `${path}#${qualifiedName.replace(/[^./]+$/u, newName)}`,
+    editsByFile, examples, examplesTruncated: reply.locations.length > examples.length,
   };
 }

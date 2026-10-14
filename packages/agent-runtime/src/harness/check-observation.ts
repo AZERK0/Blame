@@ -17,6 +17,8 @@ export type CheckObservation = {
     failed: number;
     skipped: number;
   };
+  /** Partial runner fields; missing categories remain null and grant no admission. */
+  reportedCounts?: { passed: number | null; failed: number | null; pending: number | null; skipped: number | null };
   scope: string;
   selection: "confirmed" | "unknown";
   freshness: "current" | "stale" | "unknown";
@@ -27,7 +29,7 @@ export type CheckObservation = {
 };
 
 export function isTestInvocation(command: string) {
-  return /(?:^|\s)(?:pytest|py\.test|vitest|jest)(?:\s|$)|\b(?:dotnet|mvn|mvnw|gradle|gradlew)\s+[^;&|]*\btest\b|\bnode\s+[^;&|]*--test\b/u.test(
+  return isMochaInvocation(command) || /(?:^|\s)(?:pytest|py\.test|vitest|jest)(?:\s|$)|\b(?:dotnet|mvn|mvnw|gradle|gradlew)\s+[^;&|]*\btest\b|\bnode\s+[^;&|]*--test\b/u.test(
     command,
   );
 }
@@ -59,6 +61,7 @@ export function observeCheck(
   const structured = nodeEvents ? nodeEventEvidence(nodeEvents) : undefined;
   const counts = nodeEvents ? structured?.counts
     : ambiguousNode ? undefined : report?.counts ?? runnerCounts(command, output);
+  const reportedCounts = isMochaInvocation(command) ? mochaReportedCounts(output).reportedCounts : undefined;
   const interrupted = Boolean(result.interruption);
   const execution = counts
     ? counts.executed > 0
@@ -66,7 +69,7 @@ export function observeCheck(
       : "zero_tests"
     : "not_observed";
   const failed =
-    result.failed || structured?.failed || report?.setupFailed || (counts?.failed ?? 0) > 0;
+    result.failed || structured?.failed || report?.setupFailed || (counts?.failed ?? 0) > 0 || (reportedCounts?.failed ?? 0) > 0;
   return {
     process:
       result.interruption === "cancelled"
@@ -84,6 +87,7 @@ export function observeCheck(
           ? "passed"
           : "unknown",
     ...(counts ? { counts } : {}),
+    ...(reportedCounts ? { reportedCounts } : {}),
     scope,
     selection: "unknown",
     // A host process can have unobserved external writers; pre/post equality is insufficient.
@@ -94,6 +98,19 @@ export function observeCheck(
       : ambiguousNode && !structured ? { note: "Node text summaries can count empty file workers. Source-path labels leave the executed case count unconfirmed." } : {}),
     ...(report?.failures.length ? { diagnostics: report.failures } : {}),
   };
+}
+
+function isMochaInvocation(command: string) {
+  return /(?:^|[\s/\\])mocha(?:\.[cm]?js)?(?=\s|$)/u.test(command);
+}
+
+function mochaReportedCounts(output: string) {
+  const fields = ["passing", "failing", "pending", "skipped"] as const;
+  const counts = fields.map((field) => [...output.matchAll(new RegExp(`^\\s*(\\d+) ${field}(?: \\([^\\r\\n]*\\))?\\s*$`, "gmu"))]);
+  if (!counts.some((hits) => hits.length) || counts.some((hits) => hits.length > 1)) return {};
+  const [passed, failed, pending, skipped] = counts.map((hits) => hits.length ? Number(hits[0]![1]) : null);
+  if ([passed, failed, pending, skipped].some((count) => count !== null && !Number.isSafeInteger(count))) return {};
+  return { reportedCounts: { passed: passed!, failed: failed!, pending: pending!, skipped: skipped! } };
 }
 
 function runnerCounts(

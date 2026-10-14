@@ -39,7 +39,7 @@ type Replacement = {
 
 type PlannedFile = {
   footprint?: ReferenceFootprint;
-  semanticRename?: { config: string; compilerVersion: string; identifierEdits: number };
+  semanticRename?: Awaited<ReturnType<typeof planSemanticRename>>["receipt"];
   fileMode?: number;
   initial: Buffer | null;
   mutation?: "add" | "delete";
@@ -167,7 +167,7 @@ export class LightEditService {
         ...(mapped.data as Record<string, unknown>), semanticRename: {
           ...rename, engine: "typescript_language_service", scope: "configured_project",
           staticGuard: "no_new_diagnostics_in_changed_files",
-          guidance: "Compiler-derived identifier edits preserve existing aliases. Static checks do not establish behavioral equivalence or satisfy required test/validation criteria; run required checks after editing.",
+          guidance: "Applied the listed compiler-derived binding edits. An import/export's source-side name and namespace property follow the renamed declaration; explicit local/public alias spellings stay unchanged. Examples show individual identifier edits, not a complete diff. Inspect read_code @changes or the final diff before further edits; remaining textual homonyms/comments/literals need not be renamed. Static checks do not establish behavioral equivalence or satisfy required test/validation criteria; run required checks after editing.",
         },
       } } : mapped;
     }
@@ -188,8 +188,7 @@ export class LightEditService {
       for (const location of derived.reply.locations) {
         const file = await this.filePlan(plans, location.path, derived.sources.get(location.path));
         file.footprint = derived.reply.footprint;
-        file.semanticRename = { config: derived.reply.project.config,
-          compilerVersion: derived.reply.project.compilerVersion, identifierEdits: derived.reply.locations.length };
+        file.semanticRename = derived.receipt;
         if (file.path === derived.targetPath) file.symbols.push(derived.oldQualifiedName, derived.newQualifiedName);
         file.replacements.push({ start: location.range[0], end: location.range[1],
           replacement: location.replacement!, source: `semantic rename ${rename.target}` });
@@ -254,7 +253,8 @@ export class LightEditService {
     try {
       await this.planResolvedScopedPatch(plans, operation, resolved);
     } catch (error) {
-      throw new ScopedEditRecovery(errorMessage(error), resolved);
+      throw new ScopedEditRecovery(errorMessage(error), resolved,
+        error instanceof ScopedPatchShapeError ? error.correction : undefined);
     }
   }
 
@@ -266,7 +266,7 @@ export class LightEditService {
     const sections = splitLightPatch(operation.patch);
     if (sections.length !== 1 || this.files.normalizePath(sections[0]!.path) !== resolved.path ||
         (operation.path && this.files.normalizePath(operation.path) !== resolved.path))
-      throw new Error("Scoped patch header must match the symbol's file and contain one Update File.");
+      throw new ScopedPatchShapeError(resolved.path, sections.map(({ path }) => path), operation.path);
     const [start, end] = resolved.symbol.range_utf8_bytes;
     const source = resolved.content.subarray(start, end).toString("utf8");
     const replacements = planScopedLightPatch(source, sections[0]!.patch, resolved.path);
@@ -876,15 +876,31 @@ function editFailure(error: unknown): LightToolResult<unknown> {
   };
 }
 
+class ScopedPatchShapeError extends Error {
+  readonly correction;
+
+  constructor(expectedPath: string, patchPaths: string[], suppliedPath?: string) {
+    super("Scoped patch header must match the symbol's file and contain one Update File.");
+    this.correction = {
+      reason: patchPaths.length !== 1 ? "multiple_files_for_symbol" : "wrong_file_for_symbol",
+      expectedPath, patchPaths: patchPaths.slice(0, 8), patchPathCount: patchPaths.length,
+      ...(suppliedPath ? { suppliedPath } : {}),
+      symbolRoute: "Keep target and use one operation per observed symbol, each with one matching Update File. Split unrelated file changes into separate operations in the same atomic batch.",
+      fileRoute: "Review and read all intended file changes first. For a deliberate file patch, omit target; explicit file headers select the files. This changes the scope of your request and is never done automatically. Exact preimages and atomic batch guards still apply.",
+    };
+  }
+}
+
 class ScopedEditRecovery extends Error {
   readonly recovery: string;
 
-  constructor(message: string, resolved: ResolvedLightSymbol) {
+  constructor(message: string, resolved: ResolvedLightSymbol, patchCorrection?: ScopedPatchShapeError["correction"]) {
     super(message);
     const [startLine, endLine] = resolved.symbol.line_range;
     this.recovery = "No operations in this batch were applied. Every operation uses the original source, not earlier operations in the same batch. " +
       (patchFailureRecovery(message) ? `${patchFailureRecovery(message)} ` : "") +
       JSON.stringify({ target: resolved.alias, path: resolved.path,
+        ...(patchCorrection ? { patchCorrection } : {}),
         declarationLines: [startLine, endLine],
         nextRead: { target: resolved.path, view: "range",
           range: { startLine: Math.max(1, startLine - 3), endLine: Math.min(endLine + 2, startLine + 24) } },

@@ -3,6 +3,7 @@ import { createTool, type AgentTool, type AgentToolContext } from "@cline/sdk";
 import { finishTaskInputSchema } from "./light-contracts.js";
 import type { LightRunTaskInput } from "./light-contracts.js";
 import type { ProjectMemoryCandidate } from "./project-memory.js";
+import type { LightValidationReport } from "./light-validation-report.js";
 
 export const lightCompletionToolName = "finish_task";
 
@@ -12,6 +13,7 @@ export type LightCompletionNotification = {
   submission_outcome: "accepted" | "blocked";
   summary: string;
   verified: boolean;
+  validationReport?: LightValidationReport;
 };
 
 export type LightValidationActivity = {
@@ -27,7 +29,7 @@ export function createLightCompletionTool(
   return createTool({
     name: lightCompletionToolName,
     description:
-      "Finish with a concise natural summary. Mention a non-obvious durable implementation decision only when it helps future work. The runtime checks known changes, reuses current checks, and refreshes relevant checks already requested in this session. Work without a current check is reported as unverified. Do not provide receipts or internal state.",
+      "Finish with a concise factual summary. Use run_task reporting or read_code @checks for test counts: null is unknown, pending is distinct from skipped, and unreported categories must not become zero. Separate commands run, passing tests, admitted verification and user criteria. Mention a non-obvious durable implementation decision only when it helps future work. The runtime checks known changes, reuses current checks, and refreshes relevant checks already requested in this session. Work without a current check is reported as unverified. Do not provide receipts or internal state.",
     inputSchema: finishTaskInputSchema as unknown as Record<string, unknown>,
     lifecycle: { completesRun: true },
     retryable: false,

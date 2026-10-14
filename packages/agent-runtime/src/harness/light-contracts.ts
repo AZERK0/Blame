@@ -7,7 +7,8 @@ const editContent = z.string().max(2_097_152);
 export const lightSearchCodeInputSchema = z
   .object({
     query: z.string().trim().min(1).max(1_000),
-    scope: z.union([relativePath, z.array(relativePath).max(100)]).optional(),
+    scope: z.union([relativePath, z.array(relativePath).max(100)]).optional()
+      .describe('One literal path/glob, or multiple scopes as an array, e.g. ["src","spec"]. A space in one string belongs to that path.'),
     mode: z.enum(["auto", "text", "symbol", "references"]).optional(),
   })
   .strict();
@@ -50,7 +51,7 @@ const symbolEdit = z
 const patchEdit = z
   .object({
     kind: z.literal("patch"),
-    target: z.string().trim().min(1).max(4_096).optional().describe("Observed symbol alias. Restricts one Update File patch to this symbol; its header must match the alias path."),
+    target: z.string().trim().min(1).max(4_096).optional().describe("Observed symbol alias. Restricts one Update File patch to this symbol; its header must match the alias path. Omit target for a deliberate file/multi-file patch; explicit headers select those files."),
     path: relativePath.optional().describe("Target for raw content or a patch without file headers. Explicit patch headers select their own files."),
     patch: editContent
       .min(1)

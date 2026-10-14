@@ -32,6 +32,7 @@ import { projectTestCommand } from "./project-test-command.js";
 import { environmentManifestEvidence } from "./workspace-revisions.js";
 import { validationScopePaths } from "./validation-scope.js";
 import { validationOutput, type ValidationOutput } from "./validation-output.js";
+import { checkReporting } from "./light-validation-report.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
 import { managedTestReport, type ManagedTestReport } from "./managed-test-report.js";
 
@@ -483,7 +484,9 @@ export class LightTaskRunner {
         presented.output += `\nActive Node case results: ${check.counts.passed} passed, ${check.counts.failed} failed, ${check.counts.skipped} skipped/todo. File workers and suites are excluded. Command outcome: ${check.outcome}. Test scope, selection and freshness are not admitted by these counts.`;
       return { status: "ok", data: { command, exitCode: result.exitCode,
         ...presented,
-        ...(failure ? { failure } : {}), check,
+        ...(failure ? { failure } : {}), check, reporting: { ...checkReporting(check),
+          invocationSourceRevisionId: metadata.sourceRevisionId ?? null,
+          completedSourceRevisionId: snapshot.revision.source_revision_id, cwd: metadata.cwd ?? "." },
         changed: changedPaths.length > 0, paths: changedPaths,
         validation: { status: check.freshness === "stale" ? "stale" : check.outcome === "failed" ? "failed" : "unknown" },
       } };

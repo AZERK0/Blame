@@ -33,6 +33,7 @@ import {
   autoSearchResult,
   autoSymbolCandidates,
   editTargetSymbols,
+  emptySearchScope,
   enclosingSymbol,
   firstTermIndex,
   lexicalQuery,
@@ -68,6 +69,7 @@ import {
 } from "./lexical-search.js";
 import { ReadCoverage, type ByteInterval } from "./read-coverage.js";
 import { SessionJournal } from "./session-journal.js";
+import { currentValidationReport } from "./light-validation-report.js";
 import { sha256 } from "./light-identity.js";
 import {
   assertMutableWorkspacePath,
@@ -240,6 +242,7 @@ export class LightWorkspace {
       snapshot.files,
       input.scope,
     );
+    if (!candidates.length) return emptySearchScope(this.files, snapshot.files, input);
     const semantic = input.mode === "references"
       ? await this.references.search(input, snapshot.files, candidates, snapshot.revision.source_revision_id, signal)
       : undefined;
@@ -253,7 +256,7 @@ export class LightWorkspace {
     );
     const labeled = semantic && result.status === "ok" ? { ...result, data: { ...recordValue(result.data),
       semanticFallback: semantic.fallback,
-      guidance: "Lexical candidates only. For configured JS/TS semantic references, query a symbol sN alias or path#qualifiedName with mode references. Read before editing." } } : result;
+      ...this.references.recovery(input, recordValue(result.data), semantic.fallback) } } : result;
     const expanded = await this.expandSearch(labeled, snapshot.revision.source_revision_id);
     return this.persistAliases(expanded);
   }
@@ -307,7 +310,7 @@ export class LightWorkspace {
       this.files, input.target, context, this.options.taskContract?.environment?.isolated,
     );
     if (externalImage) return externalImage;
-    const special = this.specialReadResult(input.target);
+    const special = await this.specialReadResult(input.target);
     if (special) return special;
     const snapshot = await this.files.snapshot(context.signal);
     const directory = await this.directoryReadResult(
@@ -381,7 +384,9 @@ export class LightWorkspace {
     return autoSearchResult(symbols, text, candidates);
   }
 
-  private specialReadResult(target: string) {
+  private async specialReadResult(target: string) {
+    if (target === "@checks")
+      return { status: "ok" as const, data: currentValidationReport(await this.journal.completionSnapshot()) };
     if (target === "@capabilities") return capabilitiesResult();
     if (target === "@changes")
       return {
@@ -1154,7 +1159,22 @@ function contentResult(
       ...(editTargets.length ? { editTargets } : {}),
       ...projected,
       truncated,
+      ...(truncated ? truncatedReadGuidance(path, content, intervals) : {}),
     },
+  };
+}
+
+function truncatedReadGuidance(path: string, content: Buffer, intervals: ByteInterval[]) {
+  const end = Math.max(...intervals.map(([, stop]) => stop));
+  // Include the last partial line again: neither byte limits nor UTF-8 may
+  // skip source. Hints do not register additional observed coverage.
+  const startLine = content.subarray(0, end).toString("utf8").split("\n").length;
+  const totalLines = content.toString("utf8").split("\n").length;
+  return {
+    observedRangesUtf8Bytes: intervals,
+    nextRead: { target: path, view: "range", range: { startLine, endLine: Math.min(totalLines, startLine + 79) } },
+    alternativeReads: symbolicPath(path) ? [{ target: path, view: "outline" }] : [],
+    guidance: "This read is truncated. Continue with nextRead (which repeats a partial boundary line), or inspect the outline and read a relevant symbol. Unseen bytes are not observed edit coverage. An explicit line range can exceed the inline byte limit for a very long line.",
   };
 }
 

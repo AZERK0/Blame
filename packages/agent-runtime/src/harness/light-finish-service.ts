@@ -18,6 +18,7 @@ import { SessionJournal } from "./session-journal.js";
 import { readTaskCatalog } from "./task-catalog.js";
 import { WorkspaceFiles } from "./workspace-files.js";
 import { validationScopePaths } from "./validation-scope.js";
+import { currentValidationReport } from "./light-validation-report.js";
 
 export type LocalFinishOptions = {
   conversationId: string;
@@ -297,6 +298,7 @@ export class LightFinishService {
       completion: decision,
       ...(memory ? { memory } : {}),
       submission_outcome: "accepted",
+      validationReport: currentValidationReport(state),
       summary,
       verified,
     });

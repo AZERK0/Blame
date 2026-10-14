@@ -98,7 +98,7 @@ function searchCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "search_code",
     description:
-      "Find source by path, text, symbol, or references. For JS/TS semantic references, set mode to references and query to a symbol sN alias or path#qualifiedName; results state compiler project scope and any lexical fallback. Other queries find lexical candidates. Search results do not authorize edits: read the target first. Whitespace separates search terms; punctuation stays literal. Scope accepts paths and *, **, ?, or {a,b} globs. Returns up to eight short results; generated outputs and node_modules are excluded.",
+      'Find source by path, text, symbol, or references. For JS/TS semantic references, set mode to references and query to a symbol sN alias or path#qualifiedName; results state compiler project scope and any lexical fallback. Bare-name fallback proposes nextSearches; choose the intended declaration. Search results do not authorize edits: read the target first. Whitespace separates query terms; punctuation stays literal. Scope accepts paths and *, **, ?, or {a,b} globs; multiple scopes use an array such as ["src","spec"]. Spaces in a scope string are literal. Returns up to eight short results; generated outputs and node_modules are excluded.',
     schema: lightSearchCodeInputSchema,
     execute: (input, context) => workspace.searchCode(input, context.signal),
   });
@@ -108,7 +108,7 @@ function readCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "read_code",
     description:
-      "Read a text file or local image, compact directory, sN alias, path#qualifiedName, @changes, or @capabilities. A line range selects those lines; otherwise omit view for automatic raw/outline routing. Use view signature on a symbol to inspect its declaration header without its body; read the symbol body before behavioral edits or rename. Symbol outlines list contained declarations. Results expose editTargets and containedBy relationships. Generated outputs and node_modules are excluded.",
+      "Read a text file or local image, compact directory, sN alias, path#qualifiedName, @changes, @checks, or @capabilities. @checks lists current-source check observations without running them; unknown counts stay null. A line range selects those lines; otherwise omit view for automatic raw/outline routing. Truncated reads propose nextRead and outline routes without granting unseen coverage. Use view signature on a symbol to inspect its declaration header without its body; read the symbol body before behavioral edits or rename. Symbol outlines list contained declarations. Results expose editTargets and containedBy relationships. Generated outputs and node_modules are excluded.",
     schema: lightReadCodeInputSchema,
     execute: (input, context) => workspace.readCode(input, context),
   });
@@ -137,7 +137,7 @@ function runTaskTool(workspace: LightWorkspacePort, environment?: LightTaskContr
       (environment?.managedPreview === false
         ? "For requested services, detach the process and redirect its input/output so the command can finish. "
         : "Use the managed preview for services. ") +
-      "Prettier on explicit files uses atomic edits. Returns bounded output and code/environment diagnostics.",
+      "Prettier on explicit files uses atomic edits. Test results include reporting counters; null is unknown and pending is distinct from skipped. Returns bounded output and code/environment diagnostics.",
     schema: lightRunTaskInputSchema,
     execute: (input, context) => workspace.runTask(input, context),
   });

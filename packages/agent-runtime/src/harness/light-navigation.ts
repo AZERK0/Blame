@@ -127,6 +127,23 @@ export function scopedCandidates(
   return paths.filter((path) => matchers.some((matches) => matches(path)));
 }
 
+export function emptySearchScope(files: WorkspaceFiles, paths: string[], input: LightSearchCodeInput): LightToolResult<unknown> {
+  // A valid path containing spaces stays literal; an array is only a hint.
+  const parts = typeof input.scope === "string" ? input.scope.trim().split(/\s+/u) : [];
+  let suggestArray = false;
+  if (parts.length > 1 && parts.length <= 100) {
+    try { suggestArray = parts.every((part) => scopedCandidates(files, paths, part).length > 0); }
+    catch { /* An invalid split is no reason to reject the original literal scope. */ }
+  }
+  return { status: "ok", data: {
+    mode: searchMode(input), engine: "none", results: [], candidateCount: 0, scopeStatus: "empty",
+    ...(suggestArray ? { nextSearch: { ...input, scope: parts } } : {}),
+    guidance: "No eligible files were selected; the query was not searched. Check paths, globs and ignore rules. " +
+      (suggestArray ? "For multiple scopes, pass an array as shown in nextSearch. " : "Multiple scopes use an array, for example [\"src\",\"spec\"]. ") +
+      "Spaces in one scope string are literal path characters.",
+  } };
+}
+
 function scopeMatcher(files: WorkspaceFiles, value: string) {
   const portable = safeScopePattern(files.normalizePath(value.trim()));
   const matchers = expandBracePatterns(portable).map((pattern) =>
