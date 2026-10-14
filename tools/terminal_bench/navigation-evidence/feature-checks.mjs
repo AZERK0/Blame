@@ -6,6 +6,7 @@ import {join,resolve} from "node:path";
 import {identifierTokens,onlyIdentifierRename} from "../corpus/identifier-token-audit.mjs";
 import {expectedInventory,matchesInventory} from "./inventory-criteria.mjs";
 import {auditMultifile} from "./multifile-criteria.mjs";
+import {auditFreshBehavior} from "./fresh-criteria.mjs";
 const repo=resolve(new URL("../../..",import.meta.url).pathname);
 const ts=createRequire(join(repo,"packages/agent-runtime/package.json"))("typescript");
 const [workspace,id,study]=process.argv.slice(2);
@@ -15,7 +16,10 @@ const originalRoot=join(repo,protocol.upstreams[task.project].sourceRoot),checks
 const sha=v=>createHash("sha256").update(v).digest("hex");
 function masked(text,names){
  const source=ts.createSourceFile("source.ts",text,ts.ScriptTarget.Latest,true);if(source.parseDiagnostics.length)throw Error("Invalid source syntax");
- const ranges=[];function visit(n){if(ts.isFunctionDeclaration(n)&&n.body&&names.includes(n.name?.text))ranges.push({name:n.name.text,start:n.getStart(source),end:n.end});ts.forEachChild(n,visit);}visit(source);
+ const ranges=[];function visit(n){
+  const name=ts.isMethodDeclaration(n)&&ts.isClassDeclaration(n.parent) ? n.parent.name?.text+"."+n.name.getText(source) : n.name?.text;
+  if((ts.isFunctionDeclaration(n)||ts.isMethodDeclaration(n))&&n.body&&names.includes(name))ranges.push({name,start:n.getStart(source),end:n.end});ts.forEachChild(n,visit);
+ }visit(source);
  for(const name of names)if(ranges.filter(r=>r.name===name).length!==1)throw Error("Missing/ambiguous function "+name);
  for(const r of ranges.sort((a,b)=>b.start-a.start))text=text.slice(0,r.start)+";"+text.slice(r.end);
  return identifierTokens(text);
@@ -30,6 +34,7 @@ for(const [path,expected] of Object.entries(task.selectedSourceSha256)){
  checks.push({name:"registered-source-integrity:"+path,passed,sourceSha256:sha(current)});
 }
 if(task.kind==="multifile-rename")checks.push(...await auditMultifile(originalRoot,workspace,task));
+if(task.kind==="record-presence")checks.push(...await auditFreshBehavior(workspace));
 if(task.kind==="inventory"){
  const expected=await expectedInventory(originalRoot,task.targets);
  let actual;try{actual=JSON.parse(await readFile(join(workspace,task.reportFile),"utf8"));}catch(error){if(error.code!=="ENOENT"&&!(error instanceof SyntaxError))throw error;}

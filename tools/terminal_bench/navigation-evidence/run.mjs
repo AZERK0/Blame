@@ -9,9 +9,10 @@ import { reconcileUsage } from "../corpus/light-study-accounting.mjs";
 import { repo, work, studyFor } from "./campaign-paths.mjs";
 import { getProviderCollectionSync } from "../../../packages/agent-runtime/node_modules/@cline/llms/dist/index.js";
 import { reserveTrialCosts } from "./budget-accounting.mjs";
+import { projectVerifiers } from "./project-verifiers.mjs";
 
 const panel = process.argv[3];
-if (!["f18","f19","f20","f21","f22","f23","f24","f25"].includes(panel)) throw new Error("Specify a registered F18--F25 panel");
+if (!["f18","f19","f20","f21","f22","f23","f24","f25","f26"].includes(panel)) throw new Error("Specify a registered F18--F26 panel");
 const study = studyFor(panel);
 const campaign = join(work, panel);
 const protocol = JSON.parse(await readFile(join(study, "protocol.json"), "utf8"));
@@ -32,6 +33,7 @@ async function bindings() {
     "tools/terminal_bench/navigation-evidence/run.mjs", "tools/terminal_bench/navigation-evidence/feature-checks.mjs",
     "tools/terminal_bench/navigation-evidence/budget-accounting.mjs",
     "tools/terminal_bench/navigation-evidence/campaign-paths.mjs",
+    "tools/terminal_bench/navigation-evidence/project-verifiers.mjs",
     "tools/terminal_bench/navigation-evidence/prepare-rerun.py", "tools/terminal_bench/navigation-evidence/wire-cap-preflight.mjs",
     "tools/terminal_bench/navigation-evidence/freeze.py", "tools/terminal_bench/navigation-evidence/controls.mjs", "packages/agent-runtime/src/harness/light-edit-recovery.test.ts", "packages/benchmark-runner/src/config.ts", "packages/benchmark-runner/src/benchmark-run.ts", "tools/terminal_bench/navigation-evidence/run.py",
     "tools/terminal_bench/corpus/identifier-token-audit.mjs",
@@ -56,6 +58,15 @@ async function bindings() {
     "tools/terminal_bench/navigation-evidence/rename-ablation-controls.mjs",
     "tools/terminal_bench/navigation-evidence/multifile-criteria.mjs",
   ]) inputs[path] = sha(await readFile(join(repo, path)));
+  if (protocol.studyKind === "fresh-project-confirmation") for (const path of [
+    "tools/terminal_bench/navigation-evidence/prepare-fresh.mjs",
+    "tools/terminal_bench/navigation-evidence/fresh-criteria.mjs",
+    "tools/terminal_bench/navigation-evidence/fresh-controls.mjs",
+    "tools/terminal_bench/navigation-evidence/fresh-runtime-controls.mjs",
+    "tools/terminal_bench/navigation-evidence/multifile-criteria.mjs",
+    "tools/terminal_bench/navigation-evidence/wire-audit.mjs",
+  ]) inputs[path] = sha(await readFile(join(repo, path)));
+  if (protocol.studyKind === "fresh-project-confirmation") inputs[join(study,"freeze-driver.mjs").slice(repo.length+1)] = sha(await readFile(join(study,"freeze-driver.mjs")));
   inputs[join(study, "protocol.json").slice(repo.length + 1)] = sha(await readFile(join(study, "protocol.json")));
   if (protocol.commonPatchProtocol) for (const path of [protocol.commonPatchProtocol,
     join(protocol.commonPatchProtocol, "..", "common-request-cap.patch")])
@@ -79,10 +90,13 @@ async function bindings() {
     projects[name] = { commit:git(["rev-parse","HEAD"],root).trim(),
       source:sha(execFileSync("git",["archive","HEAD"],{cwd:root,maxBuffer:32*1024*1024})),
       lock:sha(await readFile(join(dependencies,"package-lock.json"))) };
-    if (name === "date-fns") for (const module of ["vitest","typescript","esbuild"])
+    if (project.modules) for (const module of project.modules)
+      projects[name][module] = JSON.parse(await readFile(join(dependencies,"node_modules",module,"package.json"))).version;
+    else if (name === "date-fns") for (const module of ["vitest","typescript","esbuild"])
       projects[name][module] = JSON.parse(await readFile(join(root,"node_modules",module,"package.json"))).version;
-    else for (const module of ["lodash","qunit-extras","qunitjs","platform"])
+    else if (name === "lodash") for (const module of ["lodash","qunit-extras","qunitjs","platform"])
       projects[name][module] = JSON.parse(await readFile(join(root,"node_modules",module,"package.json"))).version;
+    else throw Error("Unknown project dependency inventory: " + name);
   }
   const settings = Object.fromEntries(Object.entries(process.env).filter(([name]) =>
     name.startsWith("BLAME_AGENT_") || name.startsWith("CLINE_MESSAGE_BUILDER_"))
@@ -167,10 +181,10 @@ async function score(directory, workspace, task) {
     .map((check) => ({ ...check, name: "non-UTC:" + check.name }))); } catch {}
   const npmTests = paths => ["npm","test","--","--maxWorkers=1","--minWorkers=1","--pool=forks",...paths];
   const isDate = task.project === "date-fns";
-  const selected = runCheck(task.verifierCommands?.selected ?? (isDate ? npmTests(task.selectedTests) : [process.execPath,"test/test.js"]),workspace);
-  const types = runCheck(isDate ? ["npm","run","types"] : [process.execPath,"--check","lodash.js"],workspace);
-  const full = isDate ? runCheck(npmTests([]),workspace)
-    : task.verifierCommands?.selected ? runCheck([process.execPath,"test/test.js"],workspace) : selected;
+  const commands = projectVerifiers(task);
+  const selected = runCheck(commands.selected,workspace);
+  const types = runCheck(commands.types,workspace);
+  const full = !isDate && task.project === "lodash" && !task.verifierCommands?.selected ? selected : runCheck(commands.full,workspace);
   const addedTests = task.newTest ? runCheck(isDate ? npmTests([task.newTest]) : [process.execPath,task.newTest],workspace) : null;
   let testCounterexample = null;
   if (task.newTest) {
@@ -199,7 +213,7 @@ async function score(directory, workspace, task) {
       featureChecks.every((check) => check.passed) && selected.exitCode === 0 && types.exitCode === 0 &&
       full.exitCode === 0 && (!addedTests || addedTests.exitCode === 0) &&
       (!testCounterexample || task.newTestMustFailSeed === false || (testCounterexample.exitCode === 1 && !testCounterexample.error)) &&
-      (isDate || /FAIL:\s*0\s+TOTAL:\s*6794/u.test(full.stdout)) && unexpected.length === 0 };
+      (task.project !== "lodash" || /FAIL:\s*0\s+TOTAL:\s*6794/u.test(full.stdout)) && unexpected.length === 0 };
   await writeJson(join(directory, "score.json"), score);
   return score;
 }
@@ -243,7 +257,10 @@ async function run() {
     for (const task of tasks) {
       const index = protocol.tasks.indexOf(task);
       let arms = [...protocol.arms.slice(index), ...protocol.arms.slice(0, index)];
-      if (repetition === 2) arms.reverse();
+      if (protocol.studyKind === "fresh-project-confirmation") {
+        const shift = (repetition - 1) % arms.length;
+        arms = [...arms.slice(shift), ...arms.slice(0, shift)];
+      } else if (repetition === 2) arms.reverse();
       for (const arm of arms) order.push({ repetition, id: task.id, arm });
     }
   }
