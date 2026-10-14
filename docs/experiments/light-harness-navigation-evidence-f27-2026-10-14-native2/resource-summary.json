@@ -1,0 +1,46 @@
+{
+  "method": "SDK/API estimates, not invoices. Input includes cache subsets; output includes any reasoning subsets. Never add them twice. Missing consumption remains missing. All attempted totals and strict-success/accounting-matched comparisons are separate. An incomplete panel supports only descriptive observed pairs, not a complete-panel or population claim.",
+  "planned": 36,
+  "completed": 9,
+  "unexecuted": 27,
+  "arms": {
+    "baseline": {
+      "trials": 3,
+      "tokenCostReconciled": 3,
+      "inputTokensObserved": 923639,
+      "outputTokensObserved": 34996,
+      "missingTokenAggregates": 0,
+      "estimatedUsdObserved": 0.08258476000000001,
+      "missingCostAggregates": 0,
+      "runnerSecondsObserved": 468.513,
+      "missingDurations": 0,
+      "fullRequestCacheAccounting": 0
+    },
+    "modified": {
+      "trials": 3,
+      "tokenCostReconciled": 3,
+      "inputTokensObserved": 366080,
+      "outputTokensObserved": 21773,
+      "missingTokenAggregates": 0,
+      "estimatedUsdObserved": 0.0514204,
+      "missingCostAggregates": 0,
+      "runnerSecondsObserved": 258.895,
+      "missingDurations": 0,
+      "fullRequestCacheAccounting": 0
+    },
+    "cline": {
+      "trials": 3,
+      "tokenCostReconciled": 3,
+      "inputTokensObserved": 706156,
+      "outputTokensObserved": 32385,
+      "missingTokenAggregates": 0,
+      "estimatedUsdObserved": 0.08175848,
+      "missingCostAggregates": 0,
+      "runnerSecondsObserved": 457.721,
+      "missingDurations": 0,
+      "fullRequestCacheAccounting": 0
+    }
+  },
+  "comparisons": [],
+  "comparisonReason": "Mixed fresh/known strata: all-attempt totals only here; use native-summary.json for separate registered comparisons."
+}

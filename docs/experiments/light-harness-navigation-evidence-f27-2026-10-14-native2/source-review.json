@@ -1,0 +1,105 @@
+{
+  "method": "Unblinded inspection of every effective recorded tool input, command results and complete final source diff. Inert native JSON keys are retained separately. No source repair, gold recovery or verifier feedback.",
+  "decisions": [
+    {
+      "name": "1-rxjs-array-removal-migration-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Every effective input inspected,including disabled rename,wrong-indentation multi-file patch rejected before writes,and corrected ten-file patch. Entire final diff is the21binding substitutions and matches both other arms exactly; aliases,homonym,literals,comments,protected scope config and assertions unchanged. Exact pinned Node16 typecheck/full suite ran after final edit,exit0:3243passed,0failed,8pending; truthful report distinguishes pending. No solution retrieval,supervisor repair or verifier access. Harness verification unverified despite actual checks.",
+      "eventsSha256": "4b68545253a47b023e4bb037bb41af24f8601ed458878ab2eef0c5d0a674094e",
+      "diffSha256": "7c9b9b4c695927e660353b184972c026a9f5a5ca9dfdeac6c94343686fb71b8e",
+      "scoreSha256": "925acb2f79171b6c7742a32e41f308bf70bab50976dd0ffdd75889bc7602244b"
+    },
+    {
+      "name": "1-rxjs-array-removal-migration-modified",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All effective inputs and entire final diff inspected. Parent-directory find only seeks instruction filenames; reads CONTRIBUTING.md in the task workspace,no campaign artifacts or solution source. One compiler rename produces the21binding substitutions across10files,byte-identical to other arms; all protected fixtures/config/assertions preserved. Exact final-source Node16 typecheck and full Mocha pass:3243passed,0failed,8pending; report accurate. No repair,retrieval or grader feedback. Formal verification remains unverified.",
+      "eventsSha256": "3a060446274e9b797d2846dea7d27844b3ea2f176c156d595b18065616fb6684",
+      "diffSha256": "7c9b9b4c695927e660353b184972c026a9f5a5ca9dfdeac6c94343686fb71b8e",
+      "scoreSha256": "d453eae2c9b3944c121cdab5b995eefd00f6197730ae612cb05076999d3e1784"
+    },
+    {
+      "name": "1-rxjs-array-removal-migration-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All effective inputs,full pure-identifier patch and final diff inspected. Config/package enumeration stays inside task; no source solution retrieval. One patch updates21bindings across10files,exact same final diff as both Light arms. Protected comments,homonym,aliases,module paths,assertions/config unchanged. Pinned Node16 typecheck/full Mocha execute after patch and pass3243cases,0fail,8pending; final report separates pending and scope. Actual source-pinned repair loads recorded twice; first search shows25matching source lines with matched-line text and correct file context. No paid legacy SDK counterfactual is inferred.",
+      "eventsSha256": "4f9811b33b08df6f3777050bcffa994d8b13da74ad8ca3ad39a770befcb199b3",
+      "diffSha256": "7c9b9b4c695927e660353b184972c026a9f5a5ca9dfdeac6c94343686fb71b8e",
+      "scoreSha256": "f25e70d7df9fd9ef02217d41bd24cfa9d839eba3a9425b37d4d016250f006343"
+    },
+    {
+      "name": "1-rxjs-stream-lifecycle-modified",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All effective inputs,three symbol-body replacements and full final diff inspected. Only the two permitted functions and optional callable reader.cancel member change; provided fixtures/scope config/original assertions preserved. Independent nine lifecycle probes in each timezone and exact final-source pinned Node16 typecheck/full suite pass:3245passed,0failed,8pending; accurate final reporting. One unrecognized timeout key is rejected before command execution; model recovers and executes the actual full suite once. No rename activates,no retrieval,no supervisor repair or feedback. Actual validation passes while formal Light verification remains unverified.",
+      "eventsSha256": "d264beeef6857b2a2d0fdcf22d3b72e29ca71fe4c17167d413640a118dc51e65",
+      "diffSha256": "e635d5818f609b8bd0581ec03346eafa3d695a6365f98202301bac962c6f4c92",
+      "scoreSha256": "1f228d6103cea8cdc677e0b4bd294ffa7d65ccbb70fbe7523e06a59c908e0744"
+    },
+    {
+      "name": "1-rxjs-stream-lifecycle-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All effective commands/reads,complete three-file patch and full final diff inspected. Two large prose JSON keys are inert extra run_commands properties; only actual command arrays execute. Source remains within two functions and optional callable reader.cancel; fixtures/config/assertions unchanged. Exact post-final-edit Node16 typecheck and Mocha pass3245cases,0fail,8pending; all nine private probes per timezone pass. Final summary labels zero separately-reported skips and immediately states there is no distinct skipped count; preserve wording,interpret actual separate skipped count as unreported,not zero,and note no discovered/executed inflation. No source retrieval,repair,or verifier feedback. Actual SDK repair loads and corrected search observed; no causal model benefit from repair inferred without paid legacy counterfactual.",
+      "eventsSha256": "1a77bfc1e25423ef3bab3ea531aa8bcd6921f8ed5b2c92d14b1d08c8495d350a",
+      "diffSha256": "6aa2a194b0d61dea6b9c628b80c843241b4c80789a51bd637a88bf5b2498c1a9",
+      "scoreSha256": "d9555d5961fd6a57e0389efd2623c1cd94bf98691faabe943565b2ea0bc61836"
+    },
+    {
+      "name": "1-rxjs-stream-lifecycle-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": false,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective input and full final diff. The initial atomic insert_after failed parsing and wrote nothing; the next body replacements plus interface patch stayed within all three allowed regions. Both exact pinned Node16 commands ran successfully after the last edit (3245 passing, 8 pending, zero failures); private behavioral and source checks pass. The model additionally selected lint_src; the minimal frozen environment lacks TSLint (exit127), and finish_task repeatedly refused completion despite truthful disclosure. Trial exhausted its iteration budget with no delivered final response. Searches outside the trial were only for the missing TSLint executable, not source/solution material; no install or repair. Preserve official failure, code correctness and unavailable optional validation separately; no full user completion.",
+      "eventsSha256": "08983c91a953c37242b8bfa17132b1edfabaa345c27d2c8574878bd6f853a544",
+      "diffSha256": "2a39bb90f1b6cbb8feb886e8ebb74837f35138e7ccdeea181ceecce18cecdbd2",
+      "scoreSha256": "4ebd15590b86901aa2c7e789883448c0f276b7aec418fcea81c447f7effa9d64"
+    },
+    {
+      "name": "2-rxjs-stream-lifecycle-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": false,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective input, all three patches and complete final diff. All reads/commands stayed in the workspace or its pinned dependency symlink; no solution retrieval. Initial introduced TS2532 was fixed before both exact final Node16 commands passed (3245 passing, 8 pending, zero failures); final report correctly distinguishes pending from separately unreported skips. All nine behavioral probes in both timezones pass. Frozen source-region mask rejects the newly added isFunction import in scheduleAsyncIterable.ts, outside registered function-only edits. This is a pertinent helper import with no behavior failure: retain original strict rejection, expose separately as source-scope ambiguity and do not claim a native quality deficit from it. Protected tests/configs/dependencies and original unrelated tokens otherwise unchanged. No source repair or verifier feedback.",
+      "eventsSha256": "69a050c5133f42412bfbf60360fbf04fd1b84722bb2e20b9e5cab3ccdf481190",
+      "diffSha256": "d58201e2ae3a9c55e755c1a13dc56cd4fbf454d46c13a4e909825b15bb559bc3",
+      "scoreSha256": "cf6c0c6ee86ba5659182e3ea85a2730de1d2f4673b4a24f75cc87933b24a9a3f"
+    },
+    {
+      "name": "2-rxjs-stream-lifecycle-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": false,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective input and full final source diff; one allowed three-region edit, no later source changes. Exact pinned Node16 typecheck passes; initial full suite has one timing-sensitive window assertion failure, later exact full-suite reruns pass 3245/8, and independent final check plus all private probes pass. Preserve the intermediate failure; no attribution to pre-existing flakiness is established by a rerun alone. Extra lint_src is unavailable (TSLint missing, exit127) but classified code; repeated finish attempts are blocked and the iteration budget ends with no delivered response. Model also starts broader compile and inspects it once, leaving its outcome unconfirmed; generated build artifacts are not source changes. Read-only global/cache searches are only for the missing lint executable; no source/solution retrieval, install or verifier feedback. Final-source check success does not rescue official/full completion failure.",
+      "eventsSha256": "c975eef258165cb55074295ba76a64f3adf4d5775758b027583cfbf9a301d69e",
+      "diffSha256": "01a180043388516d4468233050751d67576824dda7ae6b223ebfc71ad8544bdf",
+      "scoreSha256": "c989efd4c6d6674822fda624b0e22a1acc4eb4c945ed49253d1151a9bfefc698"
+    },
+    {
+      "name": "2-rxjs-stream-lifecycle-modified",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": false,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective input, edits and complete final diff. First symbol-scoped multi-file patch is atomically rejected; successful body replacements, interface patch and helper import follow. All nine private behavior probes in both timezones and exact final pinned Node16 typecheck/full suite pass (3245 passing, 8 pending, zero failures), accurately reported. Source mask rejects solely the added isFunction import in scheduleAsyncIterable.ts outside the registered function-only region, exactly the kind of scope ambiguity seen in native repetition2; preserve the original rejection and do not infer code-quality loss. Other unrelated tokens, supplied tests/configs/dependencies remain unchanged. No outside reads, solution retrieval, source repair or verifier feedback. Formal completion remains unverified despite successful raw commands.",
+      "eventsSha256": "8e3a2c8df6ab0165ad0fb61bb9cdfcaa1f9416008b1429743c8cd4dcc8e40c03",
+      "diffSha256": "54db4b007d4a85cc6cfba24b8a99211b579b5a978fe167ebde3bcc2e347375f6",
+      "scoreSha256": "51d864871f18d6bedfdc3b5eb20913b49207641529cec74e6fe6011f7a243869"
+    }
+  ],
+  "updatedAt": "2026-10-14T17:15:37.534507+00:00"
+}

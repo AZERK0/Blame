@@ -1,0 +1,118 @@
+{
+  "method": "Known SDK estimates plus explicit missing-aggregate/unreported-request reserves, not imputed consumption. Wire/report counts do not establish billing or hidden retries.",
+  "trials": [
+    {
+      "name": "1-rxjs-array-removal-migration-baseline",
+      "observedUsd": 0.00987264,
+      "forwardedAttempts": 8,
+      "usageReports": 8,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.00987264,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-rxjs-array-removal-migration-modified",
+      "observedUsd": 0.00706216,
+      "forwardedAttempts": 7,
+      "usageReports": 7,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.00706216,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-rxjs-array-removal-migration-cline",
+      "observedUsd": 0.01614692,
+      "forwardedAttempts": 7,
+      "usageReports": 7,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.01614692,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-rxjs-stream-lifecycle-modified",
+      "observedUsd": 0.018355999999999997,
+      "forwardedAttempts": 11,
+      "usageReports": 11,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.018355999999999997,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-rxjs-stream-lifecycle-cline",
+      "observedUsd": 0.027931600000000004,
+      "forwardedAttempts": 7,
+      "usageReports": 7,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.027931600000000004,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-rxjs-stream-lifecycle-baseline",
+      "observedUsd": 0.03539524,
+      "forwardedAttempts": 24,
+      "usageReports": 24,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.03539524,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-rxjs-stream-lifecycle-cline",
+      "observedUsd": 0.03767996,
+      "forwardedAttempts": 13,
+      "usageReports": 13,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.03767996,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-rxjs-stream-lifecycle-baseline",
+      "observedUsd": 0.03731688,
+      "forwardedAttempts": 24,
+      "usageReports": 24,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.03731688,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-rxjs-stream-lifecycle-modified",
+      "observedUsd": 0.026002240000000003,
+      "forwardedAttempts": 12,
+      "usageReports": 12,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.026002240000000003,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-rxjs-array-removal-migration-modified",
+      "observedUsd": 0.00798824,
+      "forwardedAttempts": 8,
+      "usageReports": 8,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.00798824,
+      "basis": "wire/report counts; billing unknown"
+    }
+  ],
+  "observedUsd": 0.22375188,
+  "reservedUsd": 0,
+  "accountedUsd": 0.22375188
+}

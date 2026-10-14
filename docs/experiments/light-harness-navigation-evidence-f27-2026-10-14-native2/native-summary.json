@@ -1,0 +1,2087 @@
+{
+  "method": "F27: preregistered fresh RxJS confirmation before separate known Zod diagnostics, three repetitions each. Only compiler-rename availability differs between Light arms; native SDK receives the isolated pinned search repair. Optional auxiliary members explicitly permitted by new task registrations. Preserve every assigned outcome. No repair,retry,solution recovery or feedback. Prior cohorts contribute finances only.",
+  "planned": 36,
+  "completed": 9,
+  "unexecuted": 27,
+  "arms": {
+    "baseline": {
+      "planned": 12,
+      "trials": 3,
+      "official": 1,
+      "functional": 3,
+      "actualChecks": 3,
+      "strict": 1,
+      "tokensObserved": 958635,
+      "estimatedUsdObserved": 0.08258476000000001,
+      "runnerSecondsObserved": 468.513,
+      "fullCacheAccounting": 0,
+      "tokenCostReconciled": 3,
+      "timeouts": 0,
+      "failed": 2,
+      "suitesAndBehaviorPassed": 3,
+      "sourceScopeOnlyRejections": 0,
+      "missingConsumption": 0
+    },
+    "modified": {
+      "planned": 12,
+      "trials": 3,
+      "official": 3,
+      "functional": 2,
+      "actualChecks": 3,
+      "strict": 2,
+      "tokensObserved": 387853,
+      "estimatedUsdObserved": 0.0514204,
+      "runnerSecondsObserved": 258.895,
+      "fullCacheAccounting": 0,
+      "tokenCostReconciled": 3,
+      "timeouts": 0,
+      "failed": 0,
+      "suitesAndBehaviorPassed": 3,
+      "sourceScopeOnlyRejections": 1,
+      "missingConsumption": 0
+    },
+    "cline": {
+      "planned": 12,
+      "trials": 3,
+      "official": 3,
+      "functional": 2,
+      "actualChecks": 3,
+      "strict": 2,
+      "tokensObserved": 738541,
+      "estimatedUsdObserved": 0.08175848,
+      "runnerSecondsObserved": 457.721,
+      "fullCacheAccounting": 0,
+      "tokenCostReconciled": 3,
+      "timeouts": 0,
+      "failed": 0,
+      "suitesAndBehaviorPassed": 3,
+      "sourceScopeOnlyRejections": 1,
+      "missingConsumption": 0
+    }
+  },
+  "strata": {
+    "confirmation": {
+      "arms": {
+        "baseline": {
+          "trials": 3,
+          "official": 1,
+          "functional": 3,
+          "actualChecks": 3,
+          "strict": 1,
+          "tokensObserved": 958635,
+          "estimatedUsdObserved": 0.08258476000000001,
+          "runnerSecondsObserved": 468.513,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 3,
+          "timeouts": 0,
+          "failed": 2,
+          "suitesAndBehaviorPassed": 3,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "modified": {
+          "trials": 3,
+          "official": 3,
+          "functional": 2,
+          "actualChecks": 3,
+          "strict": 2,
+          "tokensObserved": 387853,
+          "estimatedUsdObserved": 0.0514204,
+          "runnerSecondsObserved": 258.895,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 3,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 3,
+          "sourceScopeOnlyRejections": 1,
+          "missingConsumption": 0
+        },
+        "cline": {
+          "trials": 3,
+          "official": 3,
+          "functional": 2,
+          "actualChecks": 3,
+          "strict": 2,
+          "tokensObserved": 738541,
+          "estimatedUsdObserved": 0.08175848,
+          "runnerSecondsObserved": 457.721,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 3,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 3,
+          "sourceScopeOnlyRejections": 1,
+          "missingConsumption": 0
+        }
+      }
+    },
+    "diagnostic": {
+      "arms": {
+        "baseline": {
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "modified": {
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "cline": {
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "id": "rxjs-array-removal-migration",
+      "partition": "confirmation",
+      "arms": {
+        "baseline": {
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "actualChecks": 1,
+          "strict": 1,
+          "tokensObserved": 65703,
+          "estimatedUsdObserved": 0.00987264,
+          "runnerSecondsObserved": 53.777,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 1,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 1,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "modified": {
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "actualChecks": 1,
+          "strict": 1,
+          "tokensObserved": 57476,
+          "estimatedUsdObserved": 0.00706216,
+          "runnerSecondsObserved": 43.892,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 1,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 1,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "cline": {
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "actualChecks": 1,
+          "strict": 1,
+          "tokensObserved": 162857,
+          "estimatedUsdObserved": 0.01614692,
+          "runnerSecondsObserved": 54.815,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 1,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 1,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        }
+      }
+    },
+    {
+      "id": "rxjs-stream-lifecycle",
+      "partition": "confirmation",
+      "arms": {
+        "baseline": {
+          "trials": 2,
+          "official": 0,
+          "functional": 2,
+          "actualChecks": 2,
+          "strict": 0,
+          "tokensObserved": 892932,
+          "estimatedUsdObserved": 0.07271211999999999,
+          "runnerSecondsObserved": 414.736,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 2,
+          "timeouts": 0,
+          "failed": 2,
+          "suitesAndBehaviorPassed": 2,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "modified": {
+          "trials": 2,
+          "official": 2,
+          "functional": 1,
+          "actualChecks": 2,
+          "strict": 1,
+          "tokensObserved": 330377,
+          "estimatedUsdObserved": 0.04435824,
+          "runnerSecondsObserved": 215.003,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 2,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 2,
+          "sourceScopeOnlyRejections": 1,
+          "missingConsumption": 0
+        },
+        "cline": {
+          "trials": 2,
+          "official": 2,
+          "functional": 1,
+          "actualChecks": 2,
+          "strict": 1,
+          "tokensObserved": 575684,
+          "estimatedUsdObserved": 0.06561156,
+          "runnerSecondsObserved": 402.906,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 2,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 2,
+          "sourceScopeOnlyRejections": 1,
+          "missingConsumption": 0
+        }
+      }
+    },
+    {
+      "id": "zod-issue-helper-migration",
+      "partition": "diagnostic",
+      "arms": {
+        "baseline": {
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "modified": {
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "cline": {
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        }
+      }
+    },
+    {
+      "id": "zod-record-own-presence",
+      "partition": "diagnostic",
+      "arms": {
+        "baseline": {
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "modified": {
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "cline": {
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        }
+      }
+    }
+  ],
+  "adverseOutcomes": [
+    {
+      "name": "1-rxjs-stream-lifecycle-baseline",
+      "status": "failed",
+      "official": false,
+      "functional": true,
+      "audited": false,
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    {
+      "name": "2-rxjs-stream-lifecycle-cline",
+      "status": "succeeded",
+      "official": true,
+      "functional": false,
+      "audited": false,
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [
+        "registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts",
+        "non-UTC:registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts"
+      ],
+      "allFeatureFailures": [
+        "registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts",
+        "non-UTC:registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts"
+      ]
+    },
+    {
+      "name": "2-rxjs-stream-lifecycle-baseline",
+      "status": "failed",
+      "official": false,
+      "functional": true,
+      "audited": false,
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    {
+      "name": "2-rxjs-stream-lifecycle-modified",
+      "status": "succeeded",
+      "official": true,
+      "functional": false,
+      "audited": false,
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [
+        "registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts",
+        "non-UTC:registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts"
+      ],
+      "allFeatureFailures": [
+        "registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts",
+        "non-UTC:registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts"
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "left": "modified",
+      "right": "baseline",
+      "tier": "strict",
+      "partition": "confirmation",
+      "pairs": 1,
+      "resources": {
+        "tokens": {
+          "left": 57476,
+          "right": 65703,
+          "relativeChange": -0.12521498257309405
+        },
+        "cost": {
+          "left": 0.00706216,
+          "right": 0.00987264,
+          "relativeChange": -0.2846736030079088
+        },
+        "seconds": {
+          "left": 43.892,
+          "right": 53.777,
+          "relativeChange": -0.1838146419473009
+        }
+      },
+      "tasks": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 57476,
+              "right": 65703,
+              "relativeChange": -0.12521498257309405
+            },
+            "cost": {
+              "left": 0.00706216,
+              "right": 0.00987264,
+              "relativeChange": -0.2846736030079088
+            },
+            "seconds": {
+              "left": 43.892,
+              "right": 53.777,
+              "relativeChange": -0.1838146419473009
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-issue-helper-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 57476,
+              "right": 65703,
+              "relativeChange": -0.12521498257309405
+            },
+            "cost": {
+              "left": 0.00706216,
+              "right": 0.00987264,
+              "relativeChange": -0.2846736030079088
+            },
+            "seconds": {
+              "left": 43.892,
+              "right": 53.777,
+              "relativeChange": -0.1838146419473009
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "modified",
+      "right": "cline",
+      "tier": "strict",
+      "partition": "confirmation",
+      "pairs": 2,
+      "resources": {
+        "tokens": {
+          "left": 205272,
+          "right": 371278,
+          "relativeChange": -0.4471204865356956
+        },
+        "cost": {
+          "left": 0.025418159999999995,
+          "right": 0.04407852,
+          "relativeChange": -0.4233436149852583
+        },
+        "seconds": {
+          "left": 144.467,
+          "right": 283.58299999999997,
+          "relativeChange": -0.4905653723953832
+        }
+      },
+      "tasks": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 57476,
+              "right": 162857,
+              "relativeChange": -0.647076883400775
+            },
+            "cost": {
+              "left": 0.00706216,
+              "right": 0.01614692,
+              "relativeChange": -0.5626311395609813
+            },
+            "seconds": {
+              "left": 43.892,
+              "right": 54.815,
+              "relativeChange": -0.19927027273556497
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 147796,
+              "right": 208421,
+              "relativeChange": -0.29087759870646435
+            },
+            "cost": {
+              "left": 0.018355999999999997,
+              "right": 0.027931600000000004,
+              "relativeChange": -0.34282318234544407
+            },
+            "seconds": {
+              "left": 100.575,
+              "right": 228.768,
+              "relativeChange": -0.5603624632815778
+            }
+          }
+        },
+        {
+          "id": "zod-issue-helper-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 57476,
+              "right": 162857,
+              "relativeChange": -0.647076883400775
+            },
+            "cost": {
+              "left": 0.00706216,
+              "right": 0.01614692,
+              "relativeChange": -0.5626311395609813
+            },
+            "seconds": {
+              "left": 43.892,
+              "right": 54.815,
+              "relativeChange": -0.19927027273556497
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 147796,
+              "right": 208421,
+              "relativeChange": -0.29087759870646435
+            },
+            "cost": {
+              "left": 0.018355999999999997,
+              "right": 0.027931600000000004,
+              "relativeChange": -0.34282318234544407
+            },
+            "seconds": {
+              "left": 100.575,
+              "right": 228.768,
+              "relativeChange": -0.5603624632815778
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "baseline",
+      "right": "cline",
+      "tier": "strict",
+      "partition": "confirmation",
+      "pairs": 1,
+      "resources": {
+        "tokens": {
+          "left": 65703,
+          "right": 162857,
+          "relativeChange": -0.596560172421204
+        },
+        "cost": {
+          "left": 0.00987264,
+          "right": 0.01614692,
+          "relativeChange": -0.3885744154303111
+        },
+        "seconds": {
+          "left": 53.777,
+          "right": 54.815,
+          "relativeChange": -0.01893642251208605
+        }
+      },
+      "tasks": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 65703,
+              "right": 162857,
+              "relativeChange": -0.596560172421204
+            },
+            "cost": {
+              "left": 0.00987264,
+              "right": 0.01614692,
+              "relativeChange": -0.3885744154303111
+            },
+            "seconds": {
+              "left": 53.777,
+              "right": 54.815,
+              "relativeChange": -0.01893642251208605
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-issue-helper-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 65703,
+              "right": 162857,
+              "relativeChange": -0.596560172421204
+            },
+            "cost": {
+              "left": 0.00987264,
+              "right": 0.01614692,
+              "relativeChange": -0.3885744154303111
+            },
+            "seconds": {
+              "left": 53.777,
+              "right": 54.815,
+              "relativeChange": -0.01893642251208605
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "modified",
+      "right": "baseline",
+      "tier": "functional",
+      "partition": "confirmation",
+      "pairs": 1,
+      "resources": {
+        "tokens": {
+          "left": 57476,
+          "right": 65703,
+          "relativeChange": -0.12521498257309405
+        },
+        "cost": {
+          "left": 0.00706216,
+          "right": 0.00987264,
+          "relativeChange": -0.2846736030079088
+        },
+        "seconds": {
+          "left": 43.892,
+          "right": 53.777,
+          "relativeChange": -0.1838146419473009
+        }
+      },
+      "tasks": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 57476,
+              "right": 65703,
+              "relativeChange": -0.12521498257309405
+            },
+            "cost": {
+              "left": 0.00706216,
+              "right": 0.00987264,
+              "relativeChange": -0.2846736030079088
+            },
+            "seconds": {
+              "left": 43.892,
+              "right": 53.777,
+              "relativeChange": -0.1838146419473009
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-issue-helper-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 57476,
+              "right": 65703,
+              "relativeChange": -0.12521498257309405
+            },
+            "cost": {
+              "left": 0.00706216,
+              "right": 0.00987264,
+              "relativeChange": -0.2846736030079088
+            },
+            "seconds": {
+              "left": 43.892,
+              "right": 53.777,
+              "relativeChange": -0.1838146419473009
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "modified",
+      "right": "cline",
+      "tier": "functional",
+      "partition": "confirmation",
+      "pairs": 2,
+      "resources": {
+        "tokens": {
+          "left": 205272,
+          "right": 371278,
+          "relativeChange": -0.4471204865356956
+        },
+        "cost": {
+          "left": 0.025418159999999995,
+          "right": 0.04407852,
+          "relativeChange": -0.4233436149852583
+        },
+        "seconds": {
+          "left": 144.467,
+          "right": 283.58299999999997,
+          "relativeChange": -0.4905653723953832
+        }
+      },
+      "tasks": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 57476,
+              "right": 162857,
+              "relativeChange": -0.647076883400775
+            },
+            "cost": {
+              "left": 0.00706216,
+              "right": 0.01614692,
+              "relativeChange": -0.5626311395609813
+            },
+            "seconds": {
+              "left": 43.892,
+              "right": 54.815,
+              "relativeChange": -0.19927027273556497
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 147796,
+              "right": 208421,
+              "relativeChange": -0.29087759870646435
+            },
+            "cost": {
+              "left": 0.018355999999999997,
+              "right": 0.027931600000000004,
+              "relativeChange": -0.34282318234544407
+            },
+            "seconds": {
+              "left": 100.575,
+              "right": 228.768,
+              "relativeChange": -0.5603624632815778
+            }
+          }
+        },
+        {
+          "id": "zod-issue-helper-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 57476,
+              "right": 162857,
+              "relativeChange": -0.647076883400775
+            },
+            "cost": {
+              "left": 0.00706216,
+              "right": 0.01614692,
+              "relativeChange": -0.5626311395609813
+            },
+            "seconds": {
+              "left": 43.892,
+              "right": 54.815,
+              "relativeChange": -0.19927027273556497
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 147796,
+              "right": 208421,
+              "relativeChange": -0.29087759870646435
+            },
+            "cost": {
+              "left": 0.018355999999999997,
+              "right": 0.027931600000000004,
+              "relativeChange": -0.34282318234544407
+            },
+            "seconds": {
+              "left": 100.575,
+              "right": 228.768,
+              "relativeChange": -0.5603624632815778
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "baseline",
+      "right": "cline",
+      "tier": "functional",
+      "partition": "confirmation",
+      "pairs": 1,
+      "resources": {
+        "tokens": {
+          "left": 65703,
+          "right": 162857,
+          "relativeChange": -0.596560172421204
+        },
+        "cost": {
+          "left": 0.00987264,
+          "right": 0.01614692,
+          "relativeChange": -0.3885744154303111
+        },
+        "seconds": {
+          "left": 53.777,
+          "right": 54.815,
+          "relativeChange": -0.01893642251208605
+        }
+      },
+      "tasks": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 65703,
+              "right": 162857,
+              "relativeChange": -0.596560172421204
+            },
+            "cost": {
+              "left": 0.00987264,
+              "right": 0.01614692,
+              "relativeChange": -0.3885744154303111
+            },
+            "seconds": {
+              "left": 53.777,
+              "right": 54.815,
+              "relativeChange": -0.01893642251208605
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-issue-helper-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 65703,
+              "right": 162857,
+              "relativeChange": -0.596560172421204
+            },
+            "cost": {
+              "left": 0.00987264,
+              "right": 0.01614692,
+              "relativeChange": -0.3885744154303111
+            },
+            "seconds": {
+              "left": 53.777,
+              "right": 54.815,
+              "relativeChange": -0.01893642251208605
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "modified",
+      "right": "baseline",
+      "tier": "strict",
+      "partition": "diagnostic",
+      "pairs": 0,
+      "resources": {
+        "tokens": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        },
+        "cost": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        },
+        "seconds": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        }
+      },
+      "tasks": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-issue-helper-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": []
+    },
+    {
+      "left": "modified",
+      "right": "cline",
+      "tier": "strict",
+      "partition": "diagnostic",
+      "pairs": 0,
+      "resources": {
+        "tokens": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        },
+        "cost": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        },
+        "seconds": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        }
+      },
+      "tasks": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-issue-helper-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": []
+    },
+    {
+      "left": "baseline",
+      "right": "cline",
+      "tier": "strict",
+      "partition": "diagnostic",
+      "pairs": 0,
+      "resources": {
+        "tokens": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        },
+        "cost": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        },
+        "seconds": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        }
+      },
+      "tasks": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-issue-helper-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": []
+    },
+    {
+      "left": "modified",
+      "right": "baseline",
+      "tier": "functional",
+      "partition": "diagnostic",
+      "pairs": 0,
+      "resources": {
+        "tokens": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        },
+        "cost": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        },
+        "seconds": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        }
+      },
+      "tasks": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-issue-helper-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": []
+    },
+    {
+      "left": "modified",
+      "right": "cline",
+      "tier": "functional",
+      "partition": "diagnostic",
+      "pairs": 0,
+      "resources": {
+        "tokens": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        },
+        "cost": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        },
+        "seconds": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        }
+      },
+      "tasks": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-issue-helper-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": []
+    },
+    {
+      "left": "baseline",
+      "right": "cline",
+      "tier": "functional",
+      "partition": "diagnostic",
+      "pairs": 0,
+      "resources": {
+        "tokens": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        },
+        "cost": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        },
+        "seconds": {
+          "left": 0,
+          "right": 0,
+          "relativeChange": null
+        }
+      },
+      "tasks": [
+        {
+          "id": "rxjs-array-removal-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-issue-helper-migration",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": []
+    }
+  ],
+  "accounting": {
+    "method": "Known SDK estimates plus explicit missing-aggregate/unreported-request reserves, not imputed consumption. Wire/report counts do not establish billing or hidden retries.",
+    "trials": [
+      {
+        "name": "1-rxjs-array-removal-migration-baseline",
+        "observedUsd": 0.00987264,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00987264,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-rxjs-array-removal-migration-modified",
+        "observedUsd": 0.00706216,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00706216,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-rxjs-array-removal-migration-cline",
+        "observedUsd": 0.01614692,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01614692,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-rxjs-stream-lifecycle-modified",
+        "observedUsd": 0.018355999999999997,
+        "forwardedAttempts": 11,
+        "usageReports": 11,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.018355999999999997,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-rxjs-stream-lifecycle-cline",
+        "observedUsd": 0.027931600000000004,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.027931600000000004,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-rxjs-stream-lifecycle-baseline",
+        "observedUsd": 0.03539524,
+        "forwardedAttempts": 24,
+        "usageReports": 24,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.03539524,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-rxjs-stream-lifecycle-cline",
+        "observedUsd": 0.03767996,
+        "forwardedAttempts": 13,
+        "usageReports": 13,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.03767996,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-rxjs-stream-lifecycle-baseline",
+        "observedUsd": 0.03731688,
+        "forwardedAttempts": 24,
+        "usageReports": 24,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.03731688,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-rxjs-stream-lifecycle-modified",
+        "observedUsd": 0.026002240000000003,
+        "forwardedAttempts": 12,
+        "usageReports": 12,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.026002240000000003,
+        "basis": "wire/report counts; billing unknown"
+      }
+    ],
+    "observedUsd": 0.21576363999999998,
+    "reservedUsd": 0,
+    "accountedUsd": 0.21576363999999998
+  },
+  "priorAccountedUsd": 0.82594076,
+  "totalAccountedUsd": 1.0417044,
+  "referenceEquivalentEur": 0.9321643419643285,
+  "limits": {
+    "authorizedEur": 2,
+    "operationalUsd": 2.190323,
+    "invoiceVerified": false
+  },
+  "newMissingWireResponseUsage": 0,
+  "limitations": "Two fresh RxJS clusters,not a representative population; repeat trials are dependent within tasks. Known Zod diagnostics stay separate. No paid legacy SDK arm identifies model benefit from the search repair. Source-project tsconfig is supplied to all RxJS arms after a zero-model completeness block; no guard weakened. Per-task project Node version is pinned; actual model runtime Node24. Same advertised rename schema includes blocked recovery. Provider seeds/revision,invoices,hidden retries and full cache unknown. Actual checks,truthful reporting,formal admission and user criteria remain distinct."
+}

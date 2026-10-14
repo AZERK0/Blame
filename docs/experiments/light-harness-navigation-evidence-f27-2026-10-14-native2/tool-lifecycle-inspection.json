@@ -1,0 +1,95 @@
+{
+  "method": "Read every raw started/finished tool input independently of the driver's completed-tool ledger. Orphan, changed-input and missing-ID observations require explicit review; this extractor does not adjudicate external effects or leakage.",
+  "trials": [
+    {
+      "name": "1-rxjs-array-removal-migration-baseline",
+      "eventsSha256": "4b68545253a47b023e4bb037bb41af24f8601ed458878ab2eef0c5d0a674094e",
+      "started": 21,
+      "finished": 21,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-rxjs-array-removal-migration-modified",
+      "eventsSha256": "3a060446274e9b797d2846dea7d27844b3ea2f176c156d595b18065616fb6684",
+      "started": 19,
+      "finished": 19,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-rxjs-array-removal-migration-cline",
+      "eventsSha256": "4f9811b33b08df6f3777050bcffa994d8b13da74ad8ca3ad39a770befcb199b3",
+      "started": 12,
+      "finished": 12,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-rxjs-stream-lifecycle-modified",
+      "eventsSha256": "d264beeef6857b2a2d0fdcf22d3b72e29ca71fe4c17167d413640a118dc51e65",
+      "started": 30,
+      "finished": 30,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-rxjs-stream-lifecycle-cline",
+      "eventsSha256": "1a77bfc1e25423ef3bab3ea531aa8bcd6921f8ed5b2c92d14b1d08c8495d350a",
+      "started": 15,
+      "finished": 15,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-rxjs-stream-lifecycle-baseline",
+      "eventsSha256": "08983c91a953c37242b8bfa17132b1edfabaa345c27d2c8574878bd6f853a544",
+      "started": 42,
+      "finished": 42,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-stream-lifecycle-cline",
+      "eventsSha256": "69a050c5133f42412bfbf60360fbf04fd1b84722bb2e20b9e5cab3ccdf481190",
+      "started": 21,
+      "finished": 21,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-stream-lifecycle-baseline",
+      "eventsSha256": "c975eef258165cb55074295ba76a64f3adf4d5775758b027583cfbf9a301d69e",
+      "started": 50,
+      "finished": 50,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-stream-lifecycle-modified",
+      "eventsSha256": "8e3a2c8df6ab0165ad0fb61bb9cdfcaa1f9416008b1429743c8cd4dcc8e40c03",
+      "started": 34,
+      "finished": 34,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    }
+  ]
+}

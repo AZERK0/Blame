@@ -1,0 +1,17 @@
+{
+  "reviewedTraces": 9,
+  "rawArtifacts": 54,
+  "missingArtifacts": 0,
+  "rawByteSha256Verified": true,
+  "allPlannedRetained": true,
+  "frozenOrderModelEffortBudgetsVerified": true,
+  "allRecordedToolInputsReviewed": true,
+  "planned": 36,
+  "completed": 9,
+  "unexecuted": 27,
+  "observedEstimatedUsd": 0.21576363999999998,
+  "tokenCostReconciled": 9,
+  "fullRequestCacheAccounting": 0,
+  "resultsSha256": "cceb2d02b2472d1ee5c15ad451f9e71ff65bfb6abf332c83d4aa24c39c744c03",
+  "limitations": "Manual review covers recorded actions and source only; API estimates are not invoices and hidden retries/cache remain unestablished. No model source repair, reference patch recovery or verifier feedback."
+}

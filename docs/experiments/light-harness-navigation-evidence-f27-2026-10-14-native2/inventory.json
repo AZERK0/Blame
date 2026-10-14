@@ -1,0 +1,380 @@
+[
+  {
+    "trial": "1-rxjs-array-removal-migration-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-array-removal-migration-baseline.instruction.txt.gz",
+    "bytes": 1274,
+    "sha256": "3913b9867f108e336ff14e9ef08f5c003d047d4c414ef522c0ea93c10c128c44"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-array-removal-migration-baseline.events.jsonl.gz",
+    "bytes": 99556,
+    "sha256": "4b68545253a47b023e4bb037bb41af24f8601ed458878ab2eef0c5d0a674094e"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-baseline",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-array-removal-migration-baseline.result.json.gz",
+    "bytes": 4775,
+    "sha256": "c2b32b783b16cb62cb2dae1c407e30f3b965ebcb8ecf08bfd764bd02206b1e32"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-array-removal-migration-baseline.workspace.diff.gz",
+    "bytes": 9398,
+    "sha256": "7c9b9b4c695927e660353b184972c026a9f5a5ca9dfdeac6c94343686fb71b8e"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-baseline",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-array-removal-migration-baseline.trial.json.gz",
+    "bytes": 4661,
+    "sha256": "b0714d276dd93ad00c165755e43d890beba2e43e793ca7731f3d41f5bbd07817"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-baseline",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-array-removal-migration-baseline.score.json.gz",
+    "bytes": 20956,
+    "sha256": "925acb2f79171b6c7742a32e41f308bf70bab50976dd0ffdd75889bc7602244b"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-modified",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-array-removal-migration-modified.instruction.txt.gz",
+    "bytes": 1274,
+    "sha256": "3913b9867f108e336ff14e9ef08f5c003d047d4c414ef522c0ea93c10c128c44"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-modified",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-array-removal-migration-modified.events.jsonl.gz",
+    "bytes": 86189,
+    "sha256": "3a060446274e9b797d2846dea7d27844b3ea2f176c156d595b18065616fb6684"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-modified",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-array-removal-migration-modified.result.json.gz",
+    "bytes": 4770,
+    "sha256": "44417da2e0106ebe0435e7421c28b59f7a02b52e1a1fd23170ee2ce2ab31ed98"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-modified",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-array-removal-migration-modified.workspace.diff.gz",
+    "bytes": 9398,
+    "sha256": "7c9b9b4c695927e660353b184972c026a9f5a5ca9dfdeac6c94343686fb71b8e"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-modified",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-array-removal-migration-modified.trial.json.gz",
+    "bytes": 5988,
+    "sha256": "9c70942ab07abd24eae436c9566038cc9c1426fde8d8823140da0de8c1d40840"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-modified",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-array-removal-migration-modified.score.json.gz",
+    "bytes": 20955,
+    "sha256": "d453eae2c9b3944c121cdab5b995eefd00f6197730ae612cb05076999d3e1784"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-array-removal-migration-cline.instruction.txt.gz",
+    "bytes": 1274,
+    "sha256": "3913b9867f108e336ff14e9ef08f5c003d047d4c414ef522c0ea93c10c128c44"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-array-removal-migration-cline.events.jsonl.gz",
+    "bytes": 408668,
+    "sha256": "4f9811b33b08df6f3777050bcffa994d8b13da74ad8ca3ad39a770befcb199b3"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-cline",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-array-removal-migration-cline.result.json.gz",
+    "bytes": 3709,
+    "sha256": "b772f808d4fb31db4f4771e5754ab5c6321af8ad8319f38b26b2ce3fe4c6dacd"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-array-removal-migration-cline.workspace.diff.gz",
+    "bytes": 9398,
+    "sha256": "7c9b9b4c695927e660353b184972c026a9f5a5ca9dfdeac6c94343686fb71b8e"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-cline",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-array-removal-migration-cline.trial.json.gz",
+    "bytes": 5774,
+    "sha256": "e43921641eef4617dd9f9b3d53b243ae713a2964af5c666f3a3cbb9f6778366e"
+  },
+  {
+    "trial": "1-rxjs-array-removal-migration-cline",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-array-removal-migration-cline.score.json.gz",
+    "bytes": 20939,
+    "sha256": "f25e70d7df9fd9ef02217d41bd24cfa9d839eba3a9425b37d4d016250f006343"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-modified",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-stream-lifecycle-modified.instruction.txt.gz",
+    "bytes": 1826,
+    "sha256": "4b5a34303b2734cf48946941449fcc2c8877fc5ae3ed5aa3a05ad28fc7bf99b4"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-modified",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-stream-lifecycle-modified.events.jsonl.gz",
+    "bytes": 152764,
+    "sha256": "d264beeef6857b2a2d0fdcf22d3b72e29ca71fe4c17167d413640a118dc51e65"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-modified",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-stream-lifecycle-modified.result.json.gz",
+    "bytes": 4807,
+    "sha256": "b54057c51089f5156ce027eabf552b582624a58bf3a933177773036f2a15c39a"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-modified",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-stream-lifecycle-modified.workspace.diff.gz",
+    "bytes": 4178,
+    "sha256": "e635d5818f609b8bd0581ec03346eafa3d695a6365f98202301bac962c6f4c92"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-modified",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-stream-lifecycle-modified.trial.json.gz",
+    "bytes": 7015,
+    "sha256": "0ae085b6861a188cab312b438f78add4e527415bd5b7efb613b715e39284a644"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-modified",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-stream-lifecycle-modified.score.json.gz",
+    "bytes": 20344,
+    "sha256": "1f228d6103cea8cdc677e0b4bd294ffa7d65ccbb70fbe7523e06a59c908e0744"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-stream-lifecycle-cline.instruction.txt.gz",
+    "bytes": 1826,
+    "sha256": "4b5a34303b2734cf48946941449fcc2c8877fc5ae3ed5aa3a05ad28fc7bf99b4"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-stream-lifecycle-cline.events.jsonl.gz",
+    "bytes": 548306,
+    "sha256": "1a77bfc1e25423ef3bab3ea531aa8bcd6921f8ed5b2c92d14b1d08c8495d350a"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-cline",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-stream-lifecycle-cline.result.json.gz",
+    "bytes": 3739,
+    "sha256": "3c4caf52d256d965292c7da2aa9e964cf04a0fea1de17ceb18b4796b7b8ac29f"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-stream-lifecycle-cline.workspace.diff.gz",
+    "bytes": 3804,
+    "sha256": "6aa2a194b0d61dea6b9c628b80c843241b4c80789a51bd637a88bf5b2498c1a9"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-cline",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-stream-lifecycle-cline.trial.json.gz",
+    "bytes": 6406,
+    "sha256": "e83a19382d3709b15a6af7fa990aa479d0e78f45ccb4e00f5613d38044b8ce6c"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-cline",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-stream-lifecycle-cline.score.json.gz",
+    "bytes": 20328,
+    "sha256": "d9555d5961fd6a57e0389efd2623c1cd94bf98691faabe943565b2ea0bc61836"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-stream-lifecycle-baseline.instruction.txt.gz",
+    "bytes": 1826,
+    "sha256": "4b5a34303b2734cf48946941449fcc2c8877fc5ae3ed5aa3a05ad28fc7bf99b4"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-stream-lifecycle-baseline.events.jsonl.gz",
+    "bytes": 218205,
+    "sha256": "08983c91a953c37242b8bfa17132b1edfabaa345c27d2c8574878bd6f853a544"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-baseline",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-stream-lifecycle-baseline.result.json.gz",
+    "bytes": 4508,
+    "sha256": "90b444a71b453d7e480047ea76667ff14fa359049fcd2afb4e84590832419b74"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-stream-lifecycle-baseline.workspace.diff.gz",
+    "bytes": 4190,
+    "sha256": "2a39bb90f1b6cbb8feb886e8ebb74837f35138e7ccdeea181ceecce18cecdbd2"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-baseline",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-stream-lifecycle-baseline.trial.json.gz",
+    "bytes": 5748,
+    "sha256": "17a0dea26cb556a3da600219d169570b14db514be83087f6b7f67a1a36844710"
+  },
+  {
+    "trial": "1-rxjs-stream-lifecycle-baseline",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-stream-lifecycle-baseline.score.json.gz",
+    "bytes": 20339,
+    "sha256": "4ebd15590b86901aa2c7e789883448c0f276b7aec418fcea81c447f7effa9d64"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-rxjs-stream-lifecycle-cline.instruction.txt.gz",
+    "bytes": 1826,
+    "sha256": "4b5a34303b2734cf48946941449fcc2c8877fc5ae3ed5aa3a05ad28fc7bf99b4"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-rxjs-stream-lifecycle-cline.events.jsonl.gz",
+    "bytes": 530043,
+    "sha256": "69a050c5133f42412bfbf60360fbf04fd1b84722bb2e20b9e5cab3ccdf481190"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-cline",
+    "file": "result.json",
+    "artifact": "traces/2-rxjs-stream-lifecycle-cline.result.json.gz",
+    "bytes": 3717,
+    "sha256": "64fa3ad07d24c21228517b1e2135626122e59b99b89d6563903f4aee1aba1f75"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-rxjs-stream-lifecycle-cline.workspace.diff.gz",
+    "bytes": 4110,
+    "sha256": "d58201e2ae3a9c55e755c1a13dc56cd4fbf454d46c13a4e909825b15bb559bc3"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-cline",
+    "file": "trial.json",
+    "artifact": "traces/2-rxjs-stream-lifecycle-cline.trial.json.gz",
+    "bytes": 4904,
+    "sha256": "e88eb52dfe0e1df0b4c0962389c0229a2d0050c352efd379e57cba2623225889"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-cline",
+    "file": "score.json",
+    "artifact": "traces/2-rxjs-stream-lifecycle-cline.score.json.gz",
+    "bytes": 20332,
+    "sha256": "cf6c0c6ee86ba5659182e3ea85a2730de1d2f4673b4a24f75cc87933b24a9a3f"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-rxjs-stream-lifecycle-baseline.instruction.txt.gz",
+    "bytes": 1826,
+    "sha256": "4b5a34303b2734cf48946941449fcc2c8877fc5ae3ed5aa3a05ad28fc7bf99b4"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-rxjs-stream-lifecycle-baseline.events.jsonl.gz",
+    "bytes": 254498,
+    "sha256": "c975eef258165cb55074295ba76a64f3adf4d5775758b027583cfbf9a301d69e"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-baseline",
+    "file": "result.json",
+    "artifact": "traces/2-rxjs-stream-lifecycle-baseline.result.json.gz",
+    "bytes": 4508,
+    "sha256": "ce707a25a2327835c7df2e858ea12ba9f1b854b32c5ec91a3791245c87f2a6c9"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-rxjs-stream-lifecycle-baseline.workspace.diff.gz",
+    "bytes": 4250,
+    "sha256": "01a180043388516d4468233050751d67576824dda7ae6b223ebfc71ad8544bdf"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-baseline",
+    "file": "trial.json",
+    "artifact": "traces/2-rxjs-stream-lifecycle-baseline.trial.json.gz",
+    "bytes": 5570,
+    "sha256": "6a24c5e551c2aa81b06eff5ce7b7bb3da3863c0cb88e549a54c43b2656c2c3f0"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-baseline",
+    "file": "score.json",
+    "artifact": "traces/2-rxjs-stream-lifecycle-baseline.score.json.gz",
+    "bytes": 20342,
+    "sha256": "c989efd4c6d6674822fda624b0e22a1acc4eb4c945ed49253d1151a9bfefc698"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-modified",
+    "file": "instruction.txt",
+    "artifact": "traces/2-rxjs-stream-lifecycle-modified.instruction.txt.gz",
+    "bytes": 1826,
+    "sha256": "4b5a34303b2734cf48946941449fcc2c8877fc5ae3ed5aa3a05ad28fc7bf99b4"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-modified",
+    "file": "events.jsonl",
+    "artifact": "traces/2-rxjs-stream-lifecycle-modified.events.jsonl.gz",
+    "bytes": 179590,
+    "sha256": "8e3a2c8df6ab0165ad0fb61bb9cdfcaa1f9416008b1429743c8cd4dcc8e40c03"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-modified",
+    "file": "result.json",
+    "artifact": "traces/2-rxjs-stream-lifecycle-modified.result.json.gz",
+    "bytes": 4821,
+    "sha256": "897bc91a8be6ffbde116001c4035f3cfebd6a27b3ecb67d424c0d3c35218374b"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-modified",
+    "file": "workspace.diff",
+    "artifact": "traces/2-rxjs-stream-lifecycle-modified.workspace.diff.gz",
+    "bytes": 4273,
+    "sha256": "54db4b007d4a85cc6cfba24b8a99211b579b5a978fe167ebde3bcc2e347375f6"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-modified",
+    "file": "trial.json",
+    "artifact": "traces/2-rxjs-stream-lifecycle-modified.trial.json.gz",
+    "bytes": 4751,
+    "sha256": "4cacee0379bbfd54f5a8c9163159f4984b7435e3b8b4c09cbd96b9722777ab51"
+  },
+  {
+    "trial": "2-rxjs-stream-lifecycle-modified",
+    "file": "score.json",
+    "artifact": "traces/2-rxjs-stream-lifecycle-modified.score.json.gz",
+    "bytes": 20347,
+    "sha256": "51d864871f18d6bedfdc3b5eb20913b49207641529cec74e6fe6011f7a243869"
+  }
+]
