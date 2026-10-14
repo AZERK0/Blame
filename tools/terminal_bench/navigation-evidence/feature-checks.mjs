@@ -7,6 +7,8 @@ import {identifierTokens,onlyIdentifierRename} from "../corpus/identifier-token-
 import {expectedInventory,matchesInventory} from "./inventory-criteria.mjs";
 import {auditMultifile} from "./multifile-criteria.mjs";
 import {auditFreshBehavior} from "./fresh-criteria.mjs";
+import {stripPermittedMembers} from "./source-integrity.mjs";
+import {auditRxjsLifecycle} from "./rxjs-criteria.mjs";
 const repo=resolve(new URL("../../..",import.meta.url).pathname);
 const ts=createRequire(join(repo,"packages/agent-runtime/package.json"))("typescript");
 const [workspace,id,study]=process.argv.slice(2);
@@ -29,12 +31,14 @@ for(const [path,expected] of Object.entries(task.selectedSourceSha256)){
  if(task.kind==="multifile-rename")continue;
  if(task.seed?.path===path){if(original.split(task.seed.before).length!==2)throw Error("Nonunique seed");original=original.replace(task.seed.before,task.seed.after);}
  const current=await readFile(join(workspace,path),"utf8");
+ const permissions=task.permittedAuxiliaryMembers?.[path];
  const passed=task.kind==="inventory" ? current===original : task.kind==="rename" ? onlyIdentifierRename(original,current,task.oldName,task.newName)
- : JSON.stringify(masked(original,task.mutableFunctions[path]??[]))===JSON.stringify(masked(current,task.mutableFunctions[path]??[]));
+ : JSON.stringify(masked(stripPermittedMembers(original,permissions),task.mutableFunctions[path]??[]))===JSON.stringify(masked(stripPermittedMembers(current,permissions),task.mutableFunctions[path]??[]));
  checks.push({name:"registered-source-integrity:"+path,passed,sourceSha256:sha(current)});
 }
 if(task.kind==="multifile-rename")checks.push(...await auditMultifile(originalRoot,workspace,task));
 if(task.kind==="record-presence")checks.push(...await auditFreshBehavior(workspace));
+if(task.kind==="rxjs-stream-lifecycle")checks.push(...await auditRxjsLifecycle(workspace));
 if(task.kind==="inventory"){
  const expected=await expectedInventory(originalRoot,task.targets);
  let actual;try{actual=JSON.parse(await readFile(join(workspace,task.reportFile),"utf8"));}catch(error){if(error.code!=="ENOENT"&&!(error instanceof SyntaxError))throw error;}

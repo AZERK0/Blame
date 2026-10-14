@@ -12,7 +12,7 @@ import { reserveTrialCosts } from "./budget-accounting.mjs";
 import { projectVerifiers } from "./project-verifiers.mjs";
 
 const panel = process.argv[3];
-if (!["f18","f19","f20","f21","f22","f23","f24","f25","f26"].includes(panel)) throw new Error("Specify a registered F18--F26 panel");
+if (!["f18","f19","f20","f21","f22","f23","f24","f25","f26","f27"].includes(panel)) throw new Error("Specify a registered F18--F27 panel");
 const study = studyFor(panel);
 const campaign = join(work, panel);
 const protocol = JSON.parse(await readFile(join(study, "protocol.json"), "utf8"));
@@ -34,6 +34,7 @@ async function bindings() {
     "tools/terminal_bench/navigation-evidence/budget-accounting.mjs",
     "tools/terminal_bench/navigation-evidence/campaign-paths.mjs",
     "tools/terminal_bench/navigation-evidence/project-verifiers.mjs",
+    "tools/terminal_bench/navigation-evidence/source-integrity.mjs",
     "tools/terminal_bench/navigation-evidence/prepare-rerun.py", "tools/terminal_bench/navigation-evidence/wire-cap-preflight.mjs",
     "tools/terminal_bench/navigation-evidence/freeze.py", "tools/terminal_bench/navigation-evidence/controls.mjs", "packages/agent-runtime/src/harness/light-edit-recovery.test.ts", "packages/benchmark-runner/src/config.ts", "packages/benchmark-runner/src/benchmark-run.ts", "tools/terminal_bench/navigation-evidence/run.py",
     "tools/terminal_bench/corpus/identifier-token-audit.mjs",
@@ -67,6 +68,21 @@ async function bindings() {
     "tools/terminal_bench/navigation-evidence/wire-audit.mjs",
   ]) inputs[path] = sha(await readFile(join(repo, path)));
   if (protocol.studyKind === "fresh-project-confirmation") inputs[join(study,"freeze-driver.mjs").slice(repo.length+1)] = sha(await readFile(join(study,"freeze-driver.mjs")));
+  if (protocol.studyKind === "corrected-native-confirmation") for(const path of [
+    "tools/terminal_bench/navigation-evidence/native-search-repair.mjs",
+    "tools/terminal_bench/navigation-evidence/native-repair-controls.mjs",
+    "tools/terminal_bench/navigation-evidence/native-task-controls.mjs",
+    "tools/terminal_bench/navigation-evidence/native-runtime-controls.mjs",
+    "tools/terminal_bench/navigation-evidence/register-native2.py",
+    "tools/terminal_bench/navigation-evidence/rxjs-criteria.mjs",
+    "tools/terminal_bench/navigation-evidence/prepare-fresh.mjs",
+    "tools/terminal_bench/navigation-evidence/fresh-criteria.mjs",
+    "tools/terminal_bench/navigation-evidence/multifile-criteria.mjs",
+    "tools/terminal_bench/navigation-evidence/wire-audit.mjs",
+    join(study,"freeze-driver.mjs").slice(repo.length+1),
+    join(study,"native-search-bindings.json").slice(repo.length+1),
+  ]) inputs[path]=sha(await readFile(join(repo,path)));
+  for(const path of protocol.environmentArtifacts??[])inputs[path]=sha(await readFile(join(repo,path)));
   inputs[join(study, "protocol.json").slice(repo.length + 1)] = sha(await readFile(join(study, "protocol.json")));
   if (protocol.commonPatchProtocol) for (const path of [protocol.commonPatchProtocol,
     join(protocol.commonPatchProtocol, "..", "common-request-cap.patch")])
@@ -129,13 +145,17 @@ async function verifyBindings() {
   if (!process.env.BLAME_API_TOKEN) throw new Error("Credential unavailable");
   return expected;
 }
-async function executeModel(args, directory) {
+async function executeModel(args, directory, arm) {
+  const repair=arm==="cline"&&protocol.nativeSearchRepair===true;
+  const imports=[...(protocol.captureWireContracts?["--import",join(repo,"tools/terminal_bench/navigation-evidence/wire-audit.mjs")]:[]),
+    ...(repair?["--import",join(repo,"tools/terminal_bench/navigation-evidence/native-search-repair.mjs")]:[])];
   return new Promise((done) => {
-    const child = spawn(process.execPath, protocol.captureWireContracts
-      ? ["--import", join(repo,"tools/terminal_bench/navigation-evidence/wire-audit.mjs"), ...args] : args, {
+    const child = spawn(process.execPath, [...imports,...args], {
       cwd: repo, detached: true, stdio: ["ignore", "ignore", "pipe"],
       env: { ...process.env, BLAME_HEADLESS_DEV: "true", NODE_ENV: "development",
         NODE_USE_ENV_PROXY: "1", TZ: "UTC",
+        ...(repair?{BLAME_STUDY_NATIVE_SEARCH_BINDINGS:join(study,"native-search-bindings.json"),
+          BLAME_STUDY_NATIVE_SEARCH_AUDIT:join(directory,"native-search-loads.jsonl")}:{}),
         ...(protocol.captureWireContracts ? { BLAME_STUDY_WIRE_AUDIT:join(directory,"wire-contracts.jsonl"),
           BLAME_STUDY_WORKSPACE:join(directory,"workspace") } : {}),
         ...(protocol.budgets.maximumSerializedRequestBytes ? {
@@ -252,12 +272,16 @@ async function run() {
   const frozen = await verifyBindings();
   await mkdir(campaign);
   const order = [];
+  const phases=protocol.phaseOrder??[null];
+  if(protocol.phaseOrder&&protocol.tasks.some(t=>!phases.includes(t.partition)))throw Error("Unregistered task stratum");
+  for(const phase of phases)
   for (let repetition = 1; repetition <= protocol.repetitions; repetition++) {
-    const tasks = repetition === 1 ? protocol.tasks : [...protocol.tasks].reverse();
+    const selectedTasks=phase?protocol.tasks.filter(t=>t.partition===phase):protocol.tasks;
+    const tasks = repetition === 1 ? selectedTasks : [...selectedTasks].reverse();
     for (const task of tasks) {
       const index = protocol.tasks.indexOf(task);
       let arms = [...protocol.arms.slice(index), ...protocol.arms.slice(0, index)];
-      if (protocol.studyKind === "fresh-project-confirmation") {
+      if (["fresh-project-confirmation","corrected-native-confirmation"].includes(protocol.studyKind)) {
         const shift = (repetition - 1) % arms.length;
         arms = [...arms.slice(shift), ...arms.slice(0, shift)];
       } else if (repetition === 2) arms.reverse();
@@ -318,7 +342,7 @@ async function run() {
       "--timeout-seconds", String(protocol.budgets.timeoutSeconds)];
     process.stdout.write("START " + name + "\n");
     started = performance.now();
-    const exit = await executeModel(args, directory);
+    const exit = await executeModel(args, directory, trial.arm);
     const outerAgentMs = performance.now() - started;
     started = performance.now();
     const grade = await score(directory, workspace, task);

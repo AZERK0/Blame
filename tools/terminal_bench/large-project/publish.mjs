@@ -57,7 +57,8 @@ for (const row of analysis.rows) {
   row.auditedCompletion = row.auditedCriteria && row.status === "succeeded";
   // Compatibility for the existing paired helper: explicitly require runtime completion.
   row.auditedSuccess = row.auditedCompletion;
-  row.partition = partition;
+  row.partition = protocol.studyKind==="corrected-native-confirmation"
+    ? protocol.tasks.find(t=>t.id===row.id).partition : partition;
   row.agentRequiredChecksPassed = decision.agentRequiredChecksPassed;
   row.fullRequestCriteriaPassed = decision.fullRequestCriteriaPassed;
   row.noSolutionRetrieval = decision.noSolutionRetrieval;
@@ -113,12 +114,14 @@ await writeJson(join(destination, "inventory.json"), inventory);
 await writeFile(join(destination, "tool-ledger.json"), await readFile(join(campaign, "tool-ledger.json")));
 await writeFile(join(destination, "tool-lifecycle-inspection.json"),
   await readFile(join(campaign, "tool-lifecycle-inspection.json")));
-if (analysis.completed === analysis.planned && !protocol.continuationOf) {
+if (analysis.completed === analysis.planned && !protocol.continuationOf && !protocol.phaseOrder) {
   execFileSync(process.execPath, [resolve("tools/terminal_bench/corpus/light-study-compare.mjs"), destination],
     { stdio: "ignore" });
 } else {
   await writeJson(join(destination, "paired-comparison.json"), {
-    reason: protocol.continuationOf
+    reason: protocol.phaseOrder
+      ? "Preregistered fresh confirmation and known diagnostics remain separate. See stratum-specific comparisons; do not pool efficacy."
+      :protocol.continuationOf
       ? "Administrative single-slot continuation has no contemporaneous counterpart; retain parent and tail separately. Any cross-registration comparison is descriptive and must disclose actual prompt/environment differences."
       : "Registered panel stopped before all planned outcomes; retain unexecuted cases. No complete-panel efficiency claim.",
     comparisons: [] });

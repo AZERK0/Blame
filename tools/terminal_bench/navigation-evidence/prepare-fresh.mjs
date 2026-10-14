@@ -6,8 +6,9 @@ import {createHash} from "node:crypto";
 import {join} from "node:path";
 import {repo,work,studyFor} from "./campaign-paths.mjs";
 import {bindingOracle} from "./multifile-criteria.mjs";
-assert.equal(process.env.BLAME_STUDY_VARIANT,"fresh-zod");
-const study=studyFor("f26"),sha=b=>createHash("sha256").update(b).digest("hex");
+const variant=process.env.BLAME_STUDY_VARIANT;assert(["fresh-zod","native2"].includes(variant));
+const panel=variant==="native2"?"f27":"f26";
+const study=studyFor(panel),sha=b=>createHash("sha256").update(b).digest("hex");
 const protocol=JSON.parse(await readFile(join(study,"protocol.json")));
 if(process.argv[2]==="register-oracles") {
   assert.equal(protocol.status,"local-preflight-no-model-dispatch");
@@ -27,7 +28,7 @@ if(process.argv[2]==="register-oracles") {
   // Reuse the source-based freeze implementation, parameterized in a private
   // copy. Archive that exact driver and bind its bytes in execution-bindings.
   const original=await readFile(join(repo,"tools/terminal_bench/navigation-evidence/prepare-rename-ablation.mjs"),"utf8");
-  const driver=original.replaceAll('"rename-ablation"','"fresh-zod"').replaceAll('"f25"','"f26"');
+  const driver=original.replaceAll('"rename-ablation"',JSON.stringify(variant)).replaceAll('"f25"',JSON.stringify(panel));
   await mkdir(work,{recursive:true});
   const path=join(repo,"tools/terminal_bench/navigation-evidence/.fresh-freeze-driver.mjs");
   await writeFile(join(study,"freeze-driver.mjs"),driver);
