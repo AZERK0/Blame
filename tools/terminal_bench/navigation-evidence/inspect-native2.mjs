@@ -9,7 +9,10 @@ const score=await json(join(root,name,"score.json")),tools=(await json(join(root
 const normalize=s=>s.replaceAll(join(root,name,"workspace"),"<workspace>");
 console.log(JSON.stringify({name,status:row.status,functional:row.independentFunctionalSuccess,tokens:row.usage.input===null?null:row.usage.input+row.usage.output,cost:row.usage.cost,seconds:row.durationMs/1000,
   failedFeatures:score.featureChecks.filter(c=>!c.passed),verifierExits:{selected:score.selected.exitCode,types:score.types.exitCode,full:score.full.exitCode},diffSha256:row.diffSha256,completion:row.completion}));
-if(mode==="diff")console.log(await readFile(join(root,name,"workspace.diff"),"utf8"));
+if(mode==="diff"||mode==="changes"){
+ const diff=await readFile(join(root,name,"workspace.diff"),"utf8");
+ console.log(mode==="diff"?diff:diff.split("\n").filter(l=>l.startsWith("diff ")||l.startsWith("+")||l.startsWith("-")).join("\n"));
+}
 else for(const [index,t] of tools.entries()){
  const edit=["edit_code","apply_patch"].includes(t.tool);if(mode==="edits"&&!edit)continue;
  if(edit&&mode!=="edits"){
@@ -24,7 +27,7 @@ else for(const [index,t] of tools.entries()){
    else ignored.push({keyPrefix:key.slice(0,90),keyBytes:key.length,sha256:createHash("sha256").update(key).digest("hex"),value});
   }input=effective;
  }
- console.log(normalize(JSON.stringify({index,tool:t.tool,input,ignored:ignored.length?ignored:undefined,status:t.output?.status,message:t.output?.message})));
+ console.log(normalize(JSON.stringify({index,tool:t.tool,input,ignored:ignored.length?ignored:undefined,status:t.output?.status,message:t.output?.message?.slice(0,600)})));
  if(["run_task","run_commands"].includes(t.tool))console.log(normalize(JSON.stringify(t.output).slice(-800)));
 }
 const events=(await readFile(join(root,name,"events.jsonl"),"utf8")).trim().split("\n").map(s=>JSON.parse(s).event);

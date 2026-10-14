@@ -1,7 +1,7 @@
 {
   "paidRequests": 0,
   "planned": 36,
-  "completed": 18,
+  "completed": 26,
   "frozenInputHashesVerified": true,
   "sourceIsolationVerified": true,
   "protectedSuppliedAssertionsVerified": true,
@@ -126,6 +126,54 @@
           "functionName": "sP"
         }
       ]
+    },
+    {
+      "name": "1-zod-issue-helper-migration-cline",
+      "artifact": "native-search-loads/1-zod-issue-helper-migration-cline.jsonl.gz",
+      "bytes": 420,
+      "sha256": "4ecd591c9570e57d85005a16da3a35c518b5750d93412d98a9bcc2eb216d8df1",
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        },
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        }
+      ]
+    },
+    {
+      "name": "1-zod-record-own-presence-cline",
+      "artifact": "native-search-loads/1-zod-record-own-presence-cline.jsonl.gz",
+      "bytes": 210,
+      "sha256": "5ab5181179b067ca7ebafaa4d5035b668a2fab7b3232200eb8e3e5e744899691",
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        }
+      ]
+    },
+    {
+      "name": "2-zod-record-own-presence-cline",
+      "artifact": "native-search-loads/2-zod-record-own-presence-cline.jsonl.gz",
+      "bytes": 210,
+      "sha256": "5ab5181179b067ca7ebafaa4d5035b668a2fab7b3232200eb8e3e5e744899691",
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        }
+      ]
     }
   ],
   "initialGitIdentities": {
@@ -200,6 +248,38 @@
     "3-rxjs-array-removal-migration-modified": {
       "initialHead": "dcb4058c5be2c55823fa9bc0bc56fa6fa54cba4d",
       "initialTree": "ea9c5a7e197c26b82b5cf1f3fbb14319b0f4529d"
+    },
+    "1-zod-issue-helper-migration-cline": {
+      "initialHead": "dc812b67aa8bfac06b6fad5d87e65509d5e7626e",
+      "initialTree": "28d6472b7414e8960615ccc94b23fa6a50d4ebb0"
+    },
+    "1-zod-issue-helper-migration-baseline": {
+      "initialHead": "dc812b67aa8bfac06b6fad5d87e65509d5e7626e",
+      "initialTree": "28d6472b7414e8960615ccc94b23fa6a50d4ebb0"
+    },
+    "1-zod-issue-helper-migration-modified": {
+      "initialHead": "dc812b67aa8bfac06b6fad5d87e65509d5e7626e",
+      "initialTree": "28d6472b7414e8960615ccc94b23fa6a50d4ebb0"
+    },
+    "1-zod-record-own-presence-baseline": {
+      "initialHead": "694c991ddc0332ebfdd2e6220550e770b25b4d18",
+      "initialTree": "f1b2b5b71c4cfe4c1af89101f639a74aef5ed401"
+    },
+    "1-zod-record-own-presence-modified": {
+      "initialHead": "694c991ddc0332ebfdd2e6220550e770b25b4d18",
+      "initialTree": "f1b2b5b71c4cfe4c1af89101f639a74aef5ed401"
+    },
+    "1-zod-record-own-presence-cline": {
+      "initialHead": "694c991ddc0332ebfdd2e6220550e770b25b4d18",
+      "initialTree": "f1b2b5b71c4cfe4c1af89101f639a74aef5ed401"
+    },
+    "2-zod-record-own-presence-modified": {
+      "initialHead": "694c991ddc0332ebfdd2e6220550e770b25b4d18",
+      "initialTree": "f1b2b5b71c4cfe4c1af89101f639a74aef5ed401"
+    },
+    "2-zod-record-own-presence-cline": {
+      "initialHead": "694c991ddc0332ebfdd2e6220550e770b25b4d18",
+      "initialTree": "f1b2b5b71c4cfe4c1af89101f639a74aef5ed401"
     }
   },
   "matchedLightContracts": [
@@ -244,7 +324,33 @@
       "sameInitialGit": true,
       "sameSchema": true,
       "sameNormalizedContract": true
+    },
+    {
+      "id": "zod-issue-helper-migration",
+      "repetition": 1,
+      "sameInitialGit": true,
+      "sameSchema": true,
+      "sameNormalizedContract": true
+    },
+    {
+      "id": "zod-record-own-presence",
+      "repetition": 1,
+      "sameInitialGit": true,
+      "sameSchema": true,
+      "sameNormalizedContract": true
     }
   ],
+  "administrativeContinuation": {
+    "verified": true,
+    "modelRetries": 0,
+    "completedPrefix": 24,
+    "remainingAssigned": 12,
+    "newStarted": 3,
+    "originalDriverSha256": "6861a6bd6f8c67a2ff1b7f184f9ba5ee3061a0377f9d27bb4927ad603428c72f",
+    "administrativeDriverSha256": "535a596f47ab559083475cb23578932f8031c404a8ce4fa059e26bb44c819ab5",
+    "originalLogSha256": "6ce90f8dc4677fcb2fc3445e920b58436ccd237032d465cd3bee32a8ec0865d6",
+    "continuedLogSha256": "9ba4aca025f0cce864c8a1e8cedc57e21cf8d236410b4588ae01d77ecb89b140",
+    "missingOuterMetadataRetained": true
+  },
   "method": "Original task Git identity, actual initial dispatch schema/workspace-normalized contract and frozen input SHA equality. Checks do not require favorable outcomes. Native repairs verified against actual original/repaired module hashes and absent from Light trials. Fresh and known strata remain separate."
 }

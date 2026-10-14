@@ -2,40 +2,40 @@
   "partition": "mixed",
   "definition": "Internal real-repository panel, not an external benchmark certification. Official runtime success, frozen independent feature/existing-suite success, actual required agent validation and full audited completion are separate. Post-selected wording sensitivity never replaces the registered endpoint. Cache tokens subset input, reasoning subset output; incomplete usage is never zero-filled.",
   "planned": 36,
-  "completed": 18,
-  "unexecuted": 18,
+  "completed": 26,
+  "unexecuted": 10,
   "arms": {
     "baseline": {
-      "trials": 6,
+      "trials": 8,
       "planned": 12,
-      "officialRuntimeSuccess": 4,
-      "independentFunctionalSuccess": 6,
-      "agentRequiredChecksPassed": 6,
-      "manuallyReviewedRequestCriteriaPassed": 4,
-      "auditedCriteria": 4,
-      "auditedCompletion": 4,
+      "officialRuntimeSuccess": 6,
+      "independentFunctionalSuccess": 8,
+      "agentRequiredChecksPassed": 8,
+      "manuallyReviewedRequestCriteriaPassed": 6,
+      "auditedCriteria": 6,
+      "auditedCompletion": 6,
       "timeouts": 0,
       "failed": 2,
       "missingResult": 0,
       "watchdogs": 0,
-      "tokensCostReconciled": 6,
+      "tokensCostReconciled": 8,
       "fullRequestCacheAccounting": 0,
-      "runnerSeconds": 737.317,
-      "outerAgentSeconds": 748.8409107630004,
-      "preparationSeconds": 2.9087789980000416,
-      "verificationSeconds": 107.3337330230001,
+      "runnerSeconds": 860.813,
+      "outerAgentSeconds": 876.2433538910004,
+      "preparationSeconds": 3.166001247000375,
+      "verificationSeconds": 130.10707129999963,
       "input": {
-        "observed": 1265716,
+        "observed": 1579254,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       },
       "output": {
-        "observed": 56266,
+        "observed": 65241,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       },
       "cacheRead": {
-        "observed": 1058304,
+        "observed": 1308160,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       },
@@ -45,42 +45,42 @@
         "incompleteTrialAccounting": 0
       },
       "cost": {
-        "observed": 0.13016768,
+        "observed": 0.15867119999999998,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       }
     },
     "modified": {
-      "trials": 6,
+      "trials": 9,
       "planned": 12,
-      "officialRuntimeSuccess": 6,
-      "independentFunctionalSuccess": 5,
-      "agentRequiredChecksPassed": 6,
-      "manuallyReviewedRequestCriteriaPassed": 4,
-      "auditedCriteria": 4,
-      "auditedCompletion": 4,
+      "officialRuntimeSuccess": 9,
+      "independentFunctionalSuccess": 8,
+      "agentRequiredChecksPassed": 9,
+      "manuallyReviewedRequestCriteriaPassed": 7,
+      "auditedCriteria": 7,
+      "auditedCompletion": 7,
       "timeouts": 0,
       "failed": 0,
       "missingResult": 0,
       "watchdogs": 0,
-      "tokensCostReconciled": 6,
+      "tokensCostReconciled": 9,
       "fullRequestCacheAccounting": 0,
-      "runnerSeconds": 456.348,
-      "outerAgentSeconds": 468.3578878039999,
-      "preparationSeconds": 2.9781383329998645,
-      "verificationSeconds": 106.2291018840006,
+      "runnerSeconds": 564.067,
+      "outerAgentSeconds": 581.7794275080001,
+      "preparationSeconds": 3.305009414999425,
+      "verificationSeconds": 141.68704384900047,
       "input": {
-        "observed": 603633,
+        "observed": 829258,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       },
       "output": {
-        "observed": 34315,
+        "observed": 40761,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       },
       "cacheRead": {
-        "observed": 437760,
+        "observed": 610816,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       },
@@ -90,42 +90,42 @@
         "incompleteTrialAccounting": 0
       },
       "cost": {
-        "observed": 0.08310780000000001,
+        "observed": 0.10481792000000002,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       }
     },
     "cline": {
-      "trials": 6,
+      "trials": 9,
       "planned": 12,
-      "officialRuntimeSuccess": 6,
-      "independentFunctionalSuccess": 4,
-      "agentRequiredChecksPassed": 6,
-      "manuallyReviewedRequestCriteriaPassed": 4,
-      "auditedCriteria": 4,
-      "auditedCompletion": 4,
+      "officialRuntimeSuccess": 9,
+      "independentFunctionalSuccess": 7,
+      "agentRequiredChecksPassed": 9,
+      "manuallyReviewedRequestCriteriaPassed": 7,
+      "auditedCriteria": 7,
+      "auditedCompletion": 7,
       "timeouts": 0,
       "failed": 0,
       "missingResult": 0,
       "watchdogs": 0,
-      "tokensCostReconciled": 6,
+      "tokensCostReconciled": 9,
       "fullRequestCacheAccounting": 0,
-      "runnerSeconds": 687.048,
-      "outerAgentSeconds": 698.4370359760002,
-      "preparationSeconds": 2.799222795999871,
-      "verificationSeconds": 106.76178155599997,
+      "runnerSeconds": 820.751,
+      "outerAgentSeconds": 801.6899285430005,
+      "preparationSeconds": 3.0387506259998336,
+      "verificationSeconds": 129.86306359200032,
       "input": {
-        "observed": 1224673,
+        "observed": 1584963,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       },
       "output": {
-        "observed": 53753,
+        "observed": 65271,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       },
       "cacheRead": {
-        "observed": 921600,
+        "observed": 1188864,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       },
@@ -135,7 +135,7 @@
         "incompleteTrialAccounting": 0
       },
       "cost": {
-        "observed": 0.14355020000000002,
+        "observed": 0.18132228000000003,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       }

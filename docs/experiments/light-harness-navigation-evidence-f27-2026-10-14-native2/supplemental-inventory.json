@@ -128,6 +128,62 @@
       "artifact": "journals/3-rxjs-array-removal-migration-modified.6ed5865db763ac815a95ba8b.jsonl.gz",
       "bytes": 58386,
       "sha256": "e38cfe64c0f4a0c50cee37c83760ebb33be616108aad8d296f0aa1eff88a19e8"
+    },
+    {
+      "name": "1-zod-issue-helper-migration-cline",
+      "file": "5b72ced0094b69c33284fe6b.jsonl",
+      "artifact": "journals/1-zod-issue-helper-migration-cline.5b72ced0094b69c33284fe6b.jsonl.gz",
+      "bytes": 79,
+      "sha256": "6113da39cf0375f20f4aa35430cb5478340b4869855323d861538d7893673ba4"
+    },
+    {
+      "name": "1-zod-issue-helper-migration-baseline",
+      "file": "2bad704efb85dcd1840ed807.jsonl",
+      "artifact": "journals/1-zod-issue-helper-migration-baseline.2bad704efb85dcd1840ed807.jsonl.gz",
+      "bytes": 257042,
+      "sha256": "007d9321919c5bfa763bca9190fefdd3c8e2e66223b3884fa5c61492ed28ac31"
+    },
+    {
+      "name": "1-zod-issue-helper-migration-modified",
+      "file": "710bd5b04aa80ef7b0b6bb43.jsonl",
+      "artifact": "journals/1-zod-issue-helper-migration-modified.710bd5b04aa80ef7b0b6bb43.jsonl.gz",
+      "bytes": 97385,
+      "sha256": "dfb57a5507f380b24b0cb68549b728480d28aa77220805171396ecc50f4cdf0a"
+    },
+    {
+      "name": "1-zod-record-own-presence-baseline",
+      "file": "64adff2b0b298a858f131893.jsonl",
+      "artifact": "journals/1-zod-record-own-presence-baseline.64adff2b0b298a858f131893.jsonl.gz",
+      "bytes": 135415,
+      "sha256": "ff85323a3eeec6db7fb82f6f54416b57127e29d27d996dfef45b228736bd7d3f"
+    },
+    {
+      "name": "1-zod-record-own-presence-modified",
+      "file": "889f119f5bda3745efc83226.jsonl",
+      "artifact": "journals/1-zod-record-own-presence-modified.889f119f5bda3745efc83226.jsonl.gz",
+      "bytes": 244337,
+      "sha256": "cf333d293545514f40afa16177c8b8082ccb5d6ad3f6ae7599c68de841d77408"
+    },
+    {
+      "name": "1-zod-record-own-presence-cline",
+      "file": "6ba00f6b797086ce99cc3e90.jsonl",
+      "artifact": "journals/1-zod-record-own-presence-cline.6ba00f6b797086ce99cc3e90.jsonl.gz",
+      "bytes": 79,
+      "sha256": "6f5327f91f6723eb5093923d39311b0fc14b80f6e5ec31f787ee84c32374256c"
+    },
+    {
+      "name": "2-zod-record-own-presence-modified",
+      "file": "92e3a3962fd977653f192461.jsonl",
+      "artifact": "journals/2-zod-record-own-presence-modified.92e3a3962fd977653f192461.jsonl.gz",
+      "bytes": 77437,
+      "sha256": "c004ecd9271da1ba6a63b02ae2e814a3163c4a83aabbb5a4f363bf018a91ad0e"
+    },
+    {
+      "name": "2-zod-record-own-presence-cline",
+      "file": "9e0580f8d09e59852654b412.jsonl",
+      "artifact": "journals/2-zod-record-own-presence-cline.9e0580f8d09e59852654b412.jsonl.gz",
+      "bytes": 79,
+      "sha256": "e8286501c4adf65718c71b76ddde930901a6064919fcebe0c6ecab53b543e939"
     }
   ]
 }

@@ -1,60 +1,69 @@
 {
   "method": "F27: preregistered fresh RxJS confirmation before separate known Zod diagnostics, three repetitions each. Only compiler-rename availability differs between Light arms; native SDK receives the isolated pinned search repair. Optional auxiliary members explicitly permitted by new task registrations. Preserve every assigned outcome. No repair,retry,solution recovery or feedback. Prior cohorts contribute finances only.",
   "planned": 36,
-  "completed": 18,
-  "unexecuted": 18,
+  "completed": 26,
+  "unexecuted": 10,
   "arms": {
     "baseline": {
       "planned": 12,
-      "trials": 6,
-      "official": 4,
-      "functional": 6,
-      "actualChecks": 6,
-      "strict": 4,
-      "tokensObserved": 1321982,
-      "estimatedUsdObserved": 0.13016768,
-      "runnerSecondsObserved": 737.317,
+      "trials": 8,
+      "official": 6,
+      "functional": 8,
+      "actualChecks": 8,
+      "strict": 6,
+      "tokensObserved": 1644495,
+      "estimatedUsdObserved": 0.15867119999999998,
+      "runnerSecondsObserved": 860.813,
       "fullCacheAccounting": 0,
-      "tokenCostReconciled": 6,
+      "tokenCostReconciled": 8,
       "timeouts": 0,
       "failed": 2,
-      "suitesAndBehaviorPassed": 6,
+      "orchestrationInterruptions": 0,
+      "outerSecondsObserved": 876.2433538910004,
+      "missingOuterDurations": 0,
+      "suitesAndBehaviorPassed": 8,
       "sourceScopeOnlyRejections": 0,
       "missingConsumption": 0
     },
     "modified": {
       "planned": 12,
-      "trials": 6,
-      "official": 6,
-      "functional": 5,
-      "actualChecks": 6,
-      "strict": 4,
-      "tokensObserved": 637948,
-      "estimatedUsdObserved": 0.08310780000000001,
-      "runnerSecondsObserved": 456.348,
+      "trials": 9,
+      "official": 9,
+      "functional": 8,
+      "actualChecks": 9,
+      "strict": 7,
+      "tokensObserved": 870019,
+      "estimatedUsdObserved": 0.10481792000000002,
+      "runnerSecondsObserved": 564.067,
       "fullCacheAccounting": 0,
-      "tokenCostReconciled": 6,
+      "tokenCostReconciled": 9,
       "timeouts": 0,
       "failed": 0,
-      "suitesAndBehaviorPassed": 6,
+      "orchestrationInterruptions": 0,
+      "outerSecondsObserved": 581.7794275080001,
+      "missingOuterDurations": 0,
+      "suitesAndBehaviorPassed": 9,
       "sourceScopeOnlyRejections": 1,
       "missingConsumption": 0
     },
     "cline": {
       "planned": 12,
-      "trials": 6,
-      "official": 6,
-      "functional": 4,
-      "actualChecks": 6,
-      "strict": 4,
-      "tokensObserved": 1278426,
-      "estimatedUsdObserved": 0.14355020000000002,
-      "runnerSecondsObserved": 687.048,
+      "trials": 9,
+      "official": 9,
+      "functional": 7,
+      "actualChecks": 9,
+      "strict": 7,
+      "tokensObserved": 1650234,
+      "estimatedUsdObserved": 0.18132228000000003,
+      "runnerSecondsObserved": 820.751,
       "fullCacheAccounting": 0,
-      "tokenCostReconciled": 6,
+      "tokenCostReconciled": 9,
       "timeouts": 0,
       "failed": 0,
-      "suitesAndBehaviorPassed": 6,
+      "orchestrationInterruptions": 1,
+      "outerSecondsObserved": 801.6899285430005,
+      "missingOuterDurations": 1,
+      "suitesAndBehaviorPassed": 9,
       "sourceScopeOnlyRejections": 2,
       "missingConsumption": 0
     }
@@ -75,6 +84,9 @@
           "tokenCostReconciled": 6,
           "timeouts": 0,
           "failed": 2,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 748.8409107630004,
+          "missingOuterDurations": 0,
           "suitesAndBehaviorPassed": 6,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
@@ -92,6 +104,9 @@
           "tokenCostReconciled": 6,
           "timeouts": 0,
           "failed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 468.3578878039999,
+          "missingOuterDurations": 0,
           "suitesAndBehaviorPassed": 6,
           "sourceScopeOnlyRejections": 1,
           "missingConsumption": 0
@@ -109,6 +124,9 @@
           "tokenCostReconciled": 6,
           "timeouts": 0,
           "failed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 698.4370359760002,
+          "missingOuterDurations": 0,
           "suitesAndBehaviorPassed": 6,
           "sourceScopeOnlyRejections": 2,
           "missingConsumption": 0
@@ -118,53 +136,62 @@
     "diagnostic": {
       "arms": {
         "baseline": {
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "runnerSecondsObserved": 0,
+          "trials": 2,
+          "official": 2,
+          "functional": 2,
+          "actualChecks": 2,
+          "strict": 2,
+          "tokensObserved": 322513,
+          "estimatedUsdObserved": 0.02850352,
+          "runnerSecondsObserved": 123.496,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 2,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 127.40244312800002,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 2,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "modified": {
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "runnerSecondsObserved": 0,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "actualChecks": 3,
+          "strict": 3,
+          "tokensObserved": 232071,
+          "estimatedUsdObserved": 0.021710120000000003,
+          "runnerSecondsObserved": 107.719,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 113.4215397040002,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "cline": {
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "runnerSecondsObserved": 0,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "actualChecks": 3,
+          "strict": 3,
+          "tokensObserved": 371808,
+          "estimatedUsdObserved": 0.03777208,
+          "runnerSecondsObserved": 133.703,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 0,
+          "orchestrationInterruptions": 1,
+          "outerSecondsObserved": 103.25289256700036,
+          "missingOuterDurations": 1,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         }
@@ -189,6 +216,9 @@
           "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 169.79697608500027,
+          "missingOuterDurations": 0,
           "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
@@ -206,6 +236,9 @@
           "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 155.30384497399984,
+          "missingOuterDurations": 0,
           "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
@@ -223,6 +256,9 @@
           "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 166.1772836550001,
+          "missingOuterDurations": 0,
           "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
@@ -246,6 +282,9 @@
           "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 2,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 579.043934678,
+          "missingOuterDurations": 0,
           "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
@@ -263,6 +302,9 @@
           "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 313.0540428300002,
+          "missingOuterDurations": 0,
           "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 1,
           "missingConsumption": 0
@@ -280,6 +322,9 @@
           "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 532.259752321,
+          "missingOuterDurations": 0,
           "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 2,
           "missingConsumption": 0
@@ -291,53 +336,62 @@
       "partition": "diagnostic",
       "arms": {
         "baseline": {
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "runnerSecondsObserved": 0,
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "actualChecks": 1,
+          "strict": 1,
+          "tokensObserved": 177615,
+          "estimatedUsdObserved": 0.018102880000000002,
+          "runnerSecondsObserved": 78.795,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 1,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 80.73161135999997,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 1,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "modified": {
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "runnerSecondsObserved": 0,
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "actualChecks": 1,
+          "strict": 1,
+          "tokensObserved": 67678,
+          "estimatedUsdObserved": 0.00587276,
+          "runnerSecondsObserved": 36.603,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 1,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 38.53889971300028,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 1,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "cline": {
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "runnerSecondsObserved": 0,
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "actualChecks": 1,
+          "strict": 1,
+          "tokensObserved": 146374,
+          "estimatedUsdObserved": 0.0146534,
+          "runnerSecondsObserved": 62.408,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 1,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 64.36037501700037,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 1,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         }
@@ -348,53 +402,62 @@
       "partition": "diagnostic",
       "arms": {
         "baseline": {
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "runnerSecondsObserved": 0,
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "actualChecks": 1,
+          "strict": 1,
+          "tokensObserved": 144898,
+          "estimatedUsdObserved": 0.01040064,
+          "runnerSecondsObserved": 44.701,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 1,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 46.670831768000035,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 1,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "modified": {
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "runnerSecondsObserved": 0,
+          "trials": 2,
+          "official": 2,
+          "functional": 2,
+          "actualChecks": 2,
+          "strict": 2,
+          "tokensObserved": 164393,
+          "estimatedUsdObserved": 0.01583736,
+          "runnerSecondsObserved": 71.116,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 2,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 74.88263999099992,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 2,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "cline": {
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "runnerSecondsObserved": 0,
+          "trials": 2,
+          "official": 2,
+          "functional": 2,
+          "actualChecks": 2,
+          "strict": 2,
+          "tokensObserved": 225434,
+          "estimatedUsdObserved": 0.023118680000000003,
+          "runnerSecondsObserved": 71.295,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 2,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 0,
+          "orchestrationInterruptions": 1,
+          "outerSecondsObserved": 38.892517549999994,
+          "missingOuterDurations": 1,
+          "suitesAndBehaviorPassed": 2,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         }
@@ -408,6 +471,7 @@
       "official": false,
       "functional": true,
       "audited": false,
+      "orchestrationInterrupted": false,
       "requestedIndependentSuitesPassed": true,
       "behaviorAndProtectedInputProbesPassed": true,
       "sourceScopeFailures": [],
@@ -419,6 +483,7 @@
       "official": true,
       "functional": false,
       "audited": false,
+      "orchestrationInterrupted": false,
       "requestedIndependentSuitesPassed": true,
       "behaviorAndProtectedInputProbesPassed": true,
       "sourceScopeFailures": [
@@ -436,6 +501,7 @@
       "official": false,
       "functional": true,
       "audited": false,
+      "orchestrationInterrupted": false,
       "requestedIndependentSuitesPassed": true,
       "behaviorAndProtectedInputProbesPassed": true,
       "sourceScopeFailures": [],
@@ -447,6 +513,7 @@
       "official": true,
       "functional": false,
       "audited": false,
+      "orchestrationInterrupted": false,
       "requestedIndependentSuitesPassed": true,
       "behaviorAndProtectedInputProbesPassed": true,
       "sourceScopeFailures": [
@@ -464,6 +531,7 @@
       "official": true,
       "functional": true,
       "audited": false,
+      "orchestrationInterrupted": false,
       "requestedIndependentSuitesPassed": true,
       "behaviorAndProtectedInputProbesPassed": true,
       "sourceScopeFailures": [],
@@ -475,6 +543,7 @@
       "official": true,
       "functional": false,
       "audited": false,
+      "orchestrationInterrupted": false,
       "requestedIndependentSuitesPassed": true,
       "behaviorAndProtectedInputProbesPassed": true,
       "sourceScopeFailures": [
@@ -485,6 +554,18 @@
         "registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts",
         "non-UTC:registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts"
       ]
+    },
+    {
+      "name": "1-zod-record-own-presence-cline",
+      "status": "succeeded",
+      "official": true,
+      "functional": true,
+      "audited": true,
+      "orchestrationInterrupted": true,
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
     }
   ],
   "comparisons": [
@@ -1606,22 +1687,22 @@
       "right": "baseline",
       "tier": "strict",
       "partition": "diagnostic",
-      "pairs": 0,
+      "pairs": 2,
       "resources": {
         "tokens": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 151535,
+          "right": 322513,
+          "relativeChange": -0.5301429709810147
         },
         "cost": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 0.013587640000000002,
+          "right": 0.02850352,
+          "relativeChange": -0.5232995784380314
         },
         "seconds": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 71.31,
+          "right": 123.49600000000001,
+          "relativeChange": -0.42257239100861566
         }
       },
       "tasks": [
@@ -1669,70 +1750,113 @@
         },
         {
           "id": "zod-issue-helper-migration",
-          "pairs": 0,
+          "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 67678,
+              "right": 177615,
+              "relativeChange": -0.6189623624130844
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 0.00587276,
+              "right": 0.018102880000000002,
+              "relativeChange": -0.6755897404169944
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 36.603,
+              "right": 78.795,
+              "relativeChange": -0.5354654483152483
             }
           }
         },
         {
           "id": "zod-record-own-presence",
-          "pairs": 0,
+          "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 83857,
+              "right": 144898,
+              "relativeChange": -0.4212687545721818
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 0.00771488,
+              "right": 0.01040064,
+              "relativeChange": -0.25823026275306127
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 34.707,
+              "right": 44.701,
+              "relativeChange": -0.22357441667971634
             }
           }
         }
       ],
-      "individual": []
+      "individual": [
+        {
+          "id": "zod-issue-helper-migration",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 67678,
+              "right": 177615,
+              "relativeChange": -0.6189623624130844
+            },
+            "cost": {
+              "left": 0.00587276,
+              "right": 0.018102880000000002,
+              "relativeChange": -0.6755897404169944
+            },
+            "seconds": {
+              "left": 36.603,
+              "right": 78.795,
+              "relativeChange": -0.5354654483152483
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 83857,
+              "right": 144898,
+              "relativeChange": -0.4212687545721818
+            },
+            "cost": {
+              "left": 0.00771488,
+              "right": 0.01040064,
+              "relativeChange": -0.25823026275306127
+            },
+            "seconds": {
+              "left": 34.707,
+              "right": 44.701,
+              "relativeChange": -0.22357441667971634
+            }
+          }
+        }
+      ]
     },
     {
       "left": "modified",
       "right": "cline",
       "tier": "strict",
       "partition": "diagnostic",
-      "pairs": 0,
+      "pairs": 3,
       "resources": {
         "tokens": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 232071,
+          "right": 371808,
+          "relativeChange": -0.37583107410276273
         },
         "cost": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 0.021710120000000003,
+          "right": 0.03777208,
+          "relativeChange": -0.42523366465389245
         },
         "seconds": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 107.719,
+          "right": 133.703,
+          "relativeChange": -0.19434118905334963
         }
       },
       "tasks": [
@@ -1780,70 +1904,134 @@
         },
         {
           "id": "zod-issue-helper-migration",
-          "pairs": 0,
+          "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 67678,
+              "right": 146374,
+              "relativeChange": -0.5376364654925054
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 0.00587276,
+              "right": 0.0146534,
+              "relativeChange": -0.5992220235576726
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 36.603,
+              "right": 62.408,
+              "relativeChange": -0.4134886553006025
             }
           }
         },
         {
           "id": "zod-record-own-presence",
-          "pairs": 0,
+          "pairs": 2,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 164393,
+              "right": 225434,
+              "relativeChange": -0.2707710460711339
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 0.01583736,
+              "right": 0.023118680000000003,
+              "relativeChange": -0.31495396796010844
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 71.116,
+              "right": 71.295,
+              "relativeChange": -0.002510694999649399
             }
           }
         }
       ],
-      "individual": []
+      "individual": [
+        {
+          "id": "zod-issue-helper-migration",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 67678,
+              "right": 146374,
+              "relativeChange": -0.5376364654925054
+            },
+            "cost": {
+              "left": 0.00587276,
+              "right": 0.0146534,
+              "relativeChange": -0.5992220235576726
+            },
+            "seconds": {
+              "left": 36.603,
+              "right": 62.408,
+              "relativeChange": -0.4134886553006025
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 83857,
+              "right": 97484,
+              "relativeChange": -0.13978704197611913
+            },
+            "cost": {
+              "left": 0.00771488,
+              "right": 0.01082664,
+              "relativeChange": -0.2874169640811923
+            },
+            "seconds": {
+              "left": 34.707,
+              "right": 34.247,
+              "relativeChange": 0.013431833445265218
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "repetition": 2,
+          "resources": {
+            "tokens": {
+              "left": 80536,
+              "right": 127950,
+              "relativeChange": -0.3705666275889019
+            },
+            "cost": {
+              "left": 0.008122480000000001,
+              "right": 0.01229204,
+              "relativeChange": -0.33920813794943716
+            },
+            "seconds": {
+              "left": 36.409,
+              "right": 37.048,
+              "relativeChange": -0.01724789462319165
+            }
+          }
+        }
+      ]
     },
     {
       "left": "baseline",
       "right": "cline",
       "tier": "strict",
       "partition": "diagnostic",
-      "pairs": 0,
+      "pairs": 2,
       "resources": {
         "tokens": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 322513,
+          "right": 243858,
+          "relativeChange": 0.32254426756555055
         },
         "cost": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 0.02850352,
+          "right": 0.025480040000000002,
+          "relativeChange": 0.11866072423748153
         },
         "seconds": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 123.49600000000001,
+          "right": 96.655,
+          "relativeChange": 0.2776990326418707
         }
       },
       "tasks": [
@@ -1891,70 +2079,113 @@
         },
         {
           "id": "zod-issue-helper-migration",
-          "pairs": 0,
+          "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 177615,
+              "right": 146374,
+              "relativeChange": 0.21343271346004067
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 0.018102880000000002,
+              "right": 0.0146534,
+              "relativeChange": 0.23540475248065307
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 78.795,
+              "right": 62.408,
+              "relativeChange": 0.2625785155749263
             }
           }
         },
         {
           "id": "zod-record-own-presence",
-          "pairs": 0,
+          "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 144898,
+              "right": 97484,
+              "relativeChange": 0.486377251651553
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 0.01040064,
+              "right": 0.01082664,
+              "relativeChange": -0.03934738755514189
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 44.701,
+              "right": 34.247,
+              "relativeChange": 0.3052530148626158
             }
           }
         }
       ],
-      "individual": []
+      "individual": [
+        {
+          "id": "zod-issue-helper-migration",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 177615,
+              "right": 146374,
+              "relativeChange": 0.21343271346004067
+            },
+            "cost": {
+              "left": 0.018102880000000002,
+              "right": 0.0146534,
+              "relativeChange": 0.23540475248065307
+            },
+            "seconds": {
+              "left": 78.795,
+              "right": 62.408,
+              "relativeChange": 0.2625785155749263
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 144898,
+              "right": 97484,
+              "relativeChange": 0.486377251651553
+            },
+            "cost": {
+              "left": 0.01040064,
+              "right": 0.01082664,
+              "relativeChange": -0.03934738755514189
+            },
+            "seconds": {
+              "left": 44.701,
+              "right": 34.247,
+              "relativeChange": 0.3052530148626158
+            }
+          }
+        }
+      ]
     },
     {
       "left": "modified",
       "right": "baseline",
       "tier": "functional",
       "partition": "diagnostic",
-      "pairs": 0,
+      "pairs": 2,
       "resources": {
         "tokens": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 151535,
+          "right": 322513,
+          "relativeChange": -0.5301429709810147
         },
         "cost": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 0.013587640000000002,
+          "right": 0.02850352,
+          "relativeChange": -0.5232995784380314
         },
         "seconds": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 71.31,
+          "right": 123.49600000000001,
+          "relativeChange": -0.42257239100861566
         }
       },
       "tasks": [
@@ -2002,70 +2233,113 @@
         },
         {
           "id": "zod-issue-helper-migration",
-          "pairs": 0,
+          "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 67678,
+              "right": 177615,
+              "relativeChange": -0.6189623624130844
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 0.00587276,
+              "right": 0.018102880000000002,
+              "relativeChange": -0.6755897404169944
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 36.603,
+              "right": 78.795,
+              "relativeChange": -0.5354654483152483
             }
           }
         },
         {
           "id": "zod-record-own-presence",
-          "pairs": 0,
+          "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 83857,
+              "right": 144898,
+              "relativeChange": -0.4212687545721818
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 0.00771488,
+              "right": 0.01040064,
+              "relativeChange": -0.25823026275306127
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 34.707,
+              "right": 44.701,
+              "relativeChange": -0.22357441667971634
             }
           }
         }
       ],
-      "individual": []
+      "individual": [
+        {
+          "id": "zod-issue-helper-migration",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 67678,
+              "right": 177615,
+              "relativeChange": -0.6189623624130844
+            },
+            "cost": {
+              "left": 0.00587276,
+              "right": 0.018102880000000002,
+              "relativeChange": -0.6755897404169944
+            },
+            "seconds": {
+              "left": 36.603,
+              "right": 78.795,
+              "relativeChange": -0.5354654483152483
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 83857,
+              "right": 144898,
+              "relativeChange": -0.4212687545721818
+            },
+            "cost": {
+              "left": 0.00771488,
+              "right": 0.01040064,
+              "relativeChange": -0.25823026275306127
+            },
+            "seconds": {
+              "left": 34.707,
+              "right": 44.701,
+              "relativeChange": -0.22357441667971634
+            }
+          }
+        }
+      ]
     },
     {
       "left": "modified",
       "right": "cline",
       "tier": "functional",
       "partition": "diagnostic",
-      "pairs": 0,
+      "pairs": 3,
       "resources": {
         "tokens": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 232071,
+          "right": 371808,
+          "relativeChange": -0.37583107410276273
         },
         "cost": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 0.021710120000000003,
+          "right": 0.03777208,
+          "relativeChange": -0.42523366465389245
         },
         "seconds": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 107.719,
+          "right": 133.703,
+          "relativeChange": -0.19434118905334963
         }
       },
       "tasks": [
@@ -2113,70 +2387,134 @@
         },
         {
           "id": "zod-issue-helper-migration",
-          "pairs": 0,
+          "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 67678,
+              "right": 146374,
+              "relativeChange": -0.5376364654925054
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 0.00587276,
+              "right": 0.0146534,
+              "relativeChange": -0.5992220235576726
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 36.603,
+              "right": 62.408,
+              "relativeChange": -0.4134886553006025
             }
           }
         },
         {
           "id": "zod-record-own-presence",
-          "pairs": 0,
+          "pairs": 2,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 164393,
+              "right": 225434,
+              "relativeChange": -0.2707710460711339
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 0.01583736,
+              "right": 0.023118680000000003,
+              "relativeChange": -0.31495396796010844
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 71.116,
+              "right": 71.295,
+              "relativeChange": -0.002510694999649399
             }
           }
         }
       ],
-      "individual": []
+      "individual": [
+        {
+          "id": "zod-issue-helper-migration",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 67678,
+              "right": 146374,
+              "relativeChange": -0.5376364654925054
+            },
+            "cost": {
+              "left": 0.00587276,
+              "right": 0.0146534,
+              "relativeChange": -0.5992220235576726
+            },
+            "seconds": {
+              "left": 36.603,
+              "right": 62.408,
+              "relativeChange": -0.4134886553006025
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 83857,
+              "right": 97484,
+              "relativeChange": -0.13978704197611913
+            },
+            "cost": {
+              "left": 0.00771488,
+              "right": 0.01082664,
+              "relativeChange": -0.2874169640811923
+            },
+            "seconds": {
+              "left": 34.707,
+              "right": 34.247,
+              "relativeChange": 0.013431833445265218
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "repetition": 2,
+          "resources": {
+            "tokens": {
+              "left": 80536,
+              "right": 127950,
+              "relativeChange": -0.3705666275889019
+            },
+            "cost": {
+              "left": 0.008122480000000001,
+              "right": 0.01229204,
+              "relativeChange": -0.33920813794943716
+            },
+            "seconds": {
+              "left": 36.409,
+              "right": 37.048,
+              "relativeChange": -0.01724789462319165
+            }
+          }
+        }
+      ]
     },
     {
       "left": "baseline",
       "right": "cline",
       "tier": "functional",
       "partition": "diagnostic",
-      "pairs": 0,
+      "pairs": 2,
       "resources": {
         "tokens": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 322513,
+          "right": 243858,
+          "relativeChange": 0.32254426756555055
         },
         "cost": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 0.02850352,
+          "right": 0.025480040000000002,
+          "relativeChange": 0.11866072423748153
         },
         "seconds": {
-          "left": 0,
-          "right": 0,
-          "relativeChange": null
+          "left": 123.49600000000001,
+          "right": 96.655,
+          "relativeChange": 0.2776990326418707
         }
       },
       "tasks": [
@@ -2224,48 +2562,91 @@
         },
         {
           "id": "zod-issue-helper-migration",
-          "pairs": 0,
+          "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 177615,
+              "right": 146374,
+              "relativeChange": 0.21343271346004067
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 0.018102880000000002,
+              "right": 0.0146534,
+              "relativeChange": 0.23540475248065307
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 78.795,
+              "right": 62.408,
+              "relativeChange": 0.2625785155749263
             }
           }
         },
         {
           "id": "zod-record-own-presence",
-          "pairs": 0,
+          "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 144898,
+              "right": 97484,
+              "relativeChange": 0.486377251651553
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 0.01040064,
+              "right": 0.01082664,
+              "relativeChange": -0.03934738755514189
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 44.701,
+              "right": 34.247,
+              "relativeChange": 0.3052530148626158
             }
           }
         }
       ],
-      "individual": []
+      "individual": [
+        {
+          "id": "zod-issue-helper-migration",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 177615,
+              "right": 146374,
+              "relativeChange": 0.21343271346004067
+            },
+            "cost": {
+              "left": 0.018102880000000002,
+              "right": 0.0146534,
+              "relativeChange": 0.23540475248065307
+            },
+            "seconds": {
+              "left": 78.795,
+              "right": 62.408,
+              "relativeChange": 0.2625785155749263
+            }
+          }
+        },
+        {
+          "id": "zod-record-own-presence",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 144898,
+              "right": 97484,
+              "relativeChange": 0.486377251651553
+            },
+            "cost": {
+              "left": 0.01040064,
+              "right": 0.01082664,
+              "relativeChange": -0.03934738755514189
+            },
+            "seconds": {
+              "left": 44.701,
+              "right": 34.247,
+              "relativeChange": 0.3052530148626158
+            }
+          }
+        }
+      ]
     }
   ],
   "accounting": {
@@ -2468,20 +2849,108 @@
         "unreportedRequestReserveUsd": 0,
         "accountedUsd": 0.006110760000000001,
         "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-zod-issue-helper-migration-cline",
+        "observedUsd": 0.0146534,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0146534,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-zod-issue-helper-migration-baseline",
+        "observedUsd": 0.018102880000000002,
+        "forwardedAttempts": 14,
+        "usageReports": 14,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.018102880000000002,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-zod-issue-helper-migration-modified",
+        "observedUsd": 0.00587276,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00587276,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-zod-record-own-presence-baseline",
+        "observedUsd": 0.01040064,
+        "forwardedAttempts": 12,
+        "usageReports": 12,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01040064,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-zod-record-own-presence-modified",
+        "observedUsd": 0.00771488,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00771488,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-zod-record-own-presence-cline",
+        "observedUsd": 0.01082664,
+        "forwardedAttempts": 5,
+        "usageReports": 5,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01082664,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-zod-record-own-presence-modified",
+        "observedUsd": 0.008122480000000001,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.008122480000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-zod-record-own-presence-cline",
+        "observedUsd": 0.01229204,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01229204,
+        "basis": "wire/report counts; billing unknown"
       }
     ],
-    "observedUsd": 0.35682568,
+    "observedUsd": 0.4448113999999999,
     "reservedUsd": 0,
-    "accountedUsd": 0.35682568
+    "accountedUsd": 0.4448113999999999
   },
   "priorAccountedUsd": 0.82594076,
-  "totalAccountedUsd": 1.18276644,
-  "referenceEquivalentEur": 1.0583930530005359,
+  "totalAccountedUsd": 1.27075216,
+  "referenceEquivalentEur": 1.1371266657087646,
   "limits": {
     "authorizedEur": 2,
     "operationalUsd": 2.190323,
     "invoiceVerified": false
   },
   "newMissingWireResponseUsage": 0,
-  "limitations": "Two fresh RxJS clusters,not a representative population; repeat trials are dependent within tasks. Known Zod diagnostics stay separate. No paid legacy SDK arm identifies model benefit from the search repair. Source-project tsconfig is supplied to all RxJS arms after a zero-model completeness block; no guard weakened. Per-task project Node version is pinned; actual model runtime Node24. Same advertised rename schema includes blocked recovery. Provider seeds/revision,invoices,hidden retries and full cache unknown. Actual checks,truthful reporting,formal admission and user criteria remain distinct."
+  "limitations": "Two fresh RxJS clusters,not a representative population; repeat trials are dependent within tasks. Known Zod diagnostics stay separate. No paid legacy SDK arm identifies model benefit from the search repair. Source-project tsconfig is supplied to all RxJS arms after a zero-model completeness block; no guard weakened. Per-task project Node version is pinned; actual model runtime Node24. Same advertised rename schema includes blocked recovery. One orchestration interruption after a recorded completed native result retains original events/result/source and missing outer metadata; administrative continuation skips the completed prefix under identical bindings/order/budgets. Worker durations exclude that unmeasured outer gap. Provider seeds/revision,invoices,hidden retries and full cache unknown. Actual checks,truthful reporting,formal admission and user criteria remain distinct."
 }

@@ -1,6 +1,6 @@
 # F27: repeated fresh confirmation and corrected native search
 
-**Fresh stratum complete: 18/18 reviewed trials. The separately registered 18 known Zod diagnostics are still running.** No outcome is repaired, retried or replaced after audit. F26 and earlier campaigns contribute finances only.
+**Fresh stratum complete: 18/18 reviewed trials. Eight of the separately registered 18 known Zod diagnostics are now reviewed; that stratum is still running.** No outcome is repaired, retried or replaced after audit. F26 and earlier campaigns contribute finances only.
 
 ## Design and controls
 
@@ -46,3 +46,9 @@ At this checkpoint new estimates are USD0.35682568. Cumulative observed estimate
 `native-summary.json` keeps strata and all scoring tiers separate. `trials.csv` retains all36 assignments, including diagnostics not yet executed. SHA-bound traces/diffs, journals, wire contracts, reviews and actual repaired loads are verified; `native-evidence-checks.json` also checks initial task Git identity and matched Light contracts.
 
 Decision: **retain guarded compiler rename and patch fallback**; fresh migration supports a conditional efficiency gain. Retain the native search adapter for fairer comparisons, without claiming a paid search-repair effect. Two later isolated production fixes have separate zero-model evidence in `../light-harness-posix-tool-recovery-2026-10-14/` and `../light-harness-member-boundary-recovery-2026-10-14/`. Neither enters F27 or rescues its outcomes. Final publication will add the separate Zod stratum after termination and review.
+
+## Administrative interruption (not a model retry)
+
+After23 archived trials, the orchestration process disappears after the24th model result (`1-zod-record-own-presence-cline`) has already been written. The cause is unknown; current cgroup reports no OOM. Preserve the original result/events/wire/instruction/source hashes. The same registered scorer evaluates that unchanged endpoint; lost outer exit/preparation/duration metadata stays null. Recorded worker duration34247ms and usage remain available. This interruption is counted separately from the recorded model success.
+
+The administrative continuation skips exactly the completed24-slot prefix and dispatches only the remaining12 registered slots. Original provenance, task Git identity, model/effort/runtime, prompts/schemas, order and cumulative budgets/reserves remain unchanged. `resume-manifest.json`, `administrative-resume.patch` and compressed original/continued logs plus generated driver make that change reviewable. Integrity checks verify no model slot is retried and actual dispatch/scoring/preparation/budget functions are byte-identical. Worker-time comparisons do not include the unknown outer gap. This affects only known diagnostics; the complete fresh stratum predates the interruption.

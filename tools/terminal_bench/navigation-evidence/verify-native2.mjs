@@ -42,6 +42,35 @@ for(const task of protocol.tasks)for(let rep=1;rep<=protocol.repetitions;rep++) 
 }
 const {writeFile,mkdir}=await import("node:fs/promises");
 const {gzipSync}=await import("node:zlib");
+const recovery=await json(join(campaign,"orchestration-recovery.json"));
+const continuation=await json(join(campaign,"resume-manifest.json"));
+const originalDriver=await readFile(join(repo,"tools/terminal_bench/navigation-evidence/run.mjs"),"utf8");
+const administrativeDriver=await readFile(join(campaign,"resume-driver.mjs"),"utf8");
+assert.equal(sha(originalDriver),continuation.originalDriverSha256);
+assert.equal(sha(administrativeDriver),continuation.administrativeDriverSha256);
+assert.equal(continuation.originalDriverSha256,bindings.inputs["tools/terminal_bench/navigation-evidence/run.mjs"]);
+for(const name of continuation.unchangedFunctions){
+ const pattern=new RegExp('async function '+name+'\\([^]*?(?=\\n(?:async )?function |\\nif \\(process\\.argv)');
+ assert.equal(administrativeDriver.match(pattern)?.[0],originalDriver.match(pattern)?.[0],name);
+}
+const preservedRoot=join(campaign,recovery.affectedTrial);
+for(const [path,expected]of Object.entries(recovery.originalFileSha256))
+ assert.equal(sha(await readFile(join(preservedRoot,path==="workspace.diff.beforeScoring"?"workspace.diff":path))),expected,path);
+const recovered=results.rows.find(r=>r.name===recovery.affectedTrial);
+assert.equal(recovered.outerAgentMs,null);assert.equal(recovered.exit.code,null);
+assert.equal(recovered.exit.orchestrationInterrupted,true);
+assert.equal(recovered.durationMs,recovery.recordedWorkerDurationMs);
+const order=results.provenance.order.map(t=>[t.repetition,t.id,t.arm].join("-"));
+const oldLog=await readFile(join(work,"f27-run.log"),"utf8");
+const newLog=await readFile(join(work,"f27-resume-run.log"),"utf8");
+assert.equal(sha(oldLog),recovery.originalRunnerLogSha256);
+const started=log=>[...log.matchAll(/^START (.+)$/gm)].map(m=>m[1]);
+assert.deepEqual(started(oldLog),order.slice(0,24));
+assert.deepEqual(started(newLog),order.slice(24,24+started(newLog).length));
+for(const [name,bytes]of [["administrative-driver.mjs",Buffer.from(administrativeDriver)],["original-orchestration.log",Buffer.from(oldLog)],["continued-orchestration.log",Buffer.from(newLog)]])
+ await writeFile(join(study,name+".gz"),gzipSync(bytes,{mtime:0}));
+await writeFile(join(study,"resume-manifest.json"),JSON.stringify(continuation,null,2)+"\n");
+await writeFile(join(study,"orchestration-recovery.json"),JSON.stringify(recovery,null,2)+"\n");
 const {repairSearchSource}=await import("./native-search-repair.mjs");
 const sdk=await import("node:fs/promises").then(fs=>fs.realpath(join(repo,"packages/agent-runtime/node_modules/@cline/sdk/package.json")));
 const {dirname}=await import("node:path"),nativeBindings=await json(join(study,"native-search-bindings.json")),repairAudits=[];
@@ -63,6 +92,8 @@ for(const row of results.rows){
 
 const output={paidRequests:0,planned:results.planned,completed:results.completed,frozenInputHashesVerified:true,
   sourceIsolationVerified:true,protectedSuppliedAssertionsVerified:true,nativeRepairLoadsVerified:true,repairAudits,initialGitIdentities:heads,matchedLightContracts:contracts,
+  administrativeContinuation:{verified:true,modelRetries:0,completedPrefix:24,remainingAssigned:12,newStarted:started(newLog).length,
+    originalDriverSha256:sha(originalDriver),administrativeDriverSha256:sha(administrativeDriver),originalLogSha256:sha(oldLog),continuedLogSha256:sha(newLog),missingOuterMetadataRetained:true},
   method:"Original task Git identity, actual initial dispatch schema/workspace-normalized contract and frozen input SHA equality. Checks do not require favorable outcomes. Native repairs verified against actual original/repaired module hashes and absent from Light trials. Fresh and known strata remain separate."};
 await writeFile(join(study,"native-evidence-checks.json"),JSON.stringify(output,null,2)+"\n");
 console.log(JSON.stringify({...output,initialGitIdentities:undefined}));
