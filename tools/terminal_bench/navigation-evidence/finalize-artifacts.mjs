@@ -32,6 +32,8 @@ for(const row of results.rows){
 }
 await write("mechanism-analysis.json",{method:protocol.continuationOf
  ?"Administrative single-slot continuation of F25. Keep the parent11/12 and tail1/1 separate. Frozen runtime/schema/per-invocation budgets match, but actual prompt Git HEAD differs; the tail is exploratory. See continuation-summary.json and the unchanged tool-ledger for detailed inputs/results."
+ :protocol.studyKind==="fresh-project-confirmation"
+ ?"F26 fresh Zod confirmation, three assigned repetitions of two preselected tasks. Only compiler rename availability differs between Light variants; behavioral repair probes non-rename transfer. Preserve all assigned outcomes and actual checks/reporting/admission separately. See fresh-mechanisms.json and fresh-summary.json; no efficacy pooling with prior projects."
  :protocol.studyKind==="compiler-rename-ablation"
  ?"F25 single-action availability ablation, known diagnostics: baseline blocks compiler rename; modified retains current production. All other mechanisms, prompts and schemas are identical. Detailed recorded edits, commands and final reports are in rename-ablation-mechanisms.json; reporting tiers and financial accounting stay separate."
  :protocol.studyKind==="declaration-navigation"

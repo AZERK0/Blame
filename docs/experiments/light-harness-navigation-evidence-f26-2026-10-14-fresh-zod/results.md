@@ -1,0 +1,51 @@
+# F26: fresh second-project confirmation, budget incomplete
+
+Two tasks were selected on Zod 3.24.2 (`e3087036`) before any model dispatch: a 79-identifier/three-file exported-helper migration with protected aliases/homonyms, and an unseeded two-file repair of own-property/undefined presence in synchronous and asynchronous records. This is an internal panel on 84 upstream source/test TypeScript files, including a large `types.ts`; it is not an external benchmark or a representative large-project sample.
+
+Three repetitions × two tasks × three arms were registered. **6/18 ran**, one complete repetition; the other twelve remain unexecuted in `trials.csv`. No paid pilot, task replacement, retry, solution retrieval, supervisor repair or verifier feedback occurred. Earlier campaigns contribute financial accounting only.
+
+Current Light is production source `149b0f94`; reference Light differs only by the archived compiler-rename disabling guard. Every other compiled artifact, prompt, schema, reference resolver and edit guard matches. The unchanged schema still advertises rename, so this tests availability **plus blocked-action recovery friction**, not an optimized patch-only prompt. Native is integrated Cline SDK 0.0.82. Model `gpt-5.6-luna`, effort `high`, limits, dependencies, original assertions and exact per-project argv are frozen. Initial task Git HEAD/tree and actual workspace-normalized dispatch contracts match across Light arms. Provider revision/seeds and invoices are unavailable; workspace paths expose arm names.
+
+| Observed endpoint, each arm has two attempts | Reference Light | Current Light | Cline SDK |
+|---|---:|---:|---:|
+| Official runtime completion | 2/2 | 2/2 | 2/2 |
+| Original registered functional/strict audit | 1/2 | 1/2 | 1/2 |
+| Actual final-source typecheck/full-suite passes | 2/2 | 2/2 | 2/2 |
+| Light-admitted verification | 0/2 | 0/2 | Not a Light endpoint |
+
+**Fresh migration: one strict, quality-matched pair per comparison.** All three preserve every registered binding, comment, literal and alias, and run the exact final-source typecheck and all 545 original tests, with accurate passed/failed/skipped reports.
+
+| Migration | Tokens, including cache subsets | Estimated USD | Runner seconds |
+|---|---:|---:|---:|
+| Reference Light | 203,241 | 0.01944900 | 89.081 |
+| Current Light | 75,140 | 0.00678572 | 42.157 |
+| Cline SDK | 184,500 | 0.02076984 | 157.773 |
+
+Current versus reference: **−63.0% tokens, −65.1% cost, −52.7% time**. Current versus native: **−59.3%, −67.3%, −73.3%**. The current arm performs one compiler rename. Reference encounters the disabled action and a mismatching repeated-context patch, then uses a Python replacement through `run_task`; this command bypasses `edit_code` read guards, while its final source passes the oracle. Native first omits 75 consumer identifiers, fails validation, then independently repairs them. All intermediate failures and their resources remain included. This corroborates the migration mechanism on a second project, but one repetition establishes neither robustness nor universal superiority.
+
+The current arm actually presents **more read-tool bytes** (76,819 versus 15,551 reference and 16,738 native), while using fewer model requests (7 versus 14/10). Thus this trace supports shorter editing/recovery trajectories, not a claim that narrower reads caused the token gain. Cache warming/order is not balanced by the unexecuted repetitions.
+
+**Adverse measurement finding: the behavioral source mask is too narrow.** All three final repairs pass 549 tests, the exact typecheck and fourteen private behavior assertions in each of two timezones, preserving supplied/original assertions and allowed files. The frozen grader rejects only `alwaysSet?: boolean` added to the auxiliary `ObjectPair` type, outside its two permitted method bodies. The model instruction restricts edits to record parsing/async pair merging without explicitly forbidding this auxiliary type. Preserve the original failures; do not call them three demonstrated behavioral regressions.
+
+`criterion-sensitivity.json` is explicitly post-result and exploratory. It permits exactly that optional boolean field, protects all other tokens outside the original methods, rejects required/nonboolean variants, and retains every original score. Under this sensitivity the three behavioral outputs satisfy the request. Current uses 98,102 tokens versus 136,076 reference and 165,712 native (−27.9%/−40.8%); estimated costs fall −34.2%/−39.1%. Durations are 50.078/50.116/50.176 seconds: **almost no time gain**. No rename activates on this task, so these differences do not identify a compiler effect. Do not pool this sensitivity into the primary migration comparison.
+
+**Validation and accounting.** Four Light runs remain `unverified`: raw Node/Vitest commands pass, but their selection/source/environment scope is not admitted. Execution, success, admission and user criteria remain distinct. All 58 actual dispatches have usage observations; no new usage gap, byte rejection, timeout or watchdog occurs. Token/cost aggregates reconcile for 6/6; complete cache accounting exists for 0/6. Input includes cached subsets, output includes reasoning subsets; never add them twice. Nominal output limit 8192 remains absent from actual OAuth requests; retain the full-response reserve.
+
+**Native information defect, locally reproduced after the cohort.** The actual SDK default search executor attaches a context line from `b.ts` to an `a.ts` match and omits the matched line itself. A nearby-match fixture returns 3/3 matching lines but wrong context; a separately preserved spaced fixture returns 3/4 and the same wrong binding. The compiled ripgrep path uses `--max-count=1`, with nearby matches sometimes retained by the context window, and does not verify the file for context records. The paid migration similarly reports six headers rather than the full consumer set and mixes snippets. This belongs to SDK 0.0.82's information presentation, alongside the model's omitted consumer edits; it is not a demonstrated purely model reasoning defect. `sdk-search-controls*.json` preserve exact outputs and core bytes. No SDK dependency was patched, and no model gain from a search fix was measured. The current/native comparison therefore includes this concrete native implementation weakness.
+
+New estimated cost is USD0.08281396. Cumulative estimates are USD0.59594076 plus the old USD0.23 missing-response reserve: USD0.82594076, reference EUR0.73909. The frozen conservative ceiling is USD1.095161 under the existing cumulative EUR1 authorization. The next USD0.27 allowance would reach USD1.09594076 and is therefore not admitted. This is not a renewed EUR1 budget or invoice-confirmed exchange rate.
+
+**Decision:** retain guarded compiler rename and patch fallback; deepen confirmation rather than declaring a global gain. First align the source criterion with the written task and preregister it before further model results. Then execute additional repetitions with sufficient budget and add genuinely larger-project tasks. Diagnose native search information separately before attributing all current/native savings to semantics. Preserve this incomplete panel and its adverse grader finding. No production harness change is made in F26; the benchmark runner now requires explicit verification commands for unknown projects instead of silently treating them as Lodash.
+
+The SHA-bound review covers all effective inputs and complete diffs. `inventory.json` archives 36 raw artifacts; six journals and actual public wire contracts are preserved. `fresh-evidence-checks.json` verifies frozen inputs, source isolation, protected supplied assertions and matched Git/schema/normalized contracts. `verification-amendments.json` records only UTC spelling normalization in a postprocessing check; no paid input or score changes.
+
+## Reproduction
+
+Use the preregistration commit `90ae462d` for paid driver/source bindings and the later analysis commit for read-only publishing. Never overwrite a campaign or frozen build. Existing older campaign financial inputs must be present or reconstructed from their archived accounting; do not replace missing consumption by zero.
+
+1. Clone Zod at the pinned commit into the protocol's `sourceRoot`. Create the separate `dependencyRoot` from `environment-package.json`/`environment-package-lock.json`, run `npm ci --ignore-scripts --no-audit --no-fund`, and symlink its `node_modules` into the source checkout. The upstream ES5 typecheck fails TS18028 before any change; every arm explicitly uses ES2018, without editing upstream configuration.
+2. For local controls, use a new work root in a new registration; `fresh-controls.mjs` rejects unchanged tasks and accepts private positives. `fresh-runtime-controls.mjs` checks the actual frozen action and patch fallback. Their private repairs never enter a model input.
+3. Freeze from the pinned source with `prepare-fresh.mjs freeze`, then `run.mjs bind f26` and `run.mjs budget f26`, all with `BLAME_STUDY_VARIANT=fresh-zod`. Reproduction requires a new bounded variant/root and corresponding registration, not overwriting F26. Preserve inherited proxy/CA settings, configured model/effort and cumulative accounting. `run.py f26` runs the serial preregistered order; it will refuse the existing campaign.
+4. After inspecting all raw inputs, commands, reports and full diffs, record each SHA-bound decision with `large-project/record-review.py`; run lifecycle inspection and `large-project/publish.mjs`. Extract journals/contracts with `postprocess.mjs`/`publish-wire.mjs`, then `finalize-artifacts.mjs f26`, `summarize-fresh.mjs`, and the explicitly exploratory `fresh-criterion-sensitivity.mjs`. Run `verify-fresh.mjs` and `scope-followup/verify-evidence.py`. These calls use zero model requests.
+
+Frozen Git timestamps make model task identities independent of registration time. Historical cohorts remain tied to their original drivers; new generic runner code does not rewrite or retroactively rebind them. Native LaTeX compilation returned a closed connection before diagnostics; the saved source is preserved and PDF compilation remains unverified.
