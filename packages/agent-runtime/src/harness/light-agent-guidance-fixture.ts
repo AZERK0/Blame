@@ -32,4 +32,3 @@ export const project = {
   "package.json": '{"type":"module"}',
   "tsconfig.json": JSON.stringify({ compilerOptions: { strict: true, noEmit: true, target: "ES2022", module: "NodeNext", moduleResolution: "NodeNext", types: [] }, include: ["*.ts"] }),
 };
-

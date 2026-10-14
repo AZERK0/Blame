@@ -10,6 +10,7 @@ test("Mocha reports pending separately and leaves unreported skipped unknown", (
   assert.deepEqual(observation.reportedCounts, { passed: 3245, failed: null, pending: 8, skipped: null });
   assert.equal(observation.selection, "unknown");
   assert.equal(observation.freshness, "unknown");
+  assert.equal(observation.evidenceOrigin, "runner_output");
 });
 test("interrupted or duplicated Mocha summaries cannot establish passing tests", () => {
   const output = "  2 passing (1ms)\n  1 pending\n";

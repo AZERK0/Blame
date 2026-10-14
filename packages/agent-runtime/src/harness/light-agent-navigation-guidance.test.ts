@@ -111,4 +111,3 @@ test("symbol truncation also proposes a range without granting complete declarat
     assert.equal((await workspace.editCode({ operations: [{ kind: "symbol", target: "long.ts#calculate", action: "replace_body", content: "return 9;" }] })).status, "blocked");
   });
 });
-

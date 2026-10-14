@@ -73,8 +73,8 @@ for(const [label,dist]of [["before",before],["after",after]]) {
   });
   const descriptions=await fixture({},async(_,root)=>[...lightSemanticHarnessTools(root),createFinishTaskTool({workspaceRoot:root,conversationId:"guidance-replay"})].map(t=>({name:t.name,bytes:Buffer.byteLength(t.description)})));
   const prompt=await readFile(join(resolve(dist),"prompt/code-agent-system.txt"));
-  const modules={};for(const file of ["light-workspace.js","light-navigation.js","light-reference-search.js","light-edit.js","light-semantic-rename.js","check-observation.js","light-finish-service.js","light-tools.js","light-completion.js"])
-    modules[file]=sha(await readFile(join(resolve(dist),"harness",file)));
+  const modules={};for(const file of ["light-workspace.js","light-navigation.js","light-reference-search.js","light-edit.js","light-semantic-rename.js","check-observation.js","light-task-runner.js","light-validation-report.js","light-finish-service.js","light-tools.js","light-completion.js","light-contracts.js"])
+    modules[file]=await readFile(join(resolve(dist),"harness",file)).then(sha,error=>{if(error.code==="ENOENT")return null;throw error;});
   variants.push({label,node:process.version,runtimeHashes:modules,prompt:{bytes:prompt.length,sha256:sha(prompt)},descriptions,scopes,references,rename,reading,validation,patches});
 }
 await mkdir(resolve(destination),{recursive:true});

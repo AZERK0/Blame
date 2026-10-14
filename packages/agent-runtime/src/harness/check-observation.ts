@@ -92,7 +92,7 @@ export function observeCheck(
     selection: "unknown",
     // A host process can have unobserved external writers; pre/post equality is insufficient.
     freshness: sourceChanged ? "stale" : "unknown",
-    evidenceOrigin: structured ? "node_events" : report ? "report" : counts ? "runner_output" : "none",
+    evidenceOrigin: structured ? "node_events" : report ? "report" : counts || reportedCounts ? "runner_output" : "none",
     ...(structured ? { evidence: structured.evidence } : {}),
     ...(nodeEvents && !structured ? { note: "Invocation-owned Node events are incomplete or unsupported; executed case count remains unconfirmed." }
       : ambiguousNode && !structured ? { note: "Node text summaries can count empty file workers. Source-path labels leave the executed case count unconfirmed." } : {}),
