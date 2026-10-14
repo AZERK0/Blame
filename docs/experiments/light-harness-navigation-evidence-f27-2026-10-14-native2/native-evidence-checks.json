@@ -1,7 +1,7 @@
 {
   "paidRequests": 0,
   "planned": 36,
-  "completed": 9,
+  "completed": 18,
   "frozenInputHashesVerified": true,
   "sourceIsolationVerified": true,
   "protectedSuppliedAssertionsVerified": true,
@@ -66,6 +66,66 @@
           "functionName": "sP"
         }
       ]
+    },
+    {
+      "name": "2-rxjs-array-removal-migration-cline",
+      "artifact": "native-search-loads/2-rxjs-array-removal-migration-cline.jsonl.gz",
+      "bytes": 420,
+      "sha256": "4ecd591c9570e57d85005a16da3a35c518b5750d93412d98a9bcc2eb216d8df1",
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        },
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        }
+      ]
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-cline",
+      "artifact": "native-search-loads/3-rxjs-stream-lifecycle-cline.jsonl.gz",
+      "bytes": 420,
+      "sha256": "4ecd591c9570e57d85005a16da3a35c518b5750d93412d98a9bcc2eb216d8df1",
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        },
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        }
+      ]
+    },
+    {
+      "name": "3-rxjs-array-removal-migration-cline",
+      "artifact": "native-search-loads/3-rxjs-array-removal-migration-cline.jsonl.gz",
+      "bytes": 420,
+      "sha256": "4ecd591c9570e57d85005a16da3a35c518b5750d93412d98a9bcc2eb216d8df1",
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        },
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        }
+      ]
     }
   ],
   "initialGitIdentities": {
@@ -104,12 +164,62 @@
     "2-rxjs-stream-lifecycle-modified": {
       "initialHead": "aeaabf78066abe209fb03f887118ec6134172627",
       "initialTree": "9bc52cda6aedefac72bfd22f4cf1b7982d3c9154"
+    },
+    "2-rxjs-array-removal-migration-modified": {
+      "initialHead": "dcb4058c5be2c55823fa9bc0bc56fa6fa54cba4d",
+      "initialTree": "ea9c5a7e197c26b82b5cf1f3fbb14319b0f4529d"
+    },
+    "2-rxjs-array-removal-migration-cline": {
+      "initialHead": "dcb4058c5be2c55823fa9bc0bc56fa6fa54cba4d",
+      "initialTree": "ea9c5a7e197c26b82b5cf1f3fbb14319b0f4529d"
+    },
+    "2-rxjs-array-removal-migration-baseline": {
+      "initialHead": "dcb4058c5be2c55823fa9bc0bc56fa6fa54cba4d",
+      "initialTree": "ea9c5a7e197c26b82b5cf1f3fbb14319b0f4529d"
+    },
+    "3-rxjs-stream-lifecycle-baseline": {
+      "initialHead": "aeaabf78066abe209fb03f887118ec6134172627",
+      "initialTree": "9bc52cda6aedefac72bfd22f4cf1b7982d3c9154"
+    },
+    "3-rxjs-stream-lifecycle-modified": {
+      "initialHead": "aeaabf78066abe209fb03f887118ec6134172627",
+      "initialTree": "9bc52cda6aedefac72bfd22f4cf1b7982d3c9154"
+    },
+    "3-rxjs-stream-lifecycle-cline": {
+      "initialHead": "aeaabf78066abe209fb03f887118ec6134172627",
+      "initialTree": "9bc52cda6aedefac72bfd22f4cf1b7982d3c9154"
+    },
+    "3-rxjs-array-removal-migration-cline": {
+      "initialHead": "dcb4058c5be2c55823fa9bc0bc56fa6fa54cba4d",
+      "initialTree": "ea9c5a7e197c26b82b5cf1f3fbb14319b0f4529d"
+    },
+    "3-rxjs-array-removal-migration-baseline": {
+      "initialHead": "dcb4058c5be2c55823fa9bc0bc56fa6fa54cba4d",
+      "initialTree": "ea9c5a7e197c26b82b5cf1f3fbb14319b0f4529d"
+    },
+    "3-rxjs-array-removal-migration-modified": {
+      "initialHead": "dcb4058c5be2c55823fa9bc0bc56fa6fa54cba4d",
+      "initialTree": "ea9c5a7e197c26b82b5cf1f3fbb14319b0f4529d"
     }
   },
   "matchedLightContracts": [
     {
       "id": "rxjs-array-removal-migration",
       "repetition": 1,
+      "sameInitialGit": true,
+      "sameSchema": true,
+      "sameNormalizedContract": true
+    },
+    {
+      "id": "rxjs-array-removal-migration",
+      "repetition": 2,
+      "sameInitialGit": true,
+      "sameSchema": true,
+      "sameNormalizedContract": true
+    },
+    {
+      "id": "rxjs-array-removal-migration",
+      "repetition": 3,
       "sameInitialGit": true,
       "sameSchema": true,
       "sameNormalizedContract": true
@@ -124,6 +234,13 @@
     {
       "id": "rxjs-stream-lifecycle",
       "repetition": 2,
+      "sameInitialGit": true,
+      "sameSchema": true,
+      "sameNormalizedContract": true
+    },
+    {
+      "id": "rxjs-stream-lifecycle",
+      "repetition": 3,
       "sameInitialGit": true,
       "sameSchema": true,
       "sameNormalizedContract": true

@@ -90,6 +90,96 @@
       "startedWithoutFinish": [],
       "finishedWithoutStart": [],
       "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-array-removal-migration-modified",
+      "eventsSha256": "6f1bc4edeef42b80ccd407b83de05372aff03c11112ce443d2e02b3508f5c2b9",
+      "started": 23,
+      "finished": 23,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-array-removal-migration-cline",
+      "eventsSha256": "20e4bfd416c82a325fbc60b89275c778ab1622b993b33d03f048ecdf9e811030",
+      "started": 12,
+      "finished": 12,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-array-removal-migration-baseline",
+      "eventsSha256": "a0fb5c6c186a5b08cda10b285bf274da588b3595bb35d15f75c3f376702e8e53",
+      "started": 30,
+      "finished": 30,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-baseline",
+      "eventsSha256": "2e74e346e252bac4d601f34b398d6451c27942355123dc8175f688ac5300f025",
+      "started": 36,
+      "finished": 36,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-modified",
+      "eventsSha256": "82cbcc62b4b4d9faa4f5f08c1d4d5ffbe0a0dab17aa38345f0997e73b4d244fb",
+      "started": 31,
+      "finished": 31,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-cline",
+      "eventsSha256": "f678d9b59a8b138aae40c661551d286c8af485e4ea58583aa6f3e7260cb25f40",
+      "started": 17,
+      "finished": 17,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-array-removal-migration-cline",
+      "eventsSha256": "4e36f4d199cb5ff60547a92ae94d2fac4a8903cf26c1f31b13d3369f793e5ee1",
+      "started": 15,
+      "finished": 15,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-array-removal-migration-baseline",
+      "eventsSha256": "c19e4943446c951f91e2d74c66d6c30349dbe912ec340e19e53e99d27c7e3cf1",
+      "started": 32,
+      "finished": 32,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-array-removal-migration-modified",
+      "eventsSha256": "c42e61805e3d02d9f45dcadfb48e60398876dd7890dd8421c0c0940c36059ee8",
+      "started": 21,
+      "finished": 21,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
     }
   ]
 }

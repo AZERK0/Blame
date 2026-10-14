@@ -99,7 +99,106 @@
       "eventsSha256": "8e3a2c8df6ab0165ad0fb61bb9cdfcaa1f9416008b1429743c8cd4dcc8e40c03",
       "diffSha256": "54db4b007d4a85cc6cfba24b8a99211b579b5a978fe167ebde3bcc2e347375f6",
       "scoreSha256": "51d864871f18d6bedfdc3b5eb20913b49207641529cec74e6fe6011f7a243869"
+    },
+    {
+      "name": "2-rxjs-array-removal-migration-modified",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected all effective recorded inputs, command results and final endpoint (identical 7c9b9b4c diff SHA to fully reviewed first triplet). One compiler identifier rename updates exactly 21 resolving spans in ten files; local/public aliases, unrelated homonym/comments/literals, module paths and supplied source config remain unchanged. Some broad/star or absent-scope searches and a command-side ripgrep add navigation overhead but no outside source/solution read occurs. Exact final pinned Node16 typecheck and Mocha pass (3243 passing, 8 pending, zero failed), accurately reported without discovered/executed inflation; diff check passes. Raw checks do not admit harness verification: completion remains explicitly unverified. No repair or verifier feedback.",
+      "eventsSha256": "6f1bc4edeef42b80ccd407b83de05372aff03c11112ce443d2e02b3508f5c2b9",
+      "diffSha256": "7c9b9b4c695927e660353b184972c026a9f5a5ca9dfdeac6c94343686fb71b8e",
+      "scoreSha256": "088631099ed85be52d68df3b13ca5410d0ba3fcd562063de856635a9a935db98"
+    },
+    {
+      "name": "2-rxjs-array-removal-migration-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected all effective inputs, full identifier-only patch and final endpoint (7c9b9b4c, identical to reviewed first triplet). One ten-file patch updates exactly the 21 resolving identifiers, preserving aliases, fixture homonym/comments/literals, module paths/config/dependencies and behavior. All reads and discovery/verification commands remain in the task workspace; no solution recovery. Exact pinned Node16 typecheck and final Mocha both pass (3243 passing, 8 pending, no failure); final report explicitly states separate skips are not distinguishable rather than asserting they executed. No edits after checks. Actual native search repair load is verified separately. No source repair, retry or oracle feedback.",
+      "eventsSha256": "20e4bfd416c82a325fbc60b89275c778ab1622b993b33d03f048ecdf9e811030",
+      "diffSha256": "7c9b9b4c695927e660353b184972c026a9f5a5ca9dfdeac6c94343686fb71b8e",
+      "scoreSha256": "63d2a5988d6eef775e3e1b2e89525defe95c8acb511627b8769d2a65d6b3e6d6"
+    },
+    {
+      "name": "2-rxjs-array-removal-migration-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected all effective actions, both full patches and final endpoint identical to reviewed 7c9b9b4c migration diff. Compiler rename is disabled and writes nothing. First ten-file patch has incorrect windowToggle indentation, atomically rejected; reads and corrected patch recover with exactly 21 binding-identifier substitutions. Final exact Node16 typecheck and full Mocha pass (3243 passing, zero failing, 8 pending), accurately reported with extra validation scopes explicitly unrun. All aliases/homonyms/comments/literals/module paths/protected assertions/configs/dependencies remain intact. No outside source read, solution recovery, supervising repair or verifier feedback. Formal verification remains unverified.",
+      "eventsSha256": "a0fb5c6c186a5b08cda10b285bf274da588b3595bb35d15f75c3f376702e8e53",
+      "diffSha256": "7c9b9b4c695927e660353b184972c026a9f5a5ca9dfdeac6c94343686fb71b8e",
+      "scoreSha256": "572cd399e9937add76ff661ae1c5cb907004bf36c1fb8c630f37b0b8a31789cd"
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective input and complete final three-region diff. A read of a nonexistent guessed asyncIterator symbol path fails harmlessly. Initial atomic insert_after on a type member fails parsing with no writes; whole-interface replacement preserving original members and two function body replacements then succeed. Source mask, all nine registered behavioral probes in both timezones and exact final Node16 typecheck/full suite pass (3245 passing, 8 pending, zero failed), accurately reported. Pulls form a serial promise/schedule chain, normal early unsubscribe returns once, and readable-generator early close/rejected cancel still releases. No unrelated source/input/dependency/config edits, outside reads, retrieval or verifier feedback. No optional lint is attempted in this repetition; official completion succeeds and formal verification remains unverified. Finite probes do not certify all possible iterator implementations.",
+      "eventsSha256": "2e74e346e252bac4d601f34b398d6451c27942355123dc8175f688ac5300f025",
+      "diffSha256": "0891e91d456ce6d5f9e4c7c3522f979096f503d9c86a2500c40bbe371e70b815",
+      "scoreSha256": "8723a383ccbc3ac6d42112f56ef59c5f2769f7d24e00e56cda3a0f6233da86d0"
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-modified",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": false,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective input and full three-region final diff. One atomic two-body/reader-member edit; no unrelated source/input/config/dependency change or outside retrieval. Source mask, all nine behavior probes in both timezones, exact final Node16 typecheck/full suite and later two focused tests pass. Actual full Mocha output is 3245 passing and 8 pending; it emits no separate skipped count. Final report adds an unqualified 0 skipped, unsupported by the recorded runner output. Retain official and registered functional success and actual-check success, but full audited reporting criterion fails; no missing count is zero-filled. This differs from native first-life qualified separately-reported wording. Formal completion remains unverified. No supervising source repair or verifier feedback.",
+      "eventsSha256": "82cbcc62b4b4d9faa4f5f08c1d4d5ffbe0a0dab17aa38345f0997e73b4d244fb",
+      "diffSha256": "a4c67128426872a63e473664aee3786ac17b291f552ca863e37fe2da617a2174",
+      "scoreSha256": "6e1a9c228cdc7e494948918481771a615c29a89ebe64b4ab5aea4b7777f7d24a"
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": false,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective input, both patches and full final diff. Initial introduced TS2532/TS2588 are repaired before both exact final pinned Node16 commands pass (3245 passing, 8 pending, zero failures); keep the intermediate type errors. All nine behavioral probes in both timezones pass. Original source mask rejects the added isFunction import outside scheduleAsyncIterable function-only region, as in native repetition2 and current repetition2; preserve the strict rejection without claiming behavioral quality loss. Final wording says 0 skipped reported, but a separate skipped count is absent; retain actual pending8 and missing separate skips rather than zero-fill. All assertions/config/dependencies/unrelated source otherwise unchanged; no outside reads, solution retrieval, supervising repair or verifier feedback. Actual repaired native loads verified separately.",
+      "eventsSha256": "f678d9b59a8b138aae40c661551d286c8af485e4ea58583aa6f3e7260cb25f40",
+      "diffSha256": "cc3b16664f4276f5cb636e5e1c8ccce1cf88ad6d79f5df97167107bec7406164",
+      "scoreSha256": "d9a35c03c55b7983235d2131b75f1aff292279d6e9c8037ccef81de76c41a592"
+    },
+    {
+      "name": "3-rxjs-array-removal-migration-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective input and full patch; final diff SHA7c9b9b4c matches all reviewed migration endpoints. One identifier-only ten-file patch preserves all21 binding spans plus aliases/homonym/literals/comments/module paths/config/dependencies. Commands remain workspace-local except temporary /tmp compiler/Mocha logs written by the same invocation and immediately read; these are verification outputs, not retrieved solution material or added implementation files. Both exact Node16 checks run after final edit with shell exit-code propagation and observed0; Mocha3243 passing8pending is accurately reported with separate skips unreported and pending cases not executed. Unknown timeout JSON key is inert; actual commands remain recorded. No source repair or verifier feedback; native load evidence checked separately.",
+      "eventsSha256": "4e36f4d199cb5ff60547a92ae94d2fac4a8903cf26c1f31b13d3369f793e5ee1",
+      "diffSha256": "7c9b9b4c695927e660353b184972c026a9f5a5ca9dfdeac6c94343686fb71b8e",
+      "scoreSha256": "b91337979b6573c93ea7f8cd5f6685b7806325484b5370ba1c61b723b8dd18da"
+    },
+    {
+      "name": "3-rxjs-array-removal-migration-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective action and the single patch endpoint, byte-identical to the fully reviewed7c9b9b4c diff. Disabled compiler rename writes nothing; one later ten-file patch correctly updates all21 resolving identifiers. All aliased/public/homonymous names, comments/literals/module paths, assertions/config/dependencies remain intact. Exact final Node16 typecheck and full Mocha pass3243/8 with zero failures, accurately reported; no source edits after validation. Workspace-local discovery/search/diff commands only, no solution retrieval or supervising repair/feedback. Formal completion stays unverified. Unlike repetitions1/2, no patch-context recovery is needed here.",
+      "eventsSha256": "c19e4943446c951f91e2d74c66d6c30349dbe912ec340e19e53e99d27c7e3cf1",
+      "diffSha256": "7c9b9b4c695927e660353b184972c026a9f5a5ca9dfdeac6c94343686fb71b8e",
+      "scoreSha256": "d4b973cced6e8450059d54b1e6ec3040681aebfa03c68cfe0b530b45f759b7a7"
+    },
+    {
+      "name": "3-rxjs-array-removal-migration-modified",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective input and final endpoint identical to reviewed7c9b9b4c diff. One compiler rename covers exactly21 resolving spans in ten files, preserving all aliases/homonyms/comments/literals/module paths/protected source config/dependencies. Initial broad searches cause unrelated but workspace-local docs/BehaviorSubject reads and a failed guessed fixture path; command discovery recovers, with no solution retrieval. Exact final pinned Node16 typecheck and Mocha pass3243/8, zero failed, accurately reported; no source edits afterward. Formal completion remains unverified and no broader validation is claimed. No supervising repair or oracle feedback.",
+      "eventsSha256": "c42e61805e3d02d9f45dcadfb48e60398876dd7890dd8421c0c0940c36059ee8",
+      "diffSha256": "7c9b9b4c695927e660353b184972c026a9f5a5ca9dfdeac6c94343686fb71b8e",
+      "scoreSha256": "68b283ccf5a059b5a4967b3c57552561e5945031a808a27ce91e10add32439b8"
     }
   ],
-  "updatedAt": "2026-10-14T17:15:37.534507+00:00"
+  "updatedAt": "2026-10-14T17:30:54.317929+00:00"
 }

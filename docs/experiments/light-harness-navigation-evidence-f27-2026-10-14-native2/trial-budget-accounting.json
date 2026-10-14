@@ -110,9 +110,108 @@
       "unreportedRequestReserveUsd": 0,
       "accountedUsd": 0.00798824,
       "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-rxjs-array-removal-migration-cline",
+      "observedUsd": 0.015297719999999999,
+      "forwardedAttempts": 6,
+      "usageReports": 6,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.015297719999999999,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-rxjs-array-removal-migration-baseline",
+      "observedUsd": 0.00926492,
+      "forwardedAttempts": 10,
+      "usageReports": 10,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.00926492,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-baseline",
+      "observedUsd": 0.028213879999999997,
+      "forwardedAttempts": 12,
+      "usageReports": 12,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.028213879999999997,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-modified",
+      "observedUsd": 0.0175884,
+      "forwardedAttempts": 9,
+      "usageReports": 9,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.0175884,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-cline",
+      "observedUsd": 0.02836928,
+      "forwardedAttempts": 8,
+      "usageReports": 8,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.02836928,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "3-rxjs-array-removal-migration-cline",
+      "observedUsd": 0.018124720000000004,
+      "forwardedAttempts": 7,
+      "usageReports": 7,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.018124720000000004,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "3-rxjs-array-removal-migration-baseline",
+      "observedUsd": 0.01010412,
+      "forwardedAttempts": 10,
+      "usageReports": 10,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.01010412,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "3-rxjs-array-removal-migration-modified",
+      "observedUsd": 0.006110760000000001,
+      "forwardedAttempts": 7,
+      "usageReports": 7,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.006110760000000001,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-zod-issue-helper-migration-cline",
+      "observedUsd": 0.0146534,
+      "forwardedAttempts": 8,
+      "usageReports": 8,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.0146534,
+      "basis": "wire/report counts; billing unknown"
     }
   ],
-  "observedUsd": 0.22375188,
+  "observedUsd": 0.37147907999999996,
   "reservedUsd": 0,
-  "accountedUsd": 0.22375188
+  "accountedUsd": 0.37147907999999996
 }

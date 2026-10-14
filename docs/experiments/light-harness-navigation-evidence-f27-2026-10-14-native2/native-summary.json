@@ -1,61 +1,61 @@
 {
   "method": "F27: preregistered fresh RxJS confirmation before separate known Zod diagnostics, three repetitions each. Only compiler-rename availability differs between Light arms; native SDK receives the isolated pinned search repair. Optional auxiliary members explicitly permitted by new task registrations. Preserve every assigned outcome. No repair,retry,solution recovery or feedback. Prior cohorts contribute finances only.",
   "planned": 36,
-  "completed": 9,
-  "unexecuted": 27,
+  "completed": 18,
+  "unexecuted": 18,
   "arms": {
     "baseline": {
       "planned": 12,
-      "trials": 3,
-      "official": 1,
-      "functional": 3,
-      "actualChecks": 3,
-      "strict": 1,
-      "tokensObserved": 958635,
-      "estimatedUsdObserved": 0.08258476000000001,
-      "runnerSecondsObserved": 468.513,
+      "trials": 6,
+      "official": 4,
+      "functional": 6,
+      "actualChecks": 6,
+      "strict": 4,
+      "tokensObserved": 1321982,
+      "estimatedUsdObserved": 0.13016768,
+      "runnerSecondsObserved": 737.317,
       "fullCacheAccounting": 0,
-      "tokenCostReconciled": 3,
+      "tokenCostReconciled": 6,
       "timeouts": 0,
       "failed": 2,
-      "suitesAndBehaviorPassed": 3,
+      "suitesAndBehaviorPassed": 6,
       "sourceScopeOnlyRejections": 0,
       "missingConsumption": 0
     },
     "modified": {
       "planned": 12,
-      "trials": 3,
-      "official": 3,
-      "functional": 2,
-      "actualChecks": 3,
-      "strict": 2,
-      "tokensObserved": 387853,
-      "estimatedUsdObserved": 0.0514204,
-      "runnerSecondsObserved": 258.895,
+      "trials": 6,
+      "official": 6,
+      "functional": 5,
+      "actualChecks": 6,
+      "strict": 4,
+      "tokensObserved": 637948,
+      "estimatedUsdObserved": 0.08310780000000001,
+      "runnerSecondsObserved": 456.348,
       "fullCacheAccounting": 0,
-      "tokenCostReconciled": 3,
+      "tokenCostReconciled": 6,
       "timeouts": 0,
       "failed": 0,
-      "suitesAndBehaviorPassed": 3,
+      "suitesAndBehaviorPassed": 6,
       "sourceScopeOnlyRejections": 1,
       "missingConsumption": 0
     },
     "cline": {
       "planned": 12,
-      "trials": 3,
-      "official": 3,
-      "functional": 2,
-      "actualChecks": 3,
-      "strict": 2,
-      "tokensObserved": 738541,
-      "estimatedUsdObserved": 0.08175848,
-      "runnerSecondsObserved": 457.721,
+      "trials": 6,
+      "official": 6,
+      "functional": 4,
+      "actualChecks": 6,
+      "strict": 4,
+      "tokensObserved": 1278426,
+      "estimatedUsdObserved": 0.14355020000000002,
+      "runnerSecondsObserved": 687.048,
       "fullCacheAccounting": 0,
-      "tokenCostReconciled": 3,
+      "tokenCostReconciled": 6,
       "timeouts": 0,
       "failed": 0,
-      "suitesAndBehaviorPassed": 3,
-      "sourceScopeOnlyRejections": 1,
+      "suitesAndBehaviorPassed": 6,
+      "sourceScopeOnlyRejections": 2,
       "missingConsumption": 0
     }
   },
@@ -63,54 +63,54 @@
     "confirmation": {
       "arms": {
         "baseline": {
-          "trials": 3,
-          "official": 1,
-          "functional": 3,
-          "actualChecks": 3,
-          "strict": 1,
-          "tokensObserved": 958635,
-          "estimatedUsdObserved": 0.08258476000000001,
-          "runnerSecondsObserved": 468.513,
+          "trials": 6,
+          "official": 4,
+          "functional": 6,
+          "actualChecks": 6,
+          "strict": 4,
+          "tokensObserved": 1321982,
+          "estimatedUsdObserved": 0.13016768,
+          "runnerSecondsObserved": 737.317,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 3,
+          "tokenCostReconciled": 6,
           "timeouts": 0,
           "failed": 2,
-          "suitesAndBehaviorPassed": 3,
+          "suitesAndBehaviorPassed": 6,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "modified": {
-          "trials": 3,
-          "official": 3,
-          "functional": 2,
-          "actualChecks": 3,
-          "strict": 2,
-          "tokensObserved": 387853,
-          "estimatedUsdObserved": 0.0514204,
-          "runnerSecondsObserved": 258.895,
+          "trials": 6,
+          "official": 6,
+          "functional": 5,
+          "actualChecks": 6,
+          "strict": 4,
+          "tokensObserved": 637948,
+          "estimatedUsdObserved": 0.08310780000000001,
+          "runnerSecondsObserved": 456.348,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 3,
+          "tokenCostReconciled": 6,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 3,
+          "suitesAndBehaviorPassed": 6,
           "sourceScopeOnlyRejections": 1,
           "missingConsumption": 0
         },
         "cline": {
-          "trials": 3,
-          "official": 3,
-          "functional": 2,
-          "actualChecks": 3,
-          "strict": 2,
-          "tokensObserved": 738541,
-          "estimatedUsdObserved": 0.08175848,
-          "runnerSecondsObserved": 457.721,
+          "trials": 6,
+          "official": 6,
+          "functional": 4,
+          "actualChecks": 6,
+          "strict": 4,
+          "tokensObserved": 1278426,
+          "estimatedUsdObserved": 0.14355020000000002,
+          "runnerSecondsObserved": 687.048,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 3,
+          "tokenCostReconciled": 6,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 3,
-          "sourceScopeOnlyRejections": 1,
+          "suitesAndBehaviorPassed": 6,
+          "sourceScopeOnlyRejections": 2,
           "missingConsumption": 0
         }
       }
@@ -177,53 +177,53 @@
       "partition": "confirmation",
       "arms": {
         "baseline": {
-          "trials": 1,
-          "official": 1,
-          "functional": 1,
-          "actualChecks": 1,
-          "strict": 1,
-          "tokensObserved": 65703,
-          "estimatedUsdObserved": 0.00987264,
-          "runnerSecondsObserved": 53.777,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "actualChecks": 3,
+          "strict": 3,
+          "tokensObserved": 244913,
+          "estimatedUsdObserved": 0.02924168,
+          "runnerSecondsObserved": 164.081,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 1,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 1,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "modified": {
-          "trials": 1,
-          "official": 1,
-          "functional": 1,
-          "actualChecks": 1,
-          "strict": 1,
-          "tokensObserved": 57476,
-          "estimatedUsdObserved": 0.00706216,
-          "runnerSecondsObserved": 43.892,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "actualChecks": 3,
+          "strict": 3,
+          "tokensObserved": 197137,
+          "estimatedUsdObserved": 0.021161160000000002,
+          "runnerSecondsObserved": 149.774,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 1,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 1,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "cline": {
-          "trials": 1,
-          "official": 1,
-          "functional": 1,
-          "actualChecks": 1,
-          "strict": 1,
-          "tokensObserved": 162857,
-          "estimatedUsdObserved": 0.01614692,
-          "runnerSecondsObserved": 54.815,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "actualChecks": 3,
+          "strict": 3,
+          "tokensObserved": 484092,
+          "estimatedUsdObserved": 0.04956936,
+          "runnerSecondsObserved": 160.538,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 1,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 1,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         }
@@ -234,54 +234,54 @@
       "partition": "confirmation",
       "arms": {
         "baseline": {
-          "trials": 2,
-          "official": 0,
-          "functional": 2,
-          "actualChecks": 2,
-          "strict": 0,
-          "tokensObserved": 892932,
-          "estimatedUsdObserved": 0.07271211999999999,
-          "runnerSecondsObserved": 414.736,
+          "trials": 3,
+          "official": 1,
+          "functional": 3,
+          "actualChecks": 3,
+          "strict": 1,
+          "tokensObserved": 1077069,
+          "estimatedUsdObserved": 0.10092599999999999,
+          "runnerSecondsObserved": 573.236,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 2,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "modified": {
-          "trials": 2,
-          "official": 2,
-          "functional": 1,
-          "actualChecks": 2,
+          "trials": 3,
+          "official": 3,
+          "functional": 2,
+          "actualChecks": 3,
           "strict": 1,
-          "tokensObserved": 330377,
-          "estimatedUsdObserved": 0.04435824,
-          "runnerSecondsObserved": 215.003,
+          "tokensObserved": 440811,
+          "estimatedUsdObserved": 0.06194664,
+          "runnerSecondsObserved": 306.574,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 1,
           "missingConsumption": 0
         },
         "cline": {
-          "trials": 2,
-          "official": 2,
+          "trials": 3,
+          "official": 3,
           "functional": 1,
-          "actualChecks": 2,
+          "actualChecks": 3,
           "strict": 1,
-          "tokensObserved": 575684,
-          "estimatedUsdObserved": 0.06561156,
-          "runnerSecondsObserved": 402.906,
+          "tokensObserved": 794334,
+          "estimatedUsdObserved": 0.09398084,
+          "runnerSecondsObserved": 526.51,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
-          "suitesAndBehaviorPassed": 2,
-          "sourceScopeOnlyRejections": 1,
+          "suitesAndBehaviorPassed": 3,
+          "sourceScopeOnlyRejections": 2,
           "missingConsumption": 0
         }
       }
@@ -457,6 +457,34 @@
         "registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts",
         "non-UTC:registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts"
       ]
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-modified",
+      "status": "succeeded",
+      "official": true,
+      "functional": true,
+      "audited": false,
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-cline",
+      "status": "succeeded",
+      "official": true,
+      "functional": false,
+      "audited": false,
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [
+        "registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts",
+        "non-UTC:registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts"
+      ],
+      "allFeatureFailures": [
+        "registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts",
+        "non-UTC:registered-source-integrity:src/internal/scheduled/scheduleAsyncIterable.ts"
+      ]
     }
   ],
   "comparisons": [
@@ -465,43 +493,43 @@
       "right": "baseline",
       "tier": "strict",
       "partition": "confirmation",
-      "pairs": 1,
+      "pairs": 3,
       "resources": {
         "tokens": {
-          "left": 57476,
-          "right": 65703,
-          "relativeChange": -0.12521498257309405
+          "left": 197137,
+          "right": 244913,
+          "relativeChange": -0.19507335257826253
         },
         "cost": {
-          "left": 0.00706216,
-          "right": 0.00987264,
-          "relativeChange": -0.2846736030079088
+          "left": 0.021161160000000002,
+          "right": 0.02924168,
+          "relativeChange": -0.27633569617067133
         },
         "seconds": {
-          "left": 43.892,
-          "right": 53.777,
-          "relativeChange": -0.1838146419473009
+          "left": 149.774,
+          "right": 164.081,
+          "relativeChange": -0.0871947391836958
         }
       },
       "tasks": [
         {
           "id": "rxjs-array-removal-migration",
-          "pairs": 1,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 57476,
-              "right": 65703,
-              "relativeChange": -0.12521498257309405
+              "left": 197137,
+              "right": 244913,
+              "relativeChange": -0.19507335257826253
             },
             "cost": {
-              "left": 0.00706216,
-              "right": 0.00987264,
-              "relativeChange": -0.2846736030079088
+              "left": 0.021161160000000002,
+              "right": 0.02924168,
+              "relativeChange": -0.27633569617067133
             },
             "seconds": {
-              "left": 43.892,
-              "right": 53.777,
-              "relativeChange": -0.1838146419473009
+              "left": 149.774,
+              "right": 164.081,
+              "relativeChange": -0.0871947391836958
             }
           }
         },
@@ -588,6 +616,48 @@
               "left": 43.892,
               "right": 53.777,
               "relativeChange": -0.1838146419473009
+            }
+          }
+        },
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 2,
+          "resources": {
+            "tokens": {
+              "left": 73097,
+              "right": 84923,
+              "relativeChange": -0.1392555609198921
+            },
+            "cost": {
+              "left": 0.00798824,
+              "right": 0.00926492,
+              "relativeChange": -0.13779719630606624
+            },
+            "seconds": {
+              "left": 59.795,
+              "right": 52.227,
+              "relativeChange": 0.1449058915886421
+            }
+          }
+        },
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 66564,
+              "right": 94287,
+              "relativeChange": -0.2940278087116994
+            },
+            "cost": {
+              "left": 0.006110760000000001,
+              "right": 0.01010412,
+              "relativeChange": -0.39522095937102875
+            },
+            "seconds": {
+              "left": 46.087,
+              "right": 58.077,
+              "relativeChange": -0.20645005768204272
             }
           }
         }
@@ -598,43 +668,43 @@
       "right": "cline",
       "tier": "strict",
       "partition": "confirmation",
-      "pairs": 2,
+      "pairs": 4,
       "resources": {
         "tokens": {
-          "left": 205272,
-          "right": 371278,
-          "relativeChange": -0.4471204865356956
+          "left": 344933,
+          "right": 692513,
+          "relativeChange": -0.5019111554584534
         },
         "cost": {
-          "left": 0.025418159999999995,
-          "right": 0.04407852,
-          "relativeChange": -0.4233436149852583
+          "left": 0.039517159999999996,
+          "right": 0.07750096000000001,
+          "relativeChange": -0.4901074773783448
         },
         "seconds": {
-          "left": 144.467,
-          "right": 283.58299999999997,
-          "relativeChange": -0.4905653723953832
+          "left": 250.349,
+          "right": 389.3059999999999,
+          "relativeChange": -0.3569351615438754
         }
       },
       "tasks": [
         {
           "id": "rxjs-array-removal-migration",
-          "pairs": 1,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 57476,
-              "right": 162857,
-              "relativeChange": -0.647076883400775
+              "left": 197137,
+              "right": 484092,
+              "relativeChange": -0.5927695562000612
             },
             "cost": {
-              "left": 0.00706216,
-              "right": 0.01614692,
-              "relativeChange": -0.5626311395609813
+              "left": 0.021161160000000002,
+              "right": 0.04956936,
+              "relativeChange": -0.5730999956424694
             },
             "seconds": {
-              "left": 43.892,
-              "right": 54.815,
-              "relativeChange": -0.19927027273556497
+              "left": 149.774,
+              "right": 160.538,
+              "relativeChange": -0.06704954590190493
             }
           }
         },
@@ -742,6 +812,48 @@
               "left": 100.575,
               "right": 228.768,
               "relativeChange": -0.5603624632815778
+            }
+          }
+        },
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 2,
+          "resources": {
+            "tokens": {
+              "left": 73097,
+              "right": 126349,
+              "relativeChange": -0.4214675224972101
+            },
+            "cost": {
+              "left": 0.00798824,
+              "right": 0.015297719999999999,
+              "relativeChange": -0.47781499465279786
+            },
+            "seconds": {
+              "left": 59.795,
+              "right": 52.097,
+              "relativeChange": 0.1477628270341862
+            }
+          }
+        },
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 66564,
+              "right": 194886,
+              "relativeChange": -0.6584464764015886
+            },
+            "cost": {
+              "left": 0.006110760000000001,
+              "right": 0.018124720000000004,
+              "relativeChange": -0.6628494122943693
+            },
+            "seconds": {
+              "left": 46.087,
+              "right": 53.626,
+              "relativeChange": -0.14058479095960907
             }
           }
         }
@@ -752,43 +864,43 @@
       "right": "cline",
       "tier": "strict",
       "partition": "confirmation",
-      "pairs": 1,
+      "pairs": 3,
       "resources": {
         "tokens": {
-          "left": 65703,
-          "right": 162857,
-          "relativeChange": -0.596560172421204
+          "left": 244913,
+          "right": 484092,
+          "relativeChange": -0.4940775720317626
         },
         "cost": {
-          "left": 0.00987264,
-          "right": 0.01614692,
-          "relativeChange": -0.3885744154303111
+          "left": 0.02924168,
+          "right": 0.04956936,
+          "relativeChange": -0.41008558512758686
         },
         "seconds": {
-          "left": 53.777,
-          "right": 54.815,
-          "relativeChange": -0.01893642251208605
+          "left": 164.081,
+          "right": 160.538,
+          "relativeChange": 0.022069541167823115
         }
       },
       "tasks": [
         {
           "id": "rxjs-array-removal-migration",
-          "pairs": 1,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 65703,
-              "right": 162857,
-              "relativeChange": -0.596560172421204
+              "left": 244913,
+              "right": 484092,
+              "relativeChange": -0.4940775720317626
             },
             "cost": {
-              "left": 0.00987264,
-              "right": 0.01614692,
-              "relativeChange": -0.3885744154303111
+              "left": 0.02924168,
+              "right": 0.04956936,
+              "relativeChange": -0.41008558512758686
             },
             "seconds": {
-              "left": 53.777,
-              "right": 54.815,
-              "relativeChange": -0.01893642251208605
+              "left": 164.081,
+              "right": 160.538,
+              "relativeChange": 0.022069541167823115
             }
           }
         },
@@ -875,6 +987,48 @@
               "left": 53.777,
               "right": 54.815,
               "relativeChange": -0.01893642251208605
+            }
+          }
+        },
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 2,
+          "resources": {
+            "tokens": {
+              "left": 84923,
+              "right": 126349,
+              "relativeChange": -0.3278696309428646
+            },
+            "cost": {
+              "left": 0.00926492,
+              "right": 0.015297719999999999,
+              "relativeChange": -0.39435942088102016
+            },
+            "seconds": {
+              "left": 52.227,
+              "right": 52.097,
+              "relativeChange": 0.002495345221413814
+            }
+          }
+        },
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 94287,
+              "right": 194886,
+              "relativeChange": -0.5161940826944984
+            },
+            "cost": {
+              "left": 0.01010412,
+              "right": 0.018124720000000004,
+              "relativeChange": -0.442522698281684
+            },
+            "seconds": {
+              "left": 58.077,
+              "right": 53.626,
+              "relativeChange": 0.08300078320217796
             }
           }
         }
@@ -885,64 +1039,64 @@
       "right": "baseline",
       "tier": "functional",
       "partition": "confirmation",
-      "pairs": 1,
+      "pairs": 4,
       "resources": {
         "tokens": {
-          "left": 57476,
-          "right": 65703,
-          "relativeChange": -0.12521498257309405
+          "left": 307571,
+          "right": 429050,
+          "relativeChange": -0.28313483277007345
         },
         "cost": {
-          "left": 0.00706216,
-          "right": 0.00987264,
-          "relativeChange": -0.2846736030079088
+          "left": 0.03874956,
+          "right": 0.057455559999999996,
+          "relativeChange": -0.32557336487539235
         },
         "seconds": {
-          "left": 43.892,
-          "right": 53.777,
-          "relativeChange": -0.1838146419473009
+          "left": 241.34500000000003,
+          "right": 322.581,
+          "relativeChange": -0.25183132298554467
         }
       },
       "tasks": [
         {
           "id": "rxjs-array-removal-migration",
-          "pairs": 1,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 57476,
-              "right": 65703,
-              "relativeChange": -0.12521498257309405
+              "left": 197137,
+              "right": 244913,
+              "relativeChange": -0.19507335257826253
             },
             "cost": {
-              "left": 0.00706216,
-              "right": 0.00987264,
-              "relativeChange": -0.2846736030079088
+              "left": 0.021161160000000002,
+              "right": 0.02924168,
+              "relativeChange": -0.27633569617067133
             },
             "seconds": {
-              "left": 43.892,
-              "right": 53.777,
-              "relativeChange": -0.1838146419473009
+              "left": 149.774,
+              "right": 164.081,
+              "relativeChange": -0.0871947391836958
             }
           }
         },
         {
           "id": "rxjs-stream-lifecycle",
-          "pairs": 0,
+          "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 110434,
+              "right": 184137,
+              "relativeChange": -0.4002617616231393
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 0.0175884,
+              "right": 0.028213879999999997,
+              "relativeChange": -0.3766047066195787
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "relativeChange": null
+              "left": 91.571,
+              "right": 158.5,
+              "relativeChange": -0.4222649842271293
             }
           }
         },
@@ -1008,6 +1162,69 @@
               "left": 43.892,
               "right": 53.777,
               "relativeChange": -0.1838146419473009
+            }
+          }
+        },
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 2,
+          "resources": {
+            "tokens": {
+              "left": 73097,
+              "right": 84923,
+              "relativeChange": -0.1392555609198921
+            },
+            "cost": {
+              "left": 0.00798824,
+              "right": 0.00926492,
+              "relativeChange": -0.13779719630606624
+            },
+            "seconds": {
+              "left": 59.795,
+              "right": 52.227,
+              "relativeChange": 0.1449058915886421
+            }
+          }
+        },
+        {
+          "id": "rxjs-stream-lifecycle",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 110434,
+              "right": 184137,
+              "relativeChange": -0.4002617616231393
+            },
+            "cost": {
+              "left": 0.0175884,
+              "right": 0.028213879999999997,
+              "relativeChange": -0.3766047066195787
+            },
+            "seconds": {
+              "left": 91.571,
+              "right": 158.5,
+              "relativeChange": -0.4222649842271293
+            }
+          }
+        },
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 66564,
+              "right": 94287,
+              "relativeChange": -0.2940278087116994
+            },
+            "cost": {
+              "left": 0.006110760000000001,
+              "right": 0.01010412,
+              "relativeChange": -0.39522095937102875
+            },
+            "seconds": {
+              "left": 46.087,
+              "right": 58.077,
+              "relativeChange": -0.20645005768204272
             }
           }
         }
@@ -1018,43 +1235,43 @@
       "right": "cline",
       "tier": "functional",
       "partition": "confirmation",
-      "pairs": 2,
+      "pairs": 4,
       "resources": {
         "tokens": {
-          "left": 205272,
-          "right": 371278,
-          "relativeChange": -0.4471204865356956
+          "left": 344933,
+          "right": 692513,
+          "relativeChange": -0.5019111554584534
         },
         "cost": {
-          "left": 0.025418159999999995,
-          "right": 0.04407852,
-          "relativeChange": -0.4233436149852583
+          "left": 0.039517159999999996,
+          "right": 0.07750096000000001,
+          "relativeChange": -0.4901074773783448
         },
         "seconds": {
-          "left": 144.467,
-          "right": 283.58299999999997,
-          "relativeChange": -0.4905653723953832
+          "left": 250.349,
+          "right": 389.3059999999999,
+          "relativeChange": -0.3569351615438754
         }
       },
       "tasks": [
         {
           "id": "rxjs-array-removal-migration",
-          "pairs": 1,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 57476,
-              "right": 162857,
-              "relativeChange": -0.647076883400775
+              "left": 197137,
+              "right": 484092,
+              "relativeChange": -0.5927695562000612
             },
             "cost": {
-              "left": 0.00706216,
-              "right": 0.01614692,
-              "relativeChange": -0.5626311395609813
+              "left": 0.021161160000000002,
+              "right": 0.04956936,
+              "relativeChange": -0.5730999956424694
             },
             "seconds": {
-              "left": 43.892,
-              "right": 54.815,
-              "relativeChange": -0.19927027273556497
+              "left": 149.774,
+              "right": 160.538,
+              "relativeChange": -0.06704954590190493
             }
           }
         },
@@ -1162,6 +1379,48 @@
               "left": 100.575,
               "right": 228.768,
               "relativeChange": -0.5603624632815778
+            }
+          }
+        },
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 2,
+          "resources": {
+            "tokens": {
+              "left": 73097,
+              "right": 126349,
+              "relativeChange": -0.4214675224972101
+            },
+            "cost": {
+              "left": 0.00798824,
+              "right": 0.015297719999999999,
+              "relativeChange": -0.47781499465279786
+            },
+            "seconds": {
+              "left": 59.795,
+              "right": 52.097,
+              "relativeChange": 0.1477628270341862
+            }
+          }
+        },
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 66564,
+              "right": 194886,
+              "relativeChange": -0.6584464764015886
+            },
+            "cost": {
+              "left": 0.006110760000000001,
+              "right": 0.018124720000000004,
+              "relativeChange": -0.6628494122943693
+            },
+            "seconds": {
+              "left": 46.087,
+              "right": 53.626,
+              "relativeChange": -0.14058479095960907
             }
           }
         }
@@ -1172,43 +1431,43 @@
       "right": "cline",
       "tier": "functional",
       "partition": "confirmation",
-      "pairs": 1,
+      "pairs": 3,
       "resources": {
         "tokens": {
-          "left": 65703,
-          "right": 162857,
-          "relativeChange": -0.596560172421204
+          "left": 244913,
+          "right": 484092,
+          "relativeChange": -0.4940775720317626
         },
         "cost": {
-          "left": 0.00987264,
-          "right": 0.01614692,
-          "relativeChange": -0.3885744154303111
+          "left": 0.02924168,
+          "right": 0.04956936,
+          "relativeChange": -0.41008558512758686
         },
         "seconds": {
-          "left": 53.777,
-          "right": 54.815,
-          "relativeChange": -0.01893642251208605
+          "left": 164.081,
+          "right": 160.538,
+          "relativeChange": 0.022069541167823115
         }
       },
       "tasks": [
         {
           "id": "rxjs-array-removal-migration",
-          "pairs": 1,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 65703,
-              "right": 162857,
-              "relativeChange": -0.596560172421204
+              "left": 244913,
+              "right": 484092,
+              "relativeChange": -0.4940775720317626
             },
             "cost": {
-              "left": 0.00987264,
-              "right": 0.01614692,
-              "relativeChange": -0.3885744154303111
+              "left": 0.02924168,
+              "right": 0.04956936,
+              "relativeChange": -0.41008558512758686
             },
             "seconds": {
-              "left": 53.777,
-              "right": 54.815,
-              "relativeChange": -0.01893642251208605
+              "left": 164.081,
+              "right": 160.538,
+              "relativeChange": 0.022069541167823115
             }
           }
         },
@@ -1295,6 +1554,48 @@
               "left": 53.777,
               "right": 54.815,
               "relativeChange": -0.01893642251208605
+            }
+          }
+        },
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 2,
+          "resources": {
+            "tokens": {
+              "left": 84923,
+              "right": 126349,
+              "relativeChange": -0.3278696309428646
+            },
+            "cost": {
+              "left": 0.00926492,
+              "right": 0.015297719999999999,
+              "relativeChange": -0.39435942088102016
+            },
+            "seconds": {
+              "left": 52.227,
+              "right": 52.097,
+              "relativeChange": 0.002495345221413814
+            }
+          }
+        },
+        {
+          "id": "rxjs-array-removal-migration",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 94287,
+              "right": 194886,
+              "relativeChange": -0.5161940826944984
+            },
+            "cost": {
+              "left": 0.01010412,
+              "right": 0.018124720000000004,
+              "relativeChange": -0.442522698281684
+            },
+            "seconds": {
+              "left": 58.077,
+              "right": 53.626,
+              "relativeChange": 0.08300078320217796
             }
           }
         }
@@ -2068,15 +2369,114 @@
         "unreportedRequestReserveUsd": 0,
         "accountedUsd": 0.026002240000000003,
         "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-rxjs-array-removal-migration-modified",
+        "observedUsd": 0.00798824,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00798824,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-rxjs-array-removal-migration-cline",
+        "observedUsd": 0.015297719999999999,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.015297719999999999,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-rxjs-array-removal-migration-baseline",
+        "observedUsd": 0.00926492,
+        "forwardedAttempts": 10,
+        "usageReports": 10,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00926492,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-rxjs-stream-lifecycle-baseline",
+        "observedUsd": 0.028213879999999997,
+        "forwardedAttempts": 12,
+        "usageReports": 12,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.028213879999999997,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-rxjs-stream-lifecycle-modified",
+        "observedUsd": 0.0175884,
+        "forwardedAttempts": 9,
+        "usageReports": 9,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0175884,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-rxjs-stream-lifecycle-cline",
+        "observedUsd": 0.02836928,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.02836928,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-rxjs-array-removal-migration-cline",
+        "observedUsd": 0.018124720000000004,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.018124720000000004,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-rxjs-array-removal-migration-baseline",
+        "observedUsd": 0.01010412,
+        "forwardedAttempts": 10,
+        "usageReports": 10,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01010412,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-rxjs-array-removal-migration-modified",
+        "observedUsd": 0.006110760000000001,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.006110760000000001,
+        "basis": "wire/report counts; billing unknown"
       }
     ],
-    "observedUsd": 0.21576363999999998,
+    "observedUsd": 0.35682568,
     "reservedUsd": 0,
-    "accountedUsd": 0.21576363999999998
+    "accountedUsd": 0.35682568
   },
   "priorAccountedUsd": 0.82594076,
-  "totalAccountedUsd": 1.0417044,
-  "referenceEquivalentEur": 0.9321643419643285,
+  "totalAccountedUsd": 1.18276644,
+  "referenceEquivalentEur": 1.0583930530005359,
   "limits": {
     "authorizedEur": 2,
     "operationalUsd": 2.190323,

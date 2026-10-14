@@ -209,6 +209,243 @@
       "driverIterationStartCount": 12,
       "taskSuccess": false,
       "resourceAccountingReconciled": true
+    },
+    {
+      "name": "2-rxjs-array-removal-migration-modified",
+      "eventsSha256": "6f1bc4edeef42b80ccd407b83de05372aff03c11112ce443d2e02b3508f5c2b9",
+      "blockedEdits": 0,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 15785,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": {
+        "source_revision_id": "src_36f9392fc23a4b6bee9aac599715488d",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "actualModelRequests": 8,
+      "driverIterationStartCount": 8,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "2-rxjs-array-removal-migration-cline",
+      "eventsSha256": "20e4bfd416c82a325fbc60b89275c778ab1622b993b33d03f048ecdf9e811030",
+      "blockedEdits": 0,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 0,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": null,
+      "actualModelRequests": 6,
+      "driverIterationStartCount": 6,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "2-rxjs-array-removal-migration-baseline",
+      "eventsSha256": "a0fb5c6c186a5b08cda10b285bf274da588b3595bb35d15f75c3f376702e8e53",
+      "blockedEdits": 2,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 6796,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": {
+        "source_revision_id": "src_36f9392fc23a4b6bee9aac599715488d",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "actualModelRequests": 10,
+      "driverIterationStartCount": 10,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-baseline",
+      "eventsSha256": "2e74e346e252bac4d601f34b398d6451c27942355123dc8175f688ac5300f025",
+      "blockedEdits": 1,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 42057,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": {
+        "source_revision_id": "src_ddfec60cd5d36781b49d0ca1167eaa1f",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "actualModelRequests": 12,
+      "driverIterationStartCount": 12,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-modified",
+      "eventsSha256": "82cbcc62b4b4d9faa4f5f08c1d4d5ffbe0a0dab17aa38345f0997e73b4d244fb",
+      "blockedEdits": 0,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 30907,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": {
+        "source_revision_id": "src_afaa4b3597a864a2d5c7447d9bb32247",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "actualModelRequests": 9,
+      "driverIterationStartCount": 9,
+      "taskSuccess": false,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "3-rxjs-stream-lifecycle-cline",
+      "eventsSha256": "f678d9b59a8b138aae40c661551d286c8af485e4ea58583aa6f3e7260cb25f40",
+      "blockedEdits": 0,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 0,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": null,
+      "actualModelRequests": 8,
+      "driverIterationStartCount": 8,
+      "taskSuccess": false,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "3-rxjs-array-removal-migration-cline",
+      "eventsSha256": "4e36f4d199cb5ff60547a92ae94d2fac4a8903cf26c1f31b13d3369f793e5ee1",
+      "blockedEdits": 0,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 0,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": null,
+      "actualModelRequests": 7,
+      "driverIterationStartCount": 7,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "3-rxjs-array-removal-migration-baseline",
+      "eventsSha256": "c19e4943446c951f91e2d74c66d6c30349dbe912ec340e19e53e99d27c7e3cf1",
+      "blockedEdits": 1,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 7923,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": {
+        "source_revision_id": "src_36f9392fc23a4b6bee9aac599715488d",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "actualModelRequests": 10,
+      "driverIterationStartCount": 10,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "3-rxjs-array-removal-migration-modified",
+      "eventsSha256": "c42e61805e3d02d9f45dcadfb48e60398876dd7890dd8421c0c0940c36059ee8",
+      "blockedEdits": 0,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 11248,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": {
+        "source_revision_id": "src_36f9392fc23a4b6bee9aac599715488d",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "actualModelRequests": 7,
+      "driverIterationStartCount": 7,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
     }
   ]
 }
