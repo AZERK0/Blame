@@ -42,7 +42,7 @@ if (process.argv[2] === "worker") {
   process.stdout.write(JSON.stringify({ arm, id: taskId, searches, rename, renameMs, fallbackPatch, criteria,
     sourcesMatchOracle, disabledActionWrites: arm === "baseline" ? 0 : null }));
 } else {
-  const directory = join(work, "local-controls"); await mkdir(directory);
+  const directory = join(work, "local-controls-scoped"); await mkdir(directory);
   const rows = [];
   for (const task of protocol.tasks.filter(t=>t.kind==="multifile-rename")) for (const arm of ["baseline", "modified"]) {
     const root = join(directory, task.id + "-" + arm);

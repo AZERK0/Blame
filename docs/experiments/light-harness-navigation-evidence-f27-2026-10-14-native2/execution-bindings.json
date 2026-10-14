@@ -20,9 +20,9 @@
     "packages/agent-runtime/dist/usage-audit.js": "ad0f79cffbc4903caa2ecd5cc6cb9e9a9c334896815801b90b63b53b1044e866",
     "tools/terminal_bench/navigation-evidence/native-search-repair.mjs": "62d602a4725ded7489edaafb08289f9857250499cd9e73e7f1147819a6b89fe4",
     "tools/terminal_bench/navigation-evidence/native-repair-controls.mjs": "e68c67d92a154587b60dd92017bcf8f9c7714efea1d8277a22190d5560f55a7f",
-    "tools/terminal_bench/navigation-evidence/native-task-controls.mjs": "60a054abef15ea1a28224a85377e72f153f482a95bf842d28c5b144780e2716d",
-    "tools/terminal_bench/navigation-evidence/native-runtime-controls.mjs": "e06382fccd41b738b0ba583bac2ef4ab45e775bfb03aa30f6971dac3a9ce1d2a",
-    "tools/terminal_bench/navigation-evidence/register-native2.py": "b06cbe3a220d614940caedecf6f8b4806ab66dde94bd5c0513c9ee087f6ae046",
+    "tools/terminal_bench/navigation-evidence/native-task-controls.mjs": "f38380bb922039e9666087138352e9c369203100f0800d86aba33d585e641b79",
+    "tools/terminal_bench/navigation-evidence/native-runtime-controls.mjs": "764fe905b6ebd51a5631b1c9035f82841b75ddcfbae0d3394a759aa47483f0f1",
+    "tools/terminal_bench/navigation-evidence/register-native2.py": "e612dbd8df539d2fd4dc3ba95a99b9232c3da2c2d6e741be1db1c4d70f75c0d3",
     "tools/terminal_bench/navigation-evidence/rxjs-criteria.mjs": "dc58de0c50297fd92a19c76d0f99cfcf24d5f544570cd4a3c3222f95eef3192a",
     "tools/terminal_bench/navigation-evidence/prepare-fresh.mjs": "7bfb1e14c9f4c4ac2fc1a77759cf3ffe0e2aa4c198a7b2d67d7e1c90699e982d",
     "tools/terminal_bench/navigation-evidence/fresh-criteria.mjs": "c543d106aed35ac3ce30d9dc66978f1976d4c6f4ea63e44f3e34557d2f207ff5",
@@ -31,7 +31,7 @@
     "docs/experiments/light-harness-navigation-evidence-f27-2026-10-14-native2/freeze-driver.mjs": "8ff19ca1693b319040bdba3e9c7fcffeaa0bd48fb9d6b187d43bfcf1bd044430",
     "docs/experiments/light-harness-navigation-evidence-f27-2026-10-14-native2/native-search-bindings.json": "774b097ed58b649fa3638986906814583923178d094d7055dd9df51356587ab9",
     ".blame/research/native-confirmation/dependencies/node_modules/node-linux-x64/bin/node": "8440cffda5a21bf7cfda43d2c396f79777585a4c5e03ed2801fe226953a7aa11",
-    "docs/experiments/light-harness-navigation-evidence-f27-2026-10-14-native2/protocol.json": "c043dd2878e6e6b88e33750a3eeb0387e4143b868e760a730217c0b1eac7e6e0"
+    "docs/experiments/light-harness-navigation-evidence-f27-2026-10-14-native2/protocol.json": "bbc3b83b3b44ee4830b953d07b73ac8229ceb6bfdbede79fd80a73575334ffaf"
   },
   "versions": {
     "baseline": {

@@ -25,7 +25,7 @@
   },
   "clineRuntimeArm": "modified",
   "captureWireContracts": true,
-  "registeredAtUTC": "2026-10-14T16:41:32.914559+00:00",
+  "registeredAtUTC": "2026-10-14T16:52:20.724570+00:00",
   "panel": "f27",
   "studyKind": "corrected-native-confirmation",
   "repetitions": 3,
@@ -96,7 +96,8 @@
         "src/internal/util/navigation-fixture.ts"
       ],
       "inputFiles": {
-        "src/internal/util/navigation-fixture.ts": "import { arrRemove as retainedLocal } from \"./arrRemove\";\nimport * as helpers from \"./arrRemove\";\nexport { arrRemove as stablePublicName } from \"./arrRemove\";\n// Preserve the arrRemove literal and unrelated homonym.\nfunction arrRemove() { return \"arrRemove\"; }\nexport const localExample = arrRemove();\nexport const aliasExample = retainedLocal;\nexport const namespaceExample = helpers.arrRemove;\n"
+        "src/internal/util/navigation-fixture.ts": "import { arrRemove as retainedLocal } from \"./arrRemove\";\nimport * as helpers from \"./arrRemove\";\nexport { arrRemove as stablePublicName } from \"./arrRemove\";\n// Preserve the arrRemove literal and unrelated homonym.\nfunction arrRemove() { return \"arrRemove\"; }\nexport const localExample = arrRemove();\nexport const aliasExample = retainedLocal;\nexport const namespaceExample = helpers.arrRemove;\n",
+        "src/tsconfig.json": "{\n  \"extends\": \"./tsconfig.base.json\",\n  \"compilerOptions\": {\n    \"noEmit\": true\n  },\n  \"include\": [\n    \"./**/*.ts\"\n  ]\n}\n"
       },
       "mutableInputFiles": [
         "src/internal/util/navigation-fixture.ts"
@@ -141,10 +142,10 @@
         ]
       },
       "requiredChecks": [],
-      "instruction": "Rename the internal exported helper arrRemove to removeArrayItem in src/internal/util/arrRemove.ts and every identifier resolving to that export across the project. Preserve local import aliases,stable public aliases,unrelated homonyms,comments,literals,behavior and module paths,including the supplied navigation-fixture.ts. Do not rename files or directories. Work independently; do not retrieve published solutions,reference patches,old source revisions,previous campaign artifacts or verifier source. Preserve original/supplied assertions,dependencies,configuration,unrelated comments/literals/APIs and module paths. Do not add files beyond supplied fixtures. After the final edit run node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck and TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'. Report actual passed,failed and pending/skipped counts,not discovered cases as executed; disclose validation limitations.\n",
+      "instruction": "Rename the internal exported helper arrRemove to removeArrayItem in src/internal/util/arrRemove.ts and every identifier resolving to that export across the project. Preserve local import aliases,stable public aliases,unrelated homonyms,comments,literals,behavior and module paths,including the supplied navigation-fixture.ts. Do not rename files or directories. Work independently; do not retrieve published solutions,reference patches,old source revisions,previous campaign artifacts or verifier source. Preserve original/supplied assertions,dependencies,configuration,unrelated comments/literals/APIs and module paths. Do not add files beyond supplied fixtures. After the final edit run node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck and TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'. Report actual passed,failed and pending/skipped counts,not discovered cases as executed; disclose validation limitations.\n The supplied src/tsconfig.json scopes navigation to the complete production-source project; preserve this configuration.\n",
       "oracle": {
         "compilerVersion": "4.2.4",
-        "rootFiles": 760,
+        "rootFiles": 761,
         "spans": {
           "src/internal/util/arrRemove.ts": [
             [
@@ -275,7 +276,8 @@
         "src/internal/types.ts"
       ],
       "inputFiles": {
-        "spec/stream-lifecycle-spec.ts": "import { expect } from 'chai';\nimport { firstValueFrom, scheduled, asyncScheduler } from 'rxjs';\nimport { readableStreamLikeToAsyncGenerator } from '../src/internal/util/isReadableStreamLike';\ndescribe('stream lifecycle regression', () => {\n  function fixture() {\n    const state = { canceled: 0, released: 0 };\n    const stream = { getReader: () => ({ read: async () => ({ done: false as const, value: 1 }), cancel: async () => { state.canceled++; }, releaseLock: () => { state.released++; } }) };\n    return { state, stream };\n  }\n  it('cancels and releases on direct early iterator return', async () => {\n    const { state, stream } = fixture();\n    const iterator = readableStreamLikeToAsyncGenerator(stream);\n    await iterator.next(); await iterator.return();\n    expect(state).to.deep.equal({ canceled: 1, released: 1 });\n  });\n  it('scheduled early subscription close also cleans up', async () => {\n    const { state, stream } = fixture();\n    expect(await firstValueFrom(scheduled(stream, asyncScheduler))).to.equal(1);\n    await new Promise(resolve => setTimeout(resolve, 25));\n    expect(state).to.deep.equal({ canceled: 1, released: 1 });\n  });\n});\n"
+        "spec/stream-lifecycle-spec.ts": "import { expect } from 'chai';\nimport { firstValueFrom, scheduled, asyncScheduler } from 'rxjs';\nimport { readableStreamLikeToAsyncGenerator } from '../src/internal/util/isReadableStreamLike';\ndescribe('stream lifecycle regression', () => {\n  function fixture() {\n    const state = { canceled: 0, released: 0 };\n    const stream = { getReader: () => ({ read: async () => ({ done: false as const, value: 1 }), cancel: async () => { state.canceled++; }, releaseLock: () => { state.released++; } }) };\n    return { state, stream };\n  }\n  it('cancels and releases on direct early iterator return', async () => {\n    const { state, stream } = fixture();\n    const iterator = readableStreamLikeToAsyncGenerator(stream);\n    await iterator.next(); await iterator.return();\n    expect(state).to.deep.equal({ canceled: 1, released: 1 });\n  });\n  it('scheduled early subscription close also cleans up', async () => {\n    const { state, stream } = fixture();\n    expect(await firstValueFrom(scheduled(stream, asyncScheduler))).to.equal(1);\n    await new Promise(resolve => setTimeout(resolve, 25));\n    expect(state).to.deep.equal({ canceled: 1, released: 1 });\n  });\n});\n",
+        "src/tsconfig.json": "{\n  \"extends\": \"./tsconfig.base.json\",\n  \"compilerOptions\": {\n    \"noEmit\": true\n  },\n  \"include\": [\n    \"./**/*.ts\"\n  ]\n}\n"
       },
       "selectedTests": [
         "spec/observables/from-spec.ts",
@@ -335,7 +337,7 @@
         ]
       },
       "requiredChecks": [],
-      "instruction": "Fix stream/iterator lifecycle handling in RxJS. Both normal and scheduled readable-stream consumption must cancel the underlying reader exactly once on early consumer closure when cancel exists,and always release the lock even if cancellation rejects. Natural exhaustion releases without canceling. Older reader objects without cancel must remain usable; an optional cancel method may be added to ReadableStreamDefaultReaderLike,preserving existing members. Scheduled async iterable consumption must have at most one pending next(),return the iterator exactly once on early unsubscribe,stop further pulls,and deliver next() rejections to the subscriber without unhandled promise rejections. Preserve emitted order and other existing behavior. Limit implementation edits to readableStreamLikeToAsyncGenerator,scheduleAsyncIterable,and that optional reader type member. Supplied regression assertions are protected. Work independently; do not retrieve published solutions,reference patches,old source revisions,previous campaign artifacts or verifier source. Preserve original/supplied assertions,dependencies,configuration,unrelated comments/literals/APIs and module paths. Do not add files beyond supplied fixtures. After the final edit run node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck and TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'. Report actual passed,failed and pending/skipped counts,not discovered cases as executed; disclose validation limitations.\n",
+      "instruction": "Fix stream/iterator lifecycle handling in RxJS. Both normal and scheduled readable-stream consumption must cancel the underlying reader exactly once on early consumer closure when cancel exists,and always release the lock even if cancellation rejects. Natural exhaustion releases without canceling. Older reader objects without cancel must remain usable; an optional cancel method may be added to ReadableStreamDefaultReaderLike,preserving existing members. Scheduled async iterable consumption must have at most one pending next(),return the iterator exactly once on early unsubscribe,stop further pulls,and deliver next() rejections to the subscriber without unhandled promise rejections. Preserve emitted order and other existing behavior. Limit implementation edits to readableStreamLikeToAsyncGenerator,scheduleAsyncIterable,and that optional reader type member. Supplied regression assertions are protected. Work independently; do not retrieve published solutions,reference patches,old source revisions,previous campaign artifacts or verifier source. Preserve original/supplied assertions,dependencies,configuration,unrelated comments/literals/APIs and module paths. Do not add files beyond supplied fixtures. After the final edit run node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck and TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'. Report actual passed,failed and pending/skipped counts,not discovered cases as executed; disclose validation limitations.\n The supplied src/tsconfig.json scopes navigation to the complete production-source project; preserve this configuration.\n",
       "selectedSourceSha256": {
         "src/internal/util/isReadableStreamLike.ts": "3dd04958bde7d4b070ade8b149a27e68e8d44c2c8f8dc1e0b24f4ec451f3b49c",
         "src/internal/scheduled/scheduleAsyncIterable.ts": "cc2e915ce422dc12671620a85126bbe14a1deb6c3c7f8d60978fcfff787be4d2",
@@ -824,5 +826,14 @@
   ],
   "environmentArtifacts": [
     ".blame/research/native-confirmation/dependencies/node_modules/node-linux-x64/bin/node"
+  ],
+  "preflightAmendments": [
+    {
+      "atUTC": "2026-10-14T16:48:46.918530+00:00",
+      "paidRequests": 0,
+      "previousProtocolSha256": "c043dd2878e6e6b88e33750a3eeb0387e4143b868e760a730217c0b1eac7e6e0",
+      "reason": "Actual frozen compiler rename correctly blocks RxJS root tsconfig because it includes unrelated unresolved application imports. Add a protected source-project tsconfig to all RxJS arms before any model dispatch; scope is the complete production src project containing every registered reference. Preserve the blocked control and previous registration; no guard weakened and no task replaced.",
+      "validated": "Four actual frozen compiler/patch controls now byte-match private oracles; eight scoped task controls reject unchanged tasks and accept private positives. Zero model calls."
+    }
   ]
 }

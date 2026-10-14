@@ -5,7 +5,7 @@ import {join} from "node:path";
 import {execFileSync,spawnSync} from "node:child_process";
 import {repo,work,studyFor} from "./campaign-paths.mjs";
 import {applyOracle} from "./multifile-criteria.mjs";
-const study=studyFor("f27"),protocol=JSON.parse(await readFile(join(study,"protocol.json"))),directory=join(work,"task-controls");await mkdir(directory);
+const study=studyFor("f27"),protocol=JSON.parse(await readFile(join(study,"protocol.json"))),directory=join(work,"task-controls-scoped");await mkdir(directory);
 const rows=[];
 for(const task of protocol.tasks) {
  const root=join(directory,task.id);execFileSync(process.execPath,[join(repo,"tools/terminal_bench/navigation-evidence/run.mjs"),"prepare","f27",root,task.id]);
