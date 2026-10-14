@@ -120,7 +120,17 @@ export function syntaxBoundaryRange(
     .sort((left, right) => nodeSize(left) - nodeSize(right))[0];
   if (!candidate) return target;
   const node = outerInsertionNode(candidate.node);
-  return byteRange(node, candidate);
+  const range = byteRange(node, candidate);
+  // TS member separators are siblings of method_signature, not part of it.
+  // Keep the complete member boundary without consuming a following member.
+  const separator = parsed.language === "typescript" && String(node.kind()) === "method_signature"
+    ? node.next() : undefined;
+  if (separator && [";", ","].includes(String(separator.kind()))) {
+    const [start, end] = byteRange(separator, candidate);
+    if (!content.subarray(range[1], start).toString("utf8").trim())
+      range[1] = end;
+  }
+  return range;
 }
 
 function boundaryCandidate(
@@ -167,6 +177,7 @@ const syntaxContainerKinds = new Set([
   "jsx_element",
   "module",
   "object",
+  "object_type",
   "program",
   "source_file",
   "stylesheet",

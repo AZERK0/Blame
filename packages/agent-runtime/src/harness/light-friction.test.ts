@@ -1113,6 +1113,15 @@ test("ordered ambiguity anchors resolve to their advertised candidate", async ()
 });
 
 const symbolBoundaryFixtures = [
+  { path: "signature.ts", target: "Reader.first", prefix: "interface Reader { previous(): void; ",
+    declaration: "first(): PromiseLike<void>;", suffix: " sibling(): void; }\n",
+    replacement: "changed(): PromiseLike<void>;" },
+  { path: "comma-signature.ts", target: "Reader.first", prefix: "type Reader = { previous(): void, ",
+    declaration: "first(): PromiseLike<void>,", suffix: " sibling(): void };\n",
+    replacement: "changed(): PromiseLike<void>," },
+  { path: "unterminated-signature.ts", target: "Reader.first", prefix: "// élève 🐱\r\ninterface Reader {\r\n  ",
+    declaration: "first?(): PromiseLike<void>", suffix: "\r\n  sibling(): void\r\n}\r\n",
+    replacement: "changed?(): PromiseLike<void>", newline: "\r\n" },
   { path: "simple.c", target: "first", prefix: "int previous(void) { return 0; }\n",
     declaration: "int first(void) { return 1; }", suffix: "\nint second(void) { return 2; }\n",
     replacement: "int changed(void) { return 7; }" },
