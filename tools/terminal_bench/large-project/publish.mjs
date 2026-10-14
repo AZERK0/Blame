@@ -63,7 +63,7 @@ for (const row of analysis.rows) {
   row.fullRequestCriteriaPassed = decision.fullRequestCriteriaPassed;
   row.noSolutionRetrieval = decision.noSolutionRetrieval;
 }
-const summary = { partition, definition: "Internal real-repository panel, not an external benchmark certification. Official runtime success, frozen independent feature/existing-suite success, actual required agent validation and full audited completion are separate. Post-selected wording sensitivity never replaces the registered endpoint. Cache tokens subset input, reasoning subset output; incomplete usage is never zero-filled.",
+const summary = { partition:protocol.phaseOrder?"mixed":partition, definition: "Internal real-repository panel, not an external benchmark certification. Official runtime success, frozen independent feature/existing-suite success, actual required agent validation and full audited completion are separate. Post-selected wording sensitivity never replaces the registered endpoint. Cache tokens subset input, reasoning subset output; incomplete usage is never zero-filled.",
   planned: analysis.planned, completed: analysis.completed, unexecuted: analysis.planned - analysis.completed, arms: {} };
 for (const arm of ["baseline", "modified", "cline"]) {
   const rows = analysis.rows.filter((row) => row.arm === arm);

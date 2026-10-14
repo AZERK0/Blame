@@ -88,6 +88,8 @@ for(const row of analysis.rows){
 await writeFile(join(study,"mechanism-analysis.json"),JSON.stringify({
   method:protocol.continuationOf
     ? "Administrative F25 budget-tail slot, one known diagnostic. Compare exact captured inputs/results and preserve original parent outcomes. Actual Git HEAD prompt metadata differs across registrations; neither normalized prompt equality nor a fourth isolated pair is established. Frozen runtime/schema/per-invocation constraints and final source match; this remains exploratory."
+    : protocol.studyKind === "corrected-native-confirmation"
+    ? "F27: fresh RxJS confirmation first, known Zod diagnostics separately, three repetitions each. Light differs only by compiler rename availability; native SDK gets a source-pinned isolated search repair. Explicit optional auxiliary permissions apply only to new registrations. Preserve actual checks,report criteria and formal admission separately; no efficacy pooling between strata or older cohorts."
     : protocol.studyKind === "fresh-project-confirmation"
     ? "F26 fresh Zod confirmation: one alias-heavy migration and one real cross-file behavioral repair selected before model results, three assigned repetitions. Baseline disables only compiler rename; modified keeps current production. Record natural activation/non-activation, all failures/unexecuted slots, source correctness, actual final-source commands, strict reporting and admitted verification separately. Older cohorts contribute finances only."
     : protocol.studyKind === "compiler-rename-ablation"

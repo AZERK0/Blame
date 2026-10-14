@@ -32,6 +32,8 @@ for(const row of results.rows){
 }
 await write("mechanism-analysis.json",{method:protocol.continuationOf
  ?"Administrative single-slot continuation of F25. Keep the parent11/12 and tail1/1 separate. Frozen runtime/schema/per-invocation budgets match, but actual prompt Git HEAD differs; the tail is exploratory. See continuation-summary.json and the unchanged tool-ledger for detailed inputs/results."
+ :protocol.studyKind==="corrected-native-confirmation"
+ ?"F27 fresh RxJS and known Zod strata,three repetitions. Only compiler rename differs between Light arms; native receives the isolated search repair. See native-summary.json and native-mechanisms.json for stratum-specific comparisons; no pooling."
  :protocol.studyKind==="fresh-project-confirmation"
  ?"F26 fresh Zod confirmation, three assigned repetitions of two preselected tasks. Only compiler rename availability differs between Light variants; behavioral repair probes non-rename transfer. Preserve all assigned outcomes and actual checks/reporting/admission separately. See fresh-mechanisms.json and fresh-summary.json; no efficacy pooling with prior projects."
  :protocol.studyKind==="compiler-rename-ablation"
@@ -56,5 +58,6 @@ for(const [a,b] of [["modified","baseline"],["modified","cline"],["baseline","cl
  comparisons.push({arms:[a,b],matchedTasks:pairs.map(p=>p[0].id),left,right,relativeChange:ratios});
 }
 await write("resource-summary.json",{method:"SDK/API estimates, not invoices. Input includes cache subsets; output includes any reasoning subsets. Never add them twice. Missing consumption remains missing. All attempted totals and strict-success/accounting-matched comparisons are separate. An incomplete panel supports only descriptive observed pairs, not a complete-panel or population claim.",planned:results.planned,completed:results.completed,unexecuted:results.planned-results.completed,
- arms:Object.fromEntries(["baseline","modified","cline"].map(a=>[a,fields(results.rows.filter(r=>r.arm===a))])),comparisons});
+ arms:Object.fromEntries(["baseline","modified","cline"].map(a=>[a,fields(results.rows.filter(r=>r.arm===a))])),comparisons:protocol.phaseOrder?[]:comparisons,
+ ...(protocol.phaseOrder?{comparisonReason:"Mixed fresh/known strata: all-attempt totals only here; use native-summary.json for separate registered comparisons."}:{})});
 console.log(JSON.stringify({panel,completed:results.completed,nodeReports:reports.length,missingExpectedReports:expectedReports.filter(e=>!reports.some(r=>r.name===e.name&&r.sha256===e.sha256)).length}));
