@@ -56,6 +56,13 @@ for(const name of continuation.unchangedFunctions){
 const preservedRoot=join(campaign,recovery.affectedTrial);
 for(const [path,expected]of Object.entries(recovery.originalFileSha256))
  assert.equal(sha(await readFile(join(preservedRoot,path==="workspace.diff.beforeScoring"?"workspace.diff":path))),expected,path);
+const preservedArtifacts=[];
+await mkdir(join(study,"recovery-inputs"),{recursive:true});
+for(const file of ["required-checks.json","wire-contracts.jsonl","native-search-loads.jsonl"]){
+ const bytes=await readFile(join(preservedRoot,file)),artifact="recovery-inputs/"+file+".gz";
+ await writeFile(join(study,artifact),gzipSync(bytes,{mtime:0}));
+ preservedArtifacts.push({file,artifact,bytes:bytes.length,sha256:sha(bytes)});
+}
 const recovered=results.rows.find(r=>r.name===recovery.affectedTrial);
 assert.equal(recovered.outerAgentMs,null);assert.equal(recovered.exit.code,null);
 assert.equal(recovered.exit.orchestrationInterrupted,true);
@@ -67,7 +74,7 @@ assert.equal(sha(oldLog),recovery.originalRunnerLogSha256);
 const started=log=>[...log.matchAll(/^START (.+)$/gm)].map(m=>m[1]);
 assert.deepEqual(started(oldLog),order.slice(0,24));
 assert.deepEqual(started(newLog),order.slice(24,24+started(newLog).length));
-for(const [name,bytes]of [["administrative-driver.mjs",Buffer.from(administrativeDriver)],["original-orchestration.log",Buffer.from(oldLog)],["continued-orchestration.log",Buffer.from(newLog)]])
+for(const [name,bytes]of [["registered-driver.mjs",Buffer.from(originalDriver)],["administrative-driver.mjs",Buffer.from(administrativeDriver)],["original-orchestration.log",Buffer.from(oldLog)],["continued-orchestration.log",Buffer.from(newLog)]])
  await writeFile(join(study,name+".gz"),gzipSync(bytes,{mtime:0}));
 await writeFile(join(study,"resume-manifest.json"),JSON.stringify(continuation,null,2)+"\n");
 await writeFile(join(study,"orchestration-recovery.json"),JSON.stringify(recovery,null,2)+"\n");
@@ -93,7 +100,7 @@ for(const row of results.rows){
 const output={paidRequests:0,planned:results.planned,completed:results.completed,frozenInputHashesVerified:true,
   sourceIsolationVerified:true,protectedSuppliedAssertionsVerified:true,nativeRepairLoadsVerified:true,repairAudits,initialGitIdentities:heads,matchedLightContracts:contracts,
   administrativeContinuation:{verified:true,modelRetries:0,completedPrefix:24,remainingAssigned:12,newStarted:started(newLog).length,
-    originalDriverSha256:sha(originalDriver),administrativeDriverSha256:sha(administrativeDriver),originalLogSha256:sha(oldLog),continuedLogSha256:sha(newLog),missingOuterMetadataRetained:true},
+    originalDriverSha256:sha(originalDriver),administrativeDriverSha256:sha(administrativeDriver),originalLogSha256:sha(oldLog),continuedLogSha256:sha(newLog),missingOuterMetadataRetained:true,preservedArtifacts},
   method:"Original task Git identity, actual initial dispatch schema/workspace-normalized contract and frozen input SHA equality. Checks do not require favorable outcomes. Native repairs verified against actual original/repaired module hashes and absent from Light trials. Fresh and known strata remain separate."};
 await writeFile(join(study,"native-evidence-checks.json"),JSON.stringify(output,null,2)+"\n");
 console.log(JSON.stringify({...output,initialGitIdentities:undefined}));

@@ -297,9 +297,108 @@
       "unreportedRequestReserveUsd": 0,
       "accountedUsd": 0.00946712,
       "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-zod-issue-helper-migration-baseline",
+      "observedUsd": 0.0236406,
+      "forwardedAttempts": 20,
+      "usageReports": 20,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.0236406,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-zod-issue-helper-migration-modified",
+      "observedUsd": 0.006510440000000001,
+      "forwardedAttempts": 7,
+      "usageReports": 7,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.006510440000000001,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-zod-issue-helper-migration-cline",
+      "observedUsd": 0.014924880000000001,
+      "forwardedAttempts": 8,
+      "usageReports": 8,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.014924880000000001,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "3-zod-record-own-presence-cline",
+      "observedUsd": 0.01116756,
+      "forwardedAttempts": 6,
+      "usageReports": 6,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.01116756,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "3-zod-record-own-presence-baseline",
+      "observedUsd": 0.010724839999999998,
+      "forwardedAttempts": 11,
+      "usageReports": 11,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.010724839999999998,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "3-zod-record-own-presence-modified",
+      "observedUsd": 0.011313880000000002,
+      "forwardedAttempts": 11,
+      "usageReports": 10,
+      "wireUsageCountGap": 1,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0.23,
+      "accountedUsd": 0.24131388,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "3-zod-issue-helper-migration-modified",
+      "observedUsd": 0.011127360000000001,
+      "forwardedAttempts": 9,
+      "usageReports": 9,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.011127360000000001,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "3-zod-issue-helper-migration-cline",
+      "observedUsd": 0.01339108,
+      "forwardedAttempts": 7,
+      "usageReports": 7,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.01339108,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "3-zod-issue-helper-migration-baseline",
+      "observedUsd": 0.024355840000000004,
+      "forwardedAttempts": 15,
+      "usageReports": 14,
+      "wireUsageCountGap": 1,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0.23,
+      "accountedUsd": 0.25435584,
+      "basis": "wire/report counts; billing unknown"
     }
   ],
-  "observedUsd": 0.4542785199999999,
-  "reservedUsd": 0,
-  "accountedUsd": 0.4542785199999999
+  "observedUsd": 0.5814349999999999,
+  "reservedUsd": 0.46,
+  "accountedUsd": 1.0414349999999999
 }

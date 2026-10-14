@@ -286,7 +286,124 @@
       "eventsSha256": "6b73af9de78ba2023f1f4ec93efd9bdfdf0a78ac2996075dad5651b2a63b87e9",
       "diffSha256": "ad900668940d6f5aae935f6208f5393d8487be9154a6dbd5fb7d5030b83ef00e",
       "scoreSha256": "dd92aa0ac71c8a6a0f175b5eff023b198ae59c28dd12a8bba259dc7a379e2454"
+    },
+    {
+      "name": "2-zod-record-own-presence-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective action and full final changes, identical4a8f4bf0 to reviewed current behavior endpoint. Initial scoped multi-file patch is rejected; two focused patches omit async input typing, yielding real TS2339 while transpile-only Vitest still passes. A later focused signature repair is followed by both exact final ES2018 typecheck and Vitest549/549, correctly reported. Preserve transient type failure/cost; tests alone would not verify type correctness. Final source permissions plus14 probes in both timezones pass, with all assertions/unrelated source/config/dependencies intact. No rename, outside read, solution retrieval, supervising source repair or feedback. Formal completion remains unverified.",
+      "eventsSha256": "19a372f6c65186b99dc8e79ff07e1bfb7999ab26a82439458481c963927326fc",
+      "diffSha256": "4a8f4bf09e4a2257b6d33fec7a780e92a3deeaf94d81261c90629e03bdeaabd3",
+      "scoreSha256": "5fe097d860fa9ac080ef126aab08d59b7a1daed4b840edef8632b685c867fee2"
+    },
+    {
+      "name": "2-zod-issue-helper-migration-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective action and c7885a86 final endpoint (79 identifier-only substitutions). Disabled rename, multi-file scoped patch and two export-prefix scoped patches all block without writes; whole-symbol replacement, import patch, workspace-local Python call replacement and fixture patch recover. One run_task input contains a large malformed extra JSON key; strict schema rejects it before any command, and the clean retry executes the exact full Vitest command. Preserve its text/usage as format friction; provider-vs-model origin is not established. Exact final ES2018 typecheck and545/545 Vitest across59files pass and match the report. All protected aliases/homonyms/comments/module paths/assertions/config/dependencies remain intact. No outside retrieval, supervising repair or verifier feedback. Formal completion is unverified.",
+      "eventsSha256": "cfb923a067cbfb0174300079e6f73632bd526a53b6afe9bb2e5840dc8f28ba81",
+      "diffSha256": "c7885a8694fb9246ac96291ae081d87df57848440cad7b01b80caaaf7924f81b",
+      "scoreSha256": "b86b20c6fb2a190d7f2220872f2f17cc62f563609d373f7e18f55db60ca72e17"
+    },
+    {
+      "name": "2-zod-issue-helper-migration-modified",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected all effective actions and final c7885a86 endpoint, identical to reviewed79-span migration diff. One compiler rename; substantial full-file/search reads remain, so no narrow-read/cache benefit is isolated. All aliases/homonyms/comments/module paths/assertions/config/dependencies remain intact. Exact final ES2018 typecheck and Vitest545/545 across59files pass and match the report; no later edit. Workspace-local commands/reads only, no solution retrieval, supervising repair or feedback. Original continuation bindings/order/budget stay fixed and formal completion stays unverified.",
+      "eventsSha256": "adfef5b1f41486c81fbdba5341cf75cdb2cde4cfdc8fbae738150e8839222c94",
+      "diffSha256": "c7885a8694fb9246ac96291ae081d87df57848440cad7b01b80caaaf7924f81b",
+      "scoreSha256": "46c3f7138bcb72ae2fc7dd0c80ec46617c68f5cec24c3a0323f8b9f52ec419e0"
+    },
+    {
+      "name": "2-zod-issue-helper-migration-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective action and unchangedc7885a86 full endpoint. One declaration/fixture patch plus workspace-local Python replacement updates75 types.ts identifiers; source/binding checks verify exactly79 total spans with all protected aliases/homonyms/comments/module paths intact. Exact final ES2018 typecheck and full Vitest run in one shell with separate statuses captured and correctly combined, both0;545/545 in59files and0failed/skipped are accurately reported. Grep/diff diagnostics do not replace requested checks. No unrelated source/assertion/config/dependency edits, outside source reads, solution recovery, supervising repair or feedback. Repaired native load audited independently; original continuation controls retained.",
+      "eventsSha256": "4b787c4c841bb3f987a7be7eae97e45a29fef630e3d8aad85d1d69abfc888d19",
+      "diffSha256": "c7885a8694fb9246ac96291ae081d87df57848440cad7b01b80caaaf7924f81b",
+      "scoreSha256": "a0f6b83bc1143494e41e34eadaa8ddb73646706cce56d79a3fc3de4d868c9f34"
+    },
+    {
+      "name": "3-zod-record-own-presence-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective input and complete final source changes, identical4a8f4bf0 to reviewed current behavior endpoint. One focused patch retains own enumerable entries with Object.keys/alwaysSet:true and async optional metadata, preserving original pollution guard, unrelated tokens, assertions/config/dependencies. Exact post-final-edit ES2018 typecheck and Vitest549/549 across60files pass, correctly reported; all registered source checks and14 probes in each timezone pass. Unknown timeout key is inert; commands themselves run unchanged. Workspace-local current sources only, no solution retrieval, supervising repair or feedback. Original continuation order/runtime/budgets retained; native load checked separately.",
+      "eventsSha256": "5516a017cc3c9fd2fe27061fc1b5658bf9dc91aa47e8ce917606a6d7452bf9af",
+      "diffSha256": "4a8f4bf09e4a2257b6d33fec7a780e92a3deeaf94d81261c90629e03bdeaabd3",
+      "scoreSha256": "66ea9cafd42c6e908f6357dbb5d83cb9c2663194543994bac3e41ae39fdeef67"
+    },
+    {
+      "name": "3-zod-record-own-presence-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective action and complete final changes, identical6d6a6a47 to reviewed first-baseline behavior endpoint. First multi-file patch has a mismatching ObjectPair type context and is atomically rejected; reread and corrected patch recover. Final own-key enumeration, optional boolean metadata and async propagation preserve all unrelated source/pollution guard/assertions/config/dependencies and pass14 probes per timezone plus source masks. Exact final ES2018 typecheck and full549/549 Vitest in60files pass and match the report; no later edit. No rename, outside read, solution recovery, supervising repair or feedback. Formal completion remains unverified.",
+      "eventsSha256": "205e84d9650f5d22aacd2ccde1ed96052a41b69f2789def1ed827abe9b8b2eda",
+      "diffSha256": "6d6a6a4720c9151b291c43ef3ff45b5db0875f32f7be012988149d960c31c5ab",
+      "scoreSha256": "cefdec64e89deedcaf8296f7c87ea9aafae16b9c63ea2ed15ae2c7b6132cc527"
+    },
+    {
+      "name": "3-zod-record-own-presence-modified",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective action and complete final changes, identical4a8f4bf0 to reviewed behavior endpoint. Initial focused patch omits async input type metadata and creates TS2339 while transpile-only Vitest passes; a later signature patch is followed by both exact final ES2018 typecheck and full549/549 Vitest in60files, correctly reported. Preserve transient type failure/cost, including adverse tokens/cost/worker time versus native repetition3. Registered source permissions plus14 behavior probes per timezone pass; all unrelated tokens, pollution guard, assertions/config/dependencies preserved. No rename, outside read, solution recovery, supervising repair or feedback. Formal completion remains unverified.",
+      "eventsSha256": "d5b18c768d8230f786e036661a2a556f10fb3ae70ad6f4ffb1b6572966c87d62",
+      "diffSha256": "4a8f4bf09e4a2257b6d33fec7a780e92a3deeaf94d81261c90629e03bdeaabd3",
+      "scoreSha256": "ebe096a28af0a72ba3c4eeda04e3e1037691fea1cc3885d5017b4ecf8cf3c6d5",
+      "accountingReview": {
+        "forwardedAttempts": 11,
+        "reportedResponses": 10,
+        "missingWireResponseUsage": 1,
+        "reservedUsd": 0.23,
+        "treatment": "Keep source/report acceptance and observed adverse subtotals; exclude from wire-matched resource pairs, preserve aggregate-only sensitivity. Missing usage is not zero."
+      }
+    },
+    {
+      "name": "3-zod-issue-helper-migration-modified",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective input, both full fixture patches and final c7885a86 endpoint. One compiler rename is correct; the model then unnecessarily undoes its three resolving fixture substitutions and immediately restores them before both exact final ES2018 typecheck and545/545 Vitest checks pass. These are actual writes, not no-ops; preserve their tokens/cost as model/edit churn, without assuming a harness fault. Extra deno/lib helper reads are current tracked upstream mirrors inside this task workspace, not old Git revisions, external solutions or campaign artifacts. Final source/bindings/protected aliases/homonyms/comments/module paths/assertions/config/dependencies all match the registered endpoint, and reporting is accurate. No supervising repair or verifier feedback. Formal completion remains unverified.",
+      "eventsSha256": "9b5a8dfe6ba6e58e2527f3a3e0c6c7e1f8501b7023ead53924349638cdd55732",
+      "diffSha256": "c7885a8694fb9246ac96291ae081d87df57848440cad7b01b80caaaf7924f81b",
+      "scoreSha256": "c986e2c6189bdb1f1517cbd826dfac997a0a151635ef4e19f79ac9dafed816a0"
+    },
+    {
+      "name": "3-zod-issue-helper-migration-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective action and final c7885a86 endpoint, identical79 identifier-only substitutions. Focused patch plus workspace-local Python replacement updates all remaining consumers while preserving aliases/homonyms/comments/module paths/assertions/config/dependencies. Exact post-final-edit ES2018 typecheck and Vitest545/545 across59files pass and match the final report; ancillary grep compounds are not used as test proof. Unknown timeout keys are inert; actual commands remain recorded. No outside source reads, solution recovery, supervising repair or verifier feedback. Repaired native loads and unchanged continuation bindings/order/budgets are checked separately.",
+      "eventsSha256": "c188b8a1855d0987b86f51519ad6b76e28d920805e190563c1cd6395d948ea2b",
+      "diffSha256": "c7885a8694fb9246ac96291ae081d87df57848440cad7b01b80caaaf7924f81b",
+      "scoreSha256": "44201091a0c50e5e1a0c79d5adbc47d9b29d3f758ed7ac42f7e99ea8dc060857"
+    },
+    {
+      "name": "3-zod-issue-helper-migration-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": false,
+      "fullRequestCriteriaPassed": false,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective action and complete partial endpoint. Disabled compiler rename blocks without writes; an ambiguous multi-file patch is correctly rejected with unique-anchor hints. A smaller patch renames the helper, fixture and import, but leaves all74 consumer calls unchanged. Workspace-local Python writes a proposed remaining patch to /tmp and prints contexts repeatedly; it never applies that patch or executes the requested typecheck/full suite. No external/reference-solution retrieval: temporary patch is generated solely from this trial current source. The runtime times out at480192ms while request15 has no usage report (14 responses recorded), so preserve both incomplete binding/code failure and transport/provider uncertainty without attributing the entire timeout to compiler absence. Independent selected/type/full checks fail; no final report. All unrelated assertions/config/dependencies remain intact. Keep missing consumption reserved, no retry, source repair or verifier feedback.",
+      "eventsSha256": "928eb0f0f1d0554e3df451d92ded0b3e47c064d8783992dc0841bef8cc7ba1e2",
+      "diffSha256": "21ea5d3ff53ecf3565f1759cdb3dd99bb0e526e4ee40cee04a05c1ce00442dd8",
+      "scoreSha256": "988b24be4bc6115368ccc44e3c3e6daded5c2730b176473201df9b8124e37d43"
     }
   ],
-  "updatedAt": "2026-10-14T17:44:02.781577+00:00"
+  "updatedAt": "2026-10-14T18:03:28.372329+00:00"
 }

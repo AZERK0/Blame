@@ -1090,5 +1090,425 @@
     "artifact": "traces/2-zod-record-own-presence-cline.score.json.gz",
     "bytes": 12528,
     "sha256": "dd92aa0ac71c8a6a0f175b5eff023b198ae59c28dd12a8bba259dc7a379e2454"
+  },
+  {
+    "trial": "2-zod-record-own-presence-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-zod-record-own-presence-baseline.instruction.txt.gz",
+    "bytes": 1271,
+    "sha256": "9c8aae34d6ebddeeb5c24db069a4ebf2751dd70d7283010d8924c3ffa181e8de"
+  },
+  {
+    "trial": "2-zod-record-own-presence-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-zod-record-own-presence-baseline.events.jsonl.gz",
+    "bytes": 108500,
+    "sha256": "19a372f6c65186b99dc8e79ff07e1bfb7999ab26a82439458481c963927326fc"
+  },
+  {
+    "trial": "2-zod-record-own-presence-baseline",
+    "file": "result.json",
+    "artifact": "traces/2-zod-record-own-presence-baseline.result.json.gz",
+    "bytes": 4778,
+    "sha256": "1e38c918e8fd224dfac4689804c0b68bfdd2f99d4794a6a0fb5322553fcb2121"
+  },
+  {
+    "trial": "2-zod-record-own-presence-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-zod-record-own-presence-baseline.workspace.diff.gz",
+    "bytes": 1673,
+    "sha256": "4a8f4bf09e4a2257b6d33fec7a780e92a3deeaf94d81261c90629e03bdeaabd3"
+  },
+  {
+    "trial": "2-zod-record-own-presence-baseline",
+    "file": "trial.json",
+    "artifact": "traces/2-zod-record-own-presence-baseline.trial.json.gz",
+    "bytes": 5588,
+    "sha256": "40649d986c6ef4d43fae8b08deb9c6e700dd52b3e7a496122deac9a403e18c0f"
+  },
+  {
+    "trial": "2-zod-record-own-presence-baseline",
+    "file": "score.json",
+    "artifact": "traces/2-zod-record-own-presence-baseline.score.json.gz",
+    "bytes": 12549,
+    "sha256": "5fe097d860fa9ac080ef126aab08d59b7a1daed4b840edef8632b685c867fee2"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-zod-issue-helper-migration-baseline.instruction.txt.gz",
+    "bytes": 1050,
+    "sha256": "d0d4e0d0d2c2483095876c65cb697b8949a6b6a26132b10efda895667e389b1d"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-zod-issue-helper-migration-baseline.events.jsonl.gz",
+    "bytes": 231492,
+    "sha256": "cfb923a067cbfb0174300079e6f73632bd526a53b6afe9bb2e5840dc8f28ba81"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-baseline",
+    "file": "result.json",
+    "artifact": "traces/2-zod-issue-helper-migration-baseline.result.json.gz",
+    "bytes": 4811,
+    "sha256": "7a377d811b022aa966a254c720da843ee7b124754d6ebd6b366227d36c6108e1"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-zod-issue-helper-migration-baseline.workspace.diff.gz",
+    "bytes": 30730,
+    "sha256": "c7885a8694fb9246ac96291ae081d87df57848440cad7b01b80caaaf7924f81b"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-baseline",
+    "file": "trial.json",
+    "artifact": "traces/2-zod-issue-helper-migration-baseline.trial.json.gz",
+    "bytes": 5072,
+    "sha256": "fdf114f8ec981fb9f62a4c9ccc23d32b5e9627e410b39e9747aa5ab50ac9d97f"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-baseline",
+    "file": "score.json",
+    "artifact": "traces/2-zod-issue-helper-migration-baseline.score.json.gz",
+    "bytes": 8766,
+    "sha256": "b86b20c6fb2a190d7f2220872f2f17cc62f563609d373f7e18f55db60ca72e17"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-modified",
+    "file": "instruction.txt",
+    "artifact": "traces/2-zod-issue-helper-migration-modified.instruction.txt.gz",
+    "bytes": 1050,
+    "sha256": "d0d4e0d0d2c2483095876c65cb697b8949a6b6a26132b10efda895667e389b1d"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-modified",
+    "file": "events.jsonl",
+    "artifact": "traces/2-zod-issue-helper-migration-modified.events.jsonl.gz",
+    "bytes": 146325,
+    "sha256": "adfef5b1f41486c81fbdba5341cf75cdb2cde4cfdc8fbae738150e8839222c94"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-modified",
+    "file": "result.json",
+    "artifact": "traces/2-zod-issue-helper-migration-modified.result.json.gz",
+    "bytes": 4795,
+    "sha256": "e4b68280177b0843ee060dd7e89fe2cd27fd3df7218432091376002d123da7a4"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-modified",
+    "file": "workspace.diff",
+    "artifact": "traces/2-zod-issue-helper-migration-modified.workspace.diff.gz",
+    "bytes": 30730,
+    "sha256": "c7885a8694fb9246ac96291ae081d87df57848440cad7b01b80caaaf7924f81b"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-modified",
+    "file": "trial.json",
+    "artifact": "traces/2-zod-issue-helper-migration-modified.trial.json.gz",
+    "bytes": 5981,
+    "sha256": "a10f19f3f285faeed6b60dddf9d9427cfd6d20b6b36499f3a8bae03e2d220c6f"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-modified",
+    "file": "score.json",
+    "artifact": "traces/2-zod-issue-helper-migration-modified.score.json.gz",
+    "bytes": 8788,
+    "sha256": "46c3f7138bcb72ae2fc7dd0c80ec46617c68f5cec24c3a0323f8b9f52ec419e0"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-zod-issue-helper-migration-cline.instruction.txt.gz",
+    "bytes": 1050,
+    "sha256": "d0d4e0d0d2c2483095876c65cb697b8949a6b6a26132b10efda895667e389b1d"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-zod-issue-helper-migration-cline.events.jsonl.gz",
+    "bytes": 361340,
+    "sha256": "4b787c4c841bb3f987a7be7eae97e45a29fef630e3d8aad85d1d69abfc888d19"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-cline",
+    "file": "result.json",
+    "artifact": "traces/2-zod-issue-helper-migration-cline.result.json.gz",
+    "bytes": 3724,
+    "sha256": "7381c18ac2676fa60acd7b7af312d28e51b66d26f4c7145e08e16b0b83edda5f"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-zod-issue-helper-migration-cline.workspace.diff.gz",
+    "bytes": 30730,
+    "sha256": "c7885a8694fb9246ac96291ae081d87df57848440cad7b01b80caaaf7924f81b"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-cline",
+    "file": "trial.json",
+    "artifact": "traces/2-zod-issue-helper-migration-cline.trial.json.gz",
+    "bytes": 5723,
+    "sha256": "6cfa39814c5fdf096f0dbe613da405c62114bf3bc570c5e6f1f7a00a71e8123d"
+  },
+  {
+    "trial": "2-zod-issue-helper-migration-cline",
+    "file": "score.json",
+    "artifact": "traces/2-zod-issue-helper-migration-cline.score.json.gz",
+    "bytes": 8768,
+    "sha256": "a0f6b83bc1143494e41e34eadaa8ddb73646706cce56d79a3fc3de4d868c9f34"
+  },
+  {
+    "trial": "3-zod-record-own-presence-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-zod-record-own-presence-cline.instruction.txt.gz",
+    "bytes": 1271,
+    "sha256": "9c8aae34d6ebddeeb5c24db069a4ebf2751dd70d7283010d8924c3ffa181e8de"
+  },
+  {
+    "trial": "3-zod-record-own-presence-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-zod-record-own-presence-cline.events.jsonl.gz",
+    "bytes": 351892,
+    "sha256": "5516a017cc3c9fd2fe27061fc1b5658bf9dc91aa47e8ce917606a6d7452bf9af"
+  },
+  {
+    "trial": "3-zod-record-own-presence-cline",
+    "file": "result.json",
+    "artifact": "traces/3-zod-record-own-presence-cline.result.json.gz",
+    "bytes": 3696,
+    "sha256": "9b888c78576064bd91a2b24211465a127b4d4df944c3acf998706c7c9e1eec76"
+  },
+  {
+    "trial": "3-zod-record-own-presence-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-zod-record-own-presence-cline.workspace.diff.gz",
+    "bytes": 1673,
+    "sha256": "4a8f4bf09e4a2257b6d33fec7a780e92a3deeaf94d81261c90629e03bdeaabd3"
+  },
+  {
+    "trial": "3-zod-record-own-presence-cline",
+    "file": "trial.json",
+    "artifact": "traces/3-zod-record-own-presence-cline.trial.json.gz",
+    "bytes": 4319,
+    "sha256": "951a672052d20d49a7e4525ae3cdf98868aca3f7eeddb7db39e73f04deb5353f"
+  },
+  {
+    "trial": "3-zod-record-own-presence-cline",
+    "file": "score.json",
+    "artifact": "traces/3-zod-record-own-presence-cline.score.json.gz",
+    "bytes": 12516,
+    "sha256": "66ea9cafd42c6e908f6357dbb5d83cb9c2663194543994bac3e41ae39fdeef67"
+  },
+  {
+    "trial": "3-zod-record-own-presence-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-zod-record-own-presence-baseline.instruction.txt.gz",
+    "bytes": 1271,
+    "sha256": "9c8aae34d6ebddeeb5c24db069a4ebf2751dd70d7283010d8924c3ffa181e8de"
+  },
+  {
+    "trial": "3-zod-record-own-presence-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-zod-record-own-presence-baseline.events.jsonl.gz",
+    "bytes": 118310,
+    "sha256": "205e84d9650f5d22aacd2ccde1ed96052a41b69f2789def1ed827abe9b8b2eda"
+  },
+  {
+    "trial": "3-zod-record-own-presence-baseline",
+    "file": "result.json",
+    "artifact": "traces/3-zod-record-own-presence-baseline.result.json.gz",
+    "bytes": 4803,
+    "sha256": "e76f8b87ed7018447a10b9845101fa8479baaf4d7a0789182626d3bfd50bf8ab"
+  },
+  {
+    "trial": "3-zod-record-own-presence-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-zod-record-own-presence-baseline.workspace.diff.gz",
+    "bytes": 1507,
+    "sha256": "6d6a6a4720c9151b291c43ef3ff45b5db0875f32f7be012988149d960c31c5ab"
+  },
+  {
+    "trial": "3-zod-record-own-presence-baseline",
+    "file": "trial.json",
+    "artifact": "traces/3-zod-record-own-presence-baseline.trial.json.gz",
+    "bytes": 5659,
+    "sha256": "6ecfce12f9f714bae5970886c9a898b0d88d5b2d4ac617a0a7e2500c8d52ec38"
+  },
+  {
+    "trial": "3-zod-record-own-presence-baseline",
+    "file": "score.json",
+    "artifact": "traces/3-zod-record-own-presence-baseline.score.json.gz",
+    "bytes": 12547,
+    "sha256": "cefdec64e89deedcaf8296f7c87ea9aafae16b9c63ea2ed15ae2c7b6132cc527"
+  },
+  {
+    "trial": "3-zod-record-own-presence-modified",
+    "file": "instruction.txt",
+    "artifact": "traces/3-zod-record-own-presence-modified.instruction.txt.gz",
+    "bytes": 1271,
+    "sha256": "9c8aae34d6ebddeeb5c24db069a4ebf2751dd70d7283010d8924c3ffa181e8de"
+  },
+  {
+    "trial": "3-zod-record-own-presence-modified",
+    "file": "events.jsonl",
+    "artifact": "traces/3-zod-record-own-presence-modified.events.jsonl.gz",
+    "bytes": 101306,
+    "sha256": "d5b18c768d8230f786e036661a2a556f10fb3ae70ad6f4ffb1b6572966c87d62"
+  },
+  {
+    "trial": "3-zod-record-own-presence-modified",
+    "file": "result.json",
+    "artifact": "traces/3-zod-record-own-presence-modified.result.json.gz",
+    "bytes": 4796,
+    "sha256": "883308210d8f071684260386aec9fe07f6fa47875fd50b62573cee21f39884a4"
+  },
+  {
+    "trial": "3-zod-record-own-presence-modified",
+    "file": "workspace.diff",
+    "artifact": "traces/3-zod-record-own-presence-modified.workspace.diff.gz",
+    "bytes": 1673,
+    "sha256": "4a8f4bf09e4a2257b6d33fec7a780e92a3deeaf94d81261c90629e03bdeaabd3"
+  },
+  {
+    "trial": "3-zod-record-own-presence-modified",
+    "file": "trial.json",
+    "artifact": "traces/3-zod-record-own-presence-modified.trial.json.gz",
+    "bytes": 5190,
+    "sha256": "abda3074608061da140a063404506cd213c6233fe9d1e0cd05895a58a9e0ebf4"
+  },
+  {
+    "trial": "3-zod-record-own-presence-modified",
+    "file": "score.json",
+    "artifact": "traces/3-zod-record-own-presence-modified.score.json.gz",
+    "bytes": 12563,
+    "sha256": "ebe096a28af0a72ba3c4eeda04e3e1037691fea1cc3885d5017b4ecf8cf3c6d5"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-modified",
+    "file": "instruction.txt",
+    "artifact": "traces/3-zod-issue-helper-migration-modified.instruction.txt.gz",
+    "bytes": 1050,
+    "sha256": "d0d4e0d0d2c2483095876c65cb697b8949a6b6a26132b10efda895667e389b1d"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-modified",
+    "file": "events.jsonl",
+    "artifact": "traces/3-zod-issue-helper-migration-modified.events.jsonl.gz",
+    "bytes": 167602,
+    "sha256": "9b5a8dfe6ba6e58e2527f3a3e0c6c7e1f8501b7023ead53924349638cdd55732"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-modified",
+    "file": "result.json",
+    "artifact": "traces/3-zod-issue-helper-migration-modified.result.json.gz",
+    "bytes": 4807,
+    "sha256": "76161248ece61f0373817b73f54b563b19258f6331acf0929a617aa34242a2e7"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-modified",
+    "file": "workspace.diff",
+    "artifact": "traces/3-zod-issue-helper-migration-modified.workspace.diff.gz",
+    "bytes": 30730,
+    "sha256": "c7885a8694fb9246ac96291ae081d87df57848440cad7b01b80caaaf7924f81b"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-modified",
+    "file": "trial.json",
+    "artifact": "traces/3-zod-issue-helper-migration-modified.trial.json.gz",
+    "bytes": 6045,
+    "sha256": "910944fc8df63de2f3173885c7b6a51f2ec5bdae80e4a1b3a8a3200ec9daa0d1"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-modified",
+    "file": "score.json",
+    "artifact": "traces/3-zod-issue-helper-migration-modified.score.json.gz",
+    "bytes": 8788,
+    "sha256": "c986e2c6189bdb1f1517cbd826dfac997a0a151635ef4e19f79ac9dafed816a0"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-zod-issue-helper-migration-cline.instruction.txt.gz",
+    "bytes": 1050,
+    "sha256": "d0d4e0d0d2c2483095876c65cb697b8949a6b6a26132b10efda895667e389b1d"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-zod-issue-helper-migration-cline.events.jsonl.gz",
+    "bytes": 413163,
+    "sha256": "c188b8a1855d0987b86f51519ad6b76e28d920805e190563c1cd6395d948ea2b"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-cline",
+    "file": "result.json",
+    "artifact": "traces/3-zod-issue-helper-migration-cline.result.json.gz",
+    "bytes": 3704,
+    "sha256": "4d0bb60ce2007f542a27838e553764dcae39b9bc0bd5e66d4e5ad46d126c42a5"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-zod-issue-helper-migration-cline.workspace.diff.gz",
+    "bytes": 30730,
+    "sha256": "c7885a8694fb9246ac96291ae081d87df57848440cad7b01b80caaaf7924f81b"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-cline",
+    "file": "trial.json",
+    "artifact": "traces/3-zod-issue-helper-migration-cline.trial.json.gz",
+    "bytes": 5000,
+    "sha256": "418898638be70270eff4b0677dc307d3aba8a7aca4b66c360529c718bf13a107"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-cline",
+    "file": "score.json",
+    "artifact": "traces/3-zod-issue-helper-migration-cline.score.json.gz",
+    "bytes": 8764,
+    "sha256": "44201091a0c50e5e1a0c79d5adbc47d9b29d3f758ed7ac42f7e99ea8dc060857"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-zod-issue-helper-migration-baseline.instruction.txt.gz",
+    "bytes": 1050,
+    "sha256": "d0d4e0d0d2c2483095876c65cb697b8949a6b6a26132b10efda895667e389b1d"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-zod-issue-helper-migration-baseline.events.jsonl.gz",
+    "bytes": 214294,
+    "sha256": "928eb0f0f1d0554e3df451d92ded0b3e47c064d8783992dc0841bef8cc7ba1e2"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-baseline",
+    "file": "result.json",
+    "artifact": "traces/3-zod-issue-helper-migration-baseline.result.json.gz",
+    "bytes": 4234,
+    "sha256": "d039f53e0ef3bf2ef8d3ec117fcf96864d09e5962b73a0ba8efcb7e57b41a023"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-zod-issue-helper-migration-baseline.workspace.diff.gz",
+    "bytes": 1642,
+    "sha256": "21ea5d3ff53ecf3565f1759cdb3dd99bb0e526e4ee40cee04a05c1ce00442dd8"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-baseline",
+    "file": "trial.json",
+    "artifact": "traces/3-zod-issue-helper-migration-baseline.trial.json.gz",
+    "bytes": 5441,
+    "sha256": "5f005d0ac6785ca46728aa2936496b81d1e8a9f4c798a61334f933ce2800b469"
+  },
+  {
+    "trial": "3-zod-issue-helper-migration-baseline",
+    "file": "score.json",
+    "artifact": "traces/3-zod-issue-helper-migration-baseline.score.json.gz",
+    "bytes": 165333,
+    "sha256": "988b24be4bc6115368ccc44e3c3e6daded5c2730b176473201df9b8124e37d43"
   }
 ]

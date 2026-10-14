@@ -652,6 +652,260 @@
       "driverIterationStartCount": 6,
       "taskSuccess": true,
       "resourceAccountingReconciled": true
+    },
+    {
+      "name": "2-zod-record-own-presence-baseline",
+      "eventsSha256": "19a372f6c65186b99dc8e79ff07e1bfb7999ab26a82439458481c963927326fc",
+      "blockedEdits": 1,
+      "boundedRecoveryHints": 1,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 27972,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": {
+        "source_revision_id": "src_97df10686d4022ff4cd7bc8cf0e44a34",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "actualModelRequests": 10,
+      "driverIterationStartCount": 10,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "2-zod-issue-helper-migration-baseline",
+      "eventsSha256": "cfb923a067cbfb0174300079e6f73632bd526a53b6afe9bb2e5840dc8f28ba81",
+      "blockedEdits": 4,
+      "boundedRecoveryHints": 3,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 82911,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": {
+        "source_revision_id": "src_e5ddd785738f0b13bdeb2b95a284e142",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "actualModelRequests": 20,
+      "driverIterationStartCount": 20,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "2-zod-issue-helper-migration-modified",
+      "eventsSha256": "adfef5b1f41486c81fbdba5341cf75cdb2cde4cfdc8fbae738150e8839222c94",
+      "blockedEdits": 0,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 75886,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": {
+        "source_revision_id": "src_e5ddd785738f0b13bdeb2b95a284e142",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "actualModelRequests": 7,
+      "driverIterationStartCount": 7,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "2-zod-issue-helper-migration-cline",
+      "eventsSha256": "4b787c4c841bb3f987a7be7eae97e45a29fef630e3d8aad85d1d69abfc888d19",
+      "blockedEdits": 0,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 0,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": null,
+      "actualModelRequests": 8,
+      "driverIterationStartCount": 8,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "3-zod-record-own-presence-cline",
+      "eventsSha256": "5516a017cc3c9fd2fe27061fc1b5658bf9dc91aa47e8ce917606a6d7452bf9af",
+      "blockedEdits": 0,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 0,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": null,
+      "actualModelRequests": 6,
+      "driverIterationStartCount": 6,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "3-zod-record-own-presence-baseline",
+      "eventsSha256": "205e84d9650f5d22aacd2ccde1ed96052a41b69f2789def1ed827abe9b8b2eda",
+      "blockedEdits": 1,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 36071,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": {
+        "source_revision_id": "src_4d9b55975714f2632683b998f73c4c79",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "actualModelRequests": 11,
+      "driverIterationStartCount": 11,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "3-zod-record-own-presence-modified",
+      "eventsSha256": "d5b18c768d8230f786e036661a2a556f10fb3ae70ad6f4ffb1b6572966c87d62",
+      "blockedEdits": 0,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 25187,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": {
+        "source_revision_id": "src_97df10686d4022ff4cd7bc8cf0e44a34",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "actualModelRequests": 10,
+      "driverIterationStartCount": 10,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "3-zod-issue-helper-migration-modified",
+      "eventsSha256": "9b5a8dfe6ba6e58e2527f3a3e0c6c7e1f8501b7023ead53924349638cdd55732",
+      "blockedEdits": 0,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 83640,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": {
+        "source_revision_id": "src_e5ddd785738f0b13bdeb2b95a284e142",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "actualModelRequests": 9,
+      "driverIterationStartCount": 9,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "3-zod-issue-helper-migration-cline",
+      "eventsSha256": "c188b8a1855d0987b86f51519ad6b76e28d920805e190563c1cd6395d948ea2b",
+      "blockedEdits": 0,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 0,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": null,
+      "actualModelRequests": 7,
+      "driverIterationStartCount": 7,
+      "taskSuccess": true,
+      "resourceAccountingReconciled": true
+    },
+    {
+      "name": "3-zod-issue-helper-migration-baseline",
+      "eventsSha256": "928eb0f0f1d0554e3df451d92ded0b3e47c064d8783992dc0841bef8cc7ba1e2",
+      "blockedEdits": 2,
+      "boundedRecoveryHints": 0,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "activeCaseCaptions": 0,
+      "observedReadBytes": 83242,
+      "checkInvocations": [],
+      "structuredNodeInvocations": 0,
+      "completionAsReported": null,
+      "actualModelRequests": 14,
+      "driverIterationStartCount": 15,
+      "taskSuccess": false,
+      "resourceAccountingReconciled": false
     }
   ]
 }
