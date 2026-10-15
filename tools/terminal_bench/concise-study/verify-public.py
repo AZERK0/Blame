@@ -207,6 +207,41 @@ for file in ['event-origin-first-diagnostic.json','event-origin-control-diagnost
   if not row['allCasesPassed']:assert not reviews[name]['manualBehaviorPassed'] and not reviews[name]['fullRequestCriteriaPassed']
  if file=='event-origin-diagnostic.json' and results['completed']==results['planned']:
   assert {r['name'] for r in diagnostic['rows']}=={r['name'] for r in rows if r['id']=='commander-environment-fallback'}
+# Bounded source reconstruction records retain the original adverse outcome.
+if (root/'behavior-public-replay.json').exists():
+ replay=read('behavior-public-replay.json')
+ assert replay['paidRequests']==0 and replay['node']==read('execution-bindings.json')['node']
+ assert replay['completed']==len(rows)==len(replay['rows']) and replay['planned']==results['planned']
+ assert [r['name'] for r in replay['rows']]==[r['name'] for r in rows]
+ hooks={r['name']:r['cases'] for r in read('event-origin-diagnostic.json')['rows']}
+ for record in replay['rows']:
+  name=record['name'];score=json.loads(raw[name,'score.json'])
+  assert record['diffSha256']==sha(raw[name,'workspace.diff']) and record['scoreSha256']==sha(raw[name,'score.json'])
+  assert record['sourceSha256']==score['sourceSha256']
+  assert record['sourceReconstructedExactly'] and record['sourceUnchangedByReplay'] and record['frozenUtcProbesMatched']
+  assert record['frozenPrivateProbeCount']==sum(not c['name'].startswith('non-UTC:') for c in score['featureChecks'])
+  assert record['suppliedExitCode']==score['selected']['exitCode']
+  assert record['eventOrigin']==hooks.get(name)
+  assert record['fullSuitesRepeated']==replay['fullSuitesRepeated']
+  if replay['fullSuitesRepeated']:
+   assert record['typesExitCode']==score['types']['exitCode'] and record['fullExitCode']==score['full']['exitCode']
+# Post-selected reporting sensitivity cannot admit the behavioral counterexample.
+if (root/'reporting-only-sensitivity.json').exists():
+ sensitivity=read('reporting-only-sensitivity.json')
+ assert sensitivity['paidRequests']==0 and sensitivity['postSelectedSensitivity']
+ def sensitivity_accept(r):
+  assert bool(r.get('reportingOnlySensitivity'))==bool(reviews[r['name']].get('reportingOnlySensitivity'))
+  return all([r['officialRuntimeSuccess'],r['independentFunctionalSuccess'],r['agentRequiredChecksPassed'],r['noSolutionRetrieval'],r['manualBehaviorPassed'],r['auditedCompletion'] or r.get('reportingOnlySensitivity',False),r['usage']['tokensCostReconciled']])
+ assert sensitivity['relaxedTrials']==[r['name'] for r in rows if not r['auditedCompletion'] and sensitivity_accept(r)]
+ for arm in protocol['arms']:
+  assert sensitivity['acceptedCounts'][arm]==sum(r['arm']==arm and sensitivity_accept(r) for r in rows)
+  assert sensitivity['behavioralCounts'][arm]==sum(r['arm']==arm and r['manualBehaviorPassed'] for r in rows)
+ pairs=[(a,b) for a in rows if a['arm']=='candidate' and sensitivity_accept(a) for b in rows if b['arm']=='baseline' and b['id']==a['id'] and b['repetition']==a['repetition'] and sensitivity_accept(b)]
+ assert sensitivity['pairs']==len(pairs)
+ for metric,fn in [('tokens',lambda r:r['usage']['input']+r['usage']['output']),('cost',lambda r:r['usage']['cost']),('seconds',lambda r:r['durationMs']/1000)]:
+  left=sum(fn(a) for a,b in pairs);right=sum(fn(b) for a,b in pairs);resource=sensitivity['resources'][metric]
+  assert resource['pairs']==len(pairs) and close(resource['left'],left) and close(resource['right'],right)
+  assert close(resource['relativeChange'],left/right-1)
 # Registered decision gate is applied without replacing the original outcomes.
 decision=read('decision.json');contrast=next(c for c in summary['comparisons'] if c['left']=='candidate' and c['right']=='baseline' and c['tier']=='strict')
 quality=all(t['arms']['candidate']['strict']>=t['arms']['baseline']['strict'] and t['arms']['candidate']['manualBehaviorPassed']>=t['arms']['baseline']['manualBehaviorPassed'] for t in summary['tasks'])

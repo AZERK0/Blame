@@ -1258,5 +1258,635 @@
     "artifact": "traces/2-commander-environment-fallback-cline.model-exit.json.gz",
     "bytes": 5204,
     "sha256": "f56d2abc276dbe20493e7d504d38487f07ce0efcd24772cbed1b353fc7428fdb"
+  },
+  {
+    "trial": "3-commander-canonical-choices-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-commander-canonical-choices-cline.instruction.txt.gz",
+    "bytes": 1265,
+    "sha256": "23ea7622cfde451a1804e0e3a1f46421b224bcc33e1e1cdbefd6ae1ec8b9b475"
+  },
+  {
+    "trial": "3-commander-canonical-choices-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-commander-canonical-choices-cline.events.jsonl.gz",
+    "bytes": 419319,
+    "sha256": "c6b0dd9b027d578ce01ef9c2cd9ad912b28bdef5bf68824e1fdc332ddacbe4b7"
+  },
+  {
+    "trial": "3-commander-canonical-choices-cline",
+    "file": "result.json",
+    "artifact": "traces/3-commander-canonical-choices-cline.result.json.gz",
+    "bytes": 3709,
+    "sha256": "976c472cbe21c01865fced2fa121d451bdf76a55201487cbee658b976d5d81b1"
+  },
+  {
+    "trial": "3-commander-canonical-choices-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-commander-canonical-choices-cline.workspace.diff.gz",
+    "bytes": 3041,
+    "sha256": "4be7abac4ccc1d93fcb5530116a2a7a6d31673c45c943d02110c9ef9e6937d1c"
+  },
+  {
+    "trial": "3-commander-canonical-choices-cline",
+    "file": "trial.json",
+    "artifact": "traces/3-commander-canonical-choices-cline.trial.json.gz",
+    "bytes": 5151,
+    "sha256": "12cbc1612ecaeb6c2eec427cafa8ce2ba003e15fefd4d3adfcc22a564d3cf9e4"
+  },
+  {
+    "trial": "3-commander-canonical-choices-cline",
+    "file": "score.json",
+    "artifact": "traces/3-commander-canonical-choices-cline.score.json.gz",
+    "bytes": 13306,
+    "sha256": "1cc93c2be5a9a91b9a7144f9aaae24dea88bbc93a3e7b4b75f5bc69e47465c61"
+  },
+  {
+    "trial": "3-commander-canonical-choices-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-commander-canonical-choices-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-commander-canonical-choices-cline",
+    "file": "model-start.json",
+    "artifact": "traces/3-commander-canonical-choices-cline.model-start.json.gz",
+    "bytes": 205,
+    "sha256": "112b82c225026d4aca8d7e1198c9871c45076cca372fbfd2a58ed3fd71e2938a"
+  },
+  {
+    "trial": "3-commander-canonical-choices-cline",
+    "file": "model-child.json",
+    "artifact": "traces/3-commander-canonical-choices-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "17a1f41202418e0b9ca72d1a3842a3c64fcdd0bc4bbaa8ff85d90fe1693cceac"
+  },
+  {
+    "trial": "3-commander-canonical-choices-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-commander-canonical-choices-cline.model-exit.json.gz",
+    "bytes": 4947,
+    "sha256": "d6c0c4dfc1a6e9fa8d6a12573a7a2e6941f0c97e7afd93b0be8e3cbc10eca46e"
+  },
+  {
+    "trial": "3-commander-canonical-choices-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-commander-canonical-choices-baseline.instruction.txt.gz",
+    "bytes": 1265,
+    "sha256": "23ea7622cfde451a1804e0e3a1f46421b224bcc33e1e1cdbefd6ae1ec8b9b475"
+  },
+  {
+    "trial": "3-commander-canonical-choices-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-commander-canonical-choices-baseline.events.jsonl.gz",
+    "bytes": 143715,
+    "sha256": "0ba03a1ed1d176d21b21b31cfef2f5b92d72ea57073575ca63e817a5010bfc45"
+  },
+  {
+    "trial": "3-commander-canonical-choices-baseline",
+    "file": "result.json",
+    "artifact": "traces/3-commander-canonical-choices-baseline.result.json.gz",
+    "bytes": 4648,
+    "sha256": "059e7004d81c0e41252e8ebc753d22dea0df8f9337301eb22276794078d91e48"
+  },
+  {
+    "trial": "3-commander-canonical-choices-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-commander-canonical-choices-baseline.workspace.diff.gz",
+    "bytes": 2863,
+    "sha256": "63401b60ee9d1532565a852ded9d1aebce4abae28f67fbfc5361c21a8a86edbd"
+  },
+  {
+    "trial": "3-commander-canonical-choices-baseline",
+    "file": "trial.json",
+    "artifact": "traces/3-commander-canonical-choices-baseline.trial.json.gz",
+    "bytes": 4732,
+    "sha256": "69f6400c4a56d695e39fe954bb7788c275b3608bc883669956797bfae3cca4fe"
+  },
+  {
+    "trial": "3-commander-canonical-choices-baseline",
+    "file": "score.json",
+    "artifact": "traces/3-commander-canonical-choices-baseline.score.json.gz",
+    "bytes": 13317,
+    "sha256": "74a50577a65caa783f777906931f1e712240ae502a8da5043f31aa9326786c73"
+  },
+  {
+    "trial": "3-commander-canonical-choices-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-commander-canonical-choices-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-commander-canonical-choices-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/3-commander-canonical-choices-baseline.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "35853641aa47f4158b5baa64244507852e61148d0485b7203b7fb0fbced7d304"
+  },
+  {
+    "trial": "3-commander-canonical-choices-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/3-commander-canonical-choices-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "fbf851b1c0efad1f84e987d92c869b5818dbae6f6bc8b42cbdd89c83556ba12a"
+  },
+  {
+    "trial": "3-commander-canonical-choices-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-commander-canonical-choices-baseline.model-exit.json.gz",
+    "bytes": 4524,
+    "sha256": "53421250d9faced7c771f22961e35f712eff2e613f761c5bd264b49936a9b4c3"
+  },
+  {
+    "trial": "3-commander-canonical-choices-candidate",
+    "file": "instruction.txt",
+    "artifact": "traces/3-commander-canonical-choices-candidate.instruction.txt.gz",
+    "bytes": 1265,
+    "sha256": "23ea7622cfde451a1804e0e3a1f46421b224bcc33e1e1cdbefd6ae1ec8b9b475"
+  },
+  {
+    "trial": "3-commander-canonical-choices-candidate",
+    "file": "events.jsonl",
+    "artifact": "traces/3-commander-canonical-choices-candidate.events.jsonl.gz",
+    "bytes": 166489,
+    "sha256": "46bbc25f70d31dc4b73bd7ee1d7fae75f1a1cce5b5d477e227766f465ac64e9c"
+  },
+  {
+    "trial": "3-commander-canonical-choices-candidate",
+    "file": "result.json",
+    "artifact": "traces/3-commander-canonical-choices-candidate.result.json.gz",
+    "bytes": 4674,
+    "sha256": "944465cce002ec39e7be2456666304446a0f8ddeef449b4bd31a66ee22e8863e"
+  },
+  {
+    "trial": "3-commander-canonical-choices-candidate",
+    "file": "workspace.diff",
+    "artifact": "traces/3-commander-canonical-choices-candidate.workspace.diff.gz",
+    "bytes": 2767,
+    "sha256": "fe0dfdcd1fdd3a46ea9c29e00d498b3299abcb32fee56a76929ef0d0244d0ac6"
+  },
+  {
+    "trial": "3-commander-canonical-choices-candidate",
+    "file": "trial.json",
+    "artifact": "traces/3-commander-canonical-choices-candidate.trial.json.gz",
+    "bytes": 4890,
+    "sha256": "4029c81ed05fe7218e5158e251197cd804373f5fe400632d1bb64a4bc000d608"
+  },
+  {
+    "trial": "3-commander-canonical-choices-candidate",
+    "file": "score.json",
+    "artifact": "traces/3-commander-canonical-choices-candidate.score.json.gz",
+    "bytes": 13327,
+    "sha256": "4d7f5d6d4803784ca592c2ab26b5d4bc64a16a575889657209807d85a7753d58"
+  },
+  {
+    "trial": "3-commander-canonical-choices-candidate",
+    "file": "required-checks.json",
+    "artifact": "traces/3-commander-canonical-choices-candidate.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-commander-canonical-choices-candidate",
+    "file": "model-start.json",
+    "artifact": "traces/3-commander-canonical-choices-candidate.model-start.json.gz",
+    "bytes": 209,
+    "sha256": "5dfd8fad1559584cc834d0369d25ea8b6062d3a6115213bb738e5da4932473d2"
+  },
+  {
+    "trial": "3-commander-canonical-choices-candidate",
+    "file": "model-child.json",
+    "artifact": "traces/3-commander-canonical-choices-candidate.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "b2c65621c6040c730af7c613c723847c2402e70edf2c161e1a06f3520fa55a0f"
+  },
+  {
+    "trial": "3-commander-canonical-choices-candidate",
+    "file": "model-exit.json",
+    "artifact": "traces/3-commander-canonical-choices-candidate.model-exit.json.gz",
+    "bytes": 4679,
+    "sha256": "064e4b7a5b753708931e5c04b847af9a56aec27cb1b667459990074ce73a660c"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-commander-hidden-arguments-baseline.instruction.txt.gz",
+    "bytes": 1408,
+    "sha256": "ffa2da2af888a88026b5087cb2ae1c61a94e8d77331d8d2555542aa578442e5f"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-commander-hidden-arguments-baseline.events.jsonl.gz",
+    "bytes": 155413,
+    "sha256": "28337bcc78e734fb6396259525a78ba838eb4e959bb627ea95a13616842d618d"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-baseline",
+    "file": "result.json",
+    "artifact": "traces/3-commander-hidden-arguments-baseline.result.json.gz",
+    "bytes": 4666,
+    "sha256": "2c7046068d2093fa64195bc703854ed8de999c46e1a32b5bae5413e29846e0f6"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-commander-hidden-arguments-baseline.workspace.diff.gz",
+    "bytes": 2096,
+    "sha256": "f0a75d63de8c837ed69b7b714d7253d6257aae08edc7f225b3f7a35180394bca"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-baseline",
+    "file": "trial.json",
+    "artifact": "traces/3-commander-hidden-arguments-baseline.trial.json.gz",
+    "bytes": 4641,
+    "sha256": "61a3f6a58864ffb03a1c674eca3d470c62c69eb83a0fc1eabcf23f0ece6ee33d"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-baseline",
+    "file": "score.json",
+    "artifact": "traces/3-commander-hidden-arguments-baseline.score.json.gz",
+    "bytes": 11903,
+    "sha256": "7d2774a532072b19d279bf9854e79c42ba0f61f9b965428de58a85dc26afac49"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-commander-hidden-arguments-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/3-commander-hidden-arguments-baseline.model-start.json.gz",
+    "bytes": 207,
+    "sha256": "8e7e5379f0c581dc16805df77b4c81b3a86752b9ae4afb31db656b8a39ccb205"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/3-commander-hidden-arguments-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "aa17d645b9f1e7070b134b66c54d0968a52e0e57a57f71a3724a2a7edfd79ea1"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-commander-hidden-arguments-baseline.model-exit.json.gz",
+    "bytes": 4433,
+    "sha256": "09aa92f573ab0ce47d197b7e54331264f868e1923e7f086afe22d0ff0e3ad7ca"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-candidate",
+    "file": "instruction.txt",
+    "artifact": "traces/3-commander-hidden-arguments-candidate.instruction.txt.gz",
+    "bytes": 1408,
+    "sha256": "ffa2da2af888a88026b5087cb2ae1c61a94e8d77331d8d2555542aa578442e5f"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-candidate",
+    "file": "events.jsonl",
+    "artifact": "traces/3-commander-hidden-arguments-candidate.events.jsonl.gz",
+    "bytes": 172076,
+    "sha256": "ee48201d94b0a9164a925609c019ac433078237980e4c51bbb589899904e536d"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-candidate",
+    "file": "result.json",
+    "artifact": "traces/3-commander-hidden-arguments-candidate.result.json.gz",
+    "bytes": 4647,
+    "sha256": "986e5e82ff3536988befc8f0c22c555c0b89ebbe269681b916764773a9da8617"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-candidate",
+    "file": "workspace.diff",
+    "artifact": "traces/3-commander-hidden-arguments-candidate.workspace.diff.gz",
+    "bytes": 2059,
+    "sha256": "90b5e1651923a6abe80b81ca8284ad0b01c7a7e427b3bd9a73155bbd7c3544a4"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-candidate",
+    "file": "trial.json",
+    "artifact": "traces/3-commander-hidden-arguments-candidate.trial.json.gz",
+    "bytes": 6105,
+    "sha256": "ec37b40e29a9acbf5ce5c4a2af26a8cbbb83137bbe0869d6c8720e1de6e7e354"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-candidate",
+    "file": "score.json",
+    "artifact": "traces/3-commander-hidden-arguments-candidate.score.json.gz",
+    "bytes": 11909,
+    "sha256": "d24c70468f72c2ceaddb32f97cb6ffa11866f06f402fc0839483120d99c44f9d"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-candidate",
+    "file": "required-checks.json",
+    "artifact": "traces/3-commander-hidden-arguments-candidate.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-candidate",
+    "file": "model-start.json",
+    "artifact": "traces/3-commander-hidden-arguments-candidate.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "ece817964e22e61dd733ddaa737c030b8e3ad9350d7b43104a3735b248810051"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-candidate",
+    "file": "model-child.json",
+    "artifact": "traces/3-commander-hidden-arguments-candidate.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "a1c62566c90d8d9c59abb36f3a367c5b8a270c830e0268337e40a15bb175e59e"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-candidate",
+    "file": "model-exit.json",
+    "artifact": "traces/3-commander-hidden-arguments-candidate.model-exit.json.gz",
+    "bytes": 5897,
+    "sha256": "5e2c39310d9b29219da11900bc9e095bbd5df58c86e088b18474a7e20859c715"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-commander-hidden-arguments-cline.instruction.txt.gz",
+    "bytes": 1408,
+    "sha256": "ffa2da2af888a88026b5087cb2ae1c61a94e8d77331d8d2555542aa578442e5f"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-commander-hidden-arguments-cline.events.jsonl.gz",
+    "bytes": 408566,
+    "sha256": "8c57c9a7278c7ac758d750fb2d00bb21203261aaddd4bbd7d4e1f86397486bf4"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-cline",
+    "file": "result.json",
+    "artifact": "traces/3-commander-hidden-arguments-cline.result.json.gz",
+    "bytes": 3705,
+    "sha256": "becf21fef62a55ee5dfcc7a6a2ece90365ff2329b385756ec96d91c2171b425c"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-commander-hidden-arguments-cline.workspace.diff.gz",
+    "bytes": 2142,
+    "sha256": "7484a088007ba96dc39123dcab8c70acaa54cbcb9e62d011fab320201e181b97"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-cline",
+    "file": "trial.json",
+    "artifact": "traces/3-commander-hidden-arguments-cline.trial.json.gz",
+    "bytes": 4443,
+    "sha256": "68cee6a49a929448469a4a8a38e42a489c6a8efd3ee09ebfaedfbf2a3f9b9cee"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-cline",
+    "file": "score.json",
+    "artifact": "traces/3-commander-hidden-arguments-cline.score.json.gz",
+    "bytes": 11890,
+    "sha256": "22146aa67edc339906e07c06f1ebd2c31b9ad44be5e1bcfbcceeb5a96405c334"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-commander-hidden-arguments-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-cline",
+    "file": "model-start.json",
+    "artifact": "traces/3-commander-hidden-arguments-cline.model-start.json.gz",
+    "bytes": 204,
+    "sha256": "65cee537798a35e3da18796685f3bdbdc7d9f52323a755c6cac993d08e3c9a60"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-cline",
+    "file": "model-child.json",
+    "artifact": "traces/3-commander-hidden-arguments-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "94240715f922acec03a186e024d6aaa4d452dce47bf719928309bb3a268286c3"
+  },
+  {
+    "trial": "3-commander-hidden-arguments-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-commander-hidden-arguments-cline.model-exit.json.gz",
+    "bytes": 4241,
+    "sha256": "ab725128cd8a45165f8ac774868d631003dd55d94a74d1733ff115ce24daf926"
+  },
+  {
+    "trial": "3-commander-environment-fallback-candidate",
+    "file": "instruction.txt",
+    "artifact": "traces/3-commander-environment-fallback-candidate.instruction.txt.gz",
+    "bytes": 1553,
+    "sha256": "45d99b04c1eabcd963b2877c4fabf31183e10b3f3b3f3ae858f8c8052094813a"
+  },
+  {
+    "trial": "3-commander-environment-fallback-candidate",
+    "file": "events.jsonl",
+    "artifact": "traces/3-commander-environment-fallback-candidate.events.jsonl.gz",
+    "bytes": 342253,
+    "sha256": "4c01ce2d214c385d109dead891e67f9a720b9e9a237f5feeae674c284184ad66"
+  },
+  {
+    "trial": "3-commander-environment-fallback-candidate",
+    "file": "result.json",
+    "artifact": "traces/3-commander-environment-fallback-candidate.result.json.gz",
+    "bytes": 4697,
+    "sha256": "d63f7409928086f3e45483e53f609ec42f3962ba886c7a031cef167942958144"
+  },
+  {
+    "trial": "3-commander-environment-fallback-candidate",
+    "file": "workspace.diff",
+    "artifact": "traces/3-commander-environment-fallback-candidate.workspace.diff.gz",
+    "bytes": 4376,
+    "sha256": "89856d8c00eecda0def56e65118c75364f29d733e80cf2fa60b2a3c6350fdf23"
+  },
+  {
+    "trial": "3-commander-environment-fallback-candidate",
+    "file": "trial.json",
+    "artifact": "traces/3-commander-environment-fallback-candidate.trial.json.gz",
+    "bytes": 6610,
+    "sha256": "4006df5001de0ca31b9f670bff15f0acda470914d51ebffe860b9ca085ee4c07"
+  },
+  {
+    "trial": "3-commander-environment-fallback-candidate",
+    "file": "score.json",
+    "artifact": "traces/3-commander-environment-fallback-candidate.score.json.gz",
+    "bytes": 12309,
+    "sha256": "637a613d3c49664e6b11cd11f934673e44c359567f40ab82e67f4652447ece40"
+  },
+  {
+    "trial": "3-commander-environment-fallback-candidate",
+    "file": "required-checks.json",
+    "artifact": "traces/3-commander-environment-fallback-candidate.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-commander-environment-fallback-candidate",
+    "file": "model-start.json",
+    "artifact": "traces/3-commander-environment-fallback-candidate.model-start.json.gz",
+    "bytes": 212,
+    "sha256": "8c9d1102df5964472255989a716ffe82b0c7590dafbb4571887a637c7e398e80"
+  },
+  {
+    "trial": "3-commander-environment-fallback-candidate",
+    "file": "model-child.json",
+    "artifact": "traces/3-commander-environment-fallback-candidate.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "f84037e55565dd58e01a30b081e37f8d2a0660246fb24c2c68206d7684c88626"
+  },
+  {
+    "trial": "3-commander-environment-fallback-candidate",
+    "file": "model-exit.json",
+    "artifact": "traces/3-commander-environment-fallback-candidate.model-exit.json.gz",
+    "bytes": 6389,
+    "sha256": "c0170d15aa38c899573b49e7bd67e2b02c69a85b292108714e08558493f4484e"
+  },
+  {
+    "trial": "3-commander-environment-fallback-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-commander-environment-fallback-cline.instruction.txt.gz",
+    "bytes": 1553,
+    "sha256": "45d99b04c1eabcd963b2877c4fabf31183e10b3f3b3f3ae858f8c8052094813a"
+  },
+  {
+    "trial": "3-commander-environment-fallback-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-commander-environment-fallback-cline.events.jsonl.gz",
+    "bytes": 813581,
+    "sha256": "dc165ed6d5caceb95101e713ef60c5229c5d3e8276772878c96973472f67a211"
+  },
+  {
+    "trial": "3-commander-environment-fallback-cline",
+    "file": "result.json",
+    "artifact": "traces/3-commander-environment-fallback-cline.result.json.gz",
+    "bytes": 3751,
+    "sha256": "cc3c127abba95cf900c99f82916671c7dc4a00932fb67c992b76cb9523e08cd6"
+  },
+  {
+    "trial": "3-commander-environment-fallback-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-commander-environment-fallback-cline.workspace.diff.gz",
+    "bytes": 5418,
+    "sha256": "204079825f4918abf0b9da237dfcffdeb37d397fb8950bdb8449d5ab9e79f546"
+  },
+  {
+    "trial": "3-commander-environment-fallback-cline",
+    "file": "trial.json",
+    "artifact": "traces/3-commander-environment-fallback-cline.trial.json.gz",
+    "bytes": 4753,
+    "sha256": "ac9ce4ff593fc31eb3cf85654cd52dac66f3c917f35e5da06e1f2ad7958c91ad"
+  },
+  {
+    "trial": "3-commander-environment-fallback-cline",
+    "file": "score.json",
+    "artifact": "traces/3-commander-environment-fallback-cline.score.json.gz",
+    "bytes": 12288,
+    "sha256": "5ffb341d0991d5af7820a009a684fb9e1f560f76a2ccff9f6828a6b6b8431024"
+  },
+  {
+    "trial": "3-commander-environment-fallback-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-commander-environment-fallback-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-commander-environment-fallback-cline",
+    "file": "model-start.json",
+    "artifact": "traces/3-commander-environment-fallback-cline.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "b887788e2764ecab885adcd753522d9363b924f47fcb47b42dea79d7ec0c6c59"
+  },
+  {
+    "trial": "3-commander-environment-fallback-cline",
+    "file": "model-child.json",
+    "artifact": "traces/3-commander-environment-fallback-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "eb8d6ec1914e52214b6c598ad7971f2ed554729f9edebc7d6ed8e90acb372f3c"
+  },
+  {
+    "trial": "3-commander-environment-fallback-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-commander-environment-fallback-cline.model-exit.json.gz",
+    "bytes": 4546,
+    "sha256": "6e9ffc8ad28189366ad7ac5a95a18bd67b162906237acc4e6ae825bc9fa8f0dd"
+  },
+  {
+    "trial": "3-commander-environment-fallback-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-commander-environment-fallback-baseline.instruction.txt.gz",
+    "bytes": 1553,
+    "sha256": "45d99b04c1eabcd963b2877c4fabf31183e10b3f3b3f3ae858f8c8052094813a"
+  },
+  {
+    "trial": "3-commander-environment-fallback-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-commander-environment-fallback-baseline.events.jsonl.gz",
+    "bytes": 225155,
+    "sha256": "36f405bc2d1b844c508434612ec02227d8dd68b90f8b51b2ce4c534ee09d3d73"
+  },
+  {
+    "trial": "3-commander-environment-fallback-baseline",
+    "file": "result.json",
+    "artifact": "traces/3-commander-environment-fallback-baseline.result.json.gz",
+    "bytes": 4677,
+    "sha256": "cae86df010295faaa8b1c63b10c25d03399b0a477c5b9eea303ed9f7c0394cc3"
+  },
+  {
+    "trial": "3-commander-environment-fallback-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-commander-environment-fallback-baseline.workspace.diff.gz",
+    "bytes": 4200,
+    "sha256": "0c5e813b2fdd3bf6d7c754fa338607c765c63d70847b502c53504b4bd66589ea"
+  },
+  {
+    "trial": "3-commander-environment-fallback-baseline",
+    "file": "trial.json",
+    "artifact": "traces/3-commander-environment-fallback-baseline.trial.json.gz",
+    "bytes": 5920,
+    "sha256": "f22d41b0b85497eea5009ea8f1bbf7f2f2067b823da26e00ad252d6f19fabed8"
+  },
+  {
+    "trial": "3-commander-environment-fallback-baseline",
+    "file": "score.json",
+    "artifact": "traces/3-commander-environment-fallback-baseline.score.json.gz",
+    "bytes": 12302,
+    "sha256": "6335af7f7d11bc3744d0093dcc21703e64261b92f0176a1d52b57f64fc044310"
+  },
+  {
+    "trial": "3-commander-environment-fallback-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-commander-environment-fallback-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-commander-environment-fallback-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/3-commander-environment-fallback-baseline.model-start.json.gz",
+    "bytes": 211,
+    "sha256": "8e239acb01a7495afe80c3964fd3c7276f308a5ab14a775454f2710904b1676d"
+  },
+  {
+    "trial": "3-commander-environment-fallback-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/3-commander-environment-fallback-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "1693b392e24295c0c71c9e725971b84d3093a0798855c53f663915d314788888"
+  },
+  {
+    "trial": "3-commander-environment-fallback-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-commander-environment-fallback-baseline.model-exit.json.gz",
+    "bytes": 5699,
+    "sha256": "96db78c5455c1ce8e6e79a1689c47d1b279927f4dc80398bc73ac280b5d4bef1"
   }
 ]

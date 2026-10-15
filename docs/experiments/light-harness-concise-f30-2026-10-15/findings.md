@@ -1,40 +1,61 @@
-# Observations during the fixed panel
+# Completed F30 observations
 
-Prefix 9/27 completes the first balanced repetition. All nine official and frozen
-independent endpoints pass. Source/hook audit accepts 3/3 baseline, 2/3 candidate
-and 3/3 native. Remaining assignments continue unchanged; no efficacy conclusion
-is based on this prefix.
+The fixed 27 assignments complete three dependent repetitions of three fresh
+constructed multi-file tasks on previously unmeasured Commander.js 13.1.0.
+All official/frozen endpoints and final-source requested checks pass. Behavior
+acceptance is 9/9 baseline, 8/9 candidate, 9/9 native; full deliveries are 8/9,
+8/9 and 9/9. The exact per-trial decisions and adverse cases remain public.
 
-The actual first requests isolate the intended treatment: five descriptions
-change, all other tool fields match and system/developer prompts match after
-normalizing only the workspace path. Description bytes fall 3,897 to 2,108;
-complete tool-schema bytes fall 9,956 to 8,157. These are bytes, not billed tokens.
-Length and wording emphasis are not independently isolated.
+Actual first requests isolate five changed description values. Other tool fields
+and workspace-normalized system/developer prompts match on all nine Light pairs.
+Description bytes fall 3,897 to 2,108; complete tool-schema bytes fall 9,956 to
+8,157. Bytes are not billed tokens. The treatment also rewords emphasis, including
+an explicit whole-symbol parameter reminder, so length is not independently isolated.
 
-An extra source-review diagnostic checks the task's explicit requirement to name
-the actual selected environment variable. A public `prependListener` deletes that
-variable after its value was consumed and before the internal event handler.
-Reconstructing origin from the modified environment produces the wrong name.
-The first diagnostic assesses both completed environment endpoints at prefix 8;
-the prefix-9 candidate fails two of three cases while both other endpoints pass.
-The unchanged upstream primary-only control passes. Original grades and sources
-stay unchanged; no diagnostic reaches a model. All nine environment endpoints
-will receive the same cases. This is supplementary, correlated, post-selected
-audit evidence, not a new independent confirmation or causal proof about wording.
+A supplementary source-review probe checks the explicit actual-selected-variable
+criterion. A public `prependListener` deletes the consumed variable before the
+internal handler. Reconstructing origin from the modified environment names the
+wrong variable. All nine environment endpoints receive the same three cases:
+only repetition-one candidate fails two cases. The unchanged upstream primary-only
+control passes. The first two completed endpoints were probed at prefix 8; the
+candidate counterexample appears at prefix 9. This is correlated post-selected
+audit evidence, not a new task or causal wording proof. No source/grade is repaired
+and no diagnostic reaches any model.
 
-The independently authored local positive also passes every frozen control but
-fails the extended hook cases. Its original positive-control record remains:
-finite tests do not certify all user criteria. The negative result is retained.
+The authored local positive passes every frozen control but fails the extended
+hook cases too. Its original record remains. Finite positive tests do not certify
+all user criteria. Baseline repetition two has a distinct wording-sensitive
+reporting rejection: it claims no validation categories were unreported despite
+absent typecheck counters and Node pending:null. See `audit-notes.md`; removing
+that rejection still leaves the adverse candidate verdict.
 
-Trace observations include a correctly refused scoped multi-file patch followed
-by successful atomic recovery, and baseline source repairs after genuine full-
-suite/JS-type failures. Those are within-trial model actions, not researcher
-repairs or preexisting harness failures. A shell-like compound search scope is
-still misused despite the literal-scope guidance. No source/guard change is
-inferred from a different model trajectory.
+Runtime guards successfully refuse scoped multi-file patches, duplicate patch
+wrappers, range aliases used as symbols and syntactically invalid body edits.
+Agents recover within their original trials. Full upstream/type checks catch
+real generated-source mistakes before final delivery. These are model actions,
+not researcher retries or preexisting harness regressions.
 
-Preparation argv/color and noninteractive pnpm failures remain separately
-archived. The final launcher retains all upstream assertions and 108 suites /
-1,206 tests. Passing checks, admitted verification and full audited delivery
-remain distinct. Publication replays validate bytes and recorded adjudications;
-they are not an independent source review.
+Shorter descriptions do not remove editing confusion. Candidate choice repeats
+two/three choose body-only despite needing parameters; whole-symbol edits recover.
+Repeat two submits identical whole replacements, increases leading indentation
+and repeats validation. Repeat-three environment patches loop on exact scoped
+preimages before a body edit succeeds. Keep these costs; indentation is hygiene,
+not an invented functional rejection. Shell-like literal scopes and speculative
+missing paths also remain. Native timeout/max-result extra keys are ignored inputs.
+
+All-attempt candidate resources worsen versus baseline. Seven strict matched
+successes give +7.0% tokens,+12.3% estimated cost,+4.8% worker time. The favorable
+hidden-argument subset and unfavorable choice subset both remain. No global
+concision efficiency gain or population equivalence is established.
+
+The final public-source replay reconstructs all 27 endpoints from the archived
+upstream, fixtures and original diffs, matches every scored source hash, reruns
+frozen UTC probes and supplied tests, and reproduces all nine supplementary hook
+outcomes including the failure. Full upstream/non-UTC suites are not repeated by
+that bounded replay; their immutable original results remain. No model calls occur.
+
+Preparation argv/color,pnpm-wrapper and fixture/control mistakes remain separately
+archived before dispatch. Final original assertions and 108 suites/1,206 tests are
+preserved. No new consumption gaps/timeouts occur. SDK estimates exclude researcher-
+agent and host/setup/tool/oracle costs; invoices and complete cache/revision/seed
+accounting remain unknown. Public integrity replay is not an independent source audit.

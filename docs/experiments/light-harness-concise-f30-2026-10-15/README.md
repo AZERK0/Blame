@@ -34,5 +34,34 @@ and explicit reserves. Prior accounting is USD3.74173048, including USD0.92
 reserves; no budget reset. SDK cost estimates are not invoices, and host/tool
 compute is unpriced. The user requested no further budget questions.
 
-Reproduction and final results will be added after the registered assignments.
-None of these preparation controls establishes a model efficiency gain.
+All **27/27 assignments are complete**. See `report.md`, `decision.md`,
+`findings.md` and `audit-notes.md`. The prototype is **not promoted**: both
+registered gates fail. Successive prefixes 3, 9 and 18 remain separate snapshots;
+source changes, retries and grader feedback were not introduced between repeats.
+
+Read-only integrity/accounting replay, requiring Python only:
+
+```sh
+python tools/terminal_bench/concise-study/verify-public.py docs/experiments/light-harness-concise-f30-2026-10-15
+python tools/terminal_bench/concise-study/publication-controls.py docs/experiments/light-harness-concise-f30-2026-10-15
+```
+
+Behavior replay reconstructs endpoints from archived source/fixtures/diffs and
+requires the recorded Node version (v24.19.0) and pinned Commander dependencies:
+
+```sh
+node tools/terminal_bench/concise-study/replay-public-behavior.mjs --install-deps
+```
+
+It matches all scored source hashes, repeats frozen UTC and supplied probes, and
+reproduces supplementary event-origin outcomes, including the adverse endpoint.
+It does not repeat complete upstream/non-UTC suites by default; `--full` optionally
+repeats the full JS/TS/project commands. No model, source repair or grade rewrite
+occurs. `behavior-public-replay.json` retains the executed bounded replay.
+Model reruns require a new separately registered campaign; existing output slots
+are exclusive. Original full raw results remain in `traces/`.
+
+F30 adds USD0.54532960 observed SDK estimate, no new reserve. Cumulative accounting
+is USD4.28706008 (reference EUR3.83626), including USD0.92 prior reserves.
+Researcher-agent and host/setup/tool/oracle costs are unpriced. No invoice or
+population improvement claim follows from this finite panel.

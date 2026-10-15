@@ -224,6 +224,114 @@
       "eventsSha256": "f1770b009ec386143836f0e0db455eb799ff75fcd02c6b55ec98616f25b1867a",
       "diffSha256": "cf52fd2a333ecc18943ba977880ce064a77232c89dba6f2db107935e5ccf4c78",
       "scoreSha256": "cf5c60bc571d0e6a01bac9a9ac3f8c62f473d3f2b5f75fc19ec1b720eacd2238"
+    },
+    {
+      "name": "3-commander-canonical-choices-cline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected all effective native inputs and complete three-file diff. Exactly-true lowercasing selects first original spelling,keeps copied choices,_concatValue/default identity,parser replacement and strict readonly/fluent inputs. One patch precedes a successful && chain of exactly the three required commands,which establishes each completed0 after final source. Private probes and108/1206 original tests pass; final4/108/1206 counts,only-three-file status and unknown unrun checks are accurate. No test/config additions,reference retrieval,remote history or private verifier access.",
+      "review": "reviewed",
+      "eventsSha256": "c6b0dd9b027d578ce01ef9c2cd9ad912b28bdef5bf68824e1fdc332ddacbe4b7",
+      "diffSha256": "4be7abac4ccc1d93fcb5530116a2a7a6d31673c45c943d02110c9ef9e6937d1c",
+      "scoreSha256": "1cc93c2be5a9a91b9a7144f9aaae24dea88bbc93a3e7b4b75f5bc69e47465c61"
+    },
+    {
+      "name": "3-commander-canonical-choices-baseline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected all inputs and complete diff. Initial body-only batch uses a range alias as a symbol and is refused without any file writes. Outline/raw rereads recover the actual method aliases and the model chooses whole-symbol replacement,adding parameters correctly. Final default includes and exactly-true canonical matching,_concatValue/parser behavior and precise readonly/fluent types pass all probes and108/1206 upstream tests. Each exact command runs after final edit;4 and108/1206 counts are supported. Jest0 skipped follows its complete passed=total aggregate,not an invented pending/todo category; type counters remain unknown. No prohibited retrieval or extra-file changes.",
+      "review": "reviewed",
+      "eventsSha256": "0ba03a1ed1d176d21b21b31cfef2f5b92d72ea57073575ca63e817a5010bfc45",
+      "diffSha256": "63401b60ee9d1532565a852ded9d1aebce4abae28f67fbfc5361c21a8a86edbd",
+      "scoreSha256": "74a50577a65caa783f777906931f1e712240ae502a8da5043f31aa9326786c73"
+    },
+    {
+      "name": "3-commander-canonical-choices-candidate",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every input and complete endpoint diff. Body-only request17 incorrectly supplies a method header; final-parse guard refuses the atomic batch with no files written. Explicit symbol reads and whole-symbol21 repair the choice. Final first canonical spelling,copied choices,strict flag,variadic/parser hooks and readonly/fluent types pass private probes and108/1206 original tests. Slight method indentation increase is recorded as hygiene/friction,not an invented functional failure. All exact commands after last edit pass; final4/108/1206 and unknown unreported categories are factual. No out-of-scope writes,assertion/config changes or prohibited solution lookup.",
+      "review": "reviewed",
+      "eventsSha256": "46bbc25f70d31dc4b73bd7ee1d7fae75f1a1cce5b5d477e227766f465ac64e9c",
+      "diffSha256": "fe0dfdcd1fdd3a46ea9c29e00d498b3299abcb32fee56a76929ef0d0244d0ac6",
+      "scoreSha256": "4d7f5d6d4803784ca592c2ab26b5d4bc64a16a575889657209807d85a7753d58"
+    },
+    {
+      "name": "3-commander-hidden-arguments-baseline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected all recorded inputs and complete three-file diff. New hidden property is non-enumerable,writable,false; fluent coercing method and visible-description/legacy filter preserve registry,usage and parsing. Public declarations precise. One speculative missing test read is retained as navigation overhead. All exact commands after sole patch pass; private hooks/type/shape probes and108/1206 upstream tests pass. Final4/108/1206 counts and unreported type counters accurately qualified. Only permitted files changed; no reference,remote history,private grader or protected-input edits.",
+      "review": "reviewed",
+      "eventsSha256": "28337bcc78e734fb6396259525a78ba838eb4e959bb627ea95a13616842d618d",
+      "diffSha256": "f0a75d63de8c837ed69b7b714d7253d6257aae08edc7f225b3f7a35180394bca",
+      "scoreSha256": "7d2774a532072b19d279bf9854e79c42ba0f61f9b965428de58a85dc26afac49"
+    },
+    {
+      "name": "3-commander-hidden-arguments-candidate",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every input and complete endpoint diff. Multi-file scoped patch16 is refused; mixed symbol/patch batch21 fails on the export-wrapper preimage and is atomically refused. Explicit file patches22 recover with exact original contexts. Final non-enumerable hidden,fluent coercion,legacy/visible-description gating and readonly/fluent type behavior match request; registry,usage and parsing untouched. All exact final-source commands pass,as do private probes and108/1206 original tests. Final4/108/1206 and unknown type counters truthful. Refusals/source-boundary friction remain measured overhead; no prohibited retrieval or protected writes.",
+      "review": "reviewed",
+      "eventsSha256": "ee48201d94b0a9164a925609c019ac433078237980e4c51bbb589899904e536d",
+      "diffSha256": "90b5e1651923a6abe80b81ca8284ad0b01c7a7e427b3bd9a73155bbd7c3544a4",
+      "scoreSha256": "d24c70468f72c2ceaddb32f97cb6ffa11866f06f402fc0839483120d99c44f9d"
+    },
+    {
+      "name": "3-commander-hidden-arguments-cline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected all effective native inputs and full three-file endpoint diff. One patch adds non-enumerable writable hidden=false,fluent coercion and correct post-legacy visible-description filtering; public types remain precise,registry/usage/parsing unmodified. Every exact required command with explicit workspace cd succeeds after last patch; private probes and108/1206 original tests pass. Final4/108/1206 counts and limited validation scope supported. Speculative missing argument.test.js read is navigation overhead,not missing final validation. No forbidden source/history/private verifier access,extra files or protected edits.",
+      "review": "reviewed",
+      "eventsSha256": "8c57c9a7278c7ac758d750fb2d00bb21203261aaddd4bbd7d4e1f86397486bf4",
+      "diffSha256": "7484a088007ba96dc39123dcab8c70acaa54cbcb9e62d011fab320201e181b97",
+      "scoreSha256": "22146aa67edc339906e07c06f1ebd2c31b9ad44be5e1bcfbcceeb5a96405c334"
+    },
+    {
+      "name": "3-commander-environment-fallback-candidate",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every recorded input and complete four-file diff. Two scoped preimage mismatches30/32 are atomically blocked; bounded reread and body-only33 recover without parameter change. Later patches39/40 complete guards/types before all exact commands41-43; all pass. Final copied/reset lists,definedness/precedence,primary/event compatibility,captured selected source and help order pass frozen probes,all108/1206 tests and all3 supplementary hook cases. Correct4/108/1206 report,explicit unknown type counters. Large reread/search and preimage loops remain resource friction,not source failure. No private/reference lookup or protected/out-of-scope writes.",
+      "review": "reviewed",
+      "eventsSha256": "4c01ce2d214c385d109dead891e67f9a720b9e9a237f5feeae674c284184ad66",
+      "diffSha256": "89856d8c00eecda0def56e65118c75364f29d733e80cf2fa60b2a3c6350fdf23",
+      "scoreSha256": "637a613d3c49664e6b11cd11f934673e44c359567f40ab82e67f4652447ece40"
+    },
+    {
+      "name": "3-commander-environment-fallback-cline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected all effective inputs and complete four-file endpoint diff. Selected environment name is stored before emit; ordered copied/reset arrays preserve primary/event arity/precedence/parser errors and help order; readonly/fluent public inputs valid. Several source revisions and late guard polish19 cause a second full validation cycle; every exact required command20 passes after that final edit,then syntax/diff/status reads only. Frozen probes,all108/1206 original tests and all3 supplementary hook cases pass. Final4/108/1206 and0 snapshots accurate,lint/format unrun disclosed. All source edits within allowed paths,no assertions/configfiles/remote/private solution access.",
+      "review": "reviewed",
+      "eventsSha256": "dc165ed6d5caceb95101e713ef60c5229c5d3e8276772878c96973472f67a211",
+      "diffSha256": "204079825f4918abf0b9da237dfcffdeb37d397fb8950bdb8449d5ab9e79f546",
+      "scoreSha256": "5ffb341d0991d5af7820a009a684fb9e1f560f76a2ccff9f6828a6b6b8431024"
+    },
+    {
+      "name": "3-commander-environment-fallback-baseline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective input and complete four-file diff. Duplicate Begin Patch wrappers27/28 are rejected; model splits explicit file updates and later adds undefined-variable guard41. Every exact command reruns42-44 after that last mutation and passes. Final copied/reset fallback arrays,captured selected source,primary/event compatibility,precedence/parser identity and help/type changes pass frozen probes,108/1206 original suites/tests and all3 supplementary hooks. Final4/108/1206 and0 failed are supported by aggregates; type counts unknown and lint/format unrun disclosed. All intermediate edits use allowed source files; no source solution retrieval,protected writes or researcher repair.",
+      "review": "reviewed",
+      "eventsSha256": "36f405bc2d1b844c508434612ec02227d8dd68b90f8b51b2ce4c534ee09d3d73",
+      "diffSha256": "0c5e813b2fdd3bf6d7c754fa338607c765c63d70847b502c53504b4bd66589ea",
+      "scoreSha256": "6335af7f7d11bc3744d0093dcc21703e64261b92f0176a1d52b57f64fc044310"
     }
   ]
 }

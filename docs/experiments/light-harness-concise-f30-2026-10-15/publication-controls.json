@@ -23,6 +23,14 @@
       "rejected": true
     },
     {
+      "fault": "Changed adverse public-source replay into behavior success",
+      "rejected": true
+    },
+    {
+      "fault": "Changed reporting-only sensitivity resource subtotal",
+      "rejected": true
+    },
+    {
       "fault": "Rehashed wire metadata with unregistered model",
       "rejected": true
     }

@@ -41,6 +41,15 @@ with tempfile.TemporaryDirectory(prefix='blame-publication-controls-') as direct
  if behavioral is not None:
   behavioral['manualBehaviorPassed']=not behavioral['manualBehaviorPassed']
   put('source-review.json',review);rejected('Changed audited behavior inconsistent with recorded criteria');restore('source-review.json')
+ if (study/'behavior-public-replay.json').exists():
+  behavior=json.loads((study/'behavior-public-replay.json').read_text())
+  adverse=next(r for r in behavior['rows'] if r['eventOrigin'] and any(not c['passed'] for c in r['eventOrigin']))
+  next(c for c in adverse['eventOrigin'] if not c['passed'])['passed']=True
+  put('behavior-public-replay.json',behavior);rejected('Changed adverse public-source replay into behavior success');restore('behavior-public-replay.json')
+ if (study/'reporting-only-sensitivity.json').exists():
+  sensitivity=json.loads((study/'reporting-only-sensitivity.json').read_text())
+  sensitivity['resources']['tokens']['left']+=1
+  put('reporting-only-sensitivity.json',sensitivity);rejected('Changed reporting-only sensitivity resource subtotal');restore('reporting-only-sensitivity.json')
  wire=json.loads(gzip.decompress((study/'wire-contracts.json.gz').read_bytes()))
  wire['trials'][0]['requests'][0]['model']='unregistered-model'
  # Rehash metadata and outer archive: fixed settings must still reject it.

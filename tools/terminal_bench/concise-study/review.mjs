@@ -1,4 +1,4 @@
-// Record explicit human-agent adjudications after trace/source inspection.
+// Record explicit researcher-agent adjudications after trace/source inspection.
 // No automatic acceptance from passing tests. No source,score or event mutation.
 import assert from 'node:assert/strict';
 import {readFile,writeFile,rename} from 'node:fs/promises';

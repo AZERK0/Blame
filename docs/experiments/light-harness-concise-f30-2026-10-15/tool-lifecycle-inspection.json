@@ -180,6 +180,96 @@
       "startedWithoutFinish": [],
       "finishedWithoutStart": [],
       "differentInputs": []
+    },
+    {
+      "name": "3-commander-canonical-choices-cline",
+      "eventsSha256": "c6b0dd9b027d578ce01ef9c2cd9ad912b28bdef5bf68824e1fdc332ddacbe4b7",
+      "started": 12,
+      "finished": 12,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-commander-canonical-choices-baseline",
+      "eventsSha256": "0ba03a1ed1d176d21b21b31cfef2f5b92d72ea57073575ca63e817a5010bfc45",
+      "started": 30,
+      "finished": 30,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-commander-canonical-choices-candidate",
+      "eventsSha256": "46bbc25f70d31dc4b73bd7ee1d7fae75f1a1cce5b5d477e227766f465ac64e9c",
+      "started": 30,
+      "finished": 30,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-commander-hidden-arguments-baseline",
+      "eventsSha256": "28337bcc78e734fb6396259525a78ba838eb4e959bb627ea95a13616842d618d",
+      "started": 32,
+      "finished": 32,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-commander-hidden-arguments-candidate",
+      "eventsSha256": "ee48201d94b0a9164a925609c019ac433078237980e4c51bbb589899904e536d",
+      "started": 27,
+      "finished": 27,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-commander-hidden-arguments-cline",
+      "eventsSha256": "8c57c9a7278c7ac758d750fb2d00bb21203261aaddd4bbd7d4e1f86397486bf4",
+      "started": 10,
+      "finished": 10,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-commander-environment-fallback-candidate",
+      "eventsSha256": "4c01ce2d214c385d109dead891e67f9a720b9e9a237f5feeae674c284184ad66",
+      "started": 45,
+      "finished": 45,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-commander-environment-fallback-cline",
+      "eventsSha256": "dc165ed6d5caceb95101e713ef60c5229c5d3e8276772878c96973472f67a211",
+      "started": 23,
+      "finished": 23,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-commander-environment-fallback-baseline",
+      "eventsSha256": "36f405bc2d1b844c508434612ec02227d8dd68b90f8b51b2ce4c534ee09d3d73",
+      "started": 46,
+      "finished": 46,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
     }
   ]
 }

@@ -1,120 +1,120 @@
 {
   "method": "27 fixed assignments: three fresh constructed multi-file tasks on previously unmeasured Commander13.1.0,three dependent repeats and three rotated serial arms. No outcome-based selection,model retries,reference solution recovery or private grader feedback. Every failure,timeout,missing usage and unexecuted slot is retained. No population equivalence or absence of further improvement margin claim.",
   "planned": 27,
-  "completed": 18,
-  "unexecuted": 9,
+  "completed": 27,
+  "unexecuted": 0,
   "arms": {
     "baseline": {
       "planned": 9,
-      "trials": 6,
-      "official": 6,
-      "functional": 6,
-      "admittedVerified": 6,
-      "actualChecks": 6,
-      "strict": 5,
-      "manualBehaviorReviewed": 6,
-      "manualBehaviorPassed": 6,
+      "trials": 9,
+      "official": 9,
+      "functional": 9,
+      "admittedVerified": 9,
+      "actualChecks": 9,
+      "strict": 8,
+      "manualBehaviorReviewed": 9,
+      "manualBehaviorPassed": 9,
       "manualBehaviorFailures": 0,
       "factualWordingSensitivityOnly": 1,
-      "tokensObserved": 1162403,
-      "estimatedUsdObserved": 0.09958992,
-      "inputTokensObserved": 1127286,
-      "outputTokensObserved": 35117,
-      "cacheReadTokensObserved": 933376,
+      "tokensObserved": 1837919,
+      "estimatedUsdObserved": 0.1533824,
+      "inputTokensObserved": 1783474,
+      "outputTokensObserved": 54445,
+      "cacheReadTokensObserved": 1492480,
       "cacheWriteTokensObserved": 0,
       "missingCacheReadAggregates": 0,
       "missingCacheWriteAggregates": 0,
-      "missingReasoningAggregates": 6,
-      "runnerSecondsObserved": 527.227,
+      "missingReasoningAggregates": 9,
+      "runnerSecondsObserved": 821.386,
       "fullCacheAccounting": 0,
-      "tokenCostReconciled": 6,
+      "tokenCostReconciled": 9,
       "timeouts": 0,
       "failed": 0,
       "missingResults": 0,
       "outerWatchdogKills": 0,
       "missingWorkerDurations": 0,
       "missingWireUsageResponses": 0,
-      "wireMatchedTrialLedgers": 6,
+      "wireMatchedTrialLedgers": 9,
       "orchestrationInterruptions": 0,
-      "outerSecondsObserved": 538.708459327,
+      "outerSecondsObserved": 838.832921136,
       "missingOuterDurations": 0,
-      "suitesAndBehaviorPassed": 6,
+      "suitesAndBehaviorPassed": 9,
       "sourceScopeOnlyRejections": 0,
       "missingConsumption": 0
     },
     "candidate": {
       "planned": 9,
-      "trials": 6,
-      "official": 6,
-      "functional": 6,
-      "admittedVerified": 6,
-      "actualChecks": 6,
-      "strict": 5,
-      "manualBehaviorReviewed": 6,
-      "manualBehaviorPassed": 5,
+      "trials": 9,
+      "official": 9,
+      "functional": 9,
+      "admittedVerified": 9,
+      "actualChecks": 9,
+      "strict": 8,
+      "manualBehaviorReviewed": 9,
+      "manualBehaviorPassed": 8,
       "manualBehaviorFailures": 1,
       "factualWordingSensitivityOnly": 0,
-      "tokensObserved": 1187398,
-      "estimatedUsdObserved": 0.10648292000000002,
-      "inputTokensObserved": 1148083,
-      "outputTokensObserved": 39315,
-      "cacheReadTokensObserved": 946176,
+      "tokensObserved": 1973335,
+      "estimatedUsdObserved": 0.17103988000000003,
+      "inputTokensObserved": 1910621,
+      "outputTokensObserved": 62714,
+      "cacheReadTokensObserved": 1590784,
       "cacheWriteTokensObserved": 0,
       "missingCacheReadAggregates": 0,
       "missingCacheWriteAggregates": 0,
-      "missingReasoningAggregates": 6,
-      "runnerSecondsObserved": 557.392,
+      "missingReasoningAggregates": 9,
+      "runnerSecondsObserved": 875.218,
       "fullCacheAccounting": 0,
-      "tokenCostReconciled": 6,
+      "tokenCostReconciled": 9,
       "timeouts": 0,
       "failed": 0,
       "missingResults": 0,
       "outerWatchdogKills": 0,
       "missingWorkerDurations": 0,
       "missingWireUsageResponses": 0,
-      "wireMatchedTrialLedgers": 6,
+      "wireMatchedTrialLedgers": 9,
       "orchestrationInterruptions": 0,
-      "outerSecondsObserved": 568.9396627829999,
+      "outerSecondsObserved": 892.616643644999,
       "missingOuterDurations": 0,
-      "suitesAndBehaviorPassed": 6,
+      "suitesAndBehaviorPassed": 9,
       "sourceScopeOnlyRejections": 0,
       "missingConsumption": 0
     },
     "cline": {
       "planned": 9,
-      "trials": 6,
-      "official": 6,
-      "functional": 6,
+      "trials": 9,
+      "official": 9,
+      "functional": 9,
       "admittedVerified": 0,
-      "actualChecks": 6,
-      "strict": 6,
-      "manualBehaviorReviewed": 6,
-      "manualBehaviorPassed": 6,
+      "actualChecks": 9,
+      "strict": 9,
+      "manualBehaviorReviewed": 9,
+      "manualBehaviorPassed": 9,
       "manualBehaviorFailures": 0,
       "factualWordingSensitivityOnly": 0,
-      "tokensObserved": 1630140,
-      "estimatedUsdObserved": 0.14304476,
-      "inputTokensObserved": 1583737,
-      "outputTokensObserved": 46403,
-      "cacheReadTokensObserved": 1274368,
+      "tokensObserved": 2637926,
+      "estimatedUsdObserved": 0.22090732,
+      "inputTokensObserved": 2569697,
+      "outputTokensObserved": 68229,
+      "cacheReadTokensObserved": 2082816,
       "cacheWriteTokensObserved": 0,
       "missingCacheReadAggregates": 0,
       "missingCacheWriteAggregates": 0,
-      "missingReasoningAggregates": 6,
-      "runnerSecondsObserved": 480.607,
+      "missingReasoningAggregates": 9,
+      "runnerSecondsObserved": 817.21,
       "fullCacheAccounting": 0,
-      "tokenCostReconciled": 6,
+      "tokenCostReconciled": 9,
       "timeouts": 0,
       "failed": 0,
       "missingResults": 0,
       "outerWatchdogKills": 0,
       "missingWorkerDurations": 0,
       "missingWireUsageResponses": 0,
-      "wireMatchedTrialLedgers": 6,
+      "wireMatchedTrialLedgers": 9,
       "orchestrationInterruptions": 0,
-      "outerSecondsObserved": 491.87962484300004,
+      "outerSecondsObserved": 834.4479819129997,
       "missingOuterDurations": 0,
-      "suitesAndBehaviorPassed": 6,
+      "suitesAndBehaviorPassed": 9,
       "sourceScopeOnlyRejections": 0,
       "missingConsumption": 0
     }
@@ -363,115 +363,115 @@
       "arms": {
         "baseline": {
           "planned": 3,
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
-          "admittedVerified": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "manualBehaviorReviewed": 0,
-          "manualBehaviorPassed": 0,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "admittedVerified": 3,
+          "actualChecks": 3,
+          "strict": 3,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "inputTokensObserved": 0,
-          "outputTokensObserved": 0,
-          "cacheReadTokensObserved": 0,
+          "tokensObserved": 675516,
+          "estimatedUsdObserved": 0.053792480000000004,
+          "inputTokensObserved": 656188,
+          "outputTokensObserved": 19328,
+          "cacheReadTokensObserved": 559104,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 0,
-          "runnerSecondsObserved": 0,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 294.159,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 0,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 0,
+          "outerSecondsObserved": 300.124461809,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 0,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "candidate": {
           "planned": 3,
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
-          "admittedVerified": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "manualBehaviorReviewed": 0,
-          "manualBehaviorPassed": 0,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "admittedVerified": 3,
+          "actualChecks": 3,
+          "strict": 3,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "inputTokensObserved": 0,
-          "outputTokensObserved": 0,
-          "cacheReadTokensObserved": 0,
+          "tokensObserved": 785937,
+          "estimatedUsdObserved": 0.06455696,
+          "inputTokensObserved": 762538,
+          "outputTokensObserved": 23399,
+          "cacheReadTokensObserved": 644608,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 0,
-          "runnerSecondsObserved": 0,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 317.826,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 0,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 0,
+          "outerSecondsObserved": 323.6769808619991,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 0,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "cline": {
           "planned": 3,
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
           "admittedVerified": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "manualBehaviorReviewed": 0,
-          "manualBehaviorPassed": 0,
+          "actualChecks": 3,
+          "strict": 3,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "inputTokensObserved": 0,
-          "outputTokensObserved": 0,
-          "cacheReadTokensObserved": 0,
+          "tokensObserved": 1007786,
+          "estimatedUsdObserved": 0.07786256,
+          "inputTokensObserved": 985960,
+          "outputTokensObserved": 21826,
+          "cacheReadTokensObserved": 808448,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 0,
-          "runnerSecondsObserved": 0,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 336.603,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 0,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 0,
+          "outerSecondsObserved": 342.5683570699997,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 0,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         }
@@ -482,113 +482,113 @@
     "fresh-confirmation": {
       "arms": {
         "baseline": {
-          "trials": 6,
-          "official": 6,
-          "functional": 6,
-          "admittedVerified": 6,
-          "actualChecks": 6,
-          "strict": 5,
-          "manualBehaviorReviewed": 6,
-          "manualBehaviorPassed": 6,
+          "trials": 9,
+          "official": 9,
+          "functional": 9,
+          "admittedVerified": 9,
+          "actualChecks": 9,
+          "strict": 8,
+          "manualBehaviorReviewed": 9,
+          "manualBehaviorPassed": 9,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 1,
-          "tokensObserved": 1162403,
-          "estimatedUsdObserved": 0.09958992,
-          "inputTokensObserved": 1127286,
-          "outputTokensObserved": 35117,
-          "cacheReadTokensObserved": 933376,
+          "tokensObserved": 1837919,
+          "estimatedUsdObserved": 0.1533824,
+          "inputTokensObserved": 1783474,
+          "outputTokensObserved": 54445,
+          "cacheReadTokensObserved": 1492480,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 6,
-          "runnerSecondsObserved": 527.227,
+          "missingReasoningAggregates": 9,
+          "runnerSecondsObserved": 821.386,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 6,
+          "tokenCostReconciled": 9,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 6,
+          "wireMatchedTrialLedgers": 9,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 538.708459327,
+          "outerSecondsObserved": 838.832921136,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 6,
+          "suitesAndBehaviorPassed": 9,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "candidate": {
-          "trials": 6,
-          "official": 6,
-          "functional": 6,
-          "admittedVerified": 6,
-          "actualChecks": 6,
-          "strict": 5,
-          "manualBehaviorReviewed": 6,
-          "manualBehaviorPassed": 5,
+          "trials": 9,
+          "official": 9,
+          "functional": 9,
+          "admittedVerified": 9,
+          "actualChecks": 9,
+          "strict": 8,
+          "manualBehaviorReviewed": 9,
+          "manualBehaviorPassed": 8,
           "manualBehaviorFailures": 1,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 1187398,
-          "estimatedUsdObserved": 0.10648292000000002,
-          "inputTokensObserved": 1148083,
-          "outputTokensObserved": 39315,
-          "cacheReadTokensObserved": 946176,
+          "tokensObserved": 1973335,
+          "estimatedUsdObserved": 0.17103988000000003,
+          "inputTokensObserved": 1910621,
+          "outputTokensObserved": 62714,
+          "cacheReadTokensObserved": 1590784,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 6,
-          "runnerSecondsObserved": 557.392,
+          "missingReasoningAggregates": 9,
+          "runnerSecondsObserved": 875.218,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 6,
+          "tokenCostReconciled": 9,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 6,
+          "wireMatchedTrialLedgers": 9,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 568.9396627829999,
+          "outerSecondsObserved": 892.616643644999,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 6,
+          "suitesAndBehaviorPassed": 9,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "cline": {
-          "trials": 6,
-          "official": 6,
-          "functional": 6,
+          "trials": 9,
+          "official": 9,
+          "functional": 9,
           "admittedVerified": 0,
-          "actualChecks": 6,
-          "strict": 6,
-          "manualBehaviorReviewed": 6,
-          "manualBehaviorPassed": 6,
+          "actualChecks": 9,
+          "strict": 9,
+          "manualBehaviorReviewed": 9,
+          "manualBehaviorPassed": 9,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 1630140,
-          "estimatedUsdObserved": 0.14304476,
-          "inputTokensObserved": 1583737,
-          "outputTokensObserved": 46403,
-          "cacheReadTokensObserved": 1274368,
+          "tokensObserved": 2637926,
+          "estimatedUsdObserved": 0.22090732,
+          "inputTokensObserved": 2569697,
+          "outputTokensObserved": 68229,
+          "cacheReadTokensObserved": 2082816,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 6,
-          "runnerSecondsObserved": 480.607,
+          "missingReasoningAggregates": 9,
+          "runnerSecondsObserved": 817.21,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 6,
+          "tokenCostReconciled": 9,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 6,
+          "wireMatchedTrialLedgers": 9,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 491.87962484300004,
+          "outerSecondsObserved": 834.4479819129997,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 6,
+          "suitesAndBehaviorPassed": 9,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         }
@@ -601,113 +601,113 @@
       "partition": "fresh-confirmation",
       "arms": {
         "baseline": {
-          "trials": 2,
-          "official": 2,
-          "functional": 2,
-          "admittedVerified": 2,
-          "actualChecks": 2,
-          "strict": 2,
-          "manualBehaviorReviewed": 2,
-          "manualBehaviorPassed": 2,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "admittedVerified": 3,
+          "actualChecks": 3,
+          "strict": 3,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 264527,
-          "estimatedUsdObserved": 0.0270322,
-          "inputTokensObserved": 253997,
-          "outputTokensObserved": 10530,
-          "cacheReadTokensObserved": 202240,
+          "tokensObserved": 411084,
+          "estimatedUsdObserved": 0.040915759999999995,
+          "inputTokensObserved": 395338,
+          "outputTokensObserved": 15746,
+          "cacheReadTokensObserved": 316928,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 2,
-          "runnerSecondsObserved": 158.131,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 235.366,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 2,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 162.03330372099987,
+          "outerSecondsObserved": 241.33927701399975,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "candidate": {
-          "trials": 2,
-          "official": 2,
-          "functional": 2,
-          "admittedVerified": 2,
-          "actualChecks": 2,
-          "strict": 2,
-          "manualBehaviorReviewed": 2,
-          "manualBehaviorPassed": 2,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "admittedVerified": 3,
+          "actualChecks": 3,
+          "strict": 3,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 360915,
-          "estimatedUsdObserved": 0.033509880000000006,
-          "inputTokensObserved": 348255,
-          "outputTokensObserved": 12660,
-          "cacheReadTokensObserved": 285184,
+          "tokensObserved": 539077,
+          "estimatedUsdObserved": 0.04781852,
+          "inputTokensObserved": 521383,
+          "outputTokensObserved": 17694,
+          "cacheReadTokensObserved": 431616,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 2,
-          "runnerSecondsObserved": 181.052,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 256.491,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 2,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 184.784753465,
+          "outerSecondsObserved": 262.1186899649998,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "cline": {
-          "trials": 2,
-          "official": 2,
-          "functional": 2,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
           "admittedVerified": 0,
-          "actualChecks": 2,
-          "strict": 2,
-          "manualBehaviorReviewed": 2,
-          "manualBehaviorPassed": 2,
+          "actualChecks": 3,
+          "strict": 3,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 419542,
-          "estimatedUsdObserved": 0.039844920000000006,
-          "inputTokensObserved": 405729,
-          "outputTokensObserved": 13813,
-          "cacheReadTokensObserved": 321536,
+          "tokensObserved": 586493,
+          "estimatedUsdObserved": 0.056197760000000006,
+          "inputTokensObserved": 567046,
+          "outputTokensObserved": 19447,
+          "cacheReadTokensObserved": 447488,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 2,
-          "runnerSecondsObserved": 151.014,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 224.922,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 2,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 154.8022193280001,
+          "outerSecondsObserved": 230.6968084049999,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         }
@@ -718,113 +718,113 @@
       "partition": "fresh-confirmation",
       "arms": {
         "baseline": {
-          "trials": 2,
-          "official": 2,
-          "functional": 2,
-          "admittedVerified": 2,
-          "actualChecks": 2,
-          "strict": 2,
-          "manualBehaviorReviewed": 2,
-          "manualBehaviorPassed": 2,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "admittedVerified": 3,
+          "actualChecks": 3,
+          "strict": 3,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 402315,
-          "estimatedUsdObserved": 0.03000456,
-          "inputTokensObserved": 394344,
-          "outputTokensObserved": 7971,
-          "cacheReadTokensObserved": 324608,
+          "tokensObserved": 554728,
+          "estimatedUsdObserved": 0.04272188,
+          "inputTokensObserved": 543049,
+          "outputTokensObserved": 11679,
+          "cacheReadTokensObserved": 443904,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 2,
-          "runnerSecondsObserved": 152.155,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 218.612,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 2,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 155.92103999900002,
+          "outerSecondsObserved": 224.267451658,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "candidate": {
-          "trials": 2,
-          "official": 2,
-          "functional": 2,
-          "admittedVerified": 2,
-          "actualChecks": 2,
-          "strict": 2,
-          "manualBehaviorReviewed": 2,
-          "manualBehaviorPassed": 2,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "admittedVerified": 3,
+          "actualChecks": 3,
+          "strict": 3,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 289983,
-          "estimatedUsdObserved": 0.02640964,
-          "inputTokensObserved": 281849,
-          "outputTokensObserved": 8134,
-          "cacheReadTokensObserved": 220672,
+          "tokensObserved": 421997,
+          "estimatedUsdObserved": 0.041906360000000004,
+          "inputTokensObserved": 409747,
+          "outputTokensObserved": 12250,
+          "cacheReadTokensObserved": 304128,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 2,
-          "runnerSecondsObserved": 134.806,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 201.472,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 2,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 138.53664559700002,
+          "outerSecondsObserved": 207.26855556799973,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "cline": {
-          "trials": 2,
-          "official": 2,
-          "functional": 2,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
           "admittedVerified": 0,
-          "actualChecks": 2,
-          "strict": 2,
-          "manualBehaviorReviewed": 2,
-          "manualBehaviorPassed": 2,
+          "actualChecks": 3,
+          "strict": 3,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 409553,
-          "estimatedUsdObserved": 0.03659872,
-          "inputTokensObserved": 400214,
-          "outputTokensObserved": 9339,
-          "cacheReadTokensObserved": 303616,
+          "tokensObserved": 555891,
+          "estimatedUsdObserved": 0.0505552,
+          "inputTokensObserved": 542786,
+          "outputTokensObserved": 13105,
+          "cacheReadTokensObserved": 409600,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 2,
-          "runnerSecondsObserved": 116.128,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 162.558,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 2,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 119.737916501,
+          "outerSecondsObserved": 168.26308967299985,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         }
@@ -835,113 +835,113 @@
       "partition": "fresh-confirmation",
       "arms": {
         "baseline": {
-          "trials": 2,
-          "official": 2,
-          "functional": 2,
-          "admittedVerified": 2,
-          "actualChecks": 2,
-          "strict": 1,
-          "manualBehaviorReviewed": 2,
-          "manualBehaviorPassed": 2,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "admittedVerified": 3,
+          "actualChecks": 3,
+          "strict": 2,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 1,
-          "tokensObserved": 495561,
-          "estimatedUsdObserved": 0.04255316,
-          "inputTokensObserved": 478945,
-          "outputTokensObserved": 16616,
-          "cacheReadTokensObserved": 406528,
+          "tokensObserved": 872107,
+          "estimatedUsdObserved": 0.06974476,
+          "inputTokensObserved": 845087,
+          "outputTokensObserved": 27020,
+          "cacheReadTokensObserved": 731648,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 2,
-          "runnerSecondsObserved": 216.941,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 367.408,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 2,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 220.75411560700007,
+          "outerSecondsObserved": 373.2261924640002,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "candidate": {
-          "trials": 2,
-          "official": 2,
-          "functional": 2,
-          "admittedVerified": 2,
-          "actualChecks": 2,
-          "strict": 1,
-          "manualBehaviorReviewed": 2,
-          "manualBehaviorPassed": 1,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "admittedVerified": 3,
+          "actualChecks": 3,
+          "strict": 2,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 2,
           "manualBehaviorFailures": 1,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 536500,
-          "estimatedUsdObserved": 0.046563400000000005,
-          "inputTokensObserved": 517979,
-          "outputTokensObserved": 18521,
-          "cacheReadTokensObserved": 440320,
+          "tokensObserved": 1012261,
+          "estimatedUsdObserved": 0.08131500000000001,
+          "inputTokensObserved": 979491,
+          "outputTokensObserved": 32770,
+          "cacheReadTokensObserved": 855040,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 2,
-          "runnerSecondsObserved": 241.534,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 417.255,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 2,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 245.61826372099995,
+          "outerSecondsObserved": 423.2293981119995,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "cline": {
-          "trials": 2,
-          "official": 2,
-          "functional": 2,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
           "admittedVerified": 0,
-          "actualChecks": 2,
-          "strict": 2,
-          "manualBehaviorReviewed": 2,
-          "manualBehaviorPassed": 2,
+          "actualChecks": 3,
+          "strict": 3,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 801045,
-          "estimatedUsdObserved": 0.06660112,
-          "inputTokensObserved": 777794,
-          "outputTokensObserved": 23251,
-          "cacheReadTokensObserved": 649216,
+          "tokensObserved": 1495542,
+          "estimatedUsdObserved": 0.11415436000000001,
+          "inputTokensObserved": 1459865,
+          "outputTokensObserved": 35677,
+          "cacheReadTokensObserved": 1225728,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 2,
-          "runnerSecondsObserved": 213.465,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 429.73,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 2,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 217.33948901399992,
+          "outerSecondsObserved": 435.48808383499994,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         }
@@ -994,116 +994,116 @@
       "partition": "fresh-confirmation",
       "accountingTier": "wire_matched",
       "quality": {
-        "observedPairs": 6,
-        "unobservedPairs": 3,
-        "bothAudited": 4,
+        "observedPairs": 9,
+        "unobservedPairs": 0,
+        "bothAudited": 7,
         "leftOnlyAudited": 1,
         "rightOnlyAudited": 1,
         "neitherAudited": 0
       },
-      "pairs": 4,
+      "pairs": 7,
       "resources": {
         "tokens": {
-          "left": 650898,
-          "right": 666842,
-          "pairs": 4,
+          "left": 1436835,
+          "right": 1342358,
+          "pairs": 7,
           "missingPairs": 0,
-          "relativeChange": -0.023909711745810802
+          "relativeChange": 0.07038137367229913
         },
         "cost": {
-          "left": 0.059919520000000004,
-          "right": 0.05703676,
-          "pairs": 4,
+          "left": 0.12447648000000001,
+          "right": 0.11082924,
+          "pairs": 7,
           "missingPairs": 0,
-          "relativeChange": 0.05054214159429815
+          "relativeChange": 0.1231375402375765
         },
         "seconds": {
-          "left": 315.85799999999995,
-          "right": 310.286,
-          "pairs": 4,
+          "left": 633.684,
+          "right": 604.445,
+          "pairs": 7,
           "missingPairs": 0,
-          "relativeChange": 0.01795762619003094
+          "relativeChange": 0.048373301127480506
         }
       },
       "tasks": [
         {
           "id": "commander-canonical-choices",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 360915,
-              "right": 264527,
-              "pairs": 2,
+              "left": 539077,
+              "right": 411084,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.36437868346142355
+              "relativeChange": 0.3113548569148885
             },
             "cost": {
-              "left": 0.033509880000000006,
-              "right": 0.0270322,
-              "pairs": 2,
+              "left": 0.04781852,
+              "right": 0.040915759999999995,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.2396282951443096
+              "relativeChange": 0.1687066304035416
             },
             "seconds": {
-              "left": 181.052,
-              "right": 158.131,
-              "pairs": 2,
+              "left": 256.491,
+              "right": 235.36599999999999,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.14494944065363513
+              "relativeChange": 0.08975383020487238
             }
           }
         },
         {
           "id": "commander-hidden-arguments",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 289983,
-              "right": 402315,
-              "pairs": 2,
+              "left": 421997,
+              "right": 554728,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.2792140486931882
+              "relativeChange": -0.23927221989876124
             },
             "cost": {
-              "left": 0.02640964,
-              "right": 0.03000456,
-              "pairs": 2,
+              "left": 0.041906360000000004,
+              "right": 0.04272188,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.11981245517348027
+              "relativeChange": -0.01908904757936669
             },
             "seconds": {
-              "left": 134.806,
-              "right": 152.15499999999997,
-              "pairs": 2,
+              "left": 201.472,
+              "right": 218.61199999999997,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.11402188557720727
+              "relativeChange": -0.07840374727828281
             }
           }
         },
         {
           "id": "commander-environment-fallback",
-          "pairs": 0,
+          "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "pairs": 0,
+              "left": 475761,
+              "right": 376546,
+              "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": null
+              "relativeChange": 0.2634870639974931
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "pairs": 0,
+              "left": 0.03475160000000001,
+              "right": 0.0271916,
+              "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": null
+              "relativeChange": 0.27802703776166204
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "pairs": 0,
+              "left": 175.721,
+              "right": 150.467,
+              "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": null
+              "relativeChange": 0.16783746602244998
             }
           }
         }
@@ -1216,6 +1216,87 @@
               "relativeChange": 0.06224485380032618
             }
           }
+        },
+        {
+          "id": "commander-canonical-choices",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 178162,
+              "right": 146557,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.21564988366301163
+            },
+            "cost": {
+              "left": 0.014308639999999997,
+              "right": 0.01388356,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.030617507325210402
+            },
+            "seconds": {
+              "left": 75.439,
+              "right": 77.235,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.023253706221272874
+            }
+          }
+        },
+        {
+          "id": "commander-hidden-arguments",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 132014,
+              "right": 152413,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.13384028921417468
+            },
+            "cost": {
+              "left": 0.01549672,
+              "right": 0.012717319999999999,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.21855233649857064
+            },
+            "seconds": {
+              "left": 66.666,
+              "right": 66.457,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.0031448906811923916
+            }
+          }
+        },
+        {
+          "id": "commander-environment-fallback",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 475761,
+              "right": 376546,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.2634870639974931
+            },
+            "cost": {
+              "left": 0.03475160000000001,
+              "right": 0.0271916,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.27802703776166204
+            },
+            "seconds": {
+              "left": 175.721,
+              "right": 150.467,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.16783746602244998
+            }
+          }
         }
       ]
     },
@@ -1226,116 +1307,116 @@
       "partition": "fresh-confirmation",
       "accountingTier": "wire_matched",
       "quality": {
-        "observedPairs": 6,
-        "unobservedPairs": 3,
-        "bothAudited": 5,
+        "observedPairs": 9,
+        "unobservedPairs": 0,
+        "bothAudited": 8,
         "leftOnlyAudited": 0,
         "rightOnlyAudited": 1,
         "neitherAudited": 0
       },
-      "pairs": 5,
+      "pairs": 8,
       "resources": {
         "tokens": {
-          "left": 1026393,
-          "right": 1247989,
-          "pairs": 5,
+          "left": 1812330,
+          "right": 2255775,
+          "pairs": 8,
           "missingPairs": 0,
-          "relativeChange": -0.17756246248965335
+          "relativeChange": -0.19658210592811787
         },
         "cost": {
-          "left": 0.08916784000000001,
-          "right": 0.11031308,
-          "pairs": 5,
+          "left": 0.15372480000000002,
+          "right": 0.18817563999999998,
+          "pairs": 8,
           "missingPairs": 0,
-          "relativeChange": -0.19168388735043917
+          "relativeChange": -0.18307810724066065
         },
         "seconds": {
-          "left": 478.17799999999994,
-          "right": 376.7,
-          "pairs": 5,
+          "left": 796.0039999999999,
+          "right": 713.303,
+          "pairs": 8,
           "missingPairs": 0,
-          "relativeChange": 0.2693867799309795
+          "relativeChange": 0.1159409115060499
         }
       },
       "tasks": [
         {
           "id": "commander-canonical-choices",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 360915,
-              "right": 419542,
-              "pairs": 2,
+              "left": 539077,
+              "right": 586493,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.13974047890318486
+              "relativeChange": -0.0808466597214289
             },
             "cost": {
-              "left": 0.033509880000000006,
-              "right": 0.039844920000000006,
-              "pairs": 2,
+              "left": 0.04781852,
+              "right": 0.056197760000000006,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.15899241358747862
+              "relativeChange": -0.14910274003803714
             },
             "seconds": {
-              "left": 181.052,
-              "right": 151.014,
-              "pairs": 2,
+              "left": 256.491,
+              "right": 224.92200000000003,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.1989087104506866
+              "relativeChange": 0.1403553231787018
             }
           }
         },
         {
           "id": "commander-hidden-arguments",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 289983,
-              "right": 409553,
-              "pairs": 2,
+              "left": 421997,
+              "right": 555891,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.2919524457152066
+              "relativeChange": -0.24086376645781282
             },
             "cost": {
-              "left": 0.02640964,
-              "right": 0.03659872,
-              "pairs": 2,
+              "left": 0.041906360000000004,
+              "right": 0.0505552,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.2783999003243829
+              "relativeChange": -0.17107715922397693
             },
             "seconds": {
-              "left": 134.806,
-              "right": 116.128,
-              "pairs": 2,
+              "left": 201.472,
+              "right": 162.558,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.16083976302011593
+              "relativeChange": 0.23938532708325644
             }
           }
         },
         {
           "id": "commander-environment-fallback",
-          "pairs": 1,
+          "pairs": 2,
           "resources": {
             "tokens": {
-              "left": 375495,
-              "right": 418894,
-              "pairs": 1,
+              "left": 851256,
+              "right": 1113391,
+              "pairs": 2,
               "missingPairs": 0,
-              "relativeChange": -0.10360377565684875
+              "relativeChange": -0.23543840393895765
             },
             "cost": {
-              "left": 0.029248320000000005,
-              "right": 0.03386944,
-              "pairs": 1,
+              "left": 0.06399992000000002,
+              "right": 0.08142268,
+              "pairs": 2,
               "missingPairs": 0,
-              "relativeChange": -0.13643922072523185
+              "relativeChange": -0.2139792008811302
             },
             "seconds": {
-              "left": 162.32,
-              "right": 109.558,
-              "pairs": 1,
+              "left": 338.041,
+              "right": 325.823,
+              "pairs": 2,
               "missingPairs": 0,
-              "relativeChange": 0.4815896602712717
+              "relativeChange": 0.03749888743274732
             }
           }
         }
@@ -1475,6 +1556,87 @@
               "relativeChange": 0.4815896602712717
             }
           }
+        },
+        {
+          "id": "commander-canonical-choices",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 178162,
+              "right": 166951,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.06715143964396741
+            },
+            "cost": {
+              "left": 0.014308639999999997,
+              "right": 0.01635284,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.12500580938846118
+            },
+            "seconds": {
+              "left": 75.439,
+              "right": 73.908,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.020714942901986166
+            }
+          }
+        },
+        {
+          "id": "commander-hidden-arguments",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 132014,
+              "right": 146338,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.09788298323060307
+            },
+            "cost": {
+              "left": 0.01549672,
+              "right": 0.01395648,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.11036020543862057
+            },
+            "seconds": {
+              "left": 66.666,
+              "right": 46.43,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.4358388972646996
+            }
+          }
+        },
+        {
+          "id": "commander-environment-fallback",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 475761,
+              "right": 694497,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.31495600412960745
+            },
+            "cost": {
+              "left": 0.03475160000000001,
+              "right": 0.047553240000000004,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.26920647257684216
+            },
+            "seconds": {
+              "left": 175.721,
+              "right": 216.265,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.18747370124615625
+            }
+          }
         }
       ]
     },
@@ -1485,116 +1647,116 @@
       "partition": "fresh-confirmation",
       "accountingTier": "wire_matched",
       "quality": {
-        "observedPairs": 6,
-        "unobservedPairs": 3,
-        "bothAudited": 5,
+        "observedPairs": 9,
+        "unobservedPairs": 0,
+        "bothAudited": 8,
         "leftOnlyAudited": 0,
         "rightOnlyAudited": 1,
         "neitherAudited": 0
       },
-      "pairs": 5,
+      "pairs": 8,
       "resources": {
         "tokens": {
-          "left": 873260,
-          "right": 1211246,
-          "pairs": 5,
+          "left": 1548776,
+          "right": 2219032,
+          "pairs": 8,
           "missingPairs": 0,
-          "relativeChange": -0.27903993078202116
+          "relativeChange": -0.30204882128784083
         },
         "cost": {
-          "left": 0.07760531999999999,
-          "right": 0.10917531999999999,
-          "pairs": 5,
+          "left": 0.1313978,
+          "right": 0.18703788,
+          "pairs": 8,
           "missingPairs": 0,
-          "relativeChange": -0.2891679181705169
+          "relativeChange": -0.29748027511860153
         },
         "seconds": {
-          "left": 409.624,
-          "right": 371.04900000000004,
-          "pairs": 5,
+          "left": 703.783,
+          "right": 707.652,
+          "pairs": 8,
           "missingPairs": 0,
-          "relativeChange": 0.10396201040832875
+          "relativeChange": -0.0054673766201466245
         }
       },
       "tasks": [
         {
           "id": "commander-canonical-choices",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 264527,
-              "right": 419542,
-              "pairs": 2,
+              "left": 411084,
+              "right": 586493,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.36948624929089335
+              "relativeChange": -0.2990811484536048
             },
             "cost": {
-              "left": 0.0270322,
-              "right": 0.039844920000000006,
-              "pairs": 2,
+              "left": 0.040915759999999995,
+              "right": 0.056197760000000006,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.3215647063665834
+              "relativeChange": -0.2719325467776653
             },
             "seconds": {
-              "left": 158.131,
-              "right": 151.014,
-              "pairs": 2,
+              "left": 235.36599999999999,
+              "right": 224.92200000000003,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.047128080840186826
+              "relativeChange": 0.046433874854393764
             }
           }
         },
         {
           "id": "commander-hidden-arguments",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 402315,
-              "right": 409553,
-              "pairs": 2,
+              "left": 554728,
+              "right": 555891,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.017672926336762318
+              "relativeChange": -0.002092136767819608
             },
             "cost": {
-              "left": 0.03000456,
-              "right": 0.03659872,
-              "pairs": 2,
+              "left": 0.04272188,
+              "right": 0.0505552,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.1801746071993775
+              "relativeChange": -0.15494588093806383
             },
             "seconds": {
-              "left": 152.15499999999997,
-              "right": 116.128,
-              "pairs": 2,
+              "left": 218.61199999999997,
+              "right": 162.558,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.31023525764673443
+              "relativeChange": 0.34482461644459184
             }
           }
         },
         {
           "id": "commander-environment-fallback",
-          "pairs": 1,
+          "pairs": 2,
           "resources": {
             "tokens": {
-              "left": 206418,
-              "right": 382151,
-              "pairs": 1,
+              "left": 582964,
+              "right": 1076648,
+              "pairs": 2,
               "missingPairs": 0,
-              "relativeChange": -0.45985225735376856
+              "relativeChange": -0.4585379808442499
             },
             "cost": {
-              "left": 0.02056856,
-              "right": 0.03273168,
-              "pairs": 1,
+              "left": 0.047760159999999996,
+              "right": 0.08028492000000001,
+              "pairs": 2,
               "missingPairs": 0,
-              "relativeChange": -0.37160084664154114
+              "relativeChange": -0.40511667695502485
             },
             "seconds": {
-              "left": 99.338,
-              "right": 103.907,
-              "pairs": 1,
+              "left": 249.805,
+              "right": 320.17199999999997,
+              "pairs": 2,
               "missingPairs": 0,
-              "relativeChange": -0.04397201343509105
+              "relativeChange": -0.21977874392514019
             }
           }
         }
@@ -1734,6 +1896,87 @@
               "relativeChange": 0.3257917686658507
             }
           }
+        },
+        {
+          "id": "commander-canonical-choices",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 146557,
+              "right": 166951,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.12215560254206326
+            },
+            "cost": {
+              "left": 0.01388356,
+              "right": 0.01635284,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.15100007093569068
+            },
+            "seconds": {
+              "left": 77.235,
+              "right": 73.908,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.045015424581912544
+            }
+          }
+        },
+        {
+          "id": "commander-hidden-arguments",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 152413,
+              "right": 146338,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.04151348248575215
+            },
+            "cost": {
+              "left": 0.012717319999999999,
+              "right": 0.01395648,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.08878743064153716
+            },
+            "seconds": {
+              "left": 66.457,
+              "right": 46.43,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.43133749730777504
+            }
+          }
+        },
+        {
+          "id": "commander-environment-fallback",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 376546,
+              "right": 694497,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.4578147925764978
+            },
+            "cost": {
+              "left": 0.0271916,
+              "right": 0.047553240000000004,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.42818617616801724
+            },
+            "seconds": {
+              "left": 150.467,
+              "right": 216.265,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3042471042471041
+            }
+          }
         }
       ]
     },
@@ -1744,116 +1987,116 @@
       "partition": "fresh-confirmation",
       "accountingTier": "wire_matched",
       "quality": {
-        "observedPairs": 6,
-        "unobservedPairs": 3,
-        "bothAudited": 4,
+        "observedPairs": 9,
+        "unobservedPairs": 0,
+        "bothAudited": 7,
         "leftOnlyAudited": 1,
         "rightOnlyAudited": 1,
         "neitherAudited": 0
       },
-      "pairs": 6,
+      "pairs": 9,
       "resources": {
         "tokens": {
-          "left": 1187398,
-          "right": 1162403,
-          "pairs": 6,
+          "left": 1973335,
+          "right": 1837919,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": 0.02150286948674429
+          "relativeChange": 0.07367898150027297
         },
         "cost": {
-          "left": 0.10648292000000002,
-          "right": 0.09958992,
-          "pairs": 6,
+          "left": 0.17103988000000003,
+          "right": 0.1533824,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": 0.06921383208260456
+          "relativeChange": 0.11512063965617969
         },
         "seconds": {
-          "left": 557.392,
-          "right": 527.227,
-          "pairs": 6,
+          "left": 875.2180000000001,
+          "right": 821.386,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": 0.05721444463200864
+          "relativeChange": 0.06553800527401266
         }
       },
       "tasks": [
         {
           "id": "commander-canonical-choices",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 360915,
-              "right": 264527,
-              "pairs": 2,
+              "left": 539077,
+              "right": 411084,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.36437868346142355
+              "relativeChange": 0.3113548569148885
             },
             "cost": {
-              "left": 0.033509880000000006,
-              "right": 0.0270322,
-              "pairs": 2,
+              "left": 0.04781852,
+              "right": 0.040915759999999995,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.2396282951443096
+              "relativeChange": 0.1687066304035416
             },
             "seconds": {
-              "left": 181.052,
-              "right": 158.131,
-              "pairs": 2,
+              "left": 256.491,
+              "right": 235.36599999999999,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.14494944065363513
+              "relativeChange": 0.08975383020487238
             }
           }
         },
         {
           "id": "commander-hidden-arguments",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 289983,
-              "right": 402315,
-              "pairs": 2,
+              "left": 421997,
+              "right": 554728,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.2792140486931882
+              "relativeChange": -0.23927221989876124
             },
             "cost": {
-              "left": 0.02640964,
-              "right": 0.03000456,
-              "pairs": 2,
+              "left": 0.041906360000000004,
+              "right": 0.04272188,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.11981245517348027
+              "relativeChange": -0.01908904757936669
             },
             "seconds": {
-              "left": 134.806,
-              "right": 152.15499999999997,
-              "pairs": 2,
+              "left": 201.472,
+              "right": 218.61199999999997,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.11402188557720727
+              "relativeChange": -0.07840374727828281
             }
           }
         },
         {
           "id": "commander-environment-fallback",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 536500,
-              "right": 495561,
-              "pairs": 2,
+              "left": 1012261,
+              "right": 872107,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.08261142422426304
+              "relativeChange": 0.16070734439696044
             },
             "cost": {
-              "left": 0.046563400000000005,
-              "right": 0.04255316,
-              "pairs": 2,
+              "left": 0.08131500000000001,
+              "right": 0.06974476,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.09424070973812526
+              "relativeChange": 0.16589403992500662
             },
             "seconds": {
-              "left": 241.534,
-              "right": 216.94099999999997,
-              "pairs": 2,
+              "left": 417.255,
+              "right": 367.408,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.1133626193296795
+              "relativeChange": 0.13567205939990412
             }
           }
         }
@@ -2020,6 +2263,87 @@
               "relativeChange": 0.38023689871857
             }
           }
+        },
+        {
+          "id": "commander-canonical-choices",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 178162,
+              "right": 146557,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.21564988366301163
+            },
+            "cost": {
+              "left": 0.014308639999999997,
+              "right": 0.01388356,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.030617507325210402
+            },
+            "seconds": {
+              "left": 75.439,
+              "right": 77.235,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.023253706221272874
+            }
+          }
+        },
+        {
+          "id": "commander-hidden-arguments",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 132014,
+              "right": 152413,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.13384028921417468
+            },
+            "cost": {
+              "left": 0.01549672,
+              "right": 0.012717319999999999,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.21855233649857064
+            },
+            "seconds": {
+              "left": 66.666,
+              "right": 66.457,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.0031448906811923916
+            }
+          }
+        },
+        {
+          "id": "commander-environment-fallback",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 475761,
+              "right": 376546,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.2634870639974931
+            },
+            "cost": {
+              "left": 0.03475160000000001,
+              "right": 0.0271916,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.27802703776166204
+            },
+            "seconds": {
+              "left": 175.721,
+              "right": 150.467,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.16783746602244998
+            }
+          }
         }
       ]
     },
@@ -2030,116 +2354,116 @@
       "partition": "fresh-confirmation",
       "accountingTier": "wire_matched",
       "quality": {
-        "observedPairs": 6,
-        "unobservedPairs": 3,
-        "bothAudited": 5,
+        "observedPairs": 9,
+        "unobservedPairs": 0,
+        "bothAudited": 8,
         "leftOnlyAudited": 0,
         "rightOnlyAudited": 1,
         "neitherAudited": 0
       },
-      "pairs": 6,
+      "pairs": 9,
       "resources": {
         "tokens": {
-          "left": 1187398,
-          "right": 1630140,
-          "pairs": 6,
+          "left": 1973335,
+          "right": 2637926,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": -0.2715975315003619
+          "relativeChange": -0.25193693833716335
         },
         "cost": {
-          "left": 0.10648292000000002,
-          "right": 0.14304476,
-          "pairs": 6,
+          "left": 0.17103988000000003,
+          "right": 0.22090732,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": -0.2555971990864955
+          "relativeChange": -0.22573919234545947
         },
         "seconds": {
-          "left": 557.392,
-          "right": 480.607,
-          "pairs": 6,
+          "left": 875.2180000000001,
+          "right": 817.2099999999999,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": 0.159766711679189
+          "relativeChange": 0.07098297867133319
         }
       },
       "tasks": [
         {
           "id": "commander-canonical-choices",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 360915,
-              "right": 419542,
-              "pairs": 2,
+              "left": 539077,
+              "right": 586493,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.13974047890318486
+              "relativeChange": -0.0808466597214289
             },
             "cost": {
-              "left": 0.033509880000000006,
-              "right": 0.039844920000000006,
-              "pairs": 2,
+              "left": 0.04781852,
+              "right": 0.056197760000000006,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.15899241358747862
+              "relativeChange": -0.14910274003803714
             },
             "seconds": {
-              "left": 181.052,
-              "right": 151.014,
-              "pairs": 2,
+              "left": 256.491,
+              "right": 224.92200000000003,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.1989087104506866
+              "relativeChange": 0.1403553231787018
             }
           }
         },
         {
           "id": "commander-hidden-arguments",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 289983,
-              "right": 409553,
-              "pairs": 2,
+              "left": 421997,
+              "right": 555891,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.2919524457152066
+              "relativeChange": -0.24086376645781282
             },
             "cost": {
-              "left": 0.02640964,
-              "right": 0.03659872,
-              "pairs": 2,
+              "left": 0.041906360000000004,
+              "right": 0.0505552,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.2783999003243829
+              "relativeChange": -0.17107715922397693
             },
             "seconds": {
-              "left": 134.806,
-              "right": 116.128,
-              "pairs": 2,
+              "left": 201.472,
+              "right": 162.558,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.16083976302011593
+              "relativeChange": 0.23938532708325644
             }
           }
         },
         {
           "id": "commander-environment-fallback",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 536500,
-              "right": 801045,
-              "pairs": 2,
+              "left": 1012261,
+              "right": 1495542,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.3302498611189134
+              "relativeChange": -0.32314772838208494
             },
             "cost": {
-              "left": 0.046563400000000005,
-              "right": 0.06660112,
-              "pairs": 2,
+              "left": 0.08131500000000001,
+              "right": 0.11415436000000001,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.3008616071321323
+              "relativeChange": -0.2876750393064268
             },
             "seconds": {
-              "left": 241.534,
-              "right": 213.465,
-              "pairs": 2,
+              "left": 417.255,
+              "right": 429.73,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.13149228210713693
+              "relativeChange": -0.029029855956065442
             }
           }
         }
@@ -2306,6 +2630,87 @@
               "relativeChange": 0.4815896602712717
             }
           }
+        },
+        {
+          "id": "commander-canonical-choices",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 178162,
+              "right": 166951,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.06715143964396741
+            },
+            "cost": {
+              "left": 0.014308639999999997,
+              "right": 0.01635284,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.12500580938846118
+            },
+            "seconds": {
+              "left": 75.439,
+              "right": 73.908,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.020714942901986166
+            }
+          }
+        },
+        {
+          "id": "commander-hidden-arguments",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 132014,
+              "right": 146338,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.09788298323060307
+            },
+            "cost": {
+              "left": 0.01549672,
+              "right": 0.01395648,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.11036020543862057
+            },
+            "seconds": {
+              "left": 66.666,
+              "right": 46.43,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.4358388972646996
+            }
+          }
+        },
+        {
+          "id": "commander-environment-fallback",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 475761,
+              "right": 694497,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.31495600412960745
+            },
+            "cost": {
+              "left": 0.03475160000000001,
+              "right": 0.047553240000000004,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.26920647257684216
+            },
+            "seconds": {
+              "left": 175.721,
+              "right": 216.265,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.18747370124615625
+            }
+          }
         }
       ]
     },
@@ -2316,116 +2721,116 @@
       "partition": "fresh-confirmation",
       "accountingTier": "wire_matched",
       "quality": {
-        "observedPairs": 6,
-        "unobservedPairs": 3,
-        "bothAudited": 5,
+        "observedPairs": 9,
+        "unobservedPairs": 0,
+        "bothAudited": 8,
         "leftOnlyAudited": 0,
         "rightOnlyAudited": 1,
         "neitherAudited": 0
       },
-      "pairs": 6,
+      "pairs": 9,
       "resources": {
         "tokens": {
-          "left": 1162403,
-          "right": 1630140,
-          "pairs": 6,
+          "left": 1837919,
+          "right": 2637926,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": -0.2869305703804581
+          "relativeChange": -0.30327120624308646
         },
         "cost": {
-          "left": 0.09958992,
-          "right": 0.14304476,
-          "pairs": 6,
+          "left": 0.1533824,
+          "right": 0.22090732,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": -0.303784913197799
+          "relativeChange": -0.3056708125380363
         },
         "seconds": {
-          "left": 527.227,
-          "right": 480.607,
-          "pairs": 6,
+          "left": 821.386,
+          "right": 817.2099999999999,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": 0.09700233246706746
+          "relativeChange": 0.005110069627145997
         }
       },
       "tasks": [
         {
           "id": "commander-canonical-choices",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 264527,
-              "right": 419542,
-              "pairs": 2,
+              "left": 411084,
+              "right": 586493,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.36948624929089335
+              "relativeChange": -0.2990811484536048
             },
             "cost": {
-              "left": 0.0270322,
-              "right": 0.039844920000000006,
-              "pairs": 2,
+              "left": 0.040915759999999995,
+              "right": 0.056197760000000006,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.3215647063665834
+              "relativeChange": -0.2719325467776653
             },
             "seconds": {
-              "left": 158.131,
-              "right": 151.014,
-              "pairs": 2,
+              "left": 235.36599999999999,
+              "right": 224.92200000000003,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.047128080840186826
+              "relativeChange": 0.046433874854393764
             }
           }
         },
         {
           "id": "commander-hidden-arguments",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 402315,
-              "right": 409553,
-              "pairs": 2,
+              "left": 554728,
+              "right": 555891,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.017672926336762318
+              "relativeChange": -0.002092136767819608
             },
             "cost": {
-              "left": 0.03000456,
-              "right": 0.03659872,
-              "pairs": 2,
+              "left": 0.04272188,
+              "right": 0.0505552,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.1801746071993775
+              "relativeChange": -0.15494588093806383
             },
             "seconds": {
-              "left": 152.15499999999997,
-              "right": 116.128,
-              "pairs": 2,
+              "left": 218.61199999999997,
+              "right": 162.558,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.31023525764673443
+              "relativeChange": 0.34482461644459184
             }
           }
         },
         {
           "id": "commander-environment-fallback",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 495561,
-              "right": 801045,
-              "pairs": 2,
+              "left": 872107,
+              "right": 1495542,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.3813568526112765
+              "relativeChange": -0.4168622479341938
             },
             "cost": {
-              "left": 0.04255316,
-              "right": 0.06660112,
-              "pairs": 2,
+              "left": 0.06974476,
+              "right": 0.11415436000000001,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.36107440835829785
+              "relativeChange": -0.38903113293263614
             },
             "seconds": {
-              "left": 216.94099999999997,
-              "right": 213.465,
-              "pairs": 2,
+              "left": 367.408,
+              "right": 429.73,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.016283699903965276
+              "relativeChange": -0.1450259465245619
             }
           }
         }
@@ -2590,6 +2995,87 @@
               "pairs": 1,
               "missingPairs": 0,
               "relativeChange": 0.07343142445097572
+            }
+          }
+        },
+        {
+          "id": "commander-canonical-choices",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 146557,
+              "right": 166951,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.12215560254206326
+            },
+            "cost": {
+              "left": 0.01388356,
+              "right": 0.01635284,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.15100007093569068
+            },
+            "seconds": {
+              "left": 77.235,
+              "right": 73.908,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.045015424581912544
+            }
+          }
+        },
+        {
+          "id": "commander-hidden-arguments",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 152413,
+              "right": 146338,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.04151348248575215
+            },
+            "cost": {
+              "left": 0.012717319999999999,
+              "right": 0.01395648,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.08878743064153716
+            },
+            "seconds": {
+              "left": 66.457,
+              "right": 46.43,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.43133749730777504
+            }
+          }
+        },
+        {
+          "id": "commander-environment-fallback",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 376546,
+              "right": 694497,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.4578147925764978
+            },
+            "cost": {
+              "left": 0.0271916,
+              "right": 0.047553240000000004,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.42818617616801724
+            },
+            "seconds": {
+              "left": 150.467,
+              "right": 216.265,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3042471042471041
             }
           }
         }
@@ -2604,116 +3090,116 @@
       "partition": "fresh-confirmation",
       "accountingTier": "aggregate_only",
       "quality": {
-        "observedPairs": 6,
-        "unobservedPairs": 3,
-        "bothAudited": 4,
+        "observedPairs": 9,
+        "unobservedPairs": 0,
+        "bothAudited": 7,
         "leftOnlyAudited": 1,
         "rightOnlyAudited": 1,
         "neitherAudited": 0
       },
-      "pairs": 4,
+      "pairs": 7,
       "resources": {
         "tokens": {
-          "left": 650898,
-          "right": 666842,
-          "pairs": 4,
+          "left": 1436835,
+          "right": 1342358,
+          "pairs": 7,
           "missingPairs": 0,
-          "relativeChange": -0.023909711745810802
+          "relativeChange": 0.07038137367229913
         },
         "cost": {
-          "left": 0.059919520000000004,
-          "right": 0.05703676,
-          "pairs": 4,
+          "left": 0.12447648000000001,
+          "right": 0.11082924,
+          "pairs": 7,
           "missingPairs": 0,
-          "relativeChange": 0.05054214159429815
+          "relativeChange": 0.1231375402375765
         },
         "seconds": {
-          "left": 315.85799999999995,
-          "right": 310.286,
-          "pairs": 4,
+          "left": 633.684,
+          "right": 604.445,
+          "pairs": 7,
           "missingPairs": 0,
-          "relativeChange": 0.01795762619003094
+          "relativeChange": 0.048373301127480506
         }
       },
       "tasks": [
         {
           "id": "commander-canonical-choices",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 360915,
-              "right": 264527,
-              "pairs": 2,
+              "left": 539077,
+              "right": 411084,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.36437868346142355
+              "relativeChange": 0.3113548569148885
             },
             "cost": {
-              "left": 0.033509880000000006,
-              "right": 0.0270322,
-              "pairs": 2,
+              "left": 0.04781852,
+              "right": 0.040915759999999995,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.2396282951443096
+              "relativeChange": 0.1687066304035416
             },
             "seconds": {
-              "left": 181.052,
-              "right": 158.131,
-              "pairs": 2,
+              "left": 256.491,
+              "right": 235.36599999999999,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.14494944065363513
+              "relativeChange": 0.08975383020487238
             }
           }
         },
         {
           "id": "commander-hidden-arguments",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 289983,
-              "right": 402315,
-              "pairs": 2,
+              "left": 421997,
+              "right": 554728,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.2792140486931882
+              "relativeChange": -0.23927221989876124
             },
             "cost": {
-              "left": 0.02640964,
-              "right": 0.03000456,
-              "pairs": 2,
+              "left": 0.041906360000000004,
+              "right": 0.04272188,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.11981245517348027
+              "relativeChange": -0.01908904757936669
             },
             "seconds": {
-              "left": 134.806,
-              "right": 152.15499999999997,
-              "pairs": 2,
+              "left": 201.472,
+              "right": 218.61199999999997,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.11402188557720727
+              "relativeChange": -0.07840374727828281
             }
           }
         },
         {
           "id": "commander-environment-fallback",
-          "pairs": 0,
+          "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 0,
-              "right": 0,
-              "pairs": 0,
+              "left": 475761,
+              "right": 376546,
+              "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": null
+              "relativeChange": 0.2634870639974931
             },
             "cost": {
-              "left": 0,
-              "right": 0,
-              "pairs": 0,
+              "left": 0.03475160000000001,
+              "right": 0.0271916,
+              "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": null
+              "relativeChange": 0.27802703776166204
             },
             "seconds": {
-              "left": 0,
-              "right": 0,
-              "pairs": 0,
+              "left": 175.721,
+              "right": 150.467,
+              "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": null
+              "relativeChange": 0.16783746602244998
             }
           }
         }
@@ -2826,6 +3312,87 @@
               "relativeChange": 0.06224485380032618
             }
           }
+        },
+        {
+          "id": "commander-canonical-choices",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 178162,
+              "right": 146557,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.21564988366301163
+            },
+            "cost": {
+              "left": 0.014308639999999997,
+              "right": 0.01388356,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.030617507325210402
+            },
+            "seconds": {
+              "left": 75.439,
+              "right": 77.235,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.023253706221272874
+            }
+          }
+        },
+        {
+          "id": "commander-hidden-arguments",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 132014,
+              "right": 152413,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.13384028921417468
+            },
+            "cost": {
+              "left": 0.01549672,
+              "right": 0.012717319999999999,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.21855233649857064
+            },
+            "seconds": {
+              "left": 66.666,
+              "right": 66.457,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.0031448906811923916
+            }
+          }
+        },
+        {
+          "id": "commander-environment-fallback",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 475761,
+              "right": 376546,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.2634870639974931
+            },
+            "cost": {
+              "left": 0.03475160000000001,
+              "right": 0.0271916,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.27802703776166204
+            },
+            "seconds": {
+              "left": 175.721,
+              "right": 150.467,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.16783746602244998
+            }
+          }
         }
       ]
     },
@@ -2836,116 +3403,116 @@
       "partition": "fresh-confirmation",
       "accountingTier": "aggregate_only",
       "quality": {
-        "observedPairs": 6,
-        "unobservedPairs": 3,
-        "bothAudited": 5,
+        "observedPairs": 9,
+        "unobservedPairs": 0,
+        "bothAudited": 8,
         "leftOnlyAudited": 0,
         "rightOnlyAudited": 1,
         "neitherAudited": 0
       },
-      "pairs": 5,
+      "pairs": 8,
       "resources": {
         "tokens": {
-          "left": 1026393,
-          "right": 1247989,
-          "pairs": 5,
+          "left": 1812330,
+          "right": 2255775,
+          "pairs": 8,
           "missingPairs": 0,
-          "relativeChange": -0.17756246248965335
+          "relativeChange": -0.19658210592811787
         },
         "cost": {
-          "left": 0.08916784000000001,
-          "right": 0.11031308,
-          "pairs": 5,
+          "left": 0.15372480000000002,
+          "right": 0.18817563999999998,
+          "pairs": 8,
           "missingPairs": 0,
-          "relativeChange": -0.19168388735043917
+          "relativeChange": -0.18307810724066065
         },
         "seconds": {
-          "left": 478.17799999999994,
-          "right": 376.7,
-          "pairs": 5,
+          "left": 796.0039999999999,
+          "right": 713.303,
+          "pairs": 8,
           "missingPairs": 0,
-          "relativeChange": 0.2693867799309795
+          "relativeChange": 0.1159409115060499
         }
       },
       "tasks": [
         {
           "id": "commander-canonical-choices",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 360915,
-              "right": 419542,
-              "pairs": 2,
+              "left": 539077,
+              "right": 586493,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.13974047890318486
+              "relativeChange": -0.0808466597214289
             },
             "cost": {
-              "left": 0.033509880000000006,
-              "right": 0.039844920000000006,
-              "pairs": 2,
+              "left": 0.04781852,
+              "right": 0.056197760000000006,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.15899241358747862
+              "relativeChange": -0.14910274003803714
             },
             "seconds": {
-              "left": 181.052,
-              "right": 151.014,
-              "pairs": 2,
+              "left": 256.491,
+              "right": 224.92200000000003,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.1989087104506866
+              "relativeChange": 0.1403553231787018
             }
           }
         },
         {
           "id": "commander-hidden-arguments",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 289983,
-              "right": 409553,
-              "pairs": 2,
+              "left": 421997,
+              "right": 555891,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.2919524457152066
+              "relativeChange": -0.24086376645781282
             },
             "cost": {
-              "left": 0.02640964,
-              "right": 0.03659872,
-              "pairs": 2,
+              "left": 0.041906360000000004,
+              "right": 0.0505552,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.2783999003243829
+              "relativeChange": -0.17107715922397693
             },
             "seconds": {
-              "left": 134.806,
-              "right": 116.128,
-              "pairs": 2,
+              "left": 201.472,
+              "right": 162.558,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.16083976302011593
+              "relativeChange": 0.23938532708325644
             }
           }
         },
         {
           "id": "commander-environment-fallback",
-          "pairs": 1,
+          "pairs": 2,
           "resources": {
             "tokens": {
-              "left": 375495,
-              "right": 418894,
-              "pairs": 1,
+              "left": 851256,
+              "right": 1113391,
+              "pairs": 2,
               "missingPairs": 0,
-              "relativeChange": -0.10360377565684875
+              "relativeChange": -0.23543840393895765
             },
             "cost": {
-              "left": 0.029248320000000005,
-              "right": 0.03386944,
-              "pairs": 1,
+              "left": 0.06399992000000002,
+              "right": 0.08142268,
+              "pairs": 2,
               "missingPairs": 0,
-              "relativeChange": -0.13643922072523185
+              "relativeChange": -0.2139792008811302
             },
             "seconds": {
-              "left": 162.32,
-              "right": 109.558,
-              "pairs": 1,
+              "left": 338.041,
+              "right": 325.823,
+              "pairs": 2,
               "missingPairs": 0,
-              "relativeChange": 0.4815896602712717
+              "relativeChange": 0.03749888743274732
             }
           }
         }
@@ -3085,6 +3652,87 @@
               "relativeChange": 0.4815896602712717
             }
           }
+        },
+        {
+          "id": "commander-canonical-choices",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 178162,
+              "right": 166951,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.06715143964396741
+            },
+            "cost": {
+              "left": 0.014308639999999997,
+              "right": 0.01635284,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.12500580938846118
+            },
+            "seconds": {
+              "left": 75.439,
+              "right": 73.908,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.020714942901986166
+            }
+          }
+        },
+        {
+          "id": "commander-hidden-arguments",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 132014,
+              "right": 146338,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.09788298323060307
+            },
+            "cost": {
+              "left": 0.01549672,
+              "right": 0.01395648,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.11036020543862057
+            },
+            "seconds": {
+              "left": 66.666,
+              "right": 46.43,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.4358388972646996
+            }
+          }
+        },
+        {
+          "id": "commander-environment-fallback",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 475761,
+              "right": 694497,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.31495600412960745
+            },
+            "cost": {
+              "left": 0.03475160000000001,
+              "right": 0.047553240000000004,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.26920647257684216
+            },
+            "seconds": {
+              "left": 175.721,
+              "right": 216.265,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.18747370124615625
+            }
+          }
         }
       ]
     },
@@ -3095,116 +3743,116 @@
       "partition": "fresh-confirmation",
       "accountingTier": "aggregate_only",
       "quality": {
-        "observedPairs": 6,
-        "unobservedPairs": 3,
-        "bothAudited": 5,
+        "observedPairs": 9,
+        "unobservedPairs": 0,
+        "bothAudited": 8,
         "leftOnlyAudited": 0,
         "rightOnlyAudited": 1,
         "neitherAudited": 0
       },
-      "pairs": 5,
+      "pairs": 8,
       "resources": {
         "tokens": {
-          "left": 873260,
-          "right": 1211246,
-          "pairs": 5,
+          "left": 1548776,
+          "right": 2219032,
+          "pairs": 8,
           "missingPairs": 0,
-          "relativeChange": -0.27903993078202116
+          "relativeChange": -0.30204882128784083
         },
         "cost": {
-          "left": 0.07760531999999999,
-          "right": 0.10917531999999999,
-          "pairs": 5,
+          "left": 0.1313978,
+          "right": 0.18703788,
+          "pairs": 8,
           "missingPairs": 0,
-          "relativeChange": -0.2891679181705169
+          "relativeChange": -0.29748027511860153
         },
         "seconds": {
-          "left": 409.624,
-          "right": 371.04900000000004,
-          "pairs": 5,
+          "left": 703.783,
+          "right": 707.652,
+          "pairs": 8,
           "missingPairs": 0,
-          "relativeChange": 0.10396201040832875
+          "relativeChange": -0.0054673766201466245
         }
       },
       "tasks": [
         {
           "id": "commander-canonical-choices",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 264527,
-              "right": 419542,
-              "pairs": 2,
+              "left": 411084,
+              "right": 586493,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.36948624929089335
+              "relativeChange": -0.2990811484536048
             },
             "cost": {
-              "left": 0.0270322,
-              "right": 0.039844920000000006,
-              "pairs": 2,
+              "left": 0.040915759999999995,
+              "right": 0.056197760000000006,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.3215647063665834
+              "relativeChange": -0.2719325467776653
             },
             "seconds": {
-              "left": 158.131,
-              "right": 151.014,
-              "pairs": 2,
+              "left": 235.36599999999999,
+              "right": 224.92200000000003,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.047128080840186826
+              "relativeChange": 0.046433874854393764
             }
           }
         },
         {
           "id": "commander-hidden-arguments",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 402315,
-              "right": 409553,
-              "pairs": 2,
+              "left": 554728,
+              "right": 555891,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.017672926336762318
+              "relativeChange": -0.002092136767819608
             },
             "cost": {
-              "left": 0.03000456,
-              "right": 0.03659872,
-              "pairs": 2,
+              "left": 0.04272188,
+              "right": 0.0505552,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.1801746071993775
+              "relativeChange": -0.15494588093806383
             },
             "seconds": {
-              "left": 152.15499999999997,
-              "right": 116.128,
-              "pairs": 2,
+              "left": 218.61199999999997,
+              "right": 162.558,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.31023525764673443
+              "relativeChange": 0.34482461644459184
             }
           }
         },
         {
           "id": "commander-environment-fallback",
-          "pairs": 1,
+          "pairs": 2,
           "resources": {
             "tokens": {
-              "left": 206418,
-              "right": 382151,
-              "pairs": 1,
+              "left": 582964,
+              "right": 1076648,
+              "pairs": 2,
               "missingPairs": 0,
-              "relativeChange": -0.45985225735376856
+              "relativeChange": -0.4585379808442499
             },
             "cost": {
-              "left": 0.02056856,
-              "right": 0.03273168,
-              "pairs": 1,
+              "left": 0.047760159999999996,
+              "right": 0.08028492000000001,
+              "pairs": 2,
               "missingPairs": 0,
-              "relativeChange": -0.37160084664154114
+              "relativeChange": -0.40511667695502485
             },
             "seconds": {
-              "left": 99.338,
-              "right": 103.907,
-              "pairs": 1,
+              "left": 249.805,
+              "right": 320.17199999999997,
+              "pairs": 2,
               "missingPairs": 0,
-              "relativeChange": -0.04397201343509105
+              "relativeChange": -0.21977874392514019
             }
           }
         }
@@ -3344,6 +3992,87 @@
               "relativeChange": 0.3257917686658507
             }
           }
+        },
+        {
+          "id": "commander-canonical-choices",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 146557,
+              "right": 166951,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.12215560254206326
+            },
+            "cost": {
+              "left": 0.01388356,
+              "right": 0.01635284,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.15100007093569068
+            },
+            "seconds": {
+              "left": 77.235,
+              "right": 73.908,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.045015424581912544
+            }
+          }
+        },
+        {
+          "id": "commander-hidden-arguments",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 152413,
+              "right": 146338,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.04151348248575215
+            },
+            "cost": {
+              "left": 0.012717319999999999,
+              "right": 0.01395648,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.08878743064153716
+            },
+            "seconds": {
+              "left": 66.457,
+              "right": 46.43,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.43133749730777504
+            }
+          }
+        },
+        {
+          "id": "commander-environment-fallback",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 376546,
+              "right": 694497,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.4578147925764978
+            },
+            "cost": {
+              "left": 0.0271916,
+              "right": 0.047553240000000004,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.42818617616801724
+            },
+            "seconds": {
+              "left": 150.467,
+              "right": 216.265,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3042471042471041
+            }
+          }
         }
       ]
     },
@@ -3354,116 +4083,116 @@
       "partition": "fresh-confirmation",
       "accountingTier": "aggregate_only",
       "quality": {
-        "observedPairs": 6,
-        "unobservedPairs": 3,
-        "bothAudited": 4,
+        "observedPairs": 9,
+        "unobservedPairs": 0,
+        "bothAudited": 7,
         "leftOnlyAudited": 1,
         "rightOnlyAudited": 1,
         "neitherAudited": 0
       },
-      "pairs": 6,
+      "pairs": 9,
       "resources": {
         "tokens": {
-          "left": 1187398,
-          "right": 1162403,
-          "pairs": 6,
+          "left": 1973335,
+          "right": 1837919,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": 0.02150286948674429
+          "relativeChange": 0.07367898150027297
         },
         "cost": {
-          "left": 0.10648292000000002,
-          "right": 0.09958992,
-          "pairs": 6,
+          "left": 0.17103988000000003,
+          "right": 0.1533824,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": 0.06921383208260456
+          "relativeChange": 0.11512063965617969
         },
         "seconds": {
-          "left": 557.392,
-          "right": 527.227,
-          "pairs": 6,
+          "left": 875.2180000000001,
+          "right": 821.386,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": 0.05721444463200864
+          "relativeChange": 0.06553800527401266
         }
       },
       "tasks": [
         {
           "id": "commander-canonical-choices",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 360915,
-              "right": 264527,
-              "pairs": 2,
+              "left": 539077,
+              "right": 411084,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.36437868346142355
+              "relativeChange": 0.3113548569148885
             },
             "cost": {
-              "left": 0.033509880000000006,
-              "right": 0.0270322,
-              "pairs": 2,
+              "left": 0.04781852,
+              "right": 0.040915759999999995,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.2396282951443096
+              "relativeChange": 0.1687066304035416
             },
             "seconds": {
-              "left": 181.052,
-              "right": 158.131,
-              "pairs": 2,
+              "left": 256.491,
+              "right": 235.36599999999999,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.14494944065363513
+              "relativeChange": 0.08975383020487238
             }
           }
         },
         {
           "id": "commander-hidden-arguments",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 289983,
-              "right": 402315,
-              "pairs": 2,
+              "left": 421997,
+              "right": 554728,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.2792140486931882
+              "relativeChange": -0.23927221989876124
             },
             "cost": {
-              "left": 0.02640964,
-              "right": 0.03000456,
-              "pairs": 2,
+              "left": 0.041906360000000004,
+              "right": 0.04272188,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.11981245517348027
+              "relativeChange": -0.01908904757936669
             },
             "seconds": {
-              "left": 134.806,
-              "right": 152.15499999999997,
-              "pairs": 2,
+              "left": 201.472,
+              "right": 218.61199999999997,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.11402188557720727
+              "relativeChange": -0.07840374727828281
             }
           }
         },
         {
           "id": "commander-environment-fallback",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 536500,
-              "right": 495561,
-              "pairs": 2,
+              "left": 1012261,
+              "right": 872107,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.08261142422426304
+              "relativeChange": 0.16070734439696044
             },
             "cost": {
-              "left": 0.046563400000000005,
-              "right": 0.04255316,
-              "pairs": 2,
+              "left": 0.08131500000000001,
+              "right": 0.06974476,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.09424070973812526
+              "relativeChange": 0.16589403992500662
             },
             "seconds": {
-              "left": 241.534,
-              "right": 216.94099999999997,
-              "pairs": 2,
+              "left": 417.255,
+              "right": 367.408,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.1133626193296795
+              "relativeChange": 0.13567205939990412
             }
           }
         }
@@ -3630,6 +4359,87 @@
               "relativeChange": 0.38023689871857
             }
           }
+        },
+        {
+          "id": "commander-canonical-choices",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 178162,
+              "right": 146557,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.21564988366301163
+            },
+            "cost": {
+              "left": 0.014308639999999997,
+              "right": 0.01388356,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.030617507325210402
+            },
+            "seconds": {
+              "left": 75.439,
+              "right": 77.235,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.023253706221272874
+            }
+          }
+        },
+        {
+          "id": "commander-hidden-arguments",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 132014,
+              "right": 152413,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.13384028921417468
+            },
+            "cost": {
+              "left": 0.01549672,
+              "right": 0.012717319999999999,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.21855233649857064
+            },
+            "seconds": {
+              "left": 66.666,
+              "right": 66.457,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.0031448906811923916
+            }
+          }
+        },
+        {
+          "id": "commander-environment-fallback",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 475761,
+              "right": 376546,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.2634870639974931
+            },
+            "cost": {
+              "left": 0.03475160000000001,
+              "right": 0.0271916,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.27802703776166204
+            },
+            "seconds": {
+              "left": 175.721,
+              "right": 150.467,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.16783746602244998
+            }
+          }
         }
       ]
     },
@@ -3640,116 +4450,116 @@
       "partition": "fresh-confirmation",
       "accountingTier": "aggregate_only",
       "quality": {
-        "observedPairs": 6,
-        "unobservedPairs": 3,
-        "bothAudited": 5,
+        "observedPairs": 9,
+        "unobservedPairs": 0,
+        "bothAudited": 8,
         "leftOnlyAudited": 0,
         "rightOnlyAudited": 1,
         "neitherAudited": 0
       },
-      "pairs": 6,
+      "pairs": 9,
       "resources": {
         "tokens": {
-          "left": 1187398,
-          "right": 1630140,
-          "pairs": 6,
+          "left": 1973335,
+          "right": 2637926,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": -0.2715975315003619
+          "relativeChange": -0.25193693833716335
         },
         "cost": {
-          "left": 0.10648292000000002,
-          "right": 0.14304476,
-          "pairs": 6,
+          "left": 0.17103988000000003,
+          "right": 0.22090732,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": -0.2555971990864955
+          "relativeChange": -0.22573919234545947
         },
         "seconds": {
-          "left": 557.392,
-          "right": 480.607,
-          "pairs": 6,
+          "left": 875.2180000000001,
+          "right": 817.2099999999999,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": 0.159766711679189
+          "relativeChange": 0.07098297867133319
         }
       },
       "tasks": [
         {
           "id": "commander-canonical-choices",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 360915,
-              "right": 419542,
-              "pairs": 2,
+              "left": 539077,
+              "right": 586493,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.13974047890318486
+              "relativeChange": -0.0808466597214289
             },
             "cost": {
-              "left": 0.033509880000000006,
-              "right": 0.039844920000000006,
-              "pairs": 2,
+              "left": 0.04781852,
+              "right": 0.056197760000000006,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.15899241358747862
+              "relativeChange": -0.14910274003803714
             },
             "seconds": {
-              "left": 181.052,
-              "right": 151.014,
-              "pairs": 2,
+              "left": 256.491,
+              "right": 224.92200000000003,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.1989087104506866
+              "relativeChange": 0.1403553231787018
             }
           }
         },
         {
           "id": "commander-hidden-arguments",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 289983,
-              "right": 409553,
-              "pairs": 2,
+              "left": 421997,
+              "right": 555891,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.2919524457152066
+              "relativeChange": -0.24086376645781282
             },
             "cost": {
-              "left": 0.02640964,
-              "right": 0.03659872,
-              "pairs": 2,
+              "left": 0.041906360000000004,
+              "right": 0.0505552,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.2783999003243829
+              "relativeChange": -0.17107715922397693
             },
             "seconds": {
-              "left": 134.806,
-              "right": 116.128,
-              "pairs": 2,
+              "left": 201.472,
+              "right": 162.558,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.16083976302011593
+              "relativeChange": 0.23938532708325644
             }
           }
         },
         {
           "id": "commander-environment-fallback",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 536500,
-              "right": 801045,
-              "pairs": 2,
+              "left": 1012261,
+              "right": 1495542,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.3302498611189134
+              "relativeChange": -0.32314772838208494
             },
             "cost": {
-              "left": 0.046563400000000005,
-              "right": 0.06660112,
-              "pairs": 2,
+              "left": 0.08131500000000001,
+              "right": 0.11415436000000001,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.3008616071321323
+              "relativeChange": -0.2876750393064268
             },
             "seconds": {
-              "left": 241.534,
-              "right": 213.465,
-              "pairs": 2,
+              "left": 417.255,
+              "right": 429.73,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.13149228210713693
+              "relativeChange": -0.029029855956065442
             }
           }
         }
@@ -3916,6 +4726,87 @@
               "relativeChange": 0.4815896602712717
             }
           }
+        },
+        {
+          "id": "commander-canonical-choices",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 178162,
+              "right": 166951,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.06715143964396741
+            },
+            "cost": {
+              "left": 0.014308639999999997,
+              "right": 0.01635284,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.12500580938846118
+            },
+            "seconds": {
+              "left": 75.439,
+              "right": 73.908,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.020714942901986166
+            }
+          }
+        },
+        {
+          "id": "commander-hidden-arguments",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 132014,
+              "right": 146338,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.09788298323060307
+            },
+            "cost": {
+              "left": 0.01549672,
+              "right": 0.01395648,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.11036020543862057
+            },
+            "seconds": {
+              "left": 66.666,
+              "right": 46.43,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.4358388972646996
+            }
+          }
+        },
+        {
+          "id": "commander-environment-fallback",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 475761,
+              "right": 694497,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.31495600412960745
+            },
+            "cost": {
+              "left": 0.03475160000000001,
+              "right": 0.047553240000000004,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.26920647257684216
+            },
+            "seconds": {
+              "left": 175.721,
+              "right": 216.265,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.18747370124615625
+            }
+          }
         }
       ]
     },
@@ -3926,116 +4817,116 @@
       "partition": "fresh-confirmation",
       "accountingTier": "aggregate_only",
       "quality": {
-        "observedPairs": 6,
-        "unobservedPairs": 3,
-        "bothAudited": 5,
+        "observedPairs": 9,
+        "unobservedPairs": 0,
+        "bothAudited": 8,
         "leftOnlyAudited": 0,
         "rightOnlyAudited": 1,
         "neitherAudited": 0
       },
-      "pairs": 6,
+      "pairs": 9,
       "resources": {
         "tokens": {
-          "left": 1162403,
-          "right": 1630140,
-          "pairs": 6,
+          "left": 1837919,
+          "right": 2637926,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": -0.2869305703804581
+          "relativeChange": -0.30327120624308646
         },
         "cost": {
-          "left": 0.09958992,
-          "right": 0.14304476,
-          "pairs": 6,
+          "left": 0.1533824,
+          "right": 0.22090732,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": -0.303784913197799
+          "relativeChange": -0.3056708125380363
         },
         "seconds": {
-          "left": 527.227,
-          "right": 480.607,
-          "pairs": 6,
+          "left": 821.386,
+          "right": 817.2099999999999,
+          "pairs": 9,
           "missingPairs": 0,
-          "relativeChange": 0.09700233246706746
+          "relativeChange": 0.005110069627145997
         }
       },
       "tasks": [
         {
           "id": "commander-canonical-choices",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 264527,
-              "right": 419542,
-              "pairs": 2,
+              "left": 411084,
+              "right": 586493,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.36948624929089335
+              "relativeChange": -0.2990811484536048
             },
             "cost": {
-              "left": 0.0270322,
-              "right": 0.039844920000000006,
-              "pairs": 2,
+              "left": 0.040915759999999995,
+              "right": 0.056197760000000006,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.3215647063665834
+              "relativeChange": -0.2719325467776653
             },
             "seconds": {
-              "left": 158.131,
-              "right": 151.014,
-              "pairs": 2,
+              "left": 235.36599999999999,
+              "right": 224.92200000000003,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.047128080840186826
+              "relativeChange": 0.046433874854393764
             }
           }
         },
         {
           "id": "commander-hidden-arguments",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 402315,
-              "right": 409553,
-              "pairs": 2,
+              "left": 554728,
+              "right": 555891,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.017672926336762318
+              "relativeChange": -0.002092136767819608
             },
             "cost": {
-              "left": 0.03000456,
-              "right": 0.03659872,
-              "pairs": 2,
+              "left": 0.04272188,
+              "right": 0.0505552,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.1801746071993775
+              "relativeChange": -0.15494588093806383
             },
             "seconds": {
-              "left": 152.15499999999997,
-              "right": 116.128,
-              "pairs": 2,
+              "left": 218.61199999999997,
+              "right": 162.558,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.31023525764673443
+              "relativeChange": 0.34482461644459184
             }
           }
         },
         {
           "id": "commander-environment-fallback",
-          "pairs": 2,
+          "pairs": 3,
           "resources": {
             "tokens": {
-              "left": 495561,
-              "right": 801045,
-              "pairs": 2,
+              "left": 872107,
+              "right": 1495542,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.3813568526112765
+              "relativeChange": -0.4168622479341938
             },
             "cost": {
-              "left": 0.04255316,
-              "right": 0.06660112,
-              "pairs": 2,
+              "left": 0.06974476,
+              "right": 0.11415436000000001,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": -0.36107440835829785
+              "relativeChange": -0.38903113293263614
             },
             "seconds": {
-              "left": 216.94099999999997,
-              "right": 213.465,
-              "pairs": 2,
+              "left": 367.408,
+              "right": 429.73,
+              "pairs": 3,
               "missingPairs": 0,
-              "relativeChange": 0.016283699903965276
+              "relativeChange": -0.1450259465245619
             }
           }
         }
@@ -4200,6 +5091,87 @@
               "pairs": 1,
               "missingPairs": 0,
               "relativeChange": 0.07343142445097572
+            }
+          }
+        },
+        {
+          "id": "commander-canonical-choices",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 146557,
+              "right": 166951,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.12215560254206326
+            },
+            "cost": {
+              "left": 0.01388356,
+              "right": 0.01635284,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.15100007093569068
+            },
+            "seconds": {
+              "left": 77.235,
+              "right": 73.908,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.045015424581912544
+            }
+          }
+        },
+        {
+          "id": "commander-hidden-arguments",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 152413,
+              "right": 146338,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.04151348248575215
+            },
+            "cost": {
+              "left": 0.012717319999999999,
+              "right": 0.01395648,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.08878743064153716
+            },
+            "seconds": {
+              "left": 66.457,
+              "right": 46.43,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.43133749730777504
+            }
+          }
+        },
+        {
+          "id": "commander-environment-fallback",
+          "repetition": 3,
+          "resources": {
+            "tokens": {
+              "left": 376546,
+              "right": 694497,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.4578147925764978
+            },
+            "cost": {
+              "left": 0.0271916,
+              "right": 0.047553240000000004,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.42818617616801724
+            },
+            "seconds": {
+              "left": 150.467,
+              "right": 216.265,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3042471042471041
             }
           }
         }
@@ -4407,15 +5379,114 @@
         "unreportedRequestReserveUsd": 0,
         "accountedUsd": 0.03386944,
         "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-commander-canonical-choices-cline",
+        "observedUsd": 0.01635284,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01635284,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-commander-canonical-choices-baseline",
+        "observedUsd": 0.01388356,
+        "forwardedAttempts": 9,
+        "usageReports": 9,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01388356,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-commander-canonical-choices-candidate",
+        "observedUsd": 0.014308639999999997,
+        "forwardedAttempts": 11,
+        "usageReports": 11,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.014308639999999997,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-commander-hidden-arguments-baseline",
+        "observedUsd": 0.012717319999999999,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.012717319999999999,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-commander-hidden-arguments-candidate",
+        "observedUsd": 0.01549672,
+        "forwardedAttempts": 9,
+        "usageReports": 9,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01549672,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-commander-hidden-arguments-cline",
+        "observedUsd": 0.01395648,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01395648,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-commander-environment-fallback-candidate",
+        "observedUsd": 0.03475160000000001,
+        "forwardedAttempts": 18,
+        "usageReports": 18,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.03475160000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-commander-environment-fallback-cline",
+        "observedUsd": 0.047553240000000004,
+        "forwardedAttempts": 13,
+        "usageReports": 13,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.047553240000000004,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-commander-environment-fallback-baseline",
+        "observedUsd": 0.0271916,
+        "forwardedAttempts": 16,
+        "usageReports": 16,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0271916,
+        "basis": "wire/report counts; billing unknown"
       }
     ],
-    "observedUsd": 0.34911760000000003,
+    "observedUsd": 0.5453296,
     "reservedUsd": 0,
-    "accountedUsd": 0.34911760000000003
+    "accountedUsd": 0.5453296
   },
   "priorAccountedUsd": 3.7417304799999997,
-  "totalAccountedUsd": 4.09084808,
-  "referenceEquivalentEur": 3.6606763958847024,
+  "totalAccountedUsd": 4.28706008,
+  "referenceEquivalentEur": 3.836255792367529,
   "limits": {
     "authorizedEur": 10,
     "operationalUsd": 10.951612,
