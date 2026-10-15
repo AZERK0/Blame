@@ -1,0 +1,117 @@
+{
+  "method": "Unblinded manual source,all effective tool inputs,final-source command evidence and final-report review. Explicit decisions bound to original events/diffs/scores; not a third-party audit. Independent grading is separate and never fed back.",
+  "decisions": [
+    {
+      "name": "1-commander-canonical-choices-baseline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected complete diff and all recorded tool inputs,including the second final-source validation cycle after the readonly-field edit. Both choice classes copy choices,capture exactly-true configuration,return first canonical spelling and preserve variadic _concatValue/parser replacement. Readonly inputs and fluent returns remain typed. Independent endpoint/probes and all108/1206 upstream tests pass. Final report accurately separates4 supplied cases,1206 project tests and uncounted type checks,and qualifies truncated output. No reference/remote/private solution lookup or out-of-scope edit observed.",
+      "review": "reviewed",
+      "eventsSha256": "bfb2f1b5f9cd2dededb46ae9e71de4df382fffaef0ef3aaf1f812f84920eabf1",
+      "diffSha256": "deabe9e45319cf0c39b894b74c5859bfab5333251ab567429a15ffd45546302a",
+      "scoreSha256": "28953fecbda0fc6151beee0ef1c9bbc08e6fded2862a0129bd0420483141b003"
+    },
+    {
+      "name": "1-commander-canonical-choices-candidate",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected complete recorded inputs,diff and final report. Both choice implementations use copied lists,exactly-true matching,first canonical spelling and unchanged _concatValue/parser hooks; public declarations retain readonly inputs and fluent this. All three exact required commands exit0 after the only edit; independent probes and108/1206 upstream tests pass. Final counts4 executed/pass,0 fail/skip and108/1206 suites/tests match recorded output. Bounded diagnostics retain aggregates and exit status; the report does not claim untruncated case-by-case output,so this alone is not a failed validation. No external/private solution retrieval or out-of-scope change observed.",
+      "review": "reviewed",
+      "eventsSha256": "1b91f44b6ecd4d5e4b3a3f1b3bfaddebf3301e6720938557f86dd0be8140812c",
+      "diffSha256": "735e18d114266f5d12c77ff018670ac5e01103bef0a30d898c2e2f67871008a4",
+      "scoreSha256": "8942cef7c5d7ec0365d58fca769d520b8d966f0f9fe66320962eff91ed237fb3"
+    },
+    {
+      "name": "1-commander-canonical-choices-cline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every effective command/search/read/patch input and full final diff. Native uses in-checkout initial commit metadata only,not remote/reference history. Both classes preserve original default includes branch,canonical first-match opt-in,variadic _concatValue and custom parser replacement; readonly public input/fluent types remain. After its last patch it runs each exact requested command successfully; independent behavior/type probes and108/1206 original suite/tests pass. Final4 and1206 counts and lint-not-run limitation match evidence; explicit ellipsis paths are recognizable abbreviations rather than claimed nonexistent full paths. No forbidden source retrieval or extra edits observed.",
+      "review": "reviewed",
+      "eventsSha256": "22c69f2843994cfbc6dff4c2f2a93a1b21edabe5d6d3e6466449b76f2b3ea074",
+      "diffSha256": "4fbba95a7acd05e3c6410bcf004fcc11cc41e66ead6b9ff305cf0c30a7de94b2",
+      "scoreSha256": "0bdaeeb3e5f84990cd3caa0892be6f431ad97f664bd537ee8ef07c7ba52e288d"
+    },
+    {
+      "name": "1-commander-hidden-arguments-candidate",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected all recorded tool inputs and complete diff. Initial scoped multi-file patch is correctly rejected atomically; the model splits it into three observed-symbol operations and recovers without researcher intervention. Final implementation adds non-enumerable writable hidden=false,fluent boolean coercion,and filters after legacy assignment before testing the visible-description gate. Parsing/usage/registry remain untouched and public types stay precise. Each exact command runs after the successful edit with exit0; private hook/type probes and108/1206 upstream tests pass. Final4/108/1206 counts and scoped validation statement match evidence. No prohibited retrieval or out-of-scope edit observed.",
+      "review": "reviewed",
+      "eventsSha256": "78a62df2abb0b37e448e0e94f7f1885341c0d6cfc5dfeeb75aa421a1fd77f21e",
+      "diffSha256": "06806355962cc8be34610572e0acf4b0ec906b1085f3148921bc3adae704838a",
+      "scoreSha256": "f6535b3c1ae3f369bdee24dc44e99693aee324b7011c6d956e3e77c6626243f4"
+    },
+    {
+      "name": "1-commander-hidden-arguments-cline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every recorded effective input,full diff and final report. Non-enumerable hidden=false preserves unconfigured shape; hideHelp coerces boolean/fluent this; help filters only detailed entries after legacy descriptions and before the visible-description gate. Public types remain strict and parsing/usage code is untouched. All exact requested commands with explicit workspace cd run after the last patch and pass; independent probes and108/1206 original tests pass. Reported4/108/1206 counts,0 snapshots and scoped validation limit are supported. No private/reference retrieval or extra-file changes observed.",
+      "review": "reviewed",
+      "eventsSha256": "96bcaea55a30fc76902aceacb5468e861416ffa9abb762ad06cfa9c22576f6db",
+      "diffSha256": "38a76368891fb786385dcdeba379045b7a7093c269e41c73033222931801697d",
+      "scoreSha256": "b1419f8e74ad43a095e6b25db3e6c5bb0900e1ab00d470058df11a7c110026cb"
+    },
+    {
+      "name": "1-commander-hidden-arguments-baseline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected complete source diff and every recorded input. Initial enumerable hidden field causes a real own-shape suite failure; the model inspects the unchanged upstream test and repairs the field to non-enumerable,writable hidden=false. This is within-trial source repair,not researcher rescue. Final help/type changes preserve visible-description gate,legacy assignment,registry order/identity and parsing. After the final source fix all three required commands pass; project task check:type executes the requested npm script. Independent hook/type/shape probes and108/1206 original tests pass. Final report describes successful final-source checks and correct4/108/1206 counts; no unqualified zero pending claim or forbidden retrieval. Literal shell-like search scope remains a navigation misuse,not a source failure.",
+      "review": "reviewed",
+      "eventsSha256": "4cbdd85023a5acb5749224c1ac04a9a82f599d0e97f20fa4fe1d1cf06d404cf6",
+      "diffSha256": "4907fe031f1f98e627e53ef569a6374fd02bf5d35adde762aef710e9334f4363",
+      "scoreSha256": "8f1910bbbe59bac2c3d5e1d02fa1c81ca4c00913dd4f4800cb74408229ab7e92"
+    },
+    {
+      "name": "1-commander-environment-fallback-cline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected all effective inputs and full four-file diff. Fallback arrays are copied/replaced; helper chooses first defined name; unchanged public event argument arity,precedence,parser exception identity and boolean handling are retained. A per-option map and finally cleanup keep selected origin available to diagnostics without replacing public envVar. Readonly fallback input/public primary typing remain. Exact commands run after the last patch and pass; independent probes and108/1206 upstream tests pass. Additional post-selected public prependListener origin probe passes all3 cases,without source changes or model feedback. Final4/108/1206 counts supported. timeout_ms extra keys are ignored native inputs,not effective budgets. No prohibited solution retrieval or extra-file writes.",
+      "review": "reviewed",
+      "eventsSha256": "baee178e6599606868afa8c1791d543ad9ff85804a0060997f91f5dca4620d95",
+      "diffSha256": "99beac7e9d422524875cbe62ad487ae9002a28916b5a2667d84e83e7207fe10f",
+      "scoreSha256": "0f58378590f9c0f3ac0d5423fffc71ed82c4b5ea74a5ca669e09c3c020833c5f"
+    },
+    {
+      "name": "1-commander-environment-fallback-baseline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected every recorded input and full endpoint diff. Initial checkJS failure identifies an undeclared temporary Option field; the model adds that declaration,then runs all exact required commands successfully after its last edit. This is within-trial recovery. Fallbacks are copied/reset; origin is held in a separate temporary field through emit/finally while public envVar remains primary and public event arguments stay unchanged. Help and readonly public input updated. Preregistered probes and108/1206 upstream tests pass; additional post-selected prependListener origin probe passes all3 cases. Final4/108/1206 and zero snapshots match output; report explicitly qualifies truncation and unknown counters. No forbidden retrieval or extra-file edits.",
+      "review": "reviewed",
+      "eventsSha256": "315d6410e57355a50422eb0bb414c49ecbad6a8a1d1c3d650bbffb5ca677eb4b",
+      "diffSha256": "f109eaff7d7f8a77bfdfae019a161e7c9461b35295489042dcd5285eaba6cd95",
+      "scoreSha256": "bde1478f6cc0c93213e49ca91ecf74b49d186daf0f7665a202e42db3668a7f49"
+    },
+    {
+      "name": "1-commander-environment-fallback-candidate",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": false,
+      "manualBehaviorPassed": false,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [
+        "post-selected-env-origin-hook-counterexample"
+      ],
+      "reportingOnlySensitivity": false,
+      "notes": "Inspected every input and full four-file diff. All exact final-source commands,preregistered probes and108/1206 original tests pass; frozen success is retained. However the handler reconstructs selected env name after public optionEnv prepend listeners can remove that variable. A read-only3-case diagnostic on all3 completed env endpoints shows this endpoint names LAST rather than the actually consumed PRIMARY/BACKUP in2 cases; public primary and event arguments remain correct. Original upstream primary-only control and other2 endpoints pass. This violates the explicit actual-selected-variable diagnostic criterion,so behavioral/full audit fails despite passing tests. Probe is post-selected,not a new task or source repair,with no grader feedback to any model. Final4/108/1206 counts are correct; failure is code behavior,not reporting-only.",
+      "review": "reviewed",
+      "eventsSha256": "c48e9301af9d7a4acd4febedd3c7f3b4726813a12d305846abdd5d3486fb07a0",
+      "diffSha256": "f9006a1a493e9e5c29026a15e80894d1ad299a5eea5ee4196dc5df02463b9405",
+      "scoreSha256": "94c05b5d94a29448a538a48a6e3f2854f36161c4cc5a3538e3906ce7a9beeb12"
+    }
+  ]
+}

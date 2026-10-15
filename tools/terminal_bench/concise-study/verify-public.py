@@ -157,6 +157,64 @@ k=gzip.decompress((root/known['artifact']).read_bytes());assert sha(k)==known['u
 diagnostic=json.loads(k);assert len(diagnostic['rows'])==9 and known['knownDiagnosticOnly'] and known['originalGradesUnchanged']
 assert sorted(r['name'] for r in diagnostic['rows'] if r['differences'])==known['expectedRejectedEndpoints']
 assert all(r['assessedCases']==56 and r['sourceUnchanged'] and r['frozenIndependentFunctionalSuccess'] for r in diagnostic['rows'])
+# Preparation and pinned upstream bytes remain available without private workspaces.
+import io,tarfile
+prep=read('preparation-controls.json');prepared={}
+assert prep['paidRequests']==0 and not prep['modelDispatched'] and not prep['originalTestsModified']
+for entry in prep['inventory']:
+ b=gzip.decompress((root/entry['artifact']).read_bytes());assert len(b)==entry['bytes'] and sha(b)==entry['sha256'];prepared[entry['file']]=b
+assert sha(prepared['upstream-package-lock.json'])==read('execution-bindings.json')['projects']['commander']['lock']
+assert sha(prepared['upstream-source.tar'])==read('execution-bindings.json')['projects']['commander']['source']
+with tarfile.open(fileobj=io.BytesIO(prepared['upstream-source.tar'])) as archive:
+ for task in protocol['tasks']:
+  for path,digest in task['selectedSourceSha256'].items():assert sha(archive.extractfile(path).read())==digest
+# Actual first requests isolate five description fields and retain normalized prompts.
+treatment=read('schema-treatment.json');assert treatment['paidRequests']==0
+for observation in treatment['rows']:
+ name=observation['name'];request=next(q for q in wire[name] if not q.get('budgetRejected'))
+ tools=wire_data['contracts']['schema-'+request['toolsSha256']+'.json'];prompt=wire_data['contracts']['prompt-'+request['promptSha256']+'.json'];score=json.loads(raw[name,'score.json'])
+ changed={'edit_code','finish_task','read_code','run_task','search_code'}
+ stripped=[{k:v for k,v in t.items() if k!='description'} if t['name'] in changed else t for t in tools]
+ assert observation['toolsSha256']==request['toolsSha256'] and observation['promptSha256']==request['promptSha256']
+ assert observation['normalizedPromptSha256']==sha(js(prompt).replace(score['selected']['cwd'].encode(),b'<WORKSPACE>'))
+ assert observation['unchangedToolContractSha256']==sha(js(stripped))
+ assert observation['schemaBytes']==len(js(tools)) and observation['descriptionBytes']==sum(len(t['description'].encode()) for t in tools if t['name'] in changed)
+for pair in treatment['pairs']:
+ a,b=[next(r for r in treatment['rows'] if r['id']==pair['id'] and r['repetition']==pair['repetition'] and r['arm']==arm) for arm in ['baseline','candidate']]
+ assert a['normalizedPromptSha256']==b['normalizedPromptSha256'] and a['unchangedToolContractSha256']==b['unchangedToolContractSha256']
+ assert pair['normalizedPromptsMatch'] and pair['allOtherToolFieldsMatch']
+ assert close(pair['schemaRelativeChange'],b['schemaBytes']/a['schemaBytes']-1)
+ assert close(pair['descriptionRelativeChange'],b['descriptionBytes']/a['descriptionBytes']-1)
+# Additional public-hook diagnostics do not rewrite frozen independent grades.
+def origin_case_passed(case):
+ return len(case['events'])==1 and len(case['events'][0]['args'])==1 and case['events'][0]['args'][0]=='invalid' and case['events'][0]['primary']=='F30_ORIGIN_PRIMARY' and case['error'] is not None and case['error']['code']=='commander.invalidArgument' and ("from env '"+case['expected']+"'") in case['error']['message']
+for file in ['event-origin-first-diagnostic.json','event-origin-control-diagnostic.json','event-origin-diagnostic.json']:
+ if not (root/file).exists():continue
+ diagnostic=read(file);assert diagnostic['paidRequests']==0 and diagnostic['postSelectedDiagnostic'] and diagnostic['control']['passed'] and origin_case_passed(diagnostic['control'])
+ if diagnostic.get('authoredPositive') is not None:
+  authored=diagnostic['authoredPositive'];registered=next(c for c in controls['rows'] if c['kind']=='env-fallback')
+  assert authored['sourceSha256']==registered['authoredPositiveSourceSha256'] and authored['sourceUnchanged'] and authored['passedOriginalFrozenControls']
+  assert all(c['passed']==origin_case_passed(c) for c in authored['cases'])
+  assert authored['allCasesPassed']==all(c['passed'] for c in authored['cases'])
+ for row in diagnostic['rows']:
+  name=row['name'];assert row['sourceUnchanged'] and len(row['cases'])==3
+  assert row['scoreSha256']==sha(raw[name,'score.json']) and row['diffSha256']==sha(raw[name,'workspace.diff']) and row['eventsSha256']==sha(raw[name,'events.jsonl'])
+  assert row['sourceSha256']==json.loads(raw[name,'score.json'])['sourceSha256']
+  for case in row['cases']:
+   passed=origin_case_passed(case)
+   assert case['passed']==passed
+  assert row['allCasesPassed']==all(c['passed'] for c in row['cases'])
+  if not row['allCasesPassed']:assert not reviews[name]['manualBehaviorPassed'] and not reviews[name]['fullRequestCriteriaPassed']
+ if file=='event-origin-diagnostic.json' and results['completed']==results['planned']:
+  assert {r['name'] for r in diagnostic['rows']}=={r['name'] for r in rows if r['id']=='commander-environment-fallback'}
+# Registered decision gate is applied without replacing the original outcomes.
+decision=read('decision.json');contrast=next(c for c in summary['comparisons'] if c['left']=='candidate' and c['right']=='baseline' and c['tier']=='strict')
+quality=all(t['arms']['candidate']['strict']>=t['arms']['baseline']['strict'] and t['arms']['candidate']['manualBehaviorPassed']>=t['arms']['baseline']['manualBehaviorPassed'] for t in summary['tasks'])
+r=contrast['resources'];available=contrast['pairs']>0 and all(isinstance(r[k]['relativeChange'],(int,float)) for k in ['tokens','cost','seconds'])
+resource=available and (r['tokens']['relativeChange']<=-.10 or r['cost']['relativeChange']<=-.10) and r['cost']['relativeChange']<=.05 and r['seconds']['relativeChange']<=.10
+complete=results['completed']==results['planned'];expected=('retain-provisionally' if quality and resource else 'keep-prototype-isolated') if complete else 'pending-complete-panel'
+assert decision['registeredGate']==protocol['decisionGate'] and decision['complete']==complete
+assert decision['qualityGate']==quality and decision['resourceGate']==resource and decision['decision']==expected
 assert read('launch-registration.json')['protocolSha256']==sha((root/'protocol.json').read_bytes())
 assert read('launch-registration.json')['paidRequestsAtRegistration']==0
 assert results['completed']==len(rows)==len(reviews)

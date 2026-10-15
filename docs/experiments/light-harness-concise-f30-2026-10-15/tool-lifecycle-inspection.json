@@ -1,0 +1,95 @@
+{
+  "method": "Read every raw started/finished tool input independently of the driver's completed-tool ledger. Orphan, changed-input and missing-ID observations require explicit review; this extractor does not adjudicate external effects or leakage.",
+  "trials": [
+    {
+      "name": "1-commander-canonical-choices-baseline",
+      "eventsSha256": "bfb2f1b5f9cd2dededb46ae9e71de4df382fffaef0ef3aaf1f812f84920eabf1",
+      "started": 30,
+      "finished": 30,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-commander-canonical-choices-candidate",
+      "eventsSha256": "1b91f44b6ecd4d5e4b3a3f1b3bfaddebf3301e6720938557f86dd0be8140812c",
+      "started": 27,
+      "finished": 27,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-commander-canonical-choices-cline",
+      "eventsSha256": "22c69f2843994cfbc6dff4c2f2a93a1b21edabe5d6d3e6466449b76f2b3ea074",
+      "started": 12,
+      "finished": 12,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-commander-hidden-arguments-candidate",
+      "eventsSha256": "78a62df2abb0b37e448e0e94f7f1885341c0d6cfc5dfeeb75aa421a1fd77f21e",
+      "started": 31,
+      "finished": 31,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-commander-hidden-arguments-cline",
+      "eventsSha256": "96bcaea55a30fc76902aceacb5468e861416ffa9abb762ad06cfa9c22576f6db",
+      "started": 12,
+      "finished": 12,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-commander-hidden-arguments-baseline",
+      "eventsSha256": "4cbdd85023a5acb5749224c1ac04a9a82f599d0e97f20fa4fe1d1cf06d404cf6",
+      "started": 33,
+      "finished": 33,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-commander-environment-fallback-cline",
+      "eventsSha256": "baee178e6599606868afa8c1791d543ad9ff85804a0060997f91f5dca4620d95",
+      "started": 14,
+      "finished": 14,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-commander-environment-fallback-baseline",
+      "eventsSha256": "315d6410e57355a50422eb0bb414c49ecbad6a8a1d1c3d650bbffb5ca677eb4b",
+      "started": 40,
+      "finished": 40,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-commander-environment-fallback-candidate",
+      "eventsSha256": "c48e9301af9d7a4acd4febedd3c7f3b4726813a12d305846abdd5d3486fb07a0",
+      "started": 36,
+      "finished": 36,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    }
+  ]
+}

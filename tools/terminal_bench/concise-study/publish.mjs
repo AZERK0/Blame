@@ -14,7 +14,9 @@ run([process.execPath,'tools/terminal_bench/navigation-evidence/publish-wire.mjs
 run([process.execPath,'tools/terminal_bench/concise-study/postprocess.mjs',snapshot,study]);
 run([process.execPath,'tools/terminal_bench/concise-study/summarize.mjs',snapshot]);
 run([process.execPath,'tools/terminal_bench/concise-study/evidence.mjs',snapshot]);
+run([process.execPath,'tools/terminal_bench/concise-study/schema-treatment.mjs']);
 run([process.execPath,'tools/terminal_bench/concise-study/report.mjs']);
+run([process.execPath,'tools/terminal_bench/concise-study/decision.mjs']);
 const replay=run(['python','tools/terminal_bench/concise-study/verify-public.py',study]);
 await writeFile(join(study,'public-replay.json'),replay);
 const controls=run(['python','tools/terminal_bench/concise-study/publication-controls.py',study]);

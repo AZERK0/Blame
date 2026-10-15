@@ -1,0 +1,116 @@
+{
+  "paidRequests": 0,
+  "method": "Actual first-dispatch tools and system/developer prompts. Normalize only the original score-bound workspace path. Exactly five description fields are excluded for the tool-contract equality test. Bytes are not model/billed tokens and length is not isolated from wording emphasis.",
+  "rows": [
+    {
+      "name": "1-commander-canonical-choices-baseline",
+      "id": "commander-canonical-choices",
+      "repetition": 1,
+      "arm": "baseline",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "5ec9496b73c06d5dddaaeb5e689058ba1568af802e7ef7747fea50b6f2652524",
+      "normalizedPromptSha256": "61829c98eb23494e063973102999f43ebd86a3ce8a9ab4e5578091bd6b437ad6",
+      "unchangedToolContractSha256": "96ef6fa6a60eb0699b2cfb9b740750eec0adc25a1227cb9115daa92ab2be30c8",
+      "schemaBytes": 9956,
+      "descriptionBytes": 3897
+    },
+    {
+      "name": "1-commander-canonical-choices-candidate",
+      "id": "commander-canonical-choices",
+      "repetition": 1,
+      "arm": "candidate",
+      "toolsSha256": "236b5060919c68abb548ea5fab6471609e889f830d6f464e1b8e722c1fe082c1",
+      "promptSha256": "5532e9cd2f0c17b8dfd2f5bc7084d8b0f7ce615a57ef91274c7b53c3673c4150",
+      "normalizedPromptSha256": "61829c98eb23494e063973102999f43ebd86a3ce8a9ab4e5578091bd6b437ad6",
+      "unchangedToolContractSha256": "96ef6fa6a60eb0699b2cfb9b740750eec0adc25a1227cb9115daa92ab2be30c8",
+      "schemaBytes": 8157,
+      "descriptionBytes": 2108
+    },
+    {
+      "name": "1-commander-hidden-arguments-candidate",
+      "id": "commander-hidden-arguments",
+      "repetition": 1,
+      "arm": "candidate",
+      "toolsSha256": "236b5060919c68abb548ea5fab6471609e889f830d6f464e1b8e722c1fe082c1",
+      "promptSha256": "0c22c0d0fb3796e2ac80f7656fd72e363ece289d05d7f9bd25b9cc4aad4caa7d",
+      "normalizedPromptSha256": "7f482b45b527d910b79253b493fa26c9ff48d995b9c27278032bed803d09374f",
+      "unchangedToolContractSha256": "96ef6fa6a60eb0699b2cfb9b740750eec0adc25a1227cb9115daa92ab2be30c8",
+      "schemaBytes": 8157,
+      "descriptionBytes": 2108
+    },
+    {
+      "name": "1-commander-hidden-arguments-baseline",
+      "id": "commander-hidden-arguments",
+      "repetition": 1,
+      "arm": "baseline",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "95c7d4a926970d055e0cd2829f121db3cd7aeb14a9f9dcb3c5817552c1c69eda",
+      "normalizedPromptSha256": "7f482b45b527d910b79253b493fa26c9ff48d995b9c27278032bed803d09374f",
+      "unchangedToolContractSha256": "96ef6fa6a60eb0699b2cfb9b740750eec0adc25a1227cb9115daa92ab2be30c8",
+      "schemaBytes": 9956,
+      "descriptionBytes": 3897
+    },
+    {
+      "name": "1-commander-environment-fallback-baseline",
+      "id": "commander-environment-fallback",
+      "repetition": 1,
+      "arm": "baseline",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "95ab6d8db90e74abfec3e5957e9f4c1bb929f9e53274e85a52be2c32eb4606f9",
+      "normalizedPromptSha256": "1be5c53219af5428f7fe74a8a0b77155b10cabb4e5a0f3fa9ae156dbb57aea13",
+      "unchangedToolContractSha256": "96ef6fa6a60eb0699b2cfb9b740750eec0adc25a1227cb9115daa92ab2be30c8",
+      "schemaBytes": 9956,
+      "descriptionBytes": 3897
+    },
+    {
+      "name": "1-commander-environment-fallback-candidate",
+      "id": "commander-environment-fallback",
+      "repetition": 1,
+      "arm": "candidate",
+      "toolsSha256": "236b5060919c68abb548ea5fab6471609e889f830d6f464e1b8e722c1fe082c1",
+      "promptSha256": "1865e7bbf94c55bb1943971400f5768a467c67dbb83e79918e6f4e10b2c51fd8",
+      "normalizedPromptSha256": "1be5c53219af5428f7fe74a8a0b77155b10cabb4e5a0f3fa9ae156dbb57aea13",
+      "unchangedToolContractSha256": "96ef6fa6a60eb0699b2cfb9b740750eec0adc25a1227cb9115daa92ab2be30c8",
+      "schemaBytes": 8157,
+      "descriptionBytes": 2108
+    }
+  ],
+  "pairs": [
+    {
+      "id": "commander-canonical-choices",
+      "repetition": 1,
+      "normalizedPromptsMatch": true,
+      "allOtherToolFieldsMatch": true,
+      "baselineSchemaBytes": 9956,
+      "candidateSchemaBytes": 8157,
+      "schemaRelativeChange": -0.1806950582563278,
+      "baselineDescriptionBytes": 3897,
+      "candidateDescriptionBytes": 2108,
+      "descriptionRelativeChange": -0.45907108031819344
+    },
+    {
+      "id": "commander-hidden-arguments",
+      "repetition": 1,
+      "normalizedPromptsMatch": true,
+      "allOtherToolFieldsMatch": true,
+      "baselineSchemaBytes": 9956,
+      "candidateSchemaBytes": 8157,
+      "schemaRelativeChange": -0.1806950582563278,
+      "baselineDescriptionBytes": 3897,
+      "candidateDescriptionBytes": 2108,
+      "descriptionRelativeChange": -0.45907108031819344
+    },
+    {
+      "id": "commander-environment-fallback",
+      "repetition": 1,
+      "normalizedPromptsMatch": true,
+      "allOtherToolFieldsMatch": true,
+      "baselineSchemaBytes": 9956,
+      "candidateSchemaBytes": 8157,
+      "schemaRelativeChange": -0.1806950582563278,
+      "baselineDescriptionBytes": 3897,
+      "candidateDescriptionBytes": 2108,
+      "descriptionRelativeChange": -0.45907108031819344
+    }
+  ]
+}

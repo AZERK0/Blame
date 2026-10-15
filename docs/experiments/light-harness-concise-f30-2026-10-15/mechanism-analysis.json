@@ -1,0 +1,663 @@
+{
+  "method": "F30 SHA-bound finished tools, full command outcomes, check journals and original independent scores. Three arms and three fresh constructed multi-file tasks; earlier outcomes remain separate. No source repair,rescoring,oracle feedback or solution recovery. Apparent navigation repetition is descriptive and not automatically an error.",
+  "rows": [
+    {
+      "name": "1-commander-canonical-choices-baseline",
+      "id": "commander-canonical-choices",
+      "arm": "baseline",
+      "repetition": 1,
+      "searchCalls": 4,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 15,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 15,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "choices(",
+            "scope": [
+              "tests",
+              "typings",
+              "lib"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "readonly",
+            "scope": "typings/index.d.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "Options {",
+            "scope": "typings/index.d.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "readonly .*?:",
+            "scope": "typings/index.d.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "bfb2f1b5f9cd2dededb46ae9e71de4df382fffaef0ef3aaf1f812f84920eabf1",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-commander-canonical-choices-candidate",
+      "id": "commander-canonical-choices",
+      "arm": "candidate",
+      "repetition": 1,
+      "searchCalls": 6,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 16,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 16,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "choices(",
+            "scope": [
+              "lib/option.js",
+              "lib/argument.js",
+              "typings/index.d.ts",
+              "tests/argument.choices.test.js",
+              "tests/options.choices.test.js",
+              "tests/agent-choices.cjs"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "choices",
+            "scope": "typings/index.d.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "readonly .*?: boolean",
+            "scope": "typings/index.d.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "options?: {",
+            "scope": "typings/index.d.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "choices(",
+            "scope": "tests",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "argChoices",
+            "scope": [
+              "lib",
+              "tests",
+              "typings"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "1b91f44b6ecd4d5e4b3a3f1b3bfaddebf3301e6720938557f86dd0be8140812c",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-commander-canonical-choices-cline",
+      "id": "commander-canonical-choices",
+      "arm": "cline",
+      "repetition": 1,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 4,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 20,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "22c69f2843994cfbc6dff4c2f2a93a1b21edabe5d6d3e6466449b76f2b3ea074",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-commander-hidden-arguments-candidate",
+      "id": "commander-hidden-arguments",
+      "arm": "candidate",
+      "repetition": 1,
+      "searchCalls": 7,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 17,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 1,
+      "activeCaseCaptions": 0,
+      "readTargets": 17,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 1,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "class Argument",
+            "scope": [
+              "lib/argument.js",
+              "lib/help.js",
+              "typings/index.d.ts"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "visibleArguments hideHelp Argument",
+            "scope": "tests",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "class Argument ArgumentOptions",
+            "scope": "typings/index.d.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "visibleArguments",
+            "scope": "lib/help.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 3
+        },
+        {
+          "input": {
+            "query": "hideHelp",
+            "scope": [
+              "lib/option.js",
+              "typings/index.d.ts"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "registeredArguments",
+            "scope": "lib",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "arguments",
+            "scope": "lib/command.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "78a62df2abb0b37e448e0e94f7f1885341c0d6cfc5dfeeb75aa421a1fd77f21e",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-commander-hidden-arguments-cline",
+      "id": "commander-hidden-arguments",
+      "arm": "cline",
+      "repetition": 1,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 4,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 17,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "96bcaea55a30fc76902aceacb5468e861416ffa9abb762ad06cfa9c22576f6db",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-commander-hidden-arguments-baseline",
+      "id": "commander-hidden-arguments",
+      "arm": "baseline",
+      "repetition": 1,
+      "searchCalls": 5,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 18,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 18,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "visibleArguments",
+            "scope": [
+              "lib",
+              "tests"
+            ]
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "argumentDescription",
+            "scope": [
+              "lib",
+              "tests"
+            ]
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "hideHelp",
+            "scope": [
+              "lib",
+              "tests",
+              "typings"
+            ]
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "Object.keys(new commander.Argument",
+            "scope": "tests"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "registeredArguments",
+            "scope": "tests/help* tests | head",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "4cbdd85023a5acb5749224c1ac04a9a82f599d0e97f20fa4fe1d1cf06d404cf6",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-commander-environment-fallback-cline",
+      "id": "commander-environment-fallback",
+      "arm": "cline",
+      "repetition": 1,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 6,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 30,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "baee178e6599606868afa8c1791d543ad9ff85804a0060997f91f5dca4620d95",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-commander-environment-fallback-baseline",
+      "id": "commander-environment-fallback",
+      "arm": "baseline",
+      "repetition": 1,
+      "searchCalls": 12,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 3,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 20,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 20,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "envVar env(",
+            "scope": "lib"
+          },
+          "status": "ok",
+          "resultCount": 7
+        },
+        {
+          "input": {
+            "query": "optionEnv",
+            "scope": "lib"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "envVar",
+            "scope": "typings/index.d.ts"
+          },
+          "status": "ok",
+          "resultCount": 1
+        },
+        {
+          "input": {
+            "query": "envVar",
+            "scope": [
+              "lib",
+              "tests",
+              "typings"
+            ]
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "parseOptionsEnv",
+            "scope": "tests"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "optionEnv:",
+            "scope": "lib"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "optionEnv",
+            "scope": "tests"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getOptionValueSource",
+            "scope": "lib/command.js"
+          },
+          "status": "ok",
+          "resultCount": 6
+        },
+        {
+          "input": {
+            "query": "Invalid value",
+            "scope": "lib/command.js"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "envVarFallback",
+            "scope": "."
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "envVar",
+            "scope": "Readme.md"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "envVarFallbacks",
+            "scope": "."
+          },
+          "status": "ok",
+          "resultCount": 5
+        }
+      ],
+      "eventsSha256": "315d6410e57355a50422eb0bb414c49ecbad6a8a1d1c3d650bbffb5ca677eb4b",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-commander-environment-fallback-candidate",
+      "id": "commander-environment-fallback",
+      "arm": "candidate",
+      "repetition": 1,
+      "searchCalls": 8,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 22,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 22,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "env(",
+            "scope": [
+              "lib",
+              "typings",
+              "tests"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "envVar",
+            "scope": [
+              "lib",
+              "typings"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "optionEnv",
+            "scope": [
+              "lib",
+              "typings",
+              "tests"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "_callParseArg",
+            "scope": "lib/command.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 3
+        },
+        {
+          "input": {
+            "query": "envVar",
+            "scope": "lib",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "envVar",
+            "scope": "typings/index.d.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 1
+        },
+        {
+          "input": {
+            "query": "_optionValuesSource",
+            "scope": "lib/command.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getOptionValueSource",
+            "scope": "lib/command.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "c48e9301af9d7a4acd4febedd3c7f3b4726813a12d305846abdd5d3486fb07a0",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    }
+  ]
+}

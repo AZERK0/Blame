@@ -37,9 +37,9 @@ with tempfile.TemporaryDirectory(prefix='blame-publication-controls-') as direct
  summary=json.loads((study/'guidance-summary.json').read_text());summary['accounting']['accountedUsd']+=0.01
  put('guidance-summary.json',summary);rejected('Changed financial reserve/subtotal');restore('guidance-summary.json')
  review=json.loads((study/'source-review.json').read_text())
- behavioral=next((r for r in review['decisions'] if r.get('manualBehaviorPassed') is False),None)
+ behavioral=next((r for r in review['decisions'] if isinstance(r.get('manualBehaviorPassed'),bool)),None)
  if behavioral is not None:
-  behavioral['manualBehaviorPassed']=True
+  behavioral['manualBehaviorPassed']=not behavioral['manualBehaviorPassed']
   put('source-review.json',review);rejected('Changed audited behavior inconsistent with recorded criteria');restore('source-review.json')
  wire=json.loads(gzip.decompress((study/'wire-contracts.json.gz').read_bytes()))
  wire['trials'][0]['requests'][0]['model']='unregistered-model'

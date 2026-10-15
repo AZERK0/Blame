@@ -1,0 +1,67 @@
+{
+  "method": "Apply preregistered observed-quality and paired-resource gates,not a statistical population-equivalence test. Local controls passed before dispatch; complete non-description execution text is unchanged.",
+  "completed": 9,
+  "planned": 27,
+  "complete": false,
+  "registeredGate": {
+    "qualityFirst": "Do not promote if candidate has fewer full audited completions or behavior passes than baseline in any task cluster, or introduces a reproducible behavior/type defect in the local guards. Keep stochastic and causal attribution limits explicit.",
+    "resourceSignal": "At no lower audited quality, look for at least10% reduction in strict paired tokens or estimated cost, with estimated cost increase no greater than5% and worker time increase no greater than10%. A selected-success subset cannot override all-attempt quality.",
+    "retain": "If quality and resource gates pass across this fixed panel, retain concise descriptions provisionally with unchanged runtime guards; still require independent real-issue confirmation before a population gain claim.",
+    "mixedOrAdverse": "Keep the prototype isolated and investigate the observed mediator; do not extend the panel or revise criteria after outcomes to force a positive result."
+  },
+  "tasks": [
+    {
+      "id": "commander-canonical-choices",
+      "baselineFull": 1,
+      "candidateFull": 1,
+      "baselineBehavior": 1,
+      "candidateBehavior": 1,
+      "noLowerObservedQuality": true
+    },
+    {
+      "id": "commander-hidden-arguments",
+      "baselineFull": 1,
+      "candidateFull": 1,
+      "baselineBehavior": 1,
+      "candidateBehavior": 1,
+      "noLowerObservedQuality": true
+    },
+    {
+      "id": "commander-environment-fallback",
+      "baselineFull": 1,
+      "candidateFull": 0,
+      "baselineBehavior": 1,
+      "candidateBehavior": 0,
+      "noLowerObservedQuality": false
+    }
+  ],
+  "qualityGate": false,
+  "resourceGate": true,
+  "resourcesAvailable": true,
+  "eligiblePairs": 2,
+  "resources": {
+    "tokens": {
+      "left": 222268,
+      "right": 388509,
+      "pairs": 2,
+      "missingPairs": 0,
+      "relativeChange": -0.4278948492827708
+    },
+    "cost": {
+      "left": 0.024464720000000002,
+      "right": 0.02974172,
+      "pairs": 2,
+      "missingPairs": 0,
+      "relativeChange": -0.17742753277214618
+    },
+    "seconds": {
+      "left": 125.76499999999999,
+      "right": 165.7,
+      "pairs": 2,
+      "missingPairs": 0,
+      "relativeChange": -0.24100784550392274
+    }
+  },
+  "decision": "pending-complete-panel",
+  "limitation": "Three constructed clusters on one new project,dependent repeats,unblinded model labels/review and unknown provider revision/seeds limit external validity. Length and wording emphasis are not separately identified. A selected successful subset cannot erase all-attempt failures. No outcome-based extra trials."
+}

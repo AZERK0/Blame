@@ -1,0 +1,70 @@
+{
+  "artifact": "added-test-sources.json.gz",
+  "sha256": "952ecf46d3e3e6aa219cc1d5679f9672b7314199dffda5dd06117c76f9dc3b3a",
+  "sources": [],
+  "journals": [
+    {
+      "name": "1-commander-canonical-choices-baseline",
+      "file": "3f6ea5c11be9d46166d88ba3.jsonl",
+      "artifact": "journals/1-commander-canonical-choices-baseline.3f6ea5c11be9d46166d88ba3.jsonl.gz",
+      "bytes": 434369,
+      "sha256": "4de593f77f933fd0e74bad747b6e4279eca92647accf95ea6763de87ecbad92c"
+    },
+    {
+      "name": "1-commander-canonical-choices-candidate",
+      "file": "cbd2467ce5e01002692f69d7.jsonl",
+      "artifact": "journals/1-commander-canonical-choices-candidate.cbd2467ce5e01002692f69d7.jsonl.gz",
+      "bytes": 320981,
+      "sha256": "68d6a60d8844afad6d0df751d51a5d0edba9f58d34d146e662104b5e609169cf"
+    },
+    {
+      "name": "1-commander-canonical-choices-cline",
+      "file": "a4b0b59bbfdaf3c59f691464.jsonl",
+      "artifact": "journals/1-commander-canonical-choices-cline.a4b0b59bbfdaf3c59f691464.jsonl.gz",
+      "bytes": 79,
+      "sha256": "4d2710cb7c13a361250f8329c64a8996700382650f0cc8ed50eb50e927c57c61"
+    },
+    {
+      "name": "1-commander-hidden-arguments-candidate",
+      "file": "02fd17342cdfaa6190116614.jsonl",
+      "artifact": "journals/1-commander-hidden-arguments-candidate.02fd17342cdfaa6190116614.jsonl.gz",
+      "bytes": 307516,
+      "sha256": "fea4aeff6d638288f6d5ac863366d384ffce71d642cee20ef5c832a0c4a4f3d8"
+    },
+    {
+      "name": "1-commander-hidden-arguments-cline",
+      "file": "d70b91cbeb6c00846afd53c3.jsonl",
+      "artifact": "journals/1-commander-hidden-arguments-cline.d70b91cbeb6c00846afd53c3.jsonl.gz",
+      "bytes": 79,
+      "sha256": "d5f8919daa5b406a7db030094ce0f59795c20a26bef2464b99fc733c858e1b14"
+    },
+    {
+      "name": "1-commander-hidden-arguments-baseline",
+      "file": "6d4da1404eb7d795d9e6f4ff.jsonl",
+      "artifact": "journals/1-commander-hidden-arguments-baseline.6d4da1404eb7d795d9e6f4ff.jsonl.gz",
+      "bytes": 685357,
+      "sha256": "3ff4a2a4877ee8c21de99c9ab68c22c27ae22741f00f8eaddf750db53c385d97"
+    },
+    {
+      "name": "1-commander-environment-fallback-cline",
+      "file": "83151d0444012433a9929484.jsonl",
+      "artifact": "journals/1-commander-environment-fallback-cline.83151d0444012433a9929484.jsonl.gz",
+      "bytes": 79,
+      "sha256": "d60909686990f8463fbb4072dbf7d6c2d82bb3e152ff0f828f69d3458a6d07c7"
+    },
+    {
+      "name": "1-commander-environment-fallback-baseline",
+      "file": "2ea53ca18ebcf895edc6f98a.jsonl",
+      "artifact": "journals/1-commander-environment-fallback-baseline.2ea53ca18ebcf895edc6f98a.jsonl.gz",
+      "bytes": 1127865,
+      "sha256": "d42af95f7f7dcfb38c1eb0f9fe71a343460572f1cac53e5cb880f87fa0bcb9fc"
+    },
+    {
+      "name": "1-commander-environment-fallback-candidate",
+      "file": "68b883501cef780e8b1ea97e.jsonl",
+      "artifact": "journals/1-commander-environment-fallback-candidate.68b883501cef780e8b1ea97e.jsonl.gz",
+      "bytes": 1210822,
+      "sha256": "08eec4a937dedd7d8ffa3c8032a8e59b3314764f49975ef911fb6c95a2245868"
+    }
+  ]
+}
