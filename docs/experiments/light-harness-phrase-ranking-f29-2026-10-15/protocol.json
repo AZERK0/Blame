@@ -262,7 +262,9 @@
     "docs/experiments/light-harness-phrase-ranking-f29-2026-10-15/task-selection.json",
     "docs/experiments/light-harness-phrase-ranking-f29-2026-10-15/local-controls.json",
     "docs/experiments/light-harness-phrase-ranking-f29-2026-10-15/candidate.patch",
-    "docs/experiments/light-harness-phrase-ranking-f29-2026-10-15/prior-budget.json"
+    "docs/experiments/light-harness-phrase-ranking-f29-2026-10-15/prior-budget.json",
+    "docs/experiments/light-harness-phrase-ranking-f29-2026-10-15/contract-controls.json",
+    "docs/experiments/light-harness-phrase-ranking-f29-2026-10-15/contract-test-source.ts"
   ],
   "hypothesis": {
     "mechanism": "Common OR terms fill the32-match lexical pool before late declarations are ranked. A separate bounded contiguous-term pass prioritizes specific matches; original OR fallback,path priority,limits,scope and read-before-edit authority remain.",
@@ -278,7 +280,7 @@
       "Node fallback prioritizes within each visited file,not a global exhaustive ranking"
     ]
   },
-  "audit": "Official completion,functional endpoint,actual requested checks,admitted verification and truthful full criteria are separate. Unqualified zero-skipped claims fail when no skipped count exists; qualified unknown/runner-specific counts remain distinct. Source regions explicitly allow supporting imports for the abort task. No post-result permission changes.",
+  "audit": "Official completion,functional endpoint,actual requested checks,admitted verification and truthful full criteria are separate. Unqualified zero-skipped claims fail when no skipped count exists; qualified unknown/runner-specific counts remain distinct. No post-result permission changes.",
   "decision": "Two fresh constructed tasks in one familiar monolithic project and related option-extension family,three dependent repeats,18 fixed assignments. Known F28 searches are mechanism diagnostics only. Preserve every failure,timeout,missing usage and unexecuted slot. No model retry,source repair,reference recovery or grader feedback. Raw output alone does not establish model-visible evidence; unblinded audit and arm-labeled checkout limitations remain. No population-equivalence or universally optimal ranking claim.",
   "priorCampaignRule": "F28 contributes only its completed cumulative observed/reserved financial ledger. Keep outcome cohorts,versions,tasks and conditional efficiency comparisons separate."
 }

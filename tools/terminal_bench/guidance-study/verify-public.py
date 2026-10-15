@@ -132,6 +132,18 @@ for stage in ['before','after']:
    assert diagnostic['sourceBeforeSha256']==before['sourceBeforeSha256']
    assert diagnostic['editModuleSha256']!=before['editModuleSha256']
 evidence=read('evidence-checks.json')
+if (root/'header-correction-validation.json').exists():
+ header=read('header-correction-validation.json');logs={}
+ assert header['paidRequests']==0 and header['focusedTestsPassed']==25
+ assert header['implementedAfterFrozenTreatments'] and not header['modelBenefitMeasured']
+ assert header['f28FrozenInputsUnchanged'] and header['recordedRejectionSourceUnchanged']
+ for entry in header['inventory']:
+  data=gzip.decompress((root/entry['artifact']).read_bytes())
+  assert len(data)==entry['bytes'] and sha(data)==entry['sha256']
+  logs[entry['artifact']]=data.decode()
+ assert "actual: 'multiple_files_for_symbol'" in logs['local-validation/header-test-before.log.gz']
+ assert 'tests 25' in logs['local-validation/header-tests-after.log.gz'] and 'pass 25' in logs['local-validation/header-tests-after.log.gz']
+ assert not logs['local-validation/header-lint-correct-cwd.log.gz']
 for audit in evidence['audits']:
  b=gzip.decompress((root/audit['artifact']).read_bytes());assert len(b)==audit['bytes'] and sha(b)==audit['sha256']
  assert [json.loads(line) for line in b.splitlines() if line]==audit['records']

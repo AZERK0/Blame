@@ -195,6 +195,24 @@ assert local['paidRequests']==0 and local['prototypeOnly']
 assert len(local['rows'])==16 and len(local['real'])==8
 assert isolation['frozenModuleHashes']==local['bindings']
 assert isolation['differentExecutableFiles']==['harness/light-navigation.js','harness/light-workspace.js']
+contracts=read('contract-controls.json');contract_logs={}
+assert contracts['paidRequests']==0 and contracts['bindings']==local['bindings']
+assert sha((root/contracts['testSource']['artifact']).read_bytes())==contracts['testSource']['sha256']
+assert contracts['baseline']['pass']==6 and contracts['baseline']['fail']==2
+assert contracts['candidate']['pass']==8 and contracts['candidate']['fail']==0
+for entry in contracts['inventory']:
+ data=gzip.decompress((root/entry['artifact']).read_bytes())
+ assert len(data)==entry['bytes'] and sha(data)==entry['sha256']
+ contract_logs[entry['artifact']]=data.decode()
+assert 'pass 8' in contract_logs['local-validation/phrase-tests-candidate-final.log.gz'] and 'fail 0' in contract_logs['local-validation/phrase-tests-candidate-final.log.gz']
+assert 'pass 6' in contract_logs['local-validation/phrase-tests-baseline-final.log.gz'] and 'fail 2' in contract_logs['local-validation/phrase-tests-baseline-final.log.gz']
+latency=read('latency-controls.json')
+assert latency['paidRequests']==0 and latency['bindings']==local['bindings']
+assert len(latency['rows'])==120
+for group in latency['groups']:
+ values=sorted(r['durationMs'] for r in latency['rows'] if all(r[k]==group[k] for k in ['engine','query','arm']) and not r['warmup'])
+ assert group['n']==len(values)==9
+ assert close(group['medianMs'],values[4]) and close(group['minimumMs'],values[0]) and close(group['maximumMs'],values[-1])
 assert sha((root/'candidate.patch').read_bytes())==read('execution-bindings.json')['versions']['candidate']['source']['patchSha256']
 assert sha(b'')==read('execution-bindings.json')['versions']['baseline']['source']['patchSha256']
 for row in local['real']:

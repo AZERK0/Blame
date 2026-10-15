@@ -13,6 +13,10 @@
     {
       "issue": "Initial isolation assertion allowed only two JavaScript files; compiler also changed their declaration source maps.",
       "correction": "Require exactly those two executable files and the corresponding two .d.ts.map files. Preserve the first freeze directories; no model dispatch."
+    },
+    {
+      "issue": "Initial new path-precedence test expected result kind file; actual existing public contract uses path. Both candidate engines correctly kept matching paths first.",
+      "correction": "Correct only that test expectation before any F29 model call; preserve original source/log. Candidate runtime and all task graders unchanged. Final controls baseline6/8,candidate8/8."
     }
   ]
 }

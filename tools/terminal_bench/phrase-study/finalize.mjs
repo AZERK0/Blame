@@ -24,7 +24,7 @@ for(const name of ['guidance-summary.json','public-replay.json','checks.json']){
 assert.equal(parsed('checks.json').reviewedTraces,108);
 assert.equal(parsed('publication-controls.json').validReplayPassed,true);
 assert(parsed('publication-controls.json').negativeControls.every(c=>c.rejected));
-assert.equal(parsed('public-replay.json').totalAccountedUsd,summary.totalAccountedUsd);
+assert(Math.abs(parsed('public-replay.json').totalAccountedUsd-summary.totalAccountedUsd)<1e-10);
 const previous=shared.priorAccounting.map(e=>e.accounting);
 const observedUsd=previous.reduce((n,e)=>n+e.observedUsd,0)+summary.accounting.observedUsd;
 const reservedUsd=previous.reduce((n,e)=>n+e.reservedUsd,0)+summary.accounting.reservedUsd;
@@ -32,6 +32,11 @@ assert(Math.abs(observedUsd+reservedUsd-summary.totalAccountedUsd)<1e-10);
 const local=await read(study,'local-controls.json'),runtime=await read(study,'runtime-controls.json');
 assert.equal(local.rows.length,16);assert.equal(local.real.length,8);assert.equal(local.paidRequests,0);
 assert.equal(runtime.rows.length,2);assert(runtime.rows.every(r=>r.exitCode===0&&/tests 21\b/u.test(r.stdout)&&/pass 21\b/u.test(r.stdout)));
+const contracts=await read(study,'contract-controls.json');
+assert.equal(contracts.paidRequests,0);assert.deepEqual(contracts.bindings,local.bindings);
+assert.equal(contracts.baseline.pass,6);assert.equal(contracts.baseline.fail,2);
+assert.equal(contracts.candidate.pass,8);assert.equal(contracts.candidate.fail,0);
+assert.equal(sha(await readFile(join(study,contracts.testSource.artifact))),contracts.testSource.sha256);
 const tasks=await read(study,'task-controls.json');assert.equal(tasks.rows.length,2);
 for(const row of tasks.rows){
  assert.equal(row.negative.feature.exitCode,1);assert.equal(row.negative.selected.exitCode,1);
