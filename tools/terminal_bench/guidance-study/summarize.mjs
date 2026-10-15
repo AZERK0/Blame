@@ -38,7 +38,7 @@ for(const row of results.rows) {
     editCalls:tools.filter(t=>["edit_code","apply_patch"].includes(t.tool)).map(t=>({input:t.input,status:t.output?.status,message:t.output?.message})),
     readCalls:tools.filter(t=>["read_code","read_files"].includes(t.tool)).length,
     readBytes:tools.filter(t=>["read_code","read_files"].includes(t.tool)).reduce((n,t)=>n+Buffer.byteLength(JSON.stringify(t.output)??""),0),
-    commands,lastEditIndex,finalReport,verification:row.completion?.verification??null,
+    commands,lastDedicatedEditIndex:lastEditIndex,sourceChangingLightCommands:tools.flatMap((t,index)=>t.tool==="run_task"&&t.output?.data?.changed===true?[index]:[]),shellEditCoverage:"Dedicated edit index is not a complete mutation timeline: native/shell source edits require manual command review.",finalReport,verification:row.completion?.verification??null,
     hints,matchingHintFollowups:hints.filter(h=>h.firstMatchingLaterCall>=0).length,
     dispatchedRequests:wire.filter(r=>!r.budgetRejected).length,byteRejected:wire.filter(r=>r.budgetRejected).length,
     missingWireResponseUsage:Math.max(0,wire.filter(r=>!r.budgetRejected).length-row.usage.perRequest.length),
@@ -54,7 +54,9 @@ for(const row of results.rows) {
       continuationHints:tools.filter(t=>t.tool==="read_code"&&t.output?.data?.nextRead).length,
       checkJournalReads:tools.filter(t=>t.tool==="read_code"&&t.input.target==="@checks").length,
       reportingReceipts:tools.filter(t=>t.tool==="run_task"&&(t.output?.data?.reporting||t.output?.data?.completed?.data?.reporting)).length,
-      patchRecoveryHints:tools.filter(t=>t.tool==="edit_code"&&String(t.output?.message??"").includes('"patchCorrection"')).length
+      scopedPatchHeaderRejections:tools.filter(t=>t.tool==="edit_code"&&t.output?.status==="blocked"&&String(t.output?.message??"").includes("Scoped patch header")).length,
+      scopedRecoveryReceipts:tools.filter(t=>t.tool==="edit_code"&&typeof t.output?.recovery==="string").length,
+      patchRecoveryHints:tools.filter(t=>t.tool==="edit_code"&&String(t.output?.recovery??"").includes('"patchCorrection"')).length
     },
     partition:row.partition});
 }

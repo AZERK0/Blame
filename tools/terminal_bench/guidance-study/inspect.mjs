@@ -19,7 +19,7 @@ else for(const [index,t] of tools.entries()){
  if(edit&&mode!=="edits"){
   const operations=t.input.operations??[{patch:t.input.input}];
   console.log(JSON.stringify({index,tool:t.tool,operations:operations.map(o=>({kind:o.kind,action:o.action,target:o.target,path:o.path,contentBytes:o.content?.length,patchBytes:o.patch?.length,
-    patchHeaders:o.patch?.split("\n").filter(l=>l.startsWith("*** "))})),status:t.output?.status,message:t.output?.message}));continue;
+    patchHeaders:o.patch?.split("\n").filter(l=>l.startsWith("*** "))})),status:t.output?.status,message:t.output?.message,recovery:t.output?.recovery}));continue;
  }
  let input=t.input,ignored=[];
  if(t.tool==="run_commands"){

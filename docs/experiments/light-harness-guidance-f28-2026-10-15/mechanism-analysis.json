@@ -1426,6 +1426,991 @@
         }
       ],
       "automaticValidationInputs": []
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-patch",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "patch",
+      "repetition": 1,
+      "searchCalls": 7,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 8,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 8,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "test",
+              "examples",
+              "scripts",
+              "docs",
+              "codemods"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "7065432e6ed4f2ea3160bea057fb138c051b2a0b2b90191954a365a3206917b2",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://1fb82f2dc15116e0e2244ff155ee749bfa8e83b2d1ae4a2be02755f24dd82b0f",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-bundle",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "bundle",
+      "repetition": 1,
+      "searchCalls": 8,
+      "rootStarCalls": 2,
+      "rootStarEmpty": 2,
+      "emptySearches": 2,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 17,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 17,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 2,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test"
+            ],
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "src/_lib/getTimezoneOffsetInMilliseconds/index.ts#getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "docs"
+            ],
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src/_lib",
+              "src/locale",
+              "test",
+              "examples",
+              "scripts",
+              "docs"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "src/_lib/getTimezoneOffsetInMilliseconds/index.ts#getLocalTimezoneOffsetMilliseconds",
+            "scope": "*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": [
+              "src",
+              "test"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "1cb6ecccdee106cc028102c235ff5248bea4ca99a494f32801ac9bb76ab76de7",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://1698ea32a64816d0e17c23cbc5c64947ff3087d503c9bf6d7a8caf815f5432c7",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-baseline",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "baseline",
+      "repetition": 1,
+      "searchCalls": 4,
+      "rootStarCalls": 1,
+      "rootStarEmpty": 1,
+      "emptySearches": 4,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 10,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src test examples scripts",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s1",
+            "scope": "src test examples scripts",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src test examples scripts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "f598f567ec1dad7ab2cc74d4d77cbd20beaf5407a60da5b7fb17b255941eaf5a",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://e77a160a9c658d6d3f4a63de6b220246c2b2ede5beedff1d43759808953d4709",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-scope",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "scope",
+      "repetition": 1,
+      "searchCalls": 9,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 4,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 4,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "docs"
+            ],
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "docs"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "s3",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/**/index.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "docs"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "docs"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/_lib/getTimezoneOffsetInMilliseconds/index.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 1
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/_lib/guidance-navigation-fixture.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 6
+        }
+      ],
+      "eventsSha256": "7e34cf6293fc480f8be14d702f15a154b0ef38517ab74acc51ab0c86d026cc33",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://f898b4fe4c7468b9ddbf5b944bd3c76209ab124e3f1853c6458012054510aab2",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-cline",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "cline",
+      "repetition": 1,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 2,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 8,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "c6bd6d98781ff7eb7ec25521aa865799d68106970bd07eb896374400983379ea",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-reporting",
+      "id": "rxjs-promise-abort-config",
+      "arm": "reporting",
+      "repetition": 1,
+      "searchCalls": 4,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 11,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 11,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "FirstValueFromConfig LastValueFromConfig firstValueFrom lastValueFrom",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "firstValueFrom",
+            "scope": "spec"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "lastValueFrom",
+            "scope": "spec"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "AbortSignal",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 1
+        }
+      ],
+      "eventsSha256": "4a74f6183cd36d3c7c41ca5a72186d70a79460627125a9288fea53a082d0460b",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-patch",
+      "id": "rxjs-promise-abort-config",
+      "arm": "patch",
+      "repetition": 1,
+      "searchCalls": 6,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 13,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "FirstValueFromConfig LastValueFromConfig firstValueFrom lastValueFrom",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "firstValueFrom",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "lastValueFrom",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "firstValueFrom",
+            "scope": "spec"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "lastValueFrom",
+            "scope": "spec"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "AbortError",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 2
+        }
+      ],
+      "eventsSha256": "1370f26f5b70f71dfef5f5d1d5b2e3e02090254f63cde956aa2c9f3395ae44ef",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-bundle",
+      "id": "rxjs-promise-abort-config",
+      "arm": "bundle",
+      "repetition": 1,
+      "searchCalls": 7,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 15,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 15,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "FirstValueFromConfig",
+            "scope": [
+              "src",
+              "spec"
+            ]
+          },
+          "status": "ok",
+          "resultCount": 3
+        },
+        {
+          "input": {
+            "query": "LastValueFromConfig",
+            "scope": [
+              "src",
+              "spec"
+            ]
+          },
+          "status": "ok",
+          "resultCount": 3
+        },
+        {
+          "input": {
+            "query": "firstValueFrom",
+            "scope": [
+              "src",
+              "spec"
+            ]
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "lastValueFrom",
+            "scope": [
+              "src",
+              "spec"
+            ]
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "AbortError",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "signal?: AbortSignal",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 4
+        },
+        {
+          "input": {
+            "query": "removeEventListener('abort'",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 1
+        }
+      ],
+      "eventsSha256": "072c6cb08571704b24f90ce1e6237806ace0bdf6a741d1352e6a6c19d2c6943d",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-baseline",
+      "id": "rxjs-promise-abort-config",
+      "arm": "baseline",
+      "repetition": 1,
+      "searchCalls": 4,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 10,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 1,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 1,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "FirstValueFromConfig LastValueFromConfig firstValueFrom lastValueFrom",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "firstValueFrom",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "lastValueFrom",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "AbortError",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "e35959edc2837ebf611ce33ed9b7c2e0c274f0c7707b9462656e855ad25fbd3a",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-scope",
+      "id": "rxjs-promise-abort-config",
+      "arm": "scope",
+      "repetition": 1,
+      "searchCalls": 7,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 13,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "FirstValueFromConfig LastValueFromConfig firstValueFrom lastValueFrom",
+            "scope": [
+              "src",
+              "spec"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "firstValueFrom",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "lastValueFrom",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "export interface FirstValueFromConfig",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "export interface LastValueFromConfig",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "interface FirstValueFromConfig",
+            "scope": [
+              "src",
+              "spec-dtslint"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "interface LastValueFromConfig",
+            "scope": [
+              "src",
+              "spec-dtslint"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "043853d3b2b612004e20a122d76c0eae43e22e369954372b3ab6d66ac384b3d6",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-cline",
+      "id": "rxjs-promise-abort-config",
+      "arm": "cline",
+      "repetition": 1,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 5,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 18,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "3b7167e0efd5d1437ed8547e67cb0174e054c4031d8be54605d0cf812aad6f8f",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
     }
   ]
 }

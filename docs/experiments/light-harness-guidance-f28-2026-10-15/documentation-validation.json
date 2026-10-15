@@ -1,8 +1,8 @@
 {
   "path": "docs/semantic-harness-study.tex",
-  "sha256": "1f99fe1f3a1515ad5df9c5de0b8a8bac0101b3e9eced98b8615e8cf9803b14b2",
+  "sha256": "5742a13d909af7f39168a94efd3a2528db8fa792b9cd939bd1dbba318daea7d6",
   "compiler": "Codex native LaTeX editor",
   "result": "success",
-  "scope": "F28 ongoing13 checkpoint and preparation-only infrastructure recovery",
-  "recordedAtUTC": "2026-10-15T00:21:31.265610+00:00"
+  "scope": "F28 ongoing19 checkpoint,infrastructure recovery,native output projection diagnostic",
+  "recordedAtUTC": "2026-10-15T00:39:01.439648+00:00"
 }

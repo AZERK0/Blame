@@ -93,6 +93,83 @@
       "artifact": "journals/1-date-fns-offset-helper-migration-reporting.bc57f8d307a66dd5717514ac.jsonl.gz",
       "bytes": 121594,
       "sha256": "9d3cf35a12ba2e3241090082ebfc2d91731a1e947a360b8ac8de542bf6c0cb62"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-patch",
+      "file": "b61f4515c06bac21fc067ac5.jsonl",
+      "artifact": "journals/1-date-fns-offset-helper-migration-patch.b61f4515c06bac21fc067ac5.jsonl.gz",
+      "bytes": 83702,
+      "sha256": "f9c758ecc8f365bb94c5c2019a8524e524bf1cefdb3b101638d099f96151660d"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-bundle",
+      "file": "6affc21daf0ad27d1c8d5fdf.jsonl",
+      "artifact": "journals/1-date-fns-offset-helper-migration-bundle.6affc21daf0ad27d1c8d5fdf.jsonl.gz",
+      "bytes": 226190,
+      "sha256": "b4d039a307fe7a0b93c1f7d5a1ea4c0c617b734a524c7ecb86e0e5e608501c57"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-baseline",
+      "file": "777a229f77b62278bf1b93db.jsonl",
+      "artifact": "journals/1-date-fns-offset-helper-migration-baseline.777a229f77b62278bf1b93db.jsonl.gz",
+      "bytes": 65124,
+      "sha256": "fe426f043cc44c1b3284b05e90843fe44ee4527411cb53fbb6137877af3fe373"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-scope",
+      "file": "d667fe2666c337943c38861b.jsonl",
+      "artifact": "journals/1-date-fns-offset-helper-migration-scope.d667fe2666c337943c38861b.jsonl.gz",
+      "bytes": 81636,
+      "sha256": "43d403986609692a28af8d2b13201763d924d2d46badb7ef5f987314b97134b0"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-cline",
+      "file": "48397b53a6fa42fc845d1b88.jsonl",
+      "artifact": "journals/1-date-fns-offset-helper-migration-cline.48397b53a6fa42fc845d1b88.jsonl.gz",
+      "bytes": 79,
+      "sha256": "89974d0c3b326fc9c87ea84b4afc03fab553d1f2776c0256f5c0f1b50c8c6742"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-reporting",
+      "file": "17dcee64dc0f6fa8556f5612.jsonl",
+      "artifact": "journals/1-rxjs-promise-abort-config-reporting.17dcee64dc0f6fa8556f5612.jsonl.gz",
+      "bytes": 80941,
+      "sha256": "5cd9d773f84f4b01a2badb8fef3e7b04e9accc168c23185a864460cfcca9f8bc"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-patch",
+      "file": "01e90f31d0c8bcc3b6cacbe7.jsonl",
+      "artifact": "journals/1-rxjs-promise-abort-config-patch.01e90f31d0c8bcc3b6cacbe7.jsonl.gz",
+      "bytes": 72354,
+      "sha256": "a8252bbbc5c6273c7dc2007e5895904328a2bb011c84e1aa0f814cab57d37334"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-bundle",
+      "file": "ac8a504b40a6b13048a384fd.jsonl",
+      "artifact": "journals/1-rxjs-promise-abort-config-bundle.ac8a504b40a6b13048a384fd.jsonl.gz",
+      "bytes": 108531,
+      "sha256": "a2c7d3cdbf203565da5fc62e91947b1f45ba00c983c9ac027765cc9d499a04fa"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-baseline",
+      "file": "223e502d8723dc5ffabc58d3.jsonl",
+      "artifact": "journals/1-rxjs-promise-abort-config-baseline.223e502d8723dc5ffabc58d3.jsonl.gz",
+      "bytes": 91843,
+      "sha256": "8e1b8aacc56b48a9be5b38a4786313df2ac49f7b901c5cb737c9c690d4491b43"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-scope",
+      "file": "acd3af84ac51503a7dbe8776.jsonl",
+      "artifact": "journals/1-rxjs-promise-abort-config-scope.acd3af84ac51503a7dbe8776.jsonl.gz",
+      "bytes": 163195,
+      "sha256": "ef33161af53e4a2dda4a1f1a5251067340ff2d824e779d52ac3dd5526f49df67"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-cline",
+      "file": "2e5f967e90b208f73cee4237.jsonl",
+      "artifact": "journals/1-rxjs-promise-abort-config-cline.2e5f967e90b208f73cee4237.jsonl.gz",
+      "bytes": 79,
+      "sha256": "b8baed3d068d8f95caca0169cd2d59c0bc97d059f344fac5f0599e0791a53615"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "paidRequests": 0,
   "planned": 108,
-  "completed": 13,
+  "completed": 24,
   "frozenInputsAndRuntimesVerified": true,
   "actualWireModelEffortByteGuardVerified": true,
   "nominalOutputCapEffective": false,
@@ -59,6 +59,50 @@
     "1-date-fns-offset-helper-migration-reporting": {
       "head": "1433f8302900180616a16287948552a8c30dcfb0",
       "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "1-date-fns-offset-helper-migration-patch": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "1-date-fns-offset-helper-migration-bundle": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "1-date-fns-offset-helper-migration-baseline": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "1-date-fns-offset-helper-migration-scope": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "1-date-fns-offset-helper-migration-cline": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "1-rxjs-promise-abort-config-reporting": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "1-rxjs-promise-abort-config-patch": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "1-rxjs-promise-abort-config-bundle": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "1-rxjs-promise-abort-config-baseline": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "1-rxjs-promise-abort-config-scope": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "1-rxjs-promise-abort-config-cline": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
     }
   },
   "matchedInitialIdentities": [
@@ -85,7 +129,25 @@
         "references",
         "rename",
         "reading",
-        "reporting"
+        "reporting",
+        "patch",
+        "bundle",
+        "baseline",
+        "scope",
+        "cline"
+      ],
+      "sameHeadAndTree": true
+    },
+    {
+      "id": "rxjs-promise-abort-config",
+      "repetition": 1,
+      "arms": [
+        "reporting",
+        "patch",
+        "bundle",
+        "baseline",
+        "scope",
+        "cline"
       ],
       "sameHeadAndTree": true
     }
@@ -168,6 +230,72 @@
       "toolsSha256": "8c69fbc427868efe88a7c243364f66a6312958b44defa9038f3b01ed7d35772d",
       "promptSha256": "3d85abf93533cebe81f6d64b4eeafbee5ce5079c2d9f6708dd976a792630d718",
       "normalizedContractSha256": "b530cb0cd83c5f68d0ea35f935c862ebb2e7bcfabc1acbc30ef36662297e441f"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-patch",
+      "toolsSha256": "845292da2156cdb1513f02910895e1d6631021f844e700caffb1181ca645d507",
+      "promptSha256": "791b80ca7e5252691388f5c0a19e4c537ef79f9a8aeaf4bdc6ffb756b451b81f",
+      "normalizedContractSha256": "21d1920acf95a162332c1836cf08eb5ce48e572d119b259af11411bc432e4d8d"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-bundle",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "bf1aa114addb284e48f5688b674285c9eaa0d5df4db2ef5175a74239c065091d",
+      "normalizedContractSha256": "b2b1e380872733ec5d227c9778fffb6c6c593458ee91d79641857c607bf4e177"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-baseline",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "9f7105b3252c71f827b15c472ce6c930fb1e804101a8a57a303eef3834f9527d",
+      "normalizedContractSha256": "93e05a41ab78d023ebf1df9b16c2eb13e999ae020d4ade70707b369c29d0edbf"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-scope",
+      "toolsSha256": "305c04a53b2eb79c5359c4dc7917683851c4df2de7fa5ab67ae59c39766e7e21",
+      "promptSha256": "90cf55a0e17b7eda80ac7b4d175201bed74ee9acefff864052e162cb28614f29",
+      "normalizedContractSha256": "788e8e4e31b87f95818e7d3b26fc0618c74d50975ef07d0192707ee1f2b274bb"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-cline",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "0089ebe4f9249f31b65a8facabb614d8263c60ea8b10a77f695d34950421f6d1",
+      "normalizedContractSha256": "c3f76ce7e18e8d97008b4198f9c361c73ef43e30bafd18fa0b77633802a1f5dd"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-reporting",
+      "toolsSha256": "8c69fbc427868efe88a7c243364f66a6312958b44defa9038f3b01ed7d35772d",
+      "promptSha256": "fb06c68d3d24b1233ded513b8fe3dc349791aaf2565cf6675605d4517f1a41d1",
+      "normalizedContractSha256": "47f2d9eefb0481f760fdef8391877edc66e652c571496cb54617a606c4dec31b"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-patch",
+      "toolsSha256": "845292da2156cdb1513f02910895e1d6631021f844e700caffb1181ca645d507",
+      "promptSha256": "f59f00184c514511ec09a63a446e5eac8584bee2d022fdf186b50f961250f3a9",
+      "normalizedContractSha256": "10d5b9e67ec650bb6ffdd72df45268b6d0ed9cdaa27a324e0de2d34b38abceae"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-bundle",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "9fd7a2c24d54ca7dd42a546e11f3d57f9eacdedbf91b826e1d811e01511ef332",
+      "normalizedContractSha256": "2facddd917464b581b29225d8a286d9bac14383ce6442e426e6ccbd16aebfa03"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-baseline",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "f40daaa21db932b0cff92020fe50fc873ec9a2f199c3256ee14abb027d9d9ca7",
+      "normalizedContractSha256": "9bc400e014209a153efbda8e5412495a37b7f174ce4ef07981380a6589fbaf97"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-scope",
+      "toolsSha256": "305c04a53b2eb79c5359c4dc7917683851c4df2de7fa5ab67ae59c39766e7e21",
+      "promptSha256": "4958c9ca5cd6e40f1ebb474a7b301aad1793a4ba2413a1da3301542a86858761",
+      "normalizedContractSha256": "2c94371d7b65519363f8152dd61037675b2bb5e3ee7ddb178634d2c0861ff577"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-cline",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "bac7502d02cd8f500a9b88d042c97c8a3dbfec7933a4bebb5ed34293a4b29476",
+      "normalizedContractSha256": "c3f76ce7e18e8d97008b4198f9c361c73ef43e30bafd18fa0b77633802a1f5dd"
     }
   ],
   "audits": [
@@ -371,6 +499,190 @@
           "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
           "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
           "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-patch",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-date-fns-offset-helper-migration-patch.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-bundle",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-date-fns-offset-helper-migration-bundle.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-baseline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-date-fns-offset-helper-migration-baseline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-scope",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-date-fns-offset-helper-migration-scope.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-cline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-date-fns-offset-helper-migration-cline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-cline",
+      "file": "native-search-loads.jsonl",
+      "artifact": "execution-audits/1-date-fns-offset-helper-migration-cline.native-search-loads.jsonl.gz",
+      "sha256": "5ab5181179b067ca7ebafaa4d5035b668a2fab7b3232200eb8e3e5e744899691",
+      "bytes": 210,
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        }
+      ]
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-reporting",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-rxjs-promise-abort-config-reporting.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-patch",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-rxjs-promise-abort-config-patch.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-bundle",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-rxjs-promise-abort-config-bundle.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-baseline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-rxjs-promise-abort-config-baseline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-scope",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-rxjs-promise-abort-config-scope.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-cline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-rxjs-promise-abort-config-cline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-cline",
+      "file": "native-search-loads.jsonl",
+      "artifact": "execution-audits/1-rxjs-promise-abort-config-cline.native-search-loads.jsonl.gz",
+      "sha256": "5ab5181179b067ca7ebafaa4d5035b668a2fab7b3232200eb8e3e5e744899691",
+      "bytes": 210,
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
         }
       ]
     }

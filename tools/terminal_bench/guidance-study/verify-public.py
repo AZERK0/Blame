@@ -115,6 +115,38 @@ if admin_path.exists():
  compact=[json.loads(line) for line in artifacts['object-compaction.jsonl'].splitlines() if line]
  assert len(compact)==continuation['compaction']['repositories'] and all(r['identitiesAndDiffPreserved'] for r in compact)
  assert sum(r['objectEntriesBefore']-r['objectEntriesAfter'] for r in compact)==continuation['compaction']['freedObjectEntries']
+projection_path=root/'native-projection-diagnostic.json'
+if projection_path.exists():
+ projection=json.loads(projection_path.read_text());name=projection['trial']
+ assert sha(raw[name,'events.jsonl'])==projection['eventsSha256']
+ event_list=[json.loads(line)['event'] for line in raw[name,'events.jsonl'].splitlines() if line]
+ call=next(e for e in event_list if e['type']=='tool' and e.get('payload',{}).get('phase')=='finished' and 'npm run types' in e['payload'].get('toolCall',{}).get('input',{}).get('commands',[]))
+ text=next(r['result'] for r in call['payload']['output'] if r['query']=='npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks')
+ # All characters in this registered output are BMP; Python length/slices match JS UTF-16 here.
+ assert all(ord(ch)<=0xffff for ch in text)
+ marker=lambda n:'\n\n...[truncated '+str(n)+' chars]...\n\n'
+ limit=projection['limit'];first=max(0,(limit-len(marker(len(text)-limit)))//2)
+ cut=marker(max(0,len(text)-2*first));keep=max(0,(limit-len(cut))//2)
+ expected=text[:keep]+cut+(text[-keep:] if keep else '')
+ entry=projection['projectedArtifact'];actual=gzip.decompress((root/entry['artifact']).read_bytes())
+ assert sha(actual)==entry['sha256'] and len(actual)==entry['bytes'] and actual==expected.encode()
+ assert '3140 passed | 18 skipped' in text and '3140 passed | 18 skipped' not in expected
+ assert len(text)==projection['rawCharacters'] and len(expected)==projection['projectedCharacters']
+patch_replay_path=root/'recorded-patch-replay.json'
+if patch_replay_path.exists():
+ patch_replay=json.loads(patch_replay_path.read_text());name=patch_replay['trialSource']
+ assert sha(raw[name,'events.jsonl'])==patch_replay['eventsSha256']
+ finished=[json.loads(line)['event']['payload'] for line in raw[name,'events.jsonl'].splitlines() if json.loads(line)['event']['type']=='tool' and json.loads(line)['event']['payload'].get('phase')=='finished']
+ original=finished[patch_replay['recordedRejectedCall']]['toolCall']['input']
+ assert finished[12]['output']['status']=='blocked'
+ recovery=json.loads(json.dumps(original))
+ for operation in recovery['operations']:operation.pop('target',None)
+ for record in patch_replay['rows']:
+  assert record['rejected']['status']=='blocked' and record['recoveredStatus']=='ok'
+  assert record['recoveryInputSha256']==sha(js(recovery))
+  assert ('"patchCorrection"' in record['rejected'].get('recovery',''))==(record['arm']=='patch')
+ assert patch_replay['rows'][0]['before']==patch_replay['rows'][1]['before']
+ assert patch_replay['rows'][0]['after']==patch_replay['rows'][1]['after']!=patch_replay['rows'][0]['before']
 assert results['completed']==len(rows)==len(reviews)
 assert sha((root/'results.json').read_bytes())==read('checks.json')['resultsSha256']
 assert results['planned']==len(protocol['order'])==len(protocol['tasks'])*protocol['repetitions']*len(protocol['arms'])

@@ -908,5 +908,775 @@
     "artifact": "traces/1-date-fns-offset-helper-migration-reporting.model-exit.json.gz",
     "bytes": 5920,
     "sha256": "9142be41c8bf999e152986433ebcae9a1a5d798747e26ac0b51e07454a7ddaa4"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-patch",
+    "file": "instruction.txt",
+    "artifact": "traces/1-date-fns-offset-helper-migration-patch.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-patch",
+    "file": "events.jsonl",
+    "artifact": "traces/1-date-fns-offset-helper-migration-patch.events.jsonl.gz",
+    "bytes": 86928,
+    "sha256": "7065432e6ed4f2ea3160bea057fb138c051b2a0b2b90191954a365a3206917b2"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-patch",
+    "file": "result.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-patch.result.json.gz",
+    "bytes": 4841,
+    "sha256": "30eb50885b4f56c47df2ebebff1e2133c006257af94e4a74bf3229f9cbcd4a48"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-patch",
+    "file": "workspace.diff",
+    "artifact": "traces/1-date-fns-offset-helper-migration-patch.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-patch",
+    "file": "trial.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-patch.trial.json.gz",
+    "bytes": 4650,
+    "sha256": "ebf6e183df9a8565c6e4f27875b8afb2e9398737d55b935f3f9111c2600a63df"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-patch",
+    "file": "score.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-patch.score.json.gz",
+    "bytes": 40877,
+    "sha256": "a29dd010b02c98e753a376598d98a847d3d41a3bbf6ce2227abb19ab3fd1b995"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-patch",
+    "file": "required-checks.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-patch.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-patch",
+    "file": "model-start.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-patch.model-start.json.gz",
+    "bytes": 210,
+    "sha256": "a15dcfabb0ea1a37a071d8a2228084f9fc31b590e7162746673d9315d3fa8425"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-patch",
+    "file": "model-child.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-patch.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "281872b0a9fd4df1ea894f6c87ec408eb536467c062359cf5046326708e5b57f"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-patch",
+    "file": "model-exit.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-patch.model-exit.json.gz",
+    "bytes": 4448,
+    "sha256": "ea0e5738a104455c3afbe54b4b437dbca4f7850ff7a3e41a79f6411721331453"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-bundle",
+    "file": "instruction.txt",
+    "artifact": "traces/1-date-fns-offset-helper-migration-bundle.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-bundle",
+    "file": "events.jsonl",
+    "artifact": "traces/1-date-fns-offset-helper-migration-bundle.events.jsonl.gz",
+    "bytes": 120320,
+    "sha256": "1cb6ecccdee106cc028102c235ff5248bea4ca99a494f32801ac9bb76ab76de7"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-bundle",
+    "file": "result.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-bundle.result.json.gz",
+    "bytes": 4851,
+    "sha256": "da235544876e4b5e21eb176a6af7cfce27fea23712fc2cc010fb2a8c4fb20601"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-bundle",
+    "file": "workspace.diff",
+    "artifact": "traces/1-date-fns-offset-helper-migration-bundle.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-bundle",
+    "file": "trial.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-bundle.trial.json.gz",
+    "bytes": 5627,
+    "sha256": "6d04ee5ebd27f9a20727621adc5903417ed10c3f8523740cf5cf0398131d7adb"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-bundle",
+    "file": "score.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-bundle.score.json.gz",
+    "bytes": 40920,
+    "sha256": "4b072449c0f22dd4c0d3b2b7835f670cadc657f0dc8f464a140acc6ab8641f8f"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-bundle",
+    "file": "required-checks.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-bundle.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-bundle",
+    "file": "model-start.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-bundle.model-start.json.gz",
+    "bytes": 211,
+    "sha256": "b273816e3e093fb62e7ccc41f01e76bd59009fb24908dc6625a70c86e73fc6f7"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-bundle",
+    "file": "model-child.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-bundle.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "9de41eea49dccd053c7b0c0c678c7c4f2af1f9d82bae225f0bf8cc84d8f9fe98"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-bundle",
+    "file": "model-exit.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-bundle.model-exit.json.gz",
+    "bytes": 5412,
+    "sha256": "512b425eb72af44925947d323d84cd56b0b446f235c8bb68554d69db5b071639"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-date-fns-offset-helper-migration-baseline.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-date-fns-offset-helper-migration-baseline.events.jsonl.gz",
+    "bytes": 98041,
+    "sha256": "f598f567ec1dad7ab2cc74d4d77cbd20beaf5407a60da5b7fb17b255941eaf5a"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-baseline",
+    "file": "result.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-baseline.result.json.gz",
+    "bytes": 4876,
+    "sha256": "4bc70bc056510c6a5697cbaede511a7c3c6bac8e922ce7633c49b64b88731e30"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-date-fns-offset-helper-migration-baseline.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-baseline",
+    "file": "trial.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-baseline.trial.json.gz",
+    "bytes": 4715,
+    "sha256": "b5763824640c78851042760541fb79f302a4945353f2af34da1bcfaefff763c5"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-baseline",
+    "file": "score.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-baseline.score.json.gz",
+    "bytes": 40950,
+    "sha256": "74058f7b1c8ac90859c8d93f8afeda33e6bf0ddfc3ac19b0504be51ca7a2cc3f"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-baseline.model-start.json.gz",
+    "bytes": 213,
+    "sha256": "2851490edc6273179a652872b855e177853fda9e3417698206f701fd43274df6"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "6d0470a21783860f900baa8de0ac5cc5eb8c5853a5d6d32c1586e86279b8c645"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-baseline.model-exit.json.gz",
+    "bytes": 4496,
+    "sha256": "513173e4d73aecd775d81383bdf5ddae196826020ceb6ae94731660a9a775067"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-scope",
+    "file": "instruction.txt",
+    "artifact": "traces/1-date-fns-offset-helper-migration-scope.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-scope",
+    "file": "events.jsonl",
+    "artifact": "traces/1-date-fns-offset-helper-migration-scope.events.jsonl.gz",
+    "bytes": 75596,
+    "sha256": "7e34cf6293fc480f8be14d702f15a154b0ef38517ab74acc51ab0c86d026cc33"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-scope",
+    "file": "result.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-scope.result.json.gz",
+    "bytes": 4836,
+    "sha256": "cb4c4dba6de10eb1004eb8d3db3b47ff267d1ba0798f37c0750d7f1bd7339867"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-scope",
+    "file": "workspace.diff",
+    "artifact": "traces/1-date-fns-offset-helper-migration-scope.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-scope",
+    "file": "trial.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-scope.trial.json.gz",
+    "bytes": 6025,
+    "sha256": "8016bcf7c9a9c3c4966e3c879b5d64cc380872e0926f48e30e1fd024f45c9fba"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-scope",
+    "file": "score.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-scope.score.json.gz",
+    "bytes": 40845,
+    "sha256": "d6343adb1906d2d5cb45a7bf15f867ebb214ee836fd9a1e6ce418857d5346cc6"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-scope",
+    "file": "required-checks.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-scope.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-scope",
+    "file": "model-start.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-scope.model-start.json.gz",
+    "bytes": 210,
+    "sha256": "eac23c38295f3d6b67a5c3b1521a8cbd2356926f45b1fcf4032a4dd7206a8cf8"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-scope",
+    "file": "model-child.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-scope.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "fbfd6ffc5212d8d1458b25da05ff537b368e039787ae29402de3580545945aca"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-scope",
+    "file": "model-exit.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-scope.model-exit.json.gz",
+    "bytes": 5812,
+    "sha256": "8e43a3cc30334f99c9fe56d8b163473ebdcfd404497f1be958bbee04e6b28377"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-date-fns-offset-helper-migration-cline.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-date-fns-offset-helper-migration-cline.events.jsonl.gz",
+    "bytes": 465066,
+    "sha256": "c6bd6d98781ff7eb7ec25521aa865799d68106970bd07eb896374400983379ea"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-cline",
+    "file": "result.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-cline.result.json.gz",
+    "bytes": 3714,
+    "sha256": "6c9d66a1d75ff89bcb7194012531dcee1f0f83402041b894bd9d8d0030005d40"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-date-fns-offset-helper-migration-cline.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-cline",
+    "file": "trial.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-cline.trial.json.gz",
+    "bytes": 6373,
+    "sha256": "662d7d8d9171ce1fb1a7140898d3919fbf630995172b6b12619b3c5758bd9443"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-cline",
+    "file": "score.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-cline.score.json.gz",
+    "bytes": 40915,
+    "sha256": "b032ef77c92d83f1376f26ede94ec27c6c8ae090f6327e5ff590d739d4efe5d7"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-cline",
+    "file": "model-start.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-cline.model-start.json.gz",
+    "bytes": 210,
+    "sha256": "e2384ec4ec51a252e4120c03220514c3376e7afa063667e933042e688afd9b3d"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-cline",
+    "file": "model-child.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "b9cb716295d555aed73de98b537ce8b15931a22f7d56816d8c9dc04d2c279045"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-cline.model-exit.json.gz",
+    "bytes": 6154,
+    "sha256": "181071a5e4e94029f129cac2201cb3b1ea6d5c47d52739eb5db39659d52c0934"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-reporting",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-promise-abort-config-reporting.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-reporting",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-promise-abort-config-reporting.events.jsonl.gz",
+    "bytes": 135643,
+    "sha256": "4a74f6183cd36d3c7c41ca5a72186d70a79460627125a9288fea53a082d0460b"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-reporting",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-reporting.result.json.gz",
+    "bytes": 4789,
+    "sha256": "afe400f6c0b3e27965f92c879354cd7cd6ce3e6f4e9f67bd34b72ce4130e58bc"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-reporting",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-promise-abort-config-reporting.workspace.diff.gz",
+    "bytes": 5288,
+    "sha256": "d40fed3bf48aefb280c9480f73547f8bb4d8688897c321cd74d51b5d3fea00ef"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-reporting",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-reporting.trial.json.gz",
+    "bytes": 5468,
+    "sha256": "ef763f1c770e1de08cc44c3d6ee6632f3ddc446a8e07b230d2396b060d1e2544"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-reporting",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-reporting.score.json.gz",
+    "bytes": 19744,
+    "sha256": "afde699ede6b504899b09d3217f40c92fa73bc995f931d6060118d1adeee5a0b"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-reporting",
+    "file": "required-checks.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-reporting.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-reporting",
+    "file": "model-start.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-reporting.model-start.json.gz",
+    "bytes": 207,
+    "sha256": "97550e3e6bf2a11979bbac0852721524d0a891c312371f2e1426d8ca6c8d7624"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-reporting",
+    "file": "model-child.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-reporting.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "7899f2529408f0abd2a629a01d6258e481a7586598e5751d635d736592f605c8"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-reporting",
+    "file": "model-exit.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-reporting.model-exit.json.gz",
+    "bytes": 5261,
+    "sha256": "9da8aecd4f76ad1f89a4ed8b4bbaba46e7e6e1066e09a112a3185244a75ace56"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-patch",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-promise-abort-config-patch.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-patch",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-promise-abort-config-patch.events.jsonl.gz",
+    "bytes": 132278,
+    "sha256": "1370f26f5b70f71dfef5f5d1d5b2e3e02090254f63cde956aa2c9f3395ae44ef"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-patch",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-patch.result.json.gz",
+    "bytes": 4787,
+    "sha256": "702f85b2226956d61c68d011f6931d05994ecc23fa4c8aea30e7af34937f938c"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-patch",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-promise-abort-config-patch.workspace.diff.gz",
+    "bytes": 4383,
+    "sha256": "c2bea84b24a06d13c2ea9f8607908c84c368cdc19609be278c4f911dbc64d92b"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-patch",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-patch.trial.json.gz",
+    "bytes": 6591,
+    "sha256": "c8b23fc07dcca78ba3c964d38c5d90d939c76358405b099d7b1d2801b8c2fc02"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-patch",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-patch.score.json.gz",
+    "bytes": 19726,
+    "sha256": "8c1637b90862c24364fbb88079e7f4f7ac39c3d931c92d3ea5d29f509b3e7532"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-patch",
+    "file": "required-checks.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-patch.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-patch",
+    "file": "model-start.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-patch.model-start.json.gz",
+    "bytes": 203,
+    "sha256": "88b62f241112479535f971f207e212eb88244079af425f021d97b9cefc758b6e"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-patch",
+    "file": "model-child.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-patch.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "651a1bcb9afd93c55f5f78cf684b3740d8e06d6eec901816d2dec1922cb41eaf"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-patch",
+    "file": "model-exit.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-patch.model-exit.json.gz",
+    "bytes": 6391,
+    "sha256": "956df3c5a5e969a587b17fbe3b927a31566bc04aab657b7be4969f08b13543ce"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-bundle",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-promise-abort-config-bundle.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-bundle",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-promise-abort-config-bundle.events.jsonl.gz",
+    "bytes": 149802,
+    "sha256": "072c6cb08571704b24f90ce1e6237806ace0bdf6a741d1352e6a6c19d2c6943d"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-bundle",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-bundle.result.json.gz",
+    "bytes": 4786,
+    "sha256": "d13accc7f035b3a8cbb051268d710a8db57702118d088e0a3338f66307834b55"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-bundle",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-promise-abort-config-bundle.workspace.diff.gz",
+    "bytes": 4696,
+    "sha256": "131560e7bea5435fe85f5e5a0c51c20167b3e8562c4034d510d72e1e476ee4cb"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-bundle",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-bundle.trial.json.gz",
+    "bytes": 5081,
+    "sha256": "b3335a0aaa234fc2c5fe5fff401e9f1519def51bd80b79c1079f30e6a8d7f6c4"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-bundle",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-bundle.score.json.gz",
+    "bytes": 19730,
+    "sha256": "52817b8c832ec4680ecc42c67b34099aae67383a786a387b3e78b896c25e4ed2"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-bundle",
+    "file": "required-checks.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-bundle.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-bundle",
+    "file": "model-start.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-bundle.model-start.json.gz",
+    "bytes": 204,
+    "sha256": "ac4e744c9e74ffe8741c6771a828fbb3a2020f7eca44a2abcd410bf2f0303a8b"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-bundle",
+    "file": "model-child.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-bundle.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "56c8f4b59a79d9612544b1c4349966afedd7322bea11f6576e3094a432700f46"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-bundle",
+    "file": "model-exit.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-bundle.model-exit.json.gz",
+    "bytes": 4878,
+    "sha256": "8f8ac27976aaea5c1b223cd044ed21ebad478ed9d16bc025a2542673cc37fcf9"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-promise-abort-config-baseline.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-promise-abort-config-baseline.events.jsonl.gz",
+    "bytes": 151214,
+    "sha256": "e35959edc2837ebf611ce33ed9b7c2e0c274f0c7707b9462656e855ad25fbd3a"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-baseline",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-baseline.result.json.gz",
+    "bytes": 4807,
+    "sha256": "f2aa1dc882fa5d9ed75d3b643a89eaf1dbcc29aa8062ca582275b116027fb54c"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-promise-abort-config-baseline.workspace.diff.gz",
+    "bytes": 5187,
+    "sha256": "03a894771d9c1374e37ac95d17a0a7fb837ad76e1505ae44c640f46b15704c52"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-baseline",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-baseline.trial.json.gz",
+    "bytes": 5752,
+    "sha256": "e01f5603dd729c8e5f5d9af105995002cd4e3ef585fdc5d883152384758e874c"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-baseline",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-baseline.score.json.gz",
+    "bytes": 19739,
+    "sha256": "4ac561fbf600556349c6c1fb28b44d31c97747642d97ba27c76a29075c6b08b5"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-baseline.model-start.json.gz",
+    "bytes": 206,
+    "sha256": "9c1a54b024f9b145fb079e8961fe2965c69e5a28601882aca365c108c51540d5"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "5a0eb217c5d0c468485fa132516c0a21fadec2921fb7db8d4da22e28f8b447c3"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-baseline.model-exit.json.gz",
+    "bytes": 5545,
+    "sha256": "bedd7202d8d50b16e7869258d10dfea390f104131928b1b5e842e612330c96ea"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-scope",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-promise-abort-config-scope.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-scope",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-promise-abort-config-scope.events.jsonl.gz",
+    "bytes": 170432,
+    "sha256": "043853d3b2b612004e20a122d76c0eae43e22e369954372b3ab6d66ac384b3d6"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-scope",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-scope.result.json.gz",
+    "bytes": 4800,
+    "sha256": "71fb1609d4aa86a0911ceadbddd02c2d42ba892b9f08b31131f27147e7e05959"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-scope",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-promise-abort-config-scope.workspace.diff.gz",
+    "bytes": 5046,
+    "sha256": "7e242d9c593ce40383a02245bcf8d8598bc06f155e420805dbb3fb85f185fe25"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-scope",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-scope.trial.json.gz",
+    "bytes": 4729,
+    "sha256": "26035e15b09e35a7a15281dc6145646e85439f8e04313cfb36b45ffe0d485e34"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-scope",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-scope.score.json.gz",
+    "bytes": 19726,
+    "sha256": "d13c7ea7cf952f7d70f279a0115486768cd2653491ee7cf955999d05f2fcdbd8"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-scope",
+    "file": "required-checks.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-scope.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-scope",
+    "file": "model-start.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-scope.model-start.json.gz",
+    "bytes": 203,
+    "sha256": "54f717350b981437a80ce7a8ece013722b86d47439884c2b727051af0d71ba2c"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-scope",
+    "file": "model-child.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-scope.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "29130ed1cb182b147273e95454d6c73bbbd1d6d1eb554485e651f31e01ea64e7"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-scope",
+    "file": "model-exit.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-scope.model-exit.json.gz",
+    "bytes": 4531,
+    "sha256": "e374323d65813630a056f7bfe0fa47c91486047d7c20a6fd4f55c6e966aff3a1"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-promise-abort-config-cline.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-promise-abort-config-cline.events.jsonl.gz",
+    "bytes": 466747,
+    "sha256": "3b7167e0efd5d1437ed8547e67cb0174e054c4031d8be54605d0cf812aad6f8f"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-cline",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-cline.result.json.gz",
+    "bytes": 3708,
+    "sha256": "369005ae926c63c85711183b3b1719831c447f7291e065921124fc8bc63f9eac"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-promise-abort-config-cline.workspace.diff.gz",
+    "bytes": 4827,
+    "sha256": "4ce9e2ecd3d94e9f91ed252e535ef55705fc892a2d7ea3f3055f21f653209284"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-cline",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-cline.trial.json.gz",
+    "bytes": 5595,
+    "sha256": "ae0220bfcc5a0a58e45ed2268902e32b831b2412a65a2d211f35e6b5e82375a8"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-cline",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-cline.score.json.gz",
+    "bytes": 19724,
+    "sha256": "caef1cac98928a197ea2ce204dcedda0113a58407ea85e2ccd7c146bbb6666f4"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-cline",
+    "file": "model-start.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-cline.model-start.json.gz",
+    "bytes": 203,
+    "sha256": "7154eb69b5f286b1c35984aea039cd9a7baee382dfa0c9e08d4925be5343c383"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-cline",
+    "file": "model-child.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "7c144bcbf465ae492f05ef8757c9f54a7feb20c6052c0ea8d5d5039abf91cca1"
+  },
+  {
+    "trial": "1-rxjs-promise-abort-config-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/1-rxjs-promise-abort-config-cline.model-exit.json.gz",
+    "bytes": 5402,
+    "sha256": "14f39e034e141789281dfe87b1e553fa3683cfd33cd120f92de58d29721c2291"
   }
 ]

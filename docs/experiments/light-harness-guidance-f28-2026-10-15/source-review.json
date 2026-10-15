@@ -159,6 +159,127 @@
       "eventsSha256": "6b9ce3ec80cdcc36040575cdfc07958721e8d30b43b32ffdaa612077b7c702fa",
       "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
       "scoreSha256": "f53e5261bd2ee2fdb8cdf344c8cbc2d29d0e6173d29b49ab7dab052150060576"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-patch",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 20 effective inputs reviewed. Complete 11-file diff SHA equals the reviewed 30-binding endpoint. One compiler rename at11; exact npm types/full single-worker tests at17/18 after final edit pass 250 files,3140 tests,18 skipped. Supported failed0 and pending unknown are accurate. Final summary does not claim formal admission; retain unverified and unknown freshness from actual metadata. No scope-recovery activation or outside solution retrieval. This is the original first model dispatch for this assignment after the preserved preparation-only interruption.",
+      "eventsSha256": "7065432e6ed4f2ea3160bea057fb138c051b2a0b2b90191954a365a3206917b2",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "a29dd010b02c98e753a376598d98a847d3d41a3bbf6ce2227abb19ab3fd1b995"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-bundle",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 29 effective inputs reviewed. Same complete 11-file/30-binding diff as reviewed date-fns reference endpoint. One compiler rename at11, @changes12, exact npm types/full single-worker tests26/27 after edit pass250files3140tests18skipped, supported failed0. Final summary correctly separates unknown pending and reports only two executed commands. Empty pre-check @checks read and root-star searches after rename are retained as overhead; later src/test arrays do not support a false global absence claim. No external/history/private solution retrieval; formal verification remains unverified.",
+      "eventsSha256": "1cb6ecccdee106cc028102c235ff5248bea4ca99a494f32801ac9bb76ab76de7",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "4b072449c0f22dd4c0d3b2b7835f670cadc657f0dc8f464a140acc6ab8641f8f"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 22 effective inputs reviewed. Full final diff SHA matches the reviewed 30-binding/11-file endpoint. Preserve three repeated whitespace-separated empty scopes, root-only scan and unrelated reads before compiler rename14. Project task types18 invokes npm run types under the frozen catalog/default npm selection; its receipt labels the inner script tsc --noEmit and output confirms npm wrapper. Exact full single-worker test19 follows edit and passes250files3140tests18skipped. Final report preserves pending unknown, source-scope limitations and truthful remaining names; no outside solution retrieval. Formal unverified remains distinct.",
+      "eventsSha256": "f598f567ec1dad7ab2cc74d4d77cbd20beaf5407a60da5b7fb17b255941eaf5a",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "74058f7b1c8ac90859c8d93f8afeda33e6bf0ddfc3ac19b0504be51ca7a2cc3f"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-scope",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 18 effective inputs reviewed. Full final diff hash matches the reviewed 30-binding endpoint. Array scopes from the first query, compiler refs and one rename7; fewer unrelated reads than reference. Exact npm types/full single-worker tests12/13 after edit pass250files3140tests18skipped; final report correctly notes truncated detail, observed aggregate counts and unknown admission/pending. No forbidden file/assertion edits, external/history/private solution retrieval or source repair.",
+      "eventsSha256": "7e34cf6293fc480f8be14d702f15a154b0ef38517ab74acc51ab0c86d026cc33",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "d6343adb1906d2d5cb45a7bf15f867ebb214ee836fd9a1e6ce418857d5346cc6"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 14 effective inputs, one 11-file patch6 and complete final diff reviewed. Endpoint SHA matches the reviewed 30-binding migration; aliases/homonyms/comments/literals/path/test description preserved. Both exact commands at10 report SDK success after final edit. Every listed suite/subcount in final report matches raw output. Raw full test output includes250files3140passed18skipped, but pinned native MessageBuilder clips each nested result string to8000chars; separate pure-function replay removes the aggregate and preserves partial named-suite counts. Therefore qualified unknown aggregate/pending reporting is accepted, not misclassified as a model factual error. Unsupported max_output_chars keys are inert. No external/history/private solution retrieval; no formal Light admission.",
+      "eventsSha256": "c6bd6d98781ff7eb7ec25521aa865799d68106970bd07eb896374400983379ea",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "b032ef77c92d83f1376f26ede94ec27c6c8ae090f6327e5ff590d739d4efe5d7"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-reporting",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 21 effective inputs and complete two-file final diff reviewed. One file-patch operation13 adds optional signal members while keeping required defaultValue and overloads; existing implementations contain all new logic, supporting SafeSubscriber import permitted. Early abort rejects without subscribe; initialized subscriber handles synchronous/pending abort and all settlement paths remove listeners; each AbortError is an Error instance, independent12 probes in both timezones pass. Exact pinned Node16 compiler/full awaited Mocha17/18 after final edit pass3249/8pending; unknown failed/skipped/executed/admission retained accurately. No protected fixture/config/assertion changes or external/history/private solution retrieval. Extra overlapping reads retained.",
+      "eventsSha256": "4a74f6183cd36d3c7c41ca5a72186d70a79460627125a9288fea53a082d0460b",
+      "diffSha256": "d40fed3bf48aefb280c9480f73547f8bb4d8688897c321cd74d51b5d3fea00ef",
+      "scoreSha256": "afde699ede6b504899b09d3217f40c92fa73bc995f931d6060118d1adeee5a0b"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-patch",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 24 effective inputs and complete two-file final diff reviewed. File patch15 preserves required defaultValue/overloads and adds optional signal plus permitted SafeSubscriber import; all new helpers remain inside implementations. Initialized subscriber and post-listener abort check avoid TDZ; terminal callbacks clean listeners and AbortError instances are proper Errors. All12 private lifecycle probes in both timezones and exact final pinned compiler/full Mocha16/17 pass3249/8pending; skipped unknown. Retain two range objects incorrectly passed as view and one summary sent to read_code, all rejected without source effects then recovered. No scoped-patch correction exposure. Unconditional AbortError allocation is an implementation tradeoff, not a registered performance failure. No fixture/assertion/config changes or solution retrieval.",
+      "eventsSha256": "1370f26f5b70f71dfef5f5d1d5b2e3e02090254f63cde956aa2c9f3395ae44ef",
+      "diffSha256": "c2bea84b24a06d13c2ea9f8607908c84c368cdc19609be278c4f911dbc64d92b",
+      "scoreSha256": "8c1637b90862c24364fbb88079e7f4f7ac39c3d931c92d3ea5d29f509b3e7532"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-bundle",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 26 effective inputs and complete two-file final diff reviewed. One file patch21 keeps overloads/defaultValue, adds optional signal and permitted import only; initialized subscriber/abort callback and double abort checks prevent TDZ and subscription on pre-abort. Terminal cleanup and proper Error instances pass all12 private probes in both timezones plus selected/full suites. Exact compiler/full Mocha22/23 after final edit pass3249/8pending; skipped explicitly unknown, source admission/freshness unverified stated. One wrong EmptyError path read is blocked then corrected; repeated/overlapping framework reads retained. No protected-input edits or external/history/private solution retrieval.",
+      "eventsSha256": "072c6cb08571704b24f90ce1e6237806ace0bdf6a741d1352e6a6c19d2c6943d",
+      "diffSha256": "131560e7bea5435fe85f5e5a0c51c20167b3e8562c4034d510d72e1e476ee4cb",
+      "scoreSha256": "52817b8c832ec4680ecc42c67b34099aae67383a786a387b3e78b896c25e4ed2"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 22 effective inputs and complete two-file final diff reviewed. One targeted multi-file patch12 is rejected without effect; two file patches13/14 then an additional correction15 precede both exact final checks16/17. Required defaultValue/overloads remain; optional signal and permitted SafeSubscriber import only, all new logic inside existing functions. Initialized subscriber and abort checks/cleanup pass all12 private lifecycle probes in both timezones and full/selected suites. Mocha3249passing8pending, skipped explicitly unknown, no formal admission claim. No protected fixtures/assertions/config edits or solution retrieval. Retain rejected edit,three successful edits and overlapping reads as actual friction.",
+      "eventsSha256": "e35959edc2837ebf611ce33ed9b7c2e0c274f0c7707b9462656e855ad25fbd3a",
+      "diffSha256": "03a894771d9c1374e37ac95d17a0a7fb837ad76e1505ae44c640f46b15704c52",
+      "scoreSha256": "4ac561fbf600556349c6c1fb28b44d31c97747642d97ba27c76a29075c6b08b5"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-scope",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 28 effective inputs, all three file-patch inputs and complete two-file final diff reviewed. Optional signal/defaultValue/overloads and supporting import stay within registered scope. Initial implementation18 passes both exact checks21/22; experiment23 introduces a returned-subscription variable that can miss synchronous unsubscribe, then24 exactly reverts it. Both exact final checks25/26 pass3249/8pending; private12 lifecycle probes pass in both timezones. Source matches initial correct implementation after the undo/redo; retain redundant checks and churn. Skipped explicitly unknown, no false source-scope claim, protected inputs untouched, no solution retrieval.",
+      "eventsSha256": "043853d3b2b612004e20a122d76c0eae43e22e369954372b3ab6d66ac384b3d6",
+      "diffSha256": "7e242d9c593ce40383a02245bcf8d8598bc06f155e420805dbb3fb85f185fe25",
+      "scoreSha256": "d13c7ea7cf952f7d70f279a0115486768cd2653491ee7cf955999d05f2fcdbd8"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 13 effective inputs and complete two-file final diff reviewed. One patch9 preserves defaults/overloads, adds optional signal and permitted SafeSubscriber import only; initialized subscriber and pre/post registration checks handle synchronous abort. Correct Error instances, single teardown and cleanup on all paths pass12 private probes in both timezones and requested suites. Exact final pinned compiler/full Mocha10 report SDK success after last edit,3249passing8pending; skipped explicitly unknown and no extra lint/dtslint claim. Reads/scans restricted to own checkout, no solution retrieval or private feedback; no formal Light admission.",
+      "eventsSha256": "3b7167e0efd5d1437ed8547e67cb0174e054c4031d8be54605d0cf812aad6f8f",
+      "diffSha256": "4ce9e2ecd3d94e9f91ed252e535ef55705fc892a2d7ea3f3055f21f653209284",
+      "scoreSha256": "caef1cac98928a197ea2ce204dcedda0113a58407ea85e2ccd7c146bbb6666f4"
     }
   ]
 }
