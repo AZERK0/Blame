@@ -64,6 +64,11 @@ for (const row of analysis.rows) {
   row.noSolutionRetrieval = decision.noSolutionRetrieval;
   row.reportingOnlySensitivity = decision.reportingOnlySensitivity ?? null;
   row.manualCriteriaFailures = decision.criteriaFailures ?? [];
+  if ("manualBehaviorPassed" in decision) {
+    assert.equal(typeof decision.manualBehaviorPassed, "boolean", row.name);
+    row.manualBehaviorPassed = decision.manualBehaviorPassed;
+    assert.ok(decision.manualBehaviorPassed || !decision.fullRequestCriteriaPassed, row.name);
+  }
 }
 const summary = { partition:protocol.phaseOrder?"mixed":partition, definition: "Internal real-repository panel, not an external benchmark certification. Official runtime success, frozen independent feature/existing-suite success, actual required agent validation and full audited completion are separate. Post-selected wording sensitivity never replaces the registered endpoint. Cache tokens subset input, reasoning subset output; incomplete usage is never zero-filled.",
   planned: analysis.planned, completed: analysis.completed, unexecuted: analysis.planned - analysis.completed, arms: {} };

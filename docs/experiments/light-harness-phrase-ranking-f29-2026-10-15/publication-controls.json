@@ -19,6 +19,10 @@
       "rejected": true
     },
     {
+      "fault": "Changed audited behavior inconsistent with recorded counterexamples",
+      "rejected": true
+    },
+    {
       "fault": "Rehashed wire metadata with unregistered model",
       "rejected": true
     }

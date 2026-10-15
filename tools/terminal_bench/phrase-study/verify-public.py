@@ -59,6 +59,9 @@ for r in rows:
  assert r['partition']==next(t.get('partition','confirmation') for t in protocol['tasks'] if t['id']==r['id'])
  accepted=all([r['independentFunctionalSuccess'],review['agentRequiredChecksPassed'],review['fullRequestCriteriaPassed'],review['noSolutionRetrieval'],r['officialRuntimeSuccess']])
  assert r['auditedCompletion']==accepted
+ if 'manualBehaviorPassed' in r:
+  assert type(r['manualBehaviorPassed']) is bool and r['manualBehaviorPassed']==review['manualBehaviorPassed']
+  assert r['manualBehaviorPassed'] or not review['fullRequestCriteriaPassed']
  aggregate=execution.get('usage',{}).get('aggregateUsage',{})
  for key,recorded in [('totalInputTokens','input'),('totalOutputTokens','output'),('totalCacheReadTokens','cacheRead'),('totalCacheWriteTokens','cacheWrite'),('totalCost','cost')]:
   if isinstance(aggregate.get(key),(int,float)) and r['usage'][recorded] is not None:assert close(aggregate[key],r['usage'][recorded]),(name,key)
@@ -84,6 +87,10 @@ for phase in ['fresh-confirmation']:
   for field,key in [('inputTokensObserved','input'),('outputTokensObserved','output'),('cacheReadTokensObserved','cacheRead'),('cacheWriteTokensObserved','cacheWrite')]:totals[field]=sum(r['usage'][key] or 0 for r in rs)
   for field,key in [('missingCacheReadAggregates','cacheRead'),('missingCacheWriteAggregates','cacheWrite'),('missingReasoningAggregates','reasoning')]:totals[field]=sum(r['usage'][key] is None for r in rs)
   for key,value in totals.items():assert close(value,summary['strata'][phase]['arms'][arm][key]),(phase,arm,key)
+  if all('manualBehaviorPassed' in r for r in rs):
+   assert summary['arms'][arm]['manualBehaviorReviewed']==len(rs)
+   assert summary['arms'][arm]['manualBehaviorPassed']==sum(r['manualBehaviorPassed'] for r in rs)
+   assert summary['arms'][arm]['manualBehaviorFailures']==sum(not r['manualBehaviorPassed'] for r in rs)
   strata[phase][arm]=totals
 for repeat in summary['repetitions']:
  for arm,total in repeat['arms'].items():
@@ -190,6 +197,66 @@ if patch_replay_path.exists():
  assert patch_replay['rows'][0]['before']==patch_replay['rows'][1]['before']
  assert patch_replay['rows'][0]['after']==patch_replay['rows'][1]['after']!=patch_replay['rows'][0]['before']
 # Local mechanism evidence and the measured snapshot share the exact modules.
+if (root/'qualified-target-replay.json').exists():
+ recovery=read('qualified-target-replay.json');validation=read('qualified-target-validation.json')
+ assert recovery['paidRequests']==validation['paidRequests']==0
+ assert recovery['postSelectedDiagnostic'] and recovery['implementedAfterFrozenTreatments']
+ assert not validation['modelBenefitMeasured'] and validation['productionLexicalOrderingUnchanged']
+ assert validation['productionLexicalModuleHashes']==read('local-controls.json')['bindings']['baseline']
+ assert recovery['eventsSha256']==sha(raw[recovery['trial'],'events.jsonl'])
+ assert validation['replay']['sha256']==sha((root/'qualified-target-replay.json').read_bytes())
+ local_bytes={}
+ for entry in validation['inventory']:
+  data=gzip.decompress((root/entry['artifact']).read_bytes())
+  assert len(data)==entry['bytes'] and sha(data)==entry['sha256'];local_bytes[entry['artifact']]=data
+ for source,digest in validation['sources'].items():assert sha(local_bytes[validation['sourceArtifacts'][source]])==digest
+ assert 'pass 71' in local_bytes['local-validation/qualified-target-tests-current.log.gz'].decode()
+ assert 'fail 0' in local_bytes['local-validation/qualified-target-tests-current.log.gz'].decode()
+ assert 'pass 2' in local_bytes['local-validation/qualified-target-frozen-baseline.log.gz'].decode()
+ assert 'fail 2' in local_bytes['local-validation/qualified-target-frozen-baseline.log.gz'].decode()
+ assert not local_bytes['local-validation/qualified-target-lint.log.gz']
+ assert [r['stage'] for r in recovery['rows']]==['before','after']
+ for row in recovery['rows']:
+  assert row['sourceUnchanged'] and len(row['outcomes'])==5
+  assert row['aliasesModuleSha256']==validation['runtimeModules'][row['stage']]['sha256']
+  for outcome in row['outcomes']:
+   assert outcome['result']['status']=='blocked'
+   if row['stage']=='before':assert 'followup' not in outcome
+   else:
+    assert 'No indexed declaration matches' in outcome['result']['message']
+    if 'followup' in outcome:
+     suggested=json.loads(outcome['result']['message'].split('Suggested read_code input: ',1)[1])
+     assert suggested==outcome['followup']['input']
+     assert outcome['followup']['status']=='ok'
+     assert outcome['followup']['qualifiedName']==outcome['input']['target'].split('#')[-1].strip()
+     assert suggested['target']=='lodash.js#'+outcome['followup']['qualifiedName']
+ assert sum('followup' in o for o in recovery['rows'][1]['outcomes'])==4
+ assert sum(o['exactControl']['status']=='blocked' for o in recovery['rows'][1]['outcomes'])==1
+for diagnostic_file in ['iteratee-default-first-diagnostic.json','iteratee-full-first-diagnostic.json','iteratee-default-diagnostic.json']:
+ if not (root/diagnostic_file).exists():continue
+ diagnostic=read(diagnostic_file)
+ assert diagnostic['paidRequests']==0 and diagnostic['postSelectedDiagnostic'] and diagnostic['original']['sourceUnchanged']
+ assert diagnostic['original']['sourceSha256']==next(t for t in protocol['tasks'] if t['id']=='lodash-iterator-own-mode')['selectedSourceSha256']['lodash.js']
+ cases,expected=diagnostic['cases'],diagnostic['expected']
+ assert len(cases)==len(expected) and len(set(c['id'] for c in cases))==len(cases)
+ for c,value in zip(cases,expected):
+  assert c['method'] in ['forIn','forInRight'] and c['inputLabel'] in ['zero','false','empty-string','null','undefined','truthy-number','object']
+  assert c['optionLabel'] in ['omitted','own-false','own-nontrue','own-true']
+  own=c['optionLabel']=='own-true'
+  assert c.get('referenceMethod',c['method'])==(('forOwn' if c['method']=='forIn' else 'forOwnRight') if own else c['method'])
+  skips=c['inputLabel'] in ['null','undefined'] or own and c['inputLabel'] in ['zero','false','empty-string']
+  assert value==('0:returned-input' if skips else '1:sentinel-error')
+ for row in diagnostic['rows']:
+  assert row['sourceUnchanged'] and row['assessedCases']==len(cases)==len(row['observations'])
+  differences=[{'caseId':c['id'],'expected':e,'actual':a} for c,e,a in zip(cases,expected,row['observations']) if e!=a]
+  assert differences==row['differences'] and row['allObservedDefaultCasesMatchOriginal']==(not differences)
+  if row['name'] not in reviews:continue # Ongoing prefix retains later diagnostic rows without grading them.
+  name=row['name'];score=json.loads(raw[name,'score.json'])
+  for file,key in [('events.jsonl','eventsSha256'),('workspace.diff','diffSha256'),('score.json','scoreSha256')]:assert sha(raw[name,file])==row[key]
+  assert row['sourceSha256']==score['sourceSha256']['lodash.js'] and row['frozenIndependentFunctionalSuccess']==score['independentFunctionalSuccess']
+  if differences:assert reviews[name]['manualBehaviorPassed'] is False and not reviews[name]['fullRequestCriteriaPassed']
+ if diagnostic_file=='iteratee-default-diagnostic.json' and results['completed']==results['planned']:
+  assert len(diagnostic['rows'])==len([r for r in rows if r['id']=='lodash-iterator-own-mode'])==9
 local,isolation=read('local-controls.json'),read('isolation-controls.json')
 assert local['paidRequests']==0 and local['prototypeOnly']
 assert len(local['rows'])==16 and len(local['real'])==8
