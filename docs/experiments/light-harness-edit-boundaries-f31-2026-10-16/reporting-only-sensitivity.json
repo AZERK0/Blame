@@ -1,0 +1,13 @@
+{
+  "paidRequests": 0,
+  "registeredSensitivity": true,
+  "method": "Relax only explicit reporting-only failures. Correct source,actual final-source checks,official delivery,scope and no-solution criteria remain required. Primary grades and resource gate stay unchanged.",
+  "relaxedTrials": [
+    "2-fast-glob-dynamic-filter-cline"
+  ],
+  "acceptedCounts": {
+    "baseline": 2,
+    "candidate": 2,
+    "cline": 2
+  }
+}

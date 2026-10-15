@@ -208,5 +208,635 @@
     "artifact": "traces/1-yaml-anchor-ranges-cline.model-exit.json.gz",
     "bytes": 5820,
     "sha256": "17ace29363126aeadeccc1ba4327e8e2e5ffdcb87c733ddd9154980b1db08f76"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-candidate",
+    "file": "instruction.txt",
+    "artifact": "traces/1-fast-glob-dynamic-filter-candidate.instruction.txt.gz",
+    "bytes": 1750,
+    "sha256": "78b167811cb68e2f651aa3c70e417686971eb4498ecb59f44f87ce69ba787f62"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-candidate",
+    "file": "events.jsonl",
+    "artifact": "traces/1-fast-glob-dynamic-filter-candidate.events.jsonl.gz",
+    "bytes": 309000,
+    "sha256": "2f891ea48428d6dd8de36d9ace9becf47914fc38d6770953e803bb67f46e2a35"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-candidate",
+    "file": "result.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-candidate.result.json.gz",
+    "bytes": 4945,
+    "sha256": "16dc972eae2a9100c90b5a9260f61962fbb74f236bb4898482c4737c1959e3fb"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-candidate",
+    "file": "workspace.diff",
+    "artifact": "traces/1-fast-glob-dynamic-filter-candidate.workspace.diff.gz",
+    "bytes": 5329,
+    "sha256": "b98ff796cea216694253db895b2fa4faf569bd0582f13a5117d608040ebaf471"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-candidate",
+    "file": "trial.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-candidate.trial.json.gz",
+    "bytes": 5796,
+    "sha256": "221af8c0be8d4a702211b4dc5b742d129efd4e41b7e049be0ab79975624e85eb"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-candidate",
+    "file": "score.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-candidate.score.json.gz",
+    "bytes": 165049,
+    "sha256": "d92dfa225bd6315c6ef49ac0bd8fff2b6f226e6f33a48486d926363ee8ae9936"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-candidate",
+    "file": "required-checks.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-candidate.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-candidate",
+    "file": "model-start.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-candidate.model-start.json.gz",
+    "bytes": 206,
+    "sha256": "d015757ffbdbf9ad01c206e4dce9aee05f12a53fd2e0e4c8db8c90312e23c1e3"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-candidate",
+    "file": "model-child.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-candidate.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "8cc944c8a8768af3f550b1975df7cf55bbbd6b8ce3273566668af6b6fe893055"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-candidate",
+    "file": "model-exit.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-candidate.model-exit.json.gz",
+    "bytes": 5598,
+    "sha256": "7b06730f390d9075ed3d5b8e01427203f4cd58f9f6b9db703785324ec5b16c9e"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-fast-glob-dynamic-filter-cline.instruction.txt.gz",
+    "bytes": 1750,
+    "sha256": "78b167811cb68e2f651aa3c70e417686971eb4498ecb59f44f87ce69ba787f62"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-fast-glob-dynamic-filter-cline.events.jsonl.gz",
+    "bytes": 863927,
+    "sha256": "8b8620a93bd9f111a97fe6d9686daa077db19c50ea6c3ca3df977832f5ed393f"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-cline",
+    "file": "result.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-cline.result.json.gz",
+    "bytes": 3844,
+    "sha256": "88bae05062d9be82608c1dab2c5e4ca298abfb3e9270ccf4be66d3d489ed8d99"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-fast-glob-dynamic-filter-cline.workspace.diff.gz",
+    "bytes": 6100,
+    "sha256": "37ea64093fdd4254ca149595ecca36bcd5ab41a096caa79cadf566007fd3385a"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-cline",
+    "file": "trial.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-cline.trial.json.gz",
+    "bytes": 5328,
+    "sha256": "dcbab5c4a0ce5ac87c2f800673b42e3b9fc477f55e1b5d5de744fd3b2b45f63c"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-cline",
+    "file": "score.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-cline.score.json.gz",
+    "bytes": 165014,
+    "sha256": "2ac468b752bc55ee5e241062783ad8b19f3deadcc326169744be4344e04f2fc2"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-cline",
+    "file": "model-start.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-cline.model-start.json.gz",
+    "bytes": 202,
+    "sha256": "7c506652711a51dcdadb3c135a561702e2fd419db9f627d76758cf23a50c3f96"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-cline",
+    "file": "model-child.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "141da376281bbc47c04a8160ab7f5d270d64144c3ae0c3c7774b5ed7e9418a61"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-cline.model-exit.json.gz",
+    "bytes": 5138,
+    "sha256": "52e78baf24205c0b7013e2b02b310406e95bfe615f4036f2bf9dddc859563f78"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-fast-glob-dynamic-filter-baseline.instruction.txt.gz",
+    "bytes": 1750,
+    "sha256": "78b167811cb68e2f651aa3c70e417686971eb4498ecb59f44f87ce69ba787f62"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-fast-glob-dynamic-filter-baseline.events.jsonl.gz",
+    "bytes": 342642,
+    "sha256": "1a94eccfeceb725ef81a9011ca28ac6255b5d87f689ecff8abfa9c476853d841"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-baseline",
+    "file": "result.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-baseline.result.json.gz",
+    "bytes": 4237,
+    "sha256": "6e746a39848d7c2075c5ea9c4c8de7a914fdf78e569fa552d32d137dfeeb230d"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-fast-glob-dynamic-filter-baseline.workspace.diff.gz",
+    "bytes": 6022,
+    "sha256": "d8d4c2b6649c538f48a36b52acbbbad43ad6dd1a2720c285746e76f8693364dc"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-baseline",
+    "file": "trial.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-baseline.trial.json.gz",
+    "bytes": 6072,
+    "sha256": "eb2dc9dfbda5caff696a6371f5b59dbab958e63a73cc6a345354f56b83591199"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-baseline",
+    "file": "score.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-baseline.score.json.gz",
+    "bytes": 165027,
+    "sha256": "bd7cde4dec806e058da0de295cea9187c940ac4a091b7d696d9ebb1307433154"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-baseline.model-start.json.gz",
+    "bytes": 205,
+    "sha256": "8bc44a08bda51dac0a5c9e94730bef246148edc839a1e99bb9cbb77903c047d7"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "8eca1d89dc70a4adb54fe6893901af1984680744d7a9606c22b4b75a76a6df79"
+  },
+  {
+    "trial": "1-fast-glob-dynamic-filter-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/1-fast-glob-dynamic-filter-baseline.model-exit.json.gz",
+    "bytes": 5866,
+    "sha256": "1dd112273b0353c30456e689f802393f1f9a33f249d75fae9b1a2901423afd00"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-candidate",
+    "file": "instruction.txt",
+    "artifact": "traces/2-yaml-anchor-ranges-candidate.instruction.txt.gz",
+    "bytes": 1473,
+    "sha256": "4848b79fab9c012ff7a17afde5e88590bc8554e6231ca21cfd9bc59e1e117102"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-candidate",
+    "file": "events.jsonl",
+    "artifact": "traces/2-yaml-anchor-ranges-candidate.events.jsonl.gz",
+    "bytes": 168946,
+    "sha256": "0ae24cd4dc718f2ff7646406a399813bafaf4701aca5128b1f908db1dce889a1"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-candidate",
+    "file": "result.json",
+    "artifact": "traces/2-yaml-anchor-ranges-candidate.result.json.gz",
+    "bytes": 4653,
+    "sha256": "59edb037a14532cd9695a73e195f4973de8f30f2534e16601cb4ae6af26b99df"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-candidate",
+    "file": "workspace.diff",
+    "artifact": "traces/2-yaml-anchor-ranges-candidate.workspace.diff.gz",
+    "bytes": 5844,
+    "sha256": "20142f0803555caa2b6ed5f530ffc80fada3ca4d379c93e06087f3cca2d71bb1"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-candidate",
+    "file": "trial.json",
+    "artifact": "traces/2-yaml-anchor-ranges-candidate.trial.json.gz",
+    "bytes": 4662,
+    "sha256": "77ad76878198d0124329ed5cd7a4ba24c0e44e0e5f81be1e80112c17ee95cbcb"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-candidate",
+    "file": "score.json",
+    "artifact": "traces/2-yaml-anchor-ranges-candidate.score.json.gz",
+    "bytes": 8379,
+    "sha256": "a142b9ceb737f63528cf3590c908e1dd4aa87ac242837372da86edce1d26be11"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-candidate",
+    "file": "required-checks.json",
+    "artifact": "traces/2-yaml-anchor-ranges-candidate.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-candidate",
+    "file": "model-start.json",
+    "artifact": "traces/2-yaml-anchor-ranges-candidate.model-start.json.gz",
+    "bytes": 200,
+    "sha256": "f9c468a354af82843b3857d8f748368732c0c6e0730ba4af6965026aa6185adf"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-candidate",
+    "file": "model-child.json",
+    "artifact": "traces/2-yaml-anchor-ranges-candidate.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "aea764558274a552e1ed1daa66ffcca70f03f8f2a3989daf7dd38bf0793ed4ee"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-candidate",
+    "file": "model-exit.json",
+    "artifact": "traces/2-yaml-anchor-ranges-candidate.model-exit.json.gz",
+    "bytes": 4467,
+    "sha256": "2a106e88f1b543031a6dc2905035d47c6567b1b85404976b4c33c99e3f29e6e6"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-yaml-anchor-ranges-cline.instruction.txt.gz",
+    "bytes": 1473,
+    "sha256": "4848b79fab9c012ff7a17afde5e88590bc8554e6231ca21cfd9bc59e1e117102"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-yaml-anchor-ranges-cline.events.jsonl.gz",
+    "bytes": 757244,
+    "sha256": "e4c844d343474c9d7c781788982b475032e8e6abbf319c9d464612515e407f6b"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-cline",
+    "file": "result.json",
+    "artifact": "traces/2-yaml-anchor-ranges-cline.result.json.gz",
+    "bytes": 3731,
+    "sha256": "1242c41726873c69cd0d19cd54494690110c052464ddfa3039782a6f80ae34fc"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-yaml-anchor-ranges-cline.workspace.diff.gz",
+    "bytes": 2675,
+    "sha256": "f380f604dfb4de991b991c1fdea303295053608c8aaa56b15ce8fb4adfb1a925"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-cline",
+    "file": "trial.json",
+    "artifact": "traces/2-yaml-anchor-ranges-cline.trial.json.gz",
+    "bytes": 5228,
+    "sha256": "84d11fcdaacb6f3b6e5ef9f6adaac1c8223b082972b3ed78be4755ca38fdbbb5"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-cline",
+    "file": "score.json",
+    "artifact": "traces/2-yaml-anchor-ranges-cline.score.json.gz",
+    "bytes": 8267,
+    "sha256": "48a74099109790b3afa5023f61f1be6ce52e184eebc041b7a90fb2de8747b5b0"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/2-yaml-anchor-ranges-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-cline",
+    "file": "model-start.json",
+    "artifact": "traces/2-yaml-anchor-ranges-cline.model-start.json.gz",
+    "bytes": 196,
+    "sha256": "f9d4b9115294dfe9594f7042f2ecbe956c208b1096a8a54070f2bd2cf88d74be"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-cline",
+    "file": "model-child.json",
+    "artifact": "traces/2-yaml-anchor-ranges-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "6340efeb46c9838d39106c58634bea89ccbbc53668a6bc1b1c5c5b0ceb5fc192"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/2-yaml-anchor-ranges-cline.model-exit.json.gz",
+    "bytes": 5044,
+    "sha256": "2cfb952e94e1c31039dfe425ed6f142b439237c14a4ee3a0e28bf59159832d9f"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-yaml-anchor-ranges-baseline.instruction.txt.gz",
+    "bytes": 1473,
+    "sha256": "4848b79fab9c012ff7a17afde5e88590bc8554e6231ca21cfd9bc59e1e117102"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-yaml-anchor-ranges-baseline.events.jsonl.gz",
+    "bytes": 212008,
+    "sha256": "e1134d4736a8530df98bbb24042d3f73568f32fd2e86d52e4db6fe9eba134694"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-baseline",
+    "file": "result.json",
+    "artifact": "traces/2-yaml-anchor-ranges-baseline.result.json.gz",
+    "bytes": 4681,
+    "sha256": "038eb28fa27f93f8ffbae8e813bccd5eb03ad45202ea83876b454de8530aa40e"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-yaml-anchor-ranges-baseline.workspace.diff.gz",
+    "bytes": 5419,
+    "sha256": "390338ae32c189b09a903a1f2df3a936dd7394472d1c7c646a6e277120abb90a"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-baseline",
+    "file": "trial.json",
+    "artifact": "traces/2-yaml-anchor-ranges-baseline.trial.json.gz",
+    "bytes": 6212,
+    "sha256": "c6a9c7a5196571887cec3390d1d3f94129dc28636feda5308f8da5dc78d5f5dc"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-baseline",
+    "file": "score.json",
+    "artifact": "traces/2-yaml-anchor-ranges-baseline.score.json.gz",
+    "bytes": 8373,
+    "sha256": "623ee248470a65a2e942d718c8d28533a5f7bcbf5d1df4a81be4b28881345c49"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/2-yaml-anchor-ranges-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/2-yaml-anchor-ranges-baseline.model-start.json.gz",
+    "bytes": 199,
+    "sha256": "adb412a146bcd0003092396e4bad37ebcaf5810a144fe6e779168189c08dbcda"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/2-yaml-anchor-ranges-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "bc3f8c49bca976385893b70f24c2a35565c772a9ee42d13e85c1ce179a21e7f3"
+  },
+  {
+    "trial": "2-yaml-anchor-ranges-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/2-yaml-anchor-ranges-baseline.model-exit.json.gz",
+    "bytes": 6020,
+    "sha256": "33e3e2bd8677fd154629f48175692dfe9b1ada0372a5eabcea19a1823cb79e13"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-fast-glob-dynamic-filter-cline.instruction.txt.gz",
+    "bytes": 1750,
+    "sha256": "78b167811cb68e2f651aa3c70e417686971eb4498ecb59f44f87ce69ba787f62"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-fast-glob-dynamic-filter-cline.events.jsonl.gz",
+    "bytes": 746903,
+    "sha256": "70c887b7f9787918d28af1db1f84333c0e5f531e0ab0f316442bac5ec4b0479c"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-cline",
+    "file": "result.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-cline.result.json.gz",
+    "bytes": 3749,
+    "sha256": "d1a78346b9ea91c9e99732f00b3b985d564a5acce0f2bde8965dd910f203eaf4"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-fast-glob-dynamic-filter-cline.workspace.diff.gz",
+    "bytes": 6702,
+    "sha256": "3f69a542eef860fff7a98f3d0cecd38d8dea0966c1b22f743e4d569ea1eae7cb"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-cline",
+    "file": "trial.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-cline.trial.json.gz",
+    "bytes": 6544,
+    "sha256": "c1b9db2effb6a8f5c310910e1c13f450ed4ac918d363c83180a6793375b9da23"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-cline",
+    "file": "score.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-cline.score.json.gz",
+    "bytes": 164989,
+    "sha256": "b7b4969bd57bc752c704b5f0d95648b781f643e7fd065e4ab18b40497f614c73"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-cline",
+    "file": "model-start.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-cline.model-start.json.gz",
+    "bytes": 202,
+    "sha256": "96202840d02eac62b8cdffbb82c01f81176d20190f62d3ab53fc5d06d135f3d0"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-cline",
+    "file": "model-child.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "46c2572a19ca98da4856b3c21cacbeb24ca92ce42e7ef5cc7896abc572c99137"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-cline.model-exit.json.gz",
+    "bytes": 6347,
+    "sha256": "117f4036848f0502c3fbd18970ff0e1df5f1c475499e78aef05519db122e2295"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-fast-glob-dynamic-filter-baseline.instruction.txt.gz",
+    "bytes": 1750,
+    "sha256": "78b167811cb68e2f651aa3c70e417686971eb4498ecb59f44f87ce69ba787f62"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-fast-glob-dynamic-filter-baseline.events.jsonl.gz",
+    "bytes": 303834,
+    "sha256": "82c29c6d980adaac1e8d50f575ec91bb4ed6a51b3e34e6081ceb099a53376cf0"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-baseline",
+    "file": "result.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-baseline.result.json.gz",
+    "bytes": 4263,
+    "sha256": "e07bd298a6768a13091a8e181442ebd96b90d5d6347c2c39b03819a8649a3342"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-fast-glob-dynamic-filter-baseline.workspace.diff.gz",
+    "bytes": 6021,
+    "sha256": "6408d5cd0dc803481a27e1021e89cbebfc2db8556c85a32363ed91698236ef7c"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-baseline",
+    "file": "trial.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-baseline.trial.json.gz",
+    "bytes": 5170,
+    "sha256": "0464337a12e727c3c6a5191c54e70ab1ad8ab5d1d452c7b431cdc22287982c93"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-baseline",
+    "file": "score.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-baseline.score.json.gz",
+    "bytes": 165030,
+    "sha256": "b52f6bc9b7a480414f1ac385e3dc681ffd753292044f893d708751f8a796a55a"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-baseline.model-start.json.gz",
+    "bytes": 205,
+    "sha256": "95b2c163b8910fa866b7252640c56a78e8d222b7c09a3a65c93d91f414fbc15e"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "9d011d682f0c74a0de60ca451120d815e23ac1c14551b2eed4e5aa487a0816e1"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-baseline.model-exit.json.gz",
+    "bytes": 4966,
+    "sha256": "5fbf0d53ee01b6b04e90e020342b8f4d96d7a7d83c0563de92569a46f7b608d7"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-candidate",
+    "file": "instruction.txt",
+    "artifact": "traces/2-fast-glob-dynamic-filter-candidate.instruction.txt.gz",
+    "bytes": 1750,
+    "sha256": "78b167811cb68e2f651aa3c70e417686971eb4498ecb59f44f87ce69ba787f62"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-candidate",
+    "file": "events.jsonl",
+    "artifact": "traces/2-fast-glob-dynamic-filter-candidate.events.jsonl.gz",
+    "bytes": 370290,
+    "sha256": "e489fc4ccc00a72e2131f61e8d175401ad43cd42518bff8239b5c2df000bceaa"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-candidate",
+    "file": "result.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-candidate.result.json.gz",
+    "bytes": 4255,
+    "sha256": "f847fc5a0cd271b5e94e9ac5d41eda42c7d524becf3b74b8432d68d7d7d5b78c"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-candidate",
+    "file": "workspace.diff",
+    "artifact": "traces/2-fast-glob-dynamic-filter-candidate.workspace.diff.gz",
+    "bytes": 6057,
+    "sha256": "614ece43d5b25cd1be81f89abc5878adb2fe66d5512c2090326c2179d5a129e2"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-candidate",
+    "file": "trial.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-candidate.trial.json.gz",
+    "bytes": 5925,
+    "sha256": "9d7f5bf37f6f4f633e1c48ef1eb6e982ec97ebafdc847e30e8ee8b7999c09de8"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-candidate",
+    "file": "score.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-candidate.score.json.gz",
+    "bytes": 165397,
+    "sha256": "c81b90c2fba2a10ca07dcde916bc01fa910d6b7323a712b0a18d45e10fe7ed44"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-candidate",
+    "file": "required-checks.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-candidate.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-candidate",
+    "file": "model-start.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-candidate.model-start.json.gz",
+    "bytes": 206,
+    "sha256": "7caead35ff4485f834962e2fec2cf1bddb77d2bd58573530e03751bf7b905ed2"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-candidate",
+    "file": "model-child.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-candidate.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "a01cb9a132f1ae37a5f239cb6990497cf22a4be57fb445141e23acd6a0e0d652"
+  },
+  {
+    "trial": "2-fast-glob-dynamic-filter-candidate",
+    "file": "model-exit.json",
+    "artifact": "traces/2-fast-glob-dynamic-filter-candidate.model-exit.json.gz",
+    "bytes": 5723,
+    "sha256": "f280adcfe8bcb106d34a6a40038132b08cb445a58108c8abd4796ab7bf1a94bc"
   }
 ]

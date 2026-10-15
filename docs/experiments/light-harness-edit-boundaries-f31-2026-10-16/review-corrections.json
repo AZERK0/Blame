@@ -1,0 +1,15 @@
+{
+  "paidRequests": 0,
+  "corrections": [
+    {
+      "name": "1-fast-glob-dynamic-filter-baseline",
+      "kind": "factual_note_correction_only",
+      "reason": "The first prose note misattributed the reference failure to the byte guard. Original runtime error establishes maxIterations32. No boolean decisions,original traces,scores,costs or frozen grades change. Snapshot6 retains the original note; this correction accompanies its publication.",
+      "originalNotes": "Inspected complete seven-file diff and all effective inputs,including filesystem diagnostics and failed validation/recovery. Frozen endpoint/type/original unit/E2E checks pass on final source. The agent corrects pruning,stream error forwarding and mock compatibility,but its last successful patch70 occurs after the last validation chain69,which failed. No requested command is run after that final patch and no final delivery occurs. The research byte guard rejects the next request before dispatch; retain the official failure despite correct independently checked code. All actual implementation mutations are within allowed paths. Ephemeral /tmp diagnostic fixtures are not project additions. Dependency source is read only through installed node_modules,not a feature solution; no protected/test/config edits. File patches dominate and no whole-symbol indentation route is exercised.",
+      "correctedNotes": "Inspected complete seven-file diff and all effective inputs,including filesystem diagnostics and failed validation/recovery. Frozen endpoint/type/original unit/E2E checks pass on final source. The agent corrects pruning,stream error forwarding and mock compatibility,but its last successful patch70 occurs after the last validation chain69,which failed. No requested command is run after that final patch and no final delivery occurs. The runtime reaches its32-iteration limit after the last patch; retain the official failure despite correct independently checked code. This differs from the native trial\u2019s serialization-byte rejection. All actual implementation mutations are within allowed paths. Ephemeral /tmp diagnostic fixtures are not project additions. Dependency source is read only through installed node_modules,not a feature solution; no protected/test/config edits. File patches dominate and no whole-symbol indentation route is exercised.",
+      "runtimeError": "Agent runtime exceeded maxIterations (32)",
+      "eventsSha256": "1a94eccfeceb725ef81a9011ca28ac6255b5d87f689ecff8abfa9c476853d841",
+      "scoreSha256": "bd7cde4dec806e058da0de295cea9187c940ac4a091b7d696d9ebb1307433154"
+    }
+  ]
+}

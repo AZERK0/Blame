@@ -11,7 +11,7 @@ run([...node('snapshot'),String(count)]);const snapshot=join(work,'checkpoints',
 run([process.execPath,'tools/terminal_bench/corpus/light-study-tool-lifecycle.mjs',snapshot]);
 run([process.execPath,'tools/terminal_bench/guidance-study/publish.mjs',snapshot,study]);
 run([process.execPath,'tools/terminal_bench/navigation-evidence/publish-wire.mjs',snapshot,study]);
-run([...node('postprocess'),snapshot,study]);run([...node('summarize'),snapshot]);run([...node('evidence'),snapshot]);run(node('schema-treatment'));run(node('decision'));run(node('report'));
+run([...node('postprocess'),snapshot,study]);run([...node('summarize'),snapshot]);run([...node('evidence'),snapshot]);run(node('schema-treatment'));run(node('mechanism-exposure'));run(node('failure-classification'));run(node('scope-sensitivity'));run(node('reporting-sensitivity'));run(node('decision'));run(node('report'));
 await writeFile(join(study,'public-replay.json'),run(['python','tools/terminal_bench/edit-boundary-study/verify-public.py',study]));
 await writeFile(join(study,'publication-controls.json'),run(['python','tools/terminal_bench/edit-boundary-study/publication-controls.py',study]));
 await writeFile(join(study,'prefix-'+count+'-summary.json'),await readFile(join(study,'guidance-summary.json')),{flag:'wx'});

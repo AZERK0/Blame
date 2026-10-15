@@ -1,0 +1,34 @@
+{
+  "paidRequests": 0,
+  "postSelectedSensitivity": true,
+  "method": "Relax only explicitly flagged temporary source-scope writes fully undone in a compliant final diff. Require actual checks,accepted behavior,no solution retrieval and official delivery. Never recover missing delivery,failed checks or source behavior. Original action-scope primary grades/gates stay unchanged.",
+  "relaxedTrials": [
+    "1-fast-glob-dynamic-filter-candidate"
+  ],
+  "acceptedCounts": {
+    "baseline": 2,
+    "candidate": 3,
+    "cline": 1
+  },
+  "pairs": 2,
+  "resources": {
+    "tokens": {
+      "left": 601886,
+      "right": 702042,
+      "pairs": 2,
+      "relativeChange": -0.1426638292295902
+    },
+    "cost": {
+      "left": 0.0400642,
+      "right": 0.0424194,
+      "pairs": 2,
+      "relativeChange": -0.055521765984431704
+    },
+    "seconds": {
+      "left": 149.37900000000002,
+      "right": 169.837,
+      "pairs": 2,
+      "relativeChange": -0.1204566731630915
+    }
+  }
+}

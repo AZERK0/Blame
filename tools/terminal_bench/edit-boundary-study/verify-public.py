@@ -142,6 +142,55 @@ for r,record in zip(rows,provenance['rows']):
   if call['tool']=='run_commands':assert call['nativeResults']==output
 for entry in read('supplemental-inventory.json')['journals']:
  b=gzip.decompress((root/entry['artifact']).read_bytes());assert len(b)==entry['bytes'] and sha(b)==entry['sha256']
+if (root/'mechanism-exposure.json').exists():
+ exposure=read('mechanism-exposure.json');assert exposure['paidRequests']==0 and len(exposure['rows'])==len(rows)
+ for r,record in zip(rows,exposure['rows']):
+  events=[json.loads(l)['event'] for l in raw[r['name'],'events.jsonl'].splitlines() if l]
+  calls=[e['payload'] for e in events if e['type']=='tool' and e['payload'].get('phase')=='finished' and e['payload'].get('toolCall',{}).get('name')=='edit_code']
+  ops=[dict(op,status=(c.get('output') or {}).get('status')) for c in calls for op in (c['toolCall']['input'].get('operations') if isinstance(c['toolCall']['input'].get('operations'),list) else []) if isinstance(op,dict)]
+  whole=[o for o in ops if o.get('kind')=='symbol' and o.get('action')=='replace']
+  assert record['name']==r['name'] and record['eventsSha256']==r['eventsSha256']
+  assert record['wholeSymbolAttempts']==len(whole) and record['successfulWholeSymbolOperations']==sum(o.get('status')=='ok' for o in whole)
+  assert record['bodyOnlyAttempts']==sum(o.get('kind')=='symbol' and o.get('action')=='replace_body' for o in ops)
+  assert record['fileOrScopedPatchAttempts']==sum(o.get('kind')=='patch' for o in ops)
+  assert record['firstLineNormalizationActuallyApplied'] is None
+  assert record['mechanismRouteAbsent']==(None if r['arm']=='cline' else not any(o.get('status')=='ok' for o in whole))
+if (root/'failure-classification.json').exists():
+ classified=read('failure-classification.json');assert classified['paidRequests']==0
+ assert len(classified['rows'])==len(rows)
+ for r,c in zip(rows,classified['rows']):
+  assert c['name']==r['name'] and c['originalRuntimeError']==r['error'] and c['eventsSha256']==r['eventsSha256']
+  message=r['error'] if isinstance(r['error'],str) else ''
+  byte=re.search(r'Research request byte budget exceeded before dispatch: (\d+) > (\d+)',message)
+  iterations=re.search(r'exceeded maxIterations \((\d+)\)',message)
+  expected='research_request_byte_guard' if byte else 'max_iterations' if iterations else 'outer_watchdog' if r.get('exit',{}).get('watchdog') else 'completed' if r['officialRuntimeSuccess'] else 'other_or_unknown'
+  assert c['mechanism']==expected
+  if byte:assert c['requestBytes']==int(byte[1]) and c['byteLimit']==int(byte[2]) and c['rejectedBeforeDispatch']
+  if iterations:assert c['maximumIterations']==int(iterations[1])
+for correction in read('source-review.json').get('noteCorrections',[]):
+ r=next(r for r in rows if r['name']==correction['name'])
+ assert correction['runtimeError']==r['error'] and correction['eventsSha256']==r['eventsSha256'] and correction['scoreSha256']==r['scoreSha256']
+ assert reviews[r['name']]['notes']==correction['correctedNotes']
+if (root/'final-scope-only-sensitivity.json').exists():
+ sensitivity=read('final-scope-only-sensitivity.json');assert sensitivity['paidRequests']==0 and sensitivity['postSelectedSensitivity']
+ def scope_accept(r):
+  relaxed=reviews[r['name']].get('scopeOnlySensitivity') is True and r['manualCriteriaFailures']==['intermediate_source_write_outside_allowlist']
+  return all([r['officialRuntimeSuccess'],r['independentFunctionalSuccess'],r['agentRequiredChecksPassed'],r['noSolutionRetrieval'],r['manualBehaviorPassed'],r['auditedCompletion'] or relaxed,r['usage']['tokensCostReconciled']])
+ assert sensitivity['relaxedTrials']==[r['name'] for r in rows if not r['auditedCompletion'] and scope_accept(r)]
+ for arm in protocol['arms']:assert sensitivity['acceptedCounts'][arm]==sum(r['arm']==arm and scope_accept(r) for r in rows)
+ pairs=[(a,b) for a in rows if a['arm']=='candidate' and scope_accept(a) for b in rows if b['arm']=='baseline' and b['id']==a['id'] and b['repetition']==a['repetition'] and scope_accept(b)]
+ assert sensitivity['pairs']==len(pairs)
+ for metric,fn in [('tokens',lambda r:r['usage']['input']+r['usage']['output']),('cost',lambda r:r['usage']['cost']),('seconds',lambda r:r['durationMs']/1000)]:
+  left=sum(fn(a) for a,b in pairs);right=sum(fn(b) for a,b in pairs);resource=sensitivity['resources'][metric]
+  assert resource['pairs']==len(pairs) and close(resource['left'],left) and close(resource['right'],right)
+  assert resource['relativeChange'] is None if not right else close(resource['relativeChange'],left/right-1)
+if (root/'reporting-only-sensitivity.json').exists():
+ sensitivity=read('reporting-only-sensitivity.json');assert sensitivity['paidRequests']==0 and sensitivity['registeredSensitivity']
+ def reporting_accept(r):
+  relaxed=reviews[r['name']].get('reportingOnlySensitivity') is True and r['manualCriteriaFailures']==['final_report_assigns_e2e_counts_to_unit_command']
+  return all([r['officialRuntimeSuccess'],r['independentFunctionalSuccess'],r['agentRequiredChecksPassed'],r['noSolutionRetrieval'],r['manualBehaviorPassed'],r['auditedCompletion'] or relaxed,r['usage']['tokensCostReconciled']])
+ assert sensitivity['relaxedTrials']==[r['name'] for r in rows if not r['auditedCompletion'] and reporting_accept(r)]
+ for arm in protocol['arms']:assert sensitivity['acceptedCounts'][arm]==sum(r['arm']==arm and reporting_accept(r) for r in rows)
 controls=read('task-controls.json')
 assert controls['paidRequests']==0 and len(controls['rows'])==2
 for c in controls['rows']:

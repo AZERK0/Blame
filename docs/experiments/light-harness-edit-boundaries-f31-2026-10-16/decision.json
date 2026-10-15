@@ -1,6 +1,6 @@
 {
   "method": "Registered observed task-quality and resource gates. Local byte-correctness is separate from model efficacy; no population equivalence test.",
-  "completed": 3,
+  "completed": 12,
   "planned": 18,
   "complete": false,
   "registeredGate": {
@@ -8,30 +8,30 @@
     "resourceSignal": "At no lower quality,seek at least10% reduction in strict paired tokens or estimated cost; estimated cost increase <=5%,worker time increase <=10%. Keep all-attempt adverse results.",
     "retain": "Retain local correctness fix if local invariants pass and no observed task-quality loss; claim model efficiency only when resource gate passes. Otherwise keep isolated or investigate/revert. No outcome-based extension."
   },
-  "qualityGate": true,
-  "resourceGate": false,
-  "eligiblePairs": 1,
+  "qualityGate": false,
+  "resourceGate": true,
+  "eligiblePairs": 2,
   "resources": {
     "tokens": {
-      "left": 357062,
-      "right": 331714,
-      "pairs": 1,
+      "left": 601886,
+      "right": 702042,
+      "pairs": 2,
       "missingPairs": 0,
-      "relativeChange": 0.07641522516384591
+      "relativeChange": -0.1426638292295902
     },
     "cost": {
-      "left": 0.0230044,
-      "right": 0.020435599999999998,
-      "pairs": 1,
+      "left": 0.0400642,
+      "right": 0.0424194,
+      "pairs": 2,
       "missingPairs": 0,
-      "relativeChange": 0.12570220595431514
+      "relativeChange": -0.055521765984431704
     },
     "seconds": {
-      "left": 78.926,
-      "right": 89.146,
-      "pairs": 1,
+      "left": 149.37900000000002,
+      "right": 169.837,
+      "pairs": 2,
       "missingPairs": 0,
-      "relativeChange": -0.11464339398290446
+      "relativeChange": -0.1204566731630915
     }
   },
   "decision": "pending-complete-panel",

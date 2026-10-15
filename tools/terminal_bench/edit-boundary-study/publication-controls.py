@@ -49,6 +49,19 @@ with tempfile.TemporaryDirectory(prefix='blame-publication-controls-') as direct
  call=next(c for row in provenance['rows'] for c in row['actualRecordedAgentCommands'] if c['reporting'] and c['reporting']['counts']['pending'] is None)
  call['reporting']['counts']['pending']=0
  put('validation-provenance.json',provenance);rejected('Promoted an unreported validation counter to zero');restore('validation-provenance.json')
+ if (study/'failure-classification.json').exists():
+  classification=json.loads((study/'failure-classification.json').read_text())
+  failed=next(r for r in classification['rows'] if not r['official'])
+  failed['mechanism']='fabricated-cause'
+  put('failure-classification.json',classification);rejected('Changed original runtime failure attribution');restore('failure-classification.json')
+ if (study/'final-scope-only-sensitivity.json').exists():
+  sensitivity=json.loads((study/'final-scope-only-sensitivity.json').read_text())
+  sensitivity['resources']['tokens']['left']+=1
+  put('final-scope-only-sensitivity.json',sensitivity);rejected('Changed final-scope-only sensitivity resource subtotal');restore('final-scope-only-sensitivity.json')
+ if (study/'reporting-only-sensitivity.json').exists():
+  sensitivity=json.loads((study/'reporting-only-sensitivity.json').read_text())
+  sensitivity['acceptedCounts']['cline']+=1
+  put('reporting-only-sensitivity.json',sensitivity);rejected('Changed reporting-only sensitivity subtotal');restore('reporting-only-sensitivity.json')
  if (study/'behavior-public-replay.json').exists():
   behavior=json.loads((study/'behavior-public-replay.json').read_text())
   behavior['rows'][0]['sourceUnchangedByReplay']=False

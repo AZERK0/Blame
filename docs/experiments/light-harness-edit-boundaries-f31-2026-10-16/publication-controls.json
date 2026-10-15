@@ -31,6 +31,18 @@
       "rejected": true
     },
     {
+      "fault": "Changed original runtime failure attribution",
+      "rejected": true
+    },
+    {
+      "fault": "Changed final-scope-only sensitivity resource subtotal",
+      "rejected": true
+    },
+    {
+      "fault": "Changed reporting-only sensitivity subtotal",
+      "rejected": true
+    },
+    {
       "fault": "Rehashed wire metadata with unregistered model",
       "rejected": true
     }
