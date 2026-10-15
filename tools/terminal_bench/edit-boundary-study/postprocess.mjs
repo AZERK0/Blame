@@ -10,6 +10,8 @@ const analysis=await json(join(campaign,"analysis.json"));
 const ledger=await json(join(campaign,"tool-ledger.json"));
 const bindings=await json(join(study,"execution-bindings.json"));
 const protocol=await json(join(study,"protocol.json"));
+const review=await json(join(campaign,"source-review.json"));
+await writeFile(join(study,"review-corrections.json"),JSON.stringify({paidRequests:0,method:"Corrections to research-agent review,with original and revised decisions/notes retained. Original model events,source diffs,scores and resources are never changed. Historical published prefix summaries precede these corrections and are not the final grades.",noteCorrections:review.noteCorrections??[],adjudicationCorrections:review.adjudicationCorrections??[]},null,2)+"\n");
 const mechanisms=[],validation=[],addedSources=[],journals=[];
 for(const row of analysis.rows){
   const task=protocol.tasks.find(t=>t.id===row.id);

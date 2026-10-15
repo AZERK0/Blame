@@ -43,6 +43,10 @@
       "rejected": true
     },
     {
+      "fault": "Changed resolved-project sensitivity subtotal",
+      "rejected": true
+    },
+    {
       "fault": "Rehashed wire metadata with unregistered model",
       "rejected": true
     }

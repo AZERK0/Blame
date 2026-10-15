@@ -838,5 +838,215 @@
     "artifact": "traces/2-fast-glob-dynamic-filter-candidate.model-exit.json.gz",
     "bytes": 5723,
     "sha256": "f280adcfe8bcb106d34a6a40038132b08cb445a58108c8abd4796ab7bf1a94bc"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-yaml-anchor-ranges-cline.instruction.txt.gz",
+    "bytes": 1473,
+    "sha256": "4848b79fab9c012ff7a17afde5e88590bc8554e6231ca21cfd9bc59e1e117102"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-yaml-anchor-ranges-cline.events.jsonl.gz",
+    "bytes": 538232,
+    "sha256": "e1ef698085472849bc21989104bdf4c10800f998085a7680143fecb2cdeab654"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-cline",
+    "file": "result.json",
+    "artifact": "traces/3-yaml-anchor-ranges-cline.result.json.gz",
+    "bytes": 3727,
+    "sha256": "ad99b0efef8c3987d734c53cfc6d406598170e12a50e7d994a670109ffc8a33b"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-yaml-anchor-ranges-cline.workspace.diff.gz",
+    "bytes": 2697,
+    "sha256": "520ce192f202c394bf501478fb107699707b75d8e206a9a4d65a4ee6ee6249dc"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-cline",
+    "file": "trial.json",
+    "artifact": "traces/3-yaml-anchor-ranges-cline.trial.json.gz",
+    "bytes": 4707,
+    "sha256": "6244dde41db80c32b0647d0a1931b0bdb1b4926abfd8f79f00b4986c2f76c0b6"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-cline",
+    "file": "score.json",
+    "artifact": "traces/3-yaml-anchor-ranges-cline.score.json.gz",
+    "bytes": 8255,
+    "sha256": "1b4ac1e165b8bf1fa3f23d0aecca751fb3c9ba10903805132c7e73736f03c85f"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-yaml-anchor-ranges-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-cline",
+    "file": "model-start.json",
+    "artifact": "traces/3-yaml-anchor-ranges-cline.model-start.json.gz",
+    "bytes": 196,
+    "sha256": "f20df09e559e7550112d84e252757f8f674dfc2a40c97108e3eeb3ac3bc92f64"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-cline",
+    "file": "model-child.json",
+    "artifact": "traces/3-yaml-anchor-ranges-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "9ee15fc6e15ec9aa9ea386245a6628e4f749720714282161b2b4d175e5f54953"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-yaml-anchor-ranges-cline.model-exit.json.gz",
+    "bytes": 4520,
+    "sha256": "238d71db18ff1e48ee8bee7fde968e2b8c4536e71459e280af5226f07a86e9e7"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-yaml-anchor-ranges-baseline.instruction.txt.gz",
+    "bytes": 1473,
+    "sha256": "4848b79fab9c012ff7a17afde5e88590bc8554e6231ca21cfd9bc59e1e117102"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-yaml-anchor-ranges-baseline.events.jsonl.gz",
+    "bytes": 161537,
+    "sha256": "d39605862b1d94b0165e0eb12710e808323cd278716ebdf6da12c2db3c6c40f2"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-baseline",
+    "file": "result.json",
+    "artifact": "traces/3-yaml-anchor-ranges-baseline.result.json.gz",
+    "bytes": 4668,
+    "sha256": "0426baa9214c6c50db8a81dc5a91b36d149419f4c4fe3fba8b0e4478b494eb3e"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-yaml-anchor-ranges-baseline.workspace.diff.gz",
+    "bytes": 2578,
+    "sha256": "2675fa1a7756fec1b8b494f1890b3611ea02f94e127426c61257a1fd4f1b82a5"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-baseline",
+    "file": "trial.json",
+    "artifact": "traces/3-yaml-anchor-ranges-baseline.trial.json.gz",
+    "bytes": 4915,
+    "sha256": "19f02a133f1c6917b8c2d32b2a69590d751494a6c8878156e27f3e0b38932cd3"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-baseline",
+    "file": "score.json",
+    "artifact": "traces/3-yaml-anchor-ranges-baseline.score.json.gz",
+    "bytes": 8293,
+    "sha256": "cf60e8745764554c49f4c8120fc6a21c65a942c69fba4f19642418f1091abf98"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-yaml-anchor-ranges-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/3-yaml-anchor-ranges-baseline.model-start.json.gz",
+    "bytes": 199,
+    "sha256": "1cec109a9d4d8ab49a9e55e2f45990e21795a250e4988d2eaa4281e9cb2548f9"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/3-yaml-anchor-ranges-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "1f36243fca85c43653f638eb3cface24c54ed5aa5346eb33f1966eeafafa3962"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-yaml-anchor-ranges-baseline.model-exit.json.gz",
+    "bytes": 4723,
+    "sha256": "d883950baa5c11337ed114845bd9782977ccdfa0569c7b7c9c0f4af43c90bc74"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-candidate",
+    "file": "instruction.txt",
+    "artifact": "traces/3-yaml-anchor-ranges-candidate.instruction.txt.gz",
+    "bytes": 1473,
+    "sha256": "4848b79fab9c012ff7a17afde5e88590bc8554e6231ca21cfd9bc59e1e117102"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-candidate",
+    "file": "events.jsonl",
+    "artifact": "traces/3-yaml-anchor-ranges-candidate.events.jsonl.gz",
+    "bytes": 167453,
+    "sha256": "76425ce40885b05d60a92b134cf5df9cebfb49394e2de5dc3d3f2dc5ea4c065e"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-candidate",
+    "file": "result.json",
+    "artifact": "traces/3-yaml-anchor-ranges-candidate.result.json.gz",
+    "bytes": 4677,
+    "sha256": "4ae3ea79bfb16e3c0fe94c9ba98dac5f732b16de1239354bd0f3ffe5a5cbbf15"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-candidate",
+    "file": "workspace.diff",
+    "artifact": "traces/3-yaml-anchor-ranges-candidate.workspace.diff.gz",
+    "bytes": 2672,
+    "sha256": "e9209b89f46d5bd41de9724eb4aa69c64a2010abdcf11daff8f5d0ced22d3ca1"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-candidate",
+    "file": "trial.json",
+    "artifact": "traces/3-yaml-anchor-ranges-candidate.trial.json.gz",
+    "bytes": 4834,
+    "sha256": "31ddaf6d409c77f7e776b970717b47f7b439061cfd2f4e91d804018da1717dd2"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-candidate",
+    "file": "score.json",
+    "artifact": "traces/3-yaml-anchor-ranges-candidate.score.json.gz",
+    "bytes": 8291,
+    "sha256": "d8065360bbca5637bf731d6765a59bc7c857796e633a40096d145b05b74436a9"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-candidate",
+    "file": "required-checks.json",
+    "artifact": "traces/3-yaml-anchor-ranges-candidate.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-candidate",
+    "file": "model-start.json",
+    "artifact": "traces/3-yaml-anchor-ranges-candidate.model-start.json.gz",
+    "bytes": 200,
+    "sha256": "d06c4b0797e1e022114eab77237d65b1b34da20e94bf8fd3b70e4be6771beb7a"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-candidate",
+    "file": "model-child.json",
+    "artifact": "traces/3-yaml-anchor-ranges-candidate.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "11ede68a328589c6b8475bef1f99943f81584a8297bf252e7fb69f62f81eaf62"
+  },
+  {
+    "trial": "3-yaml-anchor-ranges-candidate",
+    "file": "model-exit.json",
+    "artifact": "traces/3-yaml-anchor-ranges-candidate.model-exit.json.gz",
+    "bytes": 4639,
+    "sha256": "116b45154d936d53b0f6f51b1ddee5ef7ef3217e3a38f608ab4fd276803ba17a"
   }
 ]

@@ -6292,6 +6292,1124 @@
       },
       "independentFunctionalSuccess": false,
       "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
+    },
+    {
+      "name": "3-yaml-anchor-ranges-cline",
+      "eventsSha256": "e1ef698085472849bc21989104bdf4c10800f998085a7680143fecb2cdeab654",
+      "scoreSha256": "1b4ac1e165b8bf1fa3f23d0aecca751fb3c9ba10903805132c7e73736f03c85f",
+      "finalScoredSources": {
+        "src/compose/compose-node.ts": "8e56388c4b28adc6759eb1401d34f21c148fa9e6bae5243f6bf9b8b88579060b",
+        "src/nodes/Node.ts": "1d30a8ca26ec4a37b52da04fd2c3ab1f0d99f4abf77766b27da26959ad0fcf2a",
+        "src/nodes/Scalar.ts": "6cd0c84d14cb9a753fe35b982c17a084f4f482c17e411a4cb6d32cb5435bed30",
+        "src/nodes/Collection.ts": "b3ee69af754d272b662041c3f2f8c1555ffa6694001c6a1265fcb702153de28d",
+        "src/nodes/YAMLMap.ts": "b13535633f411c1a7d84155ac5274e386bea28333b454c1d9a06ec325d50cd05",
+        "src/nodes/YAMLSeq.ts": "4970e2678868cfbb782a07553c87e73ababb1bc1f52156d0efaf4b90bd87c02f"
+      },
+      "actualRecordedAgentCommands": [
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p' && printf '\\nGit status:\\n' && git status --short --branch && printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\""
+            ],
+            "timeout": 120000
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "observedCheck": null,
+          "reporting": null,
+          "recordedSourceBinding": null,
+          "reportedEnvironment": null,
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p' && printf '\\nGit status:\\n' && git status --short --branch && printf '\\nPackage scripts:\\n' && node -e \"cons ... [command truncated: 77 more chars; full command is in the tool call input]",
+              "result": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace\n\nTop-level files:\n./.editorconfig\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.gitignore\n./.gitmodules\n./.prettierignore\n./.well-known/funding-manifest-urls\n./LICENSE\n./README.md\n./bin.mjs\n./browser/index.js\n./browser/package.json\n./config/jest.config.js\n./config/rollup.browser-config.mjs\n./config/rollup.node-config.mjs\n./docs/01_intro.md\n./docs/02_parse_stringify.md\n./docs/03_options.md\n./docs/04_documents.md\n./docs/05_content_nodes.md\n./docs/06_custom_tags.md\n./docs/07_parsing_yaml.md\n./docs/08_errors.md\n./docs/09_cli.md\n./docs/10_yaml_syntax.md\n./docs/CONTRIBUTING.md\n./docs/README.md\n./docs/SECURITY.md\n./docs/index.html.md\n./docs/prepare-docs.mjs\n./eslint.config.mjs\n./jsr.jsonc\n./package-lock.json\n./package.json\n./src/cli.ts\n./src/errors.ts\n./src/index.ts\n./src/log.ts\n./src/options.ts\n./src/public-api.ts\n./src/test-events.ts\n./src/util.ts\n./src/visit.ts\n./tests/_utils.ts\n./tests/agent-anchor-contracts.cjs\n./tests/agent-anchor-ranges.cjs\n./tests/cli.ts\n./tests/clone.ts\n./tests/collection-access.ts\n./tests/compat.ts\n./tests/cst.ts\n./tests/directives.ts\n./tests/is-node.ts\n./tests/json-test-suite.ts\n./tests/lexer.ts\n./tests/line-counter.ts\n./tests/node-to-js.ts\n./tests/properties.ts\n./tests/stream.ts\n./tests/tsconfig.json\n./tests/visit.ts\n./tests/yaml-test-suite.ts\n./tsconfig.json\n./util.js\n\nGit status:\n## master\n\nPackage scripts:\n{\n  \"build\": \"npm run build:node && npm run build:browser\",\n  \"build:browser\": \"rollup -c config/rollup.browser-config.mjs\",\n  \"build:node\": \"rollup -c config/rollup.node-config.mjs\",\n  \"clean\": \"git clean -fdxe node_modules\",\n  \"lint\": \"eslint config/ src/\",\n  \"prettier\": \"prettier --write .\",\n  \"prestart\": \"rollup --sourcemap -c config/rollup.node-config.mjs\",\n  \"start\": \"node --enable-source-maps -i -e 'YAML=require(\\\"./dist/index.js\\\");const{parse,parseDocument,parseAllDocuments}=YAML'\",\n  \"test\": \"jest --config config/jest.config.js\",\n  \"test:all\": \"npm test && npm run test:types && npm run test:dist && npm run test:dist:types\",\n  \"test:browsers\": \"cd playground && npm test\",\n  \"test:dist\": \"npm run build:node && jest --config config/jest.config.js\",\n  \"test:dist:types\": \"tsc --allowJs --moduleResolution node --noEmit --target es5 dist/index.js\",\n  \"test:types\": \"tsc --noEmit && tsc --noEmit -p tests/tsconfig.json\",\n  \"docs:install\": \"cd docs-slate && bundle install\",\n  \"predocs:deploy\": \"node docs/prepare-docs.mjs\",\n  \"docs:deploy\": \"cd docs-slate && ./deploy.sh\",\n  \"predocs\": \"node docs/prepare-docs.mjs\",\n  \"docs\": \"cd docs-slate && bundle exec middleman server\",\n  \"preversion\": \"npm test && npm run build\",\n  \"prepublishOnly\": \"npm run clean && npm test && npm run build\"\n}\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git diff --check && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts"
+            ],
+            "timeout": 120000
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "observedCheck": null,
+          "reporting": null,
+          "recordedSourceBinding": null,
+          "reportedEnvironment": null,
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "git diff --check && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts",
+              "result": "diff --git a/src/compose/compose-node.ts b/src/compose/compose-node.ts\nindex 88dab4e..e95d44c 100644\n--- a/src/compose/compose-node.ts\n+++ b/src/compose/compose-node.ts\n@@ -31,6 +31,11 @@ interface Props {\n const CN = { composeNode, composeEmptyNode }\n export type ComposeNode = typeof CN\n \n+function setAnchor(node: ParsedNode, anchor: SourceToken) {\n+  node.anchor = anchor.source.substring(1)\n+  node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n+}\n+\n export function composeNode(\n   ctx: ComposeContext,\n   token: Token,\n@@ -56,13 +61,13 @@ export function composeNode(\n     case 'double-quoted-scalar':\n     case 'block-scalar':\n       node = composeScalar(ctx, token, tag, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) setAnchor(node, anchor)\n       break\n     case 'block-map':\n     case 'block-seq':\n     case 'flow-collection':\n       node = composeCollection(CN, ctx, token, props, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) setAnchor(node, anchor)\n       break\n     default: {\n       const message =\n@@ -119,7 +124,7 @@ export function composeEmptyNode(\n   }\n   const node = composeScalar(ctx, token, tag, onError)\n   if (anchor) {\n-    node.anchor = anchor.source.substring(1)\n+    setAnchor(node, anchor)\n     if (node.anchor === '')\n       onError(anchor, 'BAD_ALIAS', 'Anchor cannot be an empty string')\n   }\ndiff --git a/src/nodes/Collection.ts b/src/nodes/Collection.ts\nindex 171ff2c..56bd9e4 100644\n--- a/src/nodes/Collection.ts\n+++ b/src/nodes/Collection.ts\n@@ -8,6 +8,7 @@ import {\n   NODE_TYPE\n } from './identity.ts'\n import { NodeBase } from './Node.ts'\n+import type { AnchorRange } from './Node.ts'\n \n export function collectionFromPath(\n   schema: Schema,\n@@ -85,6 +86,8 @@ export abstract class Collection extends NodeBase {\n       isNode(it) || isPair(it) ? it.clone(schema) : it\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as AnchorRange\n     return copy\n   }\n \ndiff --git a/src/nodes/Node.ts b/src/nodes/Node.ts\nindex 0ecfbe8..08b5f5c 100644\n--- a/src/nodes/Node.ts\n+++ b/src/nodes/Node.ts\n@@ -71,6 +71,9 @@ export abstract class NodeBase {\n   /** A fully qualified tag, if required */\n   declare tag?: string\n \n+  /** The `[start, end)` character offsets for a parsed anchor token */\n+  declare anchorRange?: [number, number]\n+\n   /**\n    * Customize the way that a key-value pair is resolved.\n    * Used for YAML 1.1 !!merge << handling.\n@@ -101,6 +104,8 @@ export abstract class NodeBase {\n       Object.getOwnPropertyDescriptors(this)\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as [number, number]\n     return copy\n   }\n \n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run build:node"
+            ],
+            "timeout": 120000
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "observedCheck": null,
+          "reporting": null,
+          "recordedSourceBinding": null,
+          "reportedEnvironment": null,
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "npm run build:node",
+              "result": "\n> yaml@2.8.1 build:node\n> rollup -c config/rollup.node-config.mjs\n\n\n[stderr]\n\nsrc/index.ts, src/test-events.ts, src/util.ts → dist...\ncreated dist in 2.3s\n\nsrc/cli.ts → dist/cli.mjs...\ncreated dist/cli.mjs in 1.3s\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs"
+            ],
+            "timeout": 120000
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "observedCheck": null,
+          "reporting": null,
+          "recordedSourceBinding": null,
+          "reportedEnvironment": null,
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs",
+              "result": "✔ scalar (8.03371ms)\n✔ sequence (2.121763ms)\n✔ map (1.207088ms)\n✔ block-sequence (0.936897ms)\n✔ block-map (0.64849ms)\n✔ empty (0.862999ms)\n✔ tagged (0.801738ms)\n✔ unicode-crlf (0.734839ms)\n✔ comment-anchor-decoy (0.710352ms)\n✔ aliases and unanchored/programmatic nodes stay unannotated (0.835027ms)\n✔ clone copies the range tuple (0.355296ms)\n✔ keepSourceTokens does not control anchor positions (0.321516ms)\nℹ tests 12\nℹ suites 0\nℹ pass 12\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 130.128063\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:types"
+            ],
+            "timeout": 120000
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "observedCheck": null,
+          "reporting": null,
+          "recordedSourceBinding": null,
+          "reportedEnvironment": null,
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "npm run test:types",
+              "result": "\n> yaml@2.8.1 test:types\n> tsc --noEmit && tsc --noEmit -p tests/tsconfig.json\n\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm test -- --runInBand"
+            ],
+            "timeout": 120000
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "observedCheck": null,
+          "reporting": null,
+          "recordedSourceBinding": null,
+          "reportedEnvironment": null,
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "npm test -- --runInBand",
+              "result": "\n> yaml@2.8.1 test\n> jest --config config/jest.config.js --runInBand\n\n\n[stderr]\nBrowserslist: browsers data (caniuse-lite) is 15 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nPASS tests/doc/YAML-1.2.spec.ts\nPASS tests/doc/stringify.ts\nPASS tests/doc/types.ts\nPASS tests/doc/comments.ts\nPASS tests/doc/parse.ts\nPASS tests/collection-access.ts\nPASS tests/doc/errors.ts\nPASS tests/doc/foldFlowLines.ts\nPASS tests/doc/anchors.ts\nPASS tests/doc/createNode.ts\nPASS tests/visit.ts\nPASS tests/cli.ts\nPASS tests/cst.ts\nPASS tests/yaml-test-suite.ts\nPASS tests/is-node.ts\nPASS tests/compat.ts\nPASS tests/node-to-js.ts\nPASS tests/directives.ts\nPASS tests/json-test-suite.ts\nPASS tests/clone.ts\nPASS tests/stream.ts\nPASS tests/line-counter.ts\nPASS tests/doc/YAML-1.1.spec.ts\nPASS tests/lexer.ts\nPASS tests/properties.ts\n\nTest Suites: 25 passed, 25 total\nTests:       11 skipped, 3483 passed, 3494 total\nSnapshots:   0 total\nTime:        5.002 s\nRan all test suites.\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git status --short --branch && git diff --check && git diff --stat && git diff --name-only"
+            ],
+            "timeout": 120000
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "observedCheck": null,
+          "reporting": null,
+          "recordedSourceBinding": null,
+          "reportedEnvironment": null,
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "git status --short --branch && git diff --check && git diff --stat && git diff --name-only",
+              "result": "## master\n M src/compose/compose-node.ts\n M src/nodes/Collection.ts\n M src/nodes/Node.ts\n src/compose/compose-node.ts | 11 ++++++++---\n src/nodes/Collection.ts     |  2 ++\n src/nodes/Node.ts           |  5 +++++\n 3 files changed, 15 insertions(+), 3 deletions(-)\nsrc/compose/compose-node.ts\nsrc/nodes/Collection.ts\nsrc/nodes/Node.ts\n",
+              "success": true
+            }
+          ]
+        }
+      ],
+      "officialRuntimeSuccess": true,
+      "completionAsReported": null,
+      "independent": {
+        "build": {
+          "argv": [
+            "npm",
+            "run",
+            "build:node"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 4233.289547999855,
+          "stdout": "\n> yaml@2.8.1 build:node\n> rollup -c config/rollup.node-config.mjs\n\n",
+          "stderr": "\nsrc/index.ts, src/test-events.ts, src/util.ts → dist...\ncreated dist in 2.4s\n\nsrc/cli.ts → dist/cli.mjs...\ncreated dist/cli.mjs in 1.3s\n"
+        },
+        "e2e": null,
+        "feature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/edit-boundary-study/features.mjs",
+            "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace",
+            "yaml-anchor-ranges",
+            "/workspace/Blame/docs/experiments/light-harness-edit-boundaries-f31-2026-10-16"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 99.12831300031394,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-anchor-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-anchor-ranges.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/_utils/agent-anchor-types.ts\",\"passed\":true},{\"name\":\"anchor on mapping key\",\"passed\":true},{\"name\":\"two documents have absolute input offsets\",\"passed\":true},{\"name\":\"root anchored empty node at eof\",\"passed\":true},{\"name\":\"document clone has independent tuples\",\"passed\":true},{\"name\":\"parse errors for empty anchors stay visible\",\"passed\":true}],\"checkNamesSha256\":\"e563c63b82d6a8bd83d5d0dacccc634ede8b00ed1b6fb5b275057de566bea840\"}\n",
+          "stderr": ""
+        },
+        "nonUtcFeature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/edit-boundary-study/features.mjs",
+            "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace",
+            "yaml-anchor-ranges",
+            "/workspace/Blame/docs/experiments/light-harness-edit-boundaries-f31-2026-10-16"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 113.31839199969545,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-anchor-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-anchor-ranges.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/_utils/agent-anchor-types.ts\",\"passed\":true},{\"name\":\"anchor on mapping key\",\"passed\":true},{\"name\":\"two documents have absolute input offsets\",\"passed\":true},{\"name\":\"root anchored empty node at eof\",\"passed\":true},{\"name\":\"document clone has independent tuples\",\"passed\":true},{\"name\":\"parse errors for empty anchors stay visible\",\"passed\":true}],\"checkNamesSha256\":\"e563c63b82d6a8bd83d5d0dacccc634ede8b00ed1b6fb5b275057de566bea840\"}\n",
+          "stderr": ""
+        },
+        "selected": {
+          "argv": [
+            "node",
+            "--test",
+            "--test-timeout=5000",
+            "tests/agent-anchor-ranges.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 137.1406049998477,
+          "stdout": "✔ scalar (6.87639ms)\n✔ sequence (2.212128ms)\n✔ map (1.078388ms)\n✔ block-sequence (0.999862ms)\n✔ block-map (0.770072ms)\n✔ empty (0.806415ms)\n✔ tagged (0.943779ms)\n✔ unicode-crlf (0.815889ms)\n✔ comment-anchor-decoy (0.771793ms)\n✔ aliases and unanchored/programmatic nodes stay unannotated (0.851502ms)\n✔ clone copies the range tuple (0.315497ms)\n✔ keepSourceTokens does not control anchor positions (0.33064ms)\nℹ tests 12\nℹ suites 0\nℹ pass 12\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 100.830555\n",
+          "stderr": ""
+        },
+        "typesOrSyntax": {
+          "argv": [
+            "npm",
+            "run",
+            "test:types"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 5946.00072199991,
+          "stdout": "\n> yaml@2.8.1 test:types\n> tsc --noEmit && tsc --noEmit -p tests/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        "fullDefinedSuite": {
+          "argv": [
+            "npm",
+            "test",
+            "--",
+            "--runInBand"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 5884.301318000071,
+          "stdout": "\n> yaml@2.8.1 test\n> jest --config config/jest.config.js --runInBand\n\n",
+          "stderr": "Browserslist: browsers data (caniuse-lite) is 15 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nPASS tests/doc/YAML-1.2.spec.ts\nPASS tests/yaml-test-suite.ts\nPASS tests/json-test-suite.ts\nPASS tests/stream.ts\nPASS tests/doc/stringify.ts\nPASS tests/doc/types.ts\nPASS tests/doc/parse.ts\nPASS tests/properties.ts\nPASS tests/doc/comments.ts\nPASS tests/collection-access.ts\nPASS tests/doc/anchors.ts\nPASS tests/is-node.ts\nPASS tests/cli.ts\nPASS tests/doc/errors.ts\nPASS tests/visit.ts\nPASS tests/doc/createNode.ts\nPASS tests/doc/foldFlowLines.ts\nPASS tests/cst.ts\nPASS tests/node-to-js.ts\nPASS tests/clone.ts\nPASS tests/compat.ts\nPASS tests/directives.ts\nPASS tests/line-counter.ts\nPASS tests/doc/YAML-1.1.spec.ts\nPASS tests/lexer.ts\n\nTest Suites: 25 passed, 25 total\nTests:       11 skipped, 3483 passed, 3494 total\nSnapshots:   0 total\nTime:        5.377 s\nRan all test suites.\n"
+        },
+        "addedTests": null,
+        "addedTestsOnOriginalSource": null
+      },
+      "boundEnvironment": {
+        "node": "v24.19.0",
+        "project": {
+          "commit": "1dc3c3ba06971613d0bcb772da4711ca25343dac",
+          "source": "42d6a117933d767e48664fa9f598a950c8a70e900e198c00e7191236deeaaac0",
+          "lock": "1aedaa78189c351026200d14663990ff41c72b9c4812732536b246271b9ae044",
+          "jest": "29.7.0",
+          "typescript": "5.9.2",
+          "rollup": "4.46.2"
+        },
+        "defaultTZ": "UTC",
+        "secondFeatureTZ": "America/New_York",
+        "runtime": {
+          "runtime": "836b4b1b352d265d3a80d08f8f6f6e63467471f2446adaf0cb6af01059998173",
+          "runner": "15627aa790b9be0f75bfad3f6ebdbd95ceaafa0d0822e9e3392c62628cd38f83",
+          "source": {
+            "arm": "baseline",
+            "sourceCommit": "0632677db9838621d40cf7f59aa8cc3cb0a51a83",
+            "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "changedPaths": []
+          }
+        }
+      },
+      "independentFunctionalSuccess": true,
+      "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
+    },
+    {
+      "name": "3-yaml-anchor-ranges-baseline",
+      "eventsSha256": "d39605862b1d94b0165e0eb12710e808323cd278716ebdf6da12c2db3c6c40f2",
+      "scoreSha256": "cf60e8745764554c49f4c8120fc6a21c65a942c69fba4f19642418f1091abf98",
+      "finalScoredSources": {
+        "src/compose/compose-node.ts": "56469c2a452688bdac11b4529af990eb8c448e0ecf90208e9c66a30ac41264fb",
+        "src/nodes/Node.ts": "3aa62e7fe8a0301b0f59d80379678ca23fd1add5a80578cd826dc460de44ed05",
+        "src/nodes/Scalar.ts": "6cd0c84d14cb9a753fe35b982c17a084f4f482c17e411a4cb6d32cb5435bed30",
+        "src/nodes/Collection.ts": "6e71a8acffd859fe2a79c09468e26d8c8436de89588ffdfabc1d70b3c517712e",
+        "src/nodes/YAMLMap.ts": "b13535633f411c1a7d84155ac5274e386bea28333b454c1d9a06ec325d50cd05",
+        "src/nodes/YAMLSeq.ts": "4970e2678868cfbb782a07553c87e73ababb1bc1f52156d0efaf4b90bd87c02f"
+      },
+      "actualRecordedAgentCommands": [
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "build:node"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "rollup -c config/rollup.node-config.mjs",
+          "observedExitCode": 0,
+          "process": null,
+          "observedCheck": null,
+          "reporting": null,
+          "recordedSourceBinding": null,
+          "reportedEnvironment": "linux-native",
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": {
+            "paths": [
+              "src/nodes/Node.ts",
+              "src/nodes/Collection.ts",
+              "src/compose/compose-node.ts"
+            ],
+            "sourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+            "status": "passed",
+            "taskId": "build:node",
+            "taskKind": "build"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run build:node"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "npm run build:node",
+          "observedExitCode": 0,
+          "process": null,
+          "observedCheck": null,
+          "reporting": null,
+          "recordedSourceBinding": null,
+          "reportedEnvironment": "linux-native",
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": {
+            "paths": [
+              "src/nodes/Node.ts",
+              "src/nodes/Collection.ts",
+              "src/compose/compose-node.ts"
+            ],
+            "sourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+            "status": "passed",
+            "taskId": "build:node",
+            "taskKind": "build"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs",
+          "observedExitCode": 0,
+          "process": "exited",
+          "observedCheck": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 12,
+              "passed": 12,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 12,
+              "passed": 12,
+              "failed": 0,
+              "skipped": 0,
+              "pending": null
+            },
+            "evidenceOrigin": "runner_output",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+            "completedSourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+            "cwd": "."
+          },
+          "recordedSourceBinding": {
+            "invocation": "src_06641a745f18efed35542cbca2f67b20",
+            "completed": "src_06641a745f18efed35542cbca2f67b20"
+          },
+          "reportedEnvironment": null,
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run test:types"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "npm run test:types",
+          "observedExitCode": 0,
+          "process": "exited",
+          "observedCheck": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "counts": {
+              "executed": null,
+              "passed": null,
+              "failed": null,
+              "skipped": null,
+              "pending": null
+            },
+            "evidenceOrigin": "none",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+            "completedSourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+            "cwd": "."
+          },
+          "recordedSourceBinding": {
+            "invocation": "src_06641a745f18efed35542cbca2f67b20",
+            "completed": "src_06641a745f18efed35542cbca2f67b20"
+          },
+          "reportedEnvironment": null,
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm test -- --runInBand"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "npm test -- --runInBand",
+          "observedExitCode": 0,
+          "process": "exited",
+          "observedCheck": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11,
+              "pending": null
+            },
+            "evidenceOrigin": "runner_output",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+            "completedSourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+            "cwd": "."
+          },
+          "recordedSourceBinding": {
+            "invocation": "src_06641a745f18efed35542cbca2f67b20",
+            "completed": "src_06641a745f18efed35542cbca2f67b20"
+          },
+          "reportedEnvironment": null,
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git status --short && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "git status --short && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts",
+          "observedExitCode": 0,
+          "process": null,
+          "observedCheck": null,
+          "reporting": null,
+          "recordedSourceBinding": null,
+          "reportedEnvironment": "linux-native",
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": null,
+          "nativeResults": null
+        }
+      ],
+      "officialRuntimeSuccess": true,
+      "completionAsReported": {
+        "source_revision_id": "src_06641a745f18efed35542cbca2f67b20",
+        "delivery": "satisfied",
+        "verification": "verified",
+        "satisfied_obligations": [
+          "validation"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": []
+      },
+      "independent": {
+        "build": {
+          "argv": [
+            "npm",
+            "run",
+            "build:node"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-baseline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 4491.402927000076,
+          "stdout": "\n> yaml@2.8.1 build:node\n> rollup -c config/rollup.node-config.mjs\n\n",
+          "stderr": "\nsrc/index.ts, src/test-events.ts, src/util.ts → dist...\ncreated dist in 2.6s\n\nsrc/cli.ts → dist/cli.mjs...\ncreated dist/cli.mjs in 1.3s\n"
+        },
+        "e2e": null,
+        "feature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/edit-boundary-study/features.mjs",
+            "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-baseline/workspace",
+            "yaml-anchor-ranges",
+            "/workspace/Blame/docs/experiments/light-harness-edit-boundaries-f31-2026-10-16"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 108.07055500010028,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-anchor-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-anchor-ranges.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/_utils/agent-anchor-types.ts\",\"passed\":true},{\"name\":\"anchor on mapping key\",\"passed\":true},{\"name\":\"two documents have absolute input offsets\",\"passed\":true},{\"name\":\"root anchored empty node at eof\",\"passed\":true},{\"name\":\"document clone has independent tuples\",\"passed\":true},{\"name\":\"parse errors for empty anchors stay visible\",\"passed\":true}],\"checkNamesSha256\":\"e563c63b82d6a8bd83d5d0dacccc634ede8b00ed1b6fb5b275057de566bea840\"}\n",
+          "stderr": ""
+        },
+        "nonUtcFeature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/edit-boundary-study/features.mjs",
+            "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-baseline/workspace",
+            "yaml-anchor-ranges",
+            "/workspace/Blame/docs/experiments/light-harness-edit-boundaries-f31-2026-10-16"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 112.08315599989146,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-anchor-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-anchor-ranges.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/_utils/agent-anchor-types.ts\",\"passed\":true},{\"name\":\"anchor on mapping key\",\"passed\":true},{\"name\":\"two documents have absolute input offsets\",\"passed\":true},{\"name\":\"root anchored empty node at eof\",\"passed\":true},{\"name\":\"document clone has independent tuples\",\"passed\":true},{\"name\":\"parse errors for empty anchors stay visible\",\"passed\":true}],\"checkNamesSha256\":\"e563c63b82d6a8bd83d5d0dacccc634ede8b00ed1b6fb5b275057de566bea840\"}\n",
+          "stderr": ""
+        },
+        "selected": {
+          "argv": [
+            "node",
+            "--test",
+            "--test-timeout=5000",
+            "tests/agent-anchor-ranges.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-baseline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 151.80303699988872,
+          "stdout": "✔ scalar (7.449775ms)\n✔ sequence (2.208882ms)\n✔ map (1.058548ms)\n✔ block-sequence (0.911901ms)\n✔ block-map (0.808598ms)\n✔ empty (0.971009ms)\n✔ tagged (0.929507ms)\n✔ unicode-crlf (0.815498ms)\n✔ comment-anchor-decoy (0.838502ms)\n✔ aliases and unanchored/programmatic nodes stay unannotated (0.860465ms)\n✔ clone copies the range tuple (0.375336ms)\n✔ keepSourceTokens does not control anchor positions (0.383979ms)\nℹ tests 12\nℹ suites 0\nℹ pass 12\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 111.345332\n",
+          "stderr": ""
+        },
+        "typesOrSyntax": {
+          "argv": [
+            "npm",
+            "run",
+            "test:types"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-baseline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 6089.214594000019,
+          "stdout": "\n> yaml@2.8.1 test:types\n> tsc --noEmit && tsc --noEmit -p tests/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        "fullDefinedSuite": {
+          "argv": [
+            "npm",
+            "test",
+            "--",
+            "--runInBand"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-baseline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 4124.110568000004,
+          "stdout": "\n> yaml@2.8.1 test\n> jest --config config/jest.config.js --runInBand\n\n",
+          "stderr": "Browserslist: browsers data (caniuse-lite) is 15 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nPASS tests/doc/YAML-1.2.spec.ts\nPASS tests/yaml-test-suite.ts\nPASS tests/json-test-suite.ts\nPASS tests/doc/stringify.ts\nPASS tests/stream.ts\nPASS tests/doc/parse.ts\nPASS tests/doc/types.ts\nPASS tests/collection-access.ts\nPASS tests/properties.ts\nPASS tests/doc/anchors.ts\nPASS tests/doc/comments.ts\nPASS tests/cli.ts\nPASS tests/is-node.ts\nPASS tests/doc/errors.ts\nPASS tests/doc/createNode.ts\nPASS tests/clone.ts\nPASS tests/visit.ts\nPASS tests/doc/foldFlowLines.ts\nPASS tests/cst.ts\nPASS tests/node-to-js.ts\nPASS tests/directives.ts\nPASS tests/compat.ts\nPASS tests/line-counter.ts\nPASS tests/doc/YAML-1.1.spec.ts\nPASS tests/lexer.ts\n\nTest Suites: 25 passed, 25 total\nTests:       11 skipped, 3483 passed, 3494 total\nSnapshots:   0 total\nTime:        3.601 s, estimated 6 s\nRan all test suites.\n"
+        },
+        "addedTests": null,
+        "addedTestsOnOriginalSource": null
+      },
+      "boundEnvironment": {
+        "node": "v24.19.0",
+        "project": {
+          "commit": "1dc3c3ba06971613d0bcb772da4711ca25343dac",
+          "source": "42d6a117933d767e48664fa9f598a950c8a70e900e198c00e7191236deeaaac0",
+          "lock": "1aedaa78189c351026200d14663990ff41c72b9c4812732536b246271b9ae044",
+          "jest": "29.7.0",
+          "typescript": "5.9.2",
+          "rollup": "4.46.2"
+        },
+        "defaultTZ": "UTC",
+        "secondFeatureTZ": "America/New_York",
+        "runtime": {
+          "runtime": "836b4b1b352d265d3a80d08f8f6f6e63467471f2446adaf0cb6af01059998173",
+          "runner": "15627aa790b9be0f75bfad3f6ebdbd95ceaafa0d0822e9e3392c62628cd38f83",
+          "source": {
+            "arm": "baseline",
+            "sourceCommit": "0632677db9838621d40cf7f59aa8cc3cb0a51a83",
+            "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "changedPaths": []
+          }
+        }
+      },
+      "independentFunctionalSuccess": true,
+      "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
+    },
+    {
+      "name": "3-yaml-anchor-ranges-candidate",
+      "eventsSha256": "76425ce40885b05d60a92b134cf5df9cebfb49394e2de5dc3d3f2dc5ea4c065e",
+      "scoreSha256": "d8065360bbca5637bf731d6765a59bc7c857796e633a40096d145b05b74436a9",
+      "finalScoredSources": {
+        "src/compose/compose-node.ts": "56469c2a452688bdac11b4529af990eb8c448e0ecf90208e9c66a30ac41264fb",
+        "src/nodes/Node.ts": "b1da03e584fae391da6a7300e4bf3ae5c07e2fbcb084decb5486f2a45f4bff97",
+        "src/nodes/Scalar.ts": "6cd0c84d14cb9a753fe35b982c17a084f4f482c17e411a4cb6d32cb5435bed30",
+        "src/nodes/Collection.ts": "b3ee69af754d272b662041c3f2f8c1555ffa6694001c6a1265fcb702153de28d",
+        "src/nodes/YAMLMap.ts": "b13535633f411c1a7d84155ac5274e386bea28333b454c1d9a06ec325d50cd05",
+        "src/nodes/YAMLSeq.ts": "4970e2678868cfbb782a07553c87e73ababb1bc1f52156d0efaf4b90bd87c02f"
+      },
+      "actualRecordedAgentCommands": [
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "build:node"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "rollup -c config/rollup.node-config.mjs",
+          "observedExitCode": 0,
+          "process": null,
+          "observedCheck": null,
+          "reporting": null,
+          "recordedSourceBinding": null,
+          "reportedEnvironment": "linux-native",
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": {
+            "paths": [
+              "src/nodes/Node.ts",
+              "src/nodes/Collection.ts",
+              "src/compose/compose-node.ts"
+            ],
+            "sourceRevisionId": "src_f72e574e71a93f0860de710cb170112d",
+            "status": "passed",
+            "taskId": "build:node",
+            "taskKind": "build"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "build:node"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "rollup -c config/rollup.node-config.mjs",
+          "observedExitCode": 0,
+          "process": null,
+          "observedCheck": null,
+          "reporting": null,
+          "recordedSourceBinding": null,
+          "reportedEnvironment": "linux-native",
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": {
+            "paths": [
+              "src/nodes/Node.ts",
+              "src/nodes/Collection.ts",
+              "src/compose/compose-node.ts"
+            ],
+            "sourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+            "status": "passed",
+            "taskId": "build:node",
+            "taskKind": "build"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs",
+          "observedExitCode": 0,
+          "process": "exited",
+          "observedCheck": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 12,
+              "passed": 12,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 12,
+              "passed": 12,
+              "failed": 0,
+              "skipped": 0,
+              "pending": null
+            },
+            "evidenceOrigin": "runner_output",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+            "completedSourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+            "cwd": "."
+          },
+          "recordedSourceBinding": {
+            "invocation": "src_4a46a72fd1b99101825555b4a91cf333",
+            "completed": "src_4a46a72fd1b99101825555b4a91cf333"
+          },
+          "reportedEnvironment": null,
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:types"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "tsc --noEmit && tsc --noEmit -p tests/tsconfig.json",
+          "observedExitCode": 0,
+          "process": "exited",
+          "observedCheck": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "counts": {
+              "executed": null,
+              "passed": null,
+              "failed": null,
+              "skipped": null,
+              "pending": null
+            },
+            "evidenceOrigin": "none",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+            "completedSourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+            "cwd": "."
+          },
+          "recordedSourceBinding": {
+            "invocation": "src_4a46a72fd1b99101825555b4a91cf333",
+            "completed": "src_4a46a72fd1b99101825555b4a91cf333"
+          },
+          "reportedEnvironment": null,
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm test -- --runInBand"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "npm test -- --runInBand",
+          "observedExitCode": 0,
+          "process": "exited",
+          "observedCheck": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11,
+              "pending": null
+            },
+            "evidenceOrigin": "runner_output",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+            "completedSourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+            "cwd": "."
+          },
+          "recordedSourceBinding": {
+            "invocation": "src_4a46a72fd1b99101825555b4a91cf333",
+            "completed": "src_4a46a72fd1b99101825555b4a91cf333"
+          },
+          "reportedEnvironment": null,
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git status --short && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts src/nodes/Scalar.ts src/nodes/YAMLMap.ts src/nodes/YAMLSeq.ts"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "git status --short && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts src/nodes/Scalar.ts src/nodes/YAMLMap.ts src/nodes/YAMLSeq.ts",
+          "observedExitCode": 0,
+          "process": null,
+          "observedCheck": null,
+          "reporting": null,
+          "recordedSourceBinding": null,
+          "reportedEnvironment": "linux-native",
+          "manifestEnvironmentEvidence": null,
+          "admittedValidation": null,
+          "nativeResults": null
+        }
+      ],
+      "officialRuntimeSuccess": true,
+      "completionAsReported": {
+        "source_revision_id": "src_4a46a72fd1b99101825555b4a91cf333",
+        "delivery": "satisfied",
+        "verification": "verified",
+        "satisfied_obligations": [
+          "validation"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": []
+      },
+      "independent": {
+        "build": {
+          "argv": [
+            "npm",
+            "run",
+            "build:node"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-candidate/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 3992.3635639999993,
+          "stdout": "\n> yaml@2.8.1 build:node\n> rollup -c config/rollup.node-config.mjs\n\n",
+          "stderr": "\nsrc/index.ts, src/test-events.ts, src/util.ts → dist...\ncreated dist in 2.2s\n\nsrc/cli.ts → dist/cli.mjs...\ncreated dist/cli.mjs in 1.3s\n"
+        },
+        "e2e": null,
+        "feature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/edit-boundary-study/features.mjs",
+            "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-candidate/workspace",
+            "yaml-anchor-ranges",
+            "/workspace/Blame/docs/experiments/light-harness-edit-boundaries-f31-2026-10-16"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 104.39941500034183,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-anchor-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-anchor-ranges.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/_utils/agent-anchor-types.ts\",\"passed\":true},{\"name\":\"anchor on mapping key\",\"passed\":true},{\"name\":\"two documents have absolute input offsets\",\"passed\":true},{\"name\":\"root anchored empty node at eof\",\"passed\":true},{\"name\":\"document clone has independent tuples\",\"passed\":true},{\"name\":\"parse errors for empty anchors stay visible\",\"passed\":true}],\"checkNamesSha256\":\"e563c63b82d6a8bd83d5d0dacccc634ede8b00ed1b6fb5b275057de566bea840\"}\n",
+          "stderr": ""
+        },
+        "nonUtcFeature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/edit-boundary-study/features.mjs",
+            "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-candidate/workspace",
+            "yaml-anchor-ranges",
+            "/workspace/Blame/docs/experiments/light-harness-edit-boundaries-f31-2026-10-16"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 98.54585799993947,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-anchor-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-anchor-ranges.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/_utils/agent-anchor-types.ts\",\"passed\":true},{\"name\":\"anchor on mapping key\",\"passed\":true},{\"name\":\"two documents have absolute input offsets\",\"passed\":true},{\"name\":\"root anchored empty node at eof\",\"passed\":true},{\"name\":\"document clone has independent tuples\",\"passed\":true},{\"name\":\"parse errors for empty anchors stay visible\",\"passed\":true}],\"checkNamesSha256\":\"e563c63b82d6a8bd83d5d0dacccc634ede8b00ed1b6fb5b275057de566bea840\"}\n",
+          "stderr": ""
+        },
+        "selected": {
+          "argv": [
+            "node",
+            "--test",
+            "--test-timeout=5000",
+            "tests/agent-anchor-ranges.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-candidate/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 132.6963720000349,
+          "stdout": "✔ scalar (7.231692ms)\n✔ sequence (1.919764ms)\n✔ map (0.875587ms)\n✔ block-sequence (0.916117ms)\n✔ block-map (0.66123ms)\n✔ empty (0.79658ms)\n✔ tagged (0.938019ms)\n✔ unicode-crlf (1.003327ms)\n✔ comment-anchor-decoy (0.655881ms)\n✔ aliases and unanchored/programmatic nodes stay unannotated (0.794888ms)\n✔ clone copies the range tuple (0.350849ms)\n✔ keepSourceTokens does not control anchor positions (0.306273ms)\nℹ tests 12\nℹ suites 0\nℹ pass 12\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 92.582325\n",
+          "stderr": ""
+        },
+        "typesOrSyntax": {
+          "argv": [
+            "npm",
+            "run",
+            "test:types"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-candidate/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 5875.0449880003,
+          "stdout": "\n> yaml@2.8.1 test:types\n> tsc --noEmit && tsc --noEmit -p tests/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        "fullDefinedSuite": {
+          "argv": [
+            "npm",
+            "test",
+            "--",
+            "--runInBand"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-candidate/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 3949.6437570001,
+          "stdout": "\n> yaml@2.8.1 test\n> jest --config config/jest.config.js --runInBand\n\n",
+          "stderr": "Browserslist: browsers data (caniuse-lite) is 15 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nPASS tests/doc/YAML-1.2.spec.ts\nPASS tests/yaml-test-suite.ts\nPASS tests/json-test-suite.ts\nPASS tests/stream.ts\nPASS tests/doc/stringify.ts\nPASS tests/doc/parse.ts\nPASS tests/doc/types.ts\nPASS tests/properties.ts\nPASS tests/doc/comments.ts\nPASS tests/doc/anchors.ts\nPASS tests/collection-access.ts\nPASS tests/cli.ts\nPASS tests/doc/errors.ts\nPASS tests/doc/createNode.ts\nPASS tests/visit.ts\nPASS tests/is-node.ts\nPASS tests/doc/foldFlowLines.ts\nPASS tests/node-to-js.ts\nPASS tests/cst.ts\nPASS tests/compat.ts\nPASS tests/directives.ts\nPASS tests/clone.ts\nPASS tests/line-counter.ts\nPASS tests/doc/YAML-1.1.spec.ts\nPASS tests/lexer.ts\n\nTest Suites: 25 passed, 25 total\nTests:       11 skipped, 3483 passed, 3494 total\nSnapshots:   0 total\nTime:        3.427 s, estimated 5 s\nRan all test suites.\n"
+        },
+        "addedTests": null,
+        "addedTestsOnOriginalSource": null
+      },
+      "boundEnvironment": {
+        "node": "v24.19.0",
+        "project": {
+          "commit": "1dc3c3ba06971613d0bcb772da4711ca25343dac",
+          "source": "42d6a117933d767e48664fa9f598a950c8a70e900e198c00e7191236deeaaac0",
+          "lock": "1aedaa78189c351026200d14663990ff41c72b9c4812732536b246271b9ae044",
+          "jest": "29.7.0",
+          "typescript": "5.9.2",
+          "rollup": "4.46.2"
+        },
+        "defaultTZ": "UTC",
+        "secondFeatureTZ": "America/New_York",
+        "runtime": {
+          "runtime": "9983608494dccf7de7da064fdcf8967a5076f3116357de925c6b1647d2e1f0f2",
+          "runner": "15627aa790b9be0f75bfad3f6ebdbd95ceaafa0d0822e9e3392c62628cd38f83",
+          "source": {
+            "arm": "candidate",
+            "sourceCommit": "0632677db9838621d40cf7f59aa8cc3cb0a51a83",
+            "patchSha256": "afdc4d3f1487e5d21e1f0a0d807369fe05bf52e8a4843f2f3900ce52fd696752",
+            "changedPaths": [
+              "packages/agent-runtime/src/harness/light-edit.ts"
+            ]
+          }
+        }
+      },
+      "independentFunctionalSuccess": true,
+      "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
     }
   ]
 }

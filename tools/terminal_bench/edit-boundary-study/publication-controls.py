@@ -62,6 +62,10 @@ with tempfile.TemporaryDirectory(prefix='blame-publication-controls-') as direct
   sensitivity=json.loads((study/'reporting-only-sensitivity.json').read_text())
   sensitivity['acceptedCounts']['cline']+=1
   put('reporting-only-sensitivity.json',sensitivity);rejected('Changed reporting-only sensitivity subtotal');restore('reporting-only-sensitivity.json')
+ if (study/'resolved-project-sensitivity.json').exists():
+  sensitivity=json.loads((study/'resolved-project-sensitivity.json').read_text())
+  sensitivity['acceptedCounts']['baseline']+=1
+  put('resolved-project-sensitivity.json',sensitivity);rejected('Changed resolved-project sensitivity subtotal');restore('resolved-project-sensitivity.json')
  if (study/'behavior-public-replay.json').exists():
   behavior=json.loads((study/'behavior-public-replay.json').read_text())
   behavior['rows'][0]['sourceUnchangedByReplay']=False

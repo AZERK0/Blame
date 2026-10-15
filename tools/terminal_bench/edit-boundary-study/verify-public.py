@@ -171,6 +171,23 @@ for correction in read('source-review.json').get('noteCorrections',[]):
  r=next(r for r in rows if r['name']==correction['name'])
  assert correction['runtimeError']==r['error'] and correction['eventsSha256']==r['eventsSha256'] and correction['scoreSha256']==r['scoreSha256']
  assert reviews[r['name']]['notes']==correction['correctedNotes']
+for correction in read('source-review.json').get('adjudicationCorrections',[]):
+ r=next(r for r in rows if r['name']==correction['name']);before=correction['originalDecision'];after=correction['correctedDecision']
+ assert after==reviews[r['name']] and before['name']==after['name']
+ assert before['agentRequiredChecksPassed'] and before['fullRequestCriteriaPassed']
+ assert not after['agentRequiredChecksPassed'] and not after['fullRequestCriteriaPassed']
+ assert after['criteriaFailures']==['required_exact_npm_wrappers_not_invoked'] and after['resolvedProjectSensitivity']
+ for key in ['eventsSha256','diffSha256','scoreSha256','manualBehaviorPassed','noSolutionRetrieval']:assert before[key]==after[key]
+ instruction=gzip.decompress((root/'traces'/f"{r['name']}.instruction.txt.gz").read_bytes())
+ assert hashlib.sha256(instruction).hexdigest()==correction['instructionSha256']
+ for call in correction['projectInvocations']:
+  t=next(t for t in read('tool-ledger.json') if t['name']==r['name'])['tools'][call['index']]
+  assert t['input']==call['input'] and t['input']['kind']=='project'
+  data=t['output']['data'];data=data.get('completed',{}).get('data',data)
+  assert data['command']==call['actualCommand'] and data['exitCode']==0
+if (root/'review-corrections.json').exists():
+ corrections=read('review-corrections.json');source=read('source-review.json')
+ for key in ['noteCorrections','adjudicationCorrections']:assert corrections.get(key,[])==source.get(key,[])
 if (root/'final-scope-only-sensitivity.json').exists():
  sensitivity=read('final-scope-only-sensitivity.json');assert sensitivity['paidRequests']==0 and sensitivity['postSelectedSensitivity']
  def scope_accept(r):
@@ -191,6 +208,20 @@ if (root/'reporting-only-sensitivity.json').exists():
   return all([r['officialRuntimeSuccess'],r['independentFunctionalSuccess'],r['agentRequiredChecksPassed'],r['noSolutionRetrieval'],r['manualBehaviorPassed'],r['auditedCompletion'] or relaxed,r['usage']['tokensCostReconciled']])
  assert sensitivity['relaxedTrials']==[r['name'] for r in rows if not r['auditedCompletion'] and reporting_accept(r)]
  for arm in protocol['arms']:assert sensitivity['acceptedCounts'][arm]==sum(r['arm']==arm and reporting_accept(r) for r in rows)
+if (root/'resolved-project-sensitivity.json').exists():
+ sensitivity=read('resolved-project-sensitivity.json');assert sensitivity['paidRequests']==0 and sensitivity['postSelectedSensitivity']
+ def project_accept(r):
+  relaxed=reviews[r['name']].get('resolvedProjectSensitivity') is True and r['manualCriteriaFailures']==['required_exact_npm_wrappers_not_invoked']
+  return all([r['officialRuntimeSuccess'],r['independentFunctionalSuccess'],r['agentRequiredChecksPassed'] or relaxed,r['noSolutionRetrieval'],r['manualBehaviorPassed'],r['auditedCompletion'] or relaxed,r['usage']['tokensCostReconciled']])
+ assert sensitivity['relaxedTrials']==[r['name'] for r in rows if not r['auditedCompletion'] and project_accept(r)]
+ for arm in protocol['arms']:assert sensitivity['acceptedCounts'][arm]==sum(r['arm']==arm and project_accept(r) for r in rows)
+ for c in sensitivity['comparisons']:
+  pairs=[(a,b) for a in rows if a['arm']==c['left'] and project_accept(a) for b in rows if b['arm']==c['right'] and b['id']==a['id'] and b['repetition']==a['repetition'] and project_accept(b)]
+  assert c['pairs']==len(pairs)
+  for metric,fn in [('tokens',lambda r:r['usage']['input']+r['usage']['output']),('cost',lambda r:r['usage']['cost']),('seconds',lambda r:r['durationMs']/1000)]:
+   left=sum(fn(a) for a,b in pairs);right=sum(fn(b) for a,b in pairs);resource=c['resources'][metric]
+   assert close(resource['left'],left) and close(resource['right'],right)
+   assert resource['relativeChange'] is None if not right else close(resource['relativeChange'],left/right-1)
 controls=read('task-controls.json')
 assert controls['paidRequests']==0 and len(controls['rows'])==2
 for c in controls['rows']:

@@ -6,29 +6,29 @@
     "1-fast-glob-dynamic-filter-candidate"
   ],
   "acceptedCounts": {
-    "baseline": 2,
-    "candidate": 3,
-    "cline": 1
+    "baseline": 1,
+    "candidate": 2,
+    "cline": 2
   },
-  "pairs": 2,
+  "pairs": 0,
   "resources": {
     "tokens": {
-      "left": 601886,
-      "right": 702042,
-      "pairs": 2,
-      "relativeChange": -0.1426638292295902
+      "left": 0,
+      "right": 0,
+      "pairs": 0,
+      "relativeChange": null
     },
     "cost": {
-      "left": 0.0400642,
-      "right": 0.0424194,
-      "pairs": 2,
-      "relativeChange": -0.055521765984431704
+      "left": 0,
+      "right": 0,
+      "pairs": 0,
+      "relativeChange": null
     },
     "seconds": {
-      "left": 149.37900000000002,
-      "right": 169.837,
-      "pairs": 2,
-      "relativeChange": -0.1204566731630915
+      "left": 0,
+      "right": 0,
+      "pairs": 0,
+      "relativeChange": null
     }
   }
 }

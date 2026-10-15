@@ -6,12 +6,14 @@
       "name": "1-yaml-anchor-ranges-baseline",
       "official": true,
       "frozenEndpoint": true,
-      "actualChecks": true,
+      "actualChecks": false,
       "behavior": true,
-      "full": true,
+      "full": false,
       "originalRuntimeError": null,
       "mechanism": "completed",
-      "manualCriteriaFailures": [],
+      "manualCriteriaFailures": [
+        "required_exact_npm_wrappers_not_invoked"
+      ],
       "eventsSha256": "36f4586e551705ae303d0c2eaea78f35233e5ac782f850fdf38027cfb6d84257",
       "scoreSha256": "3a52de3f6e52243848488005fe25f8af1489a7f1adbf3bb6d33b1109e22a2603"
     },
@@ -96,12 +98,14 @@
       "name": "2-yaml-anchor-ranges-candidate",
       "official": true,
       "frozenEndpoint": true,
-      "actualChecks": true,
+      "actualChecks": false,
       "behavior": true,
-      "full": true,
+      "full": false,
       "originalRuntimeError": null,
       "mechanism": "completed",
-      "manualCriteriaFailures": [],
+      "manualCriteriaFailures": [
+        "required_exact_npm_wrappers_not_invoked"
+      ],
       "eventsSha256": "0ae24cd4dc718f2ff7646406a399813bafaf4701aca5128b1f908db1dce889a1",
       "scoreSha256": "a142b9ceb737f63528cf3590c908e1dd4aa87ac242837372da86edce1d26be11"
     },
@@ -126,12 +130,14 @@
       "name": "2-yaml-anchor-ranges-baseline",
       "official": true,
       "frozenEndpoint": true,
-      "actualChecks": true,
+      "actualChecks": false,
       "behavior": true,
-      "full": true,
+      "full": false,
       "originalRuntimeError": null,
       "mechanism": "completed",
-      "manualCriteriaFailures": [],
+      "manualCriteriaFailures": [
+        "required_exact_npm_wrappers_not_invoked"
+      ],
       "eventsSha256": "e1134d4736a8530df98bbb24042d3f73568f32fd2e86d52e4db6fe9eba134694",
       "scoreSha256": "623ee248470a65a2e942d718c8d28533a5f7bcbf5d1df4a81be4b28881345c49"
     },
@@ -185,6 +191,47 @@
       ],
       "eventsSha256": "e489fc4ccc00a72e2131f61e8d175401ad43cd42518bff8239b5c2df000bceaa",
       "scoreSha256": "c81b90c2fba2a10ca07dcde916bc01fa910d6b7323a712b0a18d45e10fe7ed44"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-cline",
+      "official": true,
+      "frozenEndpoint": true,
+      "actualChecks": true,
+      "behavior": true,
+      "full": true,
+      "originalRuntimeError": null,
+      "mechanism": "completed",
+      "manualCriteriaFailures": [],
+      "eventsSha256": "e1ef698085472849bc21989104bdf4c10800f998085a7680143fecb2cdeab654",
+      "scoreSha256": "1b4ac1e165b8bf1fa3f23d0aecca751fb3c9ba10903805132c7e73736f03c85f"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-baseline",
+      "official": true,
+      "frozenEndpoint": true,
+      "actualChecks": true,
+      "behavior": true,
+      "full": true,
+      "originalRuntimeError": null,
+      "mechanism": "completed",
+      "manualCriteriaFailures": [],
+      "eventsSha256": "d39605862b1d94b0165e0eb12710e808323cd278716ebdf6da12c2db3c6c40f2",
+      "scoreSha256": "cf60e8745764554c49f4c8120fc6a21c65a942c69fba4f19642418f1091abf98"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-candidate",
+      "official": true,
+      "frozenEndpoint": true,
+      "actualChecks": false,
+      "behavior": true,
+      "full": false,
+      "originalRuntimeError": null,
+      "mechanism": "completed",
+      "manualCriteriaFailures": [
+        "required_exact_npm_wrappers_not_invoked"
+      ],
+      "eventsSha256": "76425ce40885b05d60a92b134cf5df9cebfb49394e2de5dc3d3f2dc5ea4c065e",
+      "scoreSha256": "d8065360bbca5637bf731d6765a59bc7c857796e633a40096d145b05b74436a9"
     }
   ]
 }

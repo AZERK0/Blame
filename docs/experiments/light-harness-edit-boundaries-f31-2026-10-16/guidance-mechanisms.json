@@ -6113,6 +6113,1005 @@
         "patchRecoveryHints": 1
       },
       "partition": "fresh-confirmation"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-cline",
+      "id": "yaml-anchor-ranges",
+      "arm": "cline",
+      "repetition": 3,
+      "eventsSha256": "e1ef698085472849bc21989104bdf4c10800f998085a7680143fecb2cdeab654",
+      "compilerReferenceCalls": 0,
+      "compilerRenameCalls": 0,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "queries": [
+            "anchorRange|anchor\\b|ParsedNode|keepSourceTokens|clone\\(",
+            "compose-node",
+            "class Scalar|class Collection|class YAMLMap|class YAMLSeq"
+          ]
+        },
+        {
+          "queries": [
+            "anchor:.*source|type: 'anchor'|anchor\\s*=|anchorToken|resolveProps\\(|interface Props",
+            "sourceToken.*anchor|anchor.*offset|offset.*anchor"
+          ]
+        },
+        {
+          "queries": [
+            "anchorRange"
+          ]
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "input": "*** Begin Patch\n*** Update File: /workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace/src/compose/compose-node.ts\n@@\n export type ComposeNode = typeof CN\n+\n+function setAnchor(node: ParsedNode, anchor: SourceToken) {\n+  node.anchor = anchor.source.substring(1)\n+  node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n+}\n \n export function composeNode(\n@@\n     case 'block-scalar':\n       node = composeScalar(ctx, token, tag, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) setAnchor(node, anchor)\n       break\n@@\n       node = composeCollection(CN, ctx, token, props, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) setAnchor(node, anchor)\n       break\n@@\n   const node = composeScalar(ctx, token, tag, onError)\n   if (anchor) {\n-    node.anchor = anchor.source.substring(1)\n+    setAnchor(node, anchor)\n     if (node.anchor === '')\n       onError(anchor, 'BAD_ALIAS', 'Anchor cannot be an empty string')\n*** Update File: /workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace/src/nodes/Node.ts\n@@\n export type Range = [number, number, number]\n+\n+/** `[start, end)` character offsets for a parsed anchor token */\n+export type AnchorRange = [number, number]\n \n export abstract class NodeBase {\n@@\n   /** A fully qualified tag, if required */\n   declare tag?: string\n+\n+  /** The `[start, end)` character offsets for a parsed anchor token */\n+  declare anchorRange?: AnchorRange\n@@\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange) copy.anchorRange = this.anchorRange.slice() as AnchorRange\n     return copy\n   }\n*** Update File: /workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace/src/nodes/Collection.ts\n@@\n-import { NodeBase } from './Node.ts'\n+import { NodeBase } from './Node.ts'\n+import type { AnchorRange } from './Node.ts'\n@@\n     )\n     if (schema) copy.schema = schema\n@@\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as AnchorRange\n     return copy\n   }\n*** End Patch"
+          }
+        },
+        {
+          "input": {
+            "input": "*** Begin Patch\n*** Update File: /workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace/src/nodes/Node.ts\n@@\n-/** `[start, end)` character offsets for a parsed anchor token */\n-export type AnchorRange = [number, number]\n-\n export abstract class NodeBase {\n@@\n   /** The `[start, end)` character offsets for a parsed anchor token */\n-  declare anchorRange?: AnchorRange\n+  declare anchorRange?: [number, number]\n@@\n-    if (this.anchorRange) copy.anchorRange = this.anchorRange.slice() as AnchorRange\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as [number, number]\n*** Update File: /workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace/src/nodes/Collection.ts\n@@\n import { isCollection,\n*** End Patch"
+          }
+        },
+        {
+          "input": {
+            "input": "*** Begin Patch\n*** Update File: /workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace/src/nodes/Collection.ts\n@@\n import } from './identity.ts'\n import { NodeBase } from './Node.ts'\n-import type { AnchorRange } from './Node.ts'\n@@\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n     if (this.anchorRange)\n-      copy.anchorRange = this.anchorRange.slice() as AnchorRange\n+      copy.anchorRange = this.anchorRange.slice() as [number, number]\n*** End Patch"
+          }
+        }
+      ],
+      "readCalls": 5,
+      "readBytes": 110100,
+      "commands": [
+        {
+          "index": 0,
+          "command": "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p' && printf '\\nGit status:\\n' && git status --short --branch && printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\"",
+          "output": [
+            {
+              "query": "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p' && printf '\\nGit status:\\n' && git status --short --branch && printf '\\nPackage scripts:\\n' && node -e \"cons ... [command truncated: 77 more chars; full command is in the tool call input]",
+              "result": "/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace\n\nTop-level files:\n./.editorconfig\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.gitignore\n./.gitmodules\n./.prettierignore\n./.well-known/funding-manifest-urls\n./LICENSE\n./README.md\n./bin.mjs\n./browser/index.js\n./browser/package.json\n./config/jest.config.js\n./config/rollup.browser-config.mjs\n./config/rollup.node-config.mjs\n./docs/01_intro.md\n./docs/02_parse_stringify.md\n./docs/03_options.md\n./docs/04_documents.md\n./docs/05_content_nodes.md\n./docs/06_custom_tags.md\n./docs/07_parsing_yaml.md\n./docs/08_errors.md\n./docs/09_cli.md\n./docs/10_yaml_syntax.md\n./docs/CONTRIBUTING.md\n./docs/README.md\n./docs/SECURITY.md\n./docs/index.html.md\n./docs/prepare-docs.mjs\n./eslint.config.mjs\n./jsr.jsonc\n./package-lock.json\n./package.json\n./src/cli.ts\n./src/errors.ts\n./src/index.ts\n./src/log.ts\n./src/options.ts\n./src/public-api.ts\n./src/test-events.ts\n./src/util.ts\n./src/visit.ts\n./tests/_utils.ts\n./tests/agent-anchor-contracts.cjs\n./tests/agent-anchor-ranges.cjs\n./tests/cli.ts\n./tests/clone.ts\n./tests/collection-access.ts\n./tests/compat.ts\n./tests/cst.ts\n./tests/directives.ts\n./tests/is-node.ts\n./tests/json-test-suite.ts\n./tests/lexer.ts\n./tests/line-counter.ts\n./tests/node-to-js.ts\n./tests/properties.ts\n./tests/stream.ts\n./tests/tsconfig.json\n./tests/visit.ts\n./tests/yaml-test-suite.ts\n./tsconfig.json\n./util.js\n\nGit status:\n## master\n\nPackage scripts:\n{\n  \"build\": \"npm run build:node && npm run build:browser\",\n  \"build:browser\": \"rollup -c config/rollup.browser-config.mjs\",\n  \"build:node\": \"rollup -c config/rollup.node-config.mjs\",\n  \"clean\": \"git clean -fdxe node_modules\",\n  \"lint\": \"eslint config/ src/\",\n  \"prettier\": \"prettier --write .\",\n  \"prestart\": \"rollup --sourcemap -c config/rollup.node-config.mjs\",\n  \"start\": \"node --enable-source-maps -i -e 'YAML=require(\\\"./dist/index.js\\\");const{parse,parseDocument,parseAllDocuments}=YAML'\",\n  \"test\": \"jest --config config/jest.config.js\",\n  \"test:all\": \"npm test && npm run test:types && npm run test:dist && npm run test:dist:types\",\n  \"test:browsers\": \"cd playground && npm test\",\n  \"test:dist\": \"npm run build:node && jest --config config/jest.config.js\",\n  \"test:dist:types\": \"tsc --allowJs --moduleResolution node --noEmit --target es5 dist/index.js\",\n  \"test:types\": \"tsc --noEmit && tsc --noEmit -p tests/tsconfig.json\",\n  \"docs:install\": \"cd docs-slate && bundle install\",\n  \"predocs:deploy\": \"node docs/prepare-docs.mjs\",\n  \"docs:deploy\": \"cd docs-slate && ./deploy.sh\",\n  \"predocs\": \"node docs/prepare-docs.mjs\",\n  \"docs\": \"cd docs-slate && bundle exec middleman server\",\n  \"preversion\": \"npm test && npm run build\",\n  \"prepublishOnly\": \"npm run clean && npm test && npm run build\"\n}\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "index": 9,
+          "command": "git diff --check && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts",
+          "output": [
+            {
+              "query": "git diff --check && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts",
+              "result": "diff --git a/src/compose/compose-node.ts b/src/compose/compose-node.ts\nindex 88dab4e..e95d44c 100644\n--- a/src/compose/compose-node.ts\n+++ b/src/compose/compose-node.ts\n@@ -31,6 +31,11 @@ interface Props {\n const CN = { composeNode, composeEmptyNode }\n export type ComposeNode = typeof CN\n \n+function setAnchor(node: ParsedNode, anchor: SourceToken) {\n+  node.anchor = anchor.source.substring(1)\n+  node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n+}\n+\n export function composeNode(\n   ctx: ComposeContext,\n   token: Token,\n@@ -56,13 +61,13 @@ export function composeNode(\n     case 'double-quoted-scalar':\n     case 'block-scalar':\n       node = composeScalar(ctx, token, tag, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) setAnchor(node, anchor)\n       break\n     case 'block-map':\n     case 'block-seq':\n     case 'flow-collection':\n       node = composeCollection(CN, ctx, token, props, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) setAnchor(node, anchor)\n       break\n     default: {\n       const message =\n@@ -119,7 +124,7 @@ export function composeEmptyNode(\n   }\n   const node = composeScalar(ctx, token, tag, onError)\n   if (anchor) {\n-    node.anchor = anchor.source.substring(1)\n+    setAnchor(node, anchor)\n     if (node.anchor === '')\n       onError(anchor, 'BAD_ALIAS', 'Anchor cannot be an empty string')\n   }\ndiff --git a/src/nodes/Collection.ts b/src/nodes/Collection.ts\nindex 171ff2c..56bd9e4 100644\n--- a/src/nodes/Collection.ts\n+++ b/src/nodes/Collection.ts\n@@ -8,6 +8,7 @@ import {\n   NODE_TYPE\n } from './identity.ts'\n import { NodeBase } from './Node.ts'\n+import type { AnchorRange } from './Node.ts'\n \n export function collectionFromPath(\n   schema: Schema,\n@@ -85,6 +86,8 @@ export abstract class Collection extends NodeBase {\n       isNode(it) || isPair(it) ? it.clone(schema) : it\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as AnchorRange\n     return copy\n   }\n \ndiff --git a/src/nodes/Node.ts b/src/nodes/Node.ts\nindex 0ecfbe8..08b5f5c 100644\n--- a/src/nodes/Node.ts\n+++ b/src/nodes/Node.ts\n@@ -71,6 +71,9 @@ export abstract class NodeBase {\n   /** A fully qualified tag, if required */\n   declare tag?: string\n \n+  /** The `[start, end)` character offsets for a parsed anchor token */\n+  declare anchorRange?: [number, number]\n+\n   /**\n    * Customize the way that a key-value pair is resolved.\n    * Used for YAML 1.1 !!merge << handling.\n@@ -101,6 +104,8 @@ export abstract class NodeBase {\n       Object.getOwnPropertyDescriptors(this)\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as [number, number]\n     return copy\n   }\n \n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "index": 11,
+          "command": "npm run build:node",
+          "output": [
+            {
+              "query": "npm run build:node",
+              "result": "\n> yaml@2.8.1 build:node\n> rollup -c config/rollup.node-config.mjs\n\n\n[stderr]\n\nsrc/index.ts, src/test-events.ts, src/util.ts → dist...\ncreated dist in 2.3s\n\nsrc/cli.ts → dist/cli.mjs...\ncreated dist/cli.mjs in 1.3s\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "index": 12,
+          "command": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs",
+          "output": [
+            {
+              "query": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs",
+              "result": "✔ scalar (8.03371ms)\n✔ sequence (2.121763ms)\n✔ map (1.207088ms)\n✔ block-sequence (0.936897ms)\n✔ block-map (0.64849ms)\n✔ empty (0.862999ms)\n✔ tagged (0.801738ms)\n✔ unicode-crlf (0.734839ms)\n✔ comment-anchor-decoy (0.710352ms)\n✔ aliases and unanchored/programmatic nodes stay unannotated (0.835027ms)\n✔ clone copies the range tuple (0.355296ms)\n✔ keepSourceTokens does not control anchor positions (0.321516ms)\nℹ tests 12\nℹ suites 0\nℹ pass 12\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 130.128063\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "index": 13,
+          "command": "npm run test:types",
+          "output": [
+            {
+              "query": "npm run test:types",
+              "result": "\n> yaml@2.8.1 test:types\n> tsc --noEmit && tsc --noEmit -p tests/tsconfig.json\n\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "index": 14,
+          "command": "npm test -- --runInBand",
+          "output": [
+            {
+              "query": "npm test -- --runInBand",
+              "result": "\n> yaml@2.8.1 test\n> jest --config config/jest.config.js --runInBand\n\n\n[stderr]\nBrowserslist: browsers data (caniuse-lite) is 15 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nPASS tests/doc/YAML-1.2.spec.ts\nPASS tests/doc/stringify.ts\nPASS tests/doc/types.ts\nPASS tests/doc/comments.ts\nPASS tests/doc/parse.ts\nPASS tests/collection-access.ts\nPASS tests/doc/errors.ts\nPASS tests/doc/foldFlowLines.ts\nPASS tests/doc/anchors.ts\nPASS tests/doc/createNode.ts\nPASS tests/visit.ts\nPASS tests/cli.ts\nPASS tests/cst.ts\nPASS tests/yaml-test-suite.ts\nPASS tests/is-node.ts\nPASS tests/compat.ts\nPASS tests/node-to-js.ts\nPASS tests/directives.ts\nPASS tests/json-test-suite.ts\nPASS tests/clone.ts\nPASS tests/stream.ts\nPASS tests/line-counter.ts\nPASS tests/doc/YAML-1.1.spec.ts\nPASS tests/lexer.ts\nPASS tests/properties.ts\n\nTest Suites: 25 passed, 25 total\nTests:       11 skipped, 3483 passed, 3494 total\nSnapshots:   0 total\nTime:        5.002 s\nRan all test suites.\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "index": 15,
+          "command": "git status --short --branch && git diff --check && git diff --stat && git diff --name-only",
+          "output": [
+            {
+              "query": "git status --short --branch && git diff --check && git diff --stat && git diff --name-only",
+              "result": "## master\n M src/compose/compose-node.ts\n M src/nodes/Collection.ts\n M src/nodes/Node.ts\n src/compose/compose-node.ts | 11 ++++++++---\n src/nodes/Collection.ts     |  2 ++\n src/nodes/Node.ts           |  5 +++++\n 3 files changed, 15 insertions(+), 3 deletions(-)\nsrc/compose/compose-node.ts\nsrc/nodes/Collection.ts\nsrc/nodes/Node.ts\n",
+              "success": true
+            }
+          ]
+        }
+      ],
+      "lastDedicatedEditIndex": 10,
+      "sourceChangingLightCommands": [],
+      "shellEditCoverage": "Dedicated edit index is not a complete mutation timeline: native/shell source edits require manual command review.",
+      "finalReport": "Implemented backward-compatible `anchorRange` support.\n\n### Changes\n- Parsed anchored scalar, sequence, map, and empty-value nodes now expose:\n  - `anchor: string`\n  - `anchorRange?: [number, number]`\n- Ranges use zero-based UTF-16 offsets and include the complete `&anchor` token.\n- `anchorRange` is independent of `keepSourceTokens`.\n- Aliases, unanchored nodes, and programmatically anchored nodes do not receive an own `anchorRange` property.\n- `clone()` copies `anchorRange` into a separate tuple.\n- Public typing is exposed through `NodeBase`, including `ParsedNode`.\n- Existing tag/comment ordering, errors, ranges, alias behavior, and serialization remain unchanged.\n\nOnly these permitted files were modified:\n- `/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace/src/compose/compose-node.ts`\n- `/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace/src/nodes/Node.ts`\n- `/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-cline/workspace/src/nodes/Collection.ts`\n\n### Required validation results, in order\n1. `npm run build:node` — passed.\n2. `node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs` — passed:\n   - 12 tests passed\n   - 0 failed\n3. `npm run test:types` — passed.\n4. `npm test -- --runInBand` — passed:\n   - 25 test suites passed\n   - 3,483 tests passed\n   - 11 skipped\n   - 3,494 total\n\nFinal `git diff --check` also passed. The full test run emitted only the existing Browserslist staleness warning. No known limitations remain.",
+      "verification": null,
+      "hints": [],
+      "matchingHintFollowups": 0,
+      "dispatchedRequests": 12,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "multiTermLexicalCalls": 0,
+        "multiTermTopSnippetObservations": 0,
+        "contiguousTopSnippets": 0,
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 0,
+        "bareReferenceFallbacks": 0,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 0,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 0,
+        "scopedPatchHeaderRejections": 0,
+        "scopedRecoveryReceipts": 0,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-baseline",
+      "id": "yaml-anchor-ranges",
+      "arm": "baseline",
+      "repetition": 3,
+      "eventsSha256": "d39605862b1d94b0165e0eb12710e808323cd278716ebdf6da12c2db3c6c40f2",
+      "compilerReferenceCalls": 0,
+      "compilerRenameCalls": 0,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 1,
+      "searchInputs": [
+        {
+          "query": "anchorRange",
+          "scope": [
+            "src",
+            "tests"
+          ],
+          "mode": "text"
+        },
+        {
+          "query": "anchor",
+          "scope": "src/compose",
+          "mode": "text"
+        },
+        {
+          "query": "ParsedNode",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "composeNode(",
+          "scope": "src/compose",
+          "mode": "text"
+        },
+        {
+          "query": "Props",
+          "scope": "src/compose",
+          "mode": "text"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "s25",
+                "path": "src/nodes/Node.ts",
+                "patch": "*** Begin Patch\n*** Update File: src/nodes/Node.ts\n@@\n   declare range?: Range | null\n+\n+  /** The `[start, end)` character offsets of the parsed anchor, if present. */\n+  declare anchorRange?: [number, number]\n@@\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as NodeBase['anchorRange']\n     return copy\n   }\n*** Update File: src/nodes/Collection.ts\n@@\n     )\n     if (schema) copy.schema = schema\n     copy.items = copy.items.map(it =>\n       isNode(it) || isPair(it) ? it.clone(schema) : it\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as NodeBase['anchorRange']\n     return copy\n   }\n*** Update File: src/compose/compose-node.ts\n@@\n     case 'scalar':\n@@\n       node = composeScalar(ctx, token, tag, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) {\n+        node.anchor = anchor.source.substring(1)\n+        node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n+      }\n       break\n@@\n       node = composeCollection(CN, ctx, token, props, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) {\n+        node.anchor = anchor.source.substring(1)\n+        node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n+      }\n@@\n   if (anchor) {\n     node.anchor = anchor.source.substring(1)\n+    node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n     if (node.anchor === '')\n*** End Patch"
+              }
+            ]
+          },
+          "status": "blocked",
+          "message": "Scoped patch header must match the symbol's file and contain one Update File."
+        },
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "patch": "*** Begin Patch\n*** Update File: src/nodes/Node.ts\n@@\n   declare range?: Range | null\n+\n+  /** The `[start, end)` character offsets of the parsed anchor, if present. */\n+  declare anchorRange?: [number, number]\n@@\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as NodeBase['anchorRange']\n     return copy\n   }\n*** Update File: src/nodes/Collection.ts\n@@\n     )\n     if (schema) copy.schema = schema\n@@\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as NodeBase['anchorRange']\n     return copy\n   }\n*** Update File: src/compose/compose-node.ts\n@@\n       node = composeScalar(ctx, token, tag, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) {\n+        node.anchor = anchor.source.substring(1)\n+        node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n+      }\n       break\n@@\n       node = composeCollection(CN, ctx, token, props, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) {\n+        node.anchor = anchor.source.substring(1)\n+        node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n+      }\n       break\n@@\n   if (anchor) {\n     node.anchor = anchor.source.substring(1)\n+    node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n     if (node.anchor === '')\n*** End Patch"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 18,
+      "readBytes": 60441,
+      "commands": [
+        {
+          "index": 24,
+          "input": {
+            "kind": "project",
+            "task": "build:node"
+          },
+          "status": "ok",
+          "command": "rollup -c config/rollup.node-config.mjs",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rollup -c config/rollup.node-config.mjs",
+              "exitCode": 0,
+              "output": "> yaml@2.8.1 build:node\n> rollup -c config/rollup.node-config.mjs\n\n\nsrc/index.ts, src/test-events.ts, src/util.ts → dist...\ncreated dist in 2.3s\n\nsrc/cli.ts → dist/cli.mjs...\ncreated dist/cli.mjs in 1.3s",
+              "environment": "linux-native",
+              "validation": {
+                "paths": [
+                  "src/nodes/Node.ts",
+                  "src/nodes/Collection.ts",
+                  "src/compose/compose-node.ts"
+                ],
+                "sourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+                "status": "passed",
+                "taskId": "build:node",
+                "taskKind": "build"
+              }
+            }
+          }
+        },
+        {
+          "index": 26,
+          "input": {
+            "kind": "command",
+            "command": "npm run build:node"
+          },
+          "status": "ok",
+          "command": "npm run build:node",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "npm run build:node",
+              "exitCode": 0,
+              "output": "> yaml@2.8.1 build:node\n> rollup -c config/rollup.node-config.mjs\n\n\nsrc/index.ts, src/test-events.ts, src/util.ts → dist...\ncreated dist in 2.3s\n\nsrc/cli.ts → dist/cli.mjs...\ncreated dist/cli.mjs in 1.3s",
+              "environment": "linux-native",
+              "validation": {
+                "paths": [
+                  "src/nodes/Node.ts",
+                  "src/nodes/Collection.ts",
+                  "src/compose/compose-node.ts"
+                ],
+                "sourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+                "status": "passed",
+                "taskId": "build:node",
+                "taskKind": "build"
+              }
+            }
+          }
+        },
+        {
+          "index": 27,
+          "input": {
+            "kind": "command",
+            "command": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs"
+          },
+          "status": "ok",
+          "command": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs",
+          "exitCode": 0,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 12,
+              "passed": 12,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs",
+              "exitCode": 0,
+              "output": "✔ scalar (8.279204ms)\n✔ sequence (2.087302ms)\n✔ map (1.044788ms)\n✔ block-sequence (0.920273ms)\n✔ block-map (0.605087ms)\n✔ empty (0.784221ms)\n✔ tagged (0.899602ms)\n✔ unicode-crlf (0.795799ms)\n✔ comment-anchor-decoy (0.740247ms)\n✔ aliases and unanchored/programmatic nodes stay unannotated (0.770361ms)\n✔ clone copies the range tuple (0.357519ms)\n✔ keepSourceTokens does not control anchor positions (0.285823ms)\nℹ tests 12\nℹ suites 0\nℹ pass 12\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 127.07469",
+              "check": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 12,
+                  "passed": 12,
+                  "failed": 0,
+                  "skipped": 0
+                },
+                "scope": ".",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "evidenceOrigin": "runner_output"
+              },
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 12,
+                  "passed": 12,
+                  "failed": 0,
+                  "skipped": 0,
+                  "pending": null
+                },
+                "evidenceOrigin": "runner_output",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified",
+                "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+                "invocationSourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+                "completedSourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+                "cwd": "."
+              },
+              "changed": false,
+              "paths": [],
+              "validation": {
+                "status": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "index": 28,
+          "input": {
+            "kind": "command",
+            "command": "npm run test:types"
+          },
+          "status": "ok",
+          "command": "npm run test:types",
+          "exitCode": 0,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "npm run test:types",
+              "exitCode": 0,
+              "output": "> yaml@2.8.1 test:types\n> tsc --noEmit && tsc --noEmit -p tests/tsconfig.json",
+              "check": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "scope": ".",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "evidenceOrigin": "none"
+              },
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "counts": {
+                  "executed": null,
+                  "passed": null,
+                  "failed": null,
+                  "skipped": null,
+                  "pending": null
+                },
+                "evidenceOrigin": "none",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified",
+                "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+                "invocationSourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+                "completedSourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+                "cwd": "."
+              },
+              "changed": false,
+              "paths": [],
+              "validation": {
+                "status": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "index": 29,
+          "input": {
+            "kind": "command",
+            "command": "npm test -- --runInBand"
+          },
+          "status": "ok",
+          "command": "npm test -- --runInBand",
+          "exitCode": 0,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "npm test -- --runInBand",
+              "exitCode": 0,
+              "output": "> yaml@2.8.1 test\n> jest --config config/jest.config.js --runInBand\n\nBrowserslist: browsers data (caniuse-lite) is 15 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nPASS tests/doc/YAML-1.2.spec.ts\nPASS tests/doc/stringify.ts\nPASS tests/doc/types.ts\nPASS tests/doc/comments.ts\nPASS tests/doc/parse.ts\nPASS tests/collection-access.ts\nPASS tests/doc/errors.ts\nPASS tests/doc/foldFlowLines.ts\nPASS tests/doc/anchors.ts\nPASS tests/doc/createNode.ts\nPASS tests/visit.ts\nPASS tests/cli.ts\nPASS tests/cst.ts\nPASS tests/yaml-test-suite.ts\nPASS tests/is-node.ts\nPASS tests/compat.ts\nPASS tests/node-to-js.ts\nPASS tests/directives.ts\nPASS tests/json-test-suite.ts\nPASS tests/clone.ts\nPASS tests/stream.ts\nPASS tests/line-counter.ts\nPASS tests/doc/YAML-1.1.spec.ts\nPASS tests/lexer.ts\nPASS tests/properties.ts\n\nTest Suites: 25 passed, 25 total\nTests:       11 skipped, 3483 passed, 3494 total\nSnapshots:   0 total\nTime:        5.421 s\nRan all test suites.",
+              "check": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 3483,
+                  "passed": 3483,
+                  "failed": 0,
+                  "skipped": 11
+                },
+                "scope": ".",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "evidenceOrigin": "runner_output"
+              },
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 3483,
+                  "passed": 3483,
+                  "failed": 0,
+                  "skipped": 11,
+                  "pending": null
+                },
+                "evidenceOrigin": "runner_output",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified",
+                "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+                "invocationSourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+                "completedSourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+                "cwd": "."
+              },
+              "changed": false,
+              "paths": [],
+              "validation": {
+                "status": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "index": 30,
+          "input": {
+            "kind": "command",
+            "command": "git status --short && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts"
+          },
+          "status": "ok",
+          "command": "git status --short && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "git status --short && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts",
+              "exitCode": 0,
+              "output": "M src/compose/compose-node.ts\n M src/nodes/Collection.ts\n M src/nodes/Node.ts\ndiff --git a/src/compose/compose-node.ts b/src/compose/compose-node.ts\nindex 88dab4e..3750c05 100644\n--- a/src/compose/compose-node.ts\n+++ b/src/compose/compose-node.ts\n@@ -56,13 +56,19 @@ export function composeNode(\n     case 'double-quoted-scalar':\n     case 'block-scalar':\n       node = composeScalar(ctx, token, tag, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) {\n+        node.anchor = anchor.source.substring(1)\n+        node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n+      }\n       break\n     case 'block-map':\n     case 'block-seq':\n     case 'flow-collection':\n       node = composeCollection(CN, ctx, token, props, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) {\n+        node.anchor = anchor.source.substring(1)\n+        node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n+      }\n       break\n     default: {\n       const message =\n@@ -120,6 +126,7 @@ export function composeEmptyNode(\n   const node = composeScalar(ctx, token, tag, onError)\n   if (anchor) {\n     node.anchor = anchor.source.substring(1)\n+    node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n     if (node.anchor === '')\n       onError(anchor, 'BAD_ALIAS', 'Anchor cannot be an empty string')\n   }\ndiff --git a/src/nodes/Collection.ts b/src/nodes/Collection.ts\nindex 171ff2c..0b457f9 100644\n--- a/src/nodes/Collection.ts\n+++ b/src/nodes/Collection.ts\n@@ -85,6 +85,8 @@ export abstract class Collection extends NodeBase {\n       isNode(it) || isPair(it) ? it.clone(schema) : it\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as NodeBase['anchorRange']\n     return copy\n   }\n \ndiff --git a/src/nodes/Node.ts b/src/nodes/Node.ts\nindex 0ecfbe8..d026d6d 100644\n--- a/src/nodes/Node.ts\n+++ b/src/nodes/Node.ts\n@@ -62,6 +62,9 @@ export abstract class NodeBase {\n    */\n   declare range?: Range | null\n \n+  /** The `[start, end)` character offsets of the parsed anchor, if present. */\n+  declare anchorRange?: [number, number]\n+\n   /** A blank line before this node and its commentBefore */\n   declare spaceBefore?: boolean\n \n@@ -101,6 +104,8 @@ export abstract class NodeBase {\n       Object.getOwnPropertyDescriptors(this)\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as NodeBase['anchorRange']\n     return copy\n   }",
+              "environment": "linux-native"
+            }
+          }
+        }
+      ],
+      "lastDedicatedEditIndex": 23,
+      "sourceChangingLightCommands": [],
+      "shellEditCoverage": "Dedicated edit index is not a complete mutation timeline: native/shell source edits require manual command review.",
+      "finalReport": "Implemented parsed `anchorRange?: [number, number]` in `NodeBase`, populated it for anchored scalar, sequence, map, and empty nodes from the complete anchor token span, and preserved the existing `anchor` string behavior. `clone()` now copies the tuple independently; unanchored, alias, and programmatically anchored nodes remain without an own property. Changes are limited to `src/compose/compose-node.ts`, `src/nodes/Node.ts`, and `src/nodes/Collection.ts`.\n\nVerification was run in the requested order:\n- `npm run build:node` — passed.\n- `node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs` — passed; 12 executed, 12 passed, 0 failed, 0 skipped.\n- `npm run test:types` — command exited 0; the runner did not provide observed process/count reporting, so test counts are unknown.\n- `npm test -- --runInBand` — passed; 3483 passed, 0 failed, 11 skipped (25 suites passed).\n\nLimitation: the type-check command's output confirms both `tsc` invocations completed without diagnostics, but its structured runner result did not report observed counts.",
+      "verification": "verified",
+      "hints": [],
+      "matchingHintFollowups": 0,
+      "dispatchedRequests": 12,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "multiTermLexicalCalls": 0,
+        "multiTermTopSnippetObservations": 0,
+        "contiguousTopSnippets": 0,
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 0,
+        "bareReferenceFallbacks": 0,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 0,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 1,
+        "reportingReceipts": 3,
+        "scopedPatchHeaderRejections": 1,
+        "scopedRecoveryReceipts": 1,
+        "patchRecoveryHints": 1
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-candidate",
+      "id": "yaml-anchor-ranges",
+      "arm": "candidate",
+      "repetition": 3,
+      "eventsSha256": "76425ce40885b05d60a92b134cf5df9cebfb49394e2de5dc3d3f2dc5ea4c065e",
+      "compilerReferenceCalls": 0,
+      "compilerRenameCalls": 0,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 1,
+      "searchInputs": [
+        {
+          "query": "anchorRange",
+          "scope": [
+            "src",
+            "tests"
+          ],
+          "mode": "text"
+        },
+        {
+          "query": "anchor",
+          "scope": "src/compose",
+          "mode": "text"
+        },
+        {
+          "query": "interface SourceToken type SourceToken",
+          "scope": "src/parse",
+          "mode": "text"
+        },
+        {
+          "query": "anchor?: string",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "clone()",
+          "scope": "tests",
+          "mode": "text"
+        },
+        {
+          "query": "export interface SourceToken",
+          "scope": "src/parse",
+          "mode": "text"
+        },
+        {
+          "query": "type SourceToken",
+          "scope": "src/parse",
+          "mode": "text"
+        },
+        {
+          "query": "declare range?: Range",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "Parsed extends",
+          "scope": "src/nodes",
+          "mode": "text"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "src/nodes/Node.ts",
+                "patch": "*** Begin Patch\n*** Update File: src/nodes/Node.ts\n@@\n   /** A comment before this */\n   declare commentBefore?: string | null\n \n+  /** The `[start, end]` character offsets of the anchor, if parsed. */\n+  declare anchorRange?: [number, number]\n+\n   /**\n    * The `[start, value-end, node-end]` character offsets for the part of the\n@@\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange) copy.anchorRange = this.anchorRange.slice() as [\n+      number,\n+      number\n+    ]\n     return copy\n   }\n*** Update File: src/nodes/Collection.ts\n@@\n     )\n     if (schema) copy.schema = schema\n     copy.items = copy.items.map(it =>\n       isNode(it) || isPair(it) ? it.clone(schema) : it\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange) copy.anchorRange = this.anchorRange.slice()\n     return copy\n   }\n*** Update File: src/compose/compose-node.ts\n@@\n     case 'scalar':\n@@\n       node = composeScalar(ctx, token, tag, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) {\n+        node.anchor = anchor.source.substring(1)\n+        node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n+      }\n       break\n@@\n       node = composeCollection(CN, ctx, token, props, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) {\n+        node.anchor = anchor.source.substring(1)\n+        node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n+      }\n       break\n@@\n   if (anchor) {\n     node.anchor = anchor.source.substring(1)\n+    node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n     if (node.anchor === '')\n*** End Patch"
+              }
+            ]
+          },
+          "status": "ok"
+        },
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "s108",
+                "path": "src/nodes/Collection.ts",
+                "patch": "*** Begin Patch\n*** Update File: src/nodes/Collection.ts\n@@\n-    if (this.anchorRange) copy.anchorRange = this.anchorRange.slice()\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as [number, number]\n*** End Patch"
+              }
+            ]
+          },
+          "status": "blocked",
+          "message": "Read s108 before replacing unobserved source."
+        },
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "s108",
+                "path": "src/nodes/Collection.ts",
+                "patch": "*** Begin Patch\n*** Update File: src/nodes/Collection.ts\n@@\n-    if (this.anchorRange) copy.anchorRange = this.anchorRange.slice()\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as [number, number]\n*** End Patch"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 16,
+      "readBytes": 55809,
+      "commands": [
+        {
+          "index": 25,
+          "input": {
+            "kind": "project",
+            "task": "build:node"
+          },
+          "status": "ok",
+          "command": "rollup -c config/rollup.node-config.mjs",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rollup -c config/rollup.node-config.mjs",
+              "exitCode": 0,
+              "output": "> yaml@2.8.1 build:node\n> rollup -c config/rollup.node-config.mjs\n\n\nsrc/index.ts, src/test-events.ts, src/util.ts → dist...\n(!) [plugin typescript] src/nodes/Collection.ts (88:27): @rollup/plugin-typescript TS2322: Type 'number[]' is not assignable to type '[number, number]'.\n  Target requires 2 element(s) but source may have fewer.\n/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-candidate/workspace/src/nodes/Collection.ts:88:27\n\n\u001b[7m88\u001b[0m     if (this.anchorRange) copy.anchorRange = this.anchorRange.slice()\n\u001b[7m  \u001b[0m \u001b[91m                          ~~~~~~~~~~~~~~~~\u001b[0m\n\ncreated dist in 2.2s\n\nsrc/cli.ts → dist/cli.mjs...\n(!) [plugin typescript] src/nodes/Collection.ts (88:27): @rollup/plugin-typescript TS2322: Type 'number[]' is not assignable to type '[number, number]'.\n  Target requires 2 element(s) but source may have fewer.\n/workspace/Blame/.blame/research/edit-boundaries-f31/f31/3-yaml-anchor-ranges-candidate/workspace/src/nodes/Collection.ts:88:27\n\n\u001b[7m88\u001b[0m     if (this.anchorRange) copy.anchorRange = this.anchorRange.slice()\n\u001b[7m  \u001b[0m \u001b[91m                          ~~~~~~~~~~~~~~~~\u001b[0m\n\ncreated dist/cli.mjs in 1.3s",
+              "environment": "linux-native",
+              "validation": {
+                "paths": [
+                  "src/nodes/Node.ts",
+                  "src/nodes/Collection.ts",
+                  "src/compose/compose-node.ts"
+                ],
+                "sourceRevisionId": "src_f72e574e71a93f0860de710cb170112d",
+                "status": "passed",
+                "taskId": "build:node",
+                "taskKind": "build"
+              }
+            }
+          }
+        },
+        {
+          "index": 29,
+          "input": {
+            "kind": "project",
+            "task": "build:node"
+          },
+          "status": "ok",
+          "command": "rollup -c config/rollup.node-config.mjs",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rollup -c config/rollup.node-config.mjs",
+              "exitCode": 0,
+              "output": "> yaml@2.8.1 build:node\n> rollup -c config/rollup.node-config.mjs\n\n\nsrc/index.ts, src/test-events.ts, src/util.ts → dist...\ncreated dist in 2.5s\n\nsrc/cli.ts → dist/cli.mjs...\ncreated dist/cli.mjs in 1.3s",
+              "environment": "linux-native",
+              "validation": {
+                "paths": [
+                  "src/nodes/Node.ts",
+                  "src/nodes/Collection.ts",
+                  "src/compose/compose-node.ts"
+                ],
+                "sourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+                "status": "passed",
+                "taskId": "build:node",
+                "taskKind": "build"
+              }
+            }
+          }
+        },
+        {
+          "index": 30,
+          "input": {
+            "kind": "command",
+            "command": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs"
+          },
+          "status": "ok",
+          "command": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs",
+          "exitCode": 0,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 12,
+              "passed": 12,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs",
+              "exitCode": 0,
+              "output": "✔ scalar (7.953992ms)\n✔ sequence (3.201533ms)\n✔ map (0.885812ms)\n✔ block-sequence (0.981353ms)\n✔ block-map (0.736711ms)\n✔ empty (0.747678ms)\n✔ tagged (1.08046ms)\n✔ unicode-crlf (0.846324ms)\n✔ comment-anchor-decoy (0.925161ms)\n✔ aliases and unanchored/programmatic nodes stay unannotated (0.782479ms)\n✔ clone copies the range tuple (0.316859ms)\n✔ keepSourceTokens does not control anchor positions (0.275998ms)\nℹ tests 12\nℹ suites 0\nℹ pass 12\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 137.531764",
+              "check": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 12,
+                  "passed": 12,
+                  "failed": 0,
+                  "skipped": 0
+                },
+                "scope": ".",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "evidenceOrigin": "runner_output"
+              },
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 12,
+                  "passed": 12,
+                  "failed": 0,
+                  "skipped": 0,
+                  "pending": null
+                },
+                "evidenceOrigin": "runner_output",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified",
+                "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+                "invocationSourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+                "completedSourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+                "cwd": "."
+              },
+              "changed": false,
+              "paths": [],
+              "validation": {
+                "status": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "index": 31,
+          "input": {
+            "kind": "project",
+            "task": "test:types"
+          },
+          "status": "ok",
+          "command": "tsc --noEmit && tsc --noEmit -p tests/tsconfig.json",
+          "exitCode": 0,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "tsc --noEmit && tsc --noEmit -p tests/tsconfig.json",
+              "exitCode": 0,
+              "output": "> yaml@2.8.1 test:types\n> tsc --noEmit && tsc --noEmit -p tests/tsconfig.json",
+              "check": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "scope": ".",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "evidenceOrigin": "none"
+              },
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "counts": {
+                  "executed": null,
+                  "passed": null,
+                  "failed": null,
+                  "skipped": null,
+                  "pending": null
+                },
+                "evidenceOrigin": "none",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified",
+                "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+                "invocationSourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+                "completedSourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+                "cwd": "."
+              },
+              "changed": false,
+              "paths": [],
+              "validation": {
+                "status": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "index": 32,
+          "input": {
+            "kind": "command",
+            "command": "npm test -- --runInBand"
+          },
+          "status": "ok",
+          "command": "npm test -- --runInBand",
+          "exitCode": 0,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "npm test -- --runInBand",
+              "exitCode": 0,
+              "output": "> yaml@2.8.1 test\n> jest --config config/jest.config.js --runInBand\n\nBrowserslist: browsers data (caniuse-lite) is 15 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nPASS tests/doc/YAML-1.2.spec.ts\nPASS tests/doc/stringify.ts\nPASS tests/doc/types.ts\nPASS tests/doc/comments.ts\nPASS tests/doc/parse.ts\nPASS tests/collection-access.ts\nPASS tests/doc/errors.ts\nPASS tests/doc/foldFlowLines.ts\nPASS tests/doc/anchors.ts\nPASS tests/doc/createNode.ts\nPASS tests/visit.ts\nPASS tests/cli.ts\nPASS tests/cst.ts\nPASS tests/yaml-test-suite.ts\nPASS tests/is-node.ts\nPASS tests/compat.ts\nPASS tests/node-to-js.ts\nPASS tests/directives.ts\nPASS tests/json-test-suite.ts\nPASS tests/clone.ts\nPASS tests/stream.ts\nPASS tests/line-counter.ts\nPASS tests/doc/YAML-1.1.spec.ts\nPASS tests/lexer.ts\nPASS tests/properties.ts\n\nTest Suites: 25 passed, 25 total\nTests:       11 skipped, 3483 passed, 3494 total\nSnapshots:   0 total\nTime:        5.009 s\nRan all test suites.",
+              "check": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 3483,
+                  "passed": 3483,
+                  "failed": 0,
+                  "skipped": 11
+                },
+                "scope": ".",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "evidenceOrigin": "runner_output"
+              },
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 3483,
+                  "passed": 3483,
+                  "failed": 0,
+                  "skipped": 11,
+                  "pending": null
+                },
+                "evidenceOrigin": "runner_output",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified",
+                "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+                "invocationSourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+                "completedSourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+                "cwd": "."
+              },
+              "changed": false,
+              "paths": [],
+              "validation": {
+                "status": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "index": 33,
+          "input": {
+            "kind": "command",
+            "command": "git status --short && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts src/nodes/Scalar.ts src/nodes/YAMLMap.ts src/nodes/YAMLSeq.ts"
+          },
+          "status": "ok",
+          "command": "git status --short && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts src/nodes/Scalar.ts src/nodes/YAMLMap.ts src/nodes/YAMLSeq.ts",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "git status --short && git diff -- src/compose/compose-node.ts src/nodes/Node.ts src/nodes/Collection.ts src/nodes/Scalar.ts src/nodes/YAMLMap.ts src/nodes/YAMLSeq.ts",
+              "exitCode": 0,
+              "output": "M src/compose/compose-node.ts\n M src/nodes/Collection.ts\n M src/nodes/Node.ts\ndiff --git a/src/compose/compose-node.ts b/src/compose/compose-node.ts\nindex 88dab4e..3750c05 100644\n--- a/src/compose/compose-node.ts\n+++ b/src/compose/compose-node.ts\n@@ -56,13 +56,19 @@ export function composeNode(\n     case 'double-quoted-scalar':\n     case 'block-scalar':\n       node = composeScalar(ctx, token, tag, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) {\n+        node.anchor = anchor.source.substring(1)\n+        node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n+      }\n       break\n     case 'block-map':\n     case 'block-seq':\n     case 'flow-collection':\n       node = composeCollection(CN, ctx, token, props, onError)\n-      if (anchor) node.anchor = anchor.source.substring(1)\n+      if (anchor) {\n+        node.anchor = anchor.source.substring(1)\n+        node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n+      }\n       break\n     default: {\n       const message =\n@@ -120,6 +126,7 @@ export function composeEmptyNode(\n   const node = composeScalar(ctx, token, tag, onError)\n   if (anchor) {\n     node.anchor = anchor.source.substring(1)\n+    node.anchorRange = [anchor.offset, anchor.offset + anchor.source.length]\n     if (node.anchor === '')\n       onError(anchor, 'BAD_ALIAS', 'Anchor cannot be an empty string')\n   }\ndiff --git a/src/nodes/Collection.ts b/src/nodes/Collection.ts\nindex 171ff2c..56159f3 100644\n--- a/src/nodes/Collection.ts\n+++ b/src/nodes/Collection.ts\n@@ -85,6 +85,8 @@ export abstract class Collection extends NodeBase {\n       isNode(it) || isPair(it) ? it.clone(schema) : it\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange)\n+      copy.anchorRange = this.anchorRange.slice() as [number, number]\n     return copy\n   }\n \ndiff --git a/src/nodes/Node.ts b/src/nodes/Node.ts\nindex 0ecfbe8..6ecaf8e 100644\n--- a/src/nodes/Node.ts\n+++ b/src/nodes/Node.ts\n@@ -54,6 +54,9 @@ export abstract class NodeBase {\n   /** A comment before this */\n   declare commentBefore?: string | null\n \n+  /** The `[start, end]` character offsets of the anchor, if parsed. */\n+  declare anchorRange?: [number, number]\n+\n   /**\n    * The `[start, value-end, node-end]` character offsets for the part of the\n    * source parsed into this node (undefined if not parsed). The `value-end`\n@@ -101,6 +104,10 @@ export abstract class NodeBase {\n       Object.getOwnPropertyDescriptors(this)\n     )\n     if (this.range) copy.range = this.range.slice() as NodeBase['range']\n+    if (this.anchorRange) copy.anchorRange = this.anchorRange.slice() as [\n+      number,\n+      number\n+    ]\n     return copy\n   }",
+              "environment": "linux-native"
+            }
+          }
+        }
+      ],
+      "lastDedicatedEditIndex": 28,
+      "sourceChangingLightCommands": [],
+      "shellEditCoverage": "Dedicated edit index is not a complete mutation timeline: native/shell source edits require manual command review.",
+      "finalReport": "Implemented parsed `anchorRange?: [number, number]` on `NodeBase`, populated it from anchor token offsets (including `&` and using UTF-16 source offsets) for scalar, sequence, map, tagged, and empty anchored nodes, and preserved the existing `anchor` string. Cloning now copies the tuple independently for both base nodes and collections; aliases, unanchored nodes, and programmatically anchored nodes remain without an own `anchorRange` property. Only permitted source files were changed (`src/compose/compose-node.ts`, `src/nodes/Node.ts`, `src/nodes/Collection.ts`).\n\nChecks run in the requested order after the final edit:\n- `npm run build:node` — passed.\n- `node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs` — passed, 12/12 tests; 0 failed, 0 skipped.\n- `npm run test:types` — command exited successfully; the runner reported no test counters, so type-check counts are unknown.\n- `npm test -- --runInBand` — passed, 3,483 passed, 0 failed, 11 skipped across 25 suites.\n\nLimitation: no additional verification beyond the requested commands was performed.",
+      "verification": "verified",
+      "hints": [],
+      "matchingHintFollowups": 0,
+      "dispatchedRequests": 14,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "multiTermLexicalCalls": 6,
+        "multiTermTopSnippetObservations": 5,
+        "contiguousTopSnippets": 2,
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 0,
+        "bareReferenceFallbacks": 0,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 0,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 3,
+        "scopedPatchHeaderRejections": 0,
+        "scopedRecoveryReceipts": 1,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
     }
   ],
   "scoredEvidence": {
@@ -6184,6 +7183,24 @@
     },
     "2-fast-glob-dynamic-filter-candidate": {
       "requestedIndependentSuitesPassed": false,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "3-yaml-anchor-ranges-cline": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "3-yaml-anchor-ranges-baseline": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "3-yaml-anchor-ranges-candidate": {
+      "requestedIndependentSuitesPassed": true,
       "behaviorAndProtectedInputProbesPassed": true,
       "sourceScopeFailures": [],
       "allFeatureFailures": []

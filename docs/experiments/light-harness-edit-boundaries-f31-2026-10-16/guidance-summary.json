@@ -1,69 +1,107 @@
 {
   "method": "18 preregistered assignments on two real public feature requests,two new projects,three dependent repeats and three rotated arms. API details/clone/error/default rules are researcher-specified,not an official issue grader. No outcome-based extra trials or source repair.",
   "planned": 18,
-  "completed": 12,
-  "unexecuted": 6,
+  "completed": 15,
+  "unexecuted": 3,
   "arms": {
     "baseline": {
       "planned": 6,
-      "trials": 4,
-      "official": 2,
-      "functional": 4,
-      "admittedVerified": 2,
-      "actualChecks": 2,
-      "strict": 2,
-      "manualBehaviorReviewed": 4,
-      "manualBehaviorPassed": 4,
+      "trials": 5,
+      "official": 3,
+      "functional": 5,
+      "admittedVerified": 3,
+      "actualChecks": 1,
+      "strict": 1,
+      "manualBehaviorReviewed": 5,
+      "manualBehaviorPassed": 5,
       "manualBehaviorFailures": 0,
       "factualWordingSensitivityOnly": 0,
-      "tokensObserved": 2570776,
-      "estimatedUsdObserved": 0.15133792000000001,
-      "inputTokensObserved": 2515832,
-      "outputTokensObserved": 54944,
-      "cacheReadTokensObserved": 2320896,
+      "tokensObserved": 2829076,
+      "estimatedUsdObserved": 0.16984092,
+      "inputTokensObserved": 2768121,
+      "outputTokensObserved": 60955,
+      "cacheReadTokensObserved": 2538496,
       "cacheWriteTokensObserved": 0,
       "missingCacheReadAggregates": 0,
       "missingCacheWriteAggregates": 0,
-      "missingReasoningAggregates": 4,
-      "runnerSecondsObserved": 623.759,
+      "missingReasoningAggregates": 5,
+      "runnerSecondsObserved": 707.123,
       "fullCacheAccounting": 0,
-      "tokenCostReconciled": 4,
+      "tokenCostReconciled": 5,
       "timeouts": 0,
       "failed": 2,
       "missingResults": 0,
       "outerWatchdogKills": 0,
       "missingWorkerDurations": 0,
       "missingWireUsageResponses": 0,
-      "wireMatchedTrialLedgers": 4,
+      "wireMatchedTrialLedgers": 5,
       "orchestrationInterruptions": 0,
-      "outerSecondsObserved": 631.6091248989999,
+      "outerSecondsObserved": 716.7872647009999,
       "missingOuterDurations": 0,
-      "suitesAndBehaviorPassed": 4,
+      "suitesAndBehaviorPassed": 5,
       "sourceScopeOnlyRejections": 0,
       "missingConsumption": 0
     },
     "candidate": {
       "planned": 6,
-      "trials": 4,
-      "official": 3,
-      "functional": 3,
-      "admittedVerified": 2,
-      "actualChecks": 3,
-      "strict": 2,
-      "manualBehaviorReviewed": 4,
-      "manualBehaviorPassed": 3,
+      "trials": 5,
+      "official": 4,
+      "functional": 4,
+      "admittedVerified": 3,
+      "actualChecks": 2,
+      "strict": 1,
+      "manualBehaviorReviewed": 5,
+      "manualBehaviorPassed": 4,
       "manualBehaviorFailures": 1,
       "factualWordingSensitivityOnly": 0,
-      "tokensObserved": 2583155,
-      "estimatedUsdObserved": 0.15262964,
-      "inputTokensObserved": 2528197,
-      "outputTokensObserved": 54958,
-      "cacheReadTokensObserved": 2327552,
+      "tokensObserved": 2893638,
+      "estimatedUsdObserved": 0.17463632,
+      "inputTokensObserved": 2833888,
+      "outputTokensObserved": 59750,
+      "cacheReadTokensObserved": 2576896,
       "cacheWriteTokensObserved": 0,
       "missingCacheReadAggregates": 0,
       "missingCacheWriteAggregates": 0,
-      "missingReasoningAggregates": 4,
-      "runnerSecondsObserved": 573.737,
+      "missingReasoningAggregates": 5,
+      "runnerSecondsObserved": 650.461,
+      "fullCacheAccounting": 0,
+      "tokenCostReconciled": 5,
+      "timeouts": 0,
+      "failed": 1,
+      "missingResults": 0,
+      "outerWatchdogKills": 0,
+      "missingWorkerDurations": 0,
+      "missingWireUsageResponses": 0,
+      "wireMatchedTrialLedgers": 5,
+      "orchestrationInterruptions": 0,
+      "outerSecondsObserved": 659.8012007870002,
+      "missingOuterDurations": 0,
+      "suitesAndBehaviorPassed": 4,
+      "sourceScopeOnlyRejections": 0,
+      "missingConsumption": 0
+    },
+    "cline": {
+      "planned": 6,
+      "trials": 5,
+      "official": 4,
+      "functional": 5,
+      "admittedVerified": 0,
+      "actualChecks": 4,
+      "strict": 2,
+      "manualBehaviorReviewed": 5,
+      "manualBehaviorPassed": 5,
+      "manualBehaviorFailures": 0,
+      "factualWordingSensitivityOnly": 1,
+      "tokensObserved": 3306741,
+      "estimatedUsdObserved": 0.23053688,
+      "inputTokensObserved": 3221272,
+      "outputTokensObserved": 85469,
+      "cacheReadTokensObserved": 2868224,
+      "cacheWriteTokensObserved": 0,
+      "missingCacheReadAggregates": 0,
+      "missingCacheWriteAggregates": 0,
+      "missingReasoningAggregates": 5,
+      "runnerSecondsObserved": 727.802,
       "fullCacheAccounting": 0,
       "tokenCostReconciled": 4,
       "timeouts": 0,
@@ -72,49 +110,11 @@
       "outerWatchdogKills": 0,
       "missingWorkerDurations": 0,
       "missingWireUsageResponses": 0,
-      "wireMatchedTrialLedgers": 4,
+      "wireMatchedTrialLedgers": 5,
       "orchestrationInterruptions": 0,
-      "outerSecondsObserved": 581.0495059899998,
+      "outerSecondsObserved": 736.9219610680002,
       "missingOuterDurations": 0,
-      "suitesAndBehaviorPassed": 3,
-      "sourceScopeOnlyRejections": 0,
-      "missingConsumption": 0
-    },
-    "cline": {
-      "planned": 6,
-      "trials": 4,
-      "official": 3,
-      "functional": 4,
-      "admittedVerified": 0,
-      "actualChecks": 3,
-      "strict": 1,
-      "manualBehaviorReviewed": 4,
-      "manualBehaviorPassed": 4,
-      "manualBehaviorFailures": 0,
-      "factualWordingSensitivityOnly": 1,
-      "tokensObserved": 2825855,
-      "estimatedUsdObserved": 0.1994218,
-      "inputTokensObserved": 2749697,
-      "outputTokensObserved": 76158,
-      "cacheReadTokensObserved": 2455040,
-      "cacheWriteTokensObserved": 0,
-      "missingCacheReadAggregates": 0,
-      "missingCacheWriteAggregates": 0,
-      "missingReasoningAggregates": 4,
-      "runnerSecondsObserved": 620.331,
-      "fullCacheAccounting": 0,
-      "tokenCostReconciled": 3,
-      "timeouts": 0,
-      "failed": 1,
-      "missingResults": 0,
-      "outerWatchdogKills": 0,
-      "missingWorkerDurations": 0,
-      "missingWireUsageResponses": 0,
-      "wireMatchedTrialLedgers": 4,
-      "orchestrationInterruptions": 0,
-      "outerSecondsObserved": 627.723112979,
-      "missingOuterDurations": 0,
-      "suitesAndBehaviorPassed": 4,
+      "suitesAndBehaviorPassed": 5,
       "sourceScopeOnlyRejections": 0,
       "missingConsumption": 0
     }
@@ -129,8 +129,8 @@
           "official": 1,
           "functional": 2,
           "admittedVerified": 1,
-          "actualChecks": 1,
-          "strict": 1,
+          "actualChecks": 0,
+          "strict": 0,
           "manualBehaviorReviewed": 2,
           "manualBehaviorPassed": 2,
           "manualBehaviorFailures": 0,
@@ -248,8 +248,8 @@
           "official": 1,
           "functional": 2,
           "admittedVerified": 1,
-          "actualChecks": 1,
-          "strict": 1,
+          "actualChecks": 0,
+          "strict": 0,
           "manualBehaviorReviewed": 2,
           "manualBehaviorPassed": 2,
           "manualBehaviorFailures": 0,
@@ -286,8 +286,8 @@
           "official": 1,
           "functional": 1,
           "admittedVerified": 1,
-          "actualChecks": 1,
-          "strict": 1,
+          "actualChecks": 0,
+          "strict": 0,
           "manualBehaviorReviewed": 2,
           "manualBehaviorPassed": 1,
           "manualBehaviorFailures": 1,
@@ -363,115 +363,115 @@
       "arms": {
         "baseline": {
           "planned": 2,
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
-          "admittedVerified": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "manualBehaviorReviewed": 0,
-          "manualBehaviorPassed": 0,
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "admittedVerified": 1,
+          "actualChecks": 1,
+          "strict": 1,
+          "manualBehaviorReviewed": 1,
+          "manualBehaviorPassed": 1,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "inputTokensObserved": 0,
-          "outputTokensObserved": 0,
-          "cacheReadTokensObserved": 0,
+          "tokensObserved": 258300,
+          "estimatedUsdObserved": 0.018503000000000002,
+          "inputTokensObserved": 252289,
+          "outputTokensObserved": 6011,
+          "cacheReadTokensObserved": 217600,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 0,
-          "runnerSecondsObserved": 0,
+          "missingReasoningAggregates": 1,
+          "runnerSecondsObserved": 83.364,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 1,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 0,
+          "wireMatchedTrialLedgers": 1,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 0,
+          "outerSecondsObserved": 85.17813980200002,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 0,
+          "suitesAndBehaviorPassed": 1,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "candidate": {
           "planned": 2,
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
-          "admittedVerified": 0,
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "admittedVerified": 1,
           "actualChecks": 0,
           "strict": 0,
-          "manualBehaviorReviewed": 0,
-          "manualBehaviorPassed": 0,
+          "manualBehaviorReviewed": 1,
+          "manualBehaviorPassed": 1,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "inputTokensObserved": 0,
-          "outputTokensObserved": 0,
-          "cacheReadTokensObserved": 0,
+          "tokensObserved": 310483,
+          "estimatedUsdObserved": 0.022006679999999997,
+          "inputTokensObserved": 305691,
+          "outputTokensObserved": 4792,
+          "cacheReadTokensObserved": 249344,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 0,
-          "runnerSecondsObserved": 0,
+          "missingReasoningAggregates": 1,
+          "runnerSecondsObserved": 76.724,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 1,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 0,
+          "wireMatchedTrialLedgers": 1,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 0,
+          "outerSecondsObserved": 78.75169479700038,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 0,
+          "suitesAndBehaviorPassed": 1,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "cline": {
           "planned": 2,
-          "trials": 0,
-          "official": 0,
-          "functional": 0,
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
           "admittedVerified": 0,
-          "actualChecks": 0,
-          "strict": 0,
-          "manualBehaviorReviewed": 0,
-          "manualBehaviorPassed": 0,
+          "actualChecks": 1,
+          "strict": 1,
+          "manualBehaviorReviewed": 1,
+          "manualBehaviorPassed": 1,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 0,
-          "estimatedUsdObserved": 0,
-          "inputTokensObserved": 0,
-          "outputTokensObserved": 0,
-          "cacheReadTokensObserved": 0,
+          "tokensObserved": 480886,
+          "estimatedUsdObserved": 0.031115080000000003,
+          "inputTokensObserved": 471575,
+          "outputTokensObserved": 9311,
+          "cacheReadTokensObserved": 413184,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 0,
-          "runnerSecondsObserved": 0,
+          "missingReasoningAggregates": 1,
+          "runnerSecondsObserved": 107.471,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 0,
+          "tokenCostReconciled": 1,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 0,
+          "wireMatchedTrialLedgers": 1,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 0,
+          "outerSecondsObserved": 109.19884808900021,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 0,
+          "suitesAndBehaviorPassed": 1,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         }
@@ -482,63 +482,100 @@
     "fresh-confirmation": {
       "arms": {
         "baseline": {
-          "trials": 4,
-          "official": 2,
-          "functional": 4,
-          "admittedVerified": 2,
-          "actualChecks": 2,
-          "strict": 2,
-          "manualBehaviorReviewed": 4,
-          "manualBehaviorPassed": 4,
+          "trials": 5,
+          "official": 3,
+          "functional": 5,
+          "admittedVerified": 3,
+          "actualChecks": 1,
+          "strict": 1,
+          "manualBehaviorReviewed": 5,
+          "manualBehaviorPassed": 5,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 2570776,
-          "estimatedUsdObserved": 0.15133792000000001,
-          "inputTokensObserved": 2515832,
-          "outputTokensObserved": 54944,
-          "cacheReadTokensObserved": 2320896,
+          "tokensObserved": 2829076,
+          "estimatedUsdObserved": 0.16984092,
+          "inputTokensObserved": 2768121,
+          "outputTokensObserved": 60955,
+          "cacheReadTokensObserved": 2538496,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 4,
-          "runnerSecondsObserved": 623.759,
+          "missingReasoningAggregates": 5,
+          "runnerSecondsObserved": 707.123,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 4,
+          "tokenCostReconciled": 5,
           "timeouts": 0,
           "failed": 2,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 4,
+          "wireMatchedTrialLedgers": 5,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 631.6091248989999,
+          "outerSecondsObserved": 716.7872647009999,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 5,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "candidate": {
+          "trials": 5,
+          "official": 4,
+          "functional": 4,
+          "admittedVerified": 3,
+          "actualChecks": 2,
+          "strict": 1,
+          "manualBehaviorReviewed": 5,
+          "manualBehaviorPassed": 4,
+          "manualBehaviorFailures": 1,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 2893638,
+          "estimatedUsdObserved": 0.17463632,
+          "inputTokensObserved": 2833888,
+          "outputTokensObserved": 59750,
+          "cacheReadTokensObserved": 2576896,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 5,
+          "runnerSecondsObserved": 650.461,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 5,
+          "timeouts": 0,
+          "failed": 1,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 5,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 659.8012007870002,
           "missingOuterDurations": 0,
           "suitesAndBehaviorPassed": 4,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
-        "candidate": {
-          "trials": 4,
-          "official": 3,
-          "functional": 3,
-          "admittedVerified": 2,
-          "actualChecks": 3,
+        "cline": {
+          "trials": 5,
+          "official": 4,
+          "functional": 5,
+          "admittedVerified": 0,
+          "actualChecks": 4,
           "strict": 2,
-          "manualBehaviorReviewed": 4,
-          "manualBehaviorPassed": 3,
-          "manualBehaviorFailures": 1,
-          "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 2583155,
-          "estimatedUsdObserved": 0.15262964,
-          "inputTokensObserved": 2528197,
-          "outputTokensObserved": 54958,
-          "cacheReadTokensObserved": 2327552,
+          "manualBehaviorReviewed": 5,
+          "manualBehaviorPassed": 5,
+          "manualBehaviorFailures": 0,
+          "factualWordingSensitivityOnly": 1,
+          "tokensObserved": 3306741,
+          "estimatedUsdObserved": 0.23053688,
+          "inputTokensObserved": 3221272,
+          "outputTokensObserved": 85469,
+          "cacheReadTokensObserved": 2868224,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 4,
-          "runnerSecondsObserved": 573.737,
+          "missingReasoningAggregates": 5,
+          "runnerSecondsObserved": 727.802,
           "fullCacheAccounting": 0,
           "tokenCostReconciled": 4,
           "timeouts": 0,
@@ -547,48 +584,11 @@
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 4,
+          "wireMatchedTrialLedgers": 5,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 581.0495059899998,
+          "outerSecondsObserved": 736.9219610680002,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 3,
-          "sourceScopeOnlyRejections": 0,
-          "missingConsumption": 0
-        },
-        "cline": {
-          "trials": 4,
-          "official": 3,
-          "functional": 4,
-          "admittedVerified": 0,
-          "actualChecks": 3,
-          "strict": 1,
-          "manualBehaviorReviewed": 4,
-          "manualBehaviorPassed": 4,
-          "manualBehaviorFailures": 0,
-          "factualWordingSensitivityOnly": 1,
-          "tokensObserved": 2825855,
-          "estimatedUsdObserved": 0.1994218,
-          "inputTokensObserved": 2749697,
-          "outputTokensObserved": 76158,
-          "cacheReadTokensObserved": 2455040,
-          "cacheWriteTokensObserved": 0,
-          "missingCacheReadAggregates": 0,
-          "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 4,
-          "runnerSecondsObserved": 620.331,
-          "fullCacheAccounting": 0,
-          "tokenCostReconciled": 3,
-          "timeouts": 0,
-          "failed": 1,
-          "missingResults": 0,
-          "outerWatchdogKills": 0,
-          "missingWorkerDurations": 0,
-          "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 4,
-          "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 627.723112979,
-          "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 4,
+          "suitesAndBehaviorPassed": 5,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         }
@@ -601,113 +601,113 @@
       "partition": "fresh-confirmation",
       "arms": {
         "baseline": {
-          "trials": 2,
-          "official": 2,
-          "functional": 2,
-          "admittedVerified": 2,
-          "actualChecks": 2,
-          "strict": 2,
-          "manualBehaviorReviewed": 2,
-          "manualBehaviorPassed": 2,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "admittedVerified": 3,
+          "actualChecks": 1,
+          "strict": 1,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 702042,
-          "estimatedUsdObserved": 0.0424194,
-          "inputTokensObserved": 689439,
-          "outputTokensObserved": 12603,
-          "cacheReadTokensObserved": 614400,
+          "tokensObserved": 960342,
+          "estimatedUsdObserved": 0.0609224,
+          "inputTokensObserved": 941728,
+          "outputTokensObserved": 18614,
+          "cacheReadTokensObserved": 832000,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 2,
-          "runnerSecondsObserved": 169.837,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 253.201,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 2,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 173.70518826500012,
+          "outerSecondsObserved": 258.88332806700015,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "candidate": {
-          "trials": 2,
-          "official": 2,
-          "functional": 2,
-          "admittedVerified": 2,
-          "actualChecks": 2,
-          "strict": 2,
-          "manualBehaviorReviewed": 2,
-          "manualBehaviorPassed": 2,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
+          "admittedVerified": 3,
+          "actualChecks": 1,
+          "strict": 1,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 601886,
-          "estimatedUsdObserved": 0.0400642,
-          "inputTokensObserved": 590039,
-          "outputTokensObserved": 11847,
-          "cacheReadTokensObserved": 512000,
+          "tokensObserved": 912369,
+          "estimatedUsdObserved": 0.062070879999999995,
+          "inputTokensObserved": 895730,
+          "outputTokensObserved": 16639,
+          "cacheReadTokensObserved": 761344,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 2,
-          "runnerSecondsObserved": 149.379,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 226.103,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 2,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 153.001722056,
+          "outerSecondsObserved": 231.75341685300037,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         },
         "cline": {
-          "trials": 2,
-          "official": 2,
-          "functional": 2,
+          "trials": 3,
+          "official": 3,
+          "functional": 3,
           "admittedVerified": 0,
-          "actualChecks": 1,
-          "strict": 1,
-          "manualBehaviorReviewed": 2,
-          "manualBehaviorPassed": 2,
+          "actualChecks": 2,
+          "strict": 2,
+          "manualBehaviorReviewed": 3,
+          "manualBehaviorPassed": 3,
           "manualBehaviorFailures": 0,
           "factualWordingSensitivityOnly": 0,
-          "tokensObserved": 940555,
-          "estimatedUsdObserved": 0.07088804000000001,
-          "inputTokensObserved": 916681,
-          "outputTokensObserved": 23874,
-          "cacheReadTokensObserved": 783872,
+          "tokensObserved": 1421441,
+          "estimatedUsdObserved": 0.10200312000000002,
+          "inputTokensObserved": 1388256,
+          "outputTokensObserved": 33185,
+          "cacheReadTokensObserved": 1197056,
           "cacheWriteTokensObserved": 0,
           "missingCacheReadAggregates": 0,
           "missingCacheWriteAggregates": 0,
-          "missingReasoningAggregates": 2,
-          "runnerSecondsObserved": 210.638,
+          "missingReasoningAggregates": 3,
+          "runnerSecondsObserved": 318.109,
           "fullCacheAccounting": 0,
-          "tokenCostReconciled": 2,
+          "tokenCostReconciled": 3,
           "timeouts": 0,
           "failed": 0,
           "missingResults": 0,
           "outerWatchdogKills": 0,
           "missingWorkerDurations": 0,
           "missingWireUsageResponses": 0,
-          "wireMatchedTrialLedgers": 2,
+          "wireMatchedTrialLedgers": 3,
           "orchestrationInterruptions": 0,
-          "outerSecondsObserved": 214.45256395500002,
+          "outerSecondsObserved": 323.6514120440002,
           "missingOuterDurations": 0,
-          "suitesAndBehaviorPassed": 2,
+          "suitesAndBehaviorPassed": 3,
           "sourceScopeOnlyRejections": 0,
           "missingConsumption": 0
         }
@@ -833,6 +833,24 @@
   ],
   "adverseOutcomes": [
     {
+      "name": "1-yaml-anchor-ranges-baseline",
+      "status": "succeeded",
+      "official": true,
+      "functional": true,
+      "audited": false,
+      "manualBehaviorPassed": true,
+      "manualCriteriaFailures": [
+        "required_exact_npm_wrappers_not_invoked"
+      ],
+      "reportingOnlyFailure": null,
+      "orchestrationInterrupted": false,
+      "missingWireUsageResponses": 0,
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    {
       "name": "1-fast-glob-dynamic-filter-candidate",
       "status": "succeeded",
       "official": true,
@@ -889,6 +907,24 @@
       "allFeatureFailures": []
     },
     {
+      "name": "2-yaml-anchor-ranges-candidate",
+      "status": "succeeded",
+      "official": true,
+      "functional": true,
+      "audited": false,
+      "manualBehaviorPassed": true,
+      "manualCriteriaFailures": [
+        "required_exact_npm_wrappers_not_invoked"
+      ],
+      "reportingOnlyFailure": null,
+      "orchestrationInterrupted": false,
+      "missingWireUsageResponses": 0,
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    {
       "name": "2-yaml-anchor-ranges-cline",
       "status": "succeeded",
       "official": true,
@@ -899,6 +935,24 @@
         "dependent_commands_submitted_to_concurrent_tool",
         "required_exact_focused_check_failed",
         "unsupported_build_layout_diagnosis"
+      ],
+      "reportingOnlyFailure": null,
+      "orchestrationInterrupted": false,
+      "missingWireUsageResponses": 0,
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    {
+      "name": "2-yaml-anchor-ranges-baseline",
+      "status": "succeeded",
+      "official": true,
+      "functional": true,
+      "audited": false,
+      "manualBehaviorPassed": true,
+      "manualCriteriaFailures": [
+        "required_exact_npm_wrappers_not_invoked"
       ],
       "reportingOnlyFailure": null,
       "orchestrationInterrupted": false,
@@ -965,6 +1019,24 @@
       "behaviorAndProtectedInputProbesPassed": true,
       "sourceScopeFailures": [],
       "allFeatureFailures": []
+    },
+    {
+      "name": "3-yaml-anchor-ranges-candidate",
+      "status": "succeeded",
+      "official": true,
+      "functional": true,
+      "audited": false,
+      "manualBehaviorPassed": true,
+      "manualCriteriaFailures": [
+        "required_exact_npm_wrappers_not_invoked"
+      ],
+      "reportingOnlyFailure": null,
+      "orchestrationInterrupted": false,
+      "missingWireUsageResponses": 0,
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
     }
   ],
   "comparisons": [
@@ -975,62 +1047,62 @@
       "partition": "fresh-confirmation",
       "accountingTier": "wire_matched",
       "quality": {
-        "observedPairs": 4,
-        "unobservedPairs": 2,
-        "bothAudited": 2,
-        "leftOnlyAudited": 0,
-        "rightOnlyAudited": 0,
-        "neitherAudited": 2
+        "observedPairs": 5,
+        "unobservedPairs": 1,
+        "bothAudited": 0,
+        "leftOnlyAudited": 1,
+        "rightOnlyAudited": 1,
+        "neitherAudited": 3
       },
-      "pairs": 2,
+      "pairs": 0,
       "resources": {
         "tokens": {
-          "left": 601886,
-          "right": 702042,
-          "pairs": 2,
+          "left": 0,
+          "right": 0,
+          "pairs": 0,
           "missingPairs": 0,
-          "relativeChange": -0.1426638292295902
+          "relativeChange": null
         },
         "cost": {
-          "left": 0.0400642,
-          "right": 0.0424194,
-          "pairs": 2,
+          "left": 0,
+          "right": 0,
+          "pairs": 0,
           "missingPairs": 0,
-          "relativeChange": -0.055521765984431704
+          "relativeChange": null
         },
         "seconds": {
-          "left": 149.37900000000002,
-          "right": 169.837,
-          "pairs": 2,
+          "left": 0,
+          "right": 0,
+          "pairs": 0,
           "missingPairs": 0,
-          "relativeChange": -0.1204566731630915
+          "relativeChange": null
         }
       },
       "tasks": [
         {
           "id": "yaml-anchor-ranges",
-          "pairs": 2,
+          "pairs": 0,
           "resources": {
             "tokens": {
-              "left": 601886,
-              "right": 702042,
-              "pairs": 2,
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
               "missingPairs": 0,
-              "relativeChange": -0.1426638292295902
+              "relativeChange": null
             },
             "cost": {
-              "left": 0.0400642,
-              "right": 0.0424194,
-              "pairs": 2,
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
               "missingPairs": 0,
-              "relativeChange": -0.055521765984431704
+              "relativeChange": null
             },
             "seconds": {
-              "left": 149.37900000000002,
-              "right": 169.837,
-              "pairs": 2,
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
               "missingPairs": 0,
-              "relativeChange": -0.1204566731630915
+              "relativeChange": null
             }
           }
         },
@@ -1062,62 +1134,7 @@
           }
         }
       ],
-      "individual": [
-        {
-          "id": "yaml-anchor-ranges",
-          "repetition": 1,
-          "resources": {
-            "tokens": {
-              "left": 357062,
-              "right": 331714,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": 0.07641522516384591
-            },
-            "cost": {
-              "left": 0.0230044,
-              "right": 0.020435599999999998,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": 0.12570220595431514
-            },
-            "seconds": {
-              "left": 78.926,
-              "right": 89.146,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.11464339398290446
-            }
-          }
-        },
-        {
-          "id": "yaml-anchor-ranges",
-          "repetition": 2,
-          "resources": {
-            "tokens": {
-              "left": 244824,
-              "right": 370328,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.3388995701108207
-            },
-            "cost": {
-              "left": 0.0170598,
-              "right": 0.021983800000000005,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.22398311483910893
-            },
-            "seconds": {
-              "left": 70.453,
-              "right": 80.691,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.1268790819298311
-            }
-          }
-        }
-      ]
+      "individual": []
     },
     {
       "left": "candidate",
@@ -1126,12 +1143,12 @@
       "partition": "fresh-confirmation",
       "accountingTier": "wire_matched",
       "quality": {
-        "observedPairs": 4,
-        "unobservedPairs": 2,
+        "observedPairs": 5,
+        "unobservedPairs": 1,
         "bothAudited": 1,
-        "leftOnlyAudited": 1,
-        "rightOnlyAudited": 0,
-        "neitherAudited": 2
+        "leftOnlyAudited": 0,
+        "rightOnlyAudited": 1,
+        "neitherAudited": 3
       },
       "pairs": 1,
       "resources": {
@@ -1250,35 +1267,35 @@
       "partition": "fresh-confirmation",
       "accountingTier": "wire_matched",
       "quality": {
-        "observedPairs": 4,
-        "unobservedPairs": 2,
+        "observedPairs": 5,
+        "unobservedPairs": 1,
         "bothAudited": 1,
-        "leftOnlyAudited": 1,
-        "rightOnlyAudited": 0,
-        "neitherAudited": 2
+        "leftOnlyAudited": 0,
+        "rightOnlyAudited": 1,
+        "neitherAudited": 3
       },
       "pairs": 1,
       "resources": {
         "tokens": {
-          "left": 331714,
-          "right": 375705,
+          "left": 258300,
+          "right": 480886,
           "pairs": 1,
           "missingPairs": 0,
-          "relativeChange": -0.11708920562675507
+          "relativeChange": -0.46286645899443946
         },
         "cost": {
-          "left": 0.020435599999999998,
-          "right": 0.03466612,
+          "left": 0.018503000000000002,
+          "right": 0.031115080000000003,
           "pairs": 1,
           "missingPairs": 0,
-          "relativeChange": -0.41050224253536316
+          "relativeChange": -0.40533657634818876
         },
         "seconds": {
-          "left": 89.146,
-          "right": 114.78,
+          "left": 83.364,
+          "right": 107.471,
           "pairs": 1,
           "missingPairs": 0,
-          "relativeChange": -0.2233315908694895
+          "relativeChange": -0.2243116747773818
         }
       },
       "tasks": [
@@ -1287,25 +1304,25 @@
           "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 331714,
-              "right": 375705,
+              "left": 258300,
+              "right": 480886,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.11708920562675507
+              "relativeChange": -0.46286645899443946
             },
             "cost": {
-              "left": 0.020435599999999998,
-              "right": 0.03466612,
+              "left": 0.018503000000000002,
+              "right": 0.031115080000000003,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.41050224253536316
+              "relativeChange": -0.40533657634818876
             },
             "seconds": {
-              "left": 89.146,
-              "right": 114.78,
+              "left": 83.364,
+              "right": 107.471,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.2233315908694895
+              "relativeChange": -0.2243116747773818
             }
           }
         },
@@ -1340,28 +1357,28 @@
       "individual": [
         {
           "id": "yaml-anchor-ranges",
-          "repetition": 1,
+          "repetition": 3,
           "resources": {
             "tokens": {
-              "left": 331714,
-              "right": 375705,
+              "left": 258300,
+              "right": 480886,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.11708920562675507
+              "relativeChange": -0.46286645899443946
             },
             "cost": {
-              "left": 0.020435599999999998,
-              "right": 0.03466612,
+              "left": 0.018503000000000002,
+              "right": 0.031115080000000003,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.41050224253536316
+              "relativeChange": -0.40533657634818876
             },
             "seconds": {
-              "left": 89.146,
-              "right": 114.78,
+              "left": 83.364,
+              "right": 107.471,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.2233315908694895
+              "relativeChange": -0.2243116747773818
             }
           }
         }
@@ -1374,62 +1391,62 @@
       "partition": "fresh-confirmation",
       "accountingTier": "wire_matched",
       "quality": {
-        "observedPairs": 4,
-        "unobservedPairs": 2,
-        "bothAudited": 2,
-        "leftOnlyAudited": 0,
-        "rightOnlyAudited": 0,
-        "neitherAudited": 2
+        "observedPairs": 5,
+        "unobservedPairs": 1,
+        "bothAudited": 0,
+        "leftOnlyAudited": 1,
+        "rightOnlyAudited": 1,
+        "neitherAudited": 3
       },
-      "pairs": 2,
+      "pairs": 0,
       "resources": {
         "tokens": {
-          "left": 601886,
-          "right": 702042,
-          "pairs": 2,
+          "left": 0,
+          "right": 0,
+          "pairs": 0,
           "missingPairs": 0,
-          "relativeChange": -0.1426638292295902
+          "relativeChange": null
         },
         "cost": {
-          "left": 0.0400642,
-          "right": 0.0424194,
-          "pairs": 2,
+          "left": 0,
+          "right": 0,
+          "pairs": 0,
           "missingPairs": 0,
-          "relativeChange": -0.055521765984431704
+          "relativeChange": null
         },
         "seconds": {
-          "left": 149.37900000000002,
-          "right": 169.837,
-          "pairs": 2,
+          "left": 0,
+          "right": 0,
+          "pairs": 0,
           "missingPairs": 0,
-          "relativeChange": -0.1204566731630915
+          "relativeChange": null
         }
       },
       "tasks": [
         {
           "id": "yaml-anchor-ranges",
-          "pairs": 2,
+          "pairs": 0,
           "resources": {
             "tokens": {
-              "left": 601886,
-              "right": 702042,
-              "pairs": 2,
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
               "missingPairs": 0,
-              "relativeChange": -0.1426638292295902
+              "relativeChange": null
             },
             "cost": {
-              "left": 0.0400642,
-              "right": 0.0424194,
-              "pairs": 2,
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
               "missingPairs": 0,
-              "relativeChange": -0.055521765984431704
+              "relativeChange": null
             },
             "seconds": {
-              "left": 149.37900000000002,
-              "right": 169.837,
-              "pairs": 2,
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
               "missingPairs": 0,
-              "relativeChange": -0.1204566731630915
+              "relativeChange": null
             }
           }
         },
@@ -1461,62 +1478,7 @@
           }
         }
       ],
-      "individual": [
-        {
-          "id": "yaml-anchor-ranges",
-          "repetition": 1,
-          "resources": {
-            "tokens": {
-              "left": 357062,
-              "right": 331714,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": 0.07641522516384591
-            },
-            "cost": {
-              "left": 0.0230044,
-              "right": 0.020435599999999998,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": 0.12570220595431514
-            },
-            "seconds": {
-              "left": 78.926,
-              "right": 89.146,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.11464339398290446
-            }
-          }
-        },
-        {
-          "id": "yaml-anchor-ranges",
-          "repetition": 2,
-          "resources": {
-            "tokens": {
-              "left": 244824,
-              "right": 370328,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.3388995701108207
-            },
-            "cost": {
-              "left": 0.0170598,
-              "right": 0.021983800000000005,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.22398311483910893
-            },
-            "seconds": {
-              "left": 70.453,
-              "right": 80.691,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.1268790819298311
-            }
-          }
-        }
-      ]
+      "individual": []
     },
     {
       "left": "candidate",
@@ -1525,12 +1487,12 @@
       "partition": "fresh-confirmation",
       "accountingTier": "wire_matched",
       "quality": {
-        "observedPairs": 4,
-        "unobservedPairs": 2,
+        "observedPairs": 5,
+        "unobservedPairs": 1,
         "bothAudited": 1,
-        "leftOnlyAudited": 1,
-        "rightOnlyAudited": 0,
-        "neitherAudited": 2
+        "leftOnlyAudited": 0,
+        "rightOnlyAudited": 1,
+        "neitherAudited": 3
       },
       "pairs": 1,
       "resources": {
@@ -1649,35 +1611,35 @@
       "partition": "fresh-confirmation",
       "accountingTier": "wire_matched",
       "quality": {
-        "observedPairs": 4,
-        "unobservedPairs": 2,
+        "observedPairs": 5,
+        "unobservedPairs": 1,
         "bothAudited": 1,
-        "leftOnlyAudited": 1,
-        "rightOnlyAudited": 0,
-        "neitherAudited": 2
+        "leftOnlyAudited": 0,
+        "rightOnlyAudited": 1,
+        "neitherAudited": 3
       },
       "pairs": 1,
       "resources": {
         "tokens": {
-          "left": 331714,
-          "right": 375705,
+          "left": 258300,
+          "right": 480886,
           "pairs": 1,
           "missingPairs": 0,
-          "relativeChange": -0.11708920562675507
+          "relativeChange": -0.46286645899443946
         },
         "cost": {
-          "left": 0.020435599999999998,
-          "right": 0.03466612,
+          "left": 0.018503000000000002,
+          "right": 0.031115080000000003,
           "pairs": 1,
           "missingPairs": 0,
-          "relativeChange": -0.41050224253536316
+          "relativeChange": -0.40533657634818876
         },
         "seconds": {
-          "left": 89.146,
-          "right": 114.78,
+          "left": 83.364,
+          "right": 107.471,
           "pairs": 1,
           "missingPairs": 0,
-          "relativeChange": -0.2233315908694895
+          "relativeChange": -0.2243116747773818
         }
       },
       "tasks": [
@@ -1686,25 +1648,25 @@
           "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 331714,
-              "right": 375705,
+              "left": 258300,
+              "right": 480886,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.11708920562675507
+              "relativeChange": -0.46286645899443946
             },
             "cost": {
-              "left": 0.020435599999999998,
-              "right": 0.03466612,
+              "left": 0.018503000000000002,
+              "right": 0.031115080000000003,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.41050224253536316
+              "relativeChange": -0.40533657634818876
             },
             "seconds": {
-              "left": 89.146,
-              "right": 114.78,
+              "left": 83.364,
+              "right": 107.471,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.2233315908694895
+              "relativeChange": -0.2243116747773818
             }
           }
         },
@@ -1739,28 +1701,28 @@
       "individual": [
         {
           "id": "yaml-anchor-ranges",
-          "repetition": 1,
+          "repetition": 3,
           "resources": {
             "tokens": {
-              "left": 331714,
-              "right": 375705,
+              "left": 258300,
+              "right": 480886,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.11708920562675507
+              "relativeChange": -0.46286645899443946
             },
             "cost": {
-              "left": 0.020435599999999998,
-              "right": 0.03466612,
+              "left": 0.018503000000000002,
+              "right": 0.031115080000000003,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.41050224253536316
+              "relativeChange": -0.40533657634818876
             },
             "seconds": {
-              "left": 89.146,
-              "right": 114.78,
+              "left": 83.364,
+              "right": 107.471,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.2233315908694895
+              "relativeChange": -0.2243116747773818
             }
           }
         }
@@ -1775,62 +1737,62 @@
       "partition": "fresh-confirmation",
       "accountingTier": "aggregate_only",
       "quality": {
-        "observedPairs": 4,
-        "unobservedPairs": 2,
-        "bothAudited": 2,
-        "leftOnlyAudited": 0,
-        "rightOnlyAudited": 0,
-        "neitherAudited": 2
+        "observedPairs": 5,
+        "unobservedPairs": 1,
+        "bothAudited": 0,
+        "leftOnlyAudited": 1,
+        "rightOnlyAudited": 1,
+        "neitherAudited": 3
       },
-      "pairs": 2,
+      "pairs": 0,
       "resources": {
         "tokens": {
-          "left": 601886,
-          "right": 702042,
-          "pairs": 2,
+          "left": 0,
+          "right": 0,
+          "pairs": 0,
           "missingPairs": 0,
-          "relativeChange": -0.1426638292295902
+          "relativeChange": null
         },
         "cost": {
-          "left": 0.0400642,
-          "right": 0.0424194,
-          "pairs": 2,
+          "left": 0,
+          "right": 0,
+          "pairs": 0,
           "missingPairs": 0,
-          "relativeChange": -0.055521765984431704
+          "relativeChange": null
         },
         "seconds": {
-          "left": 149.37900000000002,
-          "right": 169.837,
-          "pairs": 2,
+          "left": 0,
+          "right": 0,
+          "pairs": 0,
           "missingPairs": 0,
-          "relativeChange": -0.1204566731630915
+          "relativeChange": null
         }
       },
       "tasks": [
         {
           "id": "yaml-anchor-ranges",
-          "pairs": 2,
+          "pairs": 0,
           "resources": {
             "tokens": {
-              "left": 601886,
-              "right": 702042,
-              "pairs": 2,
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
               "missingPairs": 0,
-              "relativeChange": -0.1426638292295902
+              "relativeChange": null
             },
             "cost": {
-              "left": 0.0400642,
-              "right": 0.0424194,
-              "pairs": 2,
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
               "missingPairs": 0,
-              "relativeChange": -0.055521765984431704
+              "relativeChange": null
             },
             "seconds": {
-              "left": 149.37900000000002,
-              "right": 169.837,
-              "pairs": 2,
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
               "missingPairs": 0,
-              "relativeChange": -0.1204566731630915
+              "relativeChange": null
             }
           }
         },
@@ -1862,62 +1824,7 @@
           }
         }
       ],
-      "individual": [
-        {
-          "id": "yaml-anchor-ranges",
-          "repetition": 1,
-          "resources": {
-            "tokens": {
-              "left": 357062,
-              "right": 331714,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": 0.07641522516384591
-            },
-            "cost": {
-              "left": 0.0230044,
-              "right": 0.020435599999999998,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": 0.12570220595431514
-            },
-            "seconds": {
-              "left": 78.926,
-              "right": 89.146,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.11464339398290446
-            }
-          }
-        },
-        {
-          "id": "yaml-anchor-ranges",
-          "repetition": 2,
-          "resources": {
-            "tokens": {
-              "left": 244824,
-              "right": 370328,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.3388995701108207
-            },
-            "cost": {
-              "left": 0.0170598,
-              "right": 0.021983800000000005,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.22398311483910893
-            },
-            "seconds": {
-              "left": 70.453,
-              "right": 80.691,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.1268790819298311
-            }
-          }
-        }
-      ]
+      "individual": []
     },
     {
       "left": "candidate",
@@ -1926,12 +1833,12 @@
       "partition": "fresh-confirmation",
       "accountingTier": "aggregate_only",
       "quality": {
-        "observedPairs": 4,
-        "unobservedPairs": 2,
+        "observedPairs": 5,
+        "unobservedPairs": 1,
         "bothAudited": 1,
-        "leftOnlyAudited": 1,
-        "rightOnlyAudited": 0,
-        "neitherAudited": 2
+        "leftOnlyAudited": 0,
+        "rightOnlyAudited": 1,
+        "neitherAudited": 3
       },
       "pairs": 1,
       "resources": {
@@ -2050,35 +1957,35 @@
       "partition": "fresh-confirmation",
       "accountingTier": "aggregate_only",
       "quality": {
-        "observedPairs": 4,
-        "unobservedPairs": 2,
+        "observedPairs": 5,
+        "unobservedPairs": 1,
         "bothAudited": 1,
-        "leftOnlyAudited": 1,
-        "rightOnlyAudited": 0,
-        "neitherAudited": 2
+        "leftOnlyAudited": 0,
+        "rightOnlyAudited": 1,
+        "neitherAudited": 3
       },
       "pairs": 1,
       "resources": {
         "tokens": {
-          "left": 331714,
-          "right": 375705,
+          "left": 258300,
+          "right": 480886,
           "pairs": 1,
           "missingPairs": 0,
-          "relativeChange": -0.11708920562675507
+          "relativeChange": -0.46286645899443946
         },
         "cost": {
-          "left": 0.020435599999999998,
-          "right": 0.03466612,
+          "left": 0.018503000000000002,
+          "right": 0.031115080000000003,
           "pairs": 1,
           "missingPairs": 0,
-          "relativeChange": -0.41050224253536316
+          "relativeChange": -0.40533657634818876
         },
         "seconds": {
-          "left": 89.146,
-          "right": 114.78,
+          "left": 83.364,
+          "right": 107.471,
           "pairs": 1,
           "missingPairs": 0,
-          "relativeChange": -0.2233315908694895
+          "relativeChange": -0.2243116747773818
         }
       },
       "tasks": [
@@ -2087,25 +1994,25 @@
           "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 331714,
-              "right": 375705,
+              "left": 258300,
+              "right": 480886,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.11708920562675507
+              "relativeChange": -0.46286645899443946
             },
             "cost": {
-              "left": 0.020435599999999998,
-              "right": 0.03466612,
+              "left": 0.018503000000000002,
+              "right": 0.031115080000000003,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.41050224253536316
+              "relativeChange": -0.40533657634818876
             },
             "seconds": {
-              "left": 89.146,
-              "right": 114.78,
+              "left": 83.364,
+              "right": 107.471,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.2233315908694895
+              "relativeChange": -0.2243116747773818
             }
           }
         },
@@ -2140,28 +2047,28 @@
       "individual": [
         {
           "id": "yaml-anchor-ranges",
-          "repetition": 1,
+          "repetition": 3,
           "resources": {
             "tokens": {
-              "left": 331714,
-              "right": 375705,
+              "left": 258300,
+              "right": 480886,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.11708920562675507
+              "relativeChange": -0.46286645899443946
             },
             "cost": {
-              "left": 0.020435599999999998,
-              "right": 0.03466612,
+              "left": 0.018503000000000002,
+              "right": 0.031115080000000003,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.41050224253536316
+              "relativeChange": -0.40533657634818876
             },
             "seconds": {
-              "left": 89.146,
-              "right": 114.78,
+              "left": 83.364,
+              "right": 107.471,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.2233315908694895
+              "relativeChange": -0.2243116747773818
             }
           }
         }
@@ -2174,62 +2081,62 @@
       "partition": "fresh-confirmation",
       "accountingTier": "aggregate_only",
       "quality": {
-        "observedPairs": 4,
-        "unobservedPairs": 2,
-        "bothAudited": 2,
-        "leftOnlyAudited": 0,
-        "rightOnlyAudited": 0,
-        "neitherAudited": 2
+        "observedPairs": 5,
+        "unobservedPairs": 1,
+        "bothAudited": 0,
+        "leftOnlyAudited": 1,
+        "rightOnlyAudited": 1,
+        "neitherAudited": 3
       },
-      "pairs": 2,
+      "pairs": 0,
       "resources": {
         "tokens": {
-          "left": 601886,
-          "right": 702042,
-          "pairs": 2,
+          "left": 0,
+          "right": 0,
+          "pairs": 0,
           "missingPairs": 0,
-          "relativeChange": -0.1426638292295902
+          "relativeChange": null
         },
         "cost": {
-          "left": 0.0400642,
-          "right": 0.0424194,
-          "pairs": 2,
+          "left": 0,
+          "right": 0,
+          "pairs": 0,
           "missingPairs": 0,
-          "relativeChange": -0.055521765984431704
+          "relativeChange": null
         },
         "seconds": {
-          "left": 149.37900000000002,
-          "right": 169.837,
-          "pairs": 2,
+          "left": 0,
+          "right": 0,
+          "pairs": 0,
           "missingPairs": 0,
-          "relativeChange": -0.1204566731630915
+          "relativeChange": null
         }
       },
       "tasks": [
         {
           "id": "yaml-anchor-ranges",
-          "pairs": 2,
+          "pairs": 0,
           "resources": {
             "tokens": {
-              "left": 601886,
-              "right": 702042,
-              "pairs": 2,
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
               "missingPairs": 0,
-              "relativeChange": -0.1426638292295902
+              "relativeChange": null
             },
             "cost": {
-              "left": 0.0400642,
-              "right": 0.0424194,
-              "pairs": 2,
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
               "missingPairs": 0,
-              "relativeChange": -0.055521765984431704
+              "relativeChange": null
             },
             "seconds": {
-              "left": 149.37900000000002,
-              "right": 169.837,
-              "pairs": 2,
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
               "missingPairs": 0,
-              "relativeChange": -0.1204566731630915
+              "relativeChange": null
             }
           }
         },
@@ -2261,62 +2168,7 @@
           }
         }
       ],
-      "individual": [
-        {
-          "id": "yaml-anchor-ranges",
-          "repetition": 1,
-          "resources": {
-            "tokens": {
-              "left": 357062,
-              "right": 331714,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": 0.07641522516384591
-            },
-            "cost": {
-              "left": 0.0230044,
-              "right": 0.020435599999999998,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": 0.12570220595431514
-            },
-            "seconds": {
-              "left": 78.926,
-              "right": 89.146,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.11464339398290446
-            }
-          }
-        },
-        {
-          "id": "yaml-anchor-ranges",
-          "repetition": 2,
-          "resources": {
-            "tokens": {
-              "left": 244824,
-              "right": 370328,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.3388995701108207
-            },
-            "cost": {
-              "left": 0.0170598,
-              "right": 0.021983800000000005,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.22398311483910893
-            },
-            "seconds": {
-              "left": 70.453,
-              "right": 80.691,
-              "pairs": 1,
-              "missingPairs": 0,
-              "relativeChange": -0.1268790819298311
-            }
-          }
-        }
-      ]
+      "individual": []
     },
     {
       "left": "candidate",
@@ -2325,12 +2177,12 @@
       "partition": "fresh-confirmation",
       "accountingTier": "aggregate_only",
       "quality": {
-        "observedPairs": 4,
-        "unobservedPairs": 2,
+        "observedPairs": 5,
+        "unobservedPairs": 1,
         "bothAudited": 1,
-        "leftOnlyAudited": 1,
-        "rightOnlyAudited": 0,
-        "neitherAudited": 2
+        "leftOnlyAudited": 0,
+        "rightOnlyAudited": 1,
+        "neitherAudited": 3
       },
       "pairs": 1,
       "resources": {
@@ -2449,35 +2301,35 @@
       "partition": "fresh-confirmation",
       "accountingTier": "aggregate_only",
       "quality": {
-        "observedPairs": 4,
-        "unobservedPairs": 2,
+        "observedPairs": 5,
+        "unobservedPairs": 1,
         "bothAudited": 1,
-        "leftOnlyAudited": 1,
-        "rightOnlyAudited": 0,
-        "neitherAudited": 2
+        "leftOnlyAudited": 0,
+        "rightOnlyAudited": 1,
+        "neitherAudited": 3
       },
       "pairs": 1,
       "resources": {
         "tokens": {
-          "left": 331714,
-          "right": 375705,
+          "left": 258300,
+          "right": 480886,
           "pairs": 1,
           "missingPairs": 0,
-          "relativeChange": -0.11708920562675507
+          "relativeChange": -0.46286645899443946
         },
         "cost": {
-          "left": 0.020435599999999998,
-          "right": 0.03466612,
+          "left": 0.018503000000000002,
+          "right": 0.031115080000000003,
           "pairs": 1,
           "missingPairs": 0,
-          "relativeChange": -0.41050224253536316
+          "relativeChange": -0.40533657634818876
         },
         "seconds": {
-          "left": 89.146,
-          "right": 114.78,
+          "left": 83.364,
+          "right": 107.471,
           "pairs": 1,
           "missingPairs": 0,
-          "relativeChange": -0.2233315908694895
+          "relativeChange": -0.2243116747773818
         }
       },
       "tasks": [
@@ -2486,25 +2338,25 @@
           "pairs": 1,
           "resources": {
             "tokens": {
-              "left": 331714,
-              "right": 375705,
+              "left": 258300,
+              "right": 480886,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.11708920562675507
+              "relativeChange": -0.46286645899443946
             },
             "cost": {
-              "left": 0.020435599999999998,
-              "right": 0.03466612,
+              "left": 0.018503000000000002,
+              "right": 0.031115080000000003,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.41050224253536316
+              "relativeChange": -0.40533657634818876
             },
             "seconds": {
-              "left": 89.146,
-              "right": 114.78,
+              "left": 83.364,
+              "right": 107.471,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.2233315908694895
+              "relativeChange": -0.2243116747773818
             }
           }
         },
@@ -2539,28 +2391,28 @@
       "individual": [
         {
           "id": "yaml-anchor-ranges",
-          "repetition": 1,
+          "repetition": 3,
           "resources": {
             "tokens": {
-              "left": 331714,
-              "right": 375705,
+              "left": 258300,
+              "right": 480886,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.11708920562675507
+              "relativeChange": -0.46286645899443946
             },
             "cost": {
-              "left": 0.020435599999999998,
-              "right": 0.03466612,
+              "left": 0.018503000000000002,
+              "right": 0.031115080000000003,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.41050224253536316
+              "relativeChange": -0.40533657634818876
             },
             "seconds": {
-              "left": 89.146,
-              "right": 114.78,
+              "left": 83.364,
+              "right": 107.471,
               "pairs": 1,
               "missingPairs": 0,
-              "relativeChange": -0.2233315908694895
+              "relativeChange": -0.2243116747773818
             }
           }
         }
@@ -2702,15 +2554,48 @@
         "unreportedRequestReserveUsd": 0,
         "accountedUsd": 0.06543052,
         "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-yaml-anchor-ranges-cline",
+        "observedUsd": 0.031115080000000003,
+        "forwardedAttempts": 12,
+        "usageReports": 12,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.031115080000000003,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-yaml-anchor-ranges-baseline",
+        "observedUsd": 0.018503000000000002,
+        "forwardedAttempts": 12,
+        "usageReports": 12,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.018503000000000002,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-yaml-anchor-ranges-candidate",
+        "observedUsd": 0.022006679999999997,
+        "forwardedAttempts": 14,
+        "usageReports": 14,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.022006679999999997,
+        "basis": "wire/report counts; billing unknown"
       }
     ],
-    "observedUsd": 0.50338936,
+    "observedUsd": 0.57501412,
     "reservedUsd": 0,
-    "accountedUsd": 0.50338936
+    "accountedUsd": 0.57501412
   },
   "priorAccountedUsd": 4.28706008,
-  "totalAccountedUsd": 4.79044944,
-  "referenceEquivalentEur": 4.286711422118391,
+  "totalAccountedUsd": 4.8620741999999995,
+  "referenceEquivalentEur": 4.350804505793331,
   "limits": {
     "authorizedEur": 10,
     "operationalUsd": 10.951612,

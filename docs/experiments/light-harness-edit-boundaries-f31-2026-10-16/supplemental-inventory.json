@@ -86,6 +86,27 @@
       "artifact": "journals/2-fast-glob-dynamic-filter-candidate.8a0889a747986af8289f91c0.jsonl.gz",
       "bytes": 893957,
       "sha256": "7e9179692e81568ce15f17c324f292bb8818ec9031e088ccf9e3e2dc00ad5ff7"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-cline",
+      "file": "d0ee964e64d58a057294ebe1.jsonl",
+      "artifact": "journals/3-yaml-anchor-ranges-cline.d0ee964e64d58a057294ebe1.jsonl.gz",
+      "bytes": 79,
+      "sha256": "fde3829a87267ea7b6c145ae4ef6000d4ade734c5e547206f1ec69a910e65ee0"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-baseline",
+      "file": "51d391efd818656f912df055.jsonl",
+      "artifact": "journals/3-yaml-anchor-ranges-baseline.51d391efd818656f912df055.jsonl.gz",
+      "bytes": 264256,
+      "sha256": "b54e051cfb57fa10cc0712081b094c40e94b30d78b9198793fc58d9713b66f3c"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-candidate",
+      "file": "1de22eeec8887a5466dc9b63.jsonl",
+      "artifact": "journals/3-yaml-anchor-ranges-candidate.1de22eeec8887a5466dc9b63.jsonl.gz",
+      "bytes": 354799,
+      "sha256": "592c400112359d4bfe582a2f6a5e000293e429a929973221f9bbbb3bd763e275"
     }
   ]
 }

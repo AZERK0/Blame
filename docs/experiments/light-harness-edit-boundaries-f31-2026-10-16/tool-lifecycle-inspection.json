@@ -120,6 +120,36 @@
       "startedWithoutFinish": [],
       "finishedWithoutStart": [],
       "differentInputs": []
+    },
+    {
+      "name": "3-yaml-anchor-ranges-cline",
+      "eventsSha256": "e1ef698085472849bc21989104bdf4c10800f998085a7680143fecb2cdeab654",
+      "started": 18,
+      "finished": 18,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-yaml-anchor-ranges-baseline",
+      "eventsSha256": "d39605862b1d94b0165e0eb12710e808323cd278716ebdf6da12c2db3c6c40f2",
+      "started": 32,
+      "finished": 32,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-yaml-anchor-ranges-candidate",
+      "eventsSha256": "76425ce40885b05d60a92b134cf5df9cebfb49394e2de5dc3d3f2dc5ea4c065e",
+      "started": 35,
+      "finished": 35,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
     }
   ]
 }

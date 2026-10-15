@@ -97,6 +97,30 @@
       "unchangedToolContractSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
       "schemaBytes": 9956,
       "descriptionBytes": 3897
+    },
+    {
+      "name": "3-yaml-anchor-ranges-baseline",
+      "id": "yaml-anchor-ranges",
+      "repetition": 3,
+      "arm": "baseline",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "6262fa6f6bfcceba7b94b3580311d99bf800269d31fbc8d35ce66610c758a06f",
+      "normalizedPromptSha256": "ee38dc24844ef69ba9fadb230fe20c066de5029ba42740299789a8b4f912f5db",
+      "unchangedToolContractSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "schemaBytes": 9956,
+      "descriptionBytes": 3897
+    },
+    {
+      "name": "3-yaml-anchor-ranges-candidate",
+      "id": "yaml-anchor-ranges",
+      "repetition": 3,
+      "arm": "candidate",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "7bd9badcb1b6b310b7a2adac960d58cb1bf343c9b0f6cf5baceac9d8c0610318",
+      "normalizedPromptSha256": "ee38dc24844ef69ba9fadb230fe20c066de5029ba42740299789a8b4f912f5db",
+      "unchangedToolContractSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "schemaBytes": 9956,
+      "descriptionBytes": 3897
     }
   ],
   "pairs": [
@@ -115,6 +139,18 @@
     {
       "id": "yaml-anchor-ranges",
       "repetition": 2,
+      "normalizedPromptsMatch": true,
+      "allOtherToolFieldsMatch": true,
+      "baselineSchemaBytes": 9956,
+      "candidateSchemaBytes": 9956,
+      "schemaRelativeChange": 0,
+      "baselineDescriptionBytes": 3897,
+      "candidateDescriptionBytes": 3897,
+      "descriptionRelativeChange": 0
+    },
+    {
+      "id": "yaml-anchor-ranges",
+      "repetition": 3,
       "normalizedPromptsMatch": true,
       "allOtherToolFieldsMatch": true,
       "baselineSchemaBytes": 9956,

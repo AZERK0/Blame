@@ -1059,6 +1059,275 @@
       "classifiedRawNpmInvocations": 0,
       "classifiedInvocations": [],
       "automaticValidationInputs": []
+    },
+    {
+      "name": "3-yaml-anchor-ranges-cline",
+      "id": "yaml-anchor-ranges",
+      "arm": "cline",
+      "repetition": 3,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 5,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 23,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "e1ef698085472849bc21989104bdf4c10800f998085a7680143fecb2cdeab654",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-yaml-anchor-ranges-baseline",
+      "id": "yaml-anchor-ranges",
+      "arm": "baseline",
+      "repetition": 3,
+      "searchCalls": 5,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 18,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 1,
+      "activeCaseCaptions": 0,
+      "readTargets": 18,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 1,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "anchorRange",
+            "scope": [
+              "src",
+              "tests"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "anchor",
+            "scope": "src/compose",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "ParsedNode",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "composeNode(",
+            "scope": "src/compose",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "Props",
+            "scope": "src/compose",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "d39605862b1d94b0165e0eb12710e808323cd278716ebdf6da12c2db3c6c40f2",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://24bcc8115b9594eb13991c2f409018fbb515303b70696e61139d92f4249b12ef",
+          "command": "npm test -- --runInBand",
+          "taskId": "test",
+          "args": [
+            "--runInBand"
+          ],
+          "sourceRevisionId": "src_06641a745f18efed35542cbca2f67b20",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-yaml-anchor-ranges-candidate",
+      "id": "yaml-anchor-ranges",
+      "arm": "candidate",
+      "repetition": 3,
+      "searchCalls": 9,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 16,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 1,
+      "activeCaseCaptions": 0,
+      "readTargets": 16,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 1,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "anchorRange",
+            "scope": [
+              "src",
+              "tests"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "anchor",
+            "scope": "src/compose",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "interface SourceToken type SourceToken",
+            "scope": "src/parse",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "anchor?: string",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "clone()",
+            "scope": "tests",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 7
+        },
+        {
+          "input": {
+            "query": "export interface SourceToken",
+            "scope": "src/parse",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "type SourceToken",
+            "scope": "src/parse",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "declare range?: Range",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "Parsed extends",
+            "scope": "src/nodes",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "76425ce40885b05d60a92b134cf5df9cebfb49394e2de5dc3d3f2dc5ea4c065e",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://a9edd62df6bc5da244d483a83db21e00b7af4e28c90ba52a38f664a0f840f816",
+          "command": "npm test -- --runInBand",
+          "taskId": "test",
+          "args": [
+            "--runInBand"
+          ],
+          "sourceRevisionId": "src_4a46a72fd1b99101825555b4a91cf333",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
     }
   ]
 }
