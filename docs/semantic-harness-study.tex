@@ -2170,6 +2170,13 @@ and calls. This permitted within-trial recovery is distinct from researcher
 model retries or replacing the independently failed repetition-two score;
 guard activation alone does not establish comparative success improvement.
 
+Separately, a recorded duplicate-header rejection mislabeled two headers for
+one file as multiple files. A later production-only correction uses
+\code{multiple\_headers\_for\_symbol}; 25 focused tests and a replay of
+the first 24 recorded calls preserve atomic rejection and unchanged source.
+Explicit reviewed file edits still work. No frozen F28/F29 model treatment
+contains this diagnostic correction; no model benefit is claimed.
+
 \section{F29: bounded lexical phrase priority (preparation)}
 Known F28 Lodash traces expose a retrieval mechanism: whitespace terms form an
 OR query and fill a 32-occurrence collection before ranking. Generic

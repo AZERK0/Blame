@@ -1,10 +1,10 @@
 {
   "path": "docs/semantic-harness-study.tex",
-  "sha256": "e524e705e083280d6cb5a2263514b9270797b91e17dee6f37944043d6c39f8b5",
+  "sha256": "74d80722a81b659eddb2308c69af6013e1f247f5b4bbd442f6dc403fe49f67a1",
   "compiler": "Codex native LaTeX editor",
   "result": "unverified",
-  "scope": "F28 reviewed prefix90 and F29 preparation",
-  "recordedAtUTC": "2026-10-15T02:24:25.962346+00:00",
+  "scope": "F28 prefix90 plus later local-only duplicate-header correction and F29 preparation",
+  "recordedAtUTC": "2026-10-15T02:36:06.755319+00:00",
   "lastConfirmedCompilation": {
     "path": "docs/semantic-harness-study.tex",
     "sha256": "32a0082bc84b3c75d7b99930c60feae60a22cb1c28ab653e8404c290287ed261",

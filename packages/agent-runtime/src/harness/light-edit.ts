@@ -881,8 +881,10 @@ class ScopedPatchShapeError extends Error {
 
   constructor(expectedPath: string, patchPaths: string[], suppliedPath?: string) {
     super("Scoped patch header must match the symbol's file and contain one Update File.");
+    const repeatedHeaders = patchPaths.length > 1 && new Set(patchPaths).size === 1;
     this.correction = {
-      reason: patchPaths.length !== 1 ? "multiple_files_for_symbol" : "wrong_file_for_symbol",
+      reason: repeatedHeaders ? "multiple_headers_for_symbol"
+        : patchPaths.length !== 1 ? "multiple_files_for_symbol" : "wrong_file_for_symbol",
       expectedPath, patchPaths: patchPaths.slice(0, 8), patchPathCount: patchPaths.length,
       ...(suppliedPath ? { suppliedPath } : {}),
       symbolRoute: "Keep target and use one operation per observed symbol, each with one matching Update File. Split unrelated file changes into separate operations in the same atomic batch.",
