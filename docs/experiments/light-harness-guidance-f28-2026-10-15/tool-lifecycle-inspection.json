@@ -630,6 +630,276 @@
       "startedWithoutFinish": [],
       "finishedWithoutStart": [],
       "differentInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-baseline",
+      "eventsSha256": "dc7a6ae8841363ecc47b0a1cee556e08ed88d12bbb48e48bd5c1fb596fda76fb",
+      "started": 31,
+      "finished": 31,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-bundle",
+      "eventsSha256": "08f7fde82f9cead1e341033658e37ba382a00c285d10f11e541ee46b88b3ddf8",
+      "started": 31,
+      "finished": 31,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-patch",
+      "eventsSha256": "357007babe6188617897e6bbd79cb05903ae4d03500262c915440a71d9f6c98f",
+      "started": 28,
+      "finished": 28,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-reporting",
+      "eventsSha256": "2b10a8cd806e79e86a4154bb7b61a20d32d90b10242a81a4287d8953e8906f85",
+      "started": 32,
+      "finished": 32,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-reading",
+      "eventsSha256": "76fa971ce1167869cd7da936e2bbd9cbb24551fdeff524a93512456dd85bb9db",
+      "started": 31,
+      "finished": 31,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-rename",
+      "eventsSha256": "92b257ab2cdb489a3f3bb9e65c744cc0328d13402683ef66849a576531b11a18",
+      "started": 33,
+      "finished": 33,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-references",
+      "eventsSha256": "7e139750becc1edf4bfea442e3823bbcdb8bffc9accb809914ba1f97bfe4aa15",
+      "started": 28,
+      "finished": 28,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-cline",
+      "eventsSha256": "404501b7645092d28b40c9aea1c017bebdd49910ce0703a7ebf9aefdbb42ed7b",
+      "started": 13,
+      "finished": 13,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-scope",
+      "eventsSha256": "015242dc2909a68866bf7153d325c1f6134c94d722085d27c7bf1d4f43645848",
+      "started": 27,
+      "finished": 27,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-cline",
+      "eventsSha256": "8977030c50fdde2755d0d362e5735081ef1e5fb61bf3ec4b4adcf241e7eb5db0",
+      "started": 15,
+      "finished": 15,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-references",
+      "eventsSha256": "5e78c08b9a4f0cfb47f0add80550f45bfdf8145f8d555782142ac25ce3f14bfb",
+      "started": 27,
+      "finished": 27,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-rename",
+      "eventsSha256": "90d8d5c54f1ca2cd99a6aeaf4792f3ebf4bf9d7597b8af90f975e11c64061dd6",
+      "started": 26,
+      "finished": 26,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-reading",
+      "eventsSha256": "fe8b45dd6cb8f79003c50d4b915841df7cd11d8062f79ab6409fadc9e1671ed7",
+      "started": 21,
+      "finished": 21,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-reporting",
+      "eventsSha256": "a71e6f4ef93d16db0719e4e3237e05d39698954fca532873f22a7588348f43ef",
+      "started": 15,
+      "finished": 15,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-patch",
+      "eventsSha256": "af359e1ac7024eb7a35f819fdbb6019d7b2bc313fae7a700ceaa734c27156607",
+      "started": 27,
+      "finished": 27,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-bundle",
+      "eventsSha256": "0518a0417a08391f94f3c765529cec50f655757bbfff1b7df8eba88fd29c89b7",
+      "started": 31,
+      "finished": 31,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-baseline",
+      "eventsSha256": "9d154182d12af9c45e76eebece9bf8e496807647b05566ed42b6e726a0c1472f",
+      "started": 24,
+      "finished": 24,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-scope",
+      "eventsSha256": "93d647f48aca50aca116585939be2b42ce2bea1d2cc3386b440af4487698630e",
+      "started": 25,
+      "finished": 25,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-reading",
+      "eventsSha256": "119c0baaddbe610c5473305baa18e8de29f8e1ccb7cf8c1d5e7a3a335c9a1c22",
+      "started": 38,
+      "finished": 38,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-reporting",
+      "eventsSha256": "2707727408a4b6bf654201ea85b059f1d08c047934d094564e39d5e5d06d6f31",
+      "started": 27,
+      "finished": 27,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-patch",
+      "eventsSha256": "31f157edb8c3bdff531611d8ba0ec054bf1f4ba801d92af2633801ec5fef586c",
+      "started": 19,
+      "finished": 19,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-bundle",
+      "eventsSha256": "6d91af622021ca486bd2081ae87b2e6aff3ad02ff7b9ecab47d8fb878306b777",
+      "started": 20,
+      "finished": 20,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-baseline",
+      "eventsSha256": "6841fe891eea3baa37a1f4d678b3eeee20398b38e8e758be9b939572bb3d0319",
+      "started": 23,
+      "finished": 23,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-scope",
+      "eventsSha256": "14cca58a9be240f4fbe94e05a5a6c45916bf8a5de1bd32685ab0db3e0d9d60a3",
+      "started": 24,
+      "finished": 24,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-cline",
+      "eventsSha256": "734938996dcd3f1100c08d71993540701e25f5b4c41e20319895319f40c65a04",
+      "started": 11,
+      "finished": 11,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-references",
+      "eventsSha256": "8240b035afec982d0d091ba3e77e49735939234ecdaefe64ea31a3063cc82860",
+      "started": 22,
+      "finished": 22,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-rename",
+      "eventsSha256": "07cd1ef8f5b2e5826fed2dadb6354d77f7d082174a9bdf1131ec71aba574bbfb",
+      "started": 21,
+      "finished": 21,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
     }
   ]
 }

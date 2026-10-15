@@ -7,6 +7,7 @@ const name=process.argv[2],mode=process.argv[3]??"inputs",root=join(work,"f28"),
 const row=(await json(join(root,"analysis.json"))).rows.find(r=>r.name===name);if(!row)throw Error("Completed trial not found");
 const score=await json(join(root,name,"score.json")),tools=(await json(join(root,"tool-ledger.json"))).find(r=>r.name===name).tools;
 const normalize=s=>s.replaceAll(join(root,name,"workspace"),"<workspace>");
+const finalFinish=tools.findLastIndex(t=>t.tool==="finish_task");
 console.log(JSON.stringify({name,status:row.status,functional:row.independentFunctionalSuccess,tokens:row.usage.input===null?null:row.usage.input+row.usage.output,cost:row.usage.cost,seconds:row.durationMs/1000,
   failedFeatures:score.featureChecks.filter(c=>!c.passed),verifierExits:{selected:score.selected.exitCode,types:score.types.exitCode,full:score.full.exitCode},diffSha256:row.diffSha256,completion:row.completion}));
 if(mode==="diff"||mode==="changes"){
@@ -14,7 +15,7 @@ if(mode==="diff"||mode==="changes"){
  console.log(mode==="diff"?diff:diff.split("\n").filter(l=>l.startsWith("diff ")||l.startsWith("+")||l.startsWith("-")).join("\n"));
 }
 else for(const [index,t] of tools.entries()){
- if(t.tool==="finish_task")continue; // Full effective summary is shown once below.
+ if(t.tool==="finish_task"&&index===finalFinish)continue; // Earlier attempts remain visible.
  const edit=["edit_code","apply_patch"].includes(t.tool);if(mode==="edits"&&!edit)continue;
  if(edit&&mode!=="edits"){
   const operations=t.input.operations??[{patch:t.input.input}];
@@ -29,6 +30,7 @@ else for(const [index,t] of tools.entries()){
   }input=effective;
  }
  console.log(normalize(index+" "+t.tool+" "+JSON.stringify(input)+" => "+(t.output?.status??"")+(t.output?.message?" "+t.output.message.slice(0,600):"")));
+ if(t.tool==="finish_task")console.log(normalize(JSON.stringify({finishOutput:t.output})));
  if(ignored.length)console.log(JSON.stringify({ignored}));
  const tail=value=>String(value??"").split("\n").filter(line=>/[A-Za-z0-9]/u.test(line)).slice(-8).map(line=>line.slice(0,300));
  if(t.tool==="run_task"){

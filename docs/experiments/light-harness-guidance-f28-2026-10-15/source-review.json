@@ -713,6 +713,307 @@
       "eventsSha256": "1d6a710d0c5521bc48f697c7237216109cf92e2810e4fd8dce67c7423a706a63",
       "diffSha256": "c6a13259bf4c0d316293db4bdb4423b5ca48f934104f864213f6b1353ccdf9ea",
       "scoreSha256": "c1411bd52a1b21e514d88ea06c323f1c055d493badeaff14efe80cbacc121478"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All31 effective inputs reviewed; complete endpoint SHA equals the fully reviewed repetition1 baseline Lodash implementation. One atomic whole-symbol batch26 updates parameters and bodies together; own enumerable symbol helper, strict true option, defaults/coercion/string ordering and keysIn/valuesIn preservation pass all private probes in both timezones. Exact final syntax/QUnit/Node checks27/28/29 pass6794 runner passes and5 Node cases; unknown QUnit skipped stays separate from explicit Node0skipped/todo. Initial line0 range is rejected then corrected, extensive overlapping/helper reads retained. No protected changes or solution retrieval; formal unverified.",
+      "eventsSha256": "dc7a6ae8841363ecc47b0a1cee556e08ed88d12bbb48e48bd5c1fb596fda76fb",
+      "diffSha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6",
+      "scoreSha256": "c7e72475e918fe2f7ae60bf5803607b681672144d9cce4e3562dceb76586d282"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-bundle",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All31 effective inputs and complete final diff reviewed. One atomic whole-symbol batch26 updates parameters/bodies together, preserving strict true option, defaults/null/array-like/string ordering and own enumerable symbol/value behavior; private probes pass in both timezones and only keys/values change. Caller content adds extra leading spaces to declaration headers; retain this stylistic blemish inside the allowed functions, without inventing an unregistered functional failure. Exact final syntax/QUnit/Node27/28/29 pass6794 runner passes and5 Node cases. Explicit Node0skipped/todo is scoped; no unknown QUnit count is zero-filled. Extensive overlapping/search reads retained, no patch/truncated-read runtime hint activation. No protected changes or solution retrieval; formal unverified.",
+      "eventsSha256": "08f7fde82f9cead1e341033658e37ba382a00c285d10f11e541ee46b88b3ddf8",
+      "diffSha256": "526522aef6b2b58210fefdf583a8974a6d0d854a93adb1714849818fdf4e683b",
+      "scoreSha256": "fe2fe477a53d9713b086539aaaeb2e1bc9053fc69cf2942e08c01f7d0c55ae98"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-patch",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All28 effective inputs reviewed; endpoint byte-identical to the fully reviewed correct Lodash baseline. Body batch22 first leaves old signatures, whole-symbol batch23 repairs both before exact final checks24/25/26 pass6794 runner passes plus5 Node cases. Private own-symbol/default/coercion/order/protected-input probes pass both timezones. Node0skipped/todo is explicit; no skipped/pending tests reported is qualified observation wording, not a numeric QUnit skipped count. Only keys/values changed, no protected edits or solution retrieval. No scoped-patch correction runtime exposure; body/signature churn and overlapping reads retained, formal unverified.",
+      "eventsSha256": "357007babe6188617897e6bbd79cb05903ae4d03500262c915440a71d9f6c98f",
+      "diffSha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6",
+      "scoreSha256": "ba614ff34b96e84dcda3f3d3254ee93f3c533760c7addd9fa8ad4ff31e006dbf"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-reporting",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All32 effective inputs reviewed; complete final diff byte-identical to the fully reviewed correct Lodash baseline. One whole-symbol batch27 changes header/body together; all private/default/order/own-symbol checks pass both timezones and exact final syntax/QUnit/Node28/29/30 pass6794 runner passes plus5 Node cases. Node0skipped/todo explicitly scoped, no missing QUnit skipped/pending totals fabricated; limitation statement limited to requested command set, no formal admission claim. Initial function keys search returns generic function matches and omits the declaration under its result limit; repeated ranges and later exact rg23 locate it. Preserve this observed navigation friction. Only allowed functions changed, no protected edits or solution retrieval.",
+      "eventsSha256": "2b10a8cd806e79e86a4154bb7b61a20d32d90b10242a81a4287d8953e8906f85",
+      "diffSha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6",
+      "scoreSha256": "1b6f08133f9974446aa43d9fec3b0bcb3cbecfee301f1d15c35380b15006e787"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-reading",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All31 effective inputs reviewed; final endpoint SHA equals a fully reviewed correct repetition1 Lodash implementation with explicit null values handling. Body batch25 requires whole-symbol signature repair26 before exact final syntax/QUnit/Node27/28/29 pass6794 runner passes plus5 Node cases. Private symbol/default/coercion/protected-input probes pass both timezones. Explicit Node0skipped is scoped; no missing QUnit count invented. Repeated multiword searches omit late declarations under the lexical prefix cap; two grep attempts and later focused ranges recover, with a harmless final grep exit1 retained as command friction. No truncated-read runtime exposure, protected changes or solution retrieval; formal unverified.",
+      "eventsSha256": "76fa971ce1167869cd7da936e2bbd9cbb24551fdeff524a93512456dd85bb9db",
+      "diffSha256": "08fdf33effd17e34cb1a3e05fe0ca79250e834c57707ef91f341744862b7c58b",
+      "scoreSha256": "61a44455db9f8d6aa0d3c98e14516e528cd8d02b2883996d0300878f3640a8da"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-rename",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All33 effective inputs reviewed; endpoint SHA matches fully reviewed correct Lodash variant. Body batch24 lacks options parameters; read/diff inspection25-27 and whole-symbol batch28 repair both before exact final checks29/30/31 pass6794 runner passes plus5 Node cases. All private/protected-input probes pass both timezones, Node0skipped scoped and no skipped/pending reported is qualified observation, not numeric legacy0. Preserve multiple prefix-limited searches, own-checkout grep fallback and overlapping ranges. No compiler rename receipt activation, protected edits or solution retrieval; formal unverified.",
+      "eventsSha256": "92b257ab2cdb489a3f3bb9e65c744cc0328d13402683ef66849a576531b11a18",
+      "diffSha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1",
+      "scoreSha256": "8a73bba3ccc8e1fc21e7fd7ddab24dcc029441e5722ff456d8df1c51d52cf6a5"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-references",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All28 effective inputs reviewed; endpoint byte-identical to the fully reviewed correct if/arrayPush Lodash variant. Two scoped context patches17/20 fail atomically (second batch also contains a malformed later header); refreshed symbol reads and whole-symbol batch23 recover without source widening. Exact final checks24/25/26 pass6794 runner passes plus5 Node cases; all private probes pass both timezones. Node0skipped scoped, qualified no skipped/pending reported does not impute legacy0. Generic prefix search results and duplicate ranges retained. No protected edits or solution retrieval; formal unverified.",
+      "eventsSha256": "7e139750becc1edf4bfea442e3823bbcdb8bffc9accb809914ba1f97bfe4aa15",
+      "diffSha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1",
+      "scoreSha256": "8409f0ce6bf5cdc85dde574311f60367c0f9113ffb94e8f387eb89c3b16ce270"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All13 effective inputs and complete final diff reviewed. One file patch10 uses strict true ternary own-symbol append and forwards options in values, preserving other source/defaults/null/array-like/order/inherited APIs; all private probes pass both timezones. Three exact final commands chained with && at11 all succeed, QUnit6794 and Node5 with explicit0skipped/todo; legacy categories explicitly unknown. Initial read_files2 omits workspace path component: all three requests return ENOENT and empty results, then corrected at3. No outside source/solution data retrieved. Inert timeout keys retained; no protected edits or formal Light admission.",
+      "eventsSha256": "404501b7645092d28b40c9aea1c017bebdd49910ce0703a7ebf9aefdbb42ed7b",
+      "diffSha256": "552b5297f1991c3a5720f61493efac0e087588ca55dd948a563599961853dddc",
+      "scoreSha256": "205281d22f5c09d0338bf5069453f15f0342264cd827c4b5b8998caee3ce1ed3"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-scope",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All27 effective inputs reviewed; endpoint SHA equals fully reviewed correct Lodash variant with explicit null values handling. Body batch20 leaves parameters unchanged, symbol read21 and whole-symbol batch22 repair before exact final syntax/QUnit/Node23/24/25 pass6794 runner passes plus5 Node cases. All private/protected-input probes pass both timezones. Node0skipped is scoped, no unknown legacy count invented, limitations bounded to actual commands. Prefix-limited generic searches and overlapping ranges retained, no protected changes or solution retrieval; formal unverified.",
+      "eventsSha256": "015242dc2909a68866bf7153d325c1f6134c94d722085d27c7bf1d4f43645848",
+      "diffSha256": "08fdf33effd17e34cb1a3e05fe0ca79250e834c57707ef91f341744862b7c58b",
+      "scoreSha256": "8e4eff95bb75f8c67a1dfd0289d20a2d62c244540561abeaeb5523338831165a"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All15 effective inputs reviewed; single patch7 yields byte-identical fully reviewed four-file/eight-binding migration. Exact final checks11 both succeed3243/8pending after last edit; skipped explicitly unknown and verification scope accurately limited. Own-checkout scans/diff/read only, aliases/paths/homonym/comment/literal preserved. Extra nonschema search key at2 is not a query or command and is inert in the pinned queries-only search implementation. No protected changes or solution retrieval; independent suites/features pass, no formal Light admission.",
+      "eventsSha256": "8977030c50fdde2755d0d362e5735081ef1e5fb61bf3ec4b4adcf241e7eb5db0",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "77f42fd838890ac92ed98d7645ece61101781b26963d0e16c80458834570b20d"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-references",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All27 effective inputs reviewed. Compiler rename15 produces byte-identical reviewed migration. Exact final compiler/Mocha24/25 pass3243/8pending, skipped explicitly unknown and scope limitations accurate. Root-star bare fallback and several literal compound scopes remain; qualified alias reference3 and recursive text14 provide actual production/test coverage before rename. Unrelated helper/template reads retained as model choices. No protected changes or solution retrieval; independent checks pass, formal unverified.",
+      "eventsSha256": "5e78c08b9a4f0cfb47f0add80550f45bfdf8145f8d555782142ac25ce3f14bfb",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "d2f2994634d81cf1d13397366b5dcd45aeab76f10ed917ea4cf4d3f9b2d62041"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-rename",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All26 effective inputs reviewed. Compiler rename11 produces byte-identical reviewed migration, with rich receipt and @changes. Exact final checks22/23 pass3243/8pending; skipped explicitly unknown and scope limitations accurately stated. Exhaustive own-checkout grep and source/test scans cover references; redundant helper/source reads retained. No protected changes or solution retrieval; independent checks pass, formal unverified.",
+      "eventsSha256": "90d8d5c54f1ca2cd99a6aeaf4792f3ebf4bf9d7597b8af90f975e11c64061dd6",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "725b515ae3bcc19305bac54a63f08c94c942559f96001cb8ead4703dd4bbeb35"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-reading",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All21 effective inputs reviewed. Compiler rename9 yields byte-identical reviewed migration. Exact final commands17/18 pass3243/8pending and no skipped count is invented. Directory-array scans, qualified-capability inspection and recursive own-checkout rg cover production/tests; remaining old-name paths/homonym/literal/comment are explicitly preserved. No protected-input changes or solution retrieval; independent checks pass, formal unverified. No truncated-read continuation activates.",
+      "eventsSha256": "fe8b45dd6cb8f79003c50d4b915841df7cd11d8062f79ab6409fadc9e1671ed7",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "b47e7b8715fae70b94feceed4cadebf8d2b84cbd29dcbb54b47181c2104f003c"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-reporting",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": false,
+      "noSolutionRetrieval": true,
+      "notes": "All15 effective inputs reviewed. Compiler rename7 yields identical fully reviewed migration and exact final checks12/13 pass3243/8pending. Nullable counts/admission are qualified accurately, but final blanket no files were changed contradicts the recorded four-file migration and its own opening description, repeating the registered factual failure class from repetition1. Preserve as full-criteria failure and wording sensitivity, not a functional/source failure or a proven reporting-treatment effect. No protected changes or solution retrieval; independent checks pass and formal unverified retained.",
+      "eventsSha256": "a71e6f4ef93d16db0719e4e3237e05d39698954fca532873f22a7588348f43ef",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "287b19b64f413b13cbd25c320e666b5cfad79144efd45ef7536e26691fc88353",
+      "criteriaFailures": [
+        "Blanket no files changed claim contradicts four changed source files"
+      ],
+      "reportingOnlySensitivity": true
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-patch",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All27 effective inputs reviewed. Compiler rename14 produces identical fully reviewed four-file migration; all aliases/paths/comments/literals/homonyms preserved. Exact final checks21/22 pass3243/8pending, skipped explicitly unknown and remaining old-name occurrences correctly scoped. Own-checkout exhaustive rg and directory scans only; no protected changes or solution retrieval. Independent checks pass; scoped-patch recovery feature does not activate, formal unverified.",
+      "eventsSha256": "af359e1ac7024eb7a35f819fdbb6019d7b2bc313fae7a700ceaa734c27156607",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "198ccdae90623fbe01861db6e8ec30a2bd7579634c07a031601d7a773b500cb2"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-bundle",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All31 effective inputs including both finish summaries and complete recorded outputs reviewed. Compiler rename12 gives identical reviewed migration. Exact compiler22 passes, first exact Mocha23 fails the unchanged window/Promise timing test3242/1failed/8pending. Finish24 truthfully discloses failure but is blocked by current failing validation. Source diff inspection and test/operator reads25-28 precede an explicit same-command rerun29, which passes3243/8pending without source changes; final reports both invocations and unknown skipped/admission. This is within-trial agent recovery, not a researcher model retry or overwritten score. Independent checks pass. Root-star queries and extra helper reads retained; no protected changes or solution retrieval. Observed guard activation does not establish a comparative global success gain.",
+      "eventsSha256": "0518a0417a08391f94f3c765529cec50f655757bbfff1b7df8eba88fd29c89b7",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "7d072338f3c64427ab63f0544d9265ae6044b9746ef39271801fd43e2257d302"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All24 effective inputs reviewed. Compiler rename10 produces identical fully reviewed migration; exact final checks21/22 pass3243/8pending, skipped explicitly unknown and limited verification accurate. Recursive globs, alias references, own-checkout rg and @changes cover references while preserving paths/aliases/homonym/literal/comment. No protected changes or solution retrieval; independent checks pass, formal unverified.",
+      "eventsSha256": "9d154182d12af9c45e76eebece9bf8e496807647b05566ed42b6e726a0c1472f",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "d594869f34641ec77b6770c21ae8448cfba43967fc673940ee1176ef5cc04710"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-scope",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All25 effective inputs reviewed. Compiler rename14 yields identical fully reviewed migration; exact final checks19/20 pass3243/8pending, unknown skipped and limited validation accurate. Explicit directory-array scopes, qualified references and recursive own-checkout rg cover relevant source/tests. Unrelated helper read retained; no protected changes or solution retrieval. Independent checks pass, formal unverified.",
+      "eventsSha256": "93d647f48aca50aca116585939be2b42ce2bea1d2cc3386b440af4487698630e",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "24c9a64d5dd3639ee67e1f3d50b2f6bf25e6e5939eaba8f8e7c9a6a6ea147b80"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-reading",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All38 effective inputs reviewed. Compiler rename21 yields byte-identical fully reviewed eleven-file migration; exact final commands33/34 pass250files/3140tests/18skipped after final edit. Pending explicitly unknown and dynamic-consumer scope limitations accurate. Qualified references, directory scans and later own-checkout rg cover production/tests; root-star calls, bare fallback, unrelated helpers and many overlapping post-edit reads retained. No truncated-read hint activation, protected changes or solution retrieval; formal unverified.",
+      "eventsSha256": "119c0baaddbe610c5473305baa18e8de29f8e1ccb7cf8c1d5e7a3a335c9a1c22",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "b072a384f580411964230feb39c4d75f1fa5922e31dd59e2435c36c6088c7a7a"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-reporting",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All27 effective inputs reviewed. Compiler rename16 yields identical fully reviewed eleven-file migration, exact final checks21/22 pass250files/3140tests/18skipped; pending/selection/freshness unknown accurately stated, no blanket no-source-change claim. Compound empty scopes and initial unrelated helpers retained; recursive scans and later source references/fixture checks cover actual bindings. find .. only searches for AGENTS.md filenames and returns none; no outside source/solution content is retrieved. No protected changes; formal unverified.",
+      "eventsSha256": "2707727408a4b6bf654201ea85b059f1d08c047934d094564e39d5e5d06d6f31",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "a625ee5b66fe4362d10b4c5f3dae9e45fbed986c264ae5e46c9e21a06d53c481"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-patch",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All19 effective inputs reviewed. Compiler rename10 yields identical fully reviewed eleven-file migration; exact final commands16/17 pass250files/3140tests/18skipped, pending explicitly unknown and admission limitations accurately qualified. Recursive/directory scans plus fixture/test reads preserve paths/aliases/homonyms/comments/literals. No scoped-patch correction activation, protected changes or solution retrieval; independent checks pass, formal unverified.",
+      "eventsSha256": "31f157edb8c3bdff531611d8ba0ec054bf1f4ba801d92af2633801ec5fef586c",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "5d160b5f811652efb280c1a42827f50d40308e3b21f78cef74c29a4c3ae06c6d"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-bundle",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All20 effective inputs reviewed. Compiler rename12 yields identical fully reviewed eleven-file migration; exact final commands17/18 pass250files/3140tests/18skipped. Nullable pending and unknown selection/freshness/admission correctly disclosed. Recursive own-checkout rg plus qualified compiler references cover source/tests, preserving paths/aliases/homonym/comment/literal; unrelated helper reads and @changes retained. No protected changes or solution retrieval; formal unverified.",
+      "eventsSha256": "6d91af622021ca486bd2081ae87b2e6aff3ad02ff7b9ecab47d8fb878306b777",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "eed6f365c029f857d275a8dd7bac8c8f0dfba534b98814f82f0abc07bffea2d5"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All23 effective inputs reviewed. Compiler rename11 gives identical fully reviewed eleven-file migration; exact final commands18/19 pass250files/3140tests/18skipped. Pending explicitly unknown, source/alias/path preservation and limits accurate. Directory-array source/test scans, qualified alias references, fixture reads and diff cover bindings; unrelated helper reads retained. No protected changes or solution retrieval; independent checks pass, formal unverified.",
+      "eventsSha256": "6841fe891eea3baa37a1f4d678b3eeee20398b38e8e758be9b939572bb3d0319",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "1f4da5af45b2d3c1ce628f15d37b57a6c1815d82977ce3ca355ff07189240239"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-scope",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All24 effective inputs reviewed. Compiler rename15 gives identical fully reviewed eleven-file migration; exact final checks21/22 pass250files/3140tests/18skipped. Pending none reported is qualified; skipped reasons were not exposed in bounded output and no unsupported reasons asserted. Explicit scope arrays and qualified alias references cover source/tests; broad multiword aliases query and redundant helper/range reads retained. No protected changes or solution retrieval; formal unverified.",
+      "eventsSha256": "14cca58a9be240f4fbe94e05a5a6c45916bf8a5de1bd32685ab0db3e0d9d60a3",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "cc9849c7fc07d9a7c44e4177ec7bec7eb186ffeb08fadc123c0e5bd643b3dc66"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All11 effective inputs reviewed; single patch6 produces identical fully reviewed eleven-file migration preserving every protected alias/path/homonym/comment/literal and identifier-only test updates. Exact final commands10 both report SDK success. Final lists observed runner-specific examples and skipped partial counts, explicitly keeps complete totals unknown after SDK output clipping; same pinned projection limitation as earlier repetitions, not a reading error. Own-checkout rg/diff only; inert timeout keys retained. No protected changes or solution retrieval; independent suites/features pass, no formal Light admission.",
+      "eventsSha256": "734938996dcd3f1100c08d71993540701e25f5b4c41e20319895319f40c65a04",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "6025a47bf93b74f174303098401e68b35e0a3f51ec6c2728e9c60013b23b1207"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-references",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All22 effective inputs reviewed. Compiler rename12 yields identical fully reviewed eleven-file migration, requested exact final commands16/17 pass250files/3140tests/18skipped. Counts/pending/verification limits accurate. Initial compound/root-only scopes return misleadingly narrow results; own-checkout git grep11 plus source scans/fixture/test reads recover coverage before rename. No protected changes or solution retrieval; independent checks pass, formal unverified.",
+      "eventsSha256": "8240b035afec982d0d091ba3e77e49735939234ecdaefe64ea31a3063cc82860",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "8401213542627171460c241c5d908d2a5ee94d6f4954450bb7c78b27da7a3767"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-rename",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All21 effective inputs reviewed. Compiler rename14 yields identical fully reviewed eleven-file migration, rich receipt and @changes retain exact binding/alias evidence. Exact final commands18/19 pass250files/3140tests/18skipped; pending unreported and verification bounded accurately. Own-checkout recursive rg and explicit directory scans cover source/tests; unrelated helper reads retained. No protected changes or solution retrieval; independent checks pass, formal unverified.",
+      "eventsSha256": "07cd1ef8f5b2e5826fed2dadb6354d77f7d082174a9bdf1131ec71aba574bbfb",
+      "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
+      "scoreSha256": "047609b46d75e9453832a397f92c62de2ef9bfab7e9d5a64da80d2d971897dab"
     }
   ]
 }

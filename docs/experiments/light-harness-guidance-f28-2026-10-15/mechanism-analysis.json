@@ -6152,6 +6152,2899 @@
       "classifiedRawNpmInvocations": 0,
       "classifiedInvocations": [],
       "automaticValidationInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-baseline",
+      "id": "lodash-own-symbol-options",
+      "arm": "baseline",
+      "repetition": 2,
+      "searchCalls": 10,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 2,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 16,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 16,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keys(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "values(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keysIn(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getSymbols(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "nativeGetSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 4
+        },
+        {
+          "input": {
+            "query": "function keys(object)",
+            "scope": "lodash.js",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "function values(object)",
+            "scope": "lodash.js",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "dc7a6ae8841363ecc47b0a1cee556e08ed88d12bbb48e48bd5c1fb596fda76fb",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-bundle",
+      "id": "lodash-own-symbol-options",
+      "arm": "bundle",
+      "repetition": 2,
+      "searchCalls": 13,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 3,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 13,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keys(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "values(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function arrayLikeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keys(",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "keys =",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "baseKeys(object)",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "function arrayLikeKeys",
+            "scope": "lodash.js",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "function getAllKeys",
+            "scope": "lodash.js",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "08f7fde82f9cead1e341033658e37ba382a00c285d10f11e541ee46b88b3ddf8",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-patch",
+      "id": "lodash-own-symbol-options",
+      "arm": "patch",
+      "repetition": 2,
+      "searchCalls": 8,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 14,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 14,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keys(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "values(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "baseKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 6
+        },
+        {
+          "input": {
+            "query": "getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "nativeKeys =",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function arrayLikeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "357007babe6188617897e6bbd79cb05903ae4d03500262c915440a71d9f6c98f",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-reporting",
+      "id": "lodash-own-symbol-options",
+      "arm": "reporting",
+      "repetition": 2,
+      "searchCalls": 13,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 13,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keys =",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "values =",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "own enumerable property names",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "Gets the values of",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keys(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "values(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keys(",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "Creates an array of the own enumerable string keyed property names",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keysIn(",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "2b10a8cd806e79e86a4154bb7b61a20d32d90b10242a81a4287d8953e8906f85",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-reading",
+      "id": "lodash-own-symbol-options",
+      "arm": "reading",
+      "repetition": 2,
+      "searchCalls": 10,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 11,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 11,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "guidance-symbols",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 1
+        },
+        {
+          "input": {
+            "query": "function keys(",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values(",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function getAllKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "nativeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 4
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "76fa971ce1167869cd7da936e2bbd9cbb24551fdeff524a93512456dd85bb9db",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-rename",
+      "id": "lodash-own-symbol-options",
+      "arm": "rename",
+      "repetition": 2,
+      "searchCalls": 11,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 13,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "guidance-symbols",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 1
+        },
+        {
+          "input": {
+            "query": "_.keys _.values",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keys(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function arrayLikeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function nativeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getOwnPropertySymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 1
+        },
+        {
+          "input": {
+            "query": "nativeGetSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 4
+        },
+        {
+          "input": {
+            "query": "Object.getOwnPropertySymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 1
+        },
+        {
+          "input": {
+            "query": "getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "92b257ab2cdb489a3f3bb9e65c744cc0328d13402683ef66849a576531b11a18",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-references",
+      "id": "lodash-own-symbol-options",
+      "arm": "references",
+      "repetition": 2,
+      "searchCalls": 8,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 2,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 13,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 2,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 2,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "lodash.js#keys",
+            "scope": "lodash.js",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "lodash.js#values",
+            "scope": "lodash.js",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "keys(object)",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "values(object)",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 4
+        },
+        {
+          "input": {
+            "query": "getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "nativeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 4
+        }
+      ],
+      "eventsSha256": "7e139750becc1edf4bfea442e3823bbcdb8bffc9accb809914ba1f97bfe4aa15",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-cline",
+      "id": "lodash-own-symbol-options",
+      "arm": "cline",
+      "repetition": 2,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 5,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 17,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "404501b7645092d28b40c9aea1c017bebdd49910ce0703a7ebf9aefdbb42ed7b",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-lodash-own-symbol-options-scope",
+      "id": "lodash-own-symbol-options",
+      "arm": "scope",
+      "repetition": 2,
+      "searchCalls": 11,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 10,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keys(",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keys =",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "values =",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseValues",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "Object.keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 3
+        },
+        {
+          "input": {
+            "query": "baseKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 6
+        },
+        {
+          "input": {
+            "query": "baseValues",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 4
+        },
+        {
+          "input": {
+            "query": "getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "015242dc2909a68866bf7153d325c1f6134c94d722085d27c7bf1d4f43645848",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-cline",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "cline",
+      "repetition": 3,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 4,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 15,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "8977030c50fdde2755d0d362e5735081ef1e5fb61bf3ec4b4adcf241e7eb5db0",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-references",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "references",
+      "repetition": 3,
+      "searchCalls": 7,
+      "rootStarCalls": 1,
+      "rootStarEmpty": 1,
+      "emptySearches": 4,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 16,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 16,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src spec docs_app integration",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s1",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/internal/util/reportUnhandledError.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "src spec integration docs_app",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src spec integration docs_app",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "5e78c08b9a4f0cfb47f0add80550f45bfdf8145f8d555782142ac25ce3f14bfb",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-rename",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "rename",
+      "repetition": 3,
+      "searchCalls": 7,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 3,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 2,
+      "readCalls": 13,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "src/internal/util/reportUnhandledError.ts#reportUnhandledError",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "90d8d5c54f1ca2cd99a6aeaf4792f3ebf4bf9d7597b8af90f975e11c64061dd6",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-reading",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "reading",
+      "repetition": 3,
+      "searchCalls": 2,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 11,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 11,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ],
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "fe8b45dd6cb8f79003c50d4b915841df7cd11d8062f79ab6409fadc9e1671ed7",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-reporting",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "reporting",
+      "repetition": 3,
+      "searchCalls": 4,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 6,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 6,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src/**",
+              "spec/**",
+              "spec-dtslint/**",
+              "integration/**",
+              "docs_app/**"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src/**",
+              "spec/**",
+              "spec-dtslint/**",
+              "integration/**",
+              "docs_app/**"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": [
+              "src/**",
+              "spec/**",
+              "spec-dtslint/**",
+              "integration/**",
+              "docs_app/**"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "a71e6f4ef93d16db0719e4e3237e05d39698954fca532873f22a7588348f43ef",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-patch",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "patch",
+      "repetition": 3,
+      "searchCalls": 8,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 5,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 10,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "integration"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s1",
+            "mode": "references",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/internal",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec-dtslint",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "integration",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "af359e1ac7024eb7a35f819fdbb6019d7b2bc313fae7a700ceaa734c27156607",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-bundle",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "bundle",
+      "repetition": 3,
+      "searchCalls": 6,
+      "rootStarCalls": 4,
+      "rootStarEmpty": 4,
+      "emptySearches": 5,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 18,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 18,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ]
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s2",
+            "scope": "*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "0518a0417a08391f94f3c765529cec50f655757bbfff1b7df8eba88fd29c89b7",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-baseline",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "baseline",
+      "repetition": 3,
+      "searchCalls": 9,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 3,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 2,
+      "readCalls": 10,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**/*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "**/*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**/*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "9d154182d12af9c45e76eebece9bf8e496807647b05566ed42b6e726a0c1472f",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-scope",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "scope",
+      "repetition": 3,
+      "searchCalls": 9,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 5,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 8,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 8,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "src/internal/util/reportUnhandledError.ts#reportUnhandledError",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec-dtslint",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "integration",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "93d647f48aca50aca116585939be2b42ce2bea1d2cc3386b440af4487698630e",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-reading",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "reading",
+      "repetition": 3,
+      "searchCalls": 15,
+      "rootStarCalls": 2,
+      "rootStarEmpty": 2,
+      "emptySearches": 7,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 3,
+      "readCalls": 17,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 17,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 2,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "examples",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "scripts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "docs",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s3",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s3",
+            "scope": "*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/_lib",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "src/_lib/getTimezoneOffsetInMilliseconds/index.ts",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 1
+        }
+      ],
+      "eventsSha256": "119c0baaddbe610c5473305baa18e8de29f8e1ccb7cf8c1d5e7a3a335c9a1c22",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://0525132a59ccf0bc5ac5c87fc31459bd18d358a0767de380e36bba5f66b5d75f",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-reporting",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "reporting",
+      "repetition": 3,
+      "searchCalls": 12,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 4,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 7,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 7,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src test examples scripts docs",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s1",
+            "scope": "src test examples scripts docs",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "examples scripts docs",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/_lib/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/_lib/guidance-navigation-fixture.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 6
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "2707727408a4b6bf654201ea85b059f1d08c047934d094564e39d5e5d06d6f31",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://f561879b59d0216af6c21a3cbdf7229b5325b13bdca8ef95d0e9b4ff258cdfdd",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-patch",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "patch",
+      "repetition": 3,
+      "searchCalls": 9,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 2,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 5,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 5,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/**",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "test/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "navigation",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 1
+        },
+        {
+          "input": {
+            "query": "s3",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "examples",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "31f157edb8c3bdff531611d8ba0ec054bf1f4ba801d92af2633801ec5fef586c",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://191b350d7766ad6e9a1370d4e327c2ef5738c680341d9e899c277518d9faf1c2",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-bundle",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "bundle",
+      "repetition": 3,
+      "searchCalls": 3,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 11,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 11,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples"
+            ],
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "src/_lib/getTimezoneOffsetInMilliseconds/index.ts#getTimezoneOffsetInMilliseconds",
+            "mode": "references",
+            "scope": [
+              "src",
+              "test",
+              "examples"
+            ]
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "6d91af622021ca486bd2081ae87b2e6aff3ad02ff7b9ecab47d8fb878306b777",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://0e053954bf7044f6ccde0d45dfe34463f04ced1114b56c17e0a30dd6c1e86232",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-baseline",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "baseline",
+      "repetition": 3,
+      "searchCalls": 6,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 11,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 11,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "codemods"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "src/_lib/getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "codemods"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "s1",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "codemods"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "codemods"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "6841fe891eea3baa37a1f4d678b3eeee20398b38e8e758be9b939572bb3d0319",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://e8f6fd5a08c6a65df05b59cc01e5d1d0be4be4ff002d01277ed531ef0a76ffc9",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-scope",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "scope",
+      "repetition": 3,
+      "searchCalls": 8,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 2,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 10,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "docs"
+            ],
+            "mode": "auto"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "s3",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "test",
+              "examples",
+              "scripts",
+              "docs"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds as",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/_lib",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/differenceIn*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "14cca58a9be240f4fbe94e05a5a6c45916bf8a5de1bd32685ab0db3e0d9d60a3",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://d8300bbd9bcc9035cd9d2c6ed1fe76dcbc69922d01e282412ad65e428cb0286e",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-cline",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "cline",
+      "repetition": 3,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 3,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 9,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "734938996dcd3f1100c08d71993540701e25f5b4c41e20319895319f40c65a04",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-references",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "references",
+      "repetition": 3,
+      "searchCalls": 6,
+      "rootStarCalls": 2,
+      "rootStarEmpty": 2,
+      "emptySearches": 4,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 9,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 9,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src test examples",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "test",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "src/_lib/getTimezoneOffsetInMilliseconds/index.ts#getTimezoneOffsetInMilliseconds",
+            "scope": "*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "8240b035afec982d0d091ba3e77e49735939234ecdaefe64ea31a3063cc82860",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://5bb48f1f026890a70bea509c4472e6abab294a0bec58a94baf5af5abcdf9d12e",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-rename",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "rename",
+      "repetition": 3,
+      "searchCalls": 7,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 4,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 7,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 7,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "docs"
+            ],
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "s3",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "examples",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "scripts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "docs",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "07cd1ef8f5b2e5826fed2dadb6354d77f7d082174a9bdf1131ec71aba574bbfb",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://93bf29dcb11ec65aa838300b72ee8ff24d2da6cc229c1bd4b15918dee9a69f37",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
     }
   ]
 }

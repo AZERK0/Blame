@@ -4408,5 +4408,1895 @@
     "artifact": "traces/2-rxjs-promise-abort-config-patch.model-exit.json.gz",
     "bytes": 4600,
     "sha256": "f89bdfb87d0a3aa09c1a5198fd401315515e7da8ae8022ab500a7a7894e9fe85"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-lodash-own-symbol-options-baseline.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-lodash-own-symbol-options-baseline.events.jsonl.gz",
+    "bytes": 117692,
+    "sha256": "dc7a6ae8841363ecc47b0a1cee556e08ed88d12bbb48e48bd5c1fb596fda76fb"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-baseline",
+    "file": "result.json",
+    "artifact": "traces/2-lodash-own-symbol-options-baseline.result.json.gz",
+    "bytes": 4871,
+    "sha256": "47f3cfad48626c2ce11e85db6b35ac28e8f721d4a8f5a6f5d1f7f55e2f29fc8d"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-lodash-own-symbol-options-baseline.workspace.diff.gz",
+    "bytes": 863,
+    "sha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-baseline",
+    "file": "trial.json",
+    "artifact": "traces/2-lodash-own-symbol-options-baseline.trial.json.gz",
+    "bytes": 4782,
+    "sha256": "55d675bc09cdcc85f10eac4573c48099c99da155b5682f7665bb8d1eaa26e791"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-baseline",
+    "file": "score.json",
+    "artifact": "traces/2-lodash-own-symbol-options-baseline.score.json.gz",
+    "bytes": 7304,
+    "sha256": "c7e72475e918fe2f7ae60bf5803607b681672144d9cce4e3562dceb76586d282"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/2-lodash-own-symbol-options-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/2-lodash-own-symbol-options-baseline.model-start.json.gz",
+    "bytes": 206,
+    "sha256": "03cf9300fe3b8a6af0693e39bb839cfb5073a499f631cea7b50c1190e73ade4c"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/2-lodash-own-symbol-options-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "e87c39cc72c014f3e7944c655843b3dc2a291f494d82dbc90842a1412df3054e"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/2-lodash-own-symbol-options-baseline.model-exit.json.gz",
+    "bytes": 4576,
+    "sha256": "b073728994760eee720216e6b671262263d03579d5bcdbf0ae41ad7162f2b917"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-bundle",
+    "file": "instruction.txt",
+    "artifact": "traces/2-lodash-own-symbol-options-bundle.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-bundle",
+    "file": "events.jsonl",
+    "artifact": "traces/2-lodash-own-symbol-options-bundle.events.jsonl.gz",
+    "bytes": 113386,
+    "sha256": "08f7fde82f9cead1e341033658e37ba382a00c285d10f11e541ee46b88b3ddf8"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-bundle",
+    "file": "result.json",
+    "artifact": "traces/2-lodash-own-symbol-options-bundle.result.json.gz",
+    "bytes": 4845,
+    "sha256": "7c9e943637c1a9527155faa0c14071cf85035738341a661107770d7b2e0061ee"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-bundle",
+    "file": "workspace.diff",
+    "artifact": "traces/2-lodash-own-symbol-options-bundle.workspace.diff.gz",
+    "bytes": 871,
+    "sha256": "526522aef6b2b58210fefdf583a8974a6d0d854a93adb1714849818fdf4e683b"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-bundle",
+    "file": "trial.json",
+    "artifact": "traces/2-lodash-own-symbol-options-bundle.trial.json.gz",
+    "bytes": 5676,
+    "sha256": "e822d8dab95c83630d064201010e1136fe04b79ebfddd839f53b8b019573eb08"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-bundle",
+    "file": "score.json",
+    "artifact": "traces/2-lodash-own-symbol-options-bundle.score.json.gz",
+    "bytes": 7310,
+    "sha256": "fe2fe477a53d9713b086539aaaeb2e1bc9053fc69cf2942e08c01f7d0c55ae98"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-bundle",
+    "file": "required-checks.json",
+    "artifact": "traces/2-lodash-own-symbol-options-bundle.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-bundle",
+    "file": "model-start.json",
+    "artifact": "traces/2-lodash-own-symbol-options-bundle.model-start.json.gz",
+    "bytes": 204,
+    "sha256": "8ecb0ffc177704cbf0739a25faa0a10f16258376a274fa7e81e7b6908e08f07c"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-bundle",
+    "file": "model-child.json",
+    "artifact": "traces/2-lodash-own-symbol-options-bundle.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "986468cd2a74549dea55c5c89caadf3620af57c08adcb9323006d56c58377f0e"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-bundle",
+    "file": "model-exit.json",
+    "artifact": "traces/2-lodash-own-symbol-options-bundle.model-exit.json.gz",
+    "bytes": 5474,
+    "sha256": "fc43bf034013f5af2d2303e2cc1e317b20f6f5c46565d741d4da8b852d3c4477"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-patch",
+    "file": "instruction.txt",
+    "artifact": "traces/2-lodash-own-symbol-options-patch.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-patch",
+    "file": "events.jsonl",
+    "artifact": "traces/2-lodash-own-symbol-options-patch.events.jsonl.gz",
+    "bytes": 103084,
+    "sha256": "357007babe6188617897e6bbd79cb05903ae4d03500262c915440a71d9f6c98f"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-patch",
+    "file": "result.json",
+    "artifact": "traces/2-lodash-own-symbol-options-patch.result.json.gz",
+    "bytes": 4838,
+    "sha256": "d0febfe0d470858ee0e968f5eeaa39ce68a927b9177e7fc35109330234790da1"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-patch",
+    "file": "workspace.diff",
+    "artifact": "traces/2-lodash-own-symbol-options-patch.workspace.diff.gz",
+    "bytes": 863,
+    "sha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-patch",
+    "file": "trial.json",
+    "artifact": "traces/2-lodash-own-symbol-options-patch.trial.json.gz",
+    "bytes": 4968,
+    "sha256": "658319c38acaf13a275a6fe48929c2edb99834dad4d4bb059556d1d4eaa3fe87"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-patch",
+    "file": "score.json",
+    "artifact": "traces/2-lodash-own-symbol-options-patch.score.json.gz",
+    "bytes": 7283,
+    "sha256": "ba614ff34b96e84dcda3f3d3254ee93f3c533760c7addd9fa8ad4ff31e006dbf"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-patch",
+    "file": "required-checks.json",
+    "artifact": "traces/2-lodash-own-symbol-options-patch.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-patch",
+    "file": "model-start.json",
+    "artifact": "traces/2-lodash-own-symbol-options-patch.model-start.json.gz",
+    "bytes": 203,
+    "sha256": "29b67bce129a2f514ab6ff473a0b446cdd472ccec63dff999d8e1f5a08dd907c"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-patch",
+    "file": "model-child.json",
+    "artifact": "traces/2-lodash-own-symbol-options-patch.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "acb46b9f09dde50f9716fd6cd79c9714dc06926b5af7c799771b956d73fe59fc"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-patch",
+    "file": "model-exit.json",
+    "artifact": "traces/2-lodash-own-symbol-options-patch.model-exit.json.gz",
+    "bytes": 4770,
+    "sha256": "917a7d7dbdb0ac40411d415bb4b8c4794eae26f80f14455dba569eabbc69ae56"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reporting",
+    "file": "instruction.txt",
+    "artifact": "traces/2-lodash-own-symbol-options-reporting.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reporting",
+    "file": "events.jsonl",
+    "artifact": "traces/2-lodash-own-symbol-options-reporting.events.jsonl.gz",
+    "bytes": 127833,
+    "sha256": "2b10a8cd806e79e86a4154bb7b61a20d32d90b10242a81a4287d8953e8906f85"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reporting",
+    "file": "result.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reporting.result.json.gz",
+    "bytes": 4853,
+    "sha256": "c5c9bc2f7ee20e9b58bae9fa12781f049296a284dc3e90af546c7642a36092a0"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reporting",
+    "file": "workspace.diff",
+    "artifact": "traces/2-lodash-own-symbol-options-reporting.workspace.diff.gz",
+    "bytes": 863,
+    "sha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reporting",
+    "file": "trial.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reporting.trial.json.gz",
+    "bytes": 4978,
+    "sha256": "c9fd2776b9f274d68f507ffe806c0fddebd3ebf9075b9317b4d310d1970997a0"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reporting",
+    "file": "score.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reporting.score.json.gz",
+    "bytes": 7309,
+    "sha256": "1b6f08133f9974446aa43d9fec3b0bcb3cbecfee301f1d15c35380b15006e787"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reporting",
+    "file": "required-checks.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reporting.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reporting",
+    "file": "model-start.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reporting.model-start.json.gz",
+    "bytes": 207,
+    "sha256": "55c9c4d1a828a8222e1300e1ee9f0f7ef6bf20c3d0fffa41a0095e51a9d0fea7"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reporting",
+    "file": "model-child.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reporting.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "5640396dbe1bb4912fa78b7c771297aa7e7bdcfca6c33dfd8d25e3700dd471ec"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reporting",
+    "file": "model-exit.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reporting.model-exit.json.gz",
+    "bytes": 4771,
+    "sha256": "f098047ba23b009bfbbc918fbd962f8ae6cf72372c46b2e18ada632316cfbcdc"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reading",
+    "file": "instruction.txt",
+    "artifact": "traces/2-lodash-own-symbol-options-reading.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reading",
+    "file": "events.jsonl",
+    "artifact": "traces/2-lodash-own-symbol-options-reading.events.jsonl.gz",
+    "bytes": 135081,
+    "sha256": "76fa971ce1167869cd7da936e2bbd9cbb24551fdeff524a93512456dd85bb9db"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reading",
+    "file": "result.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reading.result.json.gz",
+    "bytes": 4877,
+    "sha256": "51ca7a6b4adc515cc90a6a6ecaede1e972a8884fe1573e3d023a395da34c81b2"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reading",
+    "file": "workspace.diff",
+    "artifact": "traces/2-lodash-own-symbol-options-reading.workspace.diff.gz",
+    "bytes": 911,
+    "sha256": "08fdf33effd17e34cb1a3e05fe0ca79250e834c57707ef91f341744862b7c58b"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reading",
+    "file": "trial.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reading.trial.json.gz",
+    "bytes": 5169,
+    "sha256": "8689a9da78ad518db12655fbe664e764879007068124656a3b92ebc021ce5349"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reading",
+    "file": "score.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reading.score.json.gz",
+    "bytes": 7316,
+    "sha256": "61a44455db9f8d6aa0d3c98e14516e528cd8d02b2883996d0300878f3640a8da"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reading",
+    "file": "required-checks.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reading.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reading",
+    "file": "model-start.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reading.model-start.json.gz",
+    "bytes": 205,
+    "sha256": "b52df0f128c46d667531b79a247450720f96a7850ecc512be1e2715bf5f77929"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reading",
+    "file": "model-child.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reading.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "1d89ae9b63d27b11818991c503663c5c2711bf24cdb81253c1bdd9a6785b89d3"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-reading",
+    "file": "model-exit.json",
+    "artifact": "traces/2-lodash-own-symbol-options-reading.model-exit.json.gz",
+    "bytes": 4966,
+    "sha256": "6155157a61b5453f0687a00c470f4b6e831ee515bec9cc79286406362c149d31"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-rename",
+    "file": "instruction.txt",
+    "artifact": "traces/2-lodash-own-symbol-options-rename.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-rename",
+    "file": "events.jsonl",
+    "artifact": "traces/2-lodash-own-symbol-options-rename.events.jsonl.gz",
+    "bytes": 131244,
+    "sha256": "92b257ab2cdb489a3f3bb9e65c744cc0328d13402683ef66849a576531b11a18"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-rename",
+    "file": "result.json",
+    "artifact": "traces/2-lodash-own-symbol-options-rename.result.json.gz",
+    "bytes": 4857,
+    "sha256": "fc5700bae143257d96365eb9a1abc0091754a53ecfcd99cbb2d3bb3247f628fb"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-rename",
+    "file": "workspace.diff",
+    "artifact": "traces/2-lodash-own-symbol-options-rename.workspace.diff.gz",
+    "bytes": 874,
+    "sha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-rename",
+    "file": "trial.json",
+    "artifact": "traces/2-lodash-own-symbol-options-rename.trial.json.gz",
+    "bytes": 5346,
+    "sha256": "c5500eb0dcee0ff5b216a413151541ea89c76c97011780b415b2c30f015dea8b"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-rename",
+    "file": "score.json",
+    "artifact": "traces/2-lodash-own-symbol-options-rename.score.json.gz",
+    "bytes": 7309,
+    "sha256": "8a73bba3ccc8e1fc21e7fd7ddab24dcc029441e5722ff456d8df1c51d52cf6a5"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-rename",
+    "file": "required-checks.json",
+    "artifact": "traces/2-lodash-own-symbol-options-rename.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-rename",
+    "file": "model-start.json",
+    "artifact": "traces/2-lodash-own-symbol-options-rename.model-start.json.gz",
+    "bytes": 204,
+    "sha256": "6933c257d6f4442de6865ac305fc966861c55b9db28c6e8ee859e8b730225cfc"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-rename",
+    "file": "model-child.json",
+    "artifact": "traces/2-lodash-own-symbol-options-rename.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "dc6d850089ccef3b0323b2eb0190c5d72d86e6449e3aca3c66c49b9648405052"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-rename",
+    "file": "model-exit.json",
+    "artifact": "traces/2-lodash-own-symbol-options-rename.model-exit.json.gz",
+    "bytes": 5146,
+    "sha256": "bffbbfad0261c9f19d641b047237499312993c9caa3aef89ae98a8ab5364df0c"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-references",
+    "file": "instruction.txt",
+    "artifact": "traces/2-lodash-own-symbol-options-references.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-references",
+    "file": "events.jsonl",
+    "artifact": "traces/2-lodash-own-symbol-options-references.events.jsonl.gz",
+    "bytes": 111283,
+    "sha256": "7e139750becc1edf4bfea442e3823bbcdb8bffc9accb809914ba1f97bfe4aa15"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-references",
+    "file": "result.json",
+    "artifact": "traces/2-lodash-own-symbol-options-references.result.json.gz",
+    "bytes": 4853,
+    "sha256": "50539b2bae151470c8514bdd4786d191a1b4efae30f3a21f8a243c2182c41b6d"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-references",
+    "file": "workspace.diff",
+    "artifact": "traces/2-lodash-own-symbol-options-references.workspace.diff.gz",
+    "bytes": 874,
+    "sha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-references",
+    "file": "trial.json",
+    "artifact": "traces/2-lodash-own-symbol-options-references.trial.json.gz",
+    "bytes": 5118,
+    "sha256": "371fe005dd7eb88c4cb5ade9f28beb83eea650e6bf5affe6aee189861100a942"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-references",
+    "file": "score.json",
+    "artifact": "traces/2-lodash-own-symbol-options-references.score.json.gz",
+    "bytes": 7317,
+    "sha256": "8409f0ce6bf5cdc85dde574311f60367c0f9113ffb94e8f387eb89c3b16ce270"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-references",
+    "file": "required-checks.json",
+    "artifact": "traces/2-lodash-own-symbol-options-references.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-references",
+    "file": "model-start.json",
+    "artifact": "traces/2-lodash-own-symbol-options-references.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "26978dbb95e9153369ec4dd63bc39997eee78afc07d0d45a0a9f85b10a22af66"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-references",
+    "file": "model-child.json",
+    "artifact": "traces/2-lodash-own-symbol-options-references.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "be9e545300f6e9a2bf2cee3d86c6effc152cdfb5da455528fca0dd48823bbbac"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-references",
+    "file": "model-exit.json",
+    "artifact": "traces/2-lodash-own-symbol-options-references.model-exit.json.gz",
+    "bytes": 4909,
+    "sha256": "3263fc87ac38fbedafaf33bd3ab6534c033b1094aca9f17d0cf400807369ff43"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-lodash-own-symbol-options-cline.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-lodash-own-symbol-options-cline.events.jsonl.gz",
+    "bytes": 438365,
+    "sha256": "404501b7645092d28b40c9aea1c017bebdd49910ce0703a7ebf9aefdbb42ed7b"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-cline",
+    "file": "result.json",
+    "artifact": "traces/2-lodash-own-symbol-options-cline.result.json.gz",
+    "bytes": 3705,
+    "sha256": "b70b9375fc2eb0d5f391c1a9105c50e0d61399e8d8063287a47f18f37eb84464"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-lodash-own-symbol-options-cline.workspace.diff.gz",
+    "bytes": 844,
+    "sha256": "552b5297f1991c3a5720f61493efac0e087588ca55dd948a563599961853dddc"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-cline",
+    "file": "trial.json",
+    "artifact": "traces/2-lodash-own-symbol-options-cline.trial.json.gz",
+    "bytes": 4701,
+    "sha256": "1c0bb90224ca8e432453a1cf70ed08c6f586cad6248283b323076ea449e7995b"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-cline",
+    "file": "score.json",
+    "artifact": "traces/2-lodash-own-symbol-options-cline.score.json.gz",
+    "bytes": 7285,
+    "sha256": "205281d22f5c09d0338bf5069453f15f0342264cd827c4b5b8998caee3ce1ed3"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/2-lodash-own-symbol-options-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-cline",
+    "file": "model-start.json",
+    "artifact": "traces/2-lodash-own-symbol-options-cline.model-start.json.gz",
+    "bytes": 203,
+    "sha256": "388b7b94d8829e0c263ca46e66618912218245b0ac110cd84aa7a28aca3b952d"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-cline",
+    "file": "model-child.json",
+    "artifact": "traces/2-lodash-own-symbol-options-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "d8effc50e8fb70d48226d717e2bb10b84bf95cab0ab7aac3b388b8df4eb44fe7"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/2-lodash-own-symbol-options-cline.model-exit.json.gz",
+    "bytes": 4501,
+    "sha256": "6bb6aefa5136a9aacbe98e69930d160bfbde01f0293b0f4564aba501022687a0"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-scope",
+    "file": "instruction.txt",
+    "artifact": "traces/2-lodash-own-symbol-options-scope.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-scope",
+    "file": "events.jsonl",
+    "artifact": "traces/2-lodash-own-symbol-options-scope.events.jsonl.gz",
+    "bytes": 103902,
+    "sha256": "015242dc2909a68866bf7153d325c1f6134c94d722085d27c7bf1d4f43645848"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-scope",
+    "file": "result.json",
+    "artifact": "traces/2-lodash-own-symbol-options-scope.result.json.gz",
+    "bytes": 4845,
+    "sha256": "fdaaad83027624aaab5da045bac350d91cdf274cc3c19ce9eb1ea8d5a9594362"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-scope",
+    "file": "workspace.diff",
+    "artifact": "traces/2-lodash-own-symbol-options-scope.workspace.diff.gz",
+    "bytes": 911,
+    "sha256": "08fdf33effd17e34cb1a3e05fe0ca79250e834c57707ef91f341744862b7c58b"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-scope",
+    "file": "trial.json",
+    "artifact": "traces/2-lodash-own-symbol-options-scope.trial.json.gz",
+    "bytes": 5319,
+    "sha256": "2c7abbb6843fde947274412ce1454ca15aed91fb641614469b86318f46028f56"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-scope",
+    "file": "score.json",
+    "artifact": "traces/2-lodash-own-symbol-options-scope.score.json.gz",
+    "bytes": 7301,
+    "sha256": "8e4eff95bb75f8c67a1dfd0289d20a2d62c244540561abeaeb5523338831165a"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-scope",
+    "file": "required-checks.json",
+    "artifact": "traces/2-lodash-own-symbol-options-scope.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-scope",
+    "file": "model-start.json",
+    "artifact": "traces/2-lodash-own-symbol-options-scope.model-start.json.gz",
+    "bytes": 203,
+    "sha256": "2d437063e6d25831e826ef9b0adfc07ddbdb00e28d8de445641bbc43ec93636a"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-scope",
+    "file": "model-child.json",
+    "artifact": "traces/2-lodash-own-symbol-options-scope.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "b03eef417ffa2fc59c7af6b5d6672282985053ab93b3a4617d973b2bbdb0651d"
+  },
+  {
+    "trial": "2-lodash-own-symbol-options-scope",
+    "file": "model-exit.json",
+    "artifact": "traces/2-lodash-own-symbol-options-scope.model-exit.json.gz",
+    "bytes": 5119,
+    "sha256": "d447a7d548caf306589283bdb7f1187d3867bea864d97430da0a09b4f36121f3"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-cline.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-cline.events.jsonl.gz",
+    "bytes": 477824,
+    "sha256": "8977030c50fdde2755d0d362e5735081ef1e5fb61bf3ec4b4adcf241e7eb5db0"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-cline",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-cline.result.json.gz",
+    "bytes": 3734,
+    "sha256": "54e19c39cead918504931cd863a826dda8b5a43ee6e45e57aa8fc16ac169d722"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-cline.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-cline",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-cline.trial.json.gz",
+    "bytes": 5890,
+    "sha256": "154ea9f2b7f1a2de14f45586c4a30094e0333fb95762f99acde0aa963882eaac"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-cline",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-cline.score.json.gz",
+    "bytes": 16825,
+    "sha256": "77f42fd838890ac92ed98d7645ece61101781b26963d0e16c80458834570b20d"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-cline",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-cline.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "cdc6b7a0f518575a20d335fab87181c304193c06d65ab76206abfb7fd0534de2"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-cline",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "769d32bd65ff4dc039df443129b1ab4baf1c62746e2a7470714a675d53b21259"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-cline.model-exit.json.gz",
+    "bytes": 5680,
+    "sha256": "78b1c654e84b4c9e3982e67205845f34f4fc923ea12ce0dbef38b7a8d610507c"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-references",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-references.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-references",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-references.events.jsonl.gz",
+    "bytes": 89506,
+    "sha256": "5e78c08b9a4f0cfb47f0add80550f45bfdf8145f8d555782142ac25ce3f14bfb"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-references",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-references.result.json.gz",
+    "bytes": 4794,
+    "sha256": "c99a82978e77c164d3d30fd9c562b25874df4f8a76f48039d0c83d17955f3b8b"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-references",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-references.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-references",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-references.trial.json.gz",
+    "bytes": 5621,
+    "sha256": "c5c64e3eca93298f2536dead93539a242926d18ee6e760efde05e11b544910cc"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-references",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-references.score.json.gz",
+    "bytes": 16853,
+    "sha256": "d2f2994634d81cf1d13397366b5dcd45aeab76f10ed917ea4cf4d3f9b2d62041"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-references",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-references.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-references",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-references.model-start.json.gz",
+    "bytes": 213,
+    "sha256": "8d8a6ef8525a1b0ecfa11b3feba30f5d86810723d162e06c184489f008b05b89"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-references",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-references.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "4788162f3d3bd64079221ea3cee8d71d1929722afe53e18f802a62baf129c13e"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-references",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-references.model-exit.json.gz",
+    "bytes": 5400,
+    "sha256": "137f1a3870908e29020d02263259218e707b639d2c9510a4581afe5db07b1070"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-rename",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-rename.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-rename",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-rename.events.jsonl.gz",
+    "bytes": 110573,
+    "sha256": "90d8d5c54f1ca2cd99a6aeaf4792f3ebf4bf9d7597b8af90f975e11c64061dd6"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-rename",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-rename.result.json.gz",
+    "bytes": 4778,
+    "sha256": "1d1c9cec7f98b7eb013aeb0f13623a2573fa21ade48b40fdc596f4894bec5a10"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-rename",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-rename.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-rename",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-rename.trial.json.gz",
+    "bytes": 5052,
+    "sha256": "d614dee1a440677c7813efc75112bb3ad66ea55cca2384ae65b7382b82bed5ee"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-rename",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-rename.score.json.gz",
+    "bytes": 16830,
+    "sha256": "725b515ae3bcc19305bac54a63f08c94c942559f96001cb8ead4703dd4bbeb35"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-rename",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-rename.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-rename",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-rename.model-start.json.gz",
+    "bytes": 209,
+    "sha256": "f26f7726fe45816f7a1b3cbcb59a79369a8704af44c16f43e72e3216f9948cea"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-rename",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-rename.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "f2a71f8ac8ba44c1eda12dcf451c7ae8f5ae8c799a707a8c6023e872cf22ab8f"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-rename",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-rename.model-exit.json.gz",
+    "bytes": 4842,
+    "sha256": "4735473265897a19653c717ee2295915fe1389d10e66cf9634417245749b4280"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reading",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reading.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reading",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reading.events.jsonl.gz",
+    "bytes": 102072,
+    "sha256": "fe8b45dd6cb8f79003c50d4b915841df7cd11d8062f79ab6409fadc9e1671ed7"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reading",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reading.result.json.gz",
+    "bytes": 4776,
+    "sha256": "a840ca120b1b672a5a91d61787ec7ce7ba9cc47a85ad490f2755f55d0d150f10"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reading",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reading.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reading",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reading.trial.json.gz",
+    "bytes": 5943,
+    "sha256": "49df9cafdb992ae8e92e74e7972a99a624d51e906f19ace4c973d95d26d6cb1d"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reading",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reading.score.json.gz",
+    "bytes": 16837,
+    "sha256": "b47e7b8715fae70b94feceed4cadebf8d2b84cbd29dcbb54b47181c2104f003c"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reading",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reading.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reading",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reading.model-start.json.gz",
+    "bytes": 210,
+    "sha256": "cc325f1144c7ea1ed856262d6db4648bdcee2d4f1e6e12b8199f3563ca32d6b6"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reading",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reading.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "81e4e7ebc9a9acf97705b40cb1318e5231c7fe4d22a830b45a3d836c254d6539"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reading",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reading.model-exit.json.gz",
+    "bytes": 5730,
+    "sha256": "3338d02d018b916ea4693254d411298fc8f5e7aa45468bfa505654192004c70c"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reporting",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reporting.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reporting",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reporting.events.jsonl.gz",
+    "bytes": 74111,
+    "sha256": "a71e6f4ef93d16db0719e4e3237e05d39698954fca532873f22a7588348f43ef"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reporting",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reporting.result.json.gz",
+    "bytes": 4766,
+    "sha256": "ecdbb64cde5641c5e776a298536870359fc2fb80b88b93bee6bda3913323ed8c"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reporting",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reporting.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reporting",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reporting.trial.json.gz",
+    "bytes": 5231,
+    "sha256": "f6e5f8247e7d36d42c5bbe2cf4c77ae1a193b0ff35664524953102b327818972"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reporting",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reporting.score.json.gz",
+    "bytes": 16846,
+    "sha256": "287b19b64f413b13cbd25c320e666b5cfad79144efd45ef7536e26691fc88353"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reporting",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reporting.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reporting",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reporting.model-start.json.gz",
+    "bytes": 212,
+    "sha256": "7953e5d33c8e1133bd9eedcddba9f4403366d20b2ca0b5bfc53fbd9f4bdc7616"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reporting",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reporting.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "69e5303dbbe150daf503eb0ac5afc9be143fef66e5901f1d7034ec3248da00f1"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-reporting",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-reporting.model-exit.json.gz",
+    "bytes": 5014,
+    "sha256": "be3426f8879c60cc7326bebad6802f4470c542daf80662e68a982e2813c296be"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-patch",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-patch.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-patch",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-patch.events.jsonl.gz",
+    "bytes": 110739,
+    "sha256": "af359e1ac7024eb7a35f819fdbb6019d7b2bc313fae7a700ceaa734c27156607"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-patch",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-patch.result.json.gz",
+    "bytes": 4771,
+    "sha256": "0edace2e18a951fc76b1abc035aeb6f76342e8209edb0cdd653649dcee18be7d"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-patch",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-patch.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-patch",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-patch.trial.json.gz",
+    "bytes": 4802,
+    "sha256": "93c3f53fd3ffa2b2989cddaab090238118b59224394a420c63441b925b8679de"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-patch",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-patch.score.json.gz",
+    "bytes": 16827,
+    "sha256": "198ccdae90623fbe01861db6e8ec30a2bd7579634c07a031601d7a773b500cb2"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-patch",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-patch.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-patch",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-patch.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "c2f409e46ccc9f067e0027aaf9e96d85adfc8996eeffd438c036ee747cbfe266"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-patch",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-patch.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "c587b724cc4ee816fb143d7d6876b96069a618184750bcfd8b491111dc3bc3ba"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-patch",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-patch.model-exit.json.gz",
+    "bytes": 4591,
+    "sha256": "fb3e563fec1f6ed17f09583b87bb748dc316d0bdf31e771092c2aa28d908d732"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-bundle",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-bundle.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-bundle",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-bundle.events.jsonl.gz",
+    "bytes": 136300,
+    "sha256": "0518a0417a08391f94f3c765529cec50f655757bbfff1b7df8eba88fd29c89b7"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-bundle",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-bundle.result.json.gz",
+    "bytes": 4901,
+    "sha256": "8b98f59407b0ccd71377a1bebf32a7bb77af916793024c57e831372254d69808"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-bundle",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-bundle.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-bundle",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-bundle.trial.json.gz",
+    "bytes": 5524,
+    "sha256": "d28a5a95cbb26e3dbd3a3b24f8e895981323ec517dbbdc3c4ee2c7bccc490761"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-bundle",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-bundle.score.json.gz",
+    "bytes": 16831,
+    "sha256": "7d072338f3c64427ab63f0544d9265ae6044b9746ef39271801fd43e2257d302"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-bundle",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-bundle.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-bundle",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-bundle.model-start.json.gz",
+    "bytes": 209,
+    "sha256": "820290dc8f42d574473e3fe2dfbcbbe39bc96d40626a12eb3c488aef51465219"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-bundle",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-bundle.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "08025c817e2aac46b3ce29eb298b74f3e0d114d9cb11b07a773c8956e61feb10"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-bundle",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-bundle.model-exit.json.gz",
+    "bytes": 5313,
+    "sha256": "337b5b3474601d29b1acb18fce17c350b9e270e820287994a2b228a6663f7c07"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-baseline.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-baseline.events.jsonl.gz",
+    "bytes": 95976,
+    "sha256": "9d154182d12af9c45e76eebece9bf8e496807647b05566ed42b6e726a0c1472f"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-baseline",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-baseline.result.json.gz",
+    "bytes": 4773,
+    "sha256": "cc75973c2ad52d84186c166253de948d81a7d38a87a61cd3ef453f00f75fb708"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-baseline.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-baseline",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-baseline.trial.json.gz",
+    "bytes": 4642,
+    "sha256": "9d9e86eb1cf1ccca4a41ce4ca59961b6b807489a70224674cc3b9caaee9f398f"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-baseline",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-baseline.score.json.gz",
+    "bytes": 16841,
+    "sha256": "d594869f34641ec77b6770c21ae8448cfba43967fc673940ee1176ef5cc04710"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-baseline.model-start.json.gz",
+    "bytes": 211,
+    "sha256": "f7795391f2bc1d4dd75ab26ed670c00061d85507d568bafde4cb7feb2a2650af"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "5fe27537b219c03c6f94de0e314b66ff28c95e6ff46fec1f639e1da5e27f0836"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-baseline.model-exit.json.gz",
+    "bytes": 4428,
+    "sha256": "3109e2dc0783bea6534fab18dff60eaead4eca434a97e55e89e6268da31d1309"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-scope",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-scope.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-scope",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-scope.events.jsonl.gz",
+    "bytes": 105605,
+    "sha256": "93d647f48aca50aca116585939be2b42ce2bea1d2cc3386b440af4487698630e"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-scope",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-scope.result.json.gz",
+    "bytes": 4775,
+    "sha256": "159d4f543c9766da7668bcff03aff45f1189bb6847a29526101015dec11c974d"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-scope",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-scope.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-scope",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-scope.trial.json.gz",
+    "bytes": 6065,
+    "sha256": "bd3061adfee43bcee98faaaba9f785ac7b79eb7419d15c3a658469547c3d44fb"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-scope",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-scope.score.json.gz",
+    "bytes": 16827,
+    "sha256": "24c9a64d5dd3639ee67e1f3d50b2f6bf25e6e5939eaba8f8e7c9a6a6ea147b80"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-scope",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-scope.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-scope",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-scope.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "19a7da8c84c69afbae1007b8b586cf5d746885bff49bdbbf2401feea3e361fee"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-scope",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-scope.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "13f28ec5eda94c4fa53a7b3ecff6ea5edf2d875f9161d146c415bb5cc3c5ee0e"
+  },
+  {
+    "trial": "3-rxjs-unhandled-error-migration-scope",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-unhandled-error-migration-scope.model-exit.json.gz",
+    "bytes": 5853,
+    "sha256": "0cee6acc7c5bf59f9a1b01dbd04207037f4a4be9fb5c4d31cecf8be348063e4c"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reading",
+    "file": "instruction.txt",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reading.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reading",
+    "file": "events.jsonl",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reading.events.jsonl.gz",
+    "bytes": 215768,
+    "sha256": "119c0baaddbe610c5473305baa18e8de29f8e1ccb7cf8c1d5e7a3a335c9a1c22"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reading",
+    "file": "result.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reading.result.json.gz",
+    "bytes": 4890,
+    "sha256": "363a5013fd8a08ca8eae1f516839894f0f4454861415814bb3d057e68f1b622a"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reading",
+    "file": "workspace.diff",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reading.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reading",
+    "file": "trial.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reading.trial.json.gz",
+    "bytes": 6272,
+    "sha256": "e7ca6710a8769ec2c196785dc7b62f69b26d12311a4210d1f9e69bb52fdb7f9c"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reading",
+    "file": "score.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reading.score.json.gz",
+    "bytes": 40889,
+    "sha256": "b072a384f580411964230feb39c4d75f1fa5922e31dd59e2435c36c6088c7a7a"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reading",
+    "file": "required-checks.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reading.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reading",
+    "file": "model-start.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reading.model-start.json.gz",
+    "bytes": 212,
+    "sha256": "6ce7c7b2e5f2ad803847c6efd16798bcebdc94d884aea93e44512c13cc3bfd3a"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reading",
+    "file": "model-child.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reading.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "86733d68e47ecffd7c488df3778831cee7a5a5f94a20cd90db5493747d3a812a"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reading",
+    "file": "model-exit.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reading.model-exit.json.gz",
+    "bytes": 6056,
+    "sha256": "817d2c4f35dabed478f5c04db501c21465a3d8b1d477ab815a871857e7ac88b7"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reporting",
+    "file": "instruction.txt",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reporting.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reporting",
+    "file": "events.jsonl",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reporting.events.jsonl.gz",
+    "bytes": 105529,
+    "sha256": "2707727408a4b6bf654201ea85b059f1d08c047934d094564e39d5e5d06d6f31"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reporting",
+    "file": "result.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reporting.result.json.gz",
+    "bytes": 4875,
+    "sha256": "202adf1524899e5b8fcc403d34f53427b7850fdf66dbd0299bc585f65e5c105a"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reporting",
+    "file": "workspace.diff",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reporting.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reporting",
+    "file": "trial.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reporting.trial.json.gz",
+    "bytes": 5828,
+    "sha256": "f0c027f26ffca28dd53d5c3e2979386ed4c6612dcbfaeedd69a06cad9c4c2fb3"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reporting",
+    "file": "score.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reporting.score.json.gz",
+    "bytes": 40884,
+    "sha256": "a625ee5b66fe4362d10b4c5f3dae9e45fbed986c264ae5e46c9e21a06d53c481"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reporting",
+    "file": "required-checks.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reporting.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reporting",
+    "file": "model-start.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reporting.model-start.json.gz",
+    "bytes": 214,
+    "sha256": "bfeace7463516092a31e4d1bcb89c2ca98395e18a1f3c84643ebb833db607db5"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reporting",
+    "file": "model-child.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reporting.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "e92825e46b1d8aa40fc34852c1db2189933796c9c1cb44ff3619515cf2295677"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-reporting",
+    "file": "model-exit.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-reporting.model-exit.json.gz",
+    "bytes": 5607,
+    "sha256": "266023bf7138ea596f5f14de814c604d3eecb8cabf92e2f57ba0826de04b6360"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-patch",
+    "file": "instruction.txt",
+    "artifact": "traces/3-date-fns-offset-helper-migration-patch.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-patch",
+    "file": "events.jsonl",
+    "artifact": "traces/3-date-fns-offset-helper-migration-patch.events.jsonl.gz",
+    "bytes": 78007,
+    "sha256": "31f157edb8c3bdff531611d8ba0ec054bf1f4ba801d92af2633801ec5fef586c"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-patch",
+    "file": "result.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-patch.result.json.gz",
+    "bytes": 4859,
+    "sha256": "d781c6116dc043849d95a5c62fed1c924758686aac105541cad7ead7a7c5cb42"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-patch",
+    "file": "workspace.diff",
+    "artifact": "traces/3-date-fns-offset-helper-migration-patch.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-patch",
+    "file": "trial.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-patch.trial.json.gz",
+    "bytes": 5816,
+    "sha256": "a9d9c43e2dcf2f45cf2f9bbc3332443a9548b9f98768f9a9f0e6a8f35bd07e71"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-patch",
+    "file": "score.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-patch.score.json.gz",
+    "bytes": 40870,
+    "sha256": "5d160b5f811652efb280c1a42827f50d40308e3b21f78cef74c29a4c3ae06c6d"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-patch",
+    "file": "required-checks.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-patch.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-patch",
+    "file": "model-start.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-patch.model-start.json.gz",
+    "bytes": 210,
+    "sha256": "6dd42800bcd75233257b1d16bd9a3d7e09be20da9ff6888342889705d8ab00b9"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-patch",
+    "file": "model-child.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-patch.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "8e0c75dad9ea2dee2df20594f54575720d4b7c3f2ce8fda14d3c836503372683"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-patch",
+    "file": "model-exit.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-patch.model-exit.json.gz",
+    "bytes": 5603,
+    "sha256": "431d1a57dd37f8aadbf5b4a2ffc4ea9d24b75af1a42588aebe381b2da2bc2dcc"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-bundle",
+    "file": "instruction.txt",
+    "artifact": "traces/3-date-fns-offset-helper-migration-bundle.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-bundle",
+    "file": "events.jsonl",
+    "artifact": "traces/3-date-fns-offset-helper-migration-bundle.events.jsonl.gz",
+    "bytes": 164942,
+    "sha256": "6d91af622021ca486bd2081ae87b2e6aff3ad02ff7b9ecab47d8fb878306b777"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-bundle",
+    "file": "result.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-bundle.result.json.gz",
+    "bytes": 4854,
+    "sha256": "1b6098e3a4b0355cc83fc596bce17cc3d9cc70a753ce5a3c636324f74703411c"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-bundle",
+    "file": "workspace.diff",
+    "artifact": "traces/3-date-fns-offset-helper-migration-bundle.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-bundle",
+    "file": "trial.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-bundle.trial.json.gz",
+    "bytes": 5612,
+    "sha256": "f61766f3b38e723d8ea9aa9d58ab5adeac804aba487cd1849c9039486f308ab3"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-bundle",
+    "file": "score.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-bundle.score.json.gz",
+    "bytes": 40877,
+    "sha256": "eed6f365c029f857d275a8dd7bac8c8f0dfba534b98814f82f0abc07bffea2d5"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-bundle",
+    "file": "required-checks.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-bundle.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-bundle",
+    "file": "model-start.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-bundle.model-start.json.gz",
+    "bytes": 211,
+    "sha256": "d8c5f8cee4a9b8ced679915eb4c8edbf51e5abd61410573c428820561f0fcde5"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-bundle",
+    "file": "model-child.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-bundle.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "7f194629bd1fe08c7e26d92de434ad7406eb1b7b1ced6ae978fdab4e3f03e111"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-bundle",
+    "file": "model-exit.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-bundle.model-exit.json.gz",
+    "bytes": 5397,
+    "sha256": "1e658b35e596110d8a1bb755d858b60286de0d064939c0997420f1d7125a45be"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-date-fns-offset-helper-migration-baseline.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-date-fns-offset-helper-migration-baseline.events.jsonl.gz",
+    "bytes": 170050,
+    "sha256": "6841fe891eea3baa37a1f4d678b3eeee20398b38e8e758be9b939572bb3d0319"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-baseline",
+    "file": "result.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-baseline.result.json.gz",
+    "bytes": 4878,
+    "sha256": "e2cc640b1ad730bd7f5e4f1e4fac2de99452b42615c6f6c0ea4097a35de6e747"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-date-fns-offset-helper-migration-baseline.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-baseline",
+    "file": "trial.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-baseline.trial.json.gz",
+    "bytes": 5524,
+    "sha256": "888a7642c006db992bcf9ba209f8f4e7420e2fcca5bbb8dfaf64b16bcf70ba2b"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-baseline",
+    "file": "score.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-baseline.score.json.gz",
+    "bytes": 40898,
+    "sha256": "1f4da5af45b2d3c1ce628f15d37b57a6c1815d82977ce3ca355ff07189240239"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-baseline.model-start.json.gz",
+    "bytes": 213,
+    "sha256": "4d1e33b38c4d10c37d919da1fdc11d2c64757d93cc056bb50e6dac66751d287f"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "0434fb811b99e17d61cfcc066dc693ff26e8c576c379dbe95eb5a77ad6902e45"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-baseline.model-exit.json.gz",
+    "bytes": 5306,
+    "sha256": "513f2d6670b616886f7fb39409871aa2fdeb1775180aae198dee14434e11a752"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-scope",
+    "file": "instruction.txt",
+    "artifact": "traces/3-date-fns-offset-helper-migration-scope.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-scope",
+    "file": "events.jsonl",
+    "artifact": "traces/3-date-fns-offset-helper-migration-scope.events.jsonl.gz",
+    "bytes": 100077,
+    "sha256": "14cca58a9be240f4fbe94e05a5a6c45916bf8a5de1bd32685ab0db3e0d9d60a3"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-scope",
+    "file": "result.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-scope.result.json.gz",
+    "bytes": 4868,
+    "sha256": "c502c764e44d9a7ba65a3406a969a0e294feccb27c68583c9f0f5a9d12260256"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-scope",
+    "file": "workspace.diff",
+    "artifact": "traces/3-date-fns-offset-helper-migration-scope.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-scope",
+    "file": "trial.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-scope.trial.json.gz",
+    "bytes": 5077,
+    "sha256": "8bf56b7ee3c71fd718108fdcf481a31525b6b3ab3b7e4446de497a6007b95bf0"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-scope",
+    "file": "score.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-scope.score.json.gz",
+    "bytes": 40895,
+    "sha256": "cc9849c7fc07d9a7c44e4177ec7bec7eb186ffeb08fadc123c0e5bd643b3dc66"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-scope",
+    "file": "required-checks.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-scope.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-scope",
+    "file": "model-start.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-scope.model-start.json.gz",
+    "bytes": 210,
+    "sha256": "b41f39cb69b1295a1563248b2cec057a50644ce84ad0b86b4fa9265a0e875e07"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-scope",
+    "file": "model-child.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-scope.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "84c1891d25f418bfbb649a212d0b8f33fb81c31bdcee7835dfb7d9b41fdfdd92"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-scope",
+    "file": "model-exit.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-scope.model-exit.json.gz",
+    "bytes": 4864,
+    "sha256": "e39541490019e1e739031f4dcf89a4d1899a0e56484fabf22517405e3e585bb8"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-date-fns-offset-helper-migration-cline.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-date-fns-offset-helper-migration-cline.events.jsonl.gz",
+    "bytes": 461324,
+    "sha256": "734938996dcd3f1100c08d71993540701e25f5b4c41e20319895319f40c65a04"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-cline",
+    "file": "result.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-cline.result.json.gz",
+    "bytes": 3709,
+    "sha256": "e3fcecb4ce70e09b0a95dd3b91b73cd28d6b7af58f495676420a9bbc51527119"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-date-fns-offset-helper-migration-cline.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-cline",
+    "file": "trial.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-cline.trial.json.gz",
+    "bytes": 4785,
+    "sha256": "2dcf2856b003fb5ceddc56efc6527bc83f8f5c337f6232dc7af2ec28d9ec6f3f"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-cline",
+    "file": "score.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-cline.score.json.gz",
+    "bytes": 40805,
+    "sha256": "6025a47bf93b74f174303098401e68b35e0a3f51ec6c2728e9c60013b23b1207"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-cline",
+    "file": "model-start.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-cline.model-start.json.gz",
+    "bytes": 210,
+    "sha256": "116aa9620f51927ad97422030dba0ad61e9310c15fbd0a776902c612713a2ade"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-cline",
+    "file": "model-child.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "552bf94a84aeaca1f7b892beddf31dfec37966a10e8788f60c3ca631d5ea2683"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-cline.model-exit.json.gz",
+    "bytes": 4573,
+    "sha256": "8edf450ae7b1cd8bfe4dfd38a8a617034fc7c8cf0f71972d208bb7fe4693fcbc"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-references",
+    "file": "instruction.txt",
+    "artifact": "traces/3-date-fns-offset-helper-migration-references.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-references",
+    "file": "events.jsonl",
+    "artifact": "traces/3-date-fns-offset-helper-migration-references.events.jsonl.gz",
+    "bytes": 91016,
+    "sha256": "8240b035afec982d0d091ba3e77e49735939234ecdaefe64ea31a3063cc82860"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-references",
+    "file": "result.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-references.result.json.gz",
+    "bytes": 4847,
+    "sha256": "420fca443909e7cbe7a5d5ab475057386be8a1897728ffd963c5c60ad6a8176c"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-references",
+    "file": "workspace.diff",
+    "artifact": "traces/3-date-fns-offset-helper-migration-references.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-references",
+    "file": "trial.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-references.trial.json.gz",
+    "bytes": 4790,
+    "sha256": "8cf0f6996482ef280e159cc9f815d6fc2fe5367adcff9edf33ff4773b25f37d6"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-references",
+    "file": "score.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-references.score.json.gz",
+    "bytes": 40899,
+    "sha256": "8401213542627171460c241c5d908d2a5ee94d6f4954450bb7c78b27da7a3767"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-references",
+    "file": "required-checks.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-references.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-references",
+    "file": "model-start.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-references.model-start.json.gz",
+    "bytes": 215,
+    "sha256": "9f0c91f29e881cea602fa85d75c0aa4beeba39d3f56a72abaf1235df533778ec"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-references",
+    "file": "model-child.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-references.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "074e2f3b1b60e94a8207fa8d755994f0b176904237a5249444c9855a358063e0"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-references",
+    "file": "model-exit.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-references.model-exit.json.gz",
+    "bytes": 4568,
+    "sha256": "ef2a9ec3a280ecb8d3fb204c18f79b77208dd469e0b05418f10b8bf3a77801a0"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-rename",
+    "file": "instruction.txt",
+    "artifact": "traces/3-date-fns-offset-helper-migration-rename.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-rename",
+    "file": "events.jsonl",
+    "artifact": "traces/3-date-fns-offset-helper-migration-rename.events.jsonl.gz",
+    "bytes": 91676,
+    "sha256": "07cd1ef8f5b2e5826fed2dadb6354d77f7d082174a9bdf1131ec71aba574bbfb"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-rename",
+    "file": "result.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-rename.result.json.gz",
+    "bytes": 4841,
+    "sha256": "5c93e247178c116110d0134b3dca31ecacdca56c32a3736ad1ecfd39421ab571"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-rename",
+    "file": "workspace.diff",
+    "artifact": "traces/3-date-fns-offset-helper-migration-rename.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-rename",
+    "file": "trial.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-rename.trial.json.gz",
+    "bytes": 6005,
+    "sha256": "b3019ac12f913cca3145ad044d92bfa0b3091a725621458251c29fe60008d315"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-rename",
+    "file": "score.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-rename.score.json.gz",
+    "bytes": 40898,
+    "sha256": "047609b46d75e9453832a397f92c62de2ef9bfab7e9d5a64da80d2d971897dab"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-rename",
+    "file": "required-checks.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-rename.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-rename",
+    "file": "model-start.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-rename.model-start.json.gz",
+    "bytes": 211,
+    "sha256": "c79226d000968f945b9239749352f4fa1b3162a6fb79ca35a615d6060dd2cbda"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-rename",
+    "file": "model-child.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-rename.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "0415f5f238b7d2743ed4afccd25d6414e7bdef66c30f60b41e5e24521a9e23c2"
+  },
+  {
+    "trial": "3-date-fns-offset-helper-migration-rename",
+    "file": "model-exit.json",
+    "artifact": "traces/3-date-fns-offset-helper-migration-rename.model-exit.json.gz",
+    "bytes": 5790,
+    "sha256": "a18266ff907457d0504e25edfdc6a419abdf30e2c6a2e663d0a7cc39786c6d73"
   }
 ]

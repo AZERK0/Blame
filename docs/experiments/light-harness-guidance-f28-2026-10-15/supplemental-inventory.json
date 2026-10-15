@@ -443,6 +443,195 @@
       "artifact": "journals/2-rxjs-promise-abort-config-patch.22b3b1edd67f0c632c6b23db.jsonl.gz",
       "bytes": 77822,
       "sha256": "0f5476bf28c2604cd267179c34eab2e45beb929171c6e6c737d9ea9c5663cee1"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-baseline",
+      "file": "48d9984d33e257eecf6228b4.jsonl",
+      "artifact": "journals/2-lodash-own-symbol-options-baseline.48d9984d33e257eecf6228b4.jsonl.gz",
+      "bytes": 210241,
+      "sha256": "d8e175e4a33c00ede49a60e69f9a050d6da1d0268c91eac121519c99efc593c4"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-bundle",
+      "file": "1073afc26b74103aa4e2fb89.jsonl",
+      "artifact": "journals/2-lodash-own-symbol-options-bundle.1073afc26b74103aa4e2fb89.jsonl.gz",
+      "bytes": 364915,
+      "sha256": "305ad7af5860afe5d01b06cd2a31e2309da32431c217bb2b8c70c71635e95e64"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-patch",
+      "file": "cb629c426f3b31b366e326f2.jsonl",
+      "artifact": "journals/2-lodash-own-symbol-options-patch.cb629c426f3b31b366e326f2.jsonl.gz",
+      "bytes": 195557,
+      "sha256": "cbe5fdc80e0470b2e38c8e696f0b1436c85f1b793c05403c93c503bc10f29f7a"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-reporting",
+      "file": "ab06c784b699419cd0541ad5.jsonl",
+      "artifact": "journals/2-lodash-own-symbol-options-reporting.ab06c784b699419cd0541ad5.jsonl.gz",
+      "bytes": 254842,
+      "sha256": "ac3737edecb70b02e22019ab4a69c45f18574c1adc1a5a8e8a37533a85dfe1f1"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-reading",
+      "file": "440c920f928340f514ac26d9.jsonl",
+      "artifact": "journals/2-lodash-own-symbol-options-reading.440c920f928340f514ac26d9.jsonl.gz",
+      "bytes": 292357,
+      "sha256": "6554f7066dcd64d4afd07d25c16f52642aaaef592a7c9f44b47218d30d8b77a4"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-rename",
+      "file": "4e3a19f60c6fab89d34e0ca2.jsonl",
+      "artifact": "journals/2-lodash-own-symbol-options-rename.4e3a19f60c6fab89d34e0ca2.jsonl.gz",
+      "bytes": 345868,
+      "sha256": "20abed28767cdb1abe2e661c6d798e0f78a0b911ac4010f1029984a1c901baa0"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-references",
+      "file": "f12d38d2cdb3ff00a0f84cb8.jsonl",
+      "artifact": "journals/2-lodash-own-symbol-options-references.f12d38d2cdb3ff00a0f84cb8.jsonl.gz",
+      "bytes": 223371,
+      "sha256": "e6f2e43b2697ae1ce5c5bb377aa51642cc49190645a70b09802cb16a55aa8ba5"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-cline",
+      "file": "ffffdc5e1d597840bda258ff.jsonl",
+      "artifact": "journals/2-lodash-own-symbol-options-cline.ffffdc5e1d597840bda258ff.jsonl.gz",
+      "bytes": 79,
+      "sha256": "ac26c76123ee4939840ad96276b2743e1383376de5936df132ce60cd290903af"
+    },
+    {
+      "name": "2-lodash-own-symbol-options-scope",
+      "file": "f21a1c736d8f034fe27c0b30.jsonl",
+      "artifact": "journals/2-lodash-own-symbol-options-scope.f21a1c736d8f034fe27c0b30.jsonl.gz",
+      "bytes": 158960,
+      "sha256": "7cb7b39e0f2751d8a055bfc917a86f25884c20d7063b7304e4751444f14f56d4"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-cline",
+      "file": "b2caf100c1ea8d9cbfa92d2f.jsonl",
+      "artifact": "journals/3-rxjs-unhandled-error-migration-cline.b2caf100c1ea8d9cbfa92d2f.jsonl.gz",
+      "bytes": 79,
+      "sha256": "8268de216a0a1cf200e59568cee935ac06fc4dcc330d4a729ca0deeaf8cc188f"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-references",
+      "file": "95db510c7ccefe978cc8628d.jsonl",
+      "artifact": "journals/3-rxjs-unhandled-error-migration-references.95db510c7ccefe978cc8628d.jsonl.gz",
+      "bytes": 100222,
+      "sha256": "068876f53f0942b10fba93f8f5173d6d0f8947a05a2cf156f6c06c91823e52e0"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-rename",
+      "file": "3063f430b375b8c89739673b.jsonl",
+      "artifact": "journals/3-rxjs-unhandled-error-migration-rename.3063f430b375b8c89739673b.jsonl.gz",
+      "bytes": 99381,
+      "sha256": "7481aa17317975189f17f9003e76b77d3359a769985fdb3b56184b7e956b12b5"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-reading",
+      "file": "673958db1e42073f90143891.jsonl",
+      "artifact": "journals/3-rxjs-unhandled-error-migration-reading.673958db1e42073f90143891.jsonl.gz",
+      "bytes": 60701,
+      "sha256": "d86290a80994f4c85c51680048ab3da8a1a363aadb6b7e9226bd7245fcbd14a3"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-reporting",
+      "file": "0718c7063ff58e3505fe03b6.jsonl",
+      "artifact": "journals/3-rxjs-unhandled-error-migration-reporting.0718c7063ff58e3505fe03b6.jsonl.gz",
+      "bytes": 56711,
+      "sha256": "4a39f562d5385005cb82a60e831df48da9039aaa164bdd1e62871daa8b8dfb4d"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-patch",
+      "file": "329b91d15f2d53ca7c74825b.jsonl",
+      "artifact": "journals/3-rxjs-unhandled-error-migration-patch.329b91d15f2d53ca7c74825b.jsonl.gz",
+      "bytes": 73355,
+      "sha256": "6ec3ffbf02fd8976235197743073d5edaf7337eda23d57ed961993950e9d0362"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-bundle",
+      "file": "8bc188eb37439cb82bd67a86.jsonl",
+      "artifact": "journals/3-rxjs-unhandled-error-migration-bundle.8bc188eb37439cb82bd67a86.jsonl.gz",
+      "bytes": 126442,
+      "sha256": "f645e7850befca500fe3ca51c5a66333975182f04bb8788b4a5fc676ed163299"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-baseline",
+      "file": "f235183033df66a37b66dc29.jsonl",
+      "artifact": "journals/3-rxjs-unhandled-error-migration-baseline.f235183033df66a37b66dc29.jsonl.gz",
+      "bytes": 68314,
+      "sha256": "ec4c292b0bc83c7693eb605107432a8200994266b605cc5d33f857267ec875ac"
+    },
+    {
+      "name": "3-rxjs-unhandled-error-migration-scope",
+      "file": "43a235feabc3bafd17553599.jsonl",
+      "artifact": "journals/3-rxjs-unhandled-error-migration-scope.43a235feabc3bafd17553599.jsonl.gz",
+      "bytes": 93398,
+      "sha256": "2e629f0a0e231694c58db358b74517fd9bd277859ed531c253083162f20943b6"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-reading",
+      "file": "d55b4b469d72d196f72d5b7c.jsonl",
+      "artifact": "journals/3-date-fns-offset-helper-migration-reading.d55b4b469d72d196f72d5b7c.jsonl.gz",
+      "bytes": 209192,
+      "sha256": "83c7c183fb498899e8fc790e053d719f68d76cdb3501cfd3cd500b5836196f3f"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-reporting",
+      "file": "2aa46921617458374bc84815.jsonl",
+      "artifact": "journals/3-date-fns-offset-helper-migration-reporting.2aa46921617458374bc84815.jsonl.gz",
+      "bytes": 86152,
+      "sha256": "bec287b70451b1c8e32334fe6b927b96d511761e1a4002eb129d5681b576e845"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-patch",
+      "file": "62dafb7b2df96e5d3c13185c.jsonl",
+      "artifact": "journals/3-date-fns-offset-helper-migration-patch.62dafb7b2df96e5d3c13185c.jsonl.gz",
+      "bytes": 61716,
+      "sha256": "dbef89230e4431b69ed841c437b3d5f49b29af2c459f72b60479ddd7502a4a2c"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-bundle",
+      "file": "bdd35053302e98f1fabcd68a.jsonl",
+      "artifact": "journals/3-date-fns-offset-helper-migration-bundle.bdd35053302e98f1fabcd68a.jsonl.gz",
+      "bytes": 74127,
+      "sha256": "227c184ec9cd9656e17243713ef9bf99992a9656a338ff39f91baa1f767a7387"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-baseline",
+      "file": "3cc918a1d30cdad2cf296240.jsonl",
+      "artifact": "journals/3-date-fns-offset-helper-migration-baseline.3cc918a1d30cdad2cf296240.jsonl.gz",
+      "bytes": 142795,
+      "sha256": "e3a0050d4667117f86a1e9448919c84b7a081e3cbbb533adc20614a4b591f133"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-scope",
+      "file": "58a0e5568a4ff64600065c18.jsonl",
+      "artifact": "journals/3-date-fns-offset-helper-migration-scope.58a0e5568a4ff64600065c18.jsonl.gz",
+      "bytes": 101501,
+      "sha256": "116043dac872905e7a4e3d30d11371d7f915fc4b5418118e540f6bc108423ab0"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-cline",
+      "file": "7064c00c4548522029a8bab4.jsonl",
+      "artifact": "journals/3-date-fns-offset-helper-migration-cline.7064c00c4548522029a8bab4.jsonl.gz",
+      "bytes": 79,
+      "sha256": "9e8ab80fd7611baadfd2773435baa6fdfec2758490f0f27763efbc06c4608c59"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-references",
+      "file": "233059641c848fb5c1f98c3a.jsonl",
+      "artifact": "journals/3-date-fns-offset-helper-migration-references.233059641c848fb5c1f98c3a.jsonl.gz",
+      "bytes": 67494,
+      "sha256": "02596923c98bc6af7fe9a05d62035f92d67708fdae986959999a80db8586b4b5"
+    },
+    {
+      "name": "3-date-fns-offset-helper-migration-rename",
+      "file": "cbb3a7f4dcd9095fc2e00793.jsonl",
+      "artifact": "journals/3-date-fns-offset-helper-migration-rename.cbb3a7f4dcd9095fc2e00793.jsonl.gz",
+      "bytes": 71005,
+      "sha256": "aab509e4c79c86c3c930893065c3176ec7dc8bafafc30dd9510257643e3452e3"
     }
   ]
 }
