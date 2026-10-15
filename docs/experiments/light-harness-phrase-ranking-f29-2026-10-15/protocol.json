@@ -1,7 +1,7 @@
 {
   "studyKind": "bounded-lexical-phrase-priority",
   "registeredAtUTC": "2026-10-15T02:04:47.932Z",
-  "readyForModel": false,
+  "readyForModel": true,
   "taskSelectionAtUTC": "2026-10-15T02:02:41.494Z",
   "taskInputCommitAtUTC": "2026-10-15T00:00:00+00:00",
   "provider": "openai-codex",
@@ -231,7 +231,7 @@
   "budgetAmendment": {
     "authorizedCeilingEur": 10,
     "scope": "Explicit user raises the same cumulative ceiling from EUR2 to EUR10; no accounting reset.",
-    "priorAccountedUsdIncludingReserves": 1.86737576,
+    "priorAccountedUsdIncludingReserves": 3.50047236,
     "referenceFx": {
       "source": "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json",
       "retrievedAtUTC": "2026-10-14T16:41:32.914559+00:00",
@@ -282,5 +282,10 @@
   },
   "audit": "Official completion,functional endpoint,actual requested checks,admitted verification and truthful full criteria are separate. Unqualified zero-skipped claims fail when no skipped count exists; qualified unknown/runner-specific counts remain distinct. No post-result permission changes.",
   "decision": "Two fresh constructed tasks in one familiar monolithic project and related option-extension family,three dependent repeats,18 fixed assignments. Known F28 searches are mechanism diagnostics only. Preserve every failure,timeout,missing usage and unexecuted slot. No model retry,source repair,reference recovery or grader feedback. Raw output alone does not establish model-visible evidence; unblinded audit and arm-labeled checkout limitations remain. No population-equivalence or universally optimal ranking claim.",
-  "priorCampaignRule": "F28 contributes only its completed cumulative observed/reserved financial ledger. Keep outcome cohorts,versions,tasks and conditional efficiency comparisons separate."
+  "priorCampaignRule": "F28 contributes only its completed cumulative observed/reserved financial ledger. Keep outcome cohorts,versions,tasks and conditional efficiency comparisons separate.",
+  "finalizedAtUTC": "2026-10-15T02:53:30.761Z",
+  "financialBinding": {
+    "priorBudgetSha256": "7043bba3a9b2b775d777c6cdfd3d63ae2a3c6ace9171f8b94148a2fd3b9eb7da",
+    "parentWitnessSha256": "4db5e943a58a0fbdbce3d581ff68c8f6d9d2f09cacd551eb1785b50970997eea"
+  }
 }
