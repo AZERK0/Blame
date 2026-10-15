@@ -15,6 +15,7 @@ import {
   Sparkles,
   Workflow,
 } from "lucide-react";
+import { AnimatedBorderFrame } from "@/components/animated-border/animated-border-frame";
 import { HighlightsCarousel } from "@/components/highlights-carousel";
 import { PipelineBacklogMockup } from "@/components/blame-mockups/backlog-mockup";
 import { LivePreviewMockup } from "@/components/blame-mockups/preview-mockup";
@@ -112,6 +113,7 @@ const reviewActions = [
 export function ProductStory() {
   return (
     <div className="relative z-10 -mt-[48vh] bg-[#1d1d1f]">
+      <HeroFadeOut />
       <StoryOpening />
       <HighlightsCarousel />
       <WorkflowSection />
@@ -124,6 +126,17 @@ export function ProductStory() {
       <ProjectCreationSection />
       <FinalCtaSection />
     </div>
+  );
+}
+
+// This page slides over the pinned hero; fade its top edge into the hero
+// instead of cutting the mockup with a hard black band.
+function HeroFadeOut() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-x-0 bottom-full h-[45vh] bg-[linear-gradient(to_bottom,rgb(5_5_5/0%)_0%,rgb(5_5_5/18%)_30%,rgb(5_5_5/55%)_62%,rgb(5_5_5/88%)_86%,#050505_100%)]"
+    />
   );
 }
 
@@ -194,9 +207,9 @@ function WorkspaceSection() {
   return (
     <section className="bg-[#1d1d1f] px-3 py-24 sm:px-6 sm:py-32 lg:px-8 lg:py-40">
       <ScrollReveal className="mx-auto max-w-[1480px]" distance={0}>
-        <div
+        <AnimatedBorderFrame
           className="user-story-state-effect rounded-[2rem] sm:rounded-[3rem]"
-          data-story-state="in-progress"
+          effect="story-progress"
         >
           <div className="relative z-[1] min-h-[680px] overflow-hidden rounded-[2rem] border border-white/10 sm:min-h-[760px] sm:rounded-[3rem]">
             <WorkspacePhoto />
@@ -217,7 +230,7 @@ function WorkspaceSection() {
               <WorkspaceSignals />
             </div>
           </div>
-        </div>
+        </AnimatedBorderFrame>
       </ScrollReveal>
     </section>
   );

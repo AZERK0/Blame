@@ -42,9 +42,18 @@
     #18202e;
   color: var(--mock-foreground);
   font-family: "Source Sans 3", Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(5px, 0.59cqw, 13px);
   line-height: 1.25;
   text-align: left;
+}
+
+/*
+ * Every size in the shell is a fraction of the shell width (cqw), mapped from
+ * the desktop app at 0.045cqw per pixel, so text and controls scale together.
+ * The shell is its own size container, which only its children can query.
+ */
+.sidebar,
+.appMain {
+  font-size: 0.59cqw;
 }
 
 .appShell *,
@@ -53,7 +62,7 @@
   box-sizing: border-box;
 }
 
-.appShell button {
+:where(.appShell button) {
   margin: 0;
   font: inherit;
 }
@@ -171,7 +180,7 @@
   gap: 0.45cqw;
   padding: 0 0.46cqw;
   border-radius: 0.35cqw;
-  font-size: 0.55cqw;
+  font-size: 0.63cqw;
   text-align: left;
   transition:
     background-color 150ms ease,
@@ -217,7 +226,7 @@
   background: transparent;
   color: rgb(255 255 255 / 62%);
   cursor: pointer;
-  font-size: 0.49cqw;
+  font-size: 0.56cqw;
   text-align: left;
   transition:
     background-color 150ms ease,
@@ -232,7 +241,7 @@
 
 .chatHistoryButton time {
   color: rgb(255 255 255 / 38%);
-  font-size: 0.44cqw;
+  font-size: 0.48cqw;
   line-height: 1;
   transition: color 150ms ease;
 }
@@ -489,7 +498,7 @@
   border: 1px solid var(--mock-border);
   border-radius: 0.42cqw;
   color: var(--mock-foreground);
-  font-size: 0.47cqw;
+  font-size: 0.58cqw;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -672,7 +681,7 @@ button.primaryToolbarButton:active {
   border-radius: 0.35cqw;
   background: transparent;
   color: var(--mock-muted-foreground);
-  font-size: 0.46cqw;
+  font-size: 0.54cqw;
 }
 
 button.newStoryAction {
@@ -704,30 +713,16 @@ button.newStoryAction:hover {
 }
 
 .storyStateEffect[data-story-state="in-progress"] {
-  overflow: hidden;
   box-shadow:
     0 0 0 max(1px, 0.045cqw) oklch(0.7 0.17 250 / 25%),
     0 0 0.68cqw oklch(0.65 0.2 250 / 32%);
 }
 
-.storyStateEffect[data-story-state="in-progress"]::before {
-  position: absolute;
-  inset: -150%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg 245deg,
-    oklch(0.85 0.12 235 / 75%) 285deg,
-    oklch(0.65 0.22 255) 325deg,
-    transparent 360deg
-  );
-  content: "";
-  animation: storyBorderRotation 2.6s linear infinite;
-  pointer-events: none;
-}
-
 .storyStateEffect[data-story-state="in-review"] {
   background: oklch(0.7 0.18 250 / 35%);
-  animation: storyReviewBreathing 2.8s ease-in-out infinite;
+  box-shadow:
+    0 0 0 max(1px, 0.045cqw) oklch(0.7 0.17 250 / 12%),
+    0 0 0.2cqw oklch(0.65 0.2 250 / 10%);
 }
 
 .storyCard {
@@ -889,7 +884,7 @@ button.newStoryAction:hover {
   border-radius: 0.32cqw;
   background: rgb(255 255 255 / 4%);
   color: rgb(255 255 255 / 82%);
-  font-size: 0.36cqw;
+  font-size: 0.52cqw;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -970,35 +965,8 @@ button.storyAction[data-tone="preview"]:hover {
     0 14px 42px rgb(0 0 0 / 52%);
 }
 
-.mockupFrame[data-variant="hero"]
-  :is(.toolbarButton, .primaryToolbarButton, .newStoryAction, .storyAction) {
-  font-size: clamp(5px, 0.66cqw, 11px);
-}
-
 .mockupFrame[data-variant="pipeline"] .storyCard {
   animation: pipelineStoryArrival 320ms cubic-bezier(0.22, 0.75, 0.23, 1) both;
-}
-
-@keyframes storyBorderRotation {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes storyReviewBreathing {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 max(1px, 0.045cqw) oklch(0.7 0.17 250 / 12%),
-      0 0 0.2cqw oklch(0.65 0.2 250 / 10%);
-  }
-
-  50% {
-    box-shadow:
-      0 0 0 max(1px, 0.09cqw) oklch(0.8 0.16 240 / 70%),
-      0 0 0.4cqw oklch(0.7 0.21 245 / 70%),
-      0 0 0.64cqw oklch(0.62 0.22 255 / 55%);
-  }
 }
 
 @keyframes pipelineStoryArrival {
@@ -1014,11 +982,6 @@ button.storyAction[data-tone="preview"]:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .storyStateEffect[data-story-state="in-progress"]::before,
-  .storyStateEffect[data-story-state="in-review"] {
-    animation: none;
-  }
-
   .mockupFrame[data-variant="pipeline"] .storyCard,
   .appShell button {
     animation: none;

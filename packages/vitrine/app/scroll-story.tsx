@@ -2,6 +2,7 @@
 
 import { ArrowRight, Play } from 'lucide-react'
 import {
+  memo,
   useEffect,
   useRef,
   useState,
@@ -11,6 +12,12 @@ import {
 import { SceneWarmup } from '@/components/scene-warmup'
 import { HeroBacklogMockup } from '@/components/blame-mockups/backlog-mockup'
 import { HeroScene } from './scene/hero-scene'
+
+// The hero re-renders on every scroll frame to update its transforms; these
+// subtrees take no props, so keep them out of that loop.
+const StaticHeroScene = memo(HeroScene)
+const StaticSceneWarmup = memo(SceneWarmup)
+const StaticHeroBacklogMockup = memo(HeroBacklogMockup)
 
 const heroStageHeight = 180
 const scrollProgressResponse = 14
@@ -43,8 +50,8 @@ export function LandingHero() {
     >
       <span id="download" className="absolute bottom-0" />
       <div className="sticky top-0 isolate h-screen overflow-hidden">
-        <HeroScene />
-        <SceneWarmup />
+        <StaticHeroScene />
+        <StaticSceneWarmup />
         <StoryBackdrop
           heroProgress={backdropProgress}
           progress={backdropProgress}
@@ -139,7 +146,7 @@ function HeroMockup({
       className="z-20 mx-auto mb-4 w-[90%] max-w-[61.2rem]"
       style={heroMockupStyle(progress, reducedMotion)}
     >
-      <HeroBacklogMockup />
+      <StaticHeroBacklogMockup />
     </div>
   )
 }
@@ -288,7 +295,7 @@ function heroMockupStyle(
   const fade = smoothstep(0.34, 0.72, progress)
   return {
     opacity: 1 - fade,
-    transform: `translate3d(0, ${lift * -24}vh, 0) perspective(1200px) rotate3d(1, -0.16, 0, ${lift * 32}deg) scale(${1 + lift * 0.42})`,
+    transform: `translate3d(0, ${lift * -42}vh, 0) perspective(1200px) rotate3d(1, -0.16, 0, ${lift * 32}deg) scale(${1 + lift * 0.42})`,
   }
 }
 

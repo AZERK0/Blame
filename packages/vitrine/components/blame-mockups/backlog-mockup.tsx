@@ -27,6 +27,8 @@ import {
   X,
 } from "lucide-react";
 
+import { useAnimatedBorderEffect } from "@/components/animated-border/use-animated-border-effect";
+
 import { BlameAppShell } from "./app-shell";
 import {
   backlogColumns,
@@ -125,11 +127,13 @@ export function HeroBacklogMockup() {
 }
 
 export function PipelineBacklogMockup() {
+  const frameRef = useRef<HTMLDivElement>(null);
   const documentVisible = useDocumentVisible();
-  const backlog = usePipelineBacklog(!documentVisible);
+  const onScreen = useOnScreen(frameRef);
+  const backlog = usePipelineBacklog(!documentVisible || !onScreen);
 
   return (
-    <div className={styles.mockupFrame} data-variant="pipeline">
+    <div ref={frameRef} className={styles.mockupFrame} data-variant="pipeline">
       <BlameAppShell>
         <InteractiveBacklogBoard backlog={backlog} />
       </BlameAppShell>
@@ -382,8 +386,10 @@ function StoryCard({
   onAction?: (storyId: string, action: StoryActionId) => void;
   story: MockStory;
 }) {
+  const stateEffectRef = useStoryStateEffect(story.status);
   return (
     <article
+      ref={stateEffectRef}
       className={styles.storyStateEffect}
       data-story-state={story.status}
     >
@@ -396,6 +402,24 @@ function StoryCard({
       </div>
     </article>
   );
+}
+
+function useStoryStateEffect(status: MockStory["status"]) {
+  const effect =
+    status === "in-progress"
+      ? "story-progress"
+      : status === "in-review"
+        ? "story-review"
+        : undefined;
+  return useAnimatedBorderEffect<HTMLElement>(effect, desktopAppScale);
+}
+
+// Sizes in the shell map 1 desktop-app pixel to 0.045cqw, so the desktop app
+// is about 2200px wide. Capped at 2 so the stroke stays visible on screen.
+function desktopAppScale(element: HTMLElement) {
+  const shell = element.closest<HTMLElement>(`.${styles.appShell}`);
+  if (!shell?.offsetWidth) return 1;
+  return Math.min(2, Math.max(1, 2_222 / shell.offsetWidth));
 }
 
 function StoryCardHeader({ story }: { story: MockStory }) {
@@ -639,6 +663,21 @@ function useDocumentVisible() {
       document.removeEventListener("visibilitychange", syncVisibility);
   }, []);
   return visible;
+}
+
+function useOnScreen(ref: RefObject<HTMLElement | null>) {
+  const [onScreen, setOnScreen] = useState(false);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setOnScreen(Boolean(entry?.isIntersecting)),
+      { rootMargin: "200px 0px" },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+  return onScreen;
 }
 
 function scheduleStoryTransitions(
