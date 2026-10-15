@@ -60,6 +60,76 @@
       "startedWithoutFinish": [],
       "finishedWithoutStart": [],
       "differentInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-reporting",
+      "eventsSha256": "efe123f627895fdb68bee937a6e7f08c5987f552ea2cb6c6cb03e15588efab90",
+      "started": 24,
+      "finished": 24,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-patch",
+      "eventsSha256": "784b4b675cd09608cf3b94cadf01c63430105e01e3ed98d4d3abfe1f1836103f",
+      "started": 25,
+      "finished": 25,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-bundle",
+      "eventsSha256": "a2d427fdbd6ef46ca3248695da789b62a044848d97448d95f4d15cc7e7066c8d",
+      "started": 23,
+      "finished": 23,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-references",
+      "eventsSha256": "f55e23fa3750c4c6c80c427d53b03b6cb86a498bbebbc28caa599b9490adedf9",
+      "started": 31,
+      "finished": 31,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-rename",
+      "eventsSha256": "d8a1f9b9e69f5ec32ea45c92b06b4036761d36e44586c5170f940f3ec2548505",
+      "started": 25,
+      "finished": 25,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-reading",
+      "eventsSha256": "07266c5f857797d2d1ab98a5e0cdc3c6fcbda6251f962de02b3e8f57f76b3d6a",
+      "started": 21,
+      "finished": 21,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-reporting",
+      "eventsSha256": "6b9ce3ec80cdcc36040575cdfc07958721e8d30b43b32ffdaa612077b7c702fa",
+      "started": 27,
+      "finished": 27,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
     }
   ]
 }

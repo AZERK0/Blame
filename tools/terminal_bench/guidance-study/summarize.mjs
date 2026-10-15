@@ -24,6 +24,12 @@ for(const row of results.rows) {
     (Array.isArray(t.input.commands)?t.input.commands:typeof t.input.commands==="string"?[t.input.commands]:[]).map(command=>({index,command,output:t.output})):[]);
   const lastEditIndex=tools.reduce((last,t,i)=>["edit_code","apply_patch"].includes(t.tool)?i:last,-1);
   const finalReport=[...tools].reverse().find(t=>t.tool==="finish_task")?.input.summary??[...events].reverse().find(e=>e.type==="done")?.payload?.text??null;
+  const sameInput=(suggested,actual)=>Object.entries(suggested).every(([key,value])=>JSON.stringify(value)===JSON.stringify(actual[key]));
+  const hints=tools.flatMap((t,index)=>[
+    ...(t.output?.data?.nextSearch?[{index,kind:"scope",tool:"search_code",inputs:[t.output.data.nextSearch]}]:[]),
+    ...(t.output?.data?.nextSearches?[{index,kind:"references",tool:"search_code",inputs:t.output.data.nextSearches}]:[]),
+    ...(t.output?.data?.nextRead?[{index,kind:"reading",tool:"read_code",inputs:[t.output.data.nextRead]}]:[])
+  ]).map(h=>({...h,firstMatchingLaterCall:tools.findIndex((t,i)=>i>h.index&&t.tool===h.tool&&h.inputs.some(input=>sameInput(input,t.input)))}));
   mechanisms.push({name:row.name,id:row.id,arm:row.arm,repetition:row.repetition,eventsSha256:row.eventsSha256,
     compilerReferenceCalls:row.semanticReferenceCalls,compilerRenameCalls:row.semanticRenameCalls,
     disabledRenameCalls:tools.filter(t=>t.tool==="edit_code"&&t.output?.message?.includes("Compiler rename is disabled")).length,
@@ -33,6 +39,7 @@ for(const row of results.rows) {
     readCalls:tools.filter(t=>["read_code","read_files"].includes(t.tool)).length,
     readBytes:tools.filter(t=>["read_code","read_files"].includes(t.tool)).reduce((n,t)=>n+Buffer.byteLength(JSON.stringify(t.output)??""),0),
     commands,lastEditIndex,finalReport,verification:row.completion?.verification??null,
+    hints,matchingHintFollowups:hints.filter(h=>h.firstMatchingLaterCall>=0).length,
     dispatchedRequests:wire.filter(r=>!r.budgetRejected).length,byteRejected:wire.filter(r=>r.budgetRejected).length,
     missingWireResponseUsage:Math.max(0,wire.filter(r=>!r.budgetRejected).length-row.usage.perRequest.length),
     actualOutputLimits:[...new Set(wire.filter(r=>!r.budgetRejected).map(r=>r.maximumOutputTokens))],
@@ -47,13 +54,14 @@ for(const row of results.rows) {
       continuationHints:tools.filter(t=>t.tool==="read_code"&&t.output?.data?.nextRead).length,
       checkJournalReads:tools.filter(t=>t.tool==="read_code"&&t.input.target==="@checks").length,
       reportingReceipts:tools.filter(t=>t.tool==="run_task"&&(t.output?.data?.reporting||t.output?.data?.completed?.data?.reporting)).length,
-      patchRecoveryHints:tools.filter(t=>t.tool==="edit_code"&&/scoped patch|scoped_patch|target scope/i.test(JSON.stringify(t.output))).length
+      patchRecoveryHints:tools.filter(t=>t.tool==="edit_code"&&String(t.output?.message??"").includes('"patchCorrection"')).length
     },
     partition:row.partition});
 }
 const fields=rows=>({trials:rows.length,official:rows.filter(r=>r.officialRuntimeSuccess).length,functional:rows.filter(r=>r.independentFunctionalSuccess).length,
   admittedVerified:rows.filter(r=>r.completion?.verification==="verified").length,
   actualChecks:rows.filter(r=>r.agentRequiredChecksPassed).length,strict:rows.filter(r=>r.auditedCompletion).length,
+  factualWordingSensitivityOnly:rows.filter(r=>r.reportingOnlySensitivity===true&&!r.fullRequestCriteriaPassed).length,
   tokensObserved:rows.reduce((n,r)=>n+(r.usage.input??0)+(r.usage.output??0),0),estimatedUsdObserved:rows.reduce((n,r)=>n+(r.usage.cost??0),0),
   inputTokensObserved:rows.reduce((n,r)=>n+(r.usage.input??0),0),outputTokensObserved:rows.reduce((n,r)=>n+(r.usage.output??0),0),
   cacheReadTokensObserved:rows.reduce((n,r)=>n+(r.usage.cacheRead??0),0),cacheWriteTokensObserved:rows.reduce((n,r)=>n+(r.usage.cacheWrite??0),0),
@@ -95,7 +103,7 @@ const summary={method:"F28: four preregistered new constructed tasks on three fa
   arms:Object.fromEntries(protocol.arms.map(a=>[a,{planned:results.provenance.order.filter(r=>r.arm===a).length,...fields(results.rows.filter(r=>r.arm===a))}])),
   strata:Object.fromEntries(["fresh-confirmation"].map(partition=>[partition,{arms:Object.fromEntries(protocol.arms.map(a=>[a,fields(results.rows.filter(r=>r.partition===partition&&r.arm===a))]))}])),
   tasks:protocol.tasks.map(task=>({id:task.id,partition:task.partition??"fresh-confirmation",arms:Object.fromEntries(protocol.arms.map(arm=>[arm,fields(results.rows.filter(r=>r.id===task.id&&r.arm===arm))]))})),
-  adverseOutcomes:results.rows.filter(r=>!r.officialRuntimeSuccess||!r.independentFunctionalSuccess||!r.auditedCompletion||r.exit?.orchestrationInterrupted||wireUsageGapByTrial[r.name]).map(r=>({name:r.name,status:r.status,official:r.officialRuntimeSuccess,functional:r.independentFunctionalSuccess,audited:r.auditedCompletion,orchestrationInterrupted:r.exit?.orchestrationInterrupted??false,missingWireUsageResponses:wireUsageGapByTrial[r.name],...scoredEvidence[r.name]})),
+  adverseOutcomes:results.rows.filter(r=>!r.officialRuntimeSuccess||!r.independentFunctionalSuccess||!r.auditedCompletion||r.exit?.orchestrationInterrupted||wireUsageGapByTrial[r.name]).map(r=>({name:r.name,status:r.status,official:r.officialRuntimeSuccess,functional:r.independentFunctionalSuccess,audited:r.auditedCompletion,manualCriteriaFailures:r.manualCriteriaFailures,narrowRunnerCountSensitivity:r.reportingOnlySensitivity,orchestrationInterrupted:r.exit?.orchestrationInterrupted??false,missingWireUsageResponses:wireUsageGapByTrial[r.name],...scoredEvidence[r.name]})),
   comparisons:["fresh-confirmation"].flatMap(partition=>["strict","functional"].flatMap(t=>[...protocol.lightArms.filter(a=>a!=="baseline").map(a=>[a,"baseline"]),["bundle","cline"],["baseline","cline"]].map(([a,b])=>compare(a,b,t,partition)))),
   observedAggregateComparisons:["fresh-confirmation"].flatMap(partition=>["strict","functional"].flatMap(t=>[...protocol.lightArms.filter(a=>a!=="baseline").map(a=>[a,"baseline"]),["bundle","cline"],["baseline","cline"]].map(([a,b])=>compare(a,b,t,partition,"aggregate_only")))),
   accountingComparisonRule:"Comparisons require zero observed wire/report gaps as well as reconciled token/cost aggregates. Earlier checkpoints used aggregate reconciliation alone; keep that sensitivity under observedAggregateComparisons, with gaps/reserves explicit. Exclusion for missing consumption is not evidence of better outcomes or complete-panel efficiency; all attempts and adverse partial subtotals remain visible. Cache accounting and provider invoices remain incomplete.",

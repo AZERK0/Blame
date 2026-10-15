@@ -18,14 +18,39 @@ for entry in read('inventory.json'):
  assert len(b)==entry['bytes'] and sha(b)==entry['sha256'],entry['artifact']
  raw[entry['trial'],entry['file']]=b
 reviews={r['name']:r for r in read('source-review.json')['decisions']}
-wire=json.loads(gzip.decompress((root/'wire-contracts.json.gz').read_bytes()))
-wire={r['name']:r['requests'] for r in wire['trials']}
+wire_bytes=(root/'wire-contracts.json.gz').read_bytes()
+assert sha(wire_bytes)==read('wire-inventory.json')['sha256']
+wire_data=json.loads(gzip.decompress(wire_bytes))
+js=lambda value:json.dumps(value,ensure_ascii=False,separators=(',',':')).encode()
+for file,content in wire_data['contracts'].items():
+ assert sha(js(content))==file.split('-',1)[1][:-5],file
+wire={r['name']:r['requests'] for r in wire_data['trials']}
+for trial in wire_data['trials']:
+ assert sha(b''.join(js(q)+b'\n' for q in trial['requests']))==trial['metadataSha256']
+ for q in trial['requests']:
+  assert q['model']==protocol['model'] and q['reasoning']['effort']==protocol['effort']
+  assert q['byteLimit']==protocol['budgets']['maximumSerializedRequestBytes']
+  assert q['budgetRejected']==(q['requestBytes']>q['byteLimit'])
+  assert q['maximumOutputTokens'] is None
+  assert 'schema-'+q['toolsSha256']+'.json' in wire_data['contracts']
+  assert 'prompt-'+q['promptSha256']+'.json' in wire_data['contracts']
 rows=results['rows'];accounted=0;observed=0;reserved=0;gaps=0;gap_by_name={}
 for r in rows:
  name=r['name'];review=reviews[name]
  for file,key in [('events.jsonl','eventsSha256'),('workspace.diff','diffSha256'),('score.json','scoreSha256')]:
   assert sha(raw[name,file])==r[key]==review[key]
  execution=json.loads(raw.get((name,'result.json'),b'{}'));score=json.loads(raw[name,'score.json'])
+ events=[json.loads(line)['event'] for line in raw[name,'events.jsonl'].splitlines() if line]
+ reports=[e['payload']['usage'] for e in events if e['type']=='usage']
+ assert len(reports)==len(r['usage']['perRequest'])
+ for report,normalized in zip(reports,r['usage']['perRequest']):
+  for key,field in [('inputTokens','input'),('outputTokens','output'),('cost','cost')]:
+   value=report.get(key)
+   if isinstance(value,(int,float)):assert close(value,normalized[field]),(name,key)
+ if r['usage']['tokensCostReconciled']:
+  for key in ['input','output','cost']:
+   assert all(isinstance(q[key],(int,float)) for q in r['usage']['perRequest'])
+   assert close(sum(q[key] for q in r['usage']['perRequest']),r['usage'][key])
  assert r['officialRuntimeSuccess']==(execution.get('status')=='succeeded')
  assert r['independentFunctionalSuccess']==score['independentFunctionalSuccess']
  if execution:
@@ -74,7 +99,24 @@ evidence=read('evidence-checks.json')
 for audit in evidence['audits']:
  b=gzip.decompress((root/audit['artifact']).read_bytes());assert len(b)==audit['bytes'] and sha(b)==audit['sha256']
  assert [json.loads(line) for line in b.splitlines() if line]==audit['records']
+admin_path=root/'administrative-recovery.json'
+if admin_path.exists():
+ admin=json.loads(admin_path.read_text());artifacts={}
+ for entry in admin['inventory']:
+  b=gzip.decompress((root/entry['artifact']).read_bytes());assert len(b)==entry['bytes'] and sha(b)==entry['sha256']
+  artifacts[entry['file']]=b
+ continuation=json.loads(artifacts['continuation.json']);interruption=json.loads(artifacts['preparation-interruption.json'])
+ assert not interruption['modelDispatched'] and interruption['modelRetries']==0 and not interruption['sourceRepair']
+ assert continuation['completedPrefix']==13 and continuation['modelRetries']==0 and not continuation['sourceRepair']
+ assert continuation['driverSha256']==results['provenance']['frozen']['inputs'][continuation['driver']]
+ for name,files in continuation['completedTrialHashes'].items():
+  if name in reviews:
+   for file,expected in files.items():assert sha(raw[name,file])==expected
+ compact=[json.loads(line) for line in artifacts['object-compaction.jsonl'].splitlines() if line]
+ assert len(compact)==continuation['compaction']['repositories'] and all(r['identitiesAndDiffPreserved'] for r in compact)
+ assert sum(r['objectEntriesBefore']-r['objectEntriesAfter'] for r in compact)==continuation['compaction']['freedObjectEntries']
 assert results['completed']==len(rows)==len(reviews)
+assert sha((root/'results.json').read_bytes())==read('checks.json')['resultsSha256']
 assert results['planned']==len(protocol['order'])==len(protocol['tasks'])*protocol['repetitions']*len(protocol['arms'])
 assert [{k:r[k] for k in ['repetition','id','arm']} for r in rows]==protocol['order'][:len(rows)]
 assert close(summary['referenceEquivalentEur'],summary['totalAccountedUsd']/protocol['budgetAmendment']['referenceFx']['usdPerEur'])

@@ -418,5 +418,495 @@
     "artifact": "traces/1-rxjs-unhandled-error-migration-reading.model-exit.json.gz",
     "bytes": 5165,
     "sha256": "e5aa7f668f670f24587a24cb8a847ef80fed4369750fbd4c0be1f6d5eb129e30"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-reporting",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-reporting.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-reporting",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-reporting.events.jsonl.gz",
+    "bytes": 93142,
+    "sha256": "efe123f627895fdb68bee937a6e7f08c5987f552ea2cb6c6cb03e15588efab90"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-reporting",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-reporting.result.json.gz",
+    "bytes": 4769,
+    "sha256": "280179b207daf216651ceb2920d572392515af91b4a775cbc3e78fbf690bcb1a"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-reporting",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-reporting.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-reporting",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-reporting.trial.json.gz",
+    "bytes": 4511,
+    "sha256": "a5ca107ed8b4ae7a7ce10958fffeec3ee6d2a2e976aa2da6bbbf337b1d6ac42f"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-reporting",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-reporting.score.json.gz",
+    "bytes": 16845,
+    "sha256": "393b11d64384376e6cd77efb8cb64731a04c99bbb26d2043c5d6efc21fe95916"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-reporting",
+    "file": "required-checks.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-reporting.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-reporting",
+    "file": "model-start.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-reporting.model-start.json.gz",
+    "bytes": 212,
+    "sha256": "a955a700674db4e8e129d336db603143b1c0d9031a22d86bd36dfdaabc9bc1a4"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-reporting",
+    "file": "model-child.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-reporting.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "bc78aca09daf3db83b7fdcd7b6b89b28f9369128edf606fe34a4bb4ac3793c58"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-reporting",
+    "file": "model-exit.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-reporting.model-exit.json.gz",
+    "bytes": 4301,
+    "sha256": "c0e511b5aae3bdcf3ec152fc7887263d8cfc630b07e4dce394f50d0837be2387"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-patch",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-patch.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-patch",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-patch.events.jsonl.gz",
+    "bytes": 97796,
+    "sha256": "784b4b675cd09608cf3b94cadf01c63430105e01e3ed98d4d3abfe1f1836103f"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-patch",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-patch.result.json.gz",
+    "bytes": 4793,
+    "sha256": "5562c9e7dd3d0cc86357b031cc1477829c7392ef91631493027e69eb0b84c777"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-patch",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-patch.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-patch",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-patch.trial.json.gz",
+    "bytes": 6176,
+    "sha256": "a79e04eb09185ffd857b8cb794b7b967f7dfd3bc8cb43ec51af63738e236b8d1"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-patch",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-patch.score.json.gz",
+    "bytes": 16827,
+    "sha256": "dcf286b4cba7161f9f88bc580594ac39455d40a2c55ac147b99cad33d9e67462"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-patch",
+    "file": "required-checks.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-patch.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-patch",
+    "file": "model-start.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-patch.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "8c6ae4de70ad174f37a2227eff77898b493af7e6efbdcd9e66c776e4842929f2"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-patch",
+    "file": "model-child.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-patch.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "7571323d3628fe0d2cf58cac425857170c2e79ff3b3ade0d2b5f066b01b15d5a"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-patch",
+    "file": "model-exit.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-patch.model-exit.json.gz",
+    "bytes": 5961,
+    "sha256": "2d12252cd26e7e175c18c2e7b2e29220698d8ae5711bf668c8f3cfbccd268078"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-bundle",
+    "file": "instruction.txt",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-bundle.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-bundle",
+    "file": "events.jsonl",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-bundle.events.jsonl.gz",
+    "bytes": 76113,
+    "sha256": "a2d427fdbd6ef46ca3248695da789b62a044848d97448d95f4d15cc7e7066c8d"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-bundle",
+    "file": "result.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-bundle.result.json.gz",
+    "bytes": 4765,
+    "sha256": "3ec14f5742ac2c9b7f2d6942adb7270ed3d56d22c4b03ec97d11abfcad6d8274"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-bundle",
+    "file": "workspace.diff",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-bundle.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-bundle",
+    "file": "trial.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-bundle.trial.json.gz",
+    "bytes": 4646,
+    "sha256": "17121625af99ad539bcb518fab1e575cb2e650b3c59ed61449fd1ce73656c223"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-bundle",
+    "file": "score.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-bundle.score.json.gz",
+    "bytes": 16833,
+    "sha256": "2f137dd3399add3f88c926527ffa3da07f5e72f8d65033ace885d2b1df6fe73d"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-bundle",
+    "file": "required-checks.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-bundle.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-bundle",
+    "file": "model-start.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-bundle.model-start.json.gz",
+    "bytes": 209,
+    "sha256": "136132be0bb3e1fbcc64e34e02fe6de994a7b02f684adbbf88ba13abbca897f3"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-bundle",
+    "file": "model-child.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-bundle.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "b97fb1cc7cbe1bd116df9c26b0af0b7017f53cbd4db1538c0a933c25bf3da851"
+  },
+  {
+    "trial": "1-rxjs-unhandled-error-migration-bundle",
+    "file": "model-exit.json",
+    "artifact": "traces/1-rxjs-unhandled-error-migration-bundle.model-exit.json.gz",
+    "bytes": 4434,
+    "sha256": "2ba22873c924b7da6f02bb37e8e02a21f5eecbfe032844073cb40157ca0f1632"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-references",
+    "file": "instruction.txt",
+    "artifact": "traces/1-date-fns-offset-helper-migration-references.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-references",
+    "file": "events.jsonl",
+    "artifact": "traces/1-date-fns-offset-helper-migration-references.events.jsonl.gz",
+    "bytes": 117229,
+    "sha256": "f55e23fa3750c4c6c80c427d53b03b6cb86a498bbebbc28caa599b9490adedf9"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-references",
+    "file": "result.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-references.result.json.gz",
+    "bytes": 4874,
+    "sha256": "7965298088e2f770c84f4c0d42baf8fc818b4890122eff6fe4096626ea4c8fd1"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-references",
+    "file": "workspace.diff",
+    "artifact": "traces/1-date-fns-offset-helper-migration-references.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-references",
+    "file": "trial.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-references.trial.json.gz",
+    "bytes": 6269,
+    "sha256": "cb3eee89ff0d8bf0fa909635efa22c79e83188db23cde5d4ebdc035c93c07a53"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-references",
+    "file": "score.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-references.score.json.gz",
+    "bytes": 40910,
+    "sha256": "51a86840576d292b3cf29bc22f2350e04f396f2ed0ed3afd7714003bda458991"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-references",
+    "file": "required-checks.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-references.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-references",
+    "file": "model-start.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-references.model-start.json.gz",
+    "bytes": 215,
+    "sha256": "02e1ffe33eb5cfb337d1486ed6cefb2c61dd0ba865600b7b1293287c5e9f203f"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-references",
+    "file": "model-child.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-references.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "1e9bbdeb01c9b6ad562af77544694bf315380ea04c30c8513ae3944651d9020c"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-references",
+    "file": "model-exit.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-references.model-exit.json.gz",
+    "bytes": 6047,
+    "sha256": "40a658eee6a0564e3f97659a63e0a32abee6928836df62e8d0ea8ee1a525bfa7"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-rename",
+    "file": "instruction.txt",
+    "artifact": "traces/1-date-fns-offset-helper-migration-rename.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-rename",
+    "file": "events.jsonl",
+    "artifact": "traces/1-date-fns-offset-helper-migration-rename.events.jsonl.gz",
+    "bytes": 111415,
+    "sha256": "d8a1f9b9e69f5ec32ea45c92b06b4036761d36e44586c5170f940f3ec2548505"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-rename",
+    "file": "result.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-rename.result.json.gz",
+    "bytes": 4873,
+    "sha256": "03e6c94db548f6ffea9ec0967de5e5f5c31f74229b83c81faf43b559e6498705"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-rename",
+    "file": "workspace.diff",
+    "artifact": "traces/1-date-fns-offset-helper-migration-rename.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-rename",
+    "file": "trial.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-rename.trial.json.gz",
+    "bytes": 6081,
+    "sha256": "7b69a278c78c176ed0e6b1e58a0c1118e932d770bcb4529c06088f1bbe61a36c"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-rename",
+    "file": "score.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-rename.score.json.gz",
+    "bytes": 40898,
+    "sha256": "fbb65b1e332027b1f88f6b72fe062cc6374cb3bdaa6919240c82783ad7e49f73"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-rename",
+    "file": "required-checks.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-rename.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-rename",
+    "file": "model-start.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-rename.model-start.json.gz",
+    "bytes": 211,
+    "sha256": "a10f253bfb76736a138ee430fa230445b1a9418b758d33c4c5d84bd23ff1949f"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-rename",
+    "file": "model-child.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-rename.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "78961ba8faa6ac13acb84c174032c50839b24297e746051b7a4a76934ffb1ae0"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-rename",
+    "file": "model-exit.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-rename.model-exit.json.gz",
+    "bytes": 5867,
+    "sha256": "a51774f66316bcd80a2af6e2a82f9dc4c627fe07aa0ef05b7aca72c8d65dee13"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reading",
+    "file": "instruction.txt",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reading.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reading",
+    "file": "events.jsonl",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reading.events.jsonl.gz",
+    "bytes": 94684,
+    "sha256": "07266c5f857797d2d1ab98a5e0cdc3c6fcbda6251f962de02b3e8f57f76b3d6a"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reading",
+    "file": "result.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reading.result.json.gz",
+    "bytes": 4846,
+    "sha256": "700235a38d396465917dcf9df505427c344e0f81188c109c4246639ee7d82fd4"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reading",
+    "file": "workspace.diff",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reading.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reading",
+    "file": "trial.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reading.trial.json.gz",
+    "bytes": 5904,
+    "sha256": "e0738046f966fdd43a52332fbb0c18eb0a768bb8212cb60bceb25252f3b6eb51"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reading",
+    "file": "score.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reading.score.json.gz",
+    "bytes": 40818,
+    "sha256": "6619f09ab0dd172c2b1a973fbfe82f23b228f582028f336737469f545257889f"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reading",
+    "file": "required-checks.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reading.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reading",
+    "file": "model-start.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reading.model-start.json.gz",
+    "bytes": 212,
+    "sha256": "a4bff947eb0e179f3a417600351d4500f2237d5127612ed27d83d1ed4a33140e"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reading",
+    "file": "model-child.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reading.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "43aff8b8680fef0b1c51fdf45a1e3608417ff16465d5fb2c0da83744b8758cc6"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reading",
+    "file": "model-exit.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reading.model-exit.json.gz",
+    "bytes": 5688,
+    "sha256": "624da0b1f51d201718c9edfff95b37e57a9035441fa8d222a1bea44e815beaca"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reporting",
+    "file": "instruction.txt",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reporting.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reporting",
+    "file": "events.jsonl",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reporting.events.jsonl.gz",
+    "bytes": 99497,
+    "sha256": "6b9ce3ec80cdcc36040575cdfc07958721e8d30b43b32ffdaa612077b7c702fa"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reporting",
+    "file": "result.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reporting.result.json.gz",
+    "bytes": 4847,
+    "sha256": "f791fa07c87cd39c01c23efe689d6314f1e66e49caf0f1991bb95052c92239f0"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reporting",
+    "file": "workspace.diff",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reporting.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reporting",
+    "file": "trial.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reporting.trial.json.gz",
+    "bytes": 6139,
+    "sha256": "f7e1aae8975483421ba8f77dc9c55d43ff28ae3264cb0c11e9b3ec64fce1ded9"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reporting",
+    "file": "score.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reporting.score.json.gz",
+    "bytes": 40870,
+    "sha256": "f53e5261bd2ee2fdb8cdf344c8cbc2d29d0e6173d29b49ab7dab052150060576"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reporting",
+    "file": "required-checks.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reporting.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reporting",
+    "file": "model-start.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reporting.model-start.json.gz",
+    "bytes": 214,
+    "sha256": "1644e5a7283333d2057dbbb763fcb8604d8f6381fc17515fad2a27237d0ab785"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reporting",
+    "file": "model-child.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reporting.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "31f7e33c60af8e2c7d5a691c0edad42d05f5d0372c3ef456c747d0f2fee04584"
+  },
+  {
+    "trial": "1-date-fns-offset-helper-migration-reporting",
+    "file": "model-exit.json",
+    "artifact": "traces/1-date-fns-offset-helper-migration-reporting.model-exit.json.gz",
+    "bytes": 5920,
+    "sha256": "9142be41c8bf999e152986433ebcae9a1a5d798747e26ac0b51e07454a7ddaa4"
   }
 ]

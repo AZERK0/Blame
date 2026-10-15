@@ -133,6 +133,8 @@
       "lastEditIndex": 12,
       "finalReport": "Implemented the internal rename from `reportUnhandledError` to `notifyUnhandledError` while preserving the module filename, explicit local alias `retainedLocal`, public export alias `stablePublicName`, unrelated fixture homonym, comment, and literal. Updated all resolved production references and the namespace fixture reference; no dependency/config/assertion/filesystem additions were made.\n\nVerification:\n- TypeScript command: passed (exit code 0).\n- Mocha command: passed; 3243 passing, 8 pending. No skipped category was reported by the supplied output, so skipped count is unknown rather than assumed zero.\n\nLimitations: validation covered the two explicitly requested commands only; no separate runtime or external-reference verification was performed.】【。",
       "verification": "unverified",
+      "hints": [],
+      "matchingHintFollowups": 0,
       "dispatchedRequests": 6,
       "byteRejected": 0,
       "missingWireResponseUsage": 0,
@@ -312,6 +314,8 @@
       "lastEditIndex": 15,
       "finalReport": "Renamed the internal exported declaration to `notifyUnhandledError` and updated all compiler-resolved imports/usages, including the supplied navigation fixture. Preserved the module filename/path, explicit local alias `retainedLocal`, public alias `stablePublicName`, local homonym, comment, and literal.\n\nVerification completed with the exact requested commands:\n- TypeScript compiler: passed, exit code 0, no diagnostics.\n- Mocha: passed, exit code 0; observed 3243 passing and 8 pending.\n\nThe test output did not report a skipped category, so skipped count is unknown rather than zero. No dependency manifests, lockfiles, configuration, assertions, or new files were changed. Broader behavioral equivalence beyond the requested compiler and test runs was not independently verified.",
       "verification": "unverified",
+      "hints": [],
+      "matchingHintFollowups": 0,
       "dispatchedRequests": 6,
       "byteRejected": 0,
       "missingWireResponseUsage": 0,
@@ -442,6 +446,8 @@
       "lastEditIndex": 6,
       "finalReport": "Implemented the internal rename from `reportUnhandledError` to `notifyUnhandledError`.\n\nChanges:\n- Renamed the exported function declaration in `/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-cline/workspace/src/internal/util/reportUnhandledError.ts`.\n- Updated resolving imports/usages in:\n  - `/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-cline/workspace/src/internal/observable/innerFrom.ts`\n  - `/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-cline/workspace/src/internal/Subscriber.ts`\n- Updated the supplied navigation fixture while preserving:\n  - The module filename and import paths\n  - `retainedLocal`\n  - `stablePublicName`\n  - The unrelated local homonym\n  - Comments and string literals\n- No files were added, and no configuration, dependency manifests, lockfiles, or assertions were changed.\n\nVerification:\n\n1. TypeScript:\n```text\nnode_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck\n```\nOutcome: passed, exit status 0, no diagnostics.\n\n2. Mocha:\n```text\nTS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'\n```\nOutcome: passed, exit status 0:\n- 3243 passing\n- 8 pending\n- Skipped count: unknown; the reporter did not emit a skipped count, so it is not reported as zero.\n\nFinal diff and whitespace checks passed. The remaining `reportUnhandledError` occurrences are only preserved module paths, comments, string literals, and the unrelated local homonym.",
       "verification": null,
+      "hints": [],
+      "matchingHintFollowups": 0,
       "dispatchedRequests": 6,
       "byteRejected": 0,
       "missingWireResponseUsage": 0,
@@ -597,6 +603,22 @@
       "lastEditIndex": 12,
       "finalReport": "Renamed the internal exported declaration to `notifyUnhandledError` and migrated all semantic references in production code plus the supplied navigation fixture. Preserved the module filename/path, `retainedLocal` import alias, `stablePublicName` public export alias, fixture comment/literal/local homonym, and runtime behavior; no manifests, configuration, assertions, or new files were changed.\n\nVerification:\n- TypeScript command: passed (exit code 0).\n- Mocha command: passed (exit code 0): 3243 passing, 8 pending, 0 skipped reported. The test output did not report a skipped category, so skipped count is unknown rather than zero.\n\nThe required compiler and test commands were run exactly as specified. No additional behavioral or external-environment verification was performed.",
       "verification": "unverified",
+      "hints": [
+        {
+          "index": 0,
+          "kind": "references",
+          "tool": "search_code",
+          "inputs": [
+            {
+              "query": "src/internal/util/reportUnhandledError.ts#reportUnhandledError",
+              "mode": "references",
+              "scope": "**"
+            }
+          ],
+          "firstMatchingLaterCall": 7
+        }
+      ],
+      "matchingHintFollowups": 1,
       "dispatchedRequests": 8,
       "byteRejected": 0,
       "missingWireResponseUsage": 0,
@@ -782,6 +804,8 @@
       "lastEditIndex": 12,
       "finalReport": "Implemented the internal rename from `reportUnhandledError` to `notifyUnhandledError` while preserving the module filename/path, explicit local alias `retainedLocal`, public alias `stablePublicName`, comments, literals, and the fixture’s unrelated local homonym. Updated all resolved production and fixture references; no dependency/config/assertion files or new files were changed.\n\nVerification:\n- TypeScript command completed successfully with exit code 0 and no diagnostics.\n- Mocha command completed successfully with exit code 0: 3243 passing, 8 pending, and no skipped category reported by the runner (therefore skipped count is unknown, not zero).\n\nLimitations: verification was limited to the requested compiler and Mocha commands; no broader build, lint, browser, or external-environment verification was run.",
       "verification": "unverified",
+      "hints": [],
+      "matchingHintFollowups": 0,
       "dispatchedRequests": 6,
       "byteRejected": 0,
       "missingWireResponseUsage": 0,
@@ -1008,6 +1032,8 @@
       "lastEditIndex": 17,
       "finalReport": "Implemented the internal rename from `reportUnhandledError` to `notifyUnhandledError` across its resolving imports, calls, export declaration, and namespace access. Preserved the module path/filename, explicit local alias `retainedLocal`, public alias `stablePublicName`, unrelated homonym, comment, literal, and runtime behavior in the navigation fixture. No manifests, lockfiles, configuration, assertions, or new files were changed.\n\nVerification:\n- `node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck`: passed (exit code 0).\n- `TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'`: passed (exit code 0); 3243 passing, 8 pending. The output did not report a skipped category, so skipped count is unknown rather than zero.\n\n`git diff --check` also passed. Verification is limited to the requested TypeScript compilation and Mocha suite; no broader build, lint, dtslint, or external verification was run.",
       "verification": "unverified",
+      "hints": [],
+      "matchingHintFollowups": 0,
       "dispatchedRequests": 8,
       "byteRejected": 0,
       "missingWireResponseUsage": 0,
@@ -1025,6 +1051,1663 @@
         "continuationHints": 0,
         "checkJournalReads": 0,
         "reportingReceipts": 0,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-reporting",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "reporting",
+      "repetition": 1,
+      "eventsSha256": "efe123f627895fdb68bee937a6e7f08c5987f552ea2cb6c6cb03e15588efab90",
+      "compilerReferenceCalls": 1,
+      "compilerRenameCalls": 1,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "query": "reportUnhandledError",
+          "scope": "src"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "spec"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "docs_app"
+        },
+        {
+          "query": "s2",
+          "mode": "references"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "**",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "**",
+          "mode": "text"
+        },
+        {
+          "query": "notifyUnhandledError",
+          "scope": "**",
+          "mode": "text"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s2",
+                "action": "rename",
+                "content": "notifyUnhandledError"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 13,
+      "readBytes": 26971,
+      "commands": [
+        {
+          "index": 21,
+          "input": {
+            "kind": "command",
+            "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-reporting/workspace"
+          },
+          "status": "ok",
+          "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+              "exitCode": 0,
+              "output": "",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 22,
+          "input": {
+            "kind": "command",
+            "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-reporting/workspace"
+          },
+          "status": "ok",
+          "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+          "exitCode": 0,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "reportedCounts": {
+              "passed": 3243,
+              "failed": null,
+              "pending": 8,
+              "skipped": null
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+              "exitCode": 0,
+              "output": "․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․,,,,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․\n… diagnostic truncated …\n․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․\n\n  3243 passing (3s)\n  8 pending",
+              "outputLog": ".blame/logs/validation-79f31746-ec5f-4e9d-92ca-aba860cca630.log",
+              "check": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "reportedCounts": {
+                  "passed": 3243,
+                  "failed": null,
+                  "pending": 8,
+                  "skipped": null
+                },
+                "scope": ".",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "evidenceOrigin": "runner_output"
+              },
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "counts": {
+                  "executed": null,
+                  "passed": 3243,
+                  "failed": null,
+                  "skipped": null,
+                  "pending": 8
+                },
+                "evidenceOrigin": "runner_output",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified",
+                "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+                "invocationSourceRevisionId": "src_277842af5829d1fc2ca21486b4c8dfc9",
+                "completedSourceRevisionId": "src_277842af5829d1fc2ca21486b4c8dfc9",
+                "cwd": "."
+              },
+              "changed": false,
+              "paths": [],
+              "validation": {
+                "status": "unknown"
+              }
+            }
+          }
+        }
+      ],
+      "lastEditIndex": 13,
+      "finalReport": "Renamed the internal exported declaration to `notifyUnhandledError` and migrated all compiler-resolved imports, calls, re-exports, and namespace references across `src`, while preserving the module filename, local import alias, stable public alias, comment/literal, and local homonym in the navigation fixture. No dependency manifests, lockfiles, configuration, assertions, or files were added or changed.\n\nVerification:\n- TypeScript command exited 0 with no output.\n- Mocha command exited 0: 3243 passing, 8 pending; failed and skipped counts were not reported (unknown, not treated as zero).\n\nThe runner marked the test outcome/admission as unverified despite the successful process exit; verification is therefore limited to the observed command exits and reported counters.",
+      "verification": "unverified",
+      "hints": [],
+      "matchingHintFollowups": 0,
+      "dispatchedRequests": 6,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 0,
+        "bareReferenceFallbacks": 0,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 0,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 1,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-patch",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "patch",
+      "repetition": 1,
+      "eventsSha256": "784b4b675cd09608cf3b94cadf01c63430105e01e3ed98d4d3abfe1f1836103f",
+      "compilerReferenceCalls": 0,
+      "compilerRenameCalls": 1,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "query": "reportUnhandledError",
+          "scope": "**/*",
+          "mode": "references"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "src/**",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "spec/**",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "docs_app/**",
+          "mode": "text"
+        },
+        {
+          "query": "from './util/reportUnhandledError'",
+          "scope": "src/**",
+          "mode": "text"
+        },
+        {
+          "query": "from '../util/reportUnhandledError'",
+          "scope": "src/**",
+          "mode": "text"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s1",
+                "action": "rename",
+                "content": "notifyUnhandledError"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 13,
+      "readBytes": 16999,
+      "commands": [
+        {
+          "index": 12,
+          "input": {
+            "kind": "command",
+            "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' '\\breportUnhandledError\\b' .",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-patch/workspace"
+          },
+          "status": "ok",
+          "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' '\\breportUnhandledError\\b' .",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' '\\breportUnhandledError\\b' .",
+              "exitCode": 0,
+              "output": "./src/internal/observable/innerFrom.ts:12:import { reportUnhandledError } from '../util/reportUnhandledError';\n./src/internal/observable/innerFrom.ts:96:      .then(null, reportUnhandledError);\n./src/internal/Subscriber.ts:5:import { reportUnhandledError } from './util/reportUnhandledError';\n./src/internal/Subscriber.ts:236:    reportUnhandledError(error);\n./src/internal/util/guidance-navigation-fixture.ts:1:import { reportUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:2:import * as helpers from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:3:export { reportUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:4:// Preserve reportUnhandledError in this comment and the local homonym/literal.\n./src/internal/util/guidance-navigation-fixture.ts:5:function reportUnhandledError() { return \"reportUnhandledError\"; }\n./src/internal/util/guidance-navigation-fixture.ts:6:export const localExample = reportUnhandledError();\n./src/internal/util/guidance-navigation-fixture.ts:8:export const namespaceExample = helpers.reportUnhandledError;\n./src/internal/util/reportUnhandledError.ts:13:export function reportUnhandledError(err: any) {",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 21,
+          "input": {
+            "kind": "command",
+            "command": "git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fixture.ts && printf '\\n--- remaining exact identifiers ---\\n' && rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' '\\breportUnhandledError\\b' . || true",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-patch/workspace"
+          },
+          "status": "ok",
+          "command": "git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fixture.ts && printf '\\n--- remaining exact identifiers ---\\n' && rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' '\\breportUnhandledError\\b' . || true",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fixture.ts && printf '\\n--- remaining exact identifiers ---\\n' && rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' '\\breportUnhandledError\\b' . || true",
+              "exitCode": 0,
+              "output": "diff --git a/src/internal/Subscriber.ts b/src/internal/Subscriber.ts\nindex 4a96c0e..b08410e 100644\n--- a/src/internal/Subscriber.ts\n+++ b/src/internal/Subscriber.ts\n@@ -2,7 +2,7 @@ import { isFunction } from './util/isFunction';\n import { Observer, ObservableNotification } from './types';\n import { isSubscription, Subscription } from './Subscription';\n import { config } from './config';\n-import { reportUnhandledError } from './util/reportUnhandledError';\n+import { notifyUnhandledError } from './util/reportUnhandledError';\n import { noop } from './util/noop';\n import { nextNotification, errorNotification, COMPLETE_NOTIFICATION } from './NotificationFactories';\n import { timeoutProvider } from './scheduler/timeoutProvider';\n@@ -233,7 +233,7 @@ function handleUnhandledError(error: any) {\n   } else {\n     // Ideal path, we report this as an unhandled error,\n     // which is thrown on a new call stack.\n-    reportUnhandledError(error);\n+    notifyUnhandledError(error);\n   }\n }\n \ndiff --git a/src/internal/observable/innerFrom.ts b/src/internal/observable/innerFrom.ts\nindex c3852c1..7e4e5bd 100644\n--- a/src/internal/observable/innerFrom.ts\n+++ b/src/internal/observable/innerFrom.ts\n@@ -9,7 +9,7 @@ import { isIterable } from '../util/isIterable';\n import { isReadableStreamLike, readableStreamLikeToAsyncGenerator } from '../util/isReadableStreamLike';\n import { Subscriber } from '../Subscriber';\n import { isFunction } from '../util/isFunction';\n-import { reportUnhandledError } from '../util/reportUnhandledError';\n+import { notifyUnhandledError } from '../util/reportUnhandledError';\n import { observable as Symbol_observable } from '../symbol/observable';\n \n export function innerFrom<O extends ObservableInput<any>>(input: O): Observable<ObservedValueOf<O>>;\n@@ -93,7 +93,7 @@ export function fromPromise<T>(promise: PromiseLike<T>) {\n         },\n         (err: any) => subscriber.error(err)\n       )\n-      .then(null, reportUnhandledError);\n+      .then(null, noti\n… diagnostic truncated …\n notifyUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n // Preserve reportUnhandledError in this comment and the local homonym/literal.\n function reportUnhandledError() { return \"reportUnhandledError\"; }\n export const localExample = reportUnhandledError();\n export const aliasExample = retainedLocal;\n-export const namespaceExample = helpers.reportUnhandledError;\n+export const namespaceExample = helpers.notifyUnhandledError;\ndiff --git a/src/internal/util/reportUnhandledError.ts b/src/internal/util/reportUnhandledError.ts\nindex d996956..7e333f2 100644\n--- a/src/internal/util/reportUnhandledError.ts\n+++ b/src/internal/util/reportUnhandledError.ts\n@@ -10,7 +10,7 @@ import { timeoutProvider } from '../scheduler/timeoutProvider';\n  *\n  * @param err the error to report\n  */\n-export function reportUnhandledError(err: any) {\n+export function notifyUnhandledError(err: any) {\n   timeoutProvider.setTimeout(() => {\n     const { onUnhandledError } = config;\n     if (onUnhandledError) {\n\n--- remaining exact identifiers ---\n./src/internal/observable/innerFrom.ts:12:import { notifyUnhandledError } from '../util/reportUnhandledError';\n./src/internal/Subscriber.ts:5:import { notifyUnhandledError } from './util/reportUnhandledError';\n./src/internal/util/guidance-navigation-fixture.ts:1:import { notifyUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:2:import * as helpers from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:3:export { notifyUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:4:// Preserve reportUnhandledError in this comment and the local homonym/literal.\n./src/internal/util/guidance-navigation-fixture.ts:5:function reportUnhandledError() { return \"reportUnhandledError\"; }\n./src/internal/util/guidance-navigation-fixture.ts:6:export const localExample = reportUnhandledError();",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 22,
+          "input": {
+            "kind": "command",
+            "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-patch/workspace"
+          },
+          "status": "ok",
+          "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+              "exitCode": 0,
+              "output": "",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 23,
+          "input": {
+            "kind": "command",
+            "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-patch/workspace"
+          },
+          "status": "ok",
+          "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+              "exitCode": 0,
+              "output": "․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․,,,,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․\n\n  3243 passing (2s)\n  8 pending",
+              "environment": "linux-native"
+            }
+          }
+        }
+      ],
+      "lastEditIndex": 16,
+      "finalReport": "Implemented the internal rename from `reportUnhandledError` to `notifyUnhandledError` across its declaration and resolving production/fixture references. Preserved the module filename/path, local alias `retainedLocal`, public alias `stablePublicName`, unrelated homonym, comment, and literal.\n\nVerification:\n- TypeScript command completed successfully with exit code 0 and no diagnostics.\n- Mocha command completed successfully: 3243 passing, 8 pending. No skipped category was reported by the command, so the skipped count is unknown rather than zero.\n\nNo dependency manifests, lockfiles, configuration, assertions, or new files were changed. Verification is limited to the requested compiler and Mocha suite; no separate skipped-test enumeration was available.",
+      "verification": "unverified",
+      "hints": [],
+      "matchingHintFollowups": 0,
+      "dispatchedRequests": 7,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 0,
+        "bareReferenceFallbacks": 1,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 0,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 0,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-bundle",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "bundle",
+      "repetition": 1,
+      "eventsSha256": "a2d427fdbd6ef46ca3248695da789b62a044848d97448d95f4d15cc7e7066c8d",
+      "compilerReferenceCalls": 1,
+      "compilerRenameCalls": 1,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "query": "src/internal/util/reportUnhandledError.ts#reportUnhandledError",
+          "scope": "*",
+          "mode": "references"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": [
+            "src",
+            "spec",
+            "spec-dtslint",
+            "integration",
+            "docs_app"
+          ],
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "spec",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "spec-dtslint",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "integration",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "docs_app",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": [
+            "src",
+            "spec",
+            "spec-dtslint",
+            "integration",
+            "docs_app"
+          ],
+          "mode": "text"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s1",
+                "action": "rename",
+                "content": "notifyUnhandledError"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 11,
+      "readBytes": 8718,
+      "commands": [
+        {
+          "index": 20,
+          "input": {
+            "kind": "command",
+            "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-bundle/workspace"
+          },
+          "status": "ok",
+          "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+              "exitCode": 0,
+              "output": "",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 21,
+          "input": {
+            "kind": "command",
+            "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-bundle/workspace"
+          },
+          "status": "ok",
+          "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+          "exitCode": 0,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "reportedCounts": {
+              "passed": 3243,
+              "failed": null,
+              "pending": 8,
+              "skipped": null
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+              "exitCode": 0,
+              "output": "․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․,,,,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․\n… diagnostic truncated …\n․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․\n\n  3243 passing (3s)\n  8 pending",
+              "outputLog": ".blame/logs/validation-e231899c-0199-4f68-ab22-991f00b2f93a.log",
+              "check": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "reportedCounts": {
+                  "passed": 3243,
+                  "failed": null,
+                  "pending": 8,
+                  "skipped": null
+                },
+                "scope": ".",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "evidenceOrigin": "runner_output"
+              },
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "counts": {
+                  "executed": null,
+                  "passed": 3243,
+                  "failed": null,
+                  "skipped": null,
+                  "pending": 8
+                },
+                "evidenceOrigin": "runner_output",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified",
+                "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+                "invocationSourceRevisionId": "src_277842af5829d1fc2ca21486b4c8dfc9",
+                "completedSourceRevisionId": "src_277842af5829d1fc2ca21486b4c8dfc9",
+                "cwd": "."
+              },
+              "changed": false,
+              "paths": [],
+              "validation": {
+                "status": "unknown"
+              }
+            }
+          }
+        }
+      ],
+      "lastEditIndex": 11,
+      "finalReport": "## Changes\n- Renamed the internal exported declaration to `notifyUnhandledError` in `src/internal/util/reportUnhandledError.ts`.\n- Updated all resolving production references and the supplied navigation fixture while preserving the module filename/path, explicit local alias `retainedLocal`, public alias `stablePublicName`, comment/literal text, and local homonym.\n- No files were added; dependency manifests, lockfiles, configuration, and assertions were not changed.\n\n## Verification\n- TypeScript command exited 0 with no diagnostics.\n- Mocha command exited 0; reported **3243 passing** and **8 pending**.\n- Failed count: **unreported/unknown**; skipped count: **unreported/unknown**. Pending is reported separately and was not treated as skipped.\n- The validation runner marked the test outcome/admission as unverified and did not report an executed-test total, so those remain verification limitations despite the successful process exit.",
+      "verification": "unverified",
+      "hints": [],
+      "matchingHintFollowups": 0,
+      "dispatchedRequests": 7,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 1,
+        "bareReferenceFallbacks": 0,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 1,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 1,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-references",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "references",
+      "repetition": 1,
+      "eventsSha256": "f55e23fa3750c4c6c80c427d53b03b6cb86a498bbebbc28caa599b9490adedf9",
+      "compilerReferenceCalls": 1,
+      "compilerRenameCalls": 1,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "src"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "test"
+        },
+        {
+          "query": "src/_lib/getTimezoneOffsetInMilliseconds/index.ts#getTimezoneOffsetInMilliseconds",
+          "mode": "references",
+          "scope": "*"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "src/_lib/getTimezoneOffsetInMilliseconds",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "test",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "examples",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "docs",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": ".github",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "scripts",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "getLocalTimezoneOffsetMilliseconds",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "getLocalTimezoneOffsetMilliseconds",
+          "scope": "src",
+          "mode": "text"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s3",
+                "action": "rename",
+                "content": "getLocalTimezoneOffsetMilliseconds"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 10,
+      "readBytes": 17166,
+      "commands": [
+        {
+          "index": 15,
+          "input": {
+            "kind": "command",
+            "command": "rg -n --hidden --glob '!node_modules' --glob '!coverage' 'getTimezoneOffsetInMilliseconds' .",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-references/workspace"
+          },
+          "status": "ok",
+          "command": "rg -n --hidden --glob '!node_modules' --glob '!coverage' 'getTimezoneOffsetInMilliseconds' .",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rg -n --hidden --glob '!node_modules' --glob '!coverage' 'getTimezoneOffsetInMilliseconds' .",
+              "exitCode": 0,
+              "output": "./src/getOverlappingDaysInIntervals/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/getOverlappingDaysInIntervals/index.ts:61:  const left = overlapLeft - getTimezoneOffsetInMilliseconds(overlapLeft);\n./src/getOverlappingDaysInIntervals/index.ts:63:  const right = overlapRight - getTimezoneOffsetInMilliseconds(overlapRight);\n./src/parse/_lib/parsers/ISOTimezoneWithZParser.ts:2:import { getTimezoneOffsetInMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/parse/_lib/parsers/ISOTimezoneWithZParser.ts:45:      date.getTime() - getTimezoneOffsetInMilliseconds(date) - value,\n./src/parse/_lib/parsers/ISOTimezoneParser.ts:2:import { getTimezoneOffsetInMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/parse/_lib/parsers/ISOTimezoneParser.ts:45:      date.getTime() - getTimezoneOffsetInMilliseconds(date) - value,\n./src/formatDistanceStrict/index.ts:4:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/formatDistanceStrict/index.ts:152:    getTimezoneOffsetInMilliseconds(earlierDate_) -\n./src/formatDistanceStrict/index.ts:153:    getTimezoneOffsetInMilliseconds(laterDate_);\n./src/formatDistance/index.ts:3:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/formatDistance/index.ts:126:    (getTimezoneOffsetInMilliseconds(earlierDate_) -\n./src/formatDistance/index.ts:127:      getTimezoneOffsetInMilliseconds(laterDate_)) /\n./src/differenceInCalendarDays/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/differenceInCalendarDays/index.ts:58:    +laterStartOfDay - getTimezoneOffsetInMilliseconds(laterStartOfDay);\n./src/differenceInCalendarDays/index.ts:60:    +earlierStartOfDay - getTimezoneOffsetInMilliseconds(earlierStartOfDay);\n./src/_lib/guidance-navigatio\n… diagnostic truncated …\nsrc/_lib/guidance-navigation-fixture.ts:4:// Preserve getTimezoneOffsetInMilliseconds in this comment and the local homonym/literal.\n./src/_lib/guidance-navigation-fixture.ts:5:function getTimezoneOffsetInMilliseconds() { return \"getTimezoneOffsetInMilliseconds\"; }\n./src/_lib/guidance-navigation-fixture.ts:6:export const localExample = getTimezoneOffsetInMilliseconds();\n./src/_lib/guidance-navigation-fixture.ts:8:export const namespaceExample = helpers.getTimezoneOffsetInMilliseconds;\n./src/_lib/getTimezoneOffsetInMilliseconds/test.ts:2:import { getTimezoneOffsetInMilliseconds } from \"./index.js\";\n./src/_lib/getTimezoneOffsetInMilliseconds/test.ts:4:describe(\"getTimezoneOffsetInMilliseconds\", () => {\n./src/_lib/getTimezoneOffsetInMilliseconds/test.ts:7:    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\n./src/_lib/getTimezoneOffsetInMilliseconds/test.ts:14:    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\n./src/_lib/getTimezoneOffsetInMilliseconds/test.ts:21:    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\n./src/_lib/getTimezoneOffsetInMilliseconds/index.ts:15:export function getTimezoneOffsetInMilliseconds(\n./src/differenceInCalendarISOWeeks/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/differenceInCalendarISOWeeks/index.ts:52:    +startOfISOWeekLeft - getTimezoneOffsetInMilliseconds(startOfISOWeekLeft);\n./src/differenceInCalendarISOWeeks/index.ts:54:    +startOfISOWeekRight - getTimezoneOffsetInMilliseconds(startOfISOWeekRight);\n./src/differenceInCalendarWeeks/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/differenceInCalendarWeeks/index.ts:67:    +laterStartOfWeek - getTimezoneOffsetInMilliseconds(laterStartOfWeek);\n./src/differenceInCalendarWeeks/index.ts:69:    +earlierStartOfWeek - getTimezoneOffsetInMilliseconds(earlierStartOfWeek);",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 16,
+          "input": {
+            "kind": "command",
+            "command": "rg -n --hidden --glob '!node_modules' --glob '!coverage' 'getTimezoneOffsetInMilliseconds/index\\.js|_lib/getTimezoneOffsetInMilliseconds' .",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-references/workspace"
+          },
+          "status": "ok",
+          "command": "rg -n --hidden --glob '!node_modules' --glob '!coverage' 'getTimezoneOffsetInMilliseconds/index\\.js|_lib/getTimezoneOffsetInMilliseconds' .",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rg -n --hidden --glob '!node_modules' --glob '!coverage' 'getTimezoneOffsetInMilliseconds/index\\.js|_lib/getTimezoneOffsetInMilliseconds' .",
+              "exitCode": 0,
+              "output": "./src/getOverlappingDaysInIntervals/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/differenceInCalendarDays/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/parse/_lib/parsers/ISOTimezoneWithZParser.ts:2:import { getTimezoneOffsetInMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/parse/_lib/parsers/ISOTimezoneParser.ts:2:import { getTimezoneOffsetInMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/formatDistance/index.ts:3:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/formatDistanceStrict/index.ts:4:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/_lib/guidance-navigation-fixture.ts:1:import { getTimezoneOffsetInMilliseconds as retainedLocal } from \"./getTimezoneOffsetInMilliseconds/index.js\";\n./src/_lib/guidance-navigation-fixture.ts:2:import * as helpers from \"./getTimezoneOffsetInMilliseconds/index.js\";\n./src/_lib/guidance-navigation-fixture.ts:3:export { getTimezoneOffsetInMilliseconds as stablePublicName } from \"./getTimezoneOffsetInMilliseconds/index.js\";\n./src/differenceInCalendarISOWeeks/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/differenceInCalendarWeeks/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 25,
+          "input": {
+            "kind": "command",
+            "command": "npm run types",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-references/workspace"
+          },
+          "status": "ok",
+          "command": "npm run types",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "npm run types",
+              "exitCode": 0,
+              "output": "> date-fns@4.1.0 types\n> tsc --noEmit",
+              "environment": "linux-native",
+              "validation": {
+                "paths": [
+                  "src/_lib/getTimezoneOffsetInMilliseconds/index.ts",
+                  "src/_lib/guidance-navigation-fixture.ts",
+                  "src/differenceInCalendarDays/index.ts",
+                  "src/differenceInCalendarISOWeeks/index.ts",
+                  "src/differenceInCalendarWeeks/index.ts",
+                  "src/formatDistance/index.ts",
+                  "src/formatDistanceStrict/index.ts",
+                  "src/getOverlappingDaysInIntervals/index.ts",
+                  "src/parse/_lib/parsers/ISOTimezoneWithZParser.ts",
+                  "src/parse/_lib/parsers/ISOTimezoneParser.ts",
+                  "src/_lib/getTimezoneOffsetInMilliseconds/test.ts"
+                ],
+                "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+                "status": "passed",
+                "taskId": "types",
+                "taskKind": "typecheck"
+              }
+            }
+          }
+        },
+        {
+          "index": 26,
+          "input": {
+            "kind": "command",
+            "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-references/workspace"
+          },
+          "status": "ok",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "exitCode": 0,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+              "exitCode": 0,
+              "output": "> date-fns@4.1.0 test\n> vitest run --maxWorkers=1 --minWorkers=1 --pool=forks\n\n\n RUN  v1.3.1 /workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-references/workspace\n\nstderr | src/parse/test.ts > parse > era > with week-numbering year\nUse `y` instead of `Y` (in `Y GGGGG`) for formatting years to the input `44 B`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md\n\nstderr | \n… diagnostic truncated …\natRFC7231/test.ts  (3 tests)\n ✓ src/getSeconds/test.ts  (3 tests)\n ✓ src/isMatch/test.ts  (3 tests)\n ✓ src/_lib/addLeadingZeros/test.ts  (1 test)\n ✓ src/secondsToMilliseconds/test.ts  (2 tests)\n ✓ src/isExists/test.ts  (2 tests)\n\n Test Files  250 passed (250)\n      Tests  3140 passed | 18 skipped (3158)\n   Start at  00:07:23\n   Duration  6.72s (transform 2.53s, setup 0ms, collect 4.34s, tests 1.17s, environment 2ms, prepare 101ms)",
+              "outputLog": ".blame/logs/validation-c339cd85-084c-4cdf-832b-c6f791137cc5.log",
+              "check": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 3140,
+                  "passed": 3140,
+                  "failed": 0,
+                  "skipped": 18
+                },
+                "scope": ".",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "evidenceOrigin": "runner_output"
+              },
+              "changed": false,
+              "paths": [],
+              "validation": {
+                "status": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "index": 27,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff --stat && git diff -- src/_lib/getTimezoneOffsetInMilliseconds/index.ts src/_lib/getTimezoneOffsetInMilliseconds/test.ts src/_lib/guidance-navigation-fixture.ts src/differenceInCalendarDays/index.ts src/differenceInCalendarISOWeeks/index.ts src/differenceInCalendarWeeks/index.ts src/formatDistance/index.ts src/formatDistanceStrict/index.ts src/getOverlappingDaysInIntervals/index.ts src/parse/_lib/parsers/ISOTimezoneParser.ts src/parse/_lib/parsers/ISOTimezoneWithZParser.ts",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-references/workspace"
+          },
+          "status": "ok",
+          "command": "git diff --check && git status --short && git diff --stat && git diff -- src/_lib/getTimezoneOffsetInMilliseconds/index.ts src/_lib/getTimezoneOffsetInMilliseconds/test.ts src/_lib/guidance-navigation-fixture.ts src/differenceInCalendarDays/index.ts src/differenceInCalendarISOWeeks/index.ts src/differenceInCalendarWeeks/index.ts src/formatDistance/index.ts src/formatDistanceStrict/index.ts src/getOverlappingDaysInIntervals/index.ts src/parse/_lib/parsers/ISOTimezoneParser.ts src/parse/_lib/parsers/ISOTimezoneWithZParser.ts",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "git diff --check && git status --short && git diff --stat && git diff -- src/_lib/getTimezoneOffsetInMilliseconds/index.ts src/_lib/getTimezoneOffsetInMilliseconds/test.ts src/_lib/guidance-navigation-fixture.ts src/differenceInCalendarDays/index.ts src/differenceInCalendarISOWeeks/index.ts src/differenceInCalendarWeeks/index.ts src/formatDistance/index.ts src/formatDistanceStrict/index.ts src/getOverlappingDaysInIntervals/index.ts src/parse/_lib/parsers/ISOTimezoneParser.ts src/parse/_lib/parsers/ISOTimezoneWithZParser.ts",
+              "exitCode": 0,
+              "output": "M src/_lib/getTimezoneOffsetInMilliseconds/index.ts\n M src/_lib/getTimezoneOffsetInMilliseconds/test.ts\n M src/_lib/guidance-navigation-fixture.ts\n M src/differenceInCalendarDays/index.ts\n M src/differenceInCalendarISOWeeks/index.ts\n M src/differenceInCalendarWeeks/index.ts\n M src/formatDistance/index.ts\n M src/formatDistanceStrict/index.ts\n M src/getOverlappingDaysInIntervals/index.ts\n M src/parse/_lib/parsers/ISOTimezoneParser.ts\n M src/parse/_lib/parsers/ISOTimezoneWithZParser.ts\n src/_lib/getTimezoneOffsetInMilliseconds/index.ts | 2 +-\n src/_lib/getTimezoneOffsetInMilliseconds/test.ts  | 8 ++++----\n src/_lib/guidance-navigation-fixture.ts           | 6 +++---\n src/differenceInCalendarDays/index.ts             | 6 +++---\n src/differenceInCalendarISOWeeks/index.ts         | 6 +++---\n src/differenceInCalendarWeeks/index.ts            | 6 +++---\n src/formatDistance/index.ts                       | 6 +++---\n src/formatDistanceStrict/index.ts                 | 6 +++---\n src/getOverlappingDaysInIntervals/index.ts        | 6 +++---\n src/parse/_lib/parsers/ISOTimezoneParser.ts       | 4 ++--\n src/parse/_lib/parsers/ISOTimezoneWithZParser.ts  | 4 ++--\n 11 files changed, 30 insertions(+), 30 deletions(-)\ndiff --git a/src/_lib/getTimezoneOffsetInMilliseconds/index.ts b/src/_lib/getTimezoneOffsetInMilliseconds/index.ts\nindex 9b5ffca..4139883 100644\n--- a/src/_lib/getTimezoneOffsetInMilliseconds/index.ts\n+++ b/src/_lib/getTimezoneOffsetInMilliseconds/index.ts\n@@ -12,7 +12,7 @@ import type { DateArg } from \"../../types.js\";\n  *\n  * This function returns the timezone offset in milliseconds that takes seconds in account.\n  */\n-export function getTimezoneOffsetInMilliseconds(\n+export function getLocalTimezoneOffsetMilliseconds(\n   date: DateArg<Date> & {},\n ): number {\n   const _date = toDate(date);\ndiff --git a/src/_lib/getTimezoneOffsetInMilliseconds/test.ts b/src/_lib/getTimezoneOffsetInMilliseconds/test.ts\nindex dc12b58..30525d3 100644\n--- a/src/_lib/getTimezo\n… diagnostic truncated …\neParser.ts b/src/parse/_lib/parsers/ISOTimezoneParser.ts\nindex a96781c..c8908eb 100644\n--- a/src/parse/_lib/parsers/ISOTimezoneParser.ts\n+++ b/src/parse/_lib/parsers/ISOTimezoneParser.ts\n@@ -1,5 +1,5 @@\n import { constructFrom } from \"../../../constructFrom/index.js\";\n-import { getTimezoneOffsetInMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n+import { getLocalTimezoneOffsetMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n import { timezonePatterns } from \"../constants.js\";\n import { Parser } from \"../Parser.js\";\n import type { ParseFlags, ParseResult } from \"../types.js\";\n@@ -42,7 +42,7 @@ export class ISOTimezoneParser extends Parser<number> {\n     if (flags.timestampIsSet) return date;\n     return constructFrom(\n       date,\n-      date.getTime() - getTimezoneOffsetInMilliseconds(date) - value,\n+      date.getTime() - getLocalTimezoneOffsetMilliseconds(date) - value,\n     );\n   }\n \ndiff --git a/src/parse/_lib/parsers/ISOTimezoneWithZParser.ts b/src/parse/_lib/parsers/ISOTimezoneWithZParser.ts\nindex b4c3a2a..3f85746 100644\n--- a/src/parse/_lib/parsers/ISOTimezoneWithZParser.ts\n+++ b/src/parse/_lib/parsers/ISOTimezoneWithZParser.ts\n@@ -1,5 +1,5 @@\n import { constructFrom } from \"../../../constructFrom/index.js\";\n-import { getTimezoneOffsetInMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n+import { getLocalTimezoneOffsetMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n import { timezonePatterns } from \"../constants.js\";\n import { Parser } from \"../Parser.js\";\n import type { ParseFlags, ParseResult } from \"../types.js\";\n@@ -42,7 +42,7 @@ export class ISOTimezoneWithZParser extends Parser<number> {\n     if (flags.timestampIsSet) return date;\n     return constructFrom(\n       date,\n-      date.getTime() - getTimezoneOffsetInMilliseconds(date) - value,\n+      date.getTime() - getLocalTimezoneOffsetMilliseconds(date) - value,\n     );\n   }",
+              "environment": "linux-native"
+            }
+          }
+        }
+      ],
+      "lastEditIndex": 19,
+      "finalReport": "Implemented the internal rename from `getTimezoneOffsetInMilliseconds` to `getLocalTimezoneOffsetMilliseconds` while preserving the module path, explicit local aliases, stable public export alias, comments, literals, unrelated homonym, and runtime behavior. Updated all resolving production/test identifiers, including the supplied navigation fixture; no files were added and no manifests/configuration/assertions were changed.\n\nVerification:\n- `npm run types`: passed (TypeScript completed successfully).\n- `npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks`: passed — 250 test files passed; 3,140 tests passed; 18 tests skipped; 0 failed.\n- `git diff --check`: passed.\n\nSkipped tests are reported separately from passed tests; no pending category was reported by the test runner. The test command’s runner validation metadata was marked unknown, but its observed process exited successfully with the counts above.",
+      "verification": "unverified",
+      "hints": [],
+      "matchingHintFollowups": 0,
+      "dispatchedRequests": 9,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 1,
+        "bareReferenceFallbacks": 0,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 0,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 0,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-rename",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "rename",
+      "repetition": 1,
+      "eventsSha256": "d8a1f9b9e69f5ec32ea45c92b06b4036761d36e44586c5170f940f3ec2548505",
+      "compilerReferenceCalls": 1,
+      "compilerRenameCalls": 1,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": [
+            "src",
+            "test",
+            "examples",
+            "scripts",
+            "codemods",
+            "docs"
+          ],
+          "mode": "references"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": [
+            "src",
+            "test",
+            "examples",
+            "scripts",
+            "codemods",
+            "docs"
+          ],
+          "mode": "text"
+        },
+        {
+          "query": "s1",
+          "scope": "*",
+          "mode": "references"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds as",
+          "scope": "*",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "src/**/*.ts",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "getLocalTimezoneOffsetMilliseconds",
+          "scope": "src",
+          "mode": "text"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s1",
+                "action": "rename",
+                "content": "getLocalTimezoneOffsetMilliseconds"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 10,
+      "readBytes": 16712,
+      "commands": [
+        {
+          "index": 9,
+          "input": {
+            "kind": "command",
+            "command": "rg -n --hidden --glob '!node_modules/**' --glob '!package-lock.json' 'getTimezoneOffsetInMilliseconds' .",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-rename/workspace"
+          },
+          "status": "ok",
+          "command": "rg -n --hidden --glob '!node_modules/**' --glob '!package-lock.json' 'getTimezoneOffsetInMilliseconds' .",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rg -n --hidden --glob '!node_modules/**' --glob '!package-lock.json' 'getTimezoneOffsetInMilliseconds' .",
+              "exitCode": 0,
+              "output": "./src/parse/_lib/parsers/ISOTimezoneWithZParser.ts:2:import { getTimezoneOffsetInMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/parse/_lib/parsers/ISOTimezoneWithZParser.ts:45:      date.getTime() - getTimezoneOffsetInMilliseconds(date) - value,\n./src/parse/_lib/parsers/ISOTimezoneParser.ts:2:import { getTimezoneOffsetInMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/parse/_lib/parsers/ISOTimezoneParser.ts:45:      date.getTime() - getTimezoneOffsetInMilliseconds(date) - value,\n./src/differenceInCalendarDays/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/differenceInCalendarDays/index.ts:58:    +laterStartOfDay - getTimezoneOffsetInMilliseconds(laterStartOfDay);\n./src/differenceInCalendarDays/index.ts:60:    +earlierStartOfDay - getTimezoneOffsetInMilliseconds(earlierStartOfDay);\n./src/formatDistance/index.ts:3:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/formatDistance/index.ts:126:    (getTimezoneOffsetInMilliseconds(earlierDate_) -\n./src/formatDistance/index.ts:127:      getTimezoneOffsetInMilliseconds(laterDate_)) /\n./src/getOverlappingDaysInIntervals/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/getOverlappingDaysInIntervals/index.ts:61:  const left = overlapLeft - getTimezoneOffsetInMilliseconds(overlapLeft);\n./src/getOverlappingDaysInIntervals/index.ts:63:  const right = overlapRight - getTimezoneOffsetInMilliseconds(overlapRight);\n./src/formatDistanceStrict/index.ts:4:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/formatDistanceStrict/index.ts:152:    getTimezoneOffsetInMilliseconds(earlierDate_) -\n./src/formatDistanceStrict/index.ts:153:    getTimezoneOffsetInMilliseconds(laterDate_);\n./src/differenceInCalendarISO\n… diagnostic truncated …\n-fixture.ts:1:import { getTimezoneOffsetInMilliseconds as retainedLocal } from \"./getTimezoneOffsetInMilliseconds/index.js\";\n./src/_lib/guidance-navigation-fixture.ts:2:import * as helpers from \"./getTimezoneOffsetInMilliseconds/index.js\";\n./src/_lib/guidance-navigation-fixture.ts:3:export { getTimezoneOffsetInMilliseconds as stablePublicName } from \"./getTimezoneOffsetInMilliseconds/index.js\";\n./src/_lib/guidance-navigation-fixture.ts:4:// Preserve getTimezoneOffsetInMilliseconds in this comment and the local homonym/literal.\n./src/_lib/guidance-navigation-fixture.ts:5:function getTimezoneOffsetInMilliseconds() { return \"getTimezoneOffsetInMilliseconds\"; }\n./src/_lib/guidance-navigation-fixture.ts:6:export const localExample = getTimezoneOffsetInMilliseconds();\n./src/_lib/guidance-navigation-fixture.ts:8:export const namespaceExample = helpers.getTimezoneOffsetInMilliseconds;\n./src/_lib/getTimezoneOffsetInMilliseconds/test.ts:2:import { getTimezoneOffsetInMilliseconds } from \"./index.js\";\n./src/_lib/getTimezoneOffsetInMilliseconds/test.ts:4:describe(\"getTimezoneOffsetInMilliseconds\", () => {\n./src/_lib/getTimezoneOffsetInMilliseconds/test.ts:7:    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\n./src/_lib/getTimezoneOffsetInMilliseconds/test.ts:14:    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\n./src/_lib/getTimezoneOffsetInMilliseconds/test.ts:21:    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\n./src/_lib/getTimezoneOffsetInMilliseconds/index.ts:15:export function getTimezoneOffsetInMilliseconds(\n./src/differenceInCalendarWeeks/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\n./src/differenceInCalendarWeeks/index.ts:67:    +laterStartOfWeek - getTimezoneOffsetInMilliseconds(laterStartOfWeek);\n./src/differenceInCalendarWeeks/index.ts:69:    +earlierStartOfWeek - getTimezoneOffsetInMilliseconds(earlierStartOfWeek);",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 13,
+          "input": {
+            "kind": "command",
+            "command": "rg -l --hidden --glob '!node_modules/**' --glob '!package-lock.json' 'getTimezoneOffsetInMilliseconds' . | sort",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-rename/workspace"
+          },
+          "status": "ok",
+          "command": "rg -l --hidden --glob '!node_modules/**' --glob '!package-lock.json' 'getTimezoneOffsetInMilliseconds' . | sort",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rg -l --hidden --glob '!node_modules/**' --glob '!package-lock.json' 'getTimezoneOffsetInMilliseconds' . | sort",
+              "exitCode": 0,
+              "output": "./src/_lib/getTimezoneOffsetInMilliseconds/index.ts\n./src/_lib/getTimezoneOffsetInMilliseconds/test.ts\n./src/_lib/guidance-navigation-fixture.ts\n./src/differenceInCalendarDays/index.ts\n./src/differenceInCalendarISOWeeks/index.ts\n./src/differenceInCalendarWeeks/index.ts\n./src/formatDistance/index.ts\n./src/formatDistanceStrict/index.ts\n./src/getOverlappingDaysInIntervals/index.ts\n./src/parse/_lib/parsers/ISOTimezoneParser.ts\n./src/parse/_lib/parsers/ISOTimezoneWithZParser.ts",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 14,
+          "input": {
+            "kind": "command",
+            "command": "rg -n --hidden --glob '!node_modules/**' --glob '!package-lock.json' 'getTimezoneOffsetInMilliseconds' src test examples scripts codemods docs 2>/dev/null | sed -n '1,240p'",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-rename/workspace"
+          },
+          "status": "ok",
+          "command": "rg -n --hidden --glob '!node_modules/**' --glob '!package-lock.json' 'getTimezoneOffsetInMilliseconds' src test examples scripts codemods docs 2>/dev/null | sed -n '1,240p'",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rg -n --hidden --glob '!node_modules/**' --glob '!package-lock.json' 'getTimezoneOffsetInMilliseconds' src test examples scripts codemods docs 2>/dev/null | sed -n '1,240p'",
+              "exitCode": 0,
+              "output": "src/parse/_lib/parsers/ISOTimezoneWithZParser.ts:2:import { getTimezoneOffsetInMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/parse/_lib/parsers/ISOTimezoneWithZParser.ts:45:      date.getTime() - getTimezoneOffsetInMilliseconds(date) - value,\nsrc/parse/_lib/parsers/ISOTimezoneParser.ts:2:import { getTimezoneOffsetInMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/parse/_lib/parsers/ISOTimezoneParser.ts:45:      date.getTime() - getTimezoneOffsetInMilliseconds(date) - value,\nsrc/formatDistance/index.ts:3:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/formatDistance/index.ts:126:    (getTimezoneOffsetInMilliseconds(earlierDate_) -\nsrc/formatDistance/index.ts:127:      getTimezoneOffsetInMilliseconds(laterDate_)) /\nsrc/differenceInCalendarDays/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/differenceInCalendarDays/index.ts:58:    +laterStartOfDay - getTimezoneOffsetInMilliseconds(laterStartOfDay);\nsrc/differenceInCalendarDays/index.ts:60:    +earlierStartOfDay - getTimezoneOffsetInMilliseconds(earlierStartOfDay);\nsrc/formatDistanceStrict/index.ts:4:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/formatDistanceStrict/index.ts:152:    getTimezoneOffsetInMilliseconds(earlierDate_) -\nsrc/formatDistanceStrict/index.ts:153:    getTimezoneOffsetInMilliseconds(laterDate_);\nsrc/getOverlappingDaysInIntervals/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/getOverlappingDaysInIntervals/index.ts:61:  const left = overlapLeft - getTimezoneOffsetInMilliseconds(overlapLeft);\nsrc/getOverlappingDaysInIntervals/index.ts:63:  const right = overlapRight - getTimezoneOffsetInMilliseconds(overlapRight);\nsrc/differenceInCalendarWeeks/index.ts:1:import { getTimezone\n… diagnostic truncated …\nance-navigation-fixture.ts:1:import { getTimezoneOffsetInMilliseconds as retainedLocal } from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:2:import * as helpers from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:3:export { getTimezoneOffsetInMilliseconds as stablePublicName } from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:4:// Preserve getTimezoneOffsetInMilliseconds in this comment and the local homonym/literal.\nsrc/_lib/guidance-navigation-fixture.ts:5:function getTimezoneOffsetInMilliseconds() { return \"getTimezoneOffsetInMilliseconds\"; }\nsrc/_lib/guidance-navigation-fixture.ts:6:export const localExample = getTimezoneOffsetInMilliseconds();\nsrc/_lib/guidance-navigation-fixture.ts:8:export const namespaceExample = helpers.getTimezoneOffsetInMilliseconds;\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:2:import { getTimezoneOffsetInMilliseconds } from \"./index.js\";\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:4:describe(\"getTimezoneOffsetInMilliseconds\", () => {\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:7:    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:14:    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:21:    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\nsrc/_lib/getTimezoneOffsetInMilliseconds/index.ts:15:export function getTimezoneOffsetInMilliseconds(\nsrc/differenceInCalendarISOWeeks/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/differenceInCalendarISOWeeks/index.ts:52:    +startOfISOWeekLeft - getTimezoneOffsetInMilliseconds(startOfISOWeekLeft);\nsrc/differenceInCalendarISOWeeks/index.ts:54:    +startOfISOWeekRight - getTimezoneOffsetInMilliseconds(startOfISOWeekRight);",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 21,
+          "input": {
+            "kind": "command",
+            "command": "npm run types",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-rename/workspace"
+          },
+          "status": "ok",
+          "command": "npm run types",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "npm run types",
+              "exitCode": 0,
+              "output": "> date-fns@4.1.0 types\n> tsc --noEmit",
+              "environment": "linux-native",
+              "validation": {
+                "paths": [
+                  "src/_lib/getTimezoneOffsetInMilliseconds/index.ts",
+                  "src/_lib/guidance-navigation-fixture.ts",
+                  "src/differenceInCalendarDays/index.ts",
+                  "src/differenceInCalendarISOWeeks/index.ts",
+                  "src/differenceInCalendarWeeks/index.ts",
+                  "src/formatDistance/index.ts",
+                  "src/formatDistanceStrict/index.ts",
+                  "src/getOverlappingDaysInIntervals/index.ts",
+                  "src/parse/_lib/parsers/ISOTimezoneWithZParser.ts",
+                  "src/parse/_lib/parsers/ISOTimezoneParser.ts",
+                  "src/_lib/getTimezoneOffsetInMilliseconds/test.ts"
+                ],
+                "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+                "status": "passed",
+                "taskId": "types",
+                "taskKind": "typecheck"
+              }
+            }
+          }
+        },
+        {
+          "index": 22,
+          "input": {
+            "kind": "command",
+            "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-rename/workspace"
+          },
+          "status": "ok",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "exitCode": 0,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+              "exitCode": 0,
+              "output": "> date-fns@4.1.0 test\n> vitest run --maxWorkers=1 --minWorkers=1 --pool=forks\n\n\n RUN  v1.3.1 /workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-rename/workspace\n\nstderr | src/parse/test.ts > parse > era > with week-numbering year\nUse `y` instead of `Y` (in `Y GGGGG`) for formatting years to the input `44 B`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md\n\nstderr | src/\n… diagnostic truncated …\nC7231/test.ts  (3 tests)\n ✓ src/getSeconds/test.ts  (3 tests)\n ✓ src/isMatch/test.ts  (3 tests)\n ✓ src/_lib/addLeadingZeros/test.ts  (1 test)\n ✓ src/secondsToMilliseconds/test.ts  (2 tests) 1ms\n ✓ src/isExists/test.ts  (2 tests)\n\n Test Files  250 passed (250)\n      Tests  3140 passed | 18 skipped (3158)\n   Start at  00:08:41\n   Duration  6.77s (transform 2.50s, setup 0ms, collect 4.30s, tests 1.24s, environment 2ms, prepare 100ms)",
+              "outputLog": ".blame/logs/validation-82afc766-ef04-40b0-a690-e14c538f596f.log",
+              "check": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 3140,
+                  "passed": 3140,
+                  "failed": 0,
+                  "skipped": 18
+                },
+                "scope": ".",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "evidenceOrigin": "runner_output"
+              },
+              "changed": false,
+              "paths": [],
+              "validation": {
+                "status": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "index": 23,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff --stat && rg -n --hidden --glob '!node_modules/**' --glob '!package-lock.json' 'getTimezoneOffsetInMilliseconds' src test examples scripts codemods docs 2>/dev/null",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-rename/workspace"
+          },
+          "status": "ok",
+          "command": "git diff --check && git status --short && git diff --stat && rg -n --hidden --glob '!node_modules/**' --glob '!package-lock.json' 'getTimezoneOffsetInMilliseconds' src test examples scripts codemods docs 2>/dev/null",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "git diff --check && git status --short && git diff --stat && rg -n --hidden --glob '!node_modules/**' --glob '!package-lock.json' 'getTimezoneOffsetInMilliseconds' src test examples scripts codemods docs 2>/dev/null",
+              "exitCode": 0,
+              "output": "M src/_lib/getTimezoneOffsetInMilliseconds/index.ts\n M src/_lib/getTimezoneOffsetInMilliseconds/test.ts\n M src/_lib/guidance-navigation-fixture.ts\n M src/differenceInCalendarDays/index.ts\n M src/differenceInCalendarISOWeeks/index.ts\n M src/differenceInCalendarWeeks/index.ts\n M src/formatDistance/index.ts\n M src/formatDistanceStrict/index.ts\n M src/getOverlappingDaysInIntervals/index.ts\n M src/parse/_lib/parsers/ISOTimezoneParser.ts\n M src/parse/_lib/parsers/ISOTimezoneWithZParser.ts\n src/_lib/getTimezoneOffsetInMilliseconds/index.ts | 2 +-\n src/_lib/getTimezoneOffsetInMilliseconds/test.ts  | 8 ++++----\n src/_lib/guidance-navigation-fixture.ts           | 6 +++---\n src/differenceInCalendarDays/index.ts             | 6 +++---\n src/differenceInCalendarISOWeeks/index.ts         | 6 +++---\n src/differenceInCalendarWeeks/index.ts            | 6 +++---\n src/formatDistance/index.ts                       | 6 +++---\n src/formatDistanceStrict/index.ts                 | 6 +++---\n src/getOverlappingDaysInIntervals/index.ts        | 6 +++---\n src/parse/_lib/parsers/ISOTimezoneParser.ts       | 4 ++--\n src/parse/_lib/parsers/ISOTimezoneWithZParser.ts  | 4 ++--\n 11 files changed, 30 insertions(+), 30 deletions(-)\nsrc/parse/_lib/parsers/ISOTimezoneWithZParser.ts:2:import { getLocalTimezoneOffsetMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/parse/_lib/parsers/ISOTimezoneParser.ts:2:import { getLocalTimezoneOffsetMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/formatDistance/index.ts:3:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/formatDistanceStrict/index.ts:4:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/differenceInCalendarDays/index.ts:1:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/getOverlappingDaysInIntervals/index.ts:1:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/differenceInCalendarWeeks/index.ts:1:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:1:import { getLocalTimezoneOffsetMilliseconds as retainedLocal } from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:2:import * as helpers from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:3:export { getLocalTimezoneOffsetMilliseconds as stablePublicName } from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:4:// Preserve getTimezoneOffsetInMilliseconds in this comment and the local homonym/literal.\nsrc/_lib/guidance-navigation-fixture.ts:5:function getTimezoneOffsetInMilliseconds() { return \"getTimezoneOffsetInMilliseconds\"; }\nsrc/_lib/guidance-navigation-fixture.ts:6:export const localExample = getTimezoneOffsetInMilliseconds();\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:4:describe(\"getTimezoneOffsetInMilliseconds\", () => {\nsrc/differenceInCalendarISOWeeks/index.ts:1:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";",
+              "environment": "linux-native"
+            }
+          }
+        }
+      ],
+      "lastEditIndex": 15,
+      "finalReport": "Implemented the internal rename to `getLocalTimezoneOffsetMilliseconds` while preserving the module directory/file path, explicit local alias `retainedLocal`, public alias `stablePublicName`, comments, literals, unrelated homonyms, and runtime behavior. Updated all compiler-resolved imports, calls, the namespace property in the supplied navigation fixture, and the helper test references.\n\nVerification:\n- `npm run types`: passed.\n- `npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks`: passed; 250 test files, 3,140 passed, 0 failed, 18 skipped (3,158 total).\n- `git diff --check`: passed.\n\nNo dependency manifests, lockfiles, configuration, assertions, module paths, or files were added or changed beyond the requested identifier migration. The test runner reported 18 skipped tests; no pending category was reported. Verification is limited to the requested typecheck, test command, diff check, and source inspection; broader builds or external consumers were not run.",
+      "verification": "unverified",
+      "hints": [],
+      "matchingHintFollowups": 0,
+      "dispatchedRequests": 9,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 2,
+        "bareReferenceFallbacks": 1,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 1,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 0,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-reading",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "reading",
+      "repetition": 1,
+      "eventsSha256": "07266c5f857797d2d1ab98a5e0cdc3c6fcbda6251f962de02b3e8f57f76b3d6a",
+      "compilerReferenceCalls": 3,
+      "compilerRenameCalls": 1,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "src test examples scripts",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "src",
+          "mode": "symbol"
+        },
+        {
+          "query": "navigation",
+          "scope": "src test examples",
+          "mode": "text"
+        },
+        {
+          "query": "s1",
+          "scope": "src",
+          "mode": "references"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "test",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "s1",
+          "scope": "src/differenceInCalendarDays",
+          "mode": "references"
+        },
+        {
+          "query": "s1",
+          "scope": "src/locale",
+          "mode": "references"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s1",
+                "action": "rename",
+                "content": "getLocalTimezoneOffsetMilliseconds"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 5,
+      "readBytes": 5957,
+      "commands": [
+        {
+          "index": 9,
+          "input": {
+            "kind": "command",
+            "command": "rg -n --hidden --glob '!node_modules' --glob '!dist' 'getTimezoneOffsetInMilliseconds' src test examples scripts docs"
+          },
+          "status": "ok",
+          "command": "rg -n --hidden --glob '!node_modules' --glob '!dist' 'getTimezoneOffsetInMilliseconds' src test examples scripts docs",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rg -n --hidden --glob '!node_modules' --glob '!dist' 'getTimezoneOffsetInMilliseconds' src test examples scripts docs",
+              "exitCode": 0,
+              "output": "src/parse/_lib/parsers/ISOTimezoneWithZParser.ts:2:import { getTimezoneOffsetInMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/parse/_lib/parsers/ISOTimezoneWithZParser.ts:45:      date.getTime() - getTimezoneOffsetInMilliseconds(date) - value,\nsrc/parse/_lib/parsers/ISOTimezoneParser.ts:2:import { getTimezoneOffsetInMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/parse/_lib/parsers/ISOTimezoneParser.ts:45:      date.getTime() - getTimezoneOffsetInMilliseconds(date) - value,\nsrc/differenceInCalendarDays/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/differenceInCalendarDays/index.ts:58:    +laterStartOfDay - getTimezoneOffsetInMilliseconds(laterStartOfDay);\nsrc/differenceInCalendarDays/index.ts:60:    +earlierStartOfDay - getTimezoneOffsetInMilliseconds(earlierStartOfDay);\nsrc/formatDistance/index.ts:3:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/formatDistance/index.ts:126:    (getTimezoneOffsetInMilliseconds(earlierDate_) -\nsrc/formatDistance/index.ts:127:      getTimezoneOffsetInMilliseconds(laterDate_)) /\nsrc/formatDistanceStrict/index.ts:4:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/formatDistanceStrict/index.ts:152:    getTimezoneOffsetInMilliseconds(earlierDate_) -\nsrc/formatDistanceStrict/index.ts:153:    getTimezoneOffsetInMilliseconds(laterDate_);\nsrc/getOverlappingDaysInIntervals/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/getOverlappingDaysInIntervals/index.ts:61:  const left = overlapLeft - getTimezoneOffsetInMilliseconds(overlapLeft);\nsrc/getOverlappingDaysInIntervals/index.ts:63:  const right = overlapRight - getTimezoneOffsetInMilliseconds(overlapRight);\nsrc/differenceInCalendarWeeks/index.ts:1:import { getTimezone\n… diagnostic truncated …\nance-navigation-fixture.ts:1:import { getTimezoneOffsetInMilliseconds as retainedLocal } from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:2:import * as helpers from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:3:export { getTimezoneOffsetInMilliseconds as stablePublicName } from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:4:// Preserve getTimezoneOffsetInMilliseconds in this comment and the local homonym/literal.\nsrc/_lib/guidance-navigation-fixture.ts:5:function getTimezoneOffsetInMilliseconds() { return \"getTimezoneOffsetInMilliseconds\"; }\nsrc/_lib/guidance-navigation-fixture.ts:6:export const localExample = getTimezoneOffsetInMilliseconds();\nsrc/_lib/guidance-navigation-fixture.ts:8:export const namespaceExample = helpers.getTimezoneOffsetInMilliseconds;\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:2:import { getTimezoneOffsetInMilliseconds } from \"./index.js\";\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:4:describe(\"getTimezoneOffsetInMilliseconds\", () => {\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:7:    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:14:    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:21:    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\nsrc/_lib/getTimezoneOffsetInMilliseconds/index.ts:15:export function getTimezoneOffsetInMilliseconds(\nsrc/differenceInCalendarISOWeeks/index.ts:1:import { getTimezoneOffsetInMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/differenceInCalendarISOWeeks/index.ts:52:    +startOfISOWeekLeft - getTimezoneOffsetInMilliseconds(startOfISOWeekLeft);\nsrc/differenceInCalendarISOWeeks/index.ts:54:    +startOfISOWeekRight - getTimezoneOffsetInMilliseconds(startOfISOWeekRight);",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 15,
+          "input": {
+            "kind": "command",
+            "command": "rg -n --hidden --glob '!node_modules' --glob '!dist' 'getTimezoneOffsetInMilliseconds|getLocalTimezoneOffsetMilliseconds' src test examples scripts docs"
+          },
+          "status": "ok",
+          "command": "rg -n --hidden --glob '!node_modules' --glob '!dist' 'getTimezoneOffsetInMilliseconds|getLocalTimezoneOffsetMilliseconds' src test examples scripts docs",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rg -n --hidden --glob '!node_modules' --glob '!dist' 'getTimezoneOffsetInMilliseconds|getLocalTimezoneOffsetMilliseconds' src test examples scripts docs",
+              "exitCode": 0,
+              "output": "src/parse/_lib/parsers/ISOTimezoneWithZParser.ts:2:import { getLocalTimezoneOffsetMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/parse/_lib/parsers/ISOTimezoneWithZParser.ts:45:      date.getTime() - getLocalTimezoneOffsetMilliseconds(date) - value,\nsrc/parse/_lib/parsers/ISOTimezoneParser.ts:2:import { getLocalTimezoneOffsetMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/parse/_lib/parsers/ISOTimezoneParser.ts:45:      date.getTime() - getLocalTimezoneOffsetMilliseconds(date) - value,\nsrc/formatDistance/index.ts:3:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/formatDistance/index.ts:126:    (getLocalTimezoneOffsetMilliseconds(earlierDate_) -\nsrc/formatDistance/index.ts:127:      getLocalTimezoneOffsetMilliseconds(laterDate_)) /\nsrc/differenceInCalendarDays/index.ts:1:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/differenceInCalendarDays/index.ts:58:    +laterStartOfDay - getLocalTimezoneOffsetMilliseconds(laterStartOfDay);\nsrc/differenceInCalendarDays/index.ts:60:    +earlierStartOfDay - getLocalTimezoneOffsetMilliseconds(earlierStartOfDay);\nsrc/formatDistanceStrict/index.ts:4:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/formatDistanceStrict/index.ts:152:    getLocalTimezoneOffsetMilliseconds(earlierDate_) -\nsrc/formatDistanceStrict/index.ts:153:    getLocalTimezoneOffsetMilliseconds(laterDate_);\nsrc/getOverlappingDaysInIntervals/index.ts:1:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/getOverlappingDaysInIntervals/index.ts:61:  const left = overlapLeft - getLocalTimezoneOffsetMilliseconds(overlapLeft);\nsrc/getOverlappingDaysInIntervals/index.ts:63:  const right = overlapRight - getLocalTimezoneOffsetMilliseconds(overlapRight);\nsrc/differenc\n… diagnostic truncated …\nrt { getLocalTimezoneOffsetMilliseconds as retainedLocal } from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:2:import * as helpers from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:3:export { getLocalTimezoneOffsetMilliseconds as stablePublicName } from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:4:// Preserve getTimezoneOffsetInMilliseconds in this comment and the local homonym/literal.\nsrc/_lib/guidance-navigation-fixture.ts:5:function getTimezoneOffsetInMilliseconds() { return \"getTimezoneOffsetInMilliseconds\"; }\nsrc/_lib/guidance-navigation-fixture.ts:6:export const localExample = getTimezoneOffsetInMilliseconds();\nsrc/_lib/guidance-navigation-fixture.ts:8:export const namespaceExample = helpers.getLocalTimezoneOffsetMilliseconds;\nsrc/differenceInCalendarISOWeeks/index.ts:1:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/differenceInCalendarISOWeeks/index.ts:52:    +startOfISOWeekLeft - getLocalTimezoneOffsetMilliseconds(startOfISOWeekLeft);\nsrc/differenceInCalendarISOWeeks/index.ts:54:    +startOfISOWeekRight - getLocalTimezoneOffsetMilliseconds(startOfISOWeekRight);\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:2:import { getLocalTimezoneOffsetMilliseconds } from \"./index.js\";\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:4:describe(\"getTimezoneOffsetInMilliseconds\", () => {\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:7:    const result = date.getTime() - getLocalTimezoneOffsetMilliseconds(date);\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:14:    const result = date.getTime() - getLocalTimezoneOffsetMilliseconds(date);\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:21:    const result = date.getTime() - getLocalTimezoneOffsetMilliseconds(date);\nsrc/_lib/getTimezoneOffsetInMilliseconds/index.ts:15:export function getLocalTimezoneOffsetMilliseconds(",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 16,
+          "input": {
+            "kind": "command",
+            "command": "git diff --stat && git diff -- src/_lib/getTimezoneOffsetInMilliseconds/index.ts src/_lib/guidance-navigation-fixture.ts src/_lib/getTimezoneOffsetInMilliseconds/test.ts"
+          },
+          "status": "ok",
+          "command": "git diff --stat && git diff -- src/_lib/getTimezoneOffsetInMilliseconds/index.ts src/_lib/guidance-navigation-fixture.ts src/_lib/getTimezoneOffsetInMilliseconds/test.ts",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "git diff --stat && git diff -- src/_lib/getTimezoneOffsetInMilliseconds/index.ts src/_lib/guidance-navigation-fixture.ts src/_lib/getTimezoneOffsetInMilliseconds/test.ts",
+              "exitCode": 0,
+              "output": "src/_lib/getTimezoneOffsetInMilliseconds/index.ts | 2 +-\n src/_lib/getTimezoneOffsetInMilliseconds/test.ts  | 8 ++++----\n src/_lib/guidance-navigation-fixture.ts           | 6 +++---\n src/differenceInCalendarDays/index.ts             | 6 +++---\n src/differenceInCalendarISOWeeks/index.ts         | 6 +++---\n src/differenceInCalendarWeeks/index.ts            | 6 +++---\n src/formatDistance/index.ts                       | 6 +++---\n src/formatDistanceStrict/index.ts                 | 6 +++---\n src/getOverlappingDaysInIntervals/index.ts        | 6 +++---\n src/parse/_lib/parsers/ISOTimezoneParser.ts       | 4 ++--\n src/parse/_lib/parsers/ISOTimezoneWithZParser.ts  | 4 ++--\n 11 files changed, 30 insertions(+), 30 deletions(-)\ndiff --git a/src/_lib/getTimezoneOffsetInMilliseconds/index.ts b/src/_lib/getTimezoneOffsetInMilliseconds/index.ts\nindex 9b5ffca..4139883 100644\n--- a/src/_lib/getTimezoneOffsetInMilliseconds/index.ts\n+++ b/src/_lib/getTimezoneOffsetInMilliseconds/index.ts\n@@ -12,7 +12,7 @@ import type { DateArg } from \"../../types.js\";\n  *\n  * This function returns the timezone offset in milliseconds that takes seconds in account.\n  */\n-export function getTimezoneOffsetInMilliseconds(\n+export function getLocalTimezoneOffsetMilliseconds(\n   date: DateArg<Date> & {},\n ): number {\n   const _date = toDate(date);\ndiff --git a/src/_lib/getTimezoneOffsetInMilliseconds/test.ts b/src/_lib/getTimezoneOffsetInMilliseconds/test.ts\nindex dc12b58..30525d3 100644\n--- a/src/_lib/getTimezoneOffsetInMilliseconds/test.ts\n+++ b/src/_lib/getTimezoneOffsetInMilliseconds/test.ts\n@@ -1,24 +1,24 @@\n import { describe, expect, it } from \"vitest\";\n-import { getTimezoneOffsetInMilliseconds } from \"./index.js\";\n+import { getLocalTimezoneOffsetMilliseconds } from \"./index.js\";\n \n describe(\"getTimezoneOffsetInMilliseconds\", () => {\n   it(\"works for a modern date\", () => {\n     const date = new Date(2018, 0 /* Jan */, 1, 12, 34, 56, 789);\n-    const result = date.getTime() - getTimez\n… diagnostic truncated …\nate before standardized timezones\", () => {\n     const date = new Date(1800, 0 /* Jan */, 1, 12, 34, 56, 789);\n-    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\n+    const result = date.getTime() - getLocalTimezoneOffsetMilliseconds(date);\n     const expectedResult = Date.UTC(1800, 0 /* Jan */, 1, 12, 34, 56, 789);\n     expect(result).toBe(expectedResult);\n   });\n \n   it(\"works for a date BC\", () => {\n     const date = new Date(-500, 0 /* Jan */, 1, 12, 34, 56, 789);\n-    const result = date.getTime() - getTimezoneOffsetInMilliseconds(date);\n+    const result = date.getTime() - getLocalTimezoneOffsetMilliseconds(date);\n     const expectedResult = Date.UTC(-500, 0 /* Jan */, 1, 12, 34, 56, 789);\n     expect(result).toBe(expectedResult);\n   });\ndiff --git a/src/_lib/guidance-navigation-fixture.ts b/src/_lib/guidance-navigation-fixture.ts\nindex 4c56b84..4364dce 100644\n--- a/src/_lib/guidance-navigation-fixture.ts\n+++ b/src/_lib/guidance-navigation-fixture.ts\n@@ -1,8 +1,8 @@\n-import { getTimezoneOffsetInMilliseconds as retainedLocal } from \"./getTimezoneOffsetInMilliseconds/index.js\";\n+import { getLocalTimezoneOffsetMilliseconds as retainedLocal } from \"./getTimezoneOffsetInMilliseconds/index.js\";\n import * as helpers from \"./getTimezoneOffsetInMilliseconds/index.js\";\n-export { getTimezoneOffsetInMilliseconds as stablePublicName } from \"./getTimezoneOffsetInMilliseconds/index.js\";\n+export { getLocalTimezoneOffsetMilliseconds as stablePublicName } from \"./getTimezoneOffsetInMilliseconds/index.js\";\n // Preserve getTimezoneOffsetInMilliseconds in this comment and the local homonym/literal.\n function getTimezoneOffsetInMilliseconds() { return \"getTimezoneOffsetInMilliseconds\"; }\n export const localExample = getTimezoneOffsetInMilliseconds();\n export const aliasExample = retainedLocal;\n-export const namespaceExample = helpers.getTimezoneOffsetInMilliseconds;\n+export const namespaceExample = helpers.getLocalTimezoneOffsetMilliseconds;",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 17,
+          "input": {
+            "kind": "command",
+            "command": "npm run types",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-reading/workspace"
+          },
+          "status": "ok",
+          "command": "npm run types",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "npm run types",
+              "exitCode": 0,
+              "output": "> date-fns@4.1.0 types\n> tsc --noEmit",
+              "environment": "linux-native",
+              "validation": {
+                "paths": [
+                  "src/_lib/getTimezoneOffsetInMilliseconds/index.ts",
+                  "src/_lib/guidance-navigation-fixture.ts",
+                  "src/differenceInCalendarDays/index.ts",
+                  "src/differenceInCalendarISOWeeks/index.ts",
+                  "src/differenceInCalendarWeeks/index.ts",
+                  "src/formatDistance/index.ts",
+                  "src/formatDistanceStrict/index.ts",
+                  "src/getOverlappingDaysInIntervals/index.ts",
+                  "src/parse/_lib/parsers/ISOTimezoneWithZParser.ts",
+                  "src/parse/_lib/parsers/ISOTimezoneParser.ts",
+                  "src/_lib/getTimezoneOffsetInMilliseconds/test.ts"
+                ],
+                "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+                "status": "passed",
+                "taskId": "types",
+                "taskKind": "typecheck"
+              }
+            }
+          }
+        },
+        {
+          "index": 18,
+          "input": {
+            "kind": "command",
+            "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-reading/workspace"
+          },
+          "status": "ok",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "exitCode": 0,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+              "exitCode": 0,
+              "output": "> date-fns@4.1.0 test\n> vitest run --maxWorkers=1 --minWorkers=1 --pool=forks\n\n\n RUN  v1.3.1 /workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-reading/workspace\n\nstderr | src/parse/test.ts > parse > era > with week-numbering year\nUse `y` instead of `Y` (in `Y GGGGG`) for formatting years to the input `44 B`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md\n\nstderr | src\n… diagnostic truncated …\nC7231/test.ts  (3 tests)\n ✓ src/getSeconds/test.ts  (3 tests)\n ✓ src/isMatch/test.ts  (3 tests) 1ms\n ✓ src/_lib/addLeadingZeros/test.ts  (1 test)\n ✓ src/secondsToMilliseconds/test.ts  (2 tests)\n ✓ src/isExists/test.ts  (2 tests)\n\n Test Files  250 passed (250)\n      Tests  3140 passed | 18 skipped (3158)\n   Start at  00:10:04\n   Duration  6.61s (transform 2.44s, setup 0ms, collect 4.20s, tests 1.19s, environment 2ms, prepare 100ms)",
+              "outputLog": ".blame/logs/validation-d2fe384b-1eae-44b9-9931-f7540c4d929d.log",
+              "check": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 3140,
+                  "passed": 3140,
+                  "failed": 0,
+                  "skipped": 18
+                },
+                "scope": ".",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "evidenceOrigin": "runner_output"
+              },
+              "changed": false,
+              "paths": [],
+              "validation": {
+                "status": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "index": 19,
+          "input": {
+            "kind": "command",
+            "command": "git status --short && git diff --name-only && printf '\\nRemaining old identifier occurrences:\\n' && rg -n --hidden --glob '!node_modules' --glob '!dist' 'getTimezoneOffsetInMilliseconds' src test examples scripts docs || true",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-reading/workspace"
+          },
+          "status": "ok",
+          "command": "git status --short && git diff --name-only && printf '\\nRemaining old identifier occurrences:\\n' && rg -n --hidden --glob '!node_modules' --glob '!dist' 'getTimezoneOffsetInMilliseconds' src test examples scripts docs || true",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "git status --short && git diff --name-only && printf '\\nRemaining old identifier occurrences:\\n' && rg -n --hidden --glob '!node_modules' --glob '!dist' 'getTimezoneOffsetInMilliseconds' src test examples scripts docs || true",
+              "exitCode": 0,
+              "output": "M src/_lib/getTimezoneOffsetInMilliseconds/index.ts\n M src/_lib/getTimezoneOffsetInMilliseconds/test.ts\n M src/_lib/guidance-navigation-fixture.ts\n M src/differenceInCalendarDays/index.ts\n M src/differenceInCalendarISOWeeks/index.ts\n M src/differenceInCalendarWeeks/index.ts\n M src/formatDistance/index.ts\n M src/formatDistanceStrict/index.ts\n M src/getOverlappingDaysInIntervals/index.ts\n M src/parse/_lib/parsers/ISOTimezoneParser.ts\n M src/parse/_lib/parsers/ISOTimezoneWithZParser.ts\nsrc/_lib/getTimezoneOffsetInMilliseconds/index.ts\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts\nsrc/_lib/guidance-navigation-fixture.ts\nsrc/differenceInCalendarDays/index.ts\nsrc/differenceInCalendarISOWeeks/index.ts\nsrc/differenceInCalendarWeeks/index.ts\nsrc/formatDistance/index.ts\nsrc/formatDistanceStrict/index.ts\nsrc/getOverlappingDaysInIntervals/index.ts\nsrc/parse/_lib/parsers/ISOTimezoneParser.ts\nsrc/parse/_lib/parsers/ISOTimezoneWithZParser.ts\n\nRemaining old identifier occurrences:\nsrc/parse/_lib/parsers/ISOTimezoneWithZParser.ts:2:import { getLocalTimezoneOffsetMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/parse/_lib/parsers/ISOTimezoneParser.ts:2:import { getLocalTimezoneOffsetMilliseconds } from \"../../../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/formatDistance/index.ts:3:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/differenceInCalendarDays/index.ts:1:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/formatDistanceStrict/index.ts:4:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/getOverlappingDaysInIntervals/index.ts:1:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/differenceInCalendarWeeks/index.ts:1:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:1:import { getLocalTimezoneOffsetMilliseconds as retainedLocal } from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:2:import * as helpers from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:3:export { getLocalTimezoneOffsetMilliseconds as stablePublicName } from \"./getTimezoneOffsetInMilliseconds/index.js\";\nsrc/_lib/guidance-navigation-fixture.ts:4:// Preserve getTimezoneOffsetInMilliseconds in this comment and the local homonym/literal.\nsrc/_lib/guidance-navigation-fixture.ts:5:function getTimezoneOffsetInMilliseconds() { return \"getTimezoneOffsetInMilliseconds\"; }\nsrc/_lib/guidance-navigation-fixture.ts:6:export const localExample = getTimezoneOffsetInMilliseconds();\nsrc/_lib/getTimezoneOffsetInMilliseconds/test.ts:4:describe(\"getTimezoneOffsetInMilliseconds\", () => {\nsrc/differenceInCalendarISOWeeks/index.ts:1:import { getLocalTimezoneOffsetMilliseconds } from \"../_lib/getTimezoneOffsetInMilliseconds/index.js\";",
+              "environment": "linux-native"
+            }
+          }
+        }
+      ],
+      "lastEditIndex": 12,
+      "finalReport": "Implemented the identifier migration while preserving the `src/_lib/getTimezoneOffsetInMilliseconds` module path and filenames. Renamed the declaration and all resolving imports/usages, including the navigation fixture’s semantic references; preserved its explicit aliases, local homonym, comment, and string literal. No dependency manifests, lockfiles, configuration, assertions, or unrelated APIs were changed.\n\nVerification:\n- `npm run types` — passed (TypeScript completed with exit code 0).\n- `npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks` — passed: 250 test files passed; 3,140 tests passed; 18 tests skipped; 0 failed.\n\nNo pending-test count was reported by the test runner, so pending is unknown rather than zero. The final search confirms remaining old-name occurrences are limited to the preserved module path, requested comments/literals/local homonym, test description, and path substrings; no old resolving identifier remains. Validation is limited to the requested typecheck and test suite; no additional build or external-runtime validation was performed.",
+      "verification": "unverified",
+      "hints": [],
+      "matchingHintFollowups": 0,
+      "dispatchedRequests": 9,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "emptyFileScopes": 2,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 0,
+        "bareReferenceFallbacks": 0,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 0,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 0,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-reporting",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "reporting",
+      "repetition": 1,
+      "eventsSha256": "6b9ce3ec80cdcc36040575cdfc07958721e8d30b43b32ffdaa612077b7c702fa",
+      "compilerReferenceCalls": 1,
+      "compilerRenameCalls": 1,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": [
+            "src/**",
+            "test/**",
+            "examples/**",
+            "scripts/**",
+            "docs/**"
+          ],
+          "mode": "references"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": [
+            "src/**",
+            "test/**",
+            "examples/**",
+            "scripts/**",
+            "docs/**"
+          ],
+          "mode": "text"
+        },
+        {
+          "query": "s1",
+          "mode": "references"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "test",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "examples",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "scripts",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "docs",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "getLocalTimezoneOffsetMilliseconds",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "getTimezoneOffsetInMilliseconds",
+          "scope": "*",
+          "mode": "text"
+        },
+        {
+          "query": "getLocalTimezoneOffsetMilliseconds",
+          "scope": "*",
+          "mode": "text"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s1",
+                "action": "rename",
+                "content": "getLocalTimezoneOffsetMilliseconds"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 11,
+      "readBytes": 19560,
+      "commands": [
+        {
+          "index": 20,
+          "input": {
+            "kind": "command",
+            "command": "npm run types"
+          },
+          "status": "ok",
+          "command": "npm run types",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "npm run types",
+              "exitCode": 0,
+              "output": "> date-fns@4.1.0 types\n> tsc --noEmit",
+              "environment": "linux-native",
+              "validation": {
+                "paths": [
+                  "src/_lib/getTimezoneOffsetInMilliseconds/index.ts",
+                  "src/_lib/guidance-navigation-fixture.ts",
+                  "src/differenceInCalendarDays/index.ts",
+                  "src/differenceInCalendarISOWeeks/index.ts",
+                  "src/differenceInCalendarWeeks/index.ts",
+                  "src/formatDistance/index.ts",
+                  "src/formatDistanceStrict/index.ts",
+                  "src/getOverlappingDaysInIntervals/index.ts",
+                  "src/parse/_lib/parsers/ISOTimezoneWithZParser.ts",
+                  "src/parse/_lib/parsers/ISOTimezoneParser.ts",
+                  "src/_lib/getTimezoneOffsetInMilliseconds/test.ts"
+                ],
+                "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+                "status": "passed",
+                "taskId": "types",
+                "taskKind": "typecheck"
+              }
+            }
+          }
+        },
+        {
+          "index": 21,
+          "input": {
+            "kind": "command",
+            "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks"
+          },
+          "status": "ok",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "exitCode": 0,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+              "exitCode": 0,
+              "output": "> date-fns@4.1.0 test\n> vitest run --maxWorkers=1 --minWorkers=1 --pool=forks\n\n\n RUN  v1.3.1 /workspace/Blame/.blame/research/guidance-f28/f28/1-date-fns-offset-helper-migration-reporting/workspace\n\nstderr | src/parse/test.ts > parse > era > with week-numbering year\nUse `y` instead of `Y` (in `Y GGGGG`) for formatting years to the input `44 B`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md\n\nstderr | s\n… diagnostic truncated …\n31/test.ts  (3 tests)\n ✓ src/getSeconds/test.ts  (3 tests)\n ✓ src/isMatch/test.ts  (3 tests) 1ms\n ✓ src/_lib/addLeadingZeros/test.ts  (1 test)\n ✓ src/secondsToMilliseconds/test.ts  (2 tests) 1ms\n ✓ src/isExists/test.ts  (2 tests)\n\n Test Files  250 passed (250)\n      Tests  3140 passed | 18 skipped (3158)\n   Start at  00:11:12\n   Duration  6.40s (transform 2.37s, setup 1ms, collect 4.07s, tests 1.13s, environment 2ms, prepare 94ms)",
+              "outputLog": ".blame/logs/validation-2b7d9ac7-3a9b-4c95-aab8-f91b78c49fef.log",
+              "check": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 3140,
+                  "passed": 3140,
+                  "failed": 0,
+                  "skipped": 18
+                },
+                "scope": ".",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "evidenceOrigin": "runner_output"
+              },
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 3140,
+                  "passed": 3140,
+                  "failed": 0,
+                  "skipped": 18,
+                  "pending": null
+                },
+                "evidenceOrigin": "runner_output",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified",
+                "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+                "invocationSourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+                "completedSourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+                "cwd": "."
+              },
+              "changed": false,
+              "paths": [],
+              "validation": {
+                "status": "unknown"
+              }
+            }
+          }
+        }
+      ],
+      "lastEditIndex": 15,
+      "finalReport": "Implemented the internal rename from `getTimezoneOffsetInMilliseconds` to `getLocalTimezoneOffsetMilliseconds` across all resolving production and test identifiers, including the supplied navigation fixture. Preserved the module directory/file name, local import alias `retainedLocal`, public export alias `stablePublicName`, comments, literals, local homonym, and runtime behavior; no dependency/config/assertion files or new files were changed.\n\nVerification:\n- `npm run types`: passed (TypeScript completed with exit code 0).\n- `npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks`: passed; 250 test files passed, 3,140 tests passed, 18 skipped, 0 failed. Pending count was unreported (unknown).\n- Final lexical scan found no remaining `getTimezoneOffsetInMilliseconds` occurrences in the workspace; the requested module path remains unchanged.\n\nVerification limitation: the test runner reported selection and freshness as unknown, and pending tests as unreported; no additional verification beyond the two requested commands was run.",
+      "verification": "unverified",
+      "hints": [],
+      "matchingHintFollowups": 0,
+      "dispatchedRequests": 8,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 2,
+        "bareReferenceFallbacks": 1,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 0,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 1,
         "patchRecoveryHints": 0
       },
       "partition": "fresh-confirmation"
@@ -1062,6 +2745,48 @@
       "allFeatureFailures": []
     },
     "1-rxjs-unhandled-error-migration-reading": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "1-rxjs-unhandled-error-migration-reporting": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "1-rxjs-unhandled-error-migration-patch": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "1-rxjs-unhandled-error-migration-bundle": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "1-date-fns-offset-helper-migration-references": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "1-date-fns-offset-helper-migration-rename": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "1-date-fns-offset-helper-migration-reading": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "1-date-fns-offset-helper-migration-reporting": {
       "requestedIndependentSuitesPassed": true,
       "behaviorAndProtectedInputProbesPassed": true,
       "sourceScopeFailures": [],

@@ -525,6 +525,907 @@
       "classifiedRawNpmInvocations": 0,
       "classifiedInvocations": [],
       "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-reporting",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "reporting",
+      "repetition": 1,
+      "searchCalls": 7,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 2,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 13,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s2",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "efe123f627895fdb68bee937a6e7f08c5987f552ea2cb6c6cb03e15588efab90",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-patch",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "patch",
+      "repetition": 1,
+      "searchCalls": 6,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 2,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 13,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**/*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "from './util/reportUnhandledError'",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "from '../util/reportUnhandledError'",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "784b4b675cd09608cf3b94cadf01c63430105e01e3ed98d4d3abfe1f1836103f",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-bundle",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "bundle",
+      "repetition": 1,
+      "searchCalls": 8,
+      "rootStarCalls": 1,
+      "rootStarEmpty": 1,
+      "emptySearches": 5,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 11,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 11,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "src/internal/util/reportUnhandledError.ts#reportUnhandledError",
+            "scope": "*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec-dtslint",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "integration",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "a2d427fdbd6ef46ca3248695da789b62a044848d97448d95f4d15cc7e7066c8d",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-references",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "references",
+      "repetition": 1,
+      "searchCalls": 14,
+      "rootStarCalls": 1,
+      "rootStarEmpty": 1,
+      "emptySearches": 7,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 3,
+      "readCalls": 10,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "test"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "src/_lib/getTimezoneOffsetInMilliseconds/index.ts#getTimezoneOffsetInMilliseconds",
+            "mode": "references",
+            "scope": "*"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/_lib/getTimezoneOffsetInMilliseconds",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "examples",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "docs",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": ".github",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "scripts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "f55e23fa3750c4c6c80c427d53b03b6cb86a498bbebbc28caa599b9490adedf9",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://e30058814035e78fcb30dcada1a5e29395ab8d5e71f16be8b62b1a081b3c83b3",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-rename",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "rename",
+      "repetition": 1,
+      "searchCalls": 7,
+      "rootStarCalls": 2,
+      "rootStarEmpty": 1,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 10,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "codemods",
+              "docs"
+            ],
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "codemods",
+              "docs"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "s1",
+            "scope": "*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds as",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/**/*.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "d8a1f9b9e69f5ec32ea45c92b06b4036761d36e44586c5170f940f3ec2548505",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://3feb778cad8fbfef2171395c3710cfba0734f75aaeefcfa20554de778149f99c",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-reading",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "reading",
+      "repetition": 1,
+      "searchCalls": 8,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 4,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 5,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 5,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 3,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src test examples scripts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "navigation",
+            "scope": "src test examples",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s1",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "s1",
+            "scope": "src/differenceInCalendarDays",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 3
+        },
+        {
+          "input": {
+            "query": "s1",
+            "scope": "src/locale",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "07266c5f857797d2d1ab98a5e0cdc3c6fcbda6251f962de02b3e8f57f76b3d6a",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://f0ce6e47264a44d81d06848ee7df9818a7de9719f5468da79fa8e7d3aaec183c",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-date-fns-offset-helper-migration-reporting",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "reporting",
+      "repetition": 1,
+      "searchCalls": 12,
+      "rootStarCalls": 2,
+      "rootStarEmpty": 2,
+      "emptySearches": 6,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 11,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 11,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src/**",
+              "test/**",
+              "examples/**",
+              "scripts/**",
+              "docs/**"
+            ],
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src/**",
+              "test/**",
+              "examples/**",
+              "scripts/**",
+              "docs/**"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "s1",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "examples",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "scripts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "docs",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "6b9ce3ec80cdcc36040575cdfc07958721e8d30b43b32ffdaa612077b7c702fa",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://4701f6d7852ca3db4be4b37d25679fafebe0fcb16d696e5edb039f24aecff959",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
     }
   ]
 }
