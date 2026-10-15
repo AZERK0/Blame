@@ -232,6 +232,53 @@
       "criteriaFailures": [
         "required_exact_npm_wrappers_not_invoked"
       ]
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-baseline",
+      "agentRequiredChecksPassed": false,
+      "fullRequestCriteriaPassed": false,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [
+        "missing_delivery_at_iteration_limit",
+        "required_exact_commands_or_order_not_satisfied"
+      ],
+      "notes": "Reviewed all effective inputs, final seven allowed source files and original endpoint checks. Independent feature/type/original unit/E2E outcomes pass after the agent repairs no-filter mock compatibility via body-only replacement64. This exercises body-only editing, not the changed whole-symbol first-line path. Calls66-70 run underlying project compile/unit, another compile, the literal focused Node command, then underlying E2E; the final unit invocation precedes the focused command, and the npm wrappers required by the fixed instruction are not all invoked after the last edit. All requested underlying validation categories succeed but exact invocation/order criteria do not. Runtime stops at maxIterations32 with no delivery. Dependency navigation is repeatedly blocked, recovered through installed-package shell reads; a guessed missing stream.js also fails before discovery. Kind=replace_body61 is rejected by schema, then a stale/unobserved body edit62 is refused until read63. All implementation writes remain within the seven allowed paths; no solution retrieval or source repair by the researcher.",
+      "review": "reviewed",
+      "eventsSha256": "83d60ba3fcb6fb0a3aab3537bfd5ab06f51bee57c0423e628ac92172d0838808",
+      "diffSha256": "9f0edb2187a683044d6dd3f1954ebb4120317cc4c25101b3750c124bac7457a9",
+      "scoreSha256": "7a8d7528460f7102709f3fa3c5803c5707a34c0f7001847d5ad9d8608cd07576"
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-candidate",
+      "agentRequiredChecksPassed": false,
+      "fullRequestCriteriaPassed": false,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [
+        "missing_delivery_at_iteration_limit",
+        "required_exact_npm_wrappers_not_invoked"
+      ],
+      "notes": "Reviewed every effective input, complete final seven-file diff and actual check outputs. Final source passes the frozen feature/type/original unit/E2E checks, including callback error identity and no-callback mock compatibility after stream patches48-49. After last edit49, compile50 and focused51 are exact requested commands, but unit52 and E2E53 execute direct resolved project scripts instead of the required npm wrappers. The four underlying validation categories pass in order; exact invocation criteria do not. Runtime error is maxIterations32 with no final delivery. File patch31 is refused atomically for a context mismatch; later file patches recover. Repeated dependency read_code blocks are recovered with installed-package shell inspection; missing guessed files generate additional command failures. No source edits outside the seven allowed paths, protected-input mutation, whole-symbol replacement or solution retrieval observed. Callback frequency is explicitly unspecified; passing finite probes does not establish exhaustive stream or callback behavior.",
+      "review": "reviewed",
+      "eventsSha256": "528654c1d7730273dc2f296b58881a8c49a3f7c99c6a721327d2eda76bffd183",
+      "diffSha256": "0e4a9d7d2b38dd4aa79b82479f586ad4a611477a3ae1460bbc8f8367fb73c64c",
+      "scoreSha256": "d4f7cce2ecfb66878e1adda7e74246f3fb9006b9072f1e5319bebb5d5a8da1ac"
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-cline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": false,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [
+        "missing_delivery_after_research_byte_guard"
+      ],
+      "notes": "Reviewed every effective input, complete seven-file final diff and command evidence. Frozen feature/type/original unit/E2E outcomes pass. After final source edit34, call35 executes all four exact required commands in one successful sequential literal && chain; earlier concurrent command array33 is superseded by this correct final-source validation. All implementation writes are within the allowed paths, and read_files/shell access stays within checkout, installed dependencies and ephemeral /tmp diagnostics. No solution or remote-history retrieval observed. Runtime stops before the next dispatch with the research serialized-request-byte guard, so no final delivery exists; correct source and successful actual final checks do not recover official/full task success. No whole-symbol indentation route applies to this native arm. Exact original stop: Research request byte budget exceeded before dispatch: 296432 > 290000",
+      "review": "reviewed",
+      "eventsSha256": "26f4a6c16cc588319a1e8cfc0cb0f6b11577c7f0452d7f49329712bfb2bbe510",
+      "diffSha256": "a9152e94c00f1fc7dc980be3a18bce350ae63f05088a32ef2ce5934dbd8075e8",
+      "scoreSha256": "e69e678aea9d99880b7c25390f82e6b50d19857760868d4998490f15a0215d60"
     }
   ],
   "noteCorrections": [

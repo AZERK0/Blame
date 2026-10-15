@@ -121,6 +121,30 @@
       "unchangedToolContractSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
       "schemaBytes": 9956,
       "descriptionBytes": 3897
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-baseline",
+      "id": "fast-glob-dynamic-filter",
+      "repetition": 3,
+      "arm": "baseline",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "5aae9a8934cc436966b1f430faaef9ce205ed39ac87aed59bf00844d21352e5e",
+      "normalizedPromptSha256": "63a5d6e595def76d13d20dac7c5d22e1e47df2fdf42415ae12be09f2c0dd8fc2",
+      "unchangedToolContractSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "schemaBytes": 9956,
+      "descriptionBytes": 3897
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-candidate",
+      "id": "fast-glob-dynamic-filter",
+      "repetition": 3,
+      "arm": "candidate",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "71cd1d66101e5f06cab2135912fbff0028b25cc5d729c5b60fb49f48bd8eef76",
+      "normalizedPromptSha256": "63a5d6e595def76d13d20dac7c5d22e1e47df2fdf42415ae12be09f2c0dd8fc2",
+      "unchangedToolContractSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "schemaBytes": 9956,
+      "descriptionBytes": 3897
     }
   ],
   "pairs": [
@@ -175,6 +199,18 @@
     {
       "id": "fast-glob-dynamic-filter",
       "repetition": 2,
+      "normalizedPromptsMatch": true,
+      "allOtherToolFieldsMatch": true,
+      "baselineSchemaBytes": 9956,
+      "candidateSchemaBytes": 9956,
+      "schemaRelativeChange": 0,
+      "baselineDescriptionBytes": 3897,
+      "candidateDescriptionBytes": 3897,
+      "descriptionRelativeChange": 0
+    },
+    {
+      "id": "fast-glob-dynamic-filter",
+      "repetition": 3,
       "normalizedPromptsMatch": true,
       "allOtherToolFieldsMatch": true,
       "baselineSchemaBytes": 9956,

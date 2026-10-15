@@ -47,6 +47,14 @@
       "rejected": true
     },
     {
+      "fault": "Changed source reconstruction provenance",
+      "rejected": true
+    },
+    {
+      "fault": "Promoted the reproduced original-suite failure to success",
+      "rejected": true
+    },
+    {
       "fault": "Rehashed wire metadata with unregistered model",
       "rejected": true
     }

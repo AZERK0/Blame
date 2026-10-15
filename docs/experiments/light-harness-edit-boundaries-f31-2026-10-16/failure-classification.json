@@ -232,6 +232,58 @@
       ],
       "eventsSha256": "76425ce40885b05d60a92b134cf5df9cebfb49394e2de5dc3d3f2dc5ea4c065e",
       "scoreSha256": "d8065360bbca5637bf731d6765a59bc7c857796e633a40096d145b05b74436a9"
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-baseline",
+      "official": false,
+      "frozenEndpoint": true,
+      "actualChecks": false,
+      "behavior": true,
+      "full": false,
+      "originalRuntimeError": "Agent runtime exceeded maxIterations (32)",
+      "mechanism": "max_iterations",
+      "maximumIterations": 32,
+      "manualCriteriaFailures": [
+        "missing_delivery_at_iteration_limit",
+        "required_exact_commands_or_order_not_satisfied"
+      ],
+      "eventsSha256": "83d60ba3fcb6fb0a3aab3537bfd5ab06f51bee57c0423e628ac92172d0838808",
+      "scoreSha256": "7a8d7528460f7102709f3fa3c5803c5707a34c0f7001847d5ad9d8608cd07576"
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-candidate",
+      "official": false,
+      "frozenEndpoint": true,
+      "actualChecks": false,
+      "behavior": true,
+      "full": false,
+      "originalRuntimeError": "Agent runtime exceeded maxIterations (32)",
+      "mechanism": "max_iterations",
+      "maximumIterations": 32,
+      "manualCriteriaFailures": [
+        "missing_delivery_at_iteration_limit",
+        "required_exact_npm_wrappers_not_invoked"
+      ],
+      "eventsSha256": "528654c1d7730273dc2f296b58881a8c49a3f7c99c6a721327d2eda76bffd183",
+      "scoreSha256": "d4f7cce2ecfb66878e1adda7e74246f3fb9006b9072f1e5319bebb5d5a8da1ac"
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-cline",
+      "official": false,
+      "frozenEndpoint": true,
+      "actualChecks": true,
+      "behavior": true,
+      "full": false,
+      "originalRuntimeError": "Research request byte budget exceeded before dispatch: 296432 > 290000",
+      "mechanism": "research_request_byte_guard",
+      "requestBytes": 296432,
+      "byteLimit": 290000,
+      "rejectedBeforeDispatch": true,
+      "manualCriteriaFailures": [
+        "missing_delivery_after_research_byte_guard"
+      ],
+      "eventsSha256": "26f4a6c16cc588319a1e8cfc0cb0f6b11577c7f0452d7f49329712bfb2bbe510",
+      "scoreSha256": "e69e678aea9d99880b7c25390f82e6b50d19857760868d4998490f15a0215d60"
     }
   ]
 }

@@ -70,6 +70,11 @@ with tempfile.TemporaryDirectory(prefix='blame-publication-controls-') as direct
   behavior=json.loads((study/'behavior-public-replay.json').read_text())
   behavior['rows'][0]['sourceUnchangedByReplay']=False
   put('behavior-public-replay.json',behavior);rejected('Changed source reconstruction provenance');restore('behavior-public-replay.json')
+  behavior=json.loads((study/'behavior-public-replay.json').read_text())
+  if behavior.get('fullSuitesRepeated'):
+   row=next(r for r in behavior['rows'] if r['repeatedOriginalSuites']['full']!=0)
+   row['repeatedOriginalSuites']['full']=0
+   put('behavior-public-replay.json',behavior);rejected('Promoted the reproduced original-suite failure to success');restore('behavior-public-replay.json')
  wire=json.loads(gzip.decompress((study/'wire-contracts.json.gz').read_bytes()))
  wire['trials'][0]['requests'][0]['model']='unregistered-model'
  # Rehash metadata and outer archive: fixed settings must still reject it.

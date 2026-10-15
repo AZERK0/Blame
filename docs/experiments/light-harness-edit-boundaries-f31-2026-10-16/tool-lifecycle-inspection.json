@@ -150,6 +150,36 @@
       "startedWithoutFinish": [],
       "finishedWithoutStart": [],
       "differentInputs": []
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-baseline",
+      "eventsSha256": "83d60ba3fcb6fb0a3aab3537bfd5ab06f51bee57c0423e628ac92172d0838808",
+      "started": 71,
+      "finished": 71,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-candidate",
+      "eventsSha256": "528654c1d7730273dc2f296b58881a8c49a3f7c99c6a721327d2eda76bffd183",
+      "started": 54,
+      "finished": 54,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-cline",
+      "eventsSha256": "26f4a6c16cc588319a1e8cfc0cb0f6b11577c7f0452d7f49329712bfb2bbe510",
+      "started": 36,
+      "finished": 36,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
     }
   ]
 }

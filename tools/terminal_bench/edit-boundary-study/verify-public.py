@@ -3,6 +3,7 @@ No model, private workspace, npm dependency, oracle execution or recovered solut
 Manual review decisions are verified/replayed, not independently re-adjudicated.
 """
 import gzip, hashlib, json, math, sys
+from datetime import datetime
 import re
 from pathlib import Path
 root=Path(sys.argv[1])
@@ -19,6 +20,14 @@ for entry in read('inventory.json'):
  assert len(b)==entry['bytes'] and sha(b)==entry['sha256'],entry['artifact']
  raw[entry['trial'],entry['file']]=b
 reviews={r['name']:r for r in read('source-review.json')['decisions']}
+if (root/'registration-audit.json').exists():
+ registration=read('registration-audit.json');launch=read('launch-registration.json')
+ first=json.loads(raw[results['rows'][0]['name'],'model-start.json'])
+ stamp=lambda s:datetime.fromisoformat(s.replace('Z','+00:00'))
+ assert registration['paidRequests']==0 and registration['protocolSha256']==sha((root/'protocol.json').read_bytes())
+ assert registration['launchRegistration']==launch and registration['registeredRepoCommit']==launch['gitHead']
+ assert registration['firstModelStartUTC']==first['startedAtUTC'] and registration['configuredStudyDateField']==protocol['taskInputCommitAtUTC']
+ assert stamp(registration['registeredRepoCommitTime'])<=stamp(launch['recordedAtUTC'])<stamp(first['startedAtUTC'])
 wire_bytes=(root/'wire-contracts.json.gz').read_bytes()
 assert sha(wire_bytes)==read('wire-inventory.json')['sha256']
 wire_data=json.loads(gzip.decompress(wire_bytes))
@@ -167,6 +176,13 @@ if (root/'failure-classification.json').exists():
   assert c['mechanism']==expected
   if byte:assert c['requestBytes']==int(byte[1]) and c['byteLimit']==int(byte[2]) and c['rejectedBeforeDispatch']
   if iterations:assert c['maximumIterations']==int(iterations[1])
+if (root/'quality-investigation.json').exists():
+ investigation=read('quality-investigation.json');decision=read('decision.json');exposure=read('mechanism-exposure.json')
+ light=[r for r in exposure['rows'] if r['arm']!='cline']
+ assert investigation['paidRequests']==0 and investigation['mechanismExposureSha256']==sha((root/'mechanism-exposure.json').read_bytes())
+ assert investigation['registeredGateDecision']==decision['decision'] and investigation['registeredQualityGate']==decision['qualityGate'] and investigation['registeredResourceGate']==decision['resourceGate']
+ assert investigation['lightTrials']==len(light)==12 and investigation['successfulWholeSymbolOperations']==sum(r['successfulWholeSymbolOperations'] for r in light)==0
+ assert all(r['mechanismRouteAbsent'] for r in light)
 for correction in read('source-review.json').get('noteCorrections',[]):
  r=next(r for r in rows if r['name']==correction['name'])
  assert correction['runtimeError']==r['error'] and correction['eventsSha256']==r['eventsSha256'] and correction['scoreSha256']==r['scoreSha256']
@@ -291,6 +307,12 @@ if (root/'behavior-public-replay.json').exists():
   score=json.loads(raw[r['name'],'score.json'])
   assert record['sourceSha256']==score['sourceSha256'] and record['sourceUnchangedByReplay']
   assert record['frozenUtcProbesMatched'] and record['suppliedExitCode']==score['selected']['exitCode']
+  assert record['buildExitCode']==score['build']['exitCode']
+  assert record['frozenPrivateProbeCount']==len([c for c in score['featureChecks'] if not c['name'].startswith('non-UTC:')])
+  assert record['fullSuitesRepeated']==replay['fullSuitesRepeated']
+  if replay['fullSuitesRepeated']:
+   expected={k:score[k]['exitCode'] for k in ['types','full']+(['e2e'] if score.get('e2e') else [])}
+   assert record['repeatedOriginalSuites']==expected
 decision=read('decision.json')
 contrast=next(c for c in summary['comparisons'] if c['left']=='candidate' and c['right']=='baseline' and c['tier']=='strict')
 quality=all(t['arms']['candidate']['strict']>=t['arms']['baseline']['strict'] and t['arms']['candidate']['manualBehaviorPassed']>=t['arms']['baseline']['manualBehaviorPassed'] for t in summary['tasks'])

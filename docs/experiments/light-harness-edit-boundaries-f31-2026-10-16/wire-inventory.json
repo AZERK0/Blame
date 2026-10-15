@@ -1,9 +1,9 @@
 {
   "artifact": "wire-contracts.json.gz",
-  "sha256": "ef9da26ae0a40b9737fce94095ee0244620e2a8208646c486e80a43e3ce288b0",
-  "trials": 15,
+  "sha256": "bd419a9bddc8c2398074c79d9017fdb85a3f038d8f0cad3a94dd2557b5bb2d8e",
+  "trials": 18,
   "missing": 0,
-  "requests": 269,
-  "budgetRejected": 1,
+  "requests": 356,
+  "budgetRejected": 2,
   "wireOutputLimitPresent": 0
 }

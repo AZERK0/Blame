@@ -107,6 +107,27 @@
       "artifact": "journals/3-yaml-anchor-ranges-candidate.1de22eeec8887a5466dc9b63.jsonl.gz",
       "bytes": 354799,
       "sha256": "592c400112359d4bfe582a2f6a5e000293e429a929973221f9bbbb3bd763e275"
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-baseline",
+      "file": "3d70cf95068f43b8bec2d3aa.jsonl",
+      "artifact": "journals/3-fast-glob-dynamic-filter-baseline.3d70cf95068f43b8bec2d3aa.jsonl.gz",
+      "bytes": 724169,
+      "sha256": "ac1afeccae94999f400eb54e629bccb7dd9ab5dbd9cd41af853fb4cb5add1b62"
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-candidate",
+      "file": "f4b36ee2a902e775e2ab9ddd.jsonl",
+      "artifact": "journals/3-fast-glob-dynamic-filter-candidate.f4b36ee2a902e775e2ab9ddd.jsonl.gz",
+      "bytes": 487053,
+      "sha256": "f1b4b98b5e4c4a5adfad806884fe4c52ba935dbb96a624bb5180980cc0b9f862"
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-cline",
+      "file": "b47dbf64d47974ea3632476f.jsonl",
+      "artifact": "journals/3-fast-glob-dynamic-filter-cline.b47dbf64d47974ea3632476f.jsonl.gz",
+      "bytes": 85,
+      "sha256": "9e406d89c37e01aad646503d57c11df4dc1cf06c780fdc88c9fa0818e622d166"
     }
   ]
 }

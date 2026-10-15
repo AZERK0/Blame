@@ -2,15 +2,60 @@
   "partition": "confirmation",
   "definition": "Internal real-repository panel, not an external benchmark certification. Official runtime success, frozen independent feature/existing-suite success, actual required agent validation and full audited completion are separate. Post-selected wording sensitivity never replaces the registered endpoint. Cache tokens subset input, reasoning subset output; incomplete usage is never zero-filled.",
   "planned": 18,
-  "completed": 15,
-  "unexecuted": 3,
+  "completed": 18,
+  "unexecuted": 0,
   "arms": {
     "baseline": {
-      "trials": 5,
+      "trials": 6,
       "planned": 6,
       "officialRuntimeSuccess": 3,
-      "independentFunctionalSuccess": 5,
+      "independentFunctionalSuccess": 6,
       "agentRequiredChecksPassed": 1,
+      "manuallyReviewedRequestCriteriaPassed": 1,
+      "auditedCriteria": 1,
+      "auditedCompletion": 1,
+      "timeouts": 0,
+      "failed": 3,
+      "missingResult": 0,
+      "watchdogs": 0,
+      "tokensCostReconciled": 6,
+      "fullRequestCacheAccounting": 0,
+      "runnerSeconds": 936.639,
+      "outerAgentSeconds": 948.1827075740001,
+      "preparationSeconds": 0.5973164170003556,
+      "verificationSeconds": 70.37177730800059,
+      "input": {
+        "observed": 3812924,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "output": {
+        "observed": 81316,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "cacheRead": {
+        "observed": 3522048,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "cacheWrite": {
+        "observed": 0,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "cost": {
+        "observed": 0.22619536,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      }
+    },
+    "candidate": {
+      "trials": 6,
+      "planned": 6,
+      "officialRuntimeSuccess": 4,
+      "independentFunctionalSuccess": 5,
+      "agentRequiredChecksPassed": 2,
       "manuallyReviewedRequestCriteriaPassed": 1,
       "auditedCriteria": 1,
       "auditedCompletion": 1,
@@ -18,24 +63,24 @@
       "failed": 2,
       "missingResult": 0,
       "watchdogs": 0,
-      "tokensCostReconciled": 5,
+      "tokensCostReconciled": 6,
       "fullRequestCacheAccounting": 0,
-      "runnerSeconds": 707.123,
-      "outerAgentSeconds": 716.7872647009999,
-      "preparationSeconds": 0.5130343050003112,
-      "verificationSeconds": 60.600334795000364,
+      "runnerSeconds": 849.76,
+      "outerAgentSeconds": 860.9487920070001,
+      "preparationSeconds": 0.5794277450004738,
+      "verificationSeconds": 69.96793033700014,
       "input": {
-        "observed": 2768121,
+        "observed": 3627214,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       },
       "output": {
-        "observed": 60955,
+        "observed": 76985,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       },
       "cacheRead": {
-        "observed": 2538496,
+        "observed": 3314688,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       },
@@ -45,99 +90,54 @@
         "incompleteTrialAccounting": 0
       },
       "cost": {
-        "observed": 0.16984092,
-        "missingAggregates": 0,
-        "incompleteTrialAccounting": 0
-      }
-    },
-    "candidate": {
-      "trials": 5,
-      "planned": 6,
-      "officialRuntimeSuccess": 4,
-      "independentFunctionalSuccess": 4,
-      "agentRequiredChecksPassed": 2,
-      "manuallyReviewedRequestCriteriaPassed": 1,
-      "auditedCriteria": 1,
-      "auditedCompletion": 1,
-      "timeouts": 0,
-      "failed": 1,
-      "missingResult": 0,
-      "watchdogs": 0,
-      "tokensCostReconciled": 5,
-      "fullRequestCacheAccounting": 0,
-      "runnerSeconds": 650.461,
-      "outerAgentSeconds": 659.8012007870002,
-      "preparationSeconds": 0.5348173680002947,
-      "verificationSeconds": 60.55183259400024,
-      "input": {
-        "observed": 2833888,
-        "missingAggregates": 0,
-        "incompleteTrialAccounting": 0
-      },
-      "output": {
-        "observed": 59750,
-        "missingAggregates": 0,
-        "incompleteTrialAccounting": 0
-      },
-      "cacheRead": {
-        "observed": 2576896,
-        "missingAggregates": 0,
-        "incompleteTrialAccounting": 0
-      },
-      "cacheWrite": {
-        "observed": 0,
-        "missingAggregates": 0,
-        "incompleteTrialAccounting": 0
-      },
-      "cost": {
-        "observed": 0.17463632,
+        "observed": 0.22118096,
         "missingAggregates": 0,
         "incompleteTrialAccounting": 0
       }
     },
     "cline": {
-      "trials": 5,
+      "trials": 6,
       "planned": 6,
       "officialRuntimeSuccess": 4,
-      "independentFunctionalSuccess": 5,
-      "agentRequiredChecksPassed": 4,
+      "independentFunctionalSuccess": 6,
+      "agentRequiredChecksPassed": 5,
       "manuallyReviewedRequestCriteriaPassed": 2,
       "auditedCriteria": 2,
       "auditedCompletion": 2,
       "timeouts": 0,
-      "failed": 1,
+      "failed": 2,
       "missingResult": 0,
       "watchdogs": 0,
       "tokensCostReconciled": 4,
       "fullRequestCacheAccounting": 0,
-      "runnerSeconds": 727.802,
-      "outerAgentSeconds": 736.9219610680002,
-      "preparationSeconds": 0.4962320150000742,
-      "verificationSeconds": 65.6933792539998,
+      "runnerSeconds": 943.294,
+      "outerAgentSeconds": 954.4154067310002,
+      "preparationSeconds": 0.5514608690001769,
+      "verificationSeconds": 74.25616970099975,
       "input": {
-        "observed": 3221272,
+        "observed": 4504844,
         "missingAggregates": 0,
-        "incompleteTrialAccounting": 1
+        "incompleteTrialAccounting": 2
       },
       "output": {
-        "observed": 85469,
+        "observed": 109661,
         "missingAggregates": 0,
-        "incompleteTrialAccounting": 1
+        "incompleteTrialAccounting": 2
       },
       "cacheRead": {
-        "observed": 2868224,
+        "observed": 4057600,
         "missingAggregates": 0,
-        "incompleteTrialAccounting": 1
+        "incompleteTrialAccounting": 2
       },
       "cacheWrite": {
         "observed": 0,
         "missingAggregates": 0,
-        "incompleteTrialAccounting": 1
+        "incompleteTrialAccounting": 2
       },
       "cost": {
-        "observed": 0.23053688,
+        "observed": 0.302194,
         "missingAggregates": 0,
-        "incompleteTrialAccounting": 1
+        "incompleteTrialAccounting": 2
       }
     }
   }

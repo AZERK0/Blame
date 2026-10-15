@@ -1328,6 +1328,225 @@
         }
       ],
       "automaticValidationInputs": []
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-baseline",
+      "id": "fast-glob-dynamic-filter",
+      "arm": "baseline",
+      "repetition": 3,
+      "searchCalls": 8,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 34,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 34,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 2,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "Options",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "filter",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getFilter(",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "deepFilter",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "new EntryFilter",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "ReaderOptions",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "entryFilter:",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "deepFilter:",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 3
+        }
+      ],
+      "eventsSha256": "83d60ba3fcb6fb0a3aab3537bfd5ab06f51bee57c0423e628ac92172d0838808",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-candidate",
+      "id": "fast-glob-dynamic-filter",
+      "arm": "candidate",
+      "repetition": 3,
+      "searchCalls": 7,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 21,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 21,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 1,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "filter",
+            "scope": "src/settings.ts"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "Entry",
+            "scope": [
+              "src/types/index.ts",
+              "src/providers/filters/entry.ts",
+              "src/providers/filters/deep.ts",
+              "src/readers/reader.ts",
+              "src/readers/async.ts",
+              "src/readers/stream.ts"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "new Settings",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "entryFilter",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "deepFilter",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "transform",
+            "scope": "src/providers"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "ReaderOptions",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "528654c1d7730273dc2f296b58881a8c49a3f7c99c6a721327d2eda76bffd183",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-cline",
+      "id": "fast-glob-dynamic-filter",
+      "arm": "cline",
+      "repetition": 3,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 11,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 50,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "26f4a6c16cc588319a1e8cfc0cb0f6b11577c7f0452d7f49329712bfb2bbe510",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
     }
   ]
 }

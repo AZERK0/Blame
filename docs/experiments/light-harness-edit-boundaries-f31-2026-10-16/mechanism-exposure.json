@@ -226,6 +226,51 @@
       "wholeInputs": [],
       "firstLineNormalizationActuallyApplied": null,
       "mechanismRouteAbsent": true
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-baseline",
+      "arm": "baseline",
+      "eventsSha256": "83d60ba3fcb6fb0a3aab3537bfd5ab06f51bee57c0423e628ac92172d0838808",
+      "wholeSymbolAttempts": 0,
+      "successfulWholeSymbolOperations": 0,
+      "bodyOnlyAttempts": 2,
+      "fileOrScopedPatchAttempts": 3,
+      "blockedEditCalls": 2,
+      "malformedOperationArrays": 0,
+      "nativePatchCalls": 0,
+      "wholeInputs": [],
+      "firstLineNormalizationActuallyApplied": null,
+      "mechanismRouteAbsent": true
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-candidate",
+      "arm": "candidate",
+      "eventsSha256": "528654c1d7730273dc2f296b58881a8c49a3f7c99c6a721327d2eda76bffd183",
+      "wholeSymbolAttempts": 0,
+      "successfulWholeSymbolOperations": 0,
+      "bodyOnlyAttempts": 0,
+      "fileOrScopedPatchAttempts": 7,
+      "blockedEditCalls": 1,
+      "malformedOperationArrays": 0,
+      "nativePatchCalls": 0,
+      "wholeInputs": [],
+      "firstLineNormalizationActuallyApplied": null,
+      "mechanismRouteAbsent": true
+    },
+    {
+      "name": "3-fast-glob-dynamic-filter-cline",
+      "arm": "cline",
+      "eventsSha256": "26f4a6c16cc588319a1e8cfc0cb0f6b11577c7f0452d7f49329712bfb2bbe510",
+      "wholeSymbolAttempts": 0,
+      "successfulWholeSymbolOperations": 0,
+      "bodyOnlyAttempts": 0,
+      "fileOrScopedPatchAttempts": 0,
+      "blockedEditCalls": 0,
+      "malformedOperationArrays": 0,
+      "nativePatchCalls": 7,
+      "wholeInputs": [],
+      "firstLineNormalizationActuallyApplied": null,
+      "mechanismRouteAbsent": null
     }
   ]
 }
