@@ -23,6 +23,14 @@
       "rejected": true
     },
     {
+      "fault": "Rebound an actual invocation to another source",
+      "rejected": true
+    },
+    {
+      "fault": "Promoted an unreported validation counter to zero",
+      "rejected": true
+    },
+    {
       "fault": "Rehashed wire metadata with unregistered model",
       "rejected": true
     }

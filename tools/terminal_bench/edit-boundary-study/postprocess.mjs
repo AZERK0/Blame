@@ -64,7 +64,7 @@ for(const row of analysis.rows){
   }
   const calls=tools.filter(t=>t.tool==="run_task"||t.tool==="run_commands").map(t=>{
     const data=t.output?.data;
-    const completed=data?.completed?.data;
+    const completed=data?.completed?.data??data;
     return {tool:t.tool,input:t.input,reportedStatus:t.output?.status??null,run:data?.run??null,
       command:completed?.command??data?.command??null,
       observedExitCode:completed?.exitCode??data?.exitCode??null,

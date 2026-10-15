@@ -108,10 +108,48 @@
           "run": null,
           "command": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs",
           "observedExitCode": 0,
-          "process": null,
-          "observedCheck": null,
-          "reporting": null,
-          "recordedSourceBinding": null,
+          "process": "exited",
+          "observedCheck": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 12,
+              "passed": 12,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 12,
+              "passed": 12,
+              "failed": 0,
+              "skipped": 0,
+              "pending": null
+            },
+            "evidenceOrigin": "runner_output",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_749fc9b215a93d5a04079eb9cefb96f3",
+            "completedSourceRevisionId": "src_749fc9b215a93d5a04079eb9cefb96f3",
+            "cwd": "."
+          },
+          "recordedSourceBinding": {
+            "invocation": "src_749fc9b215a93d5a04079eb9cefb96f3",
+            "completed": "src_749fc9b215a93d5a04079eb9cefb96f3"
+          },
           "reportedEnvironment": null,
           "manifestEnvironmentEvidence": null,
           "admittedValidation": {
@@ -129,10 +167,42 @@
           "run": null,
           "command": "tsc --noEmit && tsc --noEmit -p tests/tsconfig.json",
           "observedExitCode": 0,
-          "process": null,
-          "observedCheck": null,
-          "reporting": null,
-          "recordedSourceBinding": null,
+          "process": "exited",
+          "observedCheck": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "counts": {
+              "executed": null,
+              "passed": null,
+              "failed": null,
+              "skipped": null,
+              "pending": null
+            },
+            "evidenceOrigin": "none",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_749fc9b215a93d5a04079eb9cefb96f3",
+            "completedSourceRevisionId": "src_749fc9b215a93d5a04079eb9cefb96f3",
+            "cwd": "."
+          },
+          "recordedSourceBinding": {
+            "invocation": "src_749fc9b215a93d5a04079eb9cefb96f3",
+            "completed": "src_749fc9b215a93d5a04079eb9cefb96f3"
+          },
           "reportedEnvironment": null,
           "manifestEnvironmentEvidence": null,
           "admittedValidation": {
@@ -150,10 +220,48 @@
           "run": null,
           "command": "npm test -- --runInBand",
           "observedExitCode": 0,
-          "process": null,
-          "observedCheck": null,
-          "reporting": null,
-          "recordedSourceBinding": null,
+          "process": "exited",
+          "observedCheck": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11,
+              "pending": null
+            },
+            "evidenceOrigin": "runner_output",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_749fc9b215a93d5a04079eb9cefb96f3",
+            "completedSourceRevisionId": "src_749fc9b215a93d5a04079eb9cefb96f3",
+            "cwd": "."
+          },
+          "recordedSourceBinding": {
+            "invocation": "src_749fc9b215a93d5a04079eb9cefb96f3",
+            "completed": "src_749fc9b215a93d5a04079eb9cefb96f3"
+          },
           "reportedEnvironment": null,
           "manifestEnvironmentEvidence": null,
           "admittedValidation": {
@@ -385,10 +493,48 @@
           "run": null,
           "command": "node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs",
           "observedExitCode": 0,
-          "process": null,
-          "observedCheck": null,
-          "reporting": null,
-          "recordedSourceBinding": null,
+          "process": "exited",
+          "observedCheck": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 12,
+              "passed": 12,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 12,
+              "passed": 12,
+              "failed": 0,
+              "skipped": 0,
+              "pending": null
+            },
+            "evidenceOrigin": "runner_output",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_d56820382b579eb181389aa824c29bc7",
+            "completedSourceRevisionId": "src_d56820382b579eb181389aa824c29bc7",
+            "cwd": "."
+          },
+          "recordedSourceBinding": {
+            "invocation": "src_d56820382b579eb181389aa824c29bc7",
+            "completed": "src_d56820382b579eb181389aa824c29bc7"
+          },
           "reportedEnvironment": null,
           "manifestEnvironmentEvidence": null,
           "admittedValidation": {
@@ -406,10 +552,42 @@
           "run": null,
           "command": "npm run test:types",
           "observedExitCode": 0,
-          "process": null,
-          "observedCheck": null,
-          "reporting": null,
-          "recordedSourceBinding": null,
+          "process": "exited",
+          "observedCheck": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "counts": {
+              "executed": null,
+              "passed": null,
+              "failed": null,
+              "skipped": null,
+              "pending": null
+            },
+            "evidenceOrigin": "none",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_d56820382b579eb181389aa824c29bc7",
+            "completedSourceRevisionId": "src_d56820382b579eb181389aa824c29bc7",
+            "cwd": "."
+          },
+          "recordedSourceBinding": {
+            "invocation": "src_d56820382b579eb181389aa824c29bc7",
+            "completed": "src_d56820382b579eb181389aa824c29bc7"
+          },
           "reportedEnvironment": null,
           "manifestEnvironmentEvidence": null,
           "admittedValidation": {
@@ -427,10 +605,48 @@
           "run": null,
           "command": "npm test -- --runInBand",
           "observedExitCode": 0,
-          "process": null,
-          "observedCheck": null,
-          "reporting": null,
-          "recordedSourceBinding": null,
+          "process": "exited",
+          "observedCheck": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11,
+              "pending": null
+            },
+            "evidenceOrigin": "runner_output",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_d56820382b579eb181389aa824c29bc7",
+            "completedSourceRevisionId": "src_d56820382b579eb181389aa824c29bc7",
+            "cwd": "."
+          },
+          "recordedSourceBinding": {
+            "invocation": "src_d56820382b579eb181389aa824c29bc7",
+            "completed": "src_d56820382b579eb181389aa824c29bc7"
+          },
           "reportedEnvironment": null,
           "manifestEnvironmentEvidence": null,
           "admittedValidation": {

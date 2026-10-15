@@ -112,6 +112,36 @@ evidence=read('evidence-checks.json')
 for audit in evidence['audits']:
  b=gzip.decompress((root/audit['artifact']).read_bytes());assert len(b)==audit['bytes'] and sha(b)==audit['sha256']
  assert [json.loads(line) for line in b.splitlines() if line]==audit['records']
+# Compact validation provenance must copy observations,never upgrade unknowns.
+provenance=read('validation-provenance.json')
+assert provenance['bindingSha256']==sha((root/'execution-bindings.json').read_bytes())
+assert provenance['protocolSha256']==sha((root/'protocol.json').read_bytes())
+assert len(provenance['rows'])==len(rows)
+for r,record in zip(rows,provenance['rows']):
+ name=r['name'];score=json.loads(raw[name,'score.json'])
+ assert record['name']==name and record['eventsSha256']==r['eventsSha256'] and record['scoreSha256']==r['scoreSha256']
+ assert record['finalScoredSources']==score['sourceSha256']
+ assert record['independent']['build']==score['build'] and record['independent']['e2e']==score.get('e2e')
+ events=[json.loads(l)['event'] for l in raw[name,'events.jsonl'].splitlines() if l]
+ tools=[e['payload'] for e in events if e['type']=='tool' and e['payload'].get('phase')=='finished' and e['payload'].get('toolCall',{}).get('name') in ['run_task','run_commands']]
+ assert len(tools)==len(record['actualRecordedAgentCommands'])
+ for tool,call in zip(tools,record['actualRecordedAgentCommands']):
+  output=tool.get('output');data=output.get('data') if isinstance(output,dict) else None
+  data=data if isinstance(data,dict) else {}
+  completed=data.get('completed',{}).get('data',data)
+  reporting=completed.get('reporting');check=completed.get('check')
+  check=check if isinstance(check,dict) else None
+  assert call['tool']==tool['toolCall']['name'] and call['input']==tool['toolCall']['input']
+  assert call['observedExitCode']==completed.get('exitCode',data.get('exitCode'))
+  assert call['reporting']==reporting and call['observedCheck']==check
+  binding={'invocation':reporting.get('invocationSourceRevisionId'),'completed':reporting.get('completedSourceRevisionId')} if isinstance(reporting,dict) else None
+  assert call['recordedSourceBinding']==binding
+  assert call['reportedEnvironment']==completed.get('environment',data.get('environment'))
+  assert call['manifestEnvironmentEvidence']==((check or {}).get('evidence') or {}).get('manifestEnvironment')
+  assert call['admittedValidation']==completed.get('validation',data.get('validation'))
+  if call['tool']=='run_commands':assert call['nativeResults']==output
+for entry in read('supplemental-inventory.json')['journals']:
+ b=gzip.decompress((root/entry['artifact']).read_bytes());assert len(b)==entry['bytes'] and sha(b)==entry['sha256']
 controls=read('task-controls.json')
 assert controls['paidRequests']==0 and len(controls['rows'])==2
 for c in controls['rows']:
