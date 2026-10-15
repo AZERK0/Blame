@@ -9,7 +9,7 @@ Blame connects tasks, coding agents, isolated Git worktrees, previews, and code 
 [![Quality](https://github.com/AZERK0/Blame/actions/workflows/quality.yml/badge.svg)](https://github.com/AZERK0/Blame/actions/workflows/quality.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
-[![Watch the Blame demo on YouTube](packages/vitrine/public/desktop-backlog.png)](https://youtu.be/cD6jASpIKQw)
+[![Watch the Blame demo on YouTube](packages/vitrine/public/demo.gif)](https://youtu.be/cD6jASpIKQw)
 
 **[Watch the demo on YouTube](https://youtu.be/cD6jASpIKQw)**
 
