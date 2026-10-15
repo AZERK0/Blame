@@ -1997,6 +1997,2089 @@
       },
       "independentFunctionalSuccess": true,
       "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
+    },
+    {
+      "name": "2-commander-canonical-choices-candidate",
+      "eventsSha256": "7a960321f982c85a8a795b316c797dca6e76700c03339a2ecfc23e65f769d45c",
+      "scoreSha256": "8e577179f80fc15d4203b91151466fbca1700804e9c0adddae936cfea8482008",
+      "finalScoredSources": {
+        "lib/option.js": "541547cca2480a01438941156a49567363583c8670d3f6efb86d191f79db9e68",
+        "lib/argument.js": "6191ac6cb1fc07a3c583164bd558c744a6b88ef7498597c8ac8ac7824d67ac79",
+        "typings/index.d.ts": "be3aeb62e6e027239ff93b394501e3fa396d5fd62a0f3c81d8a6857e6c9af7c3"
+      },
+      "actualRecordedAgentCommands": [
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node --test tests/agent-choices.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node --test tests/agent-choices.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run check:type"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "npm run check:type",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": {
+            "paths": [
+              "lib/argument.js",
+              "lib/option.js",
+              "typings/index.d.ts"
+            ],
+            "sourceRevisionId": "src_9664d712320466c6e8ca0c3fea46a8e4",
+            "status": "passed",
+            "taskId": "check:type",
+            "taskKind": "typecheck"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node tests/agent-project-suite.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node tests/agent-project-suite.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": null,
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git status --short && git diff -- lib/option.js lib/argument.js typings/index.d.ts",
+            "cwd": "."
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "git status --short && git diff -- lib/option.js lib/argument.js typings/index.d.ts",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": null,
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node --test tests/agent-choices.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node --test tests/agent-choices.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run check:type"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "npm run check:type",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": {
+            "paths": [
+              "lib/argument.js",
+              "lib/option.js",
+              "typings/index.d.ts"
+            ],
+            "sourceRevisionId": "src_5f08884ab67b6198fd7258434eeaeefa",
+            "status": "passed",
+            "taskId": "check:type",
+            "taskKind": "typecheck"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node tests/agent-project-suite.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node tests/agent-project-suite.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": null,
+          "nativeResults": null
+        }
+      ],
+      "officialRuntimeSuccess": true,
+      "completionAsReported": {
+        "source_revision_id": "src_5f08884ab67b6198fd7258434eeaeefa",
+        "delivery": "satisfied",
+        "verification": "verified",
+        "satisfied_obligations": [
+          "validation"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": []
+      },
+      "independent": {
+        "feature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-candidate/workspace",
+            "commander-canonical-choices",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 657.5273280000547,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-choices.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"option:canonical-first-copied-and-empty\",\"passed\":true},{\"name\":\"option:nontrue-default-differential\",\"passed\":true},{\"name\":\"option:variadic-hook-and-exception-identity\",\"passed\":true},{\"name\":\"option:parser-replacement-order-and-fluent-subclass\",\"passed\":true},{\"name\":\"argument:canonical-first-copied-and-empty\",\"passed\":true},{\"name\":\"argument:nontrue-default-differential\",\"passed\":true},{\"name\":\"argument:variadic-hook-and-exception-identity\",\"passed\":true},{\"name\":\"argument:parser-replacement-order-and-fluent-subclass\",\"passed\":true},{\"name\":\"choices:parse-error-hook-and-default-array\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/option.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/argument.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "nonUtcFeature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-candidate/workspace",
+            "commander-canonical-choices",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 631.3476849999279,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-choices.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"option:canonical-first-copied-and-empty\",\"passed\":true},{\"name\":\"option:nontrue-default-differential\",\"passed\":true},{\"name\":\"option:variadic-hook-and-exception-identity\",\"passed\":true},{\"name\":\"option:parser-replacement-order-and-fluent-subclass\",\"passed\":true},{\"name\":\"argument:canonical-first-copied-and-empty\",\"passed\":true},{\"name\":\"argument:nontrue-default-differential\",\"passed\":true},{\"name\":\"argument:variadic-hook-and-exception-identity\",\"passed\":true},{\"name\":\"argument:parser-replacement-order-and-fluent-subclass\",\"passed\":true},{\"name\":\"choices:parse-error-hook-and-default-array\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/option.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/argument.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "selected": {
+          "argv": [
+            "node",
+            "--test",
+            "tests/agent-choices.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-candidate/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 105.97005000000354,
+          "stdout": "✔ both choice APIs opt in, return the first canonical spelling and copy input (2.058077ms)\n✔ absent and non-true flags retain case-sensitive choices (0.408875ms)\n✔ variadic choices accumulate canonical values without changing defaults (0.294596ms)\n✔ real command parsing and help expose canonical choices (2.337411ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 66.735629\n",
+          "stderr": ""
+        },
+        "typesOrSyntax": {
+          "argv": [
+            "npm",
+            "run",
+            "check:type"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-candidate/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 8436.752755000023,
+          "stdout": "\n> commander@13.1.0 check:type\n> npm run check:type:js && npm run check:type:ts\n\n\n> commander@13.1.0 check:type:js\n> tsc -p tsconfig.js.json\n\n\n> commander@13.1.0 check:type:ts\n> tsd && tsc -p tsconfig.ts.json\n\n",
+          "stderr": ""
+        },
+        "fullDefinedSuite": {
+          "argv": [
+            "node",
+            "tests/agent-project-suite.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-candidate/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 6366.686225999962,
+          "stdout": "",
+          "stderr": "PASS tests/command.executableSubcommand.lookup.test.js\nPASS tests/command.executableSubcommand.inspect.test.js\nPASS tests/command.executableSubcommand.signals.test.js\nPASS tests/ts-imports.test.ts\nPASS tests/command.default.test.js\nPASS tests/command.parseOptions.test.js\nPASS tests/command.action.test.js\nPASS tests/command.exitOverride.test.js\nPASS tests/command.positionalOptions.test.js\nPASS tests/help.suggestion.test.js\nPASS tests/options.conflicts.test.js\nPASS tests/command.parse.test.js\nPASS tests/options.required.test.js\nPASS tests/command.addHelpText.test.js\nPASS tests/command.configureHelp.test.js\nPASS tests/command.hook.test.js\nPASS tests/command.helpCommand.test.js\nPASS tests/command.help.test.js\nPASS tests/options.env.test.js\nPASS tests/command.executableSubcommand.mock.test.js\nPASS tests/argument.custom-processing.test.js\nPASS tests/options.mandatory.test.js\nPASS tests/command.executableSubcommand.search.test.js\nPASS tests/command.configureOutput.test.js\nPASS tests/command.chain.test.js\nPASS tests/options.version.test.js\nPASS tests/options.variadic.test.js\nPASS tests/options.bool.test.js\nPASS tests/options.values.test.js\nPASS tests/options.twice.test.js\nPASS tests/incrementNodeInspectorPort.test.js\nPASS tests/help.style.test.js\nPASS tests/command.onCommand.test.js\nPASS tests/command.allowExcessArguments.test.js\nPASS tests/options.implies.test.js\nPASS tests/options.default.test.js\nPASS tests/option.bad-flags.test.js\nPASS tests/argument.variadic.test.js\nPASS tests/options.bool.combo.test.js\nPASS tests/command.argumentVariations.test.js\nPASS tests/options.custom-processing.test.js\nPASS tests/command.helpOption.test.js\nPASS tests/command.asterisk.test.js\nPASS tests/command.alias.test.js\nPASS tests/help.boxWrap.test.js\nPASS tests/command.unknownCommand.test.js\nPASS tests/command.showHelpAfterError.test.js\nPASS tests/command.registerClash.test.js\nPASS tests/command.copySettings.test.js\nPASS tests/command.allowUnknownOption.test.js\nPASS tests/args.variadic.test.js\nPASS tests/options.getset.test.js\nPASS tests/options.dual-options.test.js\nPASS tests/options.choices.test.js\nPASS tests/help.visibleArguments.test.js\nPASS tests/help.sortOptions.test.js\nPASS tests/help.optionTerm.test.js\nPASS tests/commander.configureCommand.test.js\nPASS tests/command.addCommand.test.js\nPASS tests/argument.choices.test.js\nPASS tests/useColor.test.js\nPASS tests/program.test.js\nPASS tests/options.registerClash.test.js\nPASS tests/options.optsWithGlobals.test.js\nPASS tests/options.opts.test.js\nPASS tests/options.flags.test.js\nPASS tests/help.visibleOptions.test.js\nPASS tests/help.visibleGlobalOptions.test.js\nPASS tests/help.visibleCommands.test.js\nPASS tests/help.sortCommands.test.js\nPASS tests/help.showGlobalOptions.test.js\nPASS tests/help.longestOptionTermLength.test.js\nPASS tests/help.longestArgumentTermLength.test.js\nPASS tests/help.commandUsage.test.js\nPASS tests/command.usage.test.js\nPASS tests/command.unknownOption.test.js\nPASS tests/command.showSuggestionAfterError.test.js\nPASS tests/command.error.test.js\nPASS tests/command.createOption.test.js\nPASS tests/command.createArgument.test.js\nPASS tests/command.addHelpOption.test.js\nPASS tests/argument.chain.test.js\nPASS tests/options.preset.test.js\nPASS tests/options.optional.test.js\nPASS tests/options.bool.small.combined.test.js\nPASS tests/option.chain.test.js\nPASS tests/help.subcommandDescription.test.js\nPASS tests/help.stripAnsi.test.js\nPASS tests/help.preformatted.test.js\nPASS tests/help.optionDescription.test.js\nPASS tests/help.longestCommandTermLength.test.js\nPASS tests/help.commandTerm.test.js\nPASS tests/command.option-misuse.test.js\nPASS tests/command.executableSubcommand.test.js\nPASS tests/options.camelcase.test.js\nPASS tests/help.padWidth.test.js\nPASS tests/help.minWidthToWrap.test.js\nPASS tests/help.argumentDescription.test.js\nPASS tests/createCommand.test.js\nPASS tests/deprecated.test.js\nPASS tests/command.nested.test.js\nPASS tests/command.name.test.js\nPASS tests/command.commandHelp.test.js\nPASS tests/argument.required.test.js\nPASS tests/args.literal.test.js\nPASS tests/command.summary.test.js\nPASS tests/command.description.test.js\nPASS tests/command.createHelp.test.js\n\u001b[999D\u001b[K\nTest Suites: 108 passed, 108 total\nTests:       1206 passed, 1206 total\nSnapshots:   0 total\nTime:        6 s, estimated 8 s\nRan all test suites.\n"
+        },
+        "addedTests": null,
+        "addedTestsOnOriginalSource": null
+      },
+      "boundEnvironment": {
+        "node": "v24.19.0",
+        "project": {
+          "commit": "e6f56c888c96d1339c2b974fee7e6ba4f2e3d218",
+          "source": "6616872661cfecda123d434939e1fdf5e6517dae7aa0d88044d850e175e27814",
+          "lock": "aa6f6ec42ef38d4d533e442274e3ae3f53f7c3e65e660050c4fc3d06f2b77331",
+          "jest": "29.7.0",
+          "typescript": "5.7.2",
+          "tsd": "0.31.2"
+        },
+        "defaultTZ": "UTC",
+        "secondFeatureTZ": "America/New_York",
+        "runtime": {
+          "runtime": "6697c22d7dc59b3ef718a5ee7d812cf2118eb234c5cd9d2598ac448cc555687c",
+          "runner": "15627aa790b9be0f75bfad3f6ebdbd95ceaafa0d0822e9e3392c62628cd38f83",
+          "source": {
+            "arm": "candidate",
+            "sourceCommit": "79bcf87fc68ede77746b4f9fa278c1d7f88bc36a",
+            "patchSha256": "9fabc1362b9a181a540a8417ac3f905e61a4604315eee2b1f6553a12f0ee40b6",
+            "changedPaths": [
+              "packages/agent-runtime/src/harness/light-tools.ts",
+              "packages/agent-runtime/src/harness/light-completion.ts"
+            ]
+          }
+        }
+      },
+      "independentFunctionalSuccess": true,
+      "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
+    },
+    {
+      "name": "2-commander-canonical-choices-cline",
+      "eventsSha256": "fd9da3402e7f8abd9e127b97bca81a553d586ded6d5fd8e57b4ccc905d35d306",
+      "scoreSha256": "d40f88ef7840451519e94e71c72ee84520edd24428bb819f4063affcefc16385",
+      "finalScoredSources": {
+        "lib/option.js": "f80c9facae952337bd1acf5278f6af5e4bbecec06675ff2d66bc8c227371246f",
+        "lib/argument.js": "8514dd2c01157d7637b6c82c0a7e343bff289977839c30a4ea42ae203508d062",
+        "typings/index.d.ts": "1a800727ead4b3ec248df884000c7d2937f64e674258438e91dda19393ba2dd8"
+      },
+      "actualRecordedAgentCommands": [
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "pwd && git status --short && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p'",
+              "grep -n \"choices\\|option\\|argument\" package.json 2>/dev/null | sed -n '1,160p'"
+            ]
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "pwd && git status --short && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p'",
+              "result": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-cline/workspace\n\nTop-level files:\n./.editorconfig\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.gitattributes\n./.github/FUNDING.yml\n./.github/PULL_REQUEST_TEMPLATE.md\n./.github/dependabot.yml\n./.gitignore\n./.prettierignore\n./.prettierrc.js\n./CHANGELOG.md\n./CONTRIBUTING.md\n./LICENSE\n./Readme.md\n./Readme_zh-CN.md\n./SECURITY.md\n./docs/deprecated.md\n./docs/help-in-depth.md\n./docs/options-in-depth.md\n./docs/parsing-and-hooks.md\n./docs/terminology.md\n./eslint.config.js\n./esm.mjs\n./examples/action-this.js\n./examples/alias.js\n./examples/argument.js\n./examples/arguments-custom-processing.js\n./examples/arguments-extra.js\n./examples/color-help-replacement.mjs\n./examples/color-help.mjs\n./examples/configure-help.js\n./examples/configure-output.js\n./examples/custom-command-class.js\n./examples/custom-help\n./examples/custom-help-description\n./examples/custom-help-text.js\n./examples/custom-version\n./examples/defaultCommand.js\n./examples/deploy\n./examples/description\n./examples/global-options-added.js\n./examples/global-options-nested.js\n./examples/help-centered.mjs\n./examples/help-subcommands-usage.js\n./examples/hook.js\n./examples/man-style-help.mjs\n./examples/nestedCommands.js\n./examples/options-boolean-or-value.js\n./examples/options-common.js\n./examples/options-conflicts.js\n./examples/options-custom-processing.js\n./examples/options-defaults.js\n./examples/options-env.js\n./examples/options-extra.js\n./examples/options-implies.js\n./examples/options-negatable.js\n./examples/options-required.js\n./examples/options-variadic.js\n./examples/pass-through-options.js\n./examples/pizza\n./examples/pm\n./examples/pm-install\n./examples/pm-list.js\n./examples/positional-options.js\n./examples/split.js\n./examples/string-util.js\n./examples/thank.js\n./index.js\n./jest.config.js\n./lib/argument.js\n./lib/command.js\n./lib/error.js\n./lib/help.js\n./lib/option.js\n./lib/suggestSimilar.js\n./package-lock.json\n./package-support.json\n./package.json\n./tests/agent-choices.cjs\n./tests/agent-contracts.cjs\n./tests/agent-project-suite.cjs\n./tests/args.literal.test.js\n./tests/args.variadic.test.js\n./tests/argument.chain.test.js\n./tests/argument.choices.test.js\n./tests/argument.custom-processing.test.js\n./tests/argument.required.test.js\n./tests/argument.variadic.test.js\n./tests/command.action.test.js\n./tests/command.addCommand.test.js\n./tests/command.addHelpOption.test.js\n./tests/command.addHelpText.test.js\n./tests/command.alias.test.js\n./tests/command.allowExcessArguments.test.js\n./tests/command.allowUnknownOption.test.js\n./tests/command.argumentVariations.test.js\n./tests/command.asterisk.test.js\n./tests/command.chain.test.js\n./tests/command.commandHelp.test.js\n./tests/command.configureHelp.test.js\n./tests/command.configureOutput.test.js\n./tests/command.copySettings.test.js\n./tests/command.createArgument.test.js\n./tests/command.createHelp.test.js\n./tests/command.createOption.test.js\n./tests/command.default.test.js\n./tests/command.description.test.js\n./tests/command.error.test.js\n./tests/command.executableSubcommand.inspect.test.js\n./tests/command.executableSubcommand.lookup.test.js\n./tests/command.executableSubcommand.mock.test.js\n./tests/command.executableSubcommand.search.test.js\n./tests/command.executableSubcommand.signals.test.js\n./tests/command.executableSubcommand.test.js\n./tests/command.exitOverride.test.js\n./tests/command.help.test.js\n./tests/command.helpCommand.test.js\n./tests/command.helpOption.test.js\n./tests/command.hook.test.js\n./tests/command.name.test.js\n./tests/command.nested.test.js\n./tests/command.onCommand.test.js\n./tests/command.option-misuse.test.js\n./tests/command.parse.test.js\n./tests/command.parseOptions.test.js\n./tests/command.positionalOptions.test.js\n./tests/command.registerClash.test.js\n./tests/command.showHelpAfterError.test.js\n./tests/command.showSuggestionAfterError.test.js\n./tests/command.summary.test.js\n./tests/command.unknownCommand.test.js\n./tests/command.unknownOption.test.js\n./tests/command.usage.test.js\n./tests/commander.configureCommand.test.js\n./tests/createCommand.test.js\n./tests/deprecated.test.js\n./tests/esm-imports-test.mjs\n./tests/help.argumentDescription.test.js\n./tests/help.boxWrap.test.js\n./tests/help.commandTerm.test.js\n./tests/help.commandUsage.test.js\n./tests/help.longestArgumentTermLength.test.js\n./tests/help.longestCommandTermLength.test.js\n./tests/help.longestOptionTermLength.test.js\n./tests/help.minWidthToWrap.test.js\n./tests/help.optionDescription.test.js\n./tests/help.optionTerm.test.js\n./tests/help.padWidth.test.js\n./tests/help.preformatted.test.js\n./tests/help.showGlobalOptions.test.js\n./tests/help.sortCommands.test.js\n./tests/help.sortOptions.test.js\n./tests/help.stripAnsi.test.js\n./tests/help.style.test.js\n./tests/help.subcommandDescription.test.js\n./tests/help.suggestion.test.js\n./tests/help.visibleArguments.test.js\n",
+              "success": true
+            },
+            {
+              "query": "grep -n \"choices\\|option\\|argument\" package.json 2>/dev/null | sed -n '1,160p'",
+              "result": "8:    \"option\",\n11:    \"argument\",\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "node -e \"const p=require('./package.json'); console.log(JSON.stringify({scripts:p.scripts,version:p.version},null,2))\"",
+              "git diff --check && git status --short"
+            ],
+            "timeout": 120000
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "node -e \"const p=require('./package.json'); console.log(JSON.stringify({scripts:p.scripts,version:p.version},null,2))\"",
+              "result": "{\n  \"scripts\": {\n    \"check\": \"npm run check:type && npm run check:lint && npm run check:format\",\n    \"check:format\": \"prettier --check .\",\n    \"check:lint\": \"eslint .\",\n    \"check:type\": \"npm run check:type:js && npm run check:type:ts\",\n    \"check:type:ts\": \"tsd && tsc -p tsconfig.ts.json\",\n    \"check:type:js\": \"tsc -p tsconfig.js.json\",\n    \"fix\": \"npm run fix:lint && npm run fix:format\",\n    \"fix:format\": \"prettier --write .\",\n    \"fix:lint\": \"eslint --fix .\",\n    \"test\": \"jest && npm run check:type:ts\",\n    \"test-all\": \"jest && npm run test-esm && npm run check\",\n    \"test-esm\": \"node ./tests/esm-imports-test.mjs\"\n  },\n  \"version\": \"13.1.0\"\n}\n",
+              "success": true
+            },
+            {
+              "query": "git diff --check && git status --short",
+              "result": "",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git log -1 --oneline --decorate && node --version && npm --version"
+            ],
+            "timeout": 120000
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "git log -1 --oneline --decorate && node --version && npm --version",
+              "result": "5bafb37 (HEAD -> master) Frozen task input\nv24.19.0\n11.9.0\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git diff -- lib/option.js lib/argument.js typings/index.d.ts && git status --short"
+            ],
+            "timeout": 120000
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "git diff -- lib/option.js lib/argument.js typings/index.d.ts && git status --short",
+              "result": "diff --git a/lib/argument.js b/lib/argument.js\nindex ee46c36..7e19483 100644\n--- a/lib/argument.js\n+++ b/lib/argument.js\n@@ -91,21 +91,28 @@ class Argument {\n    * Only allow argument value to be one of choices.\n    *\n    * @param {string[]} values\n+   * @param {{ caseInsensitive?: boolean }} [configuration]\n    * @return {Argument}\n    */\n \n-  choices(values) {\n+  choices(values, configuration) {\n     this.argChoices = values.slice();\n     this.parseArg = (arg, previous) => {\n-      if (!this.argChoices.includes(arg)) {\n+      const choice =\n+        configuration?.caseInsensitive === true\n+          ? this.argChoices.find((value) => value.toLowerCase() === arg.toLowerCase())\n+          : this.argChoices.includes(arg)\n+            ? arg\n+            : undefined;\n+      if (choice === undefined) {\n         throw new InvalidArgumentError(\n           `Allowed choices are ${this.argChoices.join(', ')}.`,\n         );\n       }\n       if (this.variadic) {\n-        return this._concatValue(arg, previous);\n+        return this._concatValue(choice, previous);\n       }\n-      return arg;\n+      return choice;\n     };\n     return this;\n   }\ndiff --git a/lib/option.js b/lib/option.js\nindex 5d43dfb..04f4705 100644\n--- a/lib/option.js\n+++ b/lib/option.js\n@@ -173,21 +173,28 @@ class Option {\n    * Only allow option value to be one of choices.\n    *\n    * @param {string[]} values\n+   * @param {{ caseInsensitive?: boolean }} [configuration]\n    * @return {Option}\n    */\n \n-  choices(values) {\n+  choices(values, configuration) {\n     this.argChoices = values.slice();\n     this.parseArg = (arg, previous) => {\n-      if (!this.argChoices.includes(arg)) {\n+      const choice =\n+        configuration?.caseInsensitive === true\n+          ? this.argChoices.find((value) => value.toLowerCase() === arg.toLowerCase())\n+          : this.argChoices.includes(arg)\n+            ? arg\n+            : undefined;\n+      if (choice === undefined) {\n         throw new InvalidArgumentError(\n           `Allowed choices are ${this.argChoices.join(', ')}.`,\n         );\n       }\n       if (this.variadic) {\n-        return this._concatValue(arg, previous);\n+        return this._concatValue(choice, previous);\n       }\n-      return arg;\n+      return choice;\n     };\n     return this;\n   }\ndiff --git a/typings/index.d.ts b/typings/index.d.ts\nindex f92ee19..2e0b672 100644\n--- a/typings/index.d.ts\n+++ b/typings/index.d.ts\n@@ -78,7 +78,10 @@ export class Argument {\n   /**\n    * Only allow argument value to be one of choices.\n    */\n-  choices(values: readonly string[]): this;\n+  choices(\n+    values: readonly string[],\n+    configuration?: { readonly caseInsensitive?: boolean },\n+  ): this;\n \n   /**\n    * Make argument required.\n@@ -179,7 +182,10 @@ export class Option {\n   /**\n    * Only allow option value to be one of choices.\n    */\n-  choices(values: readonly string[]): this;\n+  choices(\n+    values: readonly string[],\n+    configuration?: { readonly caseInsensitive?: boolean },\n+  ): this;\n \n   /**\n    * Return option name.\n M lib/argument.js\n M lib/option.js\n M typings/index.d.ts\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "node --test tests/agent-choices.cjs",
+              "npm run check:type",
+              "node tests/agent-project-suite.cjs"
+            ],
+            "timeout": 120000
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "node --test tests/agent-choices.cjs",
+              "result": "✔ both choice APIs opt in, return the first canonical spelling and copy input (2.604097ms)\n✔ absent and non-true flags retain case-sensitive choices (0.383978ms)\n✔ variadic choices accumulate canonical values without changing defaults (0.252204ms)\n✔ real command parsing and help expose canonical choices (2.586549ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 98.756446\n",
+              "success": true
+            },
+            {
+              "query": "npm run check:type",
+              "result": "\n> commander@13.1.0 check:type\n> npm run check:type:js && npm run check:type:ts\n\n\n> commander@13.1.0 check:type:js\n> tsc -p tsconfig.js.json\n\n\n> commander@13.1.0 check:type:ts\n> tsd && tsc -p tsconfig.ts.json\n\n",
+              "success": true
+            },
+            {
+              "query": "node tests/agent-project-suite.cjs",
+              "result": "\n[stderr]\nPASS tests/command.positionalOptions.test.js\nPASS tests/command.parse.test.js\nPASS tests/command.parseOptions.test.js\nPASS tests/options.env.test.js\nPASS tests/command.hook.test.js\nPASS tests/command.exitOverride.test.js\nPASS tests/command.executableSubcommand.search.test.js\nPASS tests/options.conflicts.test.js\nPASS tests/command.help.test.js\nPASS tests/command.configureOutput.test.js\nPASS tests/options.mandatory.test.js\nPASS tests/command.chain.test.js\nPASS tests/help.style.test.js\nPASS tests/options.default.test.js\nPASS tests/options.implies.test.js\nPASS tests/help.suggestion.test.js\nPASS tests/command.addHelpText.test.js\nPASS tests/argument.custom-processing.test.js\nPASS tests/options.version.test.js\nPASS tests/options.variadic.test.js\nPASS tests/command.helpCommand.test.js\nPASS tests/command.asterisk.test.js\nPASS tests/command.copySettings.test.js\nPASS tests/options.bool.combo.test.js\nPASS tests/options.custom-processing.test.js\nPASS tests/options.bool.test.js\nPASS tests/command.action.test.js\nPASS tests/incrementNodeInspectorPort.test.js\nPASS tests/command.executableSubcommand.lookup.test.js\nPASS tests/command.helpOption.test.js\nPASS tests/help.boxWrap.test.js\nPASS tests/command.argumentVariations.test.js\nPASS tests/command.executableSubcommand.mock.test.js\nPASS tests/options.optsWithGlobals.test.js\nPASS tests/command.showHelpAfterError.test.js\nPASS tests/command.alias.test.js\nPASS tests/command.allowExcessArguments.test.js\nPASS tests/options.dual-options.test.js\nPASS tests/argument.variadic.test.js\nPASS tests/help.optionDescription.test.js\nPASS tests/command.default.test.js\nPASS tests/help.sortOptions.test.js\nPASS tests/options.values.test.js\nPASS tests/commander.configureCommand.test.js\nPASS tests/command.unknownOption.test.js\nPASS tests/useColor.test.js\nPASS tests/help.visibleOptions.test.js\nPASS tests/options.required.test.js\nPASS tests/options.opts.test.js\nPASS tests/options.optional.test.js\nPASS tests/help.visibleArguments.test.js\nPASS tests/options.flags.test.js\nPASS tests/command.allowUnknownOption.test.js\nPASS tests/options.getset.test.js\nPASS tests/command.usage.test.js\nPASS tests/command.executableSubcommand.inspect.test.js\nPASS tests/args.variadic.test.js\nPASS tests/options.preset.test.js\nPASS tests/command.unknownCommand.test.js\nPASS tests/options.choices.test.js\nPASS tests/argument.choices.test.js\nPASS tests/help.preformatted.test.js\nPASS tests/help.longestCommandTermLength.test.js\nPASS tests/command.executableSubcommand.signals.test.js\nPASS tests/command.addCommand.test.js\nPASS tests/command.name.test.js\nPASS tests/help.padWidth.test.js\nPASS tests/options.camelcase.test.js\nPASS tests/options.twice.test.js\nPASS tests/help.showGlobalOptions.test.js\nPASS tests/help.argumentDescription.test.js\nPASS tests/help.commandTerm.test.js\nPASS tests/help.visibleGlobalOptions.test.js\nPASS tests/help.commandUsage.test.js\nPASS tests/command.error.test.js\nPASS tests/options.registerClash.test.js\nPASS tests/program.test.js\nPASS tests/command.addHelpOption.test.js\nPASS tests/command.showSuggestionAfterError.test.js\nPASS tests/help.stripAnsi.test.js\nPASS tests/help.minWidthToWrap.test.js\nPASS tests/option.chain.test.js\nPASS tests/command.registerClash.test.js\nPASS tests/help.subcommandDescription.test.js\nPASS tests/command.createOption.test.js\nPASS tests/deprecated.test.js\nPASS tests/command.onCommand.test.js\nPASS tests/command.createArgument.test.js\nPASS tests/args.literal.test.js\nPASS tests/option.bad-flags.test.js\nPASS tests/help.visibleCommands.test.js\nPASS tests/help.longestOptionTermLength.test.js\nPASS tests/command.configureHelp.test.js\nPASS tests/ts-imports.test.ts\nPASS tests/help.longestArgumentTermLength.test.js\nPASS tests/help.optionTerm.test.js\nPASS tests/help.sortCommands.test.js\nPASS tests/argument.required.test.js\nPASS tests/argument.chain.test.js\nPASS tests/createCommand.test.js\nPASS tests/command.executableSubcommand.test.js\nPASS tests/command.option-misuse.test.js\nPASS tests/command.commandHelp.test.js\nPASS tests/command.createHelp.test.js\nPASS tests/options.bool.small.combined.test.js\nPASS tests/command.nested.test.js\nPASS tests/command.description.test.js\nPASS tests/command.summary.test.js\n\u001b[999D\u001b[K\nTest Suites: 108 passed, 108 total\nTests:       1206 passed, 1206 total\nSnapshots:   0 total\nTime:        10.039 s\nRan all test suites.\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git diff --check && git status --short"
+            ],
+            "timeout": 120000
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "git diff --check && git status --short",
+              "result": " M lib/argument.js\n M lib/option.js\n M typings/index.d.ts\n",
+              "success": true
+            }
+          ]
+        }
+      ],
+      "officialRuntimeSuccess": true,
+      "completionAsReported": null,
+      "independent": {
+        "feature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-cline/workspace",
+            "commander-canonical-choices",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 640.7008980000392,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-choices.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"option:canonical-first-copied-and-empty\",\"passed\":true},{\"name\":\"option:nontrue-default-differential\",\"passed\":true},{\"name\":\"option:variadic-hook-and-exception-identity\",\"passed\":true},{\"name\":\"option:parser-replacement-order-and-fluent-subclass\",\"passed\":true},{\"name\":\"argument:canonical-first-copied-and-empty\",\"passed\":true},{\"name\":\"argument:nontrue-default-differential\",\"passed\":true},{\"name\":\"argument:variadic-hook-and-exception-identity\",\"passed\":true},{\"name\":\"argument:parser-replacement-order-and-fluent-subclass\",\"passed\":true},{\"name\":\"choices:parse-error-hook-and-default-array\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/option.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/argument.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "nonUtcFeature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-cline/workspace",
+            "commander-canonical-choices",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 647.9519480001181,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-choices.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"option:canonical-first-copied-and-empty\",\"passed\":true},{\"name\":\"option:nontrue-default-differential\",\"passed\":true},{\"name\":\"option:variadic-hook-and-exception-identity\",\"passed\":true},{\"name\":\"option:parser-replacement-order-and-fluent-subclass\",\"passed\":true},{\"name\":\"argument:canonical-first-copied-and-empty\",\"passed\":true},{\"name\":\"argument:nontrue-default-differential\",\"passed\":true},{\"name\":\"argument:variadic-hook-and-exception-identity\",\"passed\":true},{\"name\":\"argument:parser-replacement-order-and-fluent-subclass\",\"passed\":true},{\"name\":\"choices:parse-error-hook-and-default-array\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/option.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/argument.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "selected": {
+          "argv": [
+            "node",
+            "--test",
+            "tests/agent-choices.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-cline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 112.63629100006074,
+          "stdout": "✔ both choice APIs opt in, return the first canonical spelling and copy input (1.816199ms)\n✔ absent and non-true flags retain case-sensitive choices (0.500281ms)\n✔ variadic choices accumulate canonical values without changing defaults (0.258183ms)\n✔ real command parsing and help expose canonical choices (2.283672ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 74.679568\n",
+          "stderr": ""
+        },
+        "typesOrSyntax": {
+          "argv": [
+            "npm",
+            "run",
+            "check:type"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-cline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 8201.929745999863,
+          "stdout": "\n> commander@13.1.0 check:type\n> npm run check:type:js && npm run check:type:ts\n\n\n> commander@13.1.0 check:type:js\n> tsc -p tsconfig.js.json\n\n\n> commander@13.1.0 check:type:ts\n> tsd && tsc -p tsconfig.ts.json\n\n",
+          "stderr": ""
+        },
+        "fullDefinedSuite": {
+          "argv": [
+            "node",
+            "tests/agent-project-suite.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-cline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 6421.980091999983,
+          "stdout": "",
+          "stderr": "PASS tests/command.executableSubcommand.lookup.test.js\nPASS tests/command.executableSubcommand.inspect.test.js\nPASS tests/command.executableSubcommand.signals.test.js\nPASS tests/ts-imports.test.ts\nPASS tests/command.default.test.js\nPASS tests/command.parseOptions.test.js\nPASS tests/command.positionalOptions.test.js\nPASS tests/command.action.test.js\nPASS tests/command.exitOverride.test.js\nPASS tests/options.conflicts.test.js\nPASS tests/help.suggestion.test.js\nPASS tests/command.help.test.js\nPASS tests/command.argumentVariations.test.js\nPASS tests/command.parse.test.js\nPASS tests/command.chain.test.js\nPASS tests/options.twice.test.js\nPASS tests/args.variadic.test.js\nPASS tests/command.hook.test.js\nPASS tests/command.executableSubcommand.search.test.js\nPASS tests/options.env.test.js\nPASS tests/options.mandatory.test.js\nPASS tests/command.usage.test.js\nPASS tests/options.camelcase.test.js\nPASS tests/command.configureOutput.test.js\nPASS tests/options.implies.test.js\nPASS tests/options.custom-processing.test.js\nPASS tests/options.values.test.js\nPASS tests/incrementNodeInspectorPort.test.js\nPASS tests/help.boxWrap.test.js\nPASS tests/command.helpOption.test.js\nPASS tests/command.copySettings.test.js\nPASS tests/options.version.test.js\nPASS tests/options.required.test.js\nPASS tests/options.bool.test.js\nPASS tests/help.visibleOptions.test.js\nPASS tests/command.addHelpText.test.js\nPASS tests/options.opts.test.js\nPASS tests/options.bool.combo.test.js\nPASS tests/commander.configureCommand.test.js\nPASS tests/command.unknownOption.test.js\nPASS tests/useColor.test.js\nPASS tests/command.helpCommand.test.js\nPASS tests/command.unknownCommand.test.js\nPASS tests/argument.required.test.js\nPASS tests/options.optional.test.js\nPASS tests/help.style.test.js\nPASS tests/argument.custom-processing.test.js\nPASS tests/options.variadic.test.js\nPASS tests/options.preset.test.js\nPASS tests/command.allowExcessArguments.test.js\nPASS tests/help.sortOptions.test.js\nPASS tests/help.padWidth.test.js\nPASS tests/help.commandTerm.test.js\nPASS tests/command.asterisk.test.js\nPASS tests/options.flags.test.js\nPASS tests/options.default.test.js\nPASS tests/option.bad-flags.test.js\nPASS tests/help.optionTerm.test.js\nPASS tests/help.longestArgumentTermLength.test.js\nPASS tests/command.addHelpOption.test.js\nPASS tests/program.test.js\nPASS tests/options.getset.test.js\nPASS tests/help.showGlobalOptions.test.js\nPASS tests/command.showSuggestionAfterError.test.js\nPASS tests/options.optsWithGlobals.test.js\nPASS tests/options.choices.test.js\nPASS tests/help.visibleGlobalOptions.test.js\nPASS tests/help.subcommandDescription.test.js\nPASS tests/help.stripAnsi.test.js\nPASS tests/help.sortCommands.test.js\nPASS tests/command.configureHelp.test.js\nPASS tests/argument.choices.test.js\nPASS tests/args.literal.test.js\nPASS tests/options.registerClash.test.js\nPASS tests/help.minWidthToWrap.test.js\nPASS tests/help.longestOptionTermLength.test.js\nPASS tests/help.commandUsage.test.js\nPASS tests/deprecated.test.js\nPASS tests/command.showHelpAfterError.test.js\nPASS tests/command.registerClash.test.js\nPASS tests/command.executableSubcommand.mock.test.js\nPASS tests/command.createArgument.test.js\nPASS tests/command.allowUnknownOption.test.js\nPASS tests/command.alias.test.js\nPASS tests/command.addCommand.test.js\nPASS tests/argument.chain.test.js\nPASS tests/options.dual-options.test.js\nPASS tests/help.preformatted.test.js\nPASS tests/help.optionDescription.test.js\nPASS tests/help.longestCommandTermLength.test.js\nPASS tests/command.onCommand.test.js\nPASS tests/command.nested.test.js\nPASS tests/command.name.test.js\nPASS tests/command.createOption.test.js\nPASS tests/argument.variadic.test.js\nPASS tests/options.bool.small.combined.test.js\nPASS tests/option.chain.test.js\nPASS tests/help.visibleCommands.test.js\nPASS tests/help.visibleArguments.test.js\nPASS tests/help.argumentDescription.test.js\nPASS tests/createCommand.test.js\nPASS tests/command.option-misuse.test.js\nPASS tests/command.error.test.js\nPASS tests/command.commandHelp.test.js\nPASS tests/command.summary.test.js\nPASS tests/command.description.test.js\nPASS tests/command.executableSubcommand.test.js\nPASS tests/command.createHelp.test.js\n\u001b[999D\u001b[K\nTest Suites: 108 passed, 108 total\nTests:       1206 passed, 1206 total\nSnapshots:   0 total\nTime:        6.026 s, estimated 10 s\nRan all test suites.\n"
+        },
+        "addedTests": null,
+        "addedTestsOnOriginalSource": null
+      },
+      "boundEnvironment": {
+        "node": "v24.19.0",
+        "project": {
+          "commit": "e6f56c888c96d1339c2b974fee7e6ba4f2e3d218",
+          "source": "6616872661cfecda123d434939e1fdf5e6517dae7aa0d88044d850e175e27814",
+          "lock": "aa6f6ec42ef38d4d533e442274e3ae3f53f7c3e65e660050c4fc3d06f2b77331",
+          "jest": "29.7.0",
+          "typescript": "5.7.2",
+          "tsd": "0.31.2"
+        },
+        "defaultTZ": "UTC",
+        "secondFeatureTZ": "America/New_York",
+        "runtime": {
+          "runtime": "8a95f9b4b1d09e3491f0cf28c64fb9e0050a1acda62ce49fe2e7672effeda8f0",
+          "runner": "15627aa790b9be0f75bfad3f6ebdbd95ceaafa0d0822e9e3392c62628cd38f83",
+          "source": {
+            "arm": "baseline",
+            "sourceCommit": "79bcf87fc68ede77746b4f9fa278c1d7f88bc36a",
+            "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "changedPaths": []
+          }
+        }
+      },
+      "independentFunctionalSuccess": true,
+      "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
+    },
+    {
+      "name": "2-commander-canonical-choices-baseline",
+      "eventsSha256": "84308fcc92b58247b3f13c4af7b509a8b9219b39941092db1fcc139e658f4996",
+      "scoreSha256": "d9918484c1b76eb47def76a6f552202a14a76ae55d38a7daffe28144314d854b",
+      "finalScoredSources": {
+        "lib/option.js": "a499560f5a11636982d5e0d334c3a8e75a913990549ca36486fa955589717b17",
+        "lib/argument.js": "29970005693b58c058b6e9153206e045b63615bd52bdadb1c8c1e17e22d82230",
+        "typings/index.d.ts": "087efb021c6f74200afb7daafab2ba2338a6140f270db4798d0fe9014338380f"
+      },
+      "actualRecordedAgentCommands": [
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git status --short"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "git status --short",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": null,
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node --test tests/agent-choices.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node --test tests/agent-choices.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run check:type"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "npm run check:type",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": {
+            "paths": [
+              "lib/option.js",
+              "lib/argument.js",
+              "typings/index.d.ts"
+            ],
+            "sourceRevisionId": "src_8a17eacab1eb7f7a3adacdee9604e06a",
+            "status": "passed",
+            "taskId": "check:type",
+            "taskKind": "typecheck"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node tests/agent-project-suite.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node tests/agent-project-suite.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": null,
+          "nativeResults": null
+        }
+      ],
+      "officialRuntimeSuccess": true,
+      "completionAsReported": {
+        "source_revision_id": "src_8a17eacab1eb7f7a3adacdee9604e06a",
+        "delivery": "satisfied",
+        "verification": "verified",
+        "satisfied_obligations": [
+          "validation"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": []
+      },
+      "independent": {
+        "feature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-baseline/workspace",
+            "commander-canonical-choices",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 675.2285670000128,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-choices.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"option:canonical-first-copied-and-empty\",\"passed\":true},{\"name\":\"option:nontrue-default-differential\",\"passed\":true},{\"name\":\"option:variadic-hook-and-exception-identity\",\"passed\":true},{\"name\":\"option:parser-replacement-order-and-fluent-subclass\",\"passed\":true},{\"name\":\"argument:canonical-first-copied-and-empty\",\"passed\":true},{\"name\":\"argument:nontrue-default-differential\",\"passed\":true},{\"name\":\"argument:variadic-hook-and-exception-identity\",\"passed\":true},{\"name\":\"argument:parser-replacement-order-and-fluent-subclass\",\"passed\":true},{\"name\":\"choices:parse-error-hook-and-default-array\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/option.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/argument.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "nonUtcFeature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-baseline/workspace",
+            "commander-canonical-choices",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 648.5217920001596,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-choices.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"option:canonical-first-copied-and-empty\",\"passed\":true},{\"name\":\"option:nontrue-default-differential\",\"passed\":true},{\"name\":\"option:variadic-hook-and-exception-identity\",\"passed\":true},{\"name\":\"option:parser-replacement-order-and-fluent-subclass\",\"passed\":true},{\"name\":\"argument:canonical-first-copied-and-empty\",\"passed\":true},{\"name\":\"argument:nontrue-default-differential\",\"passed\":true},{\"name\":\"argument:variadic-hook-and-exception-identity\",\"passed\":true},{\"name\":\"argument:parser-replacement-order-and-fluent-subclass\",\"passed\":true},{\"name\":\"choices:parse-error-hook-and-default-array\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/option.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/argument.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "selected": {
+          "argv": [
+            "node",
+            "--test",
+            "tests/agent-choices.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-baseline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 117.46045099990442,
+          "stdout": "✔ both choice APIs opt in, return the first canonical spelling and copy input (2.42462ms)\n✔ absent and non-true flags retain case-sensitive choices (0.410197ms)\n✔ variadic choices accumulate canonical values without changing defaults (0.385752ms)\n✔ real command parsing and help expose canonical choices (2.807457ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 76.683748\n",
+          "stderr": ""
+        },
+        "typesOrSyntax": {
+          "argv": [
+            "npm",
+            "run",
+            "check:type"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-baseline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 7806.727422000142,
+          "stdout": "\n> commander@13.1.0 check:type\n> npm run check:type:js && npm run check:type:ts\n\n\n> commander@13.1.0 check:type:js\n> tsc -p tsconfig.js.json\n\n\n> commander@13.1.0 check:type:ts\n> tsd && tsc -p tsconfig.ts.json\n\n",
+          "stderr": ""
+        },
+        "fullDefinedSuite": {
+          "argv": [
+            "node",
+            "tests/agent-project-suite.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-canonical-choices-baseline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 6544.934255999979,
+          "stdout": "",
+          "stderr": "PASS tests/command.executableSubcommand.lookup.test.js\nPASS tests/ts-imports.test.ts\nPASS tests/command.executableSubcommand.inspect.test.js\nPASS tests/command.executableSubcommand.signals.test.js\nPASS tests/command.default.test.js\nPASS tests/command.positionalOptions.test.js\nPASS tests/command.parseOptions.test.js\nPASS tests/command.action.test.js\nPASS tests/command.exitOverride.test.js\nPASS tests/options.conflicts.test.js\nPASS tests/options.opts.test.js\nPASS tests/help.suggestion.test.js\nPASS tests/command.parse.test.js\nPASS tests/help.style.test.js\nPASS tests/command.executableSubcommand.search.test.js\nPASS tests/command.configureOutput.test.js\nPASS tests/command.hook.test.js\nPASS tests/options.mandatory.test.js\nPASS tests/options.getset.test.js\nPASS tests/help.visibleArguments.test.js\nPASS tests/useColor.test.js\nPASS tests/command.addHelpText.test.js\nPASS tests/options.env.test.js\nPASS tests/command.description.test.js\nPASS tests/options.values.test.js\nPASS tests/command.help.test.js\nPASS tests/command.chain.test.js\nPASS tests/command.allowUnknownOption.test.js\nPASS tests/command.summary.test.js\nPASS tests/options.required.test.js\nPASS tests/options.implies.test.js\nPASS tests/help.sortOptions.test.js\nPASS tests/options.variadic.test.js\nPASS tests/options.default.test.js\nPASS tests/commander.configureCommand.test.js\nPASS tests/command.helpCommand.test.js\nPASS tests/command.addCommand.test.js\nPASS tests/options.flags.test.js\nPASS tests/option.bad-flags.test.js\nPASS tests/command.unknownOption.test.js\nPASS tests/command.nested.test.js\nPASS tests/command.name.test.js\nPASS tests/command.helpOption.test.js\nPASS tests/command.asterisk.test.js\nPASS tests/command.allowExcessArguments.test.js\nPASS tests/options.version.test.js\nPASS tests/options.bool.small.combined.test.js\nPASS tests/command.usage.test.js\nPASS tests/command.addHelpOption.test.js\nPASS tests/options.optsWithGlobals.test.js\nPASS tests/options.optional.test.js\nPASS tests/options.camelcase.test.js\nPASS tests/incrementNodeInspectorPort.test.js\nPASS tests/command.argumentVariations.test.js\nPASS tests/help.padWidth.test.js\nPASS tests/argument.custom-processing.test.js\nPASS tests/args.variadic.test.js\nPASS tests/options.registerClash.test.js\nPASS tests/options.bool.test.js\nPASS tests/help.visibleOptions.test.js\nPASS tests/help.boxWrap.test.js\nPASS tests/command.showHelpAfterError.test.js\nPASS tests/command.copySettings.test.js\nPASS tests/options.twice.test.js\nPASS tests/options.custom-processing.test.js\nPASS tests/options.choices.test.js\nPASS tests/options.bool.combo.test.js\nPASS tests/help.showGlobalOptions.test.js\nPASS tests/help.optionTerm.test.js\nPASS tests/command.unknownCommand.test.js\nPASS tests/command.executableSubcommand.mock.test.js\nPASS tests/command.configureHelp.test.js\nPASS tests/command.alias.test.js\nPASS tests/argument.choices.test.js\nPASS tests/program.test.js\nPASS tests/options.preset.test.js\nPASS tests/options.dual-options.test.js\nPASS tests/option.chain.test.js\nPASS tests/help.subcommandDescription.test.js\nPASS tests/help.preformatted.test.js\nPASS tests/help.longestOptionTermLength.test.js\nPASS tests/help.commandTerm.test.js\nPASS tests/help.argumentDescription.test.js\nPASS tests/command.showSuggestionAfterError.test.js\nPASS tests/command.registerClash.test.js\nPASS tests/command.option-misuse.test.js\nPASS tests/command.error.test.js\nPASS tests/command.createArgument.test.js\nPASS tests/argument.variadic.test.js\nPASS tests/args.literal.test.js\nPASS tests/help.visibleCommands.test.js\nPASS tests/help.stripAnsi.test.js\nPASS tests/help.sortCommands.test.js\nPASS tests/help.optionDescription.test.js\nPASS tests/help.longestCommandTermLength.test.js\nPASS tests/help.longestArgumentTermLength.test.js\nPASS tests/deprecated.test.js\nPASS tests/command.onCommand.test.js\nPASS tests/command.executableSubcommand.test.js\nPASS tests/command.createOption.test.js\nPASS tests/command.commandHelp.test.js\nPASS tests/argument.required.test.js\nPASS tests/help.visibleGlobalOptions.test.js\nPASS tests/help.minWidthToWrap.test.js\nPASS tests/help.commandUsage.test.js\nPASS tests/createCommand.test.js\nPASS tests/command.createHelp.test.js\nPASS tests/argument.chain.test.js\n\u001b[999D\u001b[K\nTest Suites: 108 passed, 108 total\nTests:       1206 passed, 1206 total\nSnapshots:   0 total\nTime:        6.163 s, estimated 9 s\nRan all test suites.\n"
+        },
+        "addedTests": null,
+        "addedTestsOnOriginalSource": null
+      },
+      "boundEnvironment": {
+        "node": "v24.19.0",
+        "project": {
+          "commit": "e6f56c888c96d1339c2b974fee7e6ba4f2e3d218",
+          "source": "6616872661cfecda123d434939e1fdf5e6517dae7aa0d88044d850e175e27814",
+          "lock": "aa6f6ec42ef38d4d533e442274e3ae3f53f7c3e65e660050c4fc3d06f2b77331",
+          "jest": "29.7.0",
+          "typescript": "5.7.2",
+          "tsd": "0.31.2"
+        },
+        "defaultTZ": "UTC",
+        "secondFeatureTZ": "America/New_York",
+        "runtime": {
+          "runtime": "8a95f9b4b1d09e3491f0cf28c64fb9e0050a1acda62ce49fe2e7672effeda8f0",
+          "runner": "15627aa790b9be0f75bfad3f6ebdbd95ceaafa0d0822e9e3392c62628cd38f83",
+          "source": {
+            "arm": "baseline",
+            "sourceCommit": "79bcf87fc68ede77746b4f9fa278c1d7f88bc36a",
+            "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "changedPaths": []
+          }
+        }
+      },
+      "independentFunctionalSuccess": true,
+      "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
+    },
+    {
+      "name": "2-commander-hidden-arguments-cline",
+      "eventsSha256": "f4bed4b61b6b9ee1b4b26884953acab9207805acfc8784e75fb737f2bacdab8e",
+      "scoreSha256": "1edbeeebb15f4723be73d2502ee2e15b670046a847dac1cacefdb7e6976abc5b",
+      "finalScoredSources": {
+        "lib/argument.js": "fd5c4b12a6d0c14a5f5400eda35df97f06b441e80d7743f1a51729e955f24dbf",
+        "lib/help.js": "77e456287b3905a496bdd3cc1f08eafc87550320985d290504adda4390a0c014",
+        "typings/index.d.ts": "c71c08bbd70628f4577bd6806b5e502ef8a9b1e53d4ce390a7378d0e46f549de"
+      },
+      "actualRecordedAgentCommands": [
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-cline/workspace && git status --short && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p'",
+              "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-cline/workspace && grep -n 'check:type\\|agent-project-suite' package.json && grep -R -n --exclude-dir=node_modules --exclude='*.lock' 'hideHelp\\|visibleArguments\\|registeredArguments' lib typings tests | head -200"
+            ]
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-cline/workspace && git status --short && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1 ... [command truncated: 6 more chars; full command is in the tool call input]",
+              "result": "\nTop-level files:\n./.editorconfig\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.gitattributes\n./.github/FUNDING.yml\n./.github/PULL_REQUEST_TEMPLATE.md\n./.github/dependabot.yml\n./.gitignore\n./.prettierignore\n./.prettierrc.js\n./CHANGELOG.md\n./CONTRIBUTING.md\n./LICENSE\n./Readme.md\n./Readme_zh-CN.md\n./SECURITY.md\n./docs/deprecated.md\n./docs/help-in-depth.md\n./docs/options-in-depth.md\n./docs/parsing-and-hooks.md\n./docs/terminology.md\n./eslint.config.js\n./esm.mjs\n./examples/action-this.js\n./examples/alias.js\n./examples/argument.js\n./examples/arguments-custom-processing.js\n./examples/arguments-extra.js\n./examples/color-help-replacement.mjs\n./examples/color-help.mjs\n./examples/configure-help.js\n./examples/configure-output.js\n./examples/custom-command-class.js\n./examples/custom-help\n./examples/custom-help-description\n./examples/custom-help-text.js\n./examples/custom-version\n./examples/defaultCommand.js\n./examples/deploy\n./examples/description\n./examples/global-options-added.js\n./examples/global-options-nested.js\n./examples/help-centered.mjs\n./examples/help-subcommands-usage.js\n./examples/hook.js\n./examples/man-style-help.mjs\n./examples/nestedCommands.js\n./examples/options-boolean-or-value.js\n./examples/options-common.js\n./examples/options-conflicts.js\n./examples/options-custom-processing.js\n./examples/options-defaults.js\n./examples/options-env.js\n./examples/options-extra.js\n./examples/options-implies.js\n./examples/options-negatable.js\n./examples/options-required.js\n./examples/options-variadic.js\n./examples/pass-through-options.js\n./examples/pizza\n./examples/pm\n./examples/pm-install\n./examples/pm-list.js\n./examples/positional-options.js\n./examples/split.js\n./examples/string-util.js\n./examples/thank.js\n./index.js\n./jest.config.js\n./lib/argument.js\n./lib/command.js\n./lib/error.js\n./lib/help.js\n./lib/option.js\n./lib/suggestSimilar.js\n./package-lock.json\n./package-support.json\n./package.json\n./tests/agent-contracts.cjs\n./tests/agent-hidden-arguments.cjs\n./tests/agent-project-suite.cjs\n./tests/args.literal.test.js\n./tests/args.variadic.test.js\n./tests/argument.chain.test.js\n./tests/argument.choices.test.js\n./tests/argument.custom-processing.test.js\n./tests/argument.required.test.js\n./tests/argument.variadic.test.js\n./tests/command.action.test.js\n./tests/command.addCommand.test.js\n./tests/command.addHelpOption.test.js\n./tests/command.addHelpText.test.js\n./tests/command.alias.test.js\n./tests/command.allowExcessArguments.test.js\n./tests/command.allowUnknownOption.test.js\n./tests/command.argumentVariations.test.js\n./tests/command.asterisk.test.js\n./tests/command.chain.test.js\n./tests/command.commandHelp.test.js\n./tests/command.configureHelp.test.js\n./tests/command.configureOutput.test.js\n./tests/command.copySettings.test.js\n./tests/command.createArgument.test.js\n./tests/command.createHelp.test.js\n./tests/command.createOption.test.js\n./tests/command.default.test.js\n./tests/command.description.test.js\n./tests/command.error.test.js\n./tests/command.executableSubcommand.inspect.test.js\n./tests/command.executableSubcommand.lookup.test.js\n./tests/command.executableSubcommand.mock.test.js\n./tests/command.executableSubcommand.search.test.js\n./tests/command.executableSubcommand.signals.test.js\n./tests/command.executableSubcommand.test.js\n./tests/command.exitOverride.test.js\n./tests/command.help.test.js\n./tests/command.helpCommand.test.js\n./tests/command.helpOption.test.js\n./tests/command.hook.test.js\n./tests/command.name.test.js\n./tests/command.nested.test.js\n./tests/command.onCommand.test.js\n./tests/command.option-misuse.test.js\n./tests/command.parse.test.js\n./tests/command.parseOptions.test.js\n./tests/command.positionalOptions.test.js\n./tests/command.registerClash.test.js\n./tests/command.showHelpAfterError.test.js\n./tests/command.showSuggestionAfterError.test.js\n./tests/command.summary.test.js\n./tests/command.unknownCommand.test.js\n./tests/command.unknownOption.test.js\n./tests/command.usage.test.js\n./tests/commander.configureCommand.test.js\n./tests/createCommand.test.js\n./tests/deprecated.test.js\n./tests/esm-imports-test.mjs\n./tests/help.argumentDescription.test.js\n./tests/help.boxWrap.test.js\n./tests/help.commandTerm.test.js\n./tests/help.commandUsage.test.js\n./tests/help.longestArgumentTermLength.test.js\n./tests/help.longestCommandTermLength.test.js\n./tests/help.longestOptionTermLength.test.js\n./tests/help.minWidthToWrap.test.js\n./tests/help.optionDescription.test.js\n./tests/help.optionTerm.test.js\n./tests/help.padWidth.test.js\n./tests/help.preformatted.test.js\n./tests/help.showGlobalOptions.test.js\n./tests/help.sortCommands.test.js\n./tests/help.sortOptions.test.js\n./tests/help.stripAnsi.test.js\n./tests/help.style.test.js\n./tests/help.subcommandDescription.test.js\n./tests/help.suggestion.test.js\n./tests/help.visibleArguments.test.js\n",
+              "success": true
+            },
+            {
+              "query": "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-cline/workspace && grep -n 'check:type\\|agent-project-suite' package.json && grep -R -n --exclude-dir=node_modules --ex ... [command truncated: 94 more chars; full command is in the tool call input]",
+              "result": "22:    \"check\": \"npm run check:type && npm run check:lint && npm run check:format\",\n25:    \"check:type\": \"npm run check:type:js && npm run check:type:ts\",\n26:    \"check:type:ts\": \"tsd && tsc -p tsconfig.ts.json\",\n27:    \"check:type:js\": \"tsc -p tsconfig.js.json\",\n31:    \"test\": \"jest && npm run check:type:ts\",\nlib/help.js:139:  visibleArguments(cmd) {\nlib/help.js:142:      cmd.registeredArguments.forEach((argument) => {\nlib/help.js:149:    if (cmd.registeredArguments.find((argument) => argument.description)) {\nlib/help.js:150:      return cmd.registeredArguments;\nlib/help.js:164:    const args = cmd.registeredArguments\nlib/help.js:259:    return helper.visibleArguments(cmd).reduce((max, argument) => {\nlib/help.js:426:    const argumentList = helper.visibleArguments(cmd).map((argument) => {\nlib/option.js:155:  hideHelp(hide = true) {\nlib/command.js:30:    this.registeredArguments = [];\nlib/command.js:31:    this._args = this.registeredArguments; // deprecated old name\nlib/command.js:367:    const previousArgument = this.registeredArguments.slice(-1)[0];\nlib/command.js:382:    this.registeredArguments.push(argument);\nlib/command.js:543:      const expectedArgsCount = this.registeredArguments.length;\nlib/command.js:1380:   * Check this.args against expected this.registeredArguments.\nlib/command.js:1387:    this.registeredArguments.forEach((arg, i) => {\nlib/command.js:1394:      this.registeredArguments.length > 0 &&\nlib/command.js:1395:      this.registeredArguments[this.registeredArguments.length - 1].variadic\nlib/command.js:1399:    if (this.args.length > this.registeredArguments.length) {\nlib/command.js:1405:   * Process this.args using this.registeredArguments and save as this.processedArgs!\nlib/command.js:1429:    this.registeredArguments.forEach((declaredArg, index) => {\nlib/command.js:2109:    const expected = this.registeredArguments.length;\nlib/command.js:2268:      const args = this.registeredArguments.map((arg) => {\nlib/command.js:2275:          this.registeredArguments.length ? args : [],\ntypings/index.test-d.ts:37:expectType<readonly commander.Argument[]>(program.registeredArguments);\ntypings/index.test-d.ts:587:expectType<commander.Argument[]>(helper.visibleArguments(helperCommand));\ntypings/index.test-d.ts:669:// hideHelp\ntypings/index.test-d.ts:670:expectType<commander.Option>(baseOption.hideHelp());\ntypings/index.test-d.ts:671:expectType<commander.Option>(baseOption.hideHelp(true));\ntypings/index.test-d.ts:672:expectType<commander.Option>(baseOption.hideHelp(false));\ntypings/index.d.ts:177:  hideHelp(hide?: boolean): this;\ntypings/index.d.ts:250:  visibleArguments(cmd: Command): Argument[];\ntypings/index.d.ts:360:  readonly registeredArguments: readonly Argument[];\ntests/command.addHelpOption.test.js:48:      new Option('-c,--custom-help', 'help help help').hideHelp(),\ntests/command.help.test.js:178:test('when option.hideHelp() then option not included in helpInformation', () => {\ntests/command.help.test.js:181:    new commander.Option('-s,--secret', 'secret option').hideHelp(),\ntests/command.help.test.js:187:test('when option.hideHelp(true) then option not included in helpInformation', () => {\ntests/command.help.test.js:190:    new commander.Option('-s,--secret', 'secret option').hideHelp(true),\ntests/command.help.test.js:196:test('when option.hideHelp(false) then option included in helpInformation', () => {\ntests/command.help.test.js:199:    new commander.Option('-s,--secret', 'secret option').hideHelp(false),\ntests/help.visibleArguments.test.js:6:describe('visibleArguments', () => {\ntests/help.visibleArguments.test.js:10:    expect(helper.visibleArguments(program)).toEqual([]);\ntests/help.visibleArguments.test.js:17:    expect(helper.visibleArguments(program)).toEqual([]);\ntests/help.visibleArguments.test.js:24:    const visibleArguments = helper.visibleArguments(program);\ntests/help.visibleArguments.test.js:25:    expect(visibleArguments.length).toEqual(1);\ntests/help.visibleArguments.test.js:26:    expect(visibleArguments[0]).toEqual(\ntests/help.visibleArguments.test.js:38:    const visibleArguments = helper.visibleArguments(program);\ntests/help.visibleArguments.test.js:39:    expect(visibleArguments.length).toEqual(1);\ntests/help.visibleArguments.test.js:40:    expect(visibleArguments[0]).toEqual(\ntests/help.visibleArguments.test.js:50:    const visibleArguments = helper.visibleArguments(program);\ntests/help.visibleArguments.test.js:51:    expect(visibleArguments.length).toEqual(2);\ntests/help.visibleArguments.test.js:52:    expect(visibleArguments[0]).toEqual(\ntests/help.visibleArguments.test.js:55:    expect(visibleArguments[1]).toEqual(new commander.Argument('<file2>'));\ntests/help.visibleArguments.test.js:66:    const visibleArguments = helper.visibleArguments(program);\ntests/help.visibleArguments.test.js:67:    expect(visibleArguments.length).toEqual(2);\ntests/help.visibleArguments.test.js:68:    expect(visibleArguments[0]).toEqual(\ntests/help.visibleArguments.test.js:71:    expect(visibleArguments[1]).toEqual(new commander.Argument('<file2>'));\ntests/agent-contracts.cjs:39:    test('hideHelp is fluent and reversible, with a public hidden boolean', () => {\ntests/agent-contracts.cjs:41:      assert.equal(arg.hideHelp(),arg); assert.equal(arg.hidden,true);\ntests/agent-contracts.cjs:42:      assert.equal(arg.hideHelp(false),arg); assert.equal(arg.hidden,false);\ntests/agent-contracts.cjs:45:      const secret=new Argument('<secret>','private detail').hideHelp();\ntests/agent-contracts.cjs:48:      assert.deepEqual(helper.visibleArguments(command),[publicArg]);\ntests/agent-contracts.cjs:52:      assert.throws(()=>quiet().addArgument(new Argument('<secret>').hideHelp()).parse([],{from:'user'}),e=>e.code==='commander.missingArgument');\ntests/agent-contracts.cjs:55:      const command=quiet().addArgument(new Argument('<secret>','hidden description').hideHelp()).addArgument(new Argument('[plain]'));\ntests/agent-contracts.cjs:56:      assert.deepEqual(new Help().visibleArguments(command),[]);\ntests/agent-contracts.cjs:57:      command.registeredArguments[0].hideHelp(false);\ntests/agent-contracts.cjs:58:      assert.deepEqual(new Help().visibleArguments(command),command.registeredArguments);\ntests/agent-contracts.cjs:62:      command.registeredArguments[0].hideHelp(); command.description('',{secret:'legacy secret',file:'legacy file'});\ntests/agent-contracts.cjs:63:      const registry=command.registeredArguments.slice();\ntests/agent-contracts.cjs:64:      assert.deepEqual(new Help().visibleArguments(command),[registry[1]]);\ntests/agent-contracts.cjs:65:      assert.equal(registry[0].description,'legacy secret'); assert.deepEqual(command.registeredArguments,registry);\ntests/help.suggestion.test.js:230:  program.addOption(new Option('--secret').hideHelp());\ntests/command.createArgument.test.js:24:  expect(program.registeredArguments.length).toEqual(1);\ntests/command.createArgument.test.js:25:  expect(program.registeredArguments[0].myProperty).toEqual('MyArgument');\ntests/command.createArgument.test.js:31:  expect(program.registeredArguments.length).toEqual(1);\ntests/command.createArgument.test.js:32:  expect(program.registeredArguments[0].myProperty).toEqual('MyArgument');\ntests/command.createArgument.test.js:38:  expect(sub.registeredArguments.length).toEqual(1);\ntests/command.createArgument.test.js:39:  expect(sub.registeredArguments[0].myProperty).toEqual('MyArgument');\ntests/help.visibleOptions.test.js:37:      .addOption(new commander.Option('--invisible').hideHelp());\ntests/help.visibleOptions.test.js:56:    program.addOption(new commander.Option('-h, --huge').hideHelp());\ntests/help.visibleOptions.test.js:64:    program.addOption(new commander.Option('-H, --help').hideHelp());\ntests/help.visibleOptions.test.js:72:    program.addOption(new commander.Option('-h, --help').hideHelp());\ntests/option.chain.test.js:22:  test('when call .hideHelp() then returns this', () => {\ntests/option.chain.test.js:24:    const result = option.hideHelp();\ntests/command.argumentVariations.test.js:9:    const argument = cmd.registeredArguments[0];\ntests/command.argumentVariations.test.js:23:    const argument = cmd.registeredArguments[0];\ntests/command.argumentVariations.test.js:37:    const argument = cmd.registeredArguments[0];\ntests/command.argumentVariations.test.js:51:    const argument = cmd.registeredArguments[0];\ntests/command.argumentVariations.test.js:65:    const argument = cmd.registeredArguments[0];\ntests/command.argumentVariations.test.js:79:    const argument = cmd.registeredArguments[0];\ntests/command.argumentVariations.test.js:107:    expect(cmd.registeredArguments[0].name()).toEqual('first');\ntests/command.argumentVariations.test.js:108:    expect(cmd.registeredArguments[1].name()).toEqual('second');\ntests/command.argumentVariations.test.js:133:  const argNames = cmd.registeredArguments.map((arg) => arg.name());\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-cline/workspace && git diff --check && git diff -- lib/argument.js lib/help.js typings/index.d.ts"
+            ]
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-cline/workspace && git diff --check && git diff -- lib/argument.js lib/help.js typings/index.d.ts",
+              "result": "diff --git a/lib/argument.js b/lib/argument.js\nindex ee46c36..7b8d30b 100644\n--- a/lib/argument.js\n+++ b/lib/argument.js\n@@ -17,6 +17,10 @@ class Argument {\n     this.defaultValue = undefined;\n     this.defaultValueDescription = undefined;\n     this.argChoices = undefined;\n+    Object.defineProperty(this, 'hidden', {\n+      value: false,\n+      writable: true,\n+    });\n \n     switch (name[0]) {\n       case '<': // e.g. <required>\n@@ -129,6 +133,18 @@ class Argument {\n     this.required = false;\n     return this;\n   }\n+\n+  /**\n+   * Hide argument in help.\n+   *\n+   * @param {boolean} [hide=true]\n+   * @return {Argument}\n+   */\n+\n+  hideHelp(hide = true) {\n+    this.hidden = !!hide;\n+    return this;\n+  }\n }\n \n /**\ndiff --git a/lib/help.js b/lib/help.js\nindex e448015..9f20208 100644\n--- a/lib/help.js\n+++ b/lib/help.js\n@@ -145,9 +145,13 @@ class Help {\n       });\n     }\n \n-    // If there are any arguments with a description then return all the arguments.\n-    if (cmd.registeredArguments.find((argument) => argument.description)) {\n-      return cmd.registeredArguments;\n+    // If there are any visible arguments with a description then return all visible arguments.\n+    if (\n+      cmd.registeredArguments.find(\n+        (argument) => !argument.hidden && argument.description,\n+      )\n+    ) {\n+      return cmd.registeredArguments.filter((argument) => !argument.hidden);\n     }\n     return [];\n   }\ndiff --git a/typings/index.d.ts b/typings/index.d.ts\nindex f92ee19..4d067b6 100644\n--- a/typings/index.d.ts\n+++ b/typings/index.d.ts\n@@ -52,6 +52,7 @@ export class Argument {\n   defaultValue?: any;\n   defaultValueDescription?: string;\n   argChoices?: string[];\n+  hidden: boolean;\n \n   /**\n    * Initialize a new command argument with the given name and description.\n@@ -89,6 +90,11 @@ export class Argument {\n    * Make argument optional.\n    */\n   argOptional(): this;\n+\n+  /**\n+   * Hide argument in help.\n+   */\n+  hideHelp(hide?: boolean): this;\n }\n \n export class Option {\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-cline/workspace && git status --short"
+            ]
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-cline/workspace && git status --short",
+              "result": " M lib/argument.js\n M lib/help.js\n M typings/index.d.ts\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "node --test tests/agent-hidden-arguments.cjs",
+              "npm run check:type",
+              "node tests/agent-project-suite.cjs"
+            ]
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "node --test tests/agent-hidden-arguments.cjs",
+              "result": "✔ hideHelp is fluent and reversible, with a public hidden boolean (0.72245ms)\n✔ hidden descriptions disappear, while usage and parsing remain unchanged (3.110256ms)\n✔ only visible descriptions enable the argument table (0.146978ms)\n✔ legacy descriptions still apply without unhiding an argument or mutating the registry (0.313384ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 110.737817\n",
+              "success": true
+            },
+            {
+              "query": "npm run check:type",
+              "result": "\n> commander@13.1.0 check:type\n> npm run check:type:js && npm run check:type:ts\n\n\n> commander@13.1.0 check:type:js\n> tsc -p tsconfig.js.json\n\n\n> commander@13.1.0 check:type:ts\n> tsd && tsc -p tsconfig.ts.json\n\n",
+              "success": true
+            },
+            {
+              "query": "node tests/agent-project-suite.cjs",
+              "result": "\n[stderr]\nPASS tests/command.positionalOptions.test.js\nPASS tests/command.parse.test.js\nPASS tests/command.parseOptions.test.js\nPASS tests/options.env.test.js\nPASS tests/command.hook.test.js\nPASS tests/command.exitOverride.test.js\nPASS tests/command.executableSubcommand.search.test.js\nPASS tests/options.conflicts.test.js\nPASS tests/command.help.test.js\nPASS tests/command.configureOutput.test.js\nPASS tests/options.mandatory.test.js\nPASS tests/command.chain.test.js\nPASS tests/help.style.test.js\nPASS tests/options.default.test.js\nPASS tests/options.implies.test.js\nPASS tests/help.suggestion.test.js\nPASS tests/command.addHelpText.test.js\nPASS tests/argument.custom-processing.test.js\nPASS tests/options.version.test.js\nPASS tests/options.variadic.test.js\nPASS tests/command.helpCommand.test.js\nPASS tests/command.asterisk.test.js\nPASS tests/command.copySettings.test.js\nPASS tests/options.bool.combo.test.js\nPASS tests/options.custom-processing.test.js\nPASS tests/options.bool.test.js\nPASS tests/command.action.test.js\nPASS tests/incrementNodeInspectorPort.test.js\nPASS tests/command.executableSubcommand.lookup.test.js\nPASS tests/command.helpOption.test.js\nPASS tests/help.boxWrap.test.js\nPASS tests/command.argumentVariations.test.js\nPASS tests/command.executableSubcommand.mock.test.js\nPASS tests/options.optsWithGlobals.test.js\nPASS tests/command.showHelpAfterError.test.js\nPASS tests/command.alias.test.js\nPASS tests/command.allowExcessArguments.test.js\nPASS tests/options.dual-options.test.js\nPASS tests/argument.variadic.test.js\nPASS tests/help.optionDescription.test.js\nPASS tests/command.default.test.js\nPASS tests/help.sortOptions.test.js\nPASS tests/options.values.test.js\nPASS tests/commander.configureCommand.test.js\nPASS tests/command.unknownOption.test.js\nPASS tests/useColor.test.js\nPASS tests/help.visibleOptions.test.js\nPASS tests/options.required.test.js\nPASS tests/options.opts.test.js\nPASS tests/options.optional.test.js\nPASS tests/help.visibleArguments.test.js\nPASS tests/options.flags.test.js\nPASS tests/command.allowUnknownOption.test.js\nPASS tests/options.getset.test.js\nPASS tests/command.usage.test.js\nPASS tests/command.executableSubcommand.inspect.test.js\nPASS tests/args.variadic.test.js\nPASS tests/options.preset.test.js\nPASS tests/command.unknownCommand.test.js\nPASS tests/options.choices.test.js\nPASS tests/argument.choices.test.js\nPASS tests/help.preformatted.test.js\nPASS tests/help.longestCommandTermLength.test.js\nPASS tests/command.executableSubcommand.signals.test.js\nPASS tests/command.addCommand.test.js\nPASS tests/command.name.test.js\nPASS tests/help.padWidth.test.js\nPASS tests/options.camelcase.test.js\nPASS tests/options.twice.test.js\nPASS tests/help.showGlobalOptions.test.js\nPASS tests/help.argumentDescription.test.js\nPASS tests/help.commandTerm.test.js\nPASS tests/help.visibleGlobalOptions.test.js\nPASS tests/help.commandUsage.test.js\nPASS tests/command.error.test.js\nPASS tests/options.registerClash.test.js\nPASS tests/program.test.js\nPASS tests/command.addHelpOption.test.js\nPASS tests/command.showSuggestionAfterError.test.js\nPASS tests/help.stripAnsi.test.js\nPASS tests/help.minWidthToWrap.test.js\nPASS tests/option.chain.test.js\nPASS tests/command.registerClash.test.js\nPASS tests/help.subcommandDescription.test.js\nPASS tests/command.createOption.test.js\nPASS tests/deprecated.test.js\nPASS tests/command.onCommand.test.js\nPASS tests/command.createArgument.test.js\nPASS tests/args.literal.test.js\nPASS tests/option.bad-flags.test.js\nPASS tests/help.visibleCommands.test.js\nPASS tests/help.longestOptionTermLength.test.js\nPASS tests/command.configureHelp.test.js\nPASS tests/ts-imports.test.ts\nPASS tests/help.longestArgumentTermLength.test.js\nPASS tests/help.optionTerm.test.js\nPASS tests/help.sortCommands.test.js\nPASS tests/argument.required.test.js\nPASS tests/argument.chain.test.js\nPASS tests/createCommand.test.js\nPASS tests/command.executableSubcommand.test.js\nPASS tests/command.option-misuse.test.js\nPASS tests/command.commandHelp.test.js\nPASS tests/command.createHelp.test.js\nPASS tests/options.bool.small.combined.test.js\nPASS tests/command.nested.test.js\nPASS tests/command.description.test.js\nPASS tests/command.summary.test.js\n\u001b[999D\u001b[K\nTest Suites: 108 passed, 108 total\nTests:       1206 passed, 1206 total\nSnapshots:   0 total\nTime:        9.632 s\nRan all test suites.\n",
+              "success": true
+            }
+          ]
+        }
+      ],
+      "officialRuntimeSuccess": true,
+      "completionAsReported": null,
+      "independent": {
+        "feature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-cline/workspace",
+            "commander-hidden-arguments",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 744.2395259998739,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-hidden-arguments.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"hidden:unconfigured-enumeration-shape\",\"passed\":true},{\"name\":\"hidden:default-coercion-and-reversal\",\"passed\":true},{\"name\":\"hidden:description-table-gate-after-filter\",\"passed\":true},{\"name\":\"hidden:callbacks-identity-and-throws\",\"passed\":true},{\"name\":\"hidden:required-variadic-usage-and-nonmutation\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/argument.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/help.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "nonUtcFeature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-cline/workspace",
+            "commander-hidden-arguments",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 665.6975769998971,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-hidden-arguments.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"hidden:unconfigured-enumeration-shape\",\"passed\":true},{\"name\":\"hidden:default-coercion-and-reversal\",\"passed\":true},{\"name\":\"hidden:description-table-gate-after-filter\",\"passed\":true},{\"name\":\"hidden:callbacks-identity-and-throws\",\"passed\":true},{\"name\":\"hidden:required-variadic-usage-and-nonmutation\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/argument.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/help.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "selected": {
+          "argv": [
+            "node",
+            "--test",
+            "tests/agent-hidden-arguments.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-cline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 104.34409000002779,
+          "stdout": "✔ hideHelp is fluent and reversible, with a public hidden boolean (0.86402ms)\n✔ hidden descriptions disappear, while usage and parsing remain unchanged (3.126881ms)\n✔ only visible descriptions enable the argument table (0.35839ms)\n✔ legacy descriptions still apply without unhiding an argument or mutating the registry (0.207627ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 67.734566\n",
+          "stderr": ""
+        },
+        "typesOrSyntax": {
+          "argv": [
+            "npm",
+            "run",
+            "check:type"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-cline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 7825.708736999892,
+          "stdout": "\n> commander@13.1.0 check:type\n> npm run check:type:js && npm run check:type:ts\n\n\n> commander@13.1.0 check:type:js\n> tsc -p tsconfig.js.json\n\n\n> commander@13.1.0 check:type:ts\n> tsd && tsc -p tsconfig.ts.json\n\n",
+          "stderr": ""
+        },
+        "fullDefinedSuite": {
+          "argv": [
+            "node",
+            "tests/agent-project-suite.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-cline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 6391.992493000114,
+          "stdout": "",
+          "stderr": "PASS tests/command.executableSubcommand.lookup.test.js\nPASS tests/ts-imports.test.ts\nPASS tests/command.executableSubcommand.inspect.test.js\nPASS tests/command.executableSubcommand.signals.test.js\nPASS tests/command.default.test.js\nPASS tests/command.parseOptions.test.js\nPASS tests/command.positionalOptions.test.js\nPASS tests/command.exitOverride.test.js\nPASS tests/command.action.test.js\nPASS tests/command.parse.test.js\nPASS tests/command.help.test.js\nPASS tests/options.env.test.js\nPASS tests/help.suggestion.test.js\nPASS tests/options.default.test.js\nPASS tests/command.chain.test.js\nPASS tests/command.addHelpText.test.js\nPASS tests/options.required.test.js\nPASS tests/command.executableSubcommand.search.test.js\nPASS tests/options.implies.test.js\nPASS tests/command.helpCommand.test.js\nPASS tests/help.style.test.js\nPASS tests/command.addCommand.test.js\nPASS tests/options.mandatory.test.js\nPASS tests/options.conflicts.test.js\nPASS tests/command.name.test.js\nPASS tests/command.hook.test.js\nPASS tests/command.configureOutput.test.js\nPASS tests/argument.custom-processing.test.js\nPASS tests/args.variadic.test.js\nPASS tests/options.preset.test.js\nPASS tests/command.copySettings.test.js\nPASS tests/options.version.test.js\nPASS tests/options.variadic.test.js\nPASS tests/command.unknownCommand.test.js\nPASS tests/command.asterisk.test.js\nPASS tests/options.bool.combo.test.js\nPASS tests/option.bad-flags.test.js\nPASS tests/incrementNodeInspectorPort.test.js\nPASS tests/options.bool.test.js\nPASS tests/commander.configureCommand.test.js\nPASS tests/useColor.test.js\nPASS tests/program.test.js\nPASS tests/options.values.test.js\nPASS tests/options.custom-processing.test.js\nPASS tests/options.choices.test.js\nPASS tests/command.allowExcessArguments.test.js\nPASS tests/help.commandUsage.test.js\nPASS tests/options.registerClash.test.js\nPASS tests/options.opts.test.js\nPASS tests/options.camelcase.test.js\nPASS tests/help.showGlobalOptions.test.js\nPASS tests/help.padWidth.test.js\nPASS tests/help.commandTerm.test.js\nPASS tests/help.argumentDescription.test.js\nPASS tests/command.helpOption.test.js\nPASS tests/command.configureHelp.test.js\nPASS tests/command.argumentVariations.test.js\nPASS tests/args.literal.test.js\nPASS tests/options.twice.test.js\nPASS tests/options.dual-options.test.js\nPASS tests/help.visibleGlobalOptions.test.js\nPASS tests/help.stripAnsi.test.js\nPASS tests/help.preformatted.test.js\nPASS tests/help.longestOptionTermLength.test.js\nPASS tests/help.longestCommandTermLength.test.js\nPASS tests/command.unknownOption.test.js\nPASS tests/argument.variadic.test.js\nPASS tests/argument.choices.test.js\nPASS tests/options.getset.test.js\nPASS tests/help.visibleOptions.test.js\nPASS tests/help.visibleCommands.test.js\nPASS tests/help.subcommandDescription.test.js\nPASS tests/help.sortOptions.test.js\nPASS tests/command.showHelpAfterError.test.js\nPASS tests/command.onCommand.test.js\nPASS tests/command.allowUnknownOption.test.js\nPASS tests/command.addHelpOption.test.js\nPASS tests/options.optsWithGlobals.test.js\nPASS tests/help.optionDescription.test.js\nPASS tests/help.boxWrap.test.js\nPASS tests/command.showSuggestionAfterError.test.js\nPASS tests/command.executableSubcommand.mock.test.js\nPASS tests/command.error.test.js\nPASS tests/command.createOption.test.js\nPASS tests/command.alias.test.js\nPASS tests/options.optional.test.js\nPASS tests/options.flags.test.js\nPASS tests/help.minWidthToWrap.test.js\nPASS tests/help.longestArgumentTermLength.test.js\nPASS tests/deprecated.test.js\nPASS tests/command.usage.test.js\nPASS tests/command.registerClash.test.js\nPASS tests/command.createArgument.test.js\nPASS tests/option.chain.test.js\nPASS tests/help.sortCommands.test.js\nPASS tests/help.optionTerm.test.js\nPASS tests/command.option-misuse.test.js\nPASS tests/argument.required.test.js\nPASS tests/argument.chain.test.js\nPASS tests/options.bool.small.combined.test.js\nPASS tests/help.visibleArguments.test.js\nPASS tests/createCommand.test.js\nPASS tests/command.nested.test.js\nPASS tests/command.executableSubcommand.test.js\nPASS tests/command.createHelp.test.js\nPASS tests/command.commandHelp.test.js\nPASS tests/command.summary.test.js\nPASS tests/command.description.test.js\n\u001b[999D\u001b[K\nTest Suites: 108 passed, 108 total\nTests:       1206 passed, 1206 total\nSnapshots:   0 total\nTime:        6.057 s, estimated 10 s\nRan all test suites.\n"
+        },
+        "addedTests": null,
+        "addedTestsOnOriginalSource": null
+      },
+      "boundEnvironment": {
+        "node": "v24.19.0",
+        "project": {
+          "commit": "e6f56c888c96d1339c2b974fee7e6ba4f2e3d218",
+          "source": "6616872661cfecda123d434939e1fdf5e6517dae7aa0d88044d850e175e27814",
+          "lock": "aa6f6ec42ef38d4d533e442274e3ae3f53f7c3e65e660050c4fc3d06f2b77331",
+          "jest": "29.7.0",
+          "typescript": "5.7.2",
+          "tsd": "0.31.2"
+        },
+        "defaultTZ": "UTC",
+        "secondFeatureTZ": "America/New_York",
+        "runtime": {
+          "runtime": "8a95f9b4b1d09e3491f0cf28c64fb9e0050a1acda62ce49fe2e7672effeda8f0",
+          "runner": "15627aa790b9be0f75bfad3f6ebdbd95ceaafa0d0822e9e3392c62628cd38f83",
+          "source": {
+            "arm": "baseline",
+            "sourceCommit": "79bcf87fc68ede77746b4f9fa278c1d7f88bc36a",
+            "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "changedPaths": []
+          }
+        }
+      },
+      "independentFunctionalSuccess": true,
+      "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
+    },
+    {
+      "name": "2-commander-hidden-arguments-baseline",
+      "eventsSha256": "50c729e58dcc93c5d8862770bbf6305b9847fe4a552568b20ce5883f75917edd",
+      "scoreSha256": "d8d50deab8c51bfed52d2662b0c96c18d77bc0c856ebc6f48ce98810f53e4f1e",
+      "finalScoredSources": {
+        "lib/argument.js": "fd5c4b12a6d0c14a5f5400eda35df97f06b441e80d7743f1a51729e955f24dbf",
+        "lib/help.js": "5b0b6ad5ebc9a4609bfbf73ba35f598d2d7ea8f1615b3fecbe8920cc05cde3ac",
+        "typings/index.d.ts": "9ef3e6b7dd5a003419cf38b14847adaceee348798541edb3c1ec9a0744f580e7"
+      },
+      "actualRecordedAgentCommands": [
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node --test tests/agent-hidden-arguments.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node --test tests/agent-hidden-arguments.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run check:type"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "npm run check:type",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": {
+            "paths": [
+              "lib/argument.js",
+              "lib/help.js",
+              "typings/index.d.ts"
+            ],
+            "sourceRevisionId": "src_2323a7e25ccd6561b3c0e48ef15ca6e7",
+            "status": "passed",
+            "taskId": "check:type",
+            "taskKind": "typecheck"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node tests/agent-project-suite.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node tests/agent-project-suite.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": null,
+          "nativeResults": null
+        }
+      ],
+      "officialRuntimeSuccess": true,
+      "completionAsReported": {
+        "source_revision_id": "src_2323a7e25ccd6561b3c0e48ef15ca6e7",
+        "delivery": "satisfied",
+        "verification": "verified",
+        "satisfied_obligations": [
+          "validation"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": []
+      },
+      "independent": {
+        "feature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-baseline/workspace",
+            "commander-hidden-arguments",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 601.5247610001825,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-hidden-arguments.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"hidden:unconfigured-enumeration-shape\",\"passed\":true},{\"name\":\"hidden:default-coercion-and-reversal\",\"passed\":true},{\"name\":\"hidden:description-table-gate-after-filter\",\"passed\":true},{\"name\":\"hidden:callbacks-identity-and-throws\",\"passed\":true},{\"name\":\"hidden:required-variadic-usage-and-nonmutation\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/argument.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/help.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "nonUtcFeature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-baseline/workspace",
+            "commander-hidden-arguments",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 631.7845030000899,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-hidden-arguments.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"hidden:unconfigured-enumeration-shape\",\"passed\":true},{\"name\":\"hidden:default-coercion-and-reversal\",\"passed\":true},{\"name\":\"hidden:description-table-gate-after-filter\",\"passed\":true},{\"name\":\"hidden:callbacks-identity-and-throws\",\"passed\":true},{\"name\":\"hidden:required-variadic-usage-and-nonmutation\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/argument.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/help.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "selected": {
+          "argv": [
+            "node",
+            "--test",
+            "tests/agent-hidden-arguments.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-baseline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 118.22663299995475,
+          "stdout": "✔ hideHelp is fluent and reversible, with a public hidden boolean (0.930038ms)\n✔ hidden descriptions disappear, while usage and parsing remain unchanged (3.913075ms)\n✔ only visible descriptions enable the argument table (0.347665ms)\n✔ legacy descriptions still apply without unhiding an argument or mutating the registry (0.218784ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 77.977548\n",
+          "stderr": ""
+        },
+        "typesOrSyntax": {
+          "argv": [
+            "npm",
+            "run",
+            "check:type"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-baseline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 8731.015190999955,
+          "stdout": "\n> commander@13.1.0 check:type\n> npm run check:type:js && npm run check:type:ts\n\n\n> commander@13.1.0 check:type:js\n> tsc -p tsconfig.js.json\n\n\n> commander@13.1.0 check:type:ts\n> tsd && tsc -p tsconfig.ts.json\n\n",
+          "stderr": ""
+        },
+        "fullDefinedSuite": {
+          "argv": [
+            "node",
+            "tests/agent-project-suite.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-baseline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 7400.236408999888,
+          "stdout": "",
+          "stderr": "PASS tests/command.executableSubcommand.lookup.test.js\nPASS tests/ts-imports.test.ts\nPASS tests/command.executableSubcommand.inspect.test.js\nPASS tests/command.executableSubcommand.signals.test.js\nPASS tests/command.default.test.js\nPASS tests/command.parseOptions.test.js\nPASS tests/command.positionalOptions.test.js\nPASS tests/command.exitOverride.test.js\nPASS tests/command.action.test.js\nPASS tests/command.help.test.js\nPASS tests/command.hook.test.js\nPASS tests/help.suggestion.test.js\nPASS tests/command.parse.test.js\nPASS tests/command.executableSubcommand.search.test.js\nPASS tests/options.conflicts.test.js\nPASS tests/options.mandatory.test.js\nPASS tests/options.env.test.js\nPASS tests/options.getset.test.js\nPASS tests/options.variadic.test.js\nPASS tests/command.chain.test.js\nPASS tests/option.chain.test.js\nPASS tests/command.addHelpText.test.js\nPASS tests/options.version.test.js\nPASS tests/command.usage.test.js\nPASS tests/command.configureOutput.test.js\nPASS tests/options.implies.test.js\nPASS tests/help.visibleGlobalOptions.test.js\nPASS tests/help.longestArgumentTermLength.test.js\nPASS tests/help.style.test.js\nPASS tests/options.custom-processing.test.js\nPASS tests/command.summary.test.js\nPASS tests/command.helpCommand.test.js\nPASS tests/command.allowExcessArguments.test.js\nPASS tests/command.alias.test.js\nPASS tests/options.default.test.js\nPASS tests/command.helpOption.test.js\nPASS tests/command.addCommand.test.js\nPASS tests/options.values.test.js\nPASS tests/option.bad-flags.test.js\nPASS tests/command.registerClash.test.js\nPASS tests/command.name.test.js\nPASS tests/argument.variadic.test.js\nPASS tests/argument.custom-processing.test.js\nPASS tests/options.bool.combo.test.js\nPASS tests/options.bool.test.js\nPASS tests/incrementNodeInspectorPort.test.js\nPASS tests/help.preformatted.test.js\nPASS tests/help.optionTerm.test.js\nPASS tests/help.longestCommandTermLength.test.js\nPASS tests/help.commandTerm.test.js\nPASS tests/command.showHelpAfterError.test.js\nPASS tests/command.allowUnknownOption.test.js\nPASS tests/command.argumentVariations.test.js\nPASS tests/argument.choices.test.js\nPASS tests/args.variadic.test.js\nPASS tests/program.test.js\nPASS tests/options.choices.test.js\nPASS tests/help.padWidth.test.js\nPASS tests/help.optionDescription.test.js\nPASS tests/help.minWidthToWrap.test.js\nPASS tests/command.unknownCommand.test.js\nPASS tests/command.executableSubcommand.mock.test.js\nPASS tests/command.copySettings.test.js\nPASS tests/command.configureHelp.test.js\nPASS tests/command.asterisk.test.js\nPASS tests/options.optsWithGlobals.test.js\nPASS tests/options.flags.test.js\nPASS tests/commander.configureCommand.test.js\nPASS tests/command.executableSubcommand.test.js\nPASS tests/args.literal.test.js\nPASS tests/options.twice.test.js\nPASS tests/options.opts.test.js\nPASS tests/help.visibleArguments.test.js\nPASS tests/help.sortOptions.test.js\nPASS tests/help.showGlobalOptions.test.js\nPASS tests/help.commandUsage.test.js\nPASS tests/help.boxWrap.test.js\nPASS tests/command.error.test.js\nPASS tests/command.createOption.test.js\nPASS tests/useColor.test.js\nPASS tests/options.required.test.js\nPASS tests/options.registerClash.test.js\nPASS tests/options.preset.test.js\nPASS tests/options.dual-options.test.js\nPASS tests/help.visibleOptions.test.js\nPASS tests/help.subcommandDescription.test.js\nPASS tests/help.sortCommands.test.js\nPASS tests/deprecated.test.js\nPASS tests/command.unknownOption.test.js\nPASS tests/command.onCommand.test.js\nPASS tests/command.nested.test.js\nPASS tests/command.description.test.js\nPASS tests/command.commandHelp.test.js\nPASS tests/command.addHelpOption.test.js\nPASS tests/argument.required.test.js\nPASS tests/argument.chain.test.js\nPASS tests/options.optional.test.js\nPASS tests/options.camelcase.test.js\nPASS tests/options.bool.small.combined.test.js\nPASS tests/help.visibleCommands.test.js\nPASS tests/help.stripAnsi.test.js\nPASS tests/help.longestOptionTermLength.test.js\nPASS tests/createCommand.test.js\nPASS tests/command.showSuggestionAfterError.test.js\nPASS tests/command.option-misuse.test.js\nPASS tests/command.createArgument.test.js\nPASS tests/help.argumentDescription.test.js\nPASS tests/command.createHelp.test.js\n\u001b[999D\u001b[K\nTest Suites: 108 passed, 108 total\nTests:       1206 passed, 1206 total\nSnapshots:   0 total\nTime:        6.962 s, estimated 9 s\nRan all test suites.\n"
+        },
+        "addedTests": null,
+        "addedTestsOnOriginalSource": null
+      },
+      "boundEnvironment": {
+        "node": "v24.19.0",
+        "project": {
+          "commit": "e6f56c888c96d1339c2b974fee7e6ba4f2e3d218",
+          "source": "6616872661cfecda123d434939e1fdf5e6517dae7aa0d88044d850e175e27814",
+          "lock": "aa6f6ec42ef38d4d533e442274e3ae3f53f7c3e65e660050c4fc3d06f2b77331",
+          "jest": "29.7.0",
+          "typescript": "5.7.2",
+          "tsd": "0.31.2"
+        },
+        "defaultTZ": "UTC",
+        "secondFeatureTZ": "America/New_York",
+        "runtime": {
+          "runtime": "8a95f9b4b1d09e3491f0cf28c64fb9e0050a1acda62ce49fe2e7672effeda8f0",
+          "runner": "15627aa790b9be0f75bfad3f6ebdbd95ceaafa0d0822e9e3392c62628cd38f83",
+          "source": {
+            "arm": "baseline",
+            "sourceCommit": "79bcf87fc68ede77746b4f9fa278c1d7f88bc36a",
+            "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "changedPaths": []
+          }
+        }
+      },
+      "independentFunctionalSuccess": true,
+      "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
+    },
+    {
+      "name": "2-commander-hidden-arguments-candidate",
+      "eventsSha256": "fbc53063459a276eeb4b5f6aaac576eb3f5e49037a71d32351405d4429a9ecf5",
+      "scoreSha256": "3dd7a70625817537ba59e82c936ad0a5f2d7a853f27edc5e9006c47c7408ee3a",
+      "finalScoredSources": {
+        "lib/argument.js": "8e3b95f41445deff5b594102c8c3057a142507a474b3dd3540edca5b7da1314d",
+        "lib/help.js": "5b0b6ad5ebc9a4609bfbf73ba35f598d2d7ea8f1615b3fecbe8920cc05cde3ac",
+        "typings/index.d.ts": "f5000189a90116db76474fcd31617c07fde7dd465c4d72215dca7de85d91c7ea"
+      },
+      "actualRecordedAgentCommands": [
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node --test tests/agent-hidden-arguments.cjs",
+            "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-candidate/workspace"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node --test tests/agent-hidden-arguments.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run check:type",
+            "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-candidate/workspace"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "npm run check:type",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": {
+            "paths": [
+              "lib/argument.js",
+              "lib/help.js",
+              "typings/index.d.ts"
+            ],
+            "sourceRevisionId": "src_e6b9ffce91153d5a116e3d6c772212fb",
+            "status": "passed",
+            "taskId": "check:type",
+            "taskKind": "typecheck"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node tests/agent-project-suite.cjs",
+            "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-candidate/workspace"
+          },
+          "reportedStatus": "blocked",
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node --test tests/agent-hidden-arguments.cjs",
+            "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-candidate/workspace"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node --test tests/agent-hidden-arguments.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run check:type",
+            "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-candidate/workspace"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "npm run check:type",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": {
+            "paths": [
+              "lib/argument.js",
+              "lib/help.js",
+              "typings/index.d.ts"
+            ],
+            "sourceRevisionId": "src_515b293e3bcdfa93bbd3c1811931bcf7",
+            "status": "passed",
+            "taskId": "check:type",
+            "taskKind": "typecheck"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node tests/agent-project-suite.cjs",
+            "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-candidate/workspace"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node tests/agent-project-suite.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": null,
+          "nativeResults": null
+        }
+      ],
+      "officialRuntimeSuccess": true,
+      "completionAsReported": {
+        "source_revision_id": "src_515b293e3bcdfa93bbd3c1811931bcf7",
+        "delivery": "satisfied",
+        "verification": "verified",
+        "satisfied_obligations": [
+          "validation"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": []
+      },
+      "independent": {
+        "feature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-candidate/workspace",
+            "commander-hidden-arguments",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 716.5678789999802,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-hidden-arguments.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"hidden:unconfigured-enumeration-shape\",\"passed\":true},{\"name\":\"hidden:default-coercion-and-reversal\",\"passed\":true},{\"name\":\"hidden:description-table-gate-after-filter\",\"passed\":true},{\"name\":\"hidden:callbacks-identity-and-throws\",\"passed\":true},{\"name\":\"hidden:required-variadic-usage-and-nonmutation\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/argument.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/help.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "nonUtcFeature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-candidate/workspace",
+            "commander-hidden-arguments",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 679.4298169999383,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-hidden-arguments.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"hidden:unconfigured-enumeration-shape\",\"passed\":true},{\"name\":\"hidden:default-coercion-and-reversal\",\"passed\":true},{\"name\":\"hidden:description-table-gate-after-filter\",\"passed\":true},{\"name\":\"hidden:callbacks-identity-and-throws\",\"passed\":true},{\"name\":\"hidden:required-variadic-usage-and-nonmutation\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/argument.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/help.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "selected": {
+          "argv": [
+            "node",
+            "--test",
+            "tests/agent-hidden-arguments.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-candidate/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 112.09164499980398,
+          "stdout": "✔ hideHelp is fluent and reversible, with a public hidden boolean (0.688029ms)\n✔ hidden descriptions disappear, while usage and parsing remain unchanged (3.579502ms)\n✔ only visible descriptions enable the argument table (0.169731ms)\n✔ legacy descriptions still apply without unhiding an argument or mutating the registry (0.20915ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 74.144901\n",
+          "stderr": ""
+        },
+        "typesOrSyntax": {
+          "argv": [
+            "npm",
+            "run",
+            "check:type"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-candidate/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 8123.022172000026,
+          "stdout": "\n> commander@13.1.0 check:type\n> npm run check:type:js && npm run check:type:ts\n\n\n> commander@13.1.0 check:type:js\n> tsc -p tsconfig.js.json\n\n\n> commander@13.1.0 check:type:ts\n> tsd && tsc -p tsconfig.ts.json\n\n",
+          "stderr": ""
+        },
+        "fullDefinedSuite": {
+          "argv": [
+            "node",
+            "tests/agent-project-suite.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-hidden-arguments-candidate/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 6435.0010460000485,
+          "stdout": "",
+          "stderr": "PASS tests/command.executableSubcommand.lookup.test.js\nPASS tests/command.executableSubcommand.inspect.test.js\nPASS tests/command.executableSubcommand.signals.test.js\nPASS tests/ts-imports.test.ts\nPASS tests/command.default.test.js\nPASS tests/command.parseOptions.test.js\nPASS tests/command.argumentVariations.test.js\nPASS tests/command.action.test.js\nPASS tests/command.exitOverride.test.js\nPASS tests/options.version.test.js\nPASS tests/help.suggestion.test.js\nPASS tests/command.positionalOptions.test.js\nPASS tests/command.addHelpText.test.js\nPASS tests/incrementNodeInspectorPort.test.js\nPASS tests/options.registerClash.test.js\nPASS tests/options.conflicts.test.js\nPASS tests/command.hook.test.js\nPASS tests/options.env.test.js\nPASS tests/command.parse.test.js\nPASS tests/command.helpOption.test.js\nPASS tests/command.help.test.js\nPASS tests/command.executableSubcommand.search.test.js\nPASS tests/command.chain.test.js\nPASS tests/option.bad-flags.test.js\nPASS tests/command.configureOutput.test.js\nPASS tests/options.variadic.test.js\nPASS tests/options.mandatory.test.js\nPASS tests/options.implies.test.js\nPASS tests/useColor.test.js\nPASS tests/options.choices.test.js\nPASS tests/options.values.test.js\nPASS tests/help.optionTerm.test.js\nPASS tests/command.asterisk.test.js\nPASS tests/command.allowUnknownOption.test.js\nPASS tests/command.allowExcessArguments.test.js\nPASS tests/options.required.test.js\nPASS tests/options.default.test.js\nPASS tests/options.bool.combo.test.js\nPASS tests/help.sortOptions.test.js\nPASS tests/commander.configureCommand.test.js\nPASS tests/command.helpCommand.test.js\nPASS tests/argument.variadic.test.js\nPASS tests/options.optional.test.js\nPASS tests/options.flags.test.js\nPASS tests/help.style.test.js\nPASS tests/help.showGlobalOptions.test.js\nPASS tests/argument.custom-processing.test.js\nPASS tests/options.getset.test.js\nPASS tests/options.custom-processing.test.js\nPASS tests/options.bool.test.js\nPASS tests/command.showHelpAfterError.test.js\nPASS tests/command.registerClash.test.js\nPASS tests/command.executableSubcommand.mock.test.js\nPASS tests/program.test.js\nPASS tests/options.optsWithGlobals.test.js\nPASS tests/options.dual-options.test.js\nPASS tests/help.commandTerm.test.js\nPASS tests/help.boxWrap.test.js\nPASS tests/command.usage.test.js\nPASS tests/command.alias.test.js\nPASS tests/options.preset.test.js\nPASS tests/options.opts.test.js\nPASS tests/option.chain.test.js\nPASS tests/help.visibleOptions.test.js\nPASS tests/help.visibleArguments.test.js\nPASS tests/help.argumentDescription.test.js\nPASS tests/command.unknownOption.test.js\nPASS tests/command.unknownCommand.test.js\nPASS tests/command.option-misuse.test.js\nPASS tests/command.onCommand.test.js\nPASS tests/command.name.test.js\nPASS tests/command.executableSubcommand.test.js\nPASS tests/command.error.test.js\nPASS tests/command.addHelpOption.test.js\nPASS tests/command.addCommand.test.js\nPASS tests/argument.chain.test.js\nPASS tests/args.variadic.test.js\nPASS tests/options.twice.test.js\nPASS tests/options.camelcase.test.js\nPASS tests/help.visibleGlobalOptions.test.js\nPASS tests/help.preformatted.test.js\nPASS tests/help.optionDescription.test.js\nPASS tests/help.minWidthToWrap.test.js\nPASS tests/help.longestArgumentTermLength.test.js\nPASS tests/command.description.test.js\nPASS tests/command.createArgument.test.js\nPASS tests/command.copySettings.test.js\nPASS tests/argument.choices.test.js\nPASS tests/options.bool.small.combined.test.js\nPASS tests/help.sortCommands.test.js\nPASS tests/help.longestOptionTermLength.test.js\nPASS tests/help.longestCommandTermLength.test.js\nPASS tests/help.commandUsage.test.js\nPASS tests/createCommand.test.js\nPASS tests/command.summary.test.js\nPASS tests/command.showSuggestionAfterError.test.js\nPASS tests/command.nested.test.js\nPASS tests/command.createOption.test.js\nPASS tests/command.commandHelp.test.js\nPASS tests/args.literal.test.js\nPASS tests/help.visibleCommands.test.js\nPASS tests/help.stripAnsi.test.js\nPASS tests/help.padWidth.test.js\nPASS tests/deprecated.test.js\nPASS tests/command.createHelp.test.js\nPASS tests/argument.required.test.js\nPASS tests/help.subcommandDescription.test.js\nPASS tests/command.configureHelp.test.js\n\u001b[999D\u001b[K\nTest Suites: 108 passed, 108 total\nTests:       1206 passed, 1206 total\nSnapshots:   0 total\nTime:        6.086 s, estimated 9 s\nRan all test suites.\n"
+        },
+        "addedTests": null,
+        "addedTestsOnOriginalSource": null
+      },
+      "boundEnvironment": {
+        "node": "v24.19.0",
+        "project": {
+          "commit": "e6f56c888c96d1339c2b974fee7e6ba4f2e3d218",
+          "source": "6616872661cfecda123d434939e1fdf5e6517dae7aa0d88044d850e175e27814",
+          "lock": "aa6f6ec42ef38d4d533e442274e3ae3f53f7c3e65e660050c4fc3d06f2b77331",
+          "jest": "29.7.0",
+          "typescript": "5.7.2",
+          "tsd": "0.31.2"
+        },
+        "defaultTZ": "UTC",
+        "secondFeatureTZ": "America/New_York",
+        "runtime": {
+          "runtime": "6697c22d7dc59b3ef718a5ee7d812cf2118eb234c5cd9d2598ac448cc555687c",
+          "runner": "15627aa790b9be0f75bfad3f6ebdbd95ceaafa0d0822e9e3392c62628cd38f83",
+          "source": {
+            "arm": "candidate",
+            "sourceCommit": "79bcf87fc68ede77746b4f9fa278c1d7f88bc36a",
+            "patchSha256": "9fabc1362b9a181a540a8417ac3f905e61a4604315eee2b1f6553a12f0ee40b6",
+            "changedPaths": [
+              "packages/agent-runtime/src/harness/light-tools.ts",
+              "packages/agent-runtime/src/harness/light-completion.ts"
+            ]
+          }
+        }
+      },
+      "independentFunctionalSuccess": true,
+      "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
+    },
+    {
+      "name": "2-commander-environment-fallback-baseline",
+      "eventsSha256": "bbcb7375ad807ffbe1005debff0883fa1563a6dae4fd318d98a11a8e84483861",
+      "scoreSha256": "abfb4e808763b1e559ef557e8a6fd0761ec85353ac9db0aeebb1e167bd16e71b",
+      "finalScoredSources": {
+        "lib/option.js": "d78da404303792f3bbfc2c4e76611e3f604442e3ac7d9c42804adf82ddc72baa",
+        "lib/command.js": "ada15597235ce9388367eb366e220423f38c19c5670a1343d4c86075844f100c",
+        "lib/help.js": "772f5d70f1236654bf00b6ad056512ed6ca659a9790050da12d637225d7a4a3d",
+        "typings/index.d.ts": "1b2791f3fb0f278474fa9cf610d2f6046b711fa2b85c7387fbe4f920c42932da"
+      },
+      "actualRecordedAgentCommands": [
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node --test tests/agent-env-fallback.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node --test tests/agent-env-fallback.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run check:type"
+          },
+          "reportedStatus": "blocked",
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node tests/agent-project-suite.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node tests/agent-project-suite.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": null,
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node --test tests/agent-env-fallback.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node --test tests/agent-env-fallback.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run check:type"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "npm run check:type",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": {
+            "paths": [
+              "lib/option.js",
+              "lib/command.js",
+              "lib/help.js",
+              "typings/index.d.ts"
+            ],
+            "sourceRevisionId": "src_3e6e3f48f7f95cb9ac2f5efac8b12d33",
+            "status": "passed",
+            "taskId": "check:type",
+            "taskKind": "typecheck"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node tests/agent-project-suite.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node tests/agent-project-suite.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": null,
+          "nativeResults": null
+        }
+      ],
+      "officialRuntimeSuccess": true,
+      "completionAsReported": {
+        "source_revision_id": "src_3e6e3f48f7f95cb9ac2f5efac8b12d33",
+        "delivery": "satisfied",
+        "verification": "verified",
+        "satisfied_obligations": [
+          "validation"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": []
+      },
+      "independent": {
+        "feature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-baseline/workspace",
+            "commander-environment-fallback",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 622.5009850000497,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-env-fallback.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"env:defined-order-and-replacement-snapshot\",\"passed\":true},{\"name\":\"env:precedence-and-call-counts\",\"passed\":true},{\"name\":\"env:real-source-error-and-sentinel\",\"passed\":true},{\"name\":\"env:public-event-argument-contract\",\"passed\":true},{\"name\":\"env:boolean-negation-optional-variadic-and-help\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/option.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/command.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/help.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "nonUtcFeature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-baseline/workspace",
+            "commander-environment-fallback",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 658.8494880001526,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-env-fallback.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"env:defined-order-and-replacement-snapshot\",\"passed\":true},{\"name\":\"env:precedence-and-call-counts\",\"passed\":true},{\"name\":\"env:real-source-error-and-sentinel\",\"passed\":true},{\"name\":\"env:public-event-argument-contract\",\"passed\":true},{\"name\":\"env:boolean-negation-optional-variadic-and-help\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/option.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/command.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/help.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "selected": {
+          "argv": [
+            "node",
+            "--test",
+            "tests/agent-env-fallback.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-baseline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 100.24469099985436,
+          "stdout": "✔ ordered fallbacks select the first defined value, including empty strings (2.373435ms)\n✔ CLI and client values win, defaults/config lose and the parser runs once (0.512399ms)\n✔ error messages name the selected fallback and arbitrary parser errors keep identity (0.863859ms)\n✔ boolean presence, fallback snapshots, reconfiguration and help stay consistent (0.548923ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 66.112739\n",
+          "stderr": ""
+        },
+        "typesOrSyntax": {
+          "argv": [
+            "npm",
+            "run",
+            "check:type"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-baseline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 8094.4869580001105,
+          "stdout": "\n> commander@13.1.0 check:type\n> npm run check:type:js && npm run check:type:ts\n\n\n> commander@13.1.0 check:type:js\n> tsc -p tsconfig.js.json\n\n\n> commander@13.1.0 check:type:ts\n> tsd && tsc -p tsconfig.ts.json\n\n",
+          "stderr": ""
+        },
+        "fullDefinedSuite": {
+          "argv": [
+            "node",
+            "tests/agent-project-suite.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-baseline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 6766.328378000064,
+          "stdout": "",
+          "stderr": "PASS tests/command.executableSubcommand.lookup.test.js\nPASS tests/command.executableSubcommand.inspect.test.js\nPASS tests/command.executableSubcommand.signals.test.js\nPASS tests/ts-imports.test.ts\nPASS tests/command.default.test.js\nPASS tests/command.parseOptions.test.js\nPASS tests/command.action.test.js\nPASS tests/command.exitOverride.test.js\nPASS tests/command.positionalOptions.test.js\nPASS tests/help.suggestion.test.js\nPASS tests/command.hook.test.js\nPASS tests/command.parse.test.js\nPASS tests/command.help.test.js\nPASS tests/options.conflicts.test.js\nPASS tests/command.addHelpText.test.js\nPASS tests/command.helpOption.test.js\nPASS tests/command.helpCommand.test.js\nPASS tests/options.env.test.js\nPASS tests/options.default.test.js\nPASS tests/help.showGlobalOptions.test.js\nPASS tests/options.custom-processing.test.js\nPASS tests/command.executableSubcommand.search.test.js\nPASS tests/command.chain.test.js\nPASS tests/argument.custom-processing.test.js\nPASS tests/options.version.test.js\nPASS tests/command.configureOutput.test.js\nPASS tests/options.mandatory.test.js\nPASS tests/options.implies.test.js\nPASS tests/command.argumentVariations.test.js\nPASS tests/command.allowExcessArguments.test.js\nPASS tests/options.required.test.js\nPASS tests/options.variadic.test.js\nPASS tests/option.bad-flags.test.js\nPASS tests/help.visibleGlobalOptions.test.js\nPASS tests/help.commandTerm.test.js\nPASS tests/command.asterisk.test.js\nPASS tests/options.values.test.js\nPASS tests/options.opts.test.js\nPASS tests/options.dual-options.test.js\nPASS tests/help.style.test.js\nPASS tests/command.unknownOption.test.js\nPASS tests/command.unknownCommand.test.js\nPASS tests/command.onCommand.test.js\nPASS tests/command.alias.test.js\nPASS tests/options.choices.test.js\nPASS tests/help.longestArgumentTermLength.test.js\nPASS tests/command.executableSubcommand.test.js\nPASS tests/useColor.test.js\nPASS tests/options.bool.test.js\nPASS tests/options.bool.combo.test.js\nPASS tests/incrementNodeInspectorPort.test.js\nPASS tests/help.boxWrap.test.js\nPASS tests/commander.configureCommand.test.js\nPASS tests/command.showSuggestionAfterError.test.js\nPASS tests/command.showHelpAfterError.test.js\nPASS tests/command.registerClash.test.js\nPASS tests/command.createOption.test.js\nPASS tests/command.commandHelp.test.js\nPASS tests/command.allowUnknownOption.test.js\nPASS tests/argument.variadic.test.js\nPASS tests/program.test.js\nPASS tests/options.optsWithGlobals.test.js\nPASS tests/options.getset.test.js\nPASS tests/options.camelcase.test.js\nPASS tests/help.optionDescription.test.js\nPASS tests/help.argumentDescription.test.js\nPASS tests/command.usage.test.js\nPASS tests/command.executableSubcommand.mock.test.js\nPASS tests/command.createArgument.test.js\nPASS tests/command.copySettings.test.js\nPASS tests/command.addHelpOption.test.js\nPASS tests/args.variadic.test.js\nPASS tests/options.twice.test.js\nPASS tests/options.registerClash.test.js\nPASS tests/options.preset.test.js\nPASS tests/help.visibleCommands.test.js\nPASS tests/help.visibleArguments.test.js\nPASS tests/help.stripAnsi.test.js\nPASS tests/help.preformatted.test.js\nPASS tests/createCommand.test.js\nPASS tests/command.error.test.js\nPASS tests/command.createHelp.test.js\nPASS tests/command.configureHelp.test.js\nPASS tests/argument.required.test.js\nPASS tests/argument.choices.test.js\nPASS tests/argument.chain.test.js\nPASS tests/options.optional.test.js\nPASS tests/options.flags.test.js\nPASS tests/option.chain.test.js\nPASS tests/help.visibleOptions.test.js\nPASS tests/help.subcommandDescription.test.js\nPASS tests/help.sortOptions.test.js\nPASS tests/help.sortCommands.test.js\nPASS tests/help.optionTerm.test.js\nPASS tests/help.longestOptionTermLength.test.js\nPASS tests/help.longestCommandTermLength.test.js\nPASS tests/help.commandUsage.test.js\nPASS tests/deprecated.test.js\nPASS tests/command.option-misuse.test.js\nPASS tests/command.name.test.js\nPASS tests/command.description.test.js\nPASS tests/command.addCommand.test.js\nPASS tests/args.literal.test.js\nPASS tests/options.bool.small.combined.test.js\nPASS tests/help.padWidth.test.js\nPASS tests/help.minWidthToWrap.test.js\nPASS tests/command.summary.test.js\nPASS tests/command.nested.test.js\n\u001b[999D\u001b[K\nTest Suites: 108 passed, 108 total\nTests:       1206 passed, 1206 total\nSnapshots:   0 total\nTime:        6.414 s, estimated 8 s\nRan all test suites.\n"
+        },
+        "addedTests": null,
+        "addedTestsOnOriginalSource": null
+      },
+      "boundEnvironment": {
+        "node": "v24.19.0",
+        "project": {
+          "commit": "e6f56c888c96d1339c2b974fee7e6ba4f2e3d218",
+          "source": "6616872661cfecda123d434939e1fdf5e6517dae7aa0d88044d850e175e27814",
+          "lock": "aa6f6ec42ef38d4d533e442274e3ae3f53f7c3e65e660050c4fc3d06f2b77331",
+          "jest": "29.7.0",
+          "typescript": "5.7.2",
+          "tsd": "0.31.2"
+        },
+        "defaultTZ": "UTC",
+        "secondFeatureTZ": "America/New_York",
+        "runtime": {
+          "runtime": "8a95f9b4b1d09e3491f0cf28c64fb9e0050a1acda62ce49fe2e7672effeda8f0",
+          "runner": "15627aa790b9be0f75bfad3f6ebdbd95ceaafa0d0822e9e3392c62628cd38f83",
+          "source": {
+            "arm": "baseline",
+            "sourceCommit": "79bcf87fc68ede77746b4f9fa278c1d7f88bc36a",
+            "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "changedPaths": []
+          }
+        }
+      },
+      "independentFunctionalSuccess": true,
+      "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
+    },
+    {
+      "name": "2-commander-environment-fallback-candidate",
+      "eventsSha256": "57edd66288dc18394b8eacb3bc5ebf79fca8b6f46671faa6d47872614fe42586",
+      "scoreSha256": "78e116a1e0cbedf62cfcd03c6ab1aa3760089f0ed7e1d43b528d21166b52439a",
+      "finalScoredSources": {
+        "lib/option.js": "0277743bebd9af58a838b979754e4f378044e2c80917554e24f2766c1d72689d",
+        "lib/command.js": "2350debcd06fc39385c3e9cfd8f32083778108bec42b032ab1b466938f555754",
+        "lib/help.js": "aa6a5c6ebea0a034f9d5c2325906ca70876c01d39edb774c98a15be81fe14d31",
+        "typings/index.d.ts": "1b2791f3fb0f278474fa9cf610d2f6046b711fa2b85c7387fbe4f920c42932da"
+      },
+      "actualRecordedAgentCommands": [
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node --test tests/agent-env-fallback.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node --test tests/agent-env-fallback.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run check:type"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "npm run check:type",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": {
+            "paths": [
+              "lib/option.js",
+              "lib/command.js",
+              "lib/help.js",
+              "typings/index.d.ts"
+            ],
+            "sourceRevisionId": "src_48c1be6240169940ae3039a8bf850f55",
+            "status": "passed",
+            "taskId": "check:type",
+            "taskKind": "typecheck"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node tests/agent-project-suite.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node tests/agent-project-suite.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": null,
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node --test tests/agent-env-fallback.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node --test tests/agent-env-fallback.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": {
+            "status": "unknown"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run check:type"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "npm run check:type",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": {
+            "paths": [
+              "lib/option.js",
+              "lib/command.js",
+              "lib/help.js",
+              "typings/index.d.ts"
+            ],
+            "sourceRevisionId": "src_721bc7fa51beeaaae4d4664b2b79e401",
+            "status": "passed",
+            "taskId": "check:type",
+            "taskKind": "typecheck"
+          },
+          "nativeResults": null
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node tests/agent-project-suite.cjs"
+          },
+          "reportedStatus": "ok",
+          "run": null,
+          "command": "node tests/agent-project-suite.cjs",
+          "observedExitCode": 0,
+          "process": null,
+          "reportedEnvironment": "linux-native",
+          "admittedValidation": null,
+          "nativeResults": null
+        }
+      ],
+      "officialRuntimeSuccess": true,
+      "completionAsReported": {
+        "source_revision_id": "src_721bc7fa51beeaaae4d4664b2b79e401",
+        "delivery": "satisfied",
+        "verification": "verified",
+        "satisfied_obligations": [
+          "validation"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": []
+      },
+      "independent": {
+        "feature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-candidate/workspace",
+            "commander-environment-fallback",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 676.3306670000311,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-env-fallback.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"env:defined-order-and-replacement-snapshot\",\"passed\":true},{\"name\":\"env:precedence-and-call-counts\",\"passed\":true},{\"name\":\"env:real-source-error-and-sentinel\",\"passed\":true},{\"name\":\"env:public-event-argument-contract\",\"passed\":true},{\"name\":\"env:boolean-negation-optional-variadic-and-help\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/option.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/command.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/help.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "nonUtcFeature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-candidate/workspace",
+            "commander-environment-fallback",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 678.9291590000503,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-env-fallback.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"env:defined-order-and-replacement-snapshot\",\"passed\":true},{\"name\":\"env:precedence-and-call-counts\",\"passed\":true},{\"name\":\"env:real-source-error-and-sentinel\",\"passed\":true},{\"name\":\"env:public-event-argument-contract\",\"passed\":true},{\"name\":\"env:boolean-negation-optional-variadic-and-help\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/option.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/command.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/help.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "selected": {
+          "argv": [
+            "node",
+            "--test",
+            "tests/agent-env-fallback.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-candidate/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 129.02994899987243,
+          "stdout": "✔ ordered fallbacks select the first defined value, including empty strings (3.027357ms)\n✔ CLI and client values win, defaults/config lose and the parser runs once (0.699807ms)\n✔ error messages name the selected fallback and arbitrary parser errors keep identity (1.029436ms)\n✔ boolean presence, fallback snapshots, reconfiguration and help stay consistent (1.360406ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 88.008317\n",
+          "stderr": ""
+        },
+        "typesOrSyntax": {
+          "argv": [
+            "npm",
+            "run",
+            "check:type"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-candidate/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 8056.080770000117,
+          "stdout": "\n> commander@13.1.0 check:type\n> npm run check:type:js && npm run check:type:ts\n\n\n> commander@13.1.0 check:type:js\n> tsc -p tsconfig.js.json\n\n\n> commander@13.1.0 check:type:ts\n> tsd && tsc -p tsconfig.ts.json\n\n",
+          "stderr": ""
+        },
+        "fullDefinedSuite": {
+          "argv": [
+            "node",
+            "tests/agent-project-suite.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-candidate/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 6468.520916000009,
+          "stdout": "",
+          "stderr": "PASS tests/command.executableSubcommand.lookup.test.js\nPASS tests/ts-imports.test.ts\nPASS tests/command.executableSubcommand.signals.test.js\nPASS tests/command.executableSubcommand.inspect.test.js\nPASS tests/command.default.test.js\nPASS tests/command.parseOptions.test.js\nPASS tests/command.action.test.js\nPASS tests/command.exitOverride.test.js\nPASS tests/command.parse.test.js\nPASS tests/command.positionalOptions.test.js\nPASS tests/help.suggestion.test.js\nPASS tests/command.alias.test.js\nPASS tests/options.mandatory.test.js\nPASS tests/commander.configureCommand.test.js\nPASS tests/options.conflicts.test.js\nPASS tests/command.help.test.js\nPASS tests/command.addHelpText.test.js\nPASS tests/options.implies.test.js\nPASS tests/options.env.test.js\nPASS tests/options.default.test.js\nPASS tests/command.helpCommand.test.js\nPASS tests/command.configureOutput.test.js\nPASS tests/command.asterisk.test.js\nPASS tests/command.hook.test.js\nPASS tests/command.allowExcessArguments.test.js\nPASS tests/help.style.test.js\nPASS tests/help.showGlobalOptions.test.js\nPASS tests/command.unknownOption.test.js\nPASS tests/command.executableSubcommand.search.test.js\nPASS tests/command.argumentVariations.test.js\nPASS tests/options.values.test.js\nPASS tests/option.bad-flags.test.js\nPASS tests/command.helpOption.test.js\nPASS tests/command.chain.test.js\nPASS tests/argument.variadic.test.js\nPASS tests/options.version.test.js\nPASS tests/options.variadic.test.js\nPASS tests/options.registerClash.test.js\nPASS tests/options.bool.combo.test.js\nPASS tests/help.longestCommandTermLength.test.js\nPASS tests/help.boxWrap.test.js\nPASS tests/createCommand.test.js\nPASS tests/command.onCommand.test.js\nPASS tests/command.error.test.js\nPASS tests/command.copySettings.test.js\nPASS tests/options.preset.test.js\nPASS tests/options.optional.test.js\nPASS tests/options.getset.test.js\nPASS tests/options.bool.test.js\nPASS tests/incrementNodeInspectorPort.test.js\nPASS tests/help.visibleGlobalOptions.test.js\nPASS tests/help.visibleCommands.test.js\nPASS tests/help.minWidthToWrap.test.js\nPASS tests/help.argumentDescription.test.js\nPASS tests/command.showHelpAfterError.test.js\nPASS tests/command.executableSubcommand.test.js\nPASS tests/command.configureHelp.test.js\nPASS tests/argument.custom-processing.test.js\nPASS tests/options.opts.test.js\nPASS tests/options.dual-options.test.js\nPASS tests/options.custom-processing.test.js\nPASS tests/help.visibleOptions.test.js\nPASS tests/help.subcommandDescription.test.js\nPASS tests/help.preformatted.test.js\nPASS tests/help.optionDescription.test.js\nPASS tests/help.longestArgumentTermLength.test.js\nPASS tests/help.commandUsage.test.js\nPASS tests/deprecated.test.js\nPASS tests/command.usage.test.js\nPASS tests/command.unknownCommand.test.js\nPASS tests/command.option-misuse.test.js\nPASS tests/command.executableSubcommand.mock.test.js\nPASS tests/command.createOption.test.js\nPASS tests/command.addCommand.test.js\nPASS tests/options.required.test.js\nPASS tests/useColor.test.js\nPASS tests/program.test.js\nPASS tests/options.optsWithGlobals.test.js\nPASS tests/options.flags.test.js\nPASS tests/options.choices.test.js\nPASS tests/help.padWidth.test.js\nPASS tests/help.optionTerm.test.js\nPASS tests/help.commandTerm.test.js\nPASS tests/command.registerClash.test.js\nPASS tests/command.name.test.js\nPASS tests/command.createHelp.test.js\nPASS tests/command.commandHelp.test.js\nPASS tests/command.allowUnknownOption.test.js\nPASS tests/args.variadic.test.js\nPASS tests/help.visibleArguments.test.js\nPASS tests/options.camelcase.test.js\nPASS tests/option.chain.test.js\nPASS tests/help.sortOptions.test.js\nPASS tests/help.sortCommands.test.js\nPASS tests/help.longestOptionTermLength.test.js\nPASS tests/command.showSuggestionAfterError.test.js\nPASS tests/command.addHelpOption.test.js\nPASS tests/argument.choices.test.js\nPASS tests/argument.chain.test.js\nPASS tests/args.literal.test.js\nPASS tests/options.twice.test.js\nPASS tests/help.stripAnsi.test.js\nPASS tests/command.summary.test.js\nPASS tests/command.description.test.js\nPASS tests/command.createArgument.test.js\nPASS tests/argument.required.test.js\nPASS tests/options.bool.small.combined.test.js\nPASS tests/command.nested.test.js\n\u001b[999D\u001b[K\nTest Suites: 108 passed, 108 total\nTests:       1206 passed, 1206 total\nSnapshots:   0 total\nTime:        6.142 s, estimated 9 s\nRan all test suites.\n"
+        },
+        "addedTests": null,
+        "addedTestsOnOriginalSource": null
+      },
+      "boundEnvironment": {
+        "node": "v24.19.0",
+        "project": {
+          "commit": "e6f56c888c96d1339c2b974fee7e6ba4f2e3d218",
+          "source": "6616872661cfecda123d434939e1fdf5e6517dae7aa0d88044d850e175e27814",
+          "lock": "aa6f6ec42ef38d4d533e442274e3ae3f53f7c3e65e660050c4fc3d06f2b77331",
+          "jest": "29.7.0",
+          "typescript": "5.7.2",
+          "tsd": "0.31.2"
+        },
+        "defaultTZ": "UTC",
+        "secondFeatureTZ": "America/New_York",
+        "runtime": {
+          "runtime": "6697c22d7dc59b3ef718a5ee7d812cf2118eb234c5cd9d2598ac448cc555687c",
+          "runner": "15627aa790b9be0f75bfad3f6ebdbd95ceaafa0d0822e9e3392c62628cd38f83",
+          "source": {
+            "arm": "candidate",
+            "sourceCommit": "79bcf87fc68ede77746b4f9fa278c1d7f88bc36a",
+            "patchSha256": "9fabc1362b9a181a540a8417ac3f905e61a4604315eee2b1f6553a12f0ee40b6",
+            "changedPaths": [
+              "packages/agent-runtime/src/harness/light-tools.ts",
+              "packages/agent-runtime/src/harness/light-completion.ts"
+            ]
+          }
+        }
+      },
+      "independentFunctionalSuccess": true,
+      "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
+    },
+    {
+      "name": "2-commander-environment-fallback-cline",
+      "eventsSha256": "f1770b009ec386143836f0e0db455eb799ff75fcd02c6b55ec98616f25b1867a",
+      "scoreSha256": "cf5c60bc571d0e6a01bac9a9ac3f8c62f473d3f2b5f75fc19ec1b720eacd2238",
+      "finalScoredSources": {
+        "lib/option.js": "d7b7b8b30eed4120bdcc20081a00bc1844bdf8c718fc9468a61d56cc6c103e74",
+        "lib/command.js": "4543d4c4311fcd57898f12f0a86fe7e74dbf4c2b849c910cffe9952dc73c26b6",
+        "lib/help.js": "772f5d70f1236654bf00b6ad056512ed6ca659a9790050da12d637225d7a4a3d",
+        "typings/index.d.ts": "62a368b38a15d04b861099b5657d79d9cb168435ea621dc0a6fe829acf9d1c51"
+      },
+      "actualRecordedAgentCommands": [
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-cline/workspace && git status --short && printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\" && printf '\\nRelevant test files:\\n' && find tests -maxdepth 1 -type f -iname '*env*' -o -iname '*option*' | sort | head -80"
+            ]
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-cline/workspace && git status --short && printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json' ... [command truncated: 174 more chars; full command is in the tool call input]",
+              "result": "\nPackage scripts:\n{\n  \"check\": \"npm run check:type && npm run check:lint && npm run check:format\",\n  \"check:format\": \"prettier --check .\",\n  \"check:lint\": \"eslint .\",\n  \"check:type\": \"npm run check:type:js && npm run check:type:ts\",\n  \"check:type:ts\": \"tsd && tsc -p tsconfig.ts.json\",\n  \"check:type:js\": \"tsc -p tsconfig.js.json\",\n  \"fix\": \"npm run fix:lint && npm run fix:format\",\n  \"fix:format\": \"prettier --write .\",\n  \"fix:lint\": \"eslint --fix .\",\n  \"test\": \"jest && npm run check:type:ts\",\n  \"test-all\": \"jest && npm run test-esm && npm run check\",\n  \"test-esm\": \"node ./tests/esm-imports-test.mjs\"\n}\n\nRelevant test files:\ntests/agent-env-fallback.cjs\ntests/command.addHelpOption.test.js\ntests/command.allowUnknownOption.test.js\ntests/command.createOption.test.js\ntests/command.helpOption.test.js\ntests/command.option-misuse.test.js\ntests/command.parseOptions.test.js\ntests/command.positionalOptions.test.js\ntests/command.unknownOption.test.js\ntests/help.longestOptionTermLength.test.js\ntests/help.optionDescription.test.js\ntests/help.optionTerm.test.js\ntests/help.showGlobalOptions.test.js\ntests/help.sortOptions.test.js\ntests/help.visibleGlobalOptions.test.js\ntests/help.visibleOptions.test.js\ntests/option.bad-flags.test.js\ntests/option.chain.test.js\ntests/options.bool.combo.test.js\ntests/options.bool.small.combined.test.js\ntests/options.bool.test.js\ntests/options.camelcase.test.js\ntests/options.choices.test.js\ntests/options.conflicts.test.js\ntests/options.custom-processing.test.js\ntests/options.default.test.js\ntests/options.dual-options.test.js\ntests/options.env.test.js\ntests/options.flags.test.js\ntests/options.getset.test.js\ntests/options.implies.test.js\ntests/options.mandatory.test.js\ntests/options.optional.test.js\ntests/options.opts.test.js\ntests/options.optsWithGlobals.test.js\ntests/options.preset.test.js\ntests/options.registerClash.test.js\ntests/options.required.test.js\ntests/options.twice.test.js\ntests/options.values.test.js\ntests/options.variadic.test.js\ntests/options.version.test.js\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-cline/workspace && git diff --check && node -e \"const fs=require('fs'); for (const p of ['lib/option.js','lib/command.js','lib/help.js','typings/index.d.ts']) console.log(p, fs.statSync(p).size)\""
+            ]
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-cline/workspace && git diff --check && node -e \"const fs=require('fs'); for (const p of ['lib/option.js','lib/comma ... [command truncated: 80 more chars; full command is in the tool call input]",
+              "result": "lib/option.js 10004\nlib/command.js 83721\nlib/help.js 19750\ntypings/index.d.ts 32757\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-cline/workspace && git diff -- lib/option.js lib/command.js lib/help.js typings/index.d.ts && printf '\\nStatus:\\n' && git status --short"
+            ]
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "cd /workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-cline/workspace && git diff -- lib/option.js lib/command.js lib/help.js typings/index.d.ts && printf '\\nStatus:\\n'  ... [command truncated: 21 more chars; full command is in the tool call input]",
+              "result": "diff --git a/lib/command.js b/lib/command.js\nindex efbb8f6..ed1b5cc 100644\n--- a/lib/command.js\n+++ b/lib/command.js\n@@ -37,6 +37,7 @@ class Command extends EventEmitter {\n     this._name = name || '';\n     this._optionValues = {};\n     this._optionValueSources = {}; // default, env, cli etc\n+    this._optionEnvVars = {};\n     this._storeOptionsAsProperties = false;\n     this._actionHandler = null;\n     this._executableHandler = false;\n@@ -706,7 +707,8 @@ Expecting one of '${allowedValues.join(\"', '\")}'`);\n \n     if (option.envVar) {\n       this.on('optionEnv:' + oname, (val) => {\n-        const invalidValueMessage = `error: option '${option.flags}' value '${val}' from env '${option.envVar}' is invalid.`;\n+        const envVar = this._optionEnvVars[oname] ?? option.envVar;\n+        const invalidValueMessage = `error: option '${option.flags}' value '${val}' from env '${envVar}' is invalid.`;\n         handleOptionValue(val, invalidValueMessage, 'env');\n       });\n     }\n@@ -1925,7 +1927,10 @@ Expecting one of '${allowedValues.join(\"', '\")}'`);\n    */\n   _parseOptionsEnv() {\n     this.options.forEach((option) => {\n-      if (option.envVar && option.envVar in process.env) {\n+      const envVar = [option.envVar, ...(option.envVarFallbacks || [])].find(\n+        (name) => name in process.env,\n+      );\n+      if (envVar !== undefined) {\n         const optionKey = option.attributeName();\n         // Priority check. Do not overwrite cli or options from unknown source (client-code).\n         if (\n@@ -1937,10 +1942,12 @@ Expecting one of '${allowedValues.join(\"', '\")}'`);\n           if (option.required || option.optional) {\n             // option can take a value\n             // keep very simple, optional always takes value\n-            this.emit(`optionEnv:${option.name()}`, process.env[option.envVar]);\n+            this._optionEnvVars[option.name()] = envVar;\n+            this.emit(`optionEnv:${option.name()}`, process.env[envVar]);\n           } else {\n             // boolean\n             // keep very simple, only care that envVar defined and not the value\n+            this._optionEnvVars[option.name()] = envVar;\n             this.emit(`optionEnv:${option.name()}`);\n           }\n         }\ndiff --git a/lib/help.js b/lib/help.js\nindex e448015..1b1e236 100644\n--- a/lib/help.js\n+++ b/lib/help.js\n@@ -349,7 +349,9 @@ class Help {\n       extraInfo.push(`preset: ${JSON.stringify(option.presetArg)}`);\n     }\n     if (option.envVar !== undefined) {\n-      extraInfo.push(`env: ${option.envVar}`);\n+      extraInfo.push(\n+        `env: ${[option.envVar, ...(option.envVarFallbacks || [])].join(', ')}`,\n+      );\n     }\n     if (extraInfo.length > 0) {\n       return `${option.description} (${extraInfo.join(', ')})`;\ndiff --git a/lib/option.js b/lib/option.js\nindex 5d43dfb..4026007 100644\n--- a/lib/option.js\n+++ b/lib/option.js\n@@ -28,6 +28,7 @@ class Option {\n     this.defaultValueDescription = undefined;\n     this.presetArg = undefined;\n     this.envVar = undefined;\n+    this.envVarFallbacks = undefined;\n     this.parseArg = undefined;\n     this.hidden = false;\n     this.argChoices = undefined;\n@@ -113,11 +114,13 @@ class Option {\n    * undefined, or the source of the current value is 'default' or 'config' or 'env'.\n    *\n    * @param {string} name\n+   * @param {readonly string[]} [fallbackNames]\n    * @return {Option}\n    */\n \n-  env(name) {\n+  env(name, fallbackNames) {\n     this.envVar = name;\n+    this.envVarFallbacks = fallbackNames?.slice();\n     return this;\n   }\n \ndiff --git a/typings/index.d.ts b/typings/index.d.ts\nindex f92ee19..9f88b88 100644\n--- a/typings/index.d.ts\n+++ b/typings/index.d.ts\n@@ -106,6 +106,7 @@ export class Option {\n   defaultValueDescription?: string;\n   presetArg?: unknown;\n   envVar?: string;\n+  envVarFallbacks?: string[];\n   parseArg?: <T>(value: string, previous: T) => T;\n   hidden: boolean;\n   argChoices?: string[];\n@@ -159,7 +160,7 @@ export class Option {\n    * An environment variables is only used if when processed the current option value is\n    * undefined, or the source of the current value is 'default' or 'config' or 'env'.\n    */\n-  env(name: string): this;\n+  env(name: string, fallbackNames?: readonly string[]): this;\n \n   /**\n    * Set the custom handler for processing CLI option arguments into option values.\n\nStatus:\n M lib/command.js\n M lib/help.js\n M lib/option.js\n M typings/index.d.ts\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "node --test tests/agent-env-fallback.cjs",
+              "npm run check:type",
+              "node tests/agent-project-suite.cjs"
+            ]
+          },
+          "reportedStatus": null,
+          "run": null,
+          "command": null,
+          "observedExitCode": null,
+          "process": null,
+          "reportedEnvironment": null,
+          "admittedValidation": null,
+          "nativeResults": [
+            {
+              "query": "node --test tests/agent-env-fallback.cjs",
+              "result": "✔ ordered fallbacks select the first defined value, including empty strings (2.934967ms)\n✔ CLI and client values win, defaults/config lose and the parser runs once (0.675761ms)\n✔ error messages name the selected fallback and arbitrary parser errors keep identity (1.452912ms)\n✔ boolean presence, fallback snapshots, reconfiguration and help stay consistent (0.615732ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 104.209623\n",
+              "success": true
+            },
+            {
+              "query": "npm run check:type",
+              "result": "\n> commander@13.1.0 check:type\n> npm run check:type:js && npm run check:type:ts\n\n\n> commander@13.1.0 check:type:js\n> tsc -p tsconfig.js.json\n\n\n> commander@13.1.0 check:type:ts\n> tsd && tsc -p tsconfig.ts.json\n\n",
+              "success": true
+            },
+            {
+              "query": "node tests/agent-project-suite.cjs",
+              "result": "\n[stderr]\nPASS tests/command.positionalOptions.test.js\nPASS tests/command.parse.test.js\nPASS tests/command.parseOptions.test.js\nPASS tests/options.env.test.js\nPASS tests/command.hook.test.js\nPASS tests/command.exitOverride.test.js\nPASS tests/command.executableSubcommand.search.test.js\nPASS tests/options.conflicts.test.js\nPASS tests/command.help.test.js\nPASS tests/command.configureOutput.test.js\nPASS tests/options.mandatory.test.js\nPASS tests/command.chain.test.js\nPASS tests/help.style.test.js\nPASS tests/options.default.test.js\nPASS tests/options.implies.test.js\nPASS tests/help.suggestion.test.js\nPASS tests/command.addHelpText.test.js\nPASS tests/argument.custom-processing.test.js\nPASS tests/options.version.test.js\nPASS tests/options.variadic.test.js\nPASS tests/command.helpCommand.test.js\nPASS tests/command.asterisk.test.js\nPASS tests/command.copySettings.test.js\nPASS tests/options.bool.combo.test.js\nPASS tests/options.custom-processing.test.js\nPASS tests/options.bool.test.js\nPASS tests/command.action.test.js\nPASS tests/incrementNodeInspectorPort.test.js\nPASS tests/command.executableSubcommand.lookup.test.js\nPASS tests/command.helpOption.test.js\nPASS tests/help.boxWrap.test.js\nPASS tests/command.argumentVariations.test.js\nPASS tests/command.executableSubcommand.mock.test.js\nPASS tests/options.optsWithGlobals.test.js\nPASS tests/command.showHelpAfterError.test.js\nPASS tests/command.alias.test.js\nPASS tests/command.allowExcessArguments.test.js\nPASS tests/options.dual-options.test.js\nPASS tests/argument.variadic.test.js\nPASS tests/help.optionDescription.test.js\nPASS tests/command.default.test.js\nPASS tests/help.sortOptions.test.js\nPASS tests/options.values.test.js\nPASS tests/commander.configureCommand.test.js\nPASS tests/command.unknownOption.test.js\nPASS tests/useColor.test.js\nPASS tests/help.visibleOptions.test.js\nPASS tests/options.required.test.js\nPASS tests/options.opts.test.js\nPASS tests/options.optional.test.js\nPASS tests/help.visibleArguments.test.js\nPASS tests/options.flags.test.js\nPASS tests/command.allowUnknownOption.test.js\nPASS tests/options.getset.test.js\nPASS tests/command.usage.test.js\nPASS tests/command.executableSubcommand.inspect.test.js\nPASS tests/args.variadic.test.js\nPASS tests/options.preset.test.js\nPASS tests/command.unknownCommand.test.js\nPASS tests/options.choices.test.js\nPASS tests/argument.choices.test.js\nPASS tests/help.preformatted.test.js\nPASS tests/help.longestCommandTermLength.test.js\nPASS tests/command.executableSubcommand.signals.test.js\nPASS tests/command.addCommand.test.js\nPASS tests/command.name.test.js\nPASS tests/help.padWidth.test.js\nPASS tests/options.camelcase.test.js\nPASS tests/options.twice.test.js\nPASS tests/help.showGlobalOptions.test.js\nPASS tests/help.argumentDescription.test.js\nPASS tests/help.commandTerm.test.js\nPASS tests/help.visibleGlobalOptions.test.js\nPASS tests/help.commandUsage.test.js\nPASS tests/command.error.test.js\nPASS tests/options.registerClash.test.js\nPASS tests/program.test.js\nPASS tests/command.addHelpOption.test.js\nPASS tests/command.showSuggestionAfterError.test.js\nPASS tests/help.stripAnsi.test.js\nPASS tests/help.minWidthToWrap.test.js\nPASS tests/option.chain.test.js\nPASS tests/command.registerClash.test.js\nPASS tests/help.subcommandDescription.test.js\nPASS tests/command.createOption.test.js\nPASS tests/deprecated.test.js\nPASS tests/command.onCommand.test.js\nPASS tests/command.createArgument.test.js\nPASS tests/args.literal.test.js\nPASS tests/option.bad-flags.test.js\nPASS tests/help.visibleCommands.test.js\nPASS tests/help.longestOptionTermLength.test.js\nPASS tests/command.configureHelp.test.js\nPASS tests/ts-imports.test.ts\nPASS tests/help.longestArgumentTermLength.test.js\nPASS tests/help.optionTerm.test.js\nPASS tests/help.sortCommands.test.js\nPASS tests/argument.required.test.js\nPASS tests/argument.chain.test.js\nPASS tests/createCommand.test.js\nPASS tests/command.executableSubcommand.test.js\nPASS tests/command.option-misuse.test.js\nPASS tests/command.commandHelp.test.js\nPASS tests/command.createHelp.test.js\nPASS tests/options.bool.small.combined.test.js\nPASS tests/command.nested.test.js\nPASS tests/command.description.test.js\nPASS tests/command.summary.test.js\n\u001b[999D\u001b[K\nTest Suites: 108 passed, 108 total\nTests:       1206 passed, 1206 total\nSnapshots:   0 total\nTime:        10.615 s\nRan all test suites.\n",
+              "success": true
+            }
+          ]
+        }
+      ],
+      "officialRuntimeSuccess": true,
+      "completionAsReported": null,
+      "independent": {
+        "feature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-cline/workspace",
+            "commander-environment-fallback",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 732.6733259998728,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-env-fallback.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"env:defined-order-and-replacement-snapshot\",\"passed\":true},{\"name\":\"env:precedence-and-call-counts\",\"passed\":true},{\"name\":\"env:real-source-error-and-sentinel\",\"passed\":true},{\"name\":\"env:public-event-argument-contract\",\"passed\":true},{\"name\":\"env:boolean-negation-optional-variadic-and-help\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/option.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/command.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/help.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "nonUtcFeature": {
+          "argv": [
+            "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+            "/workspace/Blame/tools/terminal_bench/concise-study/features.mjs",
+            "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-cline/workspace",
+            "commander-environment-fallback",
+            "/workspace/Blame/docs/experiments/light-harness-concise-f30-2026-10-15"
+          ],
+          "cwd": "/workspace/Blame",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 649.6001800000668,
+          "stdout": "{\"checks\":[{\"name\":\"protected-input:tests/agent-contracts.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-env-fallback.cjs\",\"passed\":true},{\"name\":\"protected-input:tests/agent-project-suite.cjs\",\"passed\":true},{\"name\":\"env:defined-order-and-replacement-snapshot\",\"passed\":true},{\"name\":\"env:precedence-and-call-counts\",\"passed\":true},{\"name\":\"env:real-source-error-and-sentinel\",\"passed\":true},{\"name\":\"env:public-event-argument-contract\",\"passed\":true},{\"name\":\"env:boolean-negation-optional-variadic-and-help\",\"passed\":true},{\"name\":\"public-types:readonly-fluent-and-reject-invalid\",\"passed\":true},{\"name\":\"read-only-probe:lib/option.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/command.js\",\"passed\":true},{\"name\":\"read-only-probe:lib/help.js\",\"passed\":true},{\"name\":\"read-only-probe:typings/index.d.ts\",\"passed\":true}]}\n",
+          "stderr": ""
+        },
+        "selected": {
+          "argv": [
+            "node",
+            "--test",
+            "tests/agent-env-fallback.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-cline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 100.14299000008032,
+          "stdout": "✔ ordered fallbacks select the first defined value, including empty strings (2.18703ms)\n✔ CLI and client values win, defaults/config lose and the parser runs once (0.54706ms)\n✔ error messages name the selected fallback and arbitrary parser errors keep identity (1.243903ms)\n✔ boolean presence, fallback snapshots, reconfiguration and help stay consistent (0.645736ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 62.199537\n",
+          "stderr": ""
+        },
+        "typesOrSyntax": {
+          "argv": [
+            "npm",
+            "run",
+            "check:type"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-cline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 8213.756877999986,
+          "stdout": "\n> commander@13.1.0 check:type\n> npm run check:type:js && npm run check:type:ts\n\n\n> commander@13.1.0 check:type:js\n> tsc -p tsconfig.js.json\n\n\n> commander@13.1.0 check:type:ts\n> tsd && tsc -p tsconfig.ts.json\n\n",
+          "stderr": ""
+        },
+        "fullDefinedSuite": {
+          "argv": [
+            "node",
+            "tests/agent-project-suite.cjs"
+          ],
+          "cwd": "/workspace/Blame/.blame/research/concise-f30/f30/2-commander-environment-fallback-cline/workspace",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 6950.109120999929,
+          "stdout": "",
+          "stderr": "PASS tests/command.executableSubcommand.lookup.test.js\nPASS tests/command.executableSubcommand.inspect.test.js\nPASS tests/command.executableSubcommand.signals.test.js\nPASS tests/ts-imports.test.ts\nPASS tests/command.default.test.js\nPASS tests/command.positionalOptions.test.js\nPASS tests/command.parseOptions.test.js\nPASS tests/command.exitOverride.test.js\nPASS tests/command.action.test.js\nPASS tests/command.help.test.js\nPASS tests/command.parse.test.js\nPASS tests/options.conflicts.test.js\nPASS tests/options.env.test.js\nPASS tests/command.executableSubcommand.search.test.js\nPASS tests/help.suggestion.test.js\nPASS tests/command.helpOption.test.js\nPASS tests/command.argumentVariations.test.js\nPASS tests/command.allowExcessArguments.test.js\nPASS tests/help.boxWrap.test.js\nPASS tests/command.hook.test.js\nPASS tests/command.helpCommand.test.js\nPASS tests/command.addHelpText.test.js\nPASS tests/command.asterisk.test.js\nPASS tests/command.alias.test.js\nPASS tests/options.optsWithGlobals.test.js\nPASS tests/help.style.test.js\nPASS tests/command.showHelpAfterError.test.js\nPASS tests/args.variadic.test.js\nPASS tests/options.variadic.test.js\nPASS tests/help.padWidth.test.js\nPASS tests/help.longestOptionTermLength.test.js\nPASS tests/command.configureHelp.test.js\nPASS tests/options.preset.test.js\nPASS tests/options.mandatory.test.js\nPASS tests/options.dual-options.test.js\nPASS tests/options.choices.test.js\nPASS tests/command.unknownCommand.test.js\nPASS tests/command.chain.test.js\nPASS tests/argument.choices.test.js\nPASS tests/options.version.test.js\nPASS tests/command.configureOutput.test.js\nPASS tests/options.twice.test.js\nPASS tests/command.addHelpOption.test.js\nPASS tests/options.default.test.js\nPASS tests/help.stripAnsi.test.js\nPASS tests/help.showGlobalOptions.test.js\nPASS tests/help.preformatted.test.js\nPASS tests/command.showSuggestionAfterError.test.js\nPASS tests/command.executableSubcommand.mock.test.js\nPASS tests/program.test.js\nPASS tests/option.chain.test.js\nPASS tests/option.bad-flags.test.js\nPASS tests/help.minWidthToWrap.test.js\nPASS tests/help.longestCommandTermLength.test.js\nPASS tests/commander.configureCommand.test.js\nPASS tests/options.values.test.js\nPASS tests/options.opts.test.js\nPASS tests/options.implies.test.js\nPASS tests/options.flags.test.js\nPASS tests/command.allowUnknownOption.test.js\nPASS tests/incrementNodeInspectorPort.test.js\nPASS tests/help.sortOptions.test.js\nPASS tests/help.argumentDescription.test.js\nPASS tests/argument.custom-processing.test.js\nPASS tests/options.getset.test.js\nPASS tests/help.visibleArguments.test.js\nPASS tests/help.visibleCommands.test.js\nPASS tests/command.copySettings.test.js\nPASS tests/help.commandUsage.test.js\nPASS tests/command.unknownOption.test.js\nPASS tests/command.error.test.js\nPASS tests/command.addCommand.test.js\nPASS tests/argument.variadic.test.js\nPASS tests/options.camelcase.test.js\nPASS tests/options.bool.test.js\nPASS tests/help.visibleGlobalOptions.test.js\nPASS tests/help.commandTerm.test.js\nPASS tests/command.registerClash.test.js\nPASS tests/useColor.test.js\nPASS tests/options.required.test.js\nPASS tests/options.custom-processing.test.js\nPASS tests/options.bool.combo.test.js\nPASS tests/help.optionDescription.test.js\nPASS tests/command.name.test.js\nPASS tests/options.registerClash.test.js\nPASS tests/options.optional.test.js\nPASS tests/command.usage.test.js\nPASS tests/command.createOption.test.js\nPASS tests/help.visibleOptions.test.js\nPASS tests/command.option-misuse.test.js\nPASS tests/command.createArgument.test.js\nPASS tests/help.longestArgumentTermLength.test.js\nPASS tests/deprecated.test.js\nPASS tests/createCommand.test.js\nPASS tests/command.onCommand.test.js\nPASS tests/command.executableSubcommand.test.js\nPASS tests/command.commandHelp.test.js\nPASS tests/argument.required.test.js\nPASS tests/args.literal.test.js\nPASS tests/argument.chain.test.js\nPASS tests/help.subcommandDescription.test.js\nPASS tests/help.sortCommands.test.js\nPASS tests/help.optionTerm.test.js\nPASS tests/command.createHelp.test.js\nPASS tests/options.bool.small.combined.test.js\nPASS tests/command.summary.test.js\nPASS tests/command.nested.test.js\nPASS tests/command.description.test.js\n\u001b[999D\u001b[K\nTest Suites: 108 passed, 108 total\nTests:       1206 passed, 1206 total\nSnapshots:   0 total\nTime:        6.583 s, estimated 11 s\nRan all test suites.\n"
+        },
+        "addedTests": null,
+        "addedTestsOnOriginalSource": null
+      },
+      "boundEnvironment": {
+        "node": "v24.19.0",
+        "project": {
+          "commit": "e6f56c888c96d1339c2b974fee7e6ba4f2e3d218",
+          "source": "6616872661cfecda123d434939e1fdf5e6517dae7aa0d88044d850e175e27814",
+          "lock": "aa6f6ec42ef38d4d533e442274e3ae3f53f7c3e65e660050c4fc3d06f2b77331",
+          "jest": "29.7.0",
+          "typescript": "5.7.2",
+          "tsd": "0.31.2"
+        },
+        "defaultTZ": "UTC",
+        "secondFeatureTZ": "America/New_York",
+        "runtime": {
+          "runtime": "8a95f9b4b1d09e3491f0cf28c64fb9e0050a1acda62ce49fe2e7672effeda8f0",
+          "runner": "15627aa790b9be0f75bfad3f6ebdbd95ceaafa0d0822e9e3392c62628cd38f83",
+          "source": {
+            "arm": "baseline",
+            "sourceCommit": "79bcf87fc68ede77746b4f9fa278c1d7f88bc36a",
+            "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "changedPaths": []
+          }
+        }
+      },
+      "independentFunctionalSuccess": true,
+      "limitation": "Configured verifier environment is reconstructed from frozen code and bindings. Agent commands carry only actually observed exit/status/admission fields. Missing test-scope admission stays unknown; manual post-final-edit invocation and full criteria review remain mandatory."
     }
   ]
 }

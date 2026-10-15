@@ -1,8 +1,8 @@
 {
   "paidRequests": 0,
   "postSelectedDiagnostic": true,
-  "completedPrefix": 9,
-  "recordedAtUTC": "2026-10-15T17:09:57.941Z",
+  "completedPrefix": 18,
+  "recordedAtUTC": "2026-10-15T17:27:30.109Z",
   "criterion": "The task explicitly requires naming the actual selected environment variable,keeping envVar as the primary string and preserving public optionEnv event arguments/hooks. A documented EventEmitter prependListener removes the already-selected variable before the internal handler. The consumed value and its origin must not be reconstructed from the now-changed environment.",
   "method": "Same three cases on every completed environment-task endpoint,with original primary-only upstream control. Restore process environment after each probe; no file edits,model retries,grader feedback,source repair or rewriting frozen grades. These correlated post-selected probes are not new confirmation tasks or causal proof about wording.",
   "control": {
@@ -22,6 +22,73 @@
       "message": "error: option '--mode <value>' value 'invalid' from env 'F30_ORIGIN_PRIMARY' is invalid. Allowed choices are allowed."
     },
     "passed": true
+  },
+  "authoredPositive": {
+    "sourceSha256": {
+      "lib/option.js": "9521bb1f09b6821db2df0d70e5230fb6e5f1a8706d2730e5320be7909f3fb9df",
+      "lib/command.js": "eb83f03ecc223d5849c1c09827b4efa5c31cb8dd53bb9f07cd22235129a50ace",
+      "lib/help.js": "607a51870e636d6cf610ee487c24518663a40cb3c961e8b1cfdcc73b706c0bda",
+      "typings/index.d.ts": "612fdf9a6eb63bd1d99a791b2d66bde02fd3c07914bbe126ab29be162b798e8c"
+    },
+    "passedOriginalFrozenControls": true,
+    "sourceUnchanged": true,
+    "cases": [
+      {
+        "useFallback": false,
+        "selectFallback": false,
+        "expected": "F30_ORIGIN_PRIMARY",
+        "events": [
+          {
+            "args": [
+              "invalid"
+            ],
+            "primary": "F30_ORIGIN_PRIMARY"
+          }
+        ],
+        "error": {
+          "code": "commander.invalidArgument",
+          "message": "error: option '--mode <value>' value 'invalid' from env 'F30_ORIGIN_PRIMARY' is invalid. Allowed choices are allowed."
+        },
+        "passed": true
+      },
+      {
+        "useFallback": true,
+        "selectFallback": false,
+        "expected": "F30_ORIGIN_PRIMARY",
+        "events": [
+          {
+            "args": [
+              "invalid"
+            ],
+            "primary": "F30_ORIGIN_PRIMARY"
+          }
+        ],
+        "error": {
+          "code": "commander.invalidArgument",
+          "message": "error: option '--mode <value>' value 'invalid' from env 'F30_ORIGIN_LAST' is invalid. Allowed choices are allowed."
+        },
+        "passed": false
+      },
+      {
+        "useFallback": true,
+        "selectFallback": true,
+        "expected": "F30_ORIGIN_BACKUP",
+        "events": [
+          {
+            "args": [
+              "invalid"
+            ],
+            "primary": "F30_ORIGIN_PRIMARY"
+          }
+        ],
+        "error": {
+          "code": "commander.invalidArgument",
+          "message": "error: option '--mode <value>' value 'invalid' from env 'F30_ORIGIN_LAST' is invalid. Allowed choices are allowed."
+        },
+        "passed": false
+      }
+    ],
+    "allCasesPassed": false
   },
   "rows": [
     {
@@ -242,6 +309,225 @@
         }
       ],
       "allCasesPassed": false
+    },
+    {
+      "name": "2-commander-environment-fallback-baseline",
+      "arm": "baseline",
+      "repetition": 2,
+      "eventsSha256": "bbcb7375ad807ffbe1005debff0883fa1563a6dae4fd318d98a11a8e84483861",
+      "diffSha256": "a6e57afa439cbe74229f5fa565a600525f76c1be9aceab45bdb81244021815ec",
+      "scoreSha256": "abfb4e808763b1e559ef557e8a6fd0761ec85353ac9db0aeebb1e167bd16e71b",
+      "sourceSha256": {
+        "lib/option.js": "d78da404303792f3bbfc2c4e76611e3f604442e3ac7d9c42804adf82ddc72baa",
+        "lib/command.js": "ada15597235ce9388367eb366e220423f38c19c5670a1343d4c86075844f100c",
+        "lib/help.js": "772f5d70f1236654bf00b6ad056512ed6ca659a9790050da12d637225d7a4a3d",
+        "typings/index.d.ts": "1b2791f3fb0f278474fa9cf610d2f6046b711fa2b85c7387fbe4f920c42932da"
+      },
+      "frozenIndependentFunctionalSuccess": true,
+      "sourceUnchanged": true,
+      "cases": [
+        {
+          "useFallback": false,
+          "selectFallback": false,
+          "expected": "F30_ORIGIN_PRIMARY",
+          "events": [
+            {
+              "args": [
+                "invalid"
+              ],
+              "primary": "F30_ORIGIN_PRIMARY"
+            }
+          ],
+          "error": {
+            "code": "commander.invalidArgument",
+            "message": "error: option '--mode <value>' value 'invalid' from env 'F30_ORIGIN_PRIMARY' is invalid. Allowed choices are allowed."
+          },
+          "passed": true
+        },
+        {
+          "useFallback": true,
+          "selectFallback": false,
+          "expected": "F30_ORIGIN_PRIMARY",
+          "events": [
+            {
+              "args": [
+                "invalid"
+              ],
+              "primary": "F30_ORIGIN_PRIMARY"
+            }
+          ],
+          "error": {
+            "code": "commander.invalidArgument",
+            "message": "error: option '--mode <value>' value 'invalid' from env 'F30_ORIGIN_PRIMARY' is invalid. Allowed choices are allowed."
+          },
+          "passed": true
+        },
+        {
+          "useFallback": true,
+          "selectFallback": true,
+          "expected": "F30_ORIGIN_BACKUP",
+          "events": [
+            {
+              "args": [
+                "invalid"
+              ],
+              "primary": "F30_ORIGIN_PRIMARY"
+            }
+          ],
+          "error": {
+            "code": "commander.invalidArgument",
+            "message": "error: option '--mode <value>' value 'invalid' from env 'F30_ORIGIN_BACKUP' is invalid. Allowed choices are allowed."
+          },
+          "passed": true
+        }
+      ],
+      "allCasesPassed": true
+    },
+    {
+      "name": "2-commander-environment-fallback-candidate",
+      "arm": "candidate",
+      "repetition": 2,
+      "eventsSha256": "57edd66288dc18394b8eacb3bc5ebf79fca8b6f46671faa6d47872614fe42586",
+      "diffSha256": "ee524574962f0314c3d616744c8e69c68c967af080c1e2a713caef8f35e39d23",
+      "scoreSha256": "78e116a1e0cbedf62cfcd03c6ab1aa3760089f0ed7e1d43b528d21166b52439a",
+      "sourceSha256": {
+        "lib/option.js": "0277743bebd9af58a838b979754e4f378044e2c80917554e24f2766c1d72689d",
+        "lib/command.js": "2350debcd06fc39385c3e9cfd8f32083778108bec42b032ab1b466938f555754",
+        "lib/help.js": "aa6a5c6ebea0a034f9d5c2325906ca70876c01d39edb774c98a15be81fe14d31",
+        "typings/index.d.ts": "1b2791f3fb0f278474fa9cf610d2f6046b711fa2b85c7387fbe4f920c42932da"
+      },
+      "frozenIndependentFunctionalSuccess": true,
+      "sourceUnchanged": true,
+      "cases": [
+        {
+          "useFallback": false,
+          "selectFallback": false,
+          "expected": "F30_ORIGIN_PRIMARY",
+          "events": [
+            {
+              "args": [
+                "invalid"
+              ],
+              "primary": "F30_ORIGIN_PRIMARY"
+            }
+          ],
+          "error": {
+            "code": "commander.invalidArgument",
+            "message": "error: option '--mode <value>' value 'invalid' from env 'F30_ORIGIN_PRIMARY' is invalid. Allowed choices are allowed."
+          },
+          "passed": true
+        },
+        {
+          "useFallback": true,
+          "selectFallback": false,
+          "expected": "F30_ORIGIN_PRIMARY",
+          "events": [
+            {
+              "args": [
+                "invalid"
+              ],
+              "primary": "F30_ORIGIN_PRIMARY"
+            }
+          ],
+          "error": {
+            "code": "commander.invalidArgument",
+            "message": "error: option '--mode <value>' value 'invalid' from env 'F30_ORIGIN_PRIMARY' is invalid. Allowed choices are allowed."
+          },
+          "passed": true
+        },
+        {
+          "useFallback": true,
+          "selectFallback": true,
+          "expected": "F30_ORIGIN_BACKUP",
+          "events": [
+            {
+              "args": [
+                "invalid"
+              ],
+              "primary": "F30_ORIGIN_PRIMARY"
+            }
+          ],
+          "error": {
+            "code": "commander.invalidArgument",
+            "message": "error: option '--mode <value>' value 'invalid' from env 'F30_ORIGIN_BACKUP' is invalid. Allowed choices are allowed."
+          },
+          "passed": true
+        }
+      ],
+      "allCasesPassed": true
+    },
+    {
+      "name": "2-commander-environment-fallback-cline",
+      "arm": "cline",
+      "repetition": 2,
+      "eventsSha256": "f1770b009ec386143836f0e0db455eb799ff75fcd02c6b55ec98616f25b1867a",
+      "diffSha256": "cf52fd2a333ecc18943ba977880ce064a77232c89dba6f2db107935e5ccf4c78",
+      "scoreSha256": "cf5c60bc571d0e6a01bac9a9ac3f8c62f473d3f2b5f75fc19ec1b720eacd2238",
+      "sourceSha256": {
+        "lib/option.js": "d7b7b8b30eed4120bdcc20081a00bc1844bdf8c718fc9468a61d56cc6c103e74",
+        "lib/command.js": "4543d4c4311fcd57898f12f0a86fe7e74dbf4c2b849c910cffe9952dc73c26b6",
+        "lib/help.js": "772f5d70f1236654bf00b6ad056512ed6ca659a9790050da12d637225d7a4a3d",
+        "typings/index.d.ts": "62a368b38a15d04b861099b5657d79d9cb168435ea621dc0a6fe829acf9d1c51"
+      },
+      "frozenIndependentFunctionalSuccess": true,
+      "sourceUnchanged": true,
+      "cases": [
+        {
+          "useFallback": false,
+          "selectFallback": false,
+          "expected": "F30_ORIGIN_PRIMARY",
+          "events": [
+            {
+              "args": [
+                "invalid"
+              ],
+              "primary": "F30_ORIGIN_PRIMARY"
+            }
+          ],
+          "error": {
+            "code": "commander.invalidArgument",
+            "message": "error: option '--mode <value>' value 'invalid' from env 'F30_ORIGIN_PRIMARY' is invalid. Allowed choices are allowed."
+          },
+          "passed": true
+        },
+        {
+          "useFallback": true,
+          "selectFallback": false,
+          "expected": "F30_ORIGIN_PRIMARY",
+          "events": [
+            {
+              "args": [
+                "invalid"
+              ],
+              "primary": "F30_ORIGIN_PRIMARY"
+            }
+          ],
+          "error": {
+            "code": "commander.invalidArgument",
+            "message": "error: option '--mode <value>' value 'invalid' from env 'F30_ORIGIN_PRIMARY' is invalid. Allowed choices are allowed."
+          },
+          "passed": true
+        },
+        {
+          "useFallback": true,
+          "selectFallback": true,
+          "expected": "F30_ORIGIN_BACKUP",
+          "events": [
+            {
+              "args": [
+                "invalid"
+              ],
+              "primary": "F30_ORIGIN_PRIMARY"
+            }
+          ],
+          "error": {
+            "code": "commander.invalidArgument",
+            "message": "error: option '--mode <value>' value 'invalid' from env 'F30_ORIGIN_BACKUP' is invalid. Allowed choices are allowed."
+          },
+          "passed": true
+        }
+      ],
+      "allCasesPassed": true
     }
   ]
 }

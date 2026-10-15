@@ -1,6 +1,6 @@
 {
   "method": "Apply preregistered observed-quality and paired-resource gates,not a statistical population-equivalence test. Local controls passed before dispatch; complete non-description execution text is unchanged.",
-  "completed": 9,
+  "completed": 18,
   "planned": 27,
   "complete": false,
   "registeredGate": {
@@ -12,54 +12,54 @@
   "tasks": [
     {
       "id": "commander-canonical-choices",
-      "baselineFull": 1,
-      "candidateFull": 1,
-      "baselineBehavior": 1,
-      "candidateBehavior": 1,
+      "baselineFull": 2,
+      "candidateFull": 2,
+      "baselineBehavior": 2,
+      "candidateBehavior": 2,
       "noLowerObservedQuality": true
     },
     {
       "id": "commander-hidden-arguments",
-      "baselineFull": 1,
-      "candidateFull": 1,
-      "baselineBehavior": 1,
-      "candidateBehavior": 1,
+      "baselineFull": 2,
+      "candidateFull": 2,
+      "baselineBehavior": 2,
+      "candidateBehavior": 2,
       "noLowerObservedQuality": true
     },
     {
       "id": "commander-environment-fallback",
       "baselineFull": 1,
-      "candidateFull": 0,
-      "baselineBehavior": 1,
-      "candidateBehavior": 0,
+      "candidateFull": 1,
+      "baselineBehavior": 2,
+      "candidateBehavior": 1,
       "noLowerObservedQuality": false
     }
   ],
   "qualityGate": false,
-  "resourceGate": true,
+  "resourceGate": false,
   "resourcesAvailable": true,
-  "eligiblePairs": 2,
+  "eligiblePairs": 4,
   "resources": {
     "tokens": {
-      "left": 222268,
-      "right": 388509,
-      "pairs": 2,
+      "left": 650898,
+      "right": 666842,
+      "pairs": 4,
       "missingPairs": 0,
-      "relativeChange": -0.4278948492827708
+      "relativeChange": -0.023909711745810802
     },
     "cost": {
-      "left": 0.024464720000000002,
-      "right": 0.02974172,
-      "pairs": 2,
+      "left": 0.059919520000000004,
+      "right": 0.05703676,
+      "pairs": 4,
       "missingPairs": 0,
-      "relativeChange": -0.17742753277214618
+      "relativeChange": 0.05054214159429815
     },
     "seconds": {
-      "left": 125.76499999999999,
-      "right": 165.7,
-      "pairs": 2,
+      "left": 315.85799999999995,
+      "right": 310.286,
+      "pairs": 4,
       "missingPairs": 0,
-      "relativeChange": -0.24100784550392274
+      "relativeChange": 0.01795762619003094
     }
   },
   "decision": "pending-complete-panel",
