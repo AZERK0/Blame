@@ -1,4 +1,4 @@
-# F28 recorded results (24/108 assignments)
+# F28 recorded results (36/108 assignments)
 
 **Ongoing prefix only.** Later registered assignments continue; these numbers are not a completed-panel comparison.
 
@@ -6,15 +6,15 @@ Four new constructed clusters on three familiar projects, three dependent repeti
 
 | Arm | Trials/planned | Official | Functional | Actual checks | Full audited | Observed tokens | SDK USD | Wire/usage gaps |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| baseline | 3/12 | 3 | 3 | 3 | 3 | 297380 | 0.035484 | 0 |
-| scope | 3/12 | 3 | 3 | 3 | 3 | 316898 | 0.035941 | 0 |
-| cline | 3/12 | 3 | 3 | 3 | 3 | 381024 | 0.047238 | 0 |
-| references | 2/12 | 2 | 2 | 2 | 2 | 193670 | 0.018914 | 0 |
-| rename | 2/12 | 2 | 2 | 2 | 2 | 162533 | 0.015691 | 0 |
-| reading | 2/12 | 2 | 2 | 2 | 2 | 164769 | 0.016350 | 0 |
-| reporting | 3/12 | 3 | 3 | 3 | 1 | 295798 | 0.032612 | 0 |
-| patch | 3/12 | 3 | 3 | 3 | 3 | 260755 | 0.033552 | 0 |
-| bundle | 3/12 | 3 | 3 | 3 | 3 | 323992 | 0.033663 | 0 |
+| baseline | 4/12 | 4 | 4 | 4 | 4 | 370212 | 0.043714 | 0 |
+| scope | 4/12 | 4 | 4 | 4 | 4 | 453202 | 0.047295 | 0 |
+| cline | 4/12 | 4 | 4 | 4 | 4 | 665081 | 0.066928 | 0 |
+| references | 4/12 | 4 | 4 | 4 | 4 | 402465 | 0.046762 | 0 |
+| rename | 4/12 | 4 | 4 | 4 | 4 | 489849 | 0.046120 | 0 |
+| reading | 4/12 | 4 | 4 | 4 | 4 | 453678 | 0.046531 | 0 |
+| reporting | 4/12 | 4 | 4 | 4 | 2 | 527160 | 0.048450 | 0 |
+| patch | 4/12 | 4 | 4 | 4 | 4 | 459618 | 0.048251 | 0 |
+| bundle | 4/12 | 4 | 4 | 4 | 4 | 529395 | 0.049313 | 0 |
 
 Token/cost columns are observed subtotals over all attempts. Missing aggregates and request gaps are counted separately in `guidance-summary.json`; they are never imputed as zero consumption. Official runtime completion is not audited user success. Formal admission remains separate. Cache reads are a subset of input, reasoning a subset of output; full per-request cache ledgers and invoices remain unverified.
 
@@ -24,15 +24,15 @@ Identical task/repetition pairs must both complete officially, pass the independ
 
 | Left / right | Discordant audited successes (left/right) | Eligible pairs | Tokens | Estimated cost | Worker time |
 |---|---:|---:|---:|---:|---:|
-| scope / baseline | 0/0 | 3 | 6.6% | 1.3% | 7.3% |
-| references / baseline | 0/0 | 2 | 26.6% | 33.2% | 26.3% |
-| rename / baseline | 0/0 | 2 | 6.2% | 10.5% | -8.0% |
-| reading / baseline | 0/0 | 2 | 7.7% | 15.2% | 10.5% |
-| reporting / baseline | 0/2 | 1 | 5.0% | -12.1% | -1.4% |
-| patch / baseline | 0/0 | 3 | -12.3% | -5.4% | 21.7% |
-| bundle / baseline | 0/0 | 3 | 8.9% | -5.1% | 6.4% |
-| bundle / cline | 0/0 | 3 | -15.0% | -28.7% | 14.8% |
-| baseline / cline | 0/0 | 3 | -22.0% | -24.9% | 7.9% |
+| scope / baseline | 0/0 | 4 | 22.4% | 8.2% | 12.9% |
+| references / baseline | 0/0 | 4 | 8.7% | 7.0% | 17.0% |
+| rename / baseline | 0/0 | 4 | 32.3% | 5.5% | 12.2% |
+| reading / baseline | 0/0 | 4 | 22.5% | 6.4% | 6.5% |
+| reporting / baseline | 0/2 | 2 | 76.3% | 17.1% | 19.4% |
+| patch / baseline | 0/0 | 4 | 24.1% | 10.4% | 23.3% |
+| bundle / baseline | 0/0 | 4 | 43.0% | 12.8% | 15.6% |
+| bundle / cline | 0/0 | 4 | -20.4% | -26.3% | 17.9% |
+| baseline / cline | 0/0 | 4 | -44.3% | -34.7% | 2.0% |
 
 Changes are `(left/right)-1`. Keep task-specific pairs and all adverse attempts in the JSON; dependent repetitions and differing successful subsets cannot establish equivalence or identify a generally optimal factor.
 
@@ -44,17 +44,17 @@ Changes are `(left/right)-1`. Keep task-specific pairs and all adverse attempts 
 | scope | 0 | 2 | 0 | 0 | 0/0 | 0 | 0 |
 | cline | 0 | 0 | 0 | 0 | 0/0 | 0 | 0 |
 | references | 1 | 1 | 1 | 0 | 0/0 | 0 | 0 |
-| rename | 0 | 1 | 0 | 2 | 0/0 | 0 | 0 |
+| rename | 4 | 1 | 0 | 2 | 0/0 | 0 | 0 |
 | reading | 2 | 0 | 0 | 0 | 0/0 | 0 | 0 |
 | reporting | 0 | 1 | 0 | 0 | 0/0 | 0 | 0 |
 | patch | 0 | 3 | 0 | 0 | 0/0 | 0 | 0 |
-| bundle | 0 | 1 | 1 | 2 | 0/0 | 1 | 0 |
+| bundle | 0 | 1 | 1 | 2 | 1/0 | 1 | 1 |
 
 Exposure is descriptive: an exact later call matching a hint does not prove that the hint caused it. Tool output bytes are not billed tokens. Common task instructions already require unknown skipped counts. Native changes multiple mechanisms. Absent runtime-hint activation leaves that particular recovery mechanism untested. Changed descriptions may still affect tool choice; do not attribute a global arm difference specifically to an unexposed response. Empty queries and repeated calls are not automatically errors.
 
 ## Financial accounting
 
-New observed SDK estimates: USD0.269445; new missing-response reserves: USD0.000000. Prior observed/reserved accounting: USD1.867376. Cumulative accounted: **USD2.136821**, reference equivalent **EUR1.9121**, against the cumulative EUR10 authorization and USD10.951612 operational stop.
+New observed SDK estimates: USD0.443364; new missing-response reserves: USD0.000000. Prior observed/reserved accounting: USD1.867376. Cumulative accounted: **USD2.310740**, reference equivalent **EUR2.0678**, against the cumulative EUR10 authorization and USD10.951612 operational stop.
 
 The nominal 8192 output cap is ineffective on actual OAuth. Admission retains a USD0.23 full-response allowance in addition to the USD0.04 SDK soft stop. Exchange reference is not an invoice exchange rate; host/setup/tool compute is unpriced. Preserve failures, timeouts, byte stops, missing usage and every remaining assignment.
 

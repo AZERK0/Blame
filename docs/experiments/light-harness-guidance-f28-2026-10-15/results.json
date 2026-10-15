@@ -1,6 +1,6 @@
 {
   "planned": 108,
-  "completed": 24,
+  "completed": 36,
   "provenance": {
     "frozen": {
       "inputs": {
@@ -8988,6 +8988,3853 @@
       "semanticRenameCalls": 0,
       "semanticReferenceCalls": 0,
       "scoreSha256": "caef1cac98928a197ea2ce204dcedda0113a58407ea85e2ccd7c146bbb6666f4",
+      "auditedCriteria": true,
+      "auditedSuccess": true,
+      "partition": "fresh-confirmation",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "reportingOnlySensitivity": null,
+      "manualCriteriaFailures": []
+    },
+    {
+      "repetition": 1,
+      "id": "rxjs-promise-abort-config",
+      "arm": "references",
+      "name": "1-rxjs-promise-abort-config-references",
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "watchdog": false,
+        "stderr": "(node:353302) Warning: AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting production files firstValueFrom and lastValueFrom**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting production files firstValueFrom and lastValueFrom**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Analyzing TypeScript and abort patterns**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting production files firstValueFrom and lastValueFrom**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Analyzing TypeScript and abort patterns**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning TypeScript 4.2 compatibility**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting production files firstValueFrom and lastValueFrom**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Analyzing TypeScript and abort patterns**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning TypeScript 4.2 compatibility**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning AbortSignal integration****Addressing synchronous abort during subscription****Planning safe abort listener integration****Assessing safe optional chaining usage****Designing custom AbortError rejection****Verifying abort handling in subscription callbacks****Planning listener removal and subscribe conditions****Summarizing subscriber lifecycle handling****Planning robust listener cleanup on subscribe errors****Designing try-catch around source.subscribe with cleanup**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting production files firstValueFrom and lastValueFrom**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Analyzing TypeScript and abort patterns**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning TypeScript 4.2 compatibility**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning AbortSignal integration****Addressing synchronous abort during subscription****Planning safe abort listener integration****Assessing safe optional chaining usage****Designing custom AbortError rejection****Verifying abort handling in subscription callbacks****Planning listener removal and subscribe conditions****Summarizing subscriber lifecycle handling****Planning robust listener cleanup on subscribe errors****Designing try-catch around source.subscribe with cleanup**\"}.\n(node:353302) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing robust synchronous abort handling****Implementing single cleanup with settled guard****Handling synchronous subscribe errors and cleanup****Analyzing subscription error handling and TDZ issue****Refactoring subscription to handle abort during subscribe****Ensuring safe subscriber initialization before callbacks****Assessing optional signal handling in typescript interfaces****Designing abort error and cleanup logic****Verifying abort and cleanup variable scopes****Designing abort and cleanup order handling****Confirming idempotent unsubscribe behavior****Refining abort logic before subscriber creation****Consolidating abort error handling****Verifying signal API type dependency****Planning precise function body replacement****Analyzing subscriber initialization and abort handling****Reducing duplicate hasConfig check**\"}.\n"
+      },
+      "preparationMs": 455.4127200001385,
+      "bindingsVerificationMs": 1079.5194709999487,
+      "outerAgentMs": 96512.06608600006,
+      "verificationMs": 15003.841312000062,
+      "status": "succeeded",
+      "officialRuntimeSuccess": true,
+      "independentFunctionalSuccess": true,
+      "auditedCompletion": true,
+      "usage": {
+        "input": 119400,
+        "output": 10054,
+        "cacheRead": 92160,
+        "cacheWrite": 0,
+        "cost": 0.019356,
+        "reasoning": null,
+        "completeness": "complete",
+        "normalizationVersion": "blame-usage-v1",
+        "complete": false,
+        "tokensCostReconciled": true,
+        "requests": 8,
+        "reports": 8,
+        "perRequest": [
+          {
+            "input": 3789,
+            "output": 204,
+            "cacheRead": 1536,
+            "cacheWrite": null,
+            "cost": 0.00072612,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 6455,
+            "output": 233,
+            "cacheRead": 3584,
+            "cacheWrite": null,
+            "cost": 0.00092548,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 11788,
+            "output": 173,
+            "cacheRead": 5632,
+            "cacheWrite": null,
+            "cost": 0.0015514399999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16556,
+            "output": 2003,
+            "cacheRead": 10752,
+            "cacheWrite": null,
+            "cost": 0.0037794400000000002,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 17184,
+            "output": 4404,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.00586464,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 18766,
+            "output": 540,
+            "cacheRead": 16896,
+            "cacheWrite": null,
+            "cost": 0.0013599200000000006,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 20911,
+            "output": 798,
+            "cacheRead": 17920,
+            "cacheWrite": null,
+            "cost": 0.0019142000000000013,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 23951,
+            "output": 1699,
+            "cacheRead": 19968,
+            "cacheWrite": null,
+            "cost": 0.0032347599999999997,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          }
+        ],
+        "reconciliation": {
+          "input": {
+            "sum": 119400,
+            "aggregate": 119400,
+            "matches": true
+          },
+          "output": {
+            "sum": 10054,
+            "aggregate": 10054,
+            "matches": true
+          },
+          "cacheRead": {
+            "sum": 92160,
+            "aggregate": 92160,
+            "matches": true
+          },
+          "cacheWrite": {
+            "sum": null,
+            "aggregate": 0,
+            "matches": false
+          },
+          "cost": {
+            "sum": 0.019356,
+            "aggregate": 0.019356,
+            "matches": true
+          }
+        }
+      },
+      "durationMs": 94548,
+      "metrics": {
+        "context": {
+          "averageInputTokens": 14925,
+          "composition": {
+            "categoryBytes": {
+              "user_text": 39408,
+              "assistant_reasoning": 6631,
+              "tool_input.search_code": 5248,
+              "tool_input.read_code": 9742,
+              "tool_result.search_code": 43313,
+              "tool_result.read_code": 307083,
+              "tool_input.edit_code": 13839,
+              "tool_result.edit_code": 3462,
+              "tool_input.run_task": 1927,
+              "tool_result.run_task": 25225
+            },
+            "composedBytes": 558424,
+            "duplicateBytes": 0,
+            "latestComposedBytes": 111828,
+            "latestDuplicateBytes": 0,
+            "latestMessageBytes": 99283,
+            "latestProjectedBytesSaved": 3694,
+            "latestSystemPromptBytes": 5190,
+            "latestToolDefinitionBytes": 7355,
+            "maximumComposedBytes": 111828,
+            "messageBytes": 458064,
+            "projectedBytesSaved": 16101,
+            "requests": 8,
+            "staleReadReplacements": 0,
+            "successfulEditReplacements": 0,
+            "validatedEditReplacements": 0,
+            "systemPromptBytes": 41520,
+            "toolDefinitionBytes": 58840
+          },
+          "compactions": 0,
+          "maximumInputTokens": 23951,
+          "modelRequests": 8,
+          "projectMemory": {
+            "candidates": 0,
+            "injectedBytes": 0,
+            "relevant": 0,
+            "requests": 0,
+            "selected": 0,
+            "stale": 0
+          },
+          "toolPayloadBytes": 87789,
+          "toolPayloadReplayExposureBytes": 381308
+        },
+        "editing": {
+          "attempts": 1,
+          "blocked": 0,
+          "firstAttemptMs": 54772,
+          "firstSuccessMs": 55033,
+          "hybridCalls": 0,
+          "patchOperations": 1,
+          "successful": 1,
+          "symbolOperations": 0
+        },
+        "navigation": {
+          "deduplicatedReads": 0,
+          "readCalls": 13,
+          "returnedBytes": 64108,
+          "searchCalls": 5
+        },
+        "toolFreeGaps": {
+          "countOverThirtySeconds": 0,
+          "maximumMs": 29930,
+          "totalOverThirtySecondsMs": 0
+        },
+        "tools": {
+          "blockedCalls": 0,
+          "calls": 23,
+          "failedCalls": 0,
+          "inputBytes": 7206,
+          "outputBytes": 80583,
+          "replayExposureBytes": 381308,
+          "distinctTools": 5
+        },
+        "toolsByName": {
+          "search_code": {
+            "blockedCalls": 0,
+            "calls": 5,
+            "failedCalls": 0,
+            "inputBytes": 321,
+            "outputBytes": 5151,
+            "replayExposureBytes": 37371
+          },
+          "read_code": {
+            "blockedCalls": 0,
+            "calls": 13,
+            "failedCalls": 0,
+            "inputBytes": 819,
+            "outputBytes": 58957,
+            "replayExposureBytes": 300715
+          },
+          "edit_code": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 4521,
+            "outputBytes": 922,
+            "replayExposureBytes": 16329
+          },
+          "run_task": {
+            "blockedCalls": 0,
+            "calls": 3,
+            "failedCalls": 0,
+            "inputBytes": 862,
+            "outputBytes": 14882,
+            "replayExposureBytes": 26893
+          },
+          "finish_task": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 683,
+            "outputBytes": 671,
+            "replayExposureBytes": 0
+          }
+        }
+      },
+      "completion": {
+        "source_revision_id": "src_8f03a3cdfa3185e2aaa3a3818315e952",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "parseErrors": 0,
+      "error": null,
+      "eventsSha256": "545763676715cc8135cfbec1c856027ea799c186af002a23cc368136d2509eb0",
+      "diffSha256": "914e972106e9b4873d5db331c683e7a1811849fc4bbc6b892653b8c17e43b129",
+      "semanticRenameCalls": 0,
+      "semanticReferenceCalls": 0,
+      "scoreSha256": "c8b60380607e73a1d2f322df51543b4cb80b54acaba9662492a5c78feec5503d",
+      "auditedCriteria": true,
+      "auditedSuccess": true,
+      "partition": "fresh-confirmation",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "reportingOnlySensitivity": null,
+      "manualCriteriaFailures": []
+    },
+    {
+      "repetition": 1,
+      "id": "rxjs-promise-abort-config",
+      "arm": "rename",
+      "name": "1-rxjs-promise-abort-config-rename",
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "watchdog": false,
+        "stderr": "(node:354301) Warning: AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning production file modifications**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning production file modifications**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching filenames globally for matches**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning production file modifications**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching filenames globally for matches**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning production file modifications**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching filenames globally for matches**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing subscription with optional AbortSignal****Finalizing abort handling requirements**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning production file modifications**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching filenames globally for matches**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing subscription with optional AbortSignal****Finalizing abort handling requirements**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing AbortSignal handling and subscription cleanup****Planning SafeSubscriber abort handling and cleanup**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning production file modifications**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching filenames globally for matches**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing subscription with optional AbortSignal****Finalizing abort handling requirements**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing AbortSignal handling and subscription cleanup****Planning SafeSubscriber abort handling and cleanup**\"}.\n(node:354301) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing abort-safe synchronous subscription****Verifying subscription unsubscribe on abort**\"}.\n"
+      },
+      "preparationMs": 526.1488159999717,
+      "bindingsVerificationMs": 1036.7263660000172,
+      "outerAgentMs": 108958.48270699987,
+      "verificationMs": 15789.758481000084,
+      "status": "succeeded",
+      "officialRuntimeSuccess": true,
+      "independentFunctionalSuccess": true,
+      "auditedCompletion": true,
+      "usage": {
+        "input": 178343,
+        "output": 8815,
+        "cacheRead": 142848,
+        "cacheWrite": 0,
+        "cost": 0.020533959999999997,
+        "reasoning": null,
+        "completeness": "complete",
+        "normalizationVersion": "blame-usage-v1",
+        "complete": false,
+        "tokensCostReconciled": true,
+        "requests": 13,
+        "reports": 13,
+        "perRequest": [
+          {
+            "input": 3776,
+            "output": 162,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0009496000000000001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 4020,
+            "output": 115,
+            "cacheRead": 3584,
+            "cacheWrite": null,
+            "cost": 0.00029688,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 5151,
+            "output": 170,
+            "cacheRead": 3584,
+            "cacheWrite": null,
+            "cost": 0.0005890799999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 8275,
+            "output": 377,
+            "cacheRead": 4608,
+            "cacheWrite": null,
+            "cost": 0.0012779599999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 12412,
+            "output": 274,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0028112,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 12483,
+            "output": 465,
+            "cacheRead": 11776,
+            "cacheWrite": null,
+            "cost": 0.0009349199999999997,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16015,
+            "output": 231,
+            "cacheRead": 11776,
+            "cacheWrite": null,
+            "cost": 0.0013605199999999996,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16861,
+            "output": 2991,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.004104439999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 18430,
+            "output": 490,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.0014170399999999996,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 18759,
+            "output": 363,
+            "cacheRead": 17920,
+            "cacheWrite": null,
+            "cost": 0.0009618000000000005,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 19117,
+            "output": 724,
+            "cacheRead": 17920,
+            "cacheWrite": null,
+            "cost": 0.0014665999999999985,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 21262,
+            "output": 1072,
+            "cacheRead": 18944,
+            "cacheWrite": null,
+            "cost": 0.0021288799999999997,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 21782,
+            "output": 1381,
+            "cacheRead": 20992,
+            "cacheWrite": null,
+            "cost": 0.0022350400000000006,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          }
+        ],
+        "reconciliation": {
+          "input": {
+            "sum": 178343,
+            "aggregate": 178343,
+            "matches": true
+          },
+          "output": {
+            "sum": 8815,
+            "aggregate": 8815,
+            "matches": true
+          },
+          "cacheRead": {
+            "sum": null,
+            "aggregate": 142848,
+            "matches": false
+          },
+          "cacheWrite": {
+            "sum": null,
+            "aggregate": 0,
+            "matches": false
+          },
+          "cost": {
+            "sum": 0.020533959999999997,
+            "aggregate": 0.020533959999999997,
+            "matches": true
+          }
+        }
+      },
+      "durationMs": 107171,
+      "metrics": {
+        "context": {
+          "averageInputTokens": 13718.69,
+          "composition": {
+            "categoryBytes": {
+              "user_text": 64038,
+              "assistant_reasoning": 9763,
+              "tool_input.search_code": 15571,
+              "tool_result.search_code": 74952,
+              "tool_input.read_code": 18312,
+              "tool_result.read_code": 417542,
+              "tool_input.edit_code": 27254,
+              "tool_result.edit_code": 12875,
+              "tool_input.run_task": 1568,
+              "tool_result.run_task": 20874
+            },
+            "composedBytes": 830367,
+            "duplicateBytes": 0,
+            "latestComposedBytes": 102808,
+            "latestDuplicateBytes": 0,
+            "latestMessageBytes": 90350,
+            "latestProjectedBytesSaved": 1506,
+            "latestSystemPromptBytes": 5178,
+            "latestToolDefinitionBytes": 7280,
+            "maximumComposedBytes": 102808,
+            "messageBytes": 668413,
+            "projectedBytesSaved": 9555,
+            "requests": 13,
+            "staleReadReplacements": 0,
+            "successfulEditReplacements": 0,
+            "validatedEditReplacements": 0,
+            "systemPromptBytes": 67314,
+            "toolDefinitionBytes": 94640
+          },
+          "compactions": 0,
+          "maximumInputTokens": 21782,
+          "modelRequests": 13,
+          "projectMemory": {
+            "candidates": 0,
+            "injectedBytes": 0,
+            "relevant": 0,
+            "requests": 0,
+            "selected": 0,
+            "stale": 0
+          },
+          "toolPayloadBytes": 77365,
+          "toolPayloadReplayExposureBytes": 530054
+        },
+        "editing": {
+          "attempts": 3,
+          "blocked": 1,
+          "firstAttemptMs": 54932,
+          "firstSuccessMs": 55161,
+          "hybridCalls": 0,
+          "patchOperations": 4,
+          "successful": 2,
+          "symbolOperations": 0
+        },
+        "navigation": {
+          "deduplicatedReads": 0,
+          "readCalls": 14,
+          "returnedBytes": 54778,
+          "searchCalls": 9
+        },
+        "toolFreeGaps": {
+          "countOverThirtySeconds": 0,
+          "maximumMs": 20172,
+          "totalOverThirtySecondsMs": 0
+        },
+        "tools": {
+          "blockedCalls": 2,
+          "calls": 29,
+          "failedCalls": 0,
+          "inputBytes": 8648,
+          "outputBytes": 68717,
+          "replayExposureBytes": 530054,
+          "distinctTools": 5
+        },
+        "toolsByName": {
+          "search_code": {
+            "blockedCalls": 0,
+            "calls": 9,
+            "failedCalls": 0,
+            "inputBytes": 644,
+            "outputBytes": 5428,
+            "replayExposureBytes": 63895
+          },
+          "read_code": {
+            "blockedCalls": 1,
+            "calls": 14,
+            "failedCalls": 0,
+            "inputBytes": 993,
+            "outputBytes": 49350,
+            "replayExposureBytes": 407376
+          },
+          "edit_code": {
+            "blockedCalls": 1,
+            "calls": 3,
+            "failedCalls": 0,
+            "inputBytes": 5532,
+            "outputBytes": 2535,
+            "replayExposureBytes": 36501
+          },
+          "run_task": {
+            "blockedCalls": 0,
+            "calls": 2,
+            "failedCalls": 0,
+            "inputBytes": 602,
+            "outputBytes": 10539,
+            "replayExposureBytes": 22282
+          },
+          "finish_task": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 877,
+            "outputBytes": 865,
+            "replayExposureBytes": 0
+          }
+        }
+      },
+      "completion": {
+        "source_revision_id": "src_c54f24a9860eb40a0d4f21607651f6ab",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "parseErrors": 0,
+      "error": null,
+      "eventsSha256": "10157d53ec71c5048bfc4f0bd7f11c8ac0b348dd042aa0e9abb0a218af714033",
+      "diffSha256": "0e38a69070b9ee4fb8a6d38a4af7220d38eb6362c2cfdfbbbfd95c3aa1506599",
+      "semanticRenameCalls": 0,
+      "semanticReferenceCalls": 0,
+      "scoreSha256": "922bf3ba9581aab4dc619180e642838f50cba7e8c9c4fd2794f56c155623c02d",
+      "auditedCriteria": true,
+      "auditedSuccess": true,
+      "partition": "fresh-confirmation",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "reportingOnlySensitivity": null,
+      "manualCriteriaFailures": []
+    },
+    {
+      "repetition": 1,
+      "id": "rxjs-promise-abort-config",
+      "arm": "reading",
+      "name": "1-rxjs-promise-abort-config-reading",
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "watchdog": false,
+        "stderr": "(node:354921) Warning: AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning backend code inspection**\"}.\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning backend code inspection**\"}.\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Analyzing Subscription and Abort Specs****Designing safe synchronous subscription handling****Examining subscription behavior on early abort**\"}.\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning backend code inspection**\"}.\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Analyzing Subscription and Abort Specs****Designing safe synchronous subscription handling****Examining subscription behavior on early abort**\"}.\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing AbortSignal integration and config typing****Implementing AbortError and managing subscription cleanup**\"}.\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning backend code inspection**\"}.\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Analyzing Subscription and Abort Specs****Designing safe synchronous subscription handling****Examining subscription behavior on early abort**\"}.\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing AbortSignal integration and config typing****Implementing AbortError and managing subscription cleanup**\"}.\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing synchronous subscriber initialization****Handling synchronous abort during subscription****Ensuring cleanup and unsubscribe on error and completion****Refining config handling and signal support****Designing inline abort error handling****Analyzing abort event handling race conditions****Planning SafeSubscriber integration for cleanup****Ensuring cleanup on complete and abort using SafeSubscriber****Refactoring unsubscribe and teardown logic****Updating config signal access to optional chaining**\"}.\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning backend code inspection**\"}.\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Analyzing Subscription and Abort Specs****Designing safe synchronous subscription handling****Examining subscription behavior on early abort**\"}.\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing AbortSignal integration and config typing****Implementing AbortError and managing subscription cleanup**\"}.\n(node:354921) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing synchronous subscriber initialization****Handling synchronous abort during subscription****Ensuring cleanup and unsubscribe on error and completion****Refining config handling and signal support****Designing inline abort error handling****Analyzing abort event handling race conditions****Planning SafeSubscriber integration for cleanup****Ensuring cleanup on complete and abort using SafeSubscriber****Refactoring unsubscribe and teardown logic****Updating config signal access to optional chaining**\"}.\n"
+      },
+      "preparationMs": 462.22750100004487,
+      "bindingsVerificationMs": 942.2700080000795,
+      "outerAgentMs": 76143.70505999983,
+      "verificationMs": 15390.489069999894,
+      "status": "succeeded",
+      "officialRuntimeSuccess": true,
+      "independentFunctionalSuccess": true,
+      "auditedCompletion": true,
+      "usage": {
+        "input": 98270,
+        "output": 7422,
+        "cacheRead": 61440,
+        "cacheWrite": 0,
+        "cost": 0.0175012,
+        "reasoning": null,
+        "completeness": "complete",
+        "normalizationVersion": "blame-usage-v1",
+        "complete": false,
+        "tokensCostReconciled": true,
+        "requests": 8,
+        "reports": 8,
+        "perRequest": [
+          {
+            "input": 3787,
+            "output": 163,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0009530000000000001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 6173,
+            "output": 606,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0019618000000000005,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 11885,
+            "output": 311,
+            "cacheRead": 3584,
+            "cacheWrite": null,
+            "cost": 0.0021050800000000005,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 12896,
+            "output": 2871,
+            "cacheRead": 11776,
+            "cacheWrite": null,
+            "cost": 0.0039047200000000004,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 14227,
+            "output": 657,
+            "cacheRead": 12800,
+            "cacheWrite": null,
+            "cost": 0.001329799999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 14833,
+            "output": 1129,
+            "cacheRead": 13824,
+            "cacheWrite": null,
+            "cost": 0.0018330800000000008,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16196,
+            "output": 633,
+            "cacheRead": 13824,
+            "cacheWrite": null,
+            "cost": 0.0015104799999999998,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 18273,
+            "output": 1052,
+            "cacheRead": 5632,
+            "cacheWrite": null,
+            "cost": 0.0039032400000000005,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          }
+        ],
+        "reconciliation": {
+          "input": {
+            "sum": 98270,
+            "aggregate": 98270,
+            "matches": true
+          },
+          "output": {
+            "sum": 7422,
+            "aggregate": 7422,
+            "matches": true
+          },
+          "cacheRead": {
+            "sum": null,
+            "aggregate": 61440,
+            "matches": false
+          },
+          "cacheWrite": {
+            "sum": null,
+            "aggregate": 0,
+            "matches": false
+          },
+          "cost": {
+            "sum": 0.0175012,
+            "aggregate": 0.0175012,
+            "matches": true
+          }
+        }
+      },
+      "durationMs": 74351,
+      "metrics": {
+        "context": {
+          "averageInputTokens": 12283.75,
+          "composition": {
+            "categoryBytes": {
+              "user_text": 39408,
+              "assistant_reasoning": 5079,
+              "tool_input.search_code": 2562,
+              "tool_input.read_code": 6880,
+              "tool_result.search_code": 28000,
+              "tool_result.read_code": 219185,
+              "tool_input.edit_code": 29746,
+              "tool_result.edit_code": 7367,
+              "tool_input.run_task": 578,
+              "tool_result.run_task": 10437
+            },
+            "composedBytes": 451730,
+            "duplicateBytes": 0,
+            "latestComposedBytes": 84343,
+            "latestDuplicateBytes": 0,
+            "latestMessageBytes": 71796,
+            "latestProjectedBytesSaved": 1170,
+            "latestSystemPromptBytes": 5181,
+            "latestToolDefinitionBytes": 7366,
+            "maximumComposedBytes": 84343,
+            "messageBytes": 351354,
+            "projectedBytesSaved": 4966,
+            "requests": 8,
+            "staleReadReplacements": 0,
+            "successfulEditReplacements": 0,
+            "validatedEditReplacements": 0,
+            "systemPromptBytes": 41448,
+            "toolDefinitionBytes": 58928
+          },
+          "compactions": 0,
+          "maximumInputTokens": 18273,
+          "modelRequests": 8,
+          "projectMemory": {
+            "candidates": 0,
+            "injectedBytes": 0,
+            "relevant": 0,
+            "requests": 0,
+            "selected": 0,
+            "stale": 0
+          },
+          "toolPayloadBytes": 62984,
+          "toolPayloadReplayExposureBytes": 285373
+        },
+        "editing": {
+          "attempts": 3,
+          "blocked": 2,
+          "firstAttemptMs": 33158,
+          "firstSuccessMs": 44047,
+          "hybridCalls": 0,
+          "patchOperations": 3,
+          "successful": 1,
+          "symbolOperations": 0
+        },
+        "navigation": {
+          "deduplicatedReads": 0,
+          "readCalls": 7,
+          "returnedBytes": 38393,
+          "searchCalls": 2
+        },
+        "toolFreeGaps": {
+          "countOverThirtySeconds": 0,
+          "maximumMs": 18027,
+          "totalOverThirtySecondsMs": 0
+        },
+        "tools": {
+          "blockedCalls": 2,
+          "calls": 15,
+          "failedCalls": 0,
+          "inputBytes": 11405,
+          "outputBytes": 51579,
+          "replayExposureBytes": 285373,
+          "distinctTools": 5
+        },
+        "toolsByName": {
+          "search_code": {
+            "blockedCalls": 0,
+            "calls": 2,
+            "failedCalls": 0,
+            "inputBytes": 178,
+            "outputBytes": 3376,
+            "replayExposureBytes": 24878
+          },
+          "read_code": {
+            "blockedCalls": 0,
+            "calls": 7,
+            "failedCalls": 0,
+            "inputBytes": 482,
+            "outputBytes": 35017,
+            "replayExposureBytes": 214863
+          },
+          "edit_code": {
+            "blockedCalls": 2,
+            "calls": 3,
+            "failedCalls": 0,
+            "inputBytes": 9623,
+            "outputBytes": 1933,
+            "replayExposureBytes": 34697
+          },
+          "run_task": {
+            "blockedCalls": 0,
+            "calls": 2,
+            "failedCalls": 0,
+            "inputBytes": 396,
+            "outputBytes": 10539,
+            "replayExposureBytes": 10935
+          },
+          "finish_task": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 726,
+            "outputBytes": 714,
+            "replayExposureBytes": 0
+          }
+        }
+      },
+      "completion": {
+        "source_revision_id": "src_30dc90ac319c9e72011fa4fc15320fd2",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "parseErrors": 0,
+      "error": null,
+      "eventsSha256": "391b124b110f6035f1af777171447640c8ae73650733d43f939d4fc30886d060",
+      "diffSha256": "35650f3eff7d701515b7bc69651cca4ff67d6f33f4c2d228d5e10110a6df77f5",
+      "semanticRenameCalls": 0,
+      "semanticReferenceCalls": 0,
+      "scoreSha256": "3c26264d5db993c275790e1685374806a97f2ca8359abe8fd331205083ec24f8",
+      "auditedCriteria": true,
+      "auditedSuccess": true,
+      "partition": "fresh-confirmation",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "reportingOnlySensitivity": null,
+      "manualCriteriaFailures": []
+    },
+    {
+      "repetition": 1,
+      "id": "lodash-own-symbol-options",
+      "arm": "baseline",
+      "name": "1-lodash-own-symbol-options-baseline",
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "watchdog": false,
+        "stderr": "(node:355543) Warning: AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection of lodash functions and tests**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection of lodash functions and tests**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning function key inspection**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection of lodash functions and tests**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning function key inspection**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection of lodash functions and tests**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning function key inspection**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys and values update****Refining keys and values option handling****Verifying symbol function edit scope**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection of lodash functions and tests**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning function key inspection**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys and values update****Refining keys and values option handling****Verifying symbol function edit scope**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning function signature change****Inspecting isArrayLike behavior with null**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection of lodash functions and tests**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning function key inspection**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys and values update****Refining keys and values option handling****Verifying symbol function edit scope**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning function signature change****Inspecting isArrayLike behavior with null**\"}.\n(node:355543) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning exact validation commands**\"}.\n"
+      },
+      "preparationMs": 123.31254799989983,
+      "bindingsVerificationMs": 975.1509209999349,
+      "outerAgentMs": 45300.55239899992,
+      "verificationMs": 12855.870232000016,
+      "status": "succeeded",
+      "officialRuntimeSuccess": true,
+      "independentFunctionalSuccess": true,
+      "auditedCompletion": true,
+      "usage": {
+        "input": 70321,
+        "output": 2511,
+        "cacheRead": 49152,
+        "cacheWrite": 0,
+        "cost": 0.008230040000000001,
+        "reasoning": null,
+        "completeness": "complete",
+        "normalizationVersion": "blame-usage-v1",
+        "complete": false,
+        "tokensCostReconciled": true,
+        "requests": 8,
+        "reports": 8,
+        "perRequest": [
+          {
+            "input": 3488,
+            "output": 205,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0009436,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 5106,
+            "output": 170,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0012252000000000003,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 7137,
+            "output": 195,
+            "cacheRead": 2560,
+            "cacheWrite": null,
+            "cost": 0.0012006,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 10145,
+            "output": 645,
+            "cacheRead": 6656,
+            "cacheWrite": null,
+            "cost": 0.0016049200000000006,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 10409,
+            "output": 381,
+            "cacheRead": 9728,
+            "cacheWrite": null,
+            "cost": 0.0007879599999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 10634,
+            "output": 322,
+            "cacheRead": 9728,
+            "cacheWrite": null,
+            "cost": 0.0007621600000000004,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 11337,
+            "output": 427,
+            "cacheRead": 9728,
+            "cacheWrite": null,
+            "cost": 0.00102876,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 12065,
+            "output": 166,
+            "cacheRead": 10752,
+            "cacheWrite": null,
+            "cost": 0.0006768399999999997,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          }
+        ],
+        "reconciliation": {
+          "input": {
+            "sum": 70321,
+            "aggregate": 70321,
+            "matches": true
+          },
+          "output": {
+            "sum": 2511,
+            "aggregate": 2511,
+            "matches": true
+          },
+          "cacheRead": {
+            "sum": null,
+            "aggregate": 49152,
+            "matches": false
+          },
+          "cacheWrite": {
+            "sum": null,
+            "aggregate": 0,
+            "matches": false
+          },
+          "cost": {
+            "sum": 0.008230040000000001,
+            "aggregate": 0.008230040000000001,
+            "matches": true
+          }
+        }
+      },
+      "durationMs": 43351,
+      "metrics": {
+        "context": {
+          "averageInputTokens": 8790.13,
+          "composition": {
+            "categoryBytes": {
+              "user_text": 28008,
+              "assistant_reasoning": 2275,
+              "tool_input.search_code": 6668,
+              "tool_input.read_code": 7109,
+              "tool_result.search_code": 74275,
+              "tool_result.read_code": 82769,
+              "tool_input.edit_code": 3269,
+              "tool_result.edit_code": 4305,
+              "tool_input.run_task": 1524,
+              "tool_result.run_task": 4602
+            },
+            "composedBytes": 316693,
+            "duplicateBytes": 0,
+            "latestComposedBytes": 54307,
+            "latestDuplicateBytes": 0,
+            "latestMessageBytes": 41843,
+            "latestProjectedBytesSaved": 445,
+            "latestSystemPromptBytes": 5184,
+            "latestToolDefinitionBytes": 7280,
+            "maximumComposedBytes": 54307,
+            "messageBytes": 216981,
+            "projectedBytesSaved": 1584,
+            "requests": 8,
+            "staleReadReplacements": 0,
+            "successfulEditReplacements": 0,
+            "validatedEditReplacements": 0,
+            "systemPromptBytes": 41472,
+            "toolDefinitionBytes": 58240
+          },
+          "compactions": 0,
+          "maximumInputTokens": 12065,
+          "modelRequests": 8,
+          "projectMemory": {
+            "candidates": 0,
+            "injectedBytes": 0,
+            "relevant": 0,
+            "requests": 0,
+            "selected": 0,
+            "stale": 0
+          },
+          "toolPayloadBytes": 31885,
+          "toolPayloadReplayExposureBytes": 152263
+        },
+        "editing": {
+          "attempts": 2,
+          "blocked": 0,
+          "firstAttemptMs": 15200,
+          "firstSuccessMs": 16496,
+          "hybridCalls": 0,
+          "patchOperations": 1,
+          "successful": 2,
+          "symbolOperations": 2
+        },
+        "navigation": {
+          "deduplicatedReads": 0,
+          "readCalls": 10,
+          "returnedBytes": 25653,
+          "searchCalls": 7
+        },
+        "toolFreeGaps": {
+          "countOverThirtySeconds": 0,
+          "maximumMs": 5264,
+          "totalOverThirtySecondsMs": 0
+        },
+        "tools": {
+          "blockedCalls": 0,
+          "calls": 23,
+          "failedCalls": 0,
+          "inputBytes": 2828,
+          "outputBytes": 29057,
+          "replayExposureBytes": 152263,
+          "distinctTools": 5
+        },
+        "toolsByName": {
+          "search_code": {
+            "blockedCalls": 0,
+            "calls": 7,
+            "failedCalls": 0,
+            "inputBytes": 402,
+            "outputBytes": 9682,
+            "replayExposureBytes": 63467
+          },
+          "read_code": {
+            "blockedCalls": 0,
+            "calls": 10,
+            "failedCalls": 0,
+            "inputBytes": 635,
+            "outputBytes": 15971,
+            "replayExposureBytes": 78230
+          },
+          "edit_code": {
+            "blockedCalls": 0,
+            "calls": 2,
+            "failedCalls": 0,
+            "inputBytes": 724,
+            "outputBytes": 858,
+            "replayExposureBytes": 5628
+          },
+          "run_task": {
+            "blockedCalls": 0,
+            "calls": 3,
+            "failedCalls": 0,
+            "inputBytes": 489,
+            "outputBytes": 1980,
+            "replayExposureBytes": 4938
+          },
+          "finish_task": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 578,
+            "outputBytes": 566,
+            "replayExposureBytes": 0
+          }
+        }
+      },
+      "completion": {
+        "source_revision_id": "src_9a4e7ccc8d90de9973317376776f784a",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "parseErrors": 0,
+      "error": null,
+      "eventsSha256": "913fd564e62dc784c5588f57fcd3d33f02843c53e3c720acd2f6b321a79a1670",
+      "diffSha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6",
+      "semanticRenameCalls": 0,
+      "semanticReferenceCalls": 0,
+      "scoreSha256": "9e93c85997556a8689f358257582205b89cbf183ddac9e299da02c7f6b7423e0",
+      "auditedCriteria": true,
+      "auditedSuccess": true,
+      "partition": "fresh-confirmation",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "reportingOnlySensitivity": null,
+      "manualCriteriaFailures": []
+    },
+    {
+      "repetition": 1,
+      "id": "lodash-own-symbol-options",
+      "arm": "scope",
+      "name": "1-lodash-own-symbol-options-scope",
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "watchdog": false,
+        "stderr": "(node:355981) Warning: AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning validation commands for final edit**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning validation commands for final edit**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys and values implementation**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning validation commands for final edit**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys and values implementation**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting keys function implementation**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning validation commands for final edit**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys and values implementation**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting keys function implementation**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning precise code search for keys function**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning validation commands for final edit**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys and values implementation**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting keys function implementation**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning precise code search for keys function**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning keys and values implementation with symbols****Refining keys and values options and implementation****Verifying null handling in keys function****Inspecting source around docs lines**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning validation commands for final edit**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys and values implementation**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting keys function implementation**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning precise code search for keys function**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning keys and values implementation with symbols****Refining keys and values options and implementation****Verifying null handling in keys function****Inspecting source around docs lines**\"}.\n(node:355981) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing keys and values functions with symbol support****Planning null handling and testing strategy****Verifying arrayPush mutation and return value**\"}.\n"
+      },
+      "preparationMs": 123.20472200005315,
+      "bindingsVerificationMs": 893.8231579998974,
+      "outerAgentMs": 61526.89696600009,
+      "verificationMs": 12888.018792000134,
+      "status": "succeeded",
+      "officialRuntimeSuccess": true,
+      "independentFunctionalSuccess": true,
+      "auditedCompletion": true,
+      "usage": {
+        "input": 132304,
+        "output": 4000,
+        "cacheRead": 110592,
+        "cacheWrite": 0,
+        "cost": 0.011354240000000002,
+        "reasoning": null,
+        "completeness": "complete",
+        "normalizationVersion": "blame-usage-v1",
+        "complete": false,
+        "tokensCostReconciled": true,
+        "requests": 11,
+        "reports": 11,
+        "perRequest": [
+          {
+            "input": 3540,
+            "output": 231,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0009852,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 5806,
+            "output": 195,
+            "cacheRead": 2560,
+            "cacheWrite": null,
+            "cost": 0.0009343999999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 8328,
+            "output": 217,
+            "cacheRead": 5632,
+            "cacheWrite": null,
+            "cost": 0.0009122399999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 10991,
+            "output": 206,
+            "cacheRead": 7680,
+            "cacheWrite": null,
+            "cost": 0.0010630000000000001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 12499,
+            "output": 576,
+            "cacheRead": 10752,
+            "cacheWrite": null,
+            "cost": 0.0012556400000000006,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 12988,
+            "output": 509,
+            "cacheRead": 11776,
+            "cacheWrite": null,
+            "cost": 0.0010887199999999996,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 13293,
+            "output": 215,
+            "cacheRead": 12800,
+            "cacheWrite": null,
+            "cost": 0.0006125999999999996,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 15417,
+            "output": 33,
+            "cacheRead": 12800,
+            "cacheWrite": null,
+            "cost": 0.0008190000000000003,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16057,
+            "output": 781,
+            "cacheRead": 14848,
+            "cacheWrite": null,
+            "cost": 0.0014759600000000001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16341,
+            "output": 545,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.0010652400000000003,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 17044,
+            "output": 492,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.001142240000000001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          }
+        ],
+        "reconciliation": {
+          "input": {
+            "sum": 132304,
+            "aggregate": 132304,
+            "matches": true
+          },
+          "output": {
+            "sum": 4000,
+            "aggregate": 4000,
+            "matches": true
+          },
+          "cacheRead": {
+            "sum": null,
+            "aggregate": 110592,
+            "matches": false
+          },
+          "cacheWrite": {
+            "sum": null,
+            "aggregate": 0,
+            "matches": false
+          },
+          "cost": {
+            "sum": 0.011354240000000002,
+            "aggregate": 0.011354240000000002,
+            "matches": true
+          }
+        }
+      },
+      "durationMs": 59517,
+      "metrics": {
+        "context": {
+          "averageInputTokens": 12027.64,
+          "composition": {
+            "categoryBytes": {
+              "user_text": 38511,
+              "assistant_reasoning": 5899,
+              "tool_input.search_code": 14525,
+              "tool_input.read_code": 13544,
+              "tool_result.search_code": 137077,
+              "tool_result.read_code": 205527,
+              "tool_input.run_task": 2629,
+              "tool_result.run_task": 24345,
+              "tool_input.edit_code": 1220,
+              "tool_result.edit_code": 1230
+            },
+            "composedBytes": 588205,
+            "duplicateBytes": 0,
+            "latestComposedBytes": 76004,
+            "latestDuplicateBytes": 0,
+            "latestMessageBytes": 63315,
+            "latestProjectedBytesSaved": 872,
+            "latestSystemPromptBytes": 5175,
+            "latestToolDefinitionBytes": 7514,
+            "maximumComposedBytes": 76004,
+            "messageBytes": 448626,
+            "projectedBytesSaved": 4949,
+            "requests": 11,
+            "staleReadReplacements": 0,
+            "successfulEditReplacements": 0,
+            "validatedEditReplacements": 0,
+            "systemPromptBytes": 56925,
+            "toolDefinitionBytes": 82654
+          },
+          "compactions": 0,
+          "maximumInputTokens": 17044,
+          "modelRequests": 11,
+          "projectMemory": {
+            "candidates": 0,
+            "injectedBytes": 0,
+            "relevant": 0,
+            "requests": 0,
+            "selected": 0,
+            "stale": 0
+          },
+          "toolPayloadBytes": 51166,
+          "toolPayloadReplayExposureBytes": 341490
+        },
+        "editing": {
+          "attempts": 1,
+          "blocked": 0,
+          "firstAttemptMs": 36114,
+          "firstSuccessMs": 37975,
+          "hybridCalls": 0,
+          "patchOperations": 0,
+          "successful": 1,
+          "symbolOperations": 2
+        },
+        "navigation": {
+          "deduplicatedReads": 0,
+          "readCalls": 13,
+          "returnedBytes": 41425,
+          "searchCalls": 11
+        },
+        "toolFreeGaps": {
+          "countOverThirtySeconds": 0,
+          "maximumMs": 6691,
+          "totalOverThirtySecondsMs": 0
+        },
+        "tools": {
+          "blockedCalls": 0,
+          "calls": 30,
+          "failedCalls": 0,
+          "inputBytes": 3499,
+          "outputBytes": 47667,
+          "replayExposureBytes": 341490,
+          "distinctTools": 5
+        },
+        "toolsByName": {
+          "search_code": {
+            "blockedCalls": 0,
+            "calls": 11,
+            "failedCalls": 0,
+            "inputBytes": 713,
+            "outputBytes": 12805,
+            "replayExposureBytes": 117584
+          },
+          "read_code": {
+            "blockedCalls": 0,
+            "calls": 13,
+            "failedCalls": 0,
+            "inputBytes": 832,
+            "outputBytes": 28620,
+            "replayExposureBytes": 196815
+          },
+          "run_task": {
+            "blockedCalls": 0,
+            "calls": 4,
+            "failedCalls": 0,
+            "inputBytes": 657,
+            "outputBytes": 5046,
+            "replayExposureBytes": 25197
+          },
+          "edit_code": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 518,
+            "outputBytes": 429,
+            "replayExposureBytes": 1894
+          },
+          "finish_task": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 779,
+            "outputBytes": 767,
+            "replayExposureBytes": 0
+          }
+        }
+      },
+      "completion": {
+        "source_revision_id": "src_1fe2c8165783d7f087664c02b8f1e7cd",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "parseErrors": 0,
+      "error": null,
+      "eventsSha256": "4e17ef52dcd08cbe4d2798243f8a26c6fbb7f1b05d85fafcc0f8808e925c86ee",
+      "diffSha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1",
+      "semanticRenameCalls": 0,
+      "semanticReferenceCalls": 0,
+      "scoreSha256": "d14452576c5b2a954c0b03a668f12236fd02832d2de121fdc2127cd0c5048b90",
+      "auditedCriteria": true,
+      "auditedSuccess": true,
+      "partition": "fresh-confirmation",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "reportingOnlySensitivity": null,
+      "manualCriteriaFailures": []
+    },
+    {
+      "repetition": 1,
+      "id": "lodash-own-symbol-options",
+      "arm": "cline",
+      "name": "1-lodash-own-symbol-options-cline",
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "watchdog": false,
+        "stderr": "(node:356494) Warning: AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection commands**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection commands**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting getOwnPropertySymbols helpers**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection commands**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting getOwnPropertySymbols helpers**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash helper inspection**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection commands**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting getOwnPropertySymbols helpers**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash helper inspection**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Reviewing keys function handling of null and options****Verifying symbol handling and arrayPush usage**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection commands**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting getOwnPropertySymbols helpers**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash helper inspection**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Reviewing keys function handling of null and options****Verifying symbol handling and arrayPush usage**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning exact validation commands****Including prevalidation file diff check**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection commands**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting getOwnPropertySymbols helpers**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash helper inspection**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Reviewing keys function handling of null and options****Verifying symbol handling and arrayPush usage**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning exact validation commands****Including prevalidation file diff check**\"}.\n(node:356494) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Preparing exact command execution**\"}.\n"
+      },
+      "preparationMs": 139.37589400005527,
+      "bindingsVerificationMs": 897.7761129999999,
+      "outerAgentMs": 54509.83132599993,
+      "verificationMs": 13267.800049000187,
+      "status": "succeeded",
+      "officialRuntimeSuccess": true,
+      "independentFunctionalSuccess": true,
+      "auditedCompletion": true,
+      "usage": {
+        "input": 279982,
+        "output": 4075,
+        "cacheRead": 228864,
+        "cacheWrite": 0,
+        "cost": 0.019690879999999997,
+        "reasoning": null,
+        "completeness": "complete",
+        "normalizationVersion": "blame-usage-v1",
+        "complete": false,
+        "tokensCostReconciled": true,
+        "requests": 8,
+        "reports": 8,
+        "perRequest": [
+          {
+            "input": 2417,
+            "output": 553,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.001147,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 13683,
+            "output": 514,
+            "cacheRead": 1536,
+            "cacheWrite": null,
+            "cost": 0.00307692,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 38603,
+            "output": 487,
+            "cacheRead": 12800,
+            "cacheWrite": null,
+            "cost": 0.006001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 43521,
+            "output": 721,
+            "cacheRead": 38400,
+            "cacheWrite": null,
+            "cost": 0.002657399999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 43935,
+            "output": 398,
+            "cacheRead": 42496,
+            "cacheWrite": null,
+            "cost": 0.00161532,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 45369,
+            "output": 181,
+            "cacheRead": 43520,
+            "cacheWrite": null,
+            "cost": 0.001457400000000001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 45902,
+            "output": 675,
+            "cacheRead": 44544,
+            "cacheWrite": null,
+            "cost": 0.0019724799999999987,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 46552,
+            "output": 546,
+            "cacheRead": 45568,
+            "cacheWrite": null,
+            "cost": 0.0017633599999999985,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          }
+        ],
+        "reconciliation": {
+          "input": {
+            "sum": 279982,
+            "aggregate": 279982,
+            "matches": true
+          },
+          "output": {
+            "sum": 4075,
+            "aggregate": 4075,
+            "matches": true
+          },
+          "cacheRead": {
+            "sum": null,
+            "aggregate": 228864,
+            "matches": false
+          },
+          "cacheWrite": {
+            "sum": null,
+            "aggregate": 0,
+            "matches": false
+          },
+          "cost": {
+            "sum": 0.019690879999999997,
+            "aggregate": 0.019690879999999997,
+            "matches": true
+          }
+        }
+      },
+      "durationMs": 52575,
+      "metrics": {
+        "context": {
+          "averageInputTokens": 34997.75,
+          "composition": {
+            "categoryBytes": {},
+            "composedBytes": 0,
+            "duplicateBytes": 0,
+            "latestComposedBytes": 0,
+            "latestDuplicateBytes": 0,
+            "latestMessageBytes": 0,
+            "latestProjectedBytesSaved": 0,
+            "latestSystemPromptBytes": 0,
+            "latestToolDefinitionBytes": 0,
+            "maximumComposedBytes": 0,
+            "messageBytes": 0,
+            "projectedBytesSaved": 0,
+            "requests": 0,
+            "staleReadReplacements": 0,
+            "successfulEditReplacements": 0,
+            "validatedEditReplacements": 0,
+            "systemPromptBytes": 0,
+            "toolDefinitionBytes": 0
+          },
+          "compactions": 0,
+          "maximumInputTokens": 46552,
+          "modelRequests": 8,
+          "projectMemory": {
+            "candidates": 0,
+            "injectedBytes": 0,
+            "relevant": 0,
+            "requests": 0,
+            "selected": 0,
+            "stale": 0
+          },
+          "toolPayloadBytes": 264826,
+          "toolPayloadReplayExposureBytes": 1620275
+        },
+        "editing": {
+          "attempts": 1,
+          "blocked": 0,
+          "firstAttemptMs": 22994,
+          "firstSuccessMs": 24023,
+          "hybridCalls": 0,
+          "patchOperations": 1,
+          "successful": 1,
+          "symbolOperations": 0
+        },
+        "navigation": {
+          "deduplicatedReads": 0,
+          "readCalls": 16,
+          "returnedBytes": 256576,
+          "searchCalls": 14
+        },
+        "toolFreeGaps": {
+          "countOverThirtySeconds": 0,
+          "maximumMs": 6530,
+          "totalOverThirtySecondsMs": 0
+        },
+        "tools": {
+          "blockedCalls": 0,
+          "calls": 15,
+          "failedCalls": 0,
+          "inputBytes": 4087,
+          "outputBytes": 260739,
+          "replayExposureBytes": 1620275,
+          "distinctTools": 4
+        },
+        "toolsByName": {
+          "run_commands": {
+            "blockedCalls": 0,
+            "calls": 5,
+            "failedCalls": 0,
+            "inputBytes": 536,
+            "outputBytes": 3958,
+            "replayExposureBytes": 16768
+          },
+          "search_codebase": {
+            "blockedCalls": 0,
+            "calls": 3,
+            "failedCalls": 0,
+            "inputBytes": 365,
+            "outputBytes": 194118,
+            "replayExposureBytes": 1225165
+          },
+          "read_files": {
+            "blockedCalls": 0,
+            "calls": 6,
+            "failedCalls": 0,
+            "inputBytes": 2424,
+            "outputBytes": 62458,
+            "replayExposureBytes": 374474
+          },
+          "apply_patch": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 762,
+            "outputBytes": 205,
+            "replayExposureBytes": 3868
+          }
+        }
+      },
+      "completion": null,
+      "parseErrors": 0,
+      "error": null,
+      "eventsSha256": "af1e3a0440965b8322678b95a61a59459d359fcd5131ada0ab78666db37a33ac",
+      "diffSha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1",
+      "semanticRenameCalls": 0,
+      "semanticReferenceCalls": 0,
+      "scoreSha256": "c57a39ce0297b11641d563ce7bd536a106bb8346251269f5e8217cc2228f306c",
+      "auditedCriteria": true,
+      "auditedSuccess": true,
+      "partition": "fresh-confirmation",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "reportingOnlySensitivity": null,
+      "manualCriteriaFailures": []
+    },
+    {
+      "repetition": 1,
+      "id": "lodash-own-symbol-options",
+      "arm": "references",
+      "name": "1-lodash-own-symbol-options-references",
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "watchdog": false,
+        "stderr": "(node:357381) Warning: AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning execution of final validation commands**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning execution of final validation commands**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted function search**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning execution of final validation commands**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted function search**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning final validation commands**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning execution of final validation commands**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted function search**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning final validation commands**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning exact keys and values implementation****Refining keys/values options handling and docs****Planning exact post-edit validation commands****Planning thorough code reading for edits**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning execution of final validation commands**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted function search**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning final validation commands**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning exact keys and values implementation****Refining keys/values options handling and docs****Planning exact post-edit validation commands****Planning thorough code reading for edits**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting key retrieval with symbols and null handling****Planning focused function signature and body edits****Preparing batch symbol replacements for functions****Verifying safe symbol handling in values function****Planning array-like behavior edits for strings**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning execution of final validation commands**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted function search**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning final validation commands**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning exact keys and values implementation****Refining keys/values options handling and docs****Planning exact post-edit validation commands****Planning thorough code reading for edits**\"}.\n(node:357381) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting key retrieval with symbols and null handling****Planning focused function signature and body edits****Preparing batch symbol replacements for functions****Verifying safe symbol handling in values function****Planning array-like behavior edits for strings**\"}.\n"
+      },
+      "preparationMs": 133.70956799993291,
+      "bindingsVerificationMs": 1078.6496480000205,
+      "outerAgentMs": 55241.86315699993,
+      "verificationMs": 13089.646178999916,
+      "status": "succeeded",
+      "officialRuntimeSuccess": true,
+      "independentFunctionalSuccess": true,
+      "auditedCompletion": true,
+      "usage": {
+        "input": 76395,
+        "output": 2946,
+        "cacheRead": 57344,
+        "cacheWrite": 0,
+        "cost": 0.00849228,
+        "reasoning": null,
+        "completeness": "complete",
+        "normalizationVersion": "blame-usage-v1",
+        "complete": false,
+        "tokensCostReconciled": true,
+        "requests": 7,
+        "reports": 7,
+        "perRequest": [
+          {
+            "input": 3501,
+            "output": 226,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0009714000000000001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 6148,
+            "output": 257,
+            "cacheRead": 2560,
+            "cacheWrite": null,
+            "cost": 0.0010772000000000002,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 9562,
+            "output": 292,
+            "cacheRead": 5632,
+            "cacheWrite": null,
+            "cost": 0.0012490399999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 13836,
+            "output": 671,
+            "cacheRead": 8704,
+            "cacheWrite": null,
+            "cost": 0.00200568,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 14063,
+            "output": 823,
+            "cacheRead": 12800,
+            "cacheWrite": null,
+            "cost": 0.0014961999999999996,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 14339,
+            "output": 198,
+            "cacheRead": 13824,
+            "cacheWrite": null,
+            "cost": 0.0006170799999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 14946,
+            "output": 479,
+            "cacheRead": 13824,
+            "cacheWrite": null,
+            "cost": 0.0010756799999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          }
+        ],
+        "reconciliation": {
+          "input": {
+            "sum": 76395,
+            "aggregate": 76395,
+            "matches": true
+          },
+          "output": {
+            "sum": 2946,
+            "aggregate": 2946,
+            "matches": true
+          },
+          "cacheRead": {
+            "sum": null,
+            "aggregate": 57344,
+            "matches": false
+          },
+          "cacheWrite": {
+            "sum": null,
+            "aggregate": 0,
+            "matches": false
+          },
+          "cost": {
+            "sum": 0.00849228,
+            "aggregate": 0.00849228,
+            "matches": true
+          }
+        }
+      },
+      "durationMs": 53211,
+      "metrics": {
+        "context": {
+          "averageInputTokens": 10913.57,
+          "composition": {
+            "categoryBytes": {
+              "user_text": 24507,
+              "assistant_reasoning": 2491,
+              "tool_input.search_code": 6458,
+              "tool_input.read_code": 8382,
+              "tool_result.search_code": 67923,
+              "tool_result.read_code": 132363,
+              "tool_input.edit_code": 1198,
+              "tool_result.edit_code": 1230,
+              "tool_input.run_task": 447,
+              "tool_result.run_task": 2303
+            },
+            "composedBytes": 336837,
+            "duplicateBytes": 0,
+            "latestComposedBytes": 66196,
+            "latestDuplicateBytes": 0,
+            "latestMessageBytes": 53651,
+            "latestProjectedBytesSaved": 703,
+            "latestSystemPromptBytes": 5190,
+            "latestToolDefinitionBytes": 7355,
+            "maximumComposedBytes": 66196,
+            "messageBytes": 249022,
+            "projectedBytesSaved": 2653,
+            "requests": 7,
+            "staleReadReplacements": 0,
+            "successfulEditReplacements": 0,
+            "validatedEditReplacements": 0,
+            "systemPromptBytes": 36330,
+            "toolDefinitionBytes": 51485
+          },
+          "compactions": 0,
+          "maximumInputTokens": 14946,
+          "modelRequests": 7,
+          "projectMemory": {
+            "candidates": 0,
+            "injectedBytes": 0,
+            "relevant": 0,
+            "requests": 0,
+            "selected": 0,
+            "stale": 0
+          },
+          "toolPayloadBytes": 43170,
+          "toolPayloadReplayExposureBytes": 188056
+        },
+        "editing": {
+          "attempts": 1,
+          "blocked": 0,
+          "firstAttemptMs": 30696,
+          "firstSuccessMs": 32638,
+          "hybridCalls": 0,
+          "patchOperations": 0,
+          "successful": 1,
+          "symbolOperations": 2
+        },
+        "navigation": {
+          "deduplicatedReads": 0,
+          "readCalls": 13,
+          "returnedBytes": 37257,
+          "searchCalls": 8
+        },
+        "toolFreeGaps": {
+          "countOverThirtySeconds": 0,
+          "maximumMs": 6413,
+          "totalOverThirtySecondsMs": 0
+        },
+        "tools": {
+          "blockedCalls": 0,
+          "calls": 26,
+          "failedCalls": 0,
+          "inputBytes": 2694,
+          "outputBytes": 40476,
+          "replayExposureBytes": 188056,
+          "distinctTools": 5
+        },
+        "toolsByName": {
+          "search_code": {
+            "blockedCalls": 0,
+            "calls": 8,
+            "failedCalls": 0,
+            "inputBytes": 478,
+            "outputBytes": 10556,
+            "replayExposureBytes": 58133
+          },
+          "read_code": {
+            "blockedCalls": 0,
+            "calls": 13,
+            "failedCalls": 0,
+            "inputBytes": 715,
+            "outputBytes": 26701,
+            "replayExposureBytes": 125895
+          },
+          "edit_code": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 507,
+            "outputBytes": 429,
+            "replayExposureBytes": 1872
+          },
+          "run_task": {
+            "blockedCalls": 0,
+            "calls": 3,
+            "failedCalls": 0,
+            "inputBytes": 174,
+            "outputBytes": 1982,
+            "replayExposureBytes": 2156
+          },
+          "finish_task": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 820,
+            "outputBytes": 808,
+            "replayExposureBytes": 0
+          }
+        }
+      },
+      "completion": {
+        "source_revision_id": "src_9a4e7ccc8d90de9973317376776f784a",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "parseErrors": 0,
+      "error": null,
+      "eventsSha256": "3c92094b6b6b6bd668eb37b51b79b200701c7cda80cfe6f467104e86563a50d7",
+      "diffSha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6",
+      "semanticRenameCalls": 0,
+      "semanticReferenceCalls": 0,
+      "scoreSha256": "64a2c742f9558356c223988d509899e42eb17a661b89186293a55da250078d28",
+      "auditedCriteria": true,
+      "auditedSuccess": true,
+      "partition": "fresh-confirmation",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "reportingOnlySensitivity": null,
+      "manualCriteriaFailures": []
+    },
+    {
+      "repetition": 1,
+      "id": "lodash-own-symbol-options",
+      "arm": "rename",
+      "name": "1-lodash-own-symbol-options-rename",
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "watchdog": false,
+        "stderr": "(node:358090) Warning: AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js inspection and test commands**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js inspection and test commands**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning implementation of constrained keys and values functions**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js inspection and test commands**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning implementation of constrained keys and values functions**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js inspection and test commands**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning implementation of constrained keys and values functions**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Identifying values location**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js inspection and test commands**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning implementation of constrained keys and values functions**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Identifying values location**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Locating exact value range 13960**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js inspection and test commands**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning implementation of constrained keys and values functions**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Identifying values location**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Locating exact value range 13960**\"}.\n(node:358090) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Assessing lodash keys and arrayLikeKeys behavior****Designing keys and values with symbols option****Planning batch replacement for keys and values bodies**\"}.\n"
+      },
+      "preparationMs": 144.99893800006248,
+      "bindingsVerificationMs": 998.4208599999547,
+      "outerAgentMs": 65053.31122400006,
+      "verificationMs": 12931.812060999917,
+      "status": "succeeded",
+      "officialRuntimeSuccess": true,
+      "independentFunctionalSuccess": true,
+      "auditedCompletion": true,
+      "usage": {
+        "input": 137651,
+        "output": 2507,
+        "cacheRead": 114688,
+        "cacheWrite": 0,
+        "cost": 0.00989476,
+        "reasoning": null,
+        "completeness": "complete",
+        "normalizationVersion": "blame-usage-v1",
+        "complete": false,
+        "tokensCostReconciled": true,
+        "requests": 11,
+        "reports": 11,
+        "perRequest": [
+          {
+            "input": 3488,
+            "output": 220,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0009616000000000001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 6544,
+            "output": 152,
+            "cacheRead": 2560,
+            "cacheWrite": null,
+            "cost": 0.0010304,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 7957,
+            "output": 137,
+            "cacheRead": 5632,
+            "cacheWrite": null,
+            "cost": 0.0007420400000000002,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 11638,
+            "output": 109,
+            "cacheRead": 7680,
+            "cacheWrite": null,
+            "cost": 0.0010759999999999997,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 13965,
+            "output": 48,
+            "cacheRead": 10752,
+            "cacheWrite": null,
+            "cost": 0.0009152400000000003,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 14872,
+            "output": 623,
+            "cacheRead": 13824,
+            "cacheWrite": null,
+            "cost": 0.00123368,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 15150,
+            "output": 200,
+            "cacheRead": 13824,
+            "cacheWrite": null,
+            "cost": 0.0007816799999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 15288,
+            "output": 204,
+            "cacheRead": 14848,
+            "cacheWrite": null,
+            "cost": 0.00062976,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 15868,
+            "output": 181,
+            "cacheRead": 14848,
+            "cacheWrite": null,
+            "cost": 0.0007181599999999998,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16091,
+            "output": 296,
+            "cacheRead": 14848,
+            "cacheWrite": null,
+            "cost": 0.0009007600000000004,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16790,
+            "output": 337,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.0009054400000000004,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          }
+        ],
+        "reconciliation": {
+          "input": {
+            "sum": 137651,
+            "aggregate": 137651,
+            "matches": true
+          },
+          "output": {
+            "sum": 2507,
+            "aggregate": 2507,
+            "matches": true
+          },
+          "cacheRead": {
+            "sum": null,
+            "aggregate": 114688,
+            "matches": false
+          },
+          "cacheWrite": {
+            "sum": null,
+            "aggregate": 0,
+            "matches": false
+          },
+          "cost": {
+            "sum": 0.00989476,
+            "aggregate": 0.00989476,
+            "matches": true
+          }
+        }
+      },
+      "durationMs": 63096,
+      "metrics": {
+        "context": {
+          "averageInputTokens": 12513.73,
+          "composition": {
+            "categoryBytes": {
+              "user_text": 38511,
+              "assistant_reasoning": 4690,
+              "tool_input.search_code": 10968,
+              "tool_input.read_code": 11428,
+              "tool_result.search_code": 106372,
+              "tool_result.read_code": 274990,
+              "tool_input.edit_code": 3631,
+              "tool_result.edit_code": 4305,
+              "tool_input.run_task": 1494,
+              "tool_result.run_task": 5327
+            },
+            "composedBytes": 602802,
+            "duplicateBytes": 0,
+            "latestComposedBytes": 73759,
+            "latestDuplicateBytes": 0,
+            "latestMessageBytes": 61301,
+            "latestProjectedBytesSaved": 1016,
+            "latestSystemPromptBytes": 5178,
+            "latestToolDefinitionBytes": 7280,
+            "maximumComposedBytes": 73759,
+            "messageBytes": 465764,
+            "projectedBytesSaved": 6898,
+            "requests": 11,
+            "staleReadReplacements": 0,
+            "successfulEditReplacements": 0,
+            "validatedEditReplacements": 0,
+            "systemPromptBytes": 56958,
+            "toolDefinitionBytes": 80080
+          },
+          "compactions": 0,
+          "maximumInputTokens": 16790,
+          "modelRequests": 11,
+          "projectMemory": {
+            "candidates": 0,
+            "injectedBytes": 0,
+            "relevant": 0,
+            "requests": 0,
+            "selected": 0,
+            "stale": 0
+          },
+          "toolPayloadBytes": 50790,
+          "toolPayloadReplayExposureBytes": 369473
+        },
+        "editing": {
+          "attempts": 2,
+          "blocked": 0,
+          "firstAttemptMs": 20334,
+          "firstSuccessMs": 21562,
+          "hybridCalls": 0,
+          "patchOperations": 1,
+          "successful": 2,
+          "symbolOperations": 2
+        },
+        "navigation": {
+          "deduplicatedReads": 0,
+          "readCalls": 11,
+          "returnedBytes": 42743,
+          "searchCalls": 8
+        },
+        "toolFreeGaps": {
+          "countOverThirtySeconds": 0,
+          "maximumMs": 15673,
+          "totalOverThirtySecondsMs": 0
+        },
+        "tools": {
+          "blockedCalls": 0,
+          "calls": 26,
+          "failedCalls": 0,
+          "inputBytes": 3428,
+          "outputBytes": 47362,
+          "replayExposureBytes": 369473,
+          "distinctTools": 5
+        },
+        "toolsByName": {
+          "search_code": {
+            "blockedCalls": 0,
+            "calls": 8,
+            "failedCalls": 0,
+            "inputBytes": 500,
+            "outputBytes": 9755,
+            "replayExposureBytes": 91114
+          },
+          "read_code": {
+            "blockedCalls": 0,
+            "calls": 11,
+            "failedCalls": 0,
+            "inputBytes": 632,
+            "outputBytes": 32988,
+            "replayExposureBytes": 266718
+          },
+          "edit_code": {
+            "blockedCalls": 0,
+            "calls": 2,
+            "failedCalls": 0,
+            "inputBytes": 760,
+            "outputBytes": 858,
+            "replayExposureBytes": 5990
+          },
+          "run_task": {
+            "blockedCalls": 0,
+            "calls": 4,
+            "failedCalls": 0,
+            "inputBytes": 638,
+            "outputBytes": 2875,
+            "replayExposureBytes": 5651
+          },
+          "finish_task": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 898,
+            "outputBytes": 886,
+            "replayExposureBytes": 0
+          }
+        }
+      },
+      "completion": {
+        "source_revision_id": "src_c9f24ca370ef5289d63034f42811095b",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "parseErrors": 0,
+      "error": null,
+      "eventsSha256": "6b34371b3f437b4afd30e94444b65bbbf9bf7078133238ba84915c703a64ab9f",
+      "diffSha256": "c1db8427d926791fe8bf70ccd3623464b6fe4b2c64b9fced4072dba943eb6aa9",
+      "semanticRenameCalls": 0,
+      "semanticReferenceCalls": 0,
+      "scoreSha256": "223ff5135e4f8913ae3c4bfbaac84cf1a6491d52276c18469a15173e2ea84ac3",
+      "auditedCriteria": true,
+      "auditedSuccess": true,
+      "partition": "fresh-confirmation",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "reportingOnlySensitivity": null,
+      "manualCriteriaFailures": []
+    },
+    {
+      "repetition": 1,
+      "id": "lodash-own-symbol-options",
+      "arm": "reading",
+      "name": "1-lodash-own-symbol-options-reading",
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "watchdog": false,
+        "stderr": "(node:358622) Warning: AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys modification**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys modification**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted lodash.js key inspection**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys modification**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted lodash.js key inspection**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting key-value API ranges**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys modification**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted lodash.js key inspection**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting key-value API ranges**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching documentation for value extraction**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys modification**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted lodash.js key inspection**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting key-value API ranges**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching documentation for value extraction**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Locating values around 13950**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys modification**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted lodash.js key inspection**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting key-value API ranges**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching documentation for value extraction**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Locating values around 13950**\"}.\n(node:358622) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing keys and values function updates****Clarifying options handling in keys and values**\"}.\n"
+      },
+      "preparationMs": 193.00141800008714,
+      "bindingsVerificationMs": 1023.3790069997776,
+      "outerAgentMs": 66473.7618160001,
+      "verificationMs": 13177.103514000075,
+      "status": "succeeded",
+      "officialRuntimeSuccess": true,
+      "independentFunctionalSuccess": true,
+      "auditedCompletion": true,
+      "usage": {
+        "input": 179441,
+        "output": 3776,
+        "cacheRead": 154112,
+        "cacheWrite": 0,
+        "cost": 0.012679240000000001,
+        "reasoning": null,
+        "completeness": "complete",
+        "normalizationVersion": "blame-usage-v1",
+        "complete": false,
+        "tokensCostReconciled": true,
+        "requests": 14,
+        "reports": 14,
+        "perRequest": [
+          {
+            "input": 3499,
+            "output": 186,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.000923,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 5698,
+            "output": 203,
+            "cacheRead": 2560,
+            "cacheWrite": null,
+            "cost": 0.0009224000000000001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 7790,
+            "output": 171,
+            "cacheRead": 4608,
+            "cacheWrite": null,
+            "cost": 0.0009337600000000001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 10217,
+            "output": 152,
+            "cacheRead": 7680,
+            "cacheWrite": null,
+            "cost": 0.0008434000000000002,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 12492,
+            "output": 122,
+            "cacheRead": 9728,
+            "cacheWrite": null,
+            "cost": 0.0008937600000000004,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 14152,
+            "output": 382,
+            "cacheRead": 11776,
+            "cacheWrite": null,
+            "cost": 0.00116912,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 14379,
+            "output": 681,
+            "cacheRead": 13824,
+            "cacheWrite": null,
+            "cost": 0.0012046799999999996,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 14649,
+            "output": 106,
+            "cacheRead": 13824,
+            "cacheWrite": null,
+            "cost": 0.0005686800000000002,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 14962,
+            "output": 196,
+            "cacheRead": 13824,
+            "cacheWrite": null,
+            "cost": 0.0007392799999999993,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 15548,
+            "output": 202,
+            "cacheRead": 14848,
+            "cacheWrite": null,
+            "cost": 0.0006793600000000004,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 15851,
+            "output": 232,
+            "cacheRead": 14848,
+            "cacheWrite": null,
+            "cost": 0.0007759599999999992,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16135,
+            "output": 239,
+            "cacheRead": 14848,
+            "cacheWrite": null,
+            "cost": 0.0008411600000000005,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16685,
+            "output": 353,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.0009036400000000007,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 17384,
+            "output": 551,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.0012810400000000007,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          }
+        ],
+        "reconciliation": {
+          "input": {
+            "sum": 179441,
+            "aggregate": 179441,
+            "matches": true
+          },
+          "output": {
+            "sum": 3776,
+            "aggregate": 3776,
+            "matches": true
+          },
+          "cacheRead": {
+            "sum": null,
+            "aggregate": 154112,
+            "matches": false
+          },
+          "cacheWrite": {
+            "sum": null,
+            "aggregate": 0,
+            "matches": false
+          },
+          "cost": {
+            "sum": 0.012679240000000001,
+            "aggregate": 0.012679240000000001,
+            "matches": true
+          }
+        }
+      },
+      "durationMs": 64471,
+      "metrics": {
+        "context": {
+          "averageInputTokens": 12817.21,
+          "composition": {
+            "categoryBytes": {
+              "user_text": 49014,
+              "assistant_reasoning": 8548,
+              "tool_input.search_code": 25460,
+              "tool_input.read_code": 17258,
+              "tool_result.search_code": 244895,
+              "tool_result.read_code": 257248,
+              "tool_input.edit_code": 7346,
+              "tool_result.edit_code": 10394,
+              "tool_input.run_task": 759,
+              "tool_result.run_task": 2299
+            },
+            "composedBytes": 805531,
+            "duplicateBytes": 0,
+            "latestComposedBytes": 78418,
+            "latestDuplicateBytes": 0,
+            "latestMessageBytes": 65871,
+            "latestProjectedBytesSaved": 679,
+            "latestSystemPromptBytes": 5181,
+            "latestToolDefinitionBytes": 7366,
+            "maximumComposedBytes": 78418,
+            "messageBytes": 629873,
+            "projectedBytesSaved": 5018,
+            "requests": 14,
+            "staleReadReplacements": 0,
+            "successfulEditReplacements": 0,
+            "validatedEditReplacements": 0,
+            "systemPromptBytes": 72534,
+            "toolDefinitionBytes": 103124
+          },
+          "compactions": 0,
+          "maximumInputTokens": 17384,
+          "modelRequests": 14,
+          "projectMemory": {
+            "candidates": 0,
+            "injectedBytes": 0,
+            "relevant": 0,
+            "requests": 0,
+            "selected": 0,
+            "stale": 0
+          },
+          "toolPayloadBytes": 51687,
+          "toolPayloadReplayExposureBytes": 471327
+        },
+        "editing": {
+          "attempts": 3,
+          "blocked": 1,
+          "firstAttemptMs": 25529,
+          "firstSuccessMs": 26752,
+          "hybridCalls": 0,
+          "patchOperations": 1,
+          "successful": 2,
+          "symbolOperations": 4
+        },
+        "navigation": {
+          "deduplicatedReads": 0,
+          "readCalls": 14,
+          "returnedBytes": 42812,
+          "searchCalls": 14
+        },
+        "toolFreeGaps": {
+          "countOverThirtySeconds": 0,
+          "maximumMs": 5675,
+          "totalOverThirtySecondsMs": 0
+        },
+        "tools": {
+          "blockedCalls": 1,
+          "calls": 35,
+          "failedCalls": 0,
+          "inputBytes": 4331,
+          "outputBytes": 47356,
+          "replayExposureBytes": 471327,
+          "distinctTools": 5
+        },
+        "toolsByName": {
+          "search_code": {
+            "blockedCalls": 0,
+            "calls": 14,
+            "failedCalls": 0,
+            "inputBytes": 864,
+            "outputBytes": 16797,
+            "replayExposureBytes": 209555
+          },
+          "read_code": {
+            "blockedCalls": 0,
+            "calls": 14,
+            "failedCalls": 0,
+            "inputBytes": 838,
+            "outputBytes": 26015,
+            "replayExposureBytes": 245468
+          },
+          "edit_code": {
+            "blockedCalls": 1,
+            "calls": 3,
+            "failedCalls": 0,
+            "inputBytes": 1296,
+            "outputBytes": 1731,
+            "replayExposureBytes": 13840
+          },
+          "run_task": {
+            "blockedCalls": 0,
+            "calls": 3,
+            "failedCalls": 0,
+            "inputBytes": 486,
+            "outputBytes": 1978,
+            "replayExposureBytes": 2464
+          },
+          "finish_task": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 847,
+            "outputBytes": 835,
+            "replayExposureBytes": 0
+          }
+        }
+      },
+      "completion": {
+        "source_revision_id": "src_1fe2c8165783d7f087664c02b8f1e7cd",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "parseErrors": 0,
+      "error": null,
+      "eventsSha256": "4fa23be6e252d09333cf11ac9aed81d95a8bf2b6dd86e6f8994ca15687109672",
+      "diffSha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1",
+      "semanticRenameCalls": 0,
+      "semanticReferenceCalls": 0,
+      "scoreSha256": "ab575c040cc367cdb58aadcd9f50c0c820992405e65bd7f3f29b8aea79721263",
+      "auditedCriteria": true,
+      "auditedSuccess": true,
+      "partition": "fresh-confirmation",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "reportingOnlySensitivity": null,
+      "manualCriteriaFailures": []
+    },
+    {
+      "repetition": 1,
+      "id": "lodash-own-symbol-options",
+      "arm": "reporting",
+      "name": "1-lodash-own-symbol-options-reporting",
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "watchdog": false,
+        "stderr": "(node:359261) Warning: AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting lodash keys and tests**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting lodash keys and tests**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching for variable declaration**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting lodash keys and tests**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching for variable declaration**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting code ranges around public functions**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting lodash keys and tests**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching for variable declaration**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting code ranges around public functions**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection with grep around lodash keys**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting lodash keys and tests**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching for variable declaration**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting code ranges around public functions**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection with grep around lodash keys**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting lodash keys and tests**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching for variable declaration**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting code ranges around public functions**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning inspection with grep around lodash keys**\"}.\n(node:359261) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning symbols inclusion in keys****Designing symbol support in values function****Confirming safe options property access****Verifying keys function handling null****Planning exact post-edit test commands**\"}.\n"
+      },
+      "preparationMs": 143.36396500002593,
+      "bindingsVerificationMs": 972.7233289999422,
+      "outerAgentMs": 72568.41137599992,
+      "verificationMs": 13049.029462999897,
+      "status": "succeeded",
+      "officialRuntimeSuccess": true,
+      "independentFunctionalSuccess": true,
+      "auditedCompletion": true,
+      "usage": {
+        "input": 226591,
+        "output": 4771,
+        "cacheRead": 195584,
+        "cacheWrite": 0,
+        "cost": 0.01583828,
+        "reasoning": null,
+        "completeness": "complete",
+        "normalizationVersion": "blame-usage-v1",
+        "complete": false,
+        "tokensCostReconciled": true,
+        "requests": 15,
+        "reports": 15,
+        "perRequest": [
+          {
+            "input": 3602,
+            "output": 224,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0009892,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 6518,
+            "output": 160,
+            "cacheRead": 2560,
+            "cacheWrite": null,
+            "cost": 0.0010347999999999998,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 8656,
+            "output": 184,
+            "cacheRead": 5632,
+            "cacheWrite": null,
+            "cost": 0.0009382399999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 10365,
+            "output": 237,
+            "cacheRead": 7680,
+            "cacheWrite": null,
+            "cost": 0.0009750000000000002,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 13268,
+            "output": 137,
+            "cacheRead": 9728,
+            "cacheWrite": null,
+            "cost": 0.0010669600000000005,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 15771,
+            "output": 876,
+            "cacheRead": 12800,
+            "cacheWrite": null,
+            "cost": 0.0019014000000000001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16185,
+            "output": 497,
+            "cacheRead": 14848,
+            "cacheWrite": null,
+            "cost": 0.0011607599999999994,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16533,
+            "output": 33,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.0004892400000000002,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16901,
+            "output": 343,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.0009348399999999993,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 17480,
+            "output": 262,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.0009534399999999998,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 19232,
+            "output": 572,
+            "cacheRead": 16896,
+            "cacheWrite": null,
+            "cost": 0.0014915199999999997,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 19517,
+            "output": 199,
+            "cacheRead": 18944,
+            "cacheWrite": null,
+            "cost": 0.0007322800000000001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 20371,
+            "output": 275,
+            "cacheRead": 18944,
+            "cacheWrite": null,
+            "cost": 0.0009942800000000002,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 20662,
+            "output": 270,
+            "cacheRead": 19968,
+            "cacheWrite": null,
+            "cost": 0.0008621600000000007,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 21530,
+            "output": 502,
+            "cacheRead": 19968,
+            "cacheWrite": null,
+            "cost": 0.00131416,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          }
+        ],
+        "reconciliation": {
+          "input": {
+            "sum": 226591,
+            "aggregate": 226591,
+            "matches": true
+          },
+          "output": {
+            "sum": 4771,
+            "aggregate": 4771,
+            "matches": true
+          },
+          "cacheRead": {
+            "sum": null,
+            "aggregate": 195584,
+            "matches": false
+          },
+          "cacheWrite": {
+            "sum": null,
+            "aggregate": 0,
+            "matches": false
+          },
+          "cost": {
+            "sum": 0.01583828,
+            "aggregate": 0.01583828,
+            "matches": true
+          }
+        }
+      },
+      "durationMs": 70620,
+      "metrics": {
+        "context": {
+          "averageInputTokens": 15106.07,
+          "composition": {
+            "categoryBytes": {
+              "user_text": 52515,
+              "assistant_reasoning": 9747,
+              "tool_input.search_code": 29655,
+              "tool_input.read_code": 17620,
+              "tool_result.search_code": 363020,
+              "tool_result.read_code": 298570,
+              "tool_input.run_task": 4999,
+              "tool_result.run_task": 11377,
+              "tool_input.edit_code": 3660,
+              "tool_result.edit_code": 3690
+            },
+            "composedBytes": 999049,
+            "duplicateBytes": 0,
+            "latestComposedBytes": 95365,
+            "latestDuplicateBytes": 0,
+            "latestMessageBytes": 82258,
+            "latestProjectedBytesSaved": 2982,
+            "latestSystemPromptBytes": 5388,
+            "latestToolDefinitionBytes": 7719,
+            "maximumComposedBytes": 95365,
+            "messageBytes": 802444,
+            "projectedBytesSaved": 27584,
+            "requests": 15,
+            "staleReadReplacements": 0,
+            "successfulEditReplacements": 0,
+            "validatedEditReplacements": 0,
+            "systemPromptBytes": 80820,
+            "toolDefinitionBytes": 115785
+          },
+          "compactions": 0,
+          "maximumInputTokens": 21530,
+          "modelRequests": 15,
+          "projectMemory": {
+            "candidates": 0,
+            "injectedBytes": 0,
+            "relevant": 0,
+            "requests": 0,
+            "selected": 0,
+            "stale": 0
+          },
+          "toolPayloadBytes": 68171,
+          "toolPayloadReplayExposureBytes": 642567
+        },
+        "editing": {
+          "attempts": 2,
+          "blocked": 0,
+          "firstAttemptMs": 40624,
+          "firstSuccessMs": 41754,
+          "hybridCalls": 0,
+          "patchOperations": 0,
+          "successful": 2,
+          "symbolOperations": 4
+        },
+        "navigation": {
+          "deduplicatedReads": 0,
+          "readCalls": 14,
+          "returnedBytes": 58108,
+          "searchCalls": 16
+        },
+        "toolFreeGaps": {
+          "countOverThirtySeconds": 0,
+          "maximumMs": 7075,
+          "totalOverThirtySecondsMs": 0
+        },
+        "tools": {
+          "blockedCalls": 0,
+          "calls": 38,
+          "failedCalls": 0,
+          "inputBytes": 4545,
+          "outputBytes": 63626,
+          "replayExposureBytes": 642567,
+          "distinctTools": 5
+        },
+        "toolsByName": {
+          "search_code": {
+            "blockedCalls": 0,
+            "calls": 16,
+            "failedCalls": 0,
+            "inputBytes": 1029,
+            "outputBytes": 25517,
+            "replayExposureBytes": 316723
+          },
+          "read_code": {
+            "blockedCalls": 0,
+            "calls": 14,
+            "failedCalls": 0,
+            "inputBytes": 902,
+            "outputBytes": 32591,
+            "replayExposureBytes": 306380
+          },
+          "run_task": {
+            "blockedCalls": 0,
+            "calls": 5,
+            "failedCalls": 0,
+            "inputBytes": 876,
+            "outputBytes": 3988,
+            "replayExposureBytes": 13782
+          },
+          "edit_code": {
+            "blockedCalls": 0,
+            "calls": 2,
+            "failedCalls": 0,
+            "inputBytes": 1054,
+            "outputBytes": 858,
+            "replayExposureBytes": 5682
+          },
+          "finish_task": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 684,
+            "outputBytes": 672,
+            "replayExposureBytes": 0
+          }
+        }
+      },
+      "completion": {
+        "source_revision_id": "src_23f9bc500ec5a64ff80039748587fce2",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "parseErrors": 0,
+      "error": null,
+      "eventsSha256": "4e48bdada6790760e1bf97352e892d6f66fe5b32773438e5f9112b6a3f2b1c6b",
+      "diffSha256": "08fdf33effd17e34cb1a3e05fe0ca79250e834c57707ef91f341744862b7c58b",
+      "semanticRenameCalls": 0,
+      "semanticReferenceCalls": 0,
+      "scoreSha256": "433fd70ed41c8b82a7ac2a9d50282e73abdb9541d971ce0fa872508495472bab",
+      "auditedCriteria": true,
+      "auditedSuccess": true,
+      "partition": "fresh-confirmation",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "reportingOnlySensitivity": null,
+      "manualCriteriaFailures": []
+    },
+    {
+      "repetition": 1,
+      "id": "lodash-own-symbol-options",
+      "arm": "patch",
+      "name": "1-lodash-own-symbol-options-patch",
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "watchdog": false,
+        "stderr": "(node:359886) Warning: AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js keys and values modification**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js keys and values modification**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted lodash.js function inspection**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js keys and values modification**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted lodash.js function inspection**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js keys and values modification**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted lodash.js function inspection**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning key and value function implementation**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js keys and values modification**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted lodash.js function inspection**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning key and value function implementation**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys function implementation**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js keys and values modification**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning targeted lodash.js function inspection**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning key and value function implementation**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash keys function implementation**\"}.\n(node:359886) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Searching function keys near line 12600**\"}.\n"
+      },
+      "preparationMs": 145.17480499995872,
+      "bindingsVerificationMs": 955.8673410001211,
+      "outerAgentMs": 58396.08269900014,
+      "verificationMs": 12793.99091599998,
+      "status": "succeeded",
+      "officialRuntimeSuccess": true,
+      "independentFunctionalSuccess": true,
+      "auditedCompletion": true,
+      "usage": {
+        "input": 196197,
+        "output": 2666,
+        "cacheRead": 154112,
+        "cacheWrite": 0,
+        "cost": 0.01469844,
+        "reasoning": null,
+        "completeness": "complete",
+        "normalizationVersion": "blame-usage-v1",
+        "complete": false,
+        "tokensCostReconciled": true,
+        "requests": 13,
+        "reports": 13,
+        "perRequest": [
+          {
+            "input": 3506,
+            "output": 220,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0009652,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 6685,
+            "output": 184,
+            "cacheRead": 2560,
+            "cacheWrite": null,
+            "cost": 0.001097,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 8578,
+            "output": 164,
+            "cacheRead": 5632,
+            "cacheWrite": null,
+            "cost": 0.00089864,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 11780,
+            "output": 157,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0025444000000000005,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 14207,
+            "output": 187,
+            "cacheRead": 10752,
+            "cacheWrite": null,
+            "cost": 0.00113044,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16149,
+            "output": 153,
+            "cacheRead": 7680,
+            "cacheWrite": null,
+            "cost": 0.0020310000000000007,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 18007,
+            "output": 33,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.0007840399999999997,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 18990,
+            "output": 790,
+            "cacheRead": 17920,
+            "cacheWrite": null,
+            "cost": 0.0015203999999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 19254,
+            "output": 77,
+            "cacheRead": 17920,
+            "cacheWrite": null,
+            "cost": 0.0007176000000000005,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 19368,
+            "output": 56,
+            "cacheRead": 18944,
+            "cacheWrite": null,
+            "cost": 0.0005308799999999992,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 19506,
+            "output": 239,
+            "cacheRead": 18944,
+            "cacheWrite": null,
+            "cost": 0.0007780800000000004,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 19782,
+            "output": 197,
+            "cacheRead": 18944,
+            "cacheWrite": null,
+            "cost": 0.0007828799999999997,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 20385,
+            "output": 209,
+            "cacheRead": 18944,
+            "cacheWrite": null,
+            "cost": 0.0009178799999999994,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          }
+        ],
+        "reconciliation": {
+          "input": {
+            "sum": 196197,
+            "aggregate": 196197,
+            "matches": true
+          },
+          "output": {
+            "sum": 2666,
+            "aggregate": 2666,
+            "matches": true
+          },
+          "cacheRead": {
+            "sum": null,
+            "aggregate": 154112,
+            "matches": false
+          },
+          "cacheWrite": {
+            "sum": null,
+            "aggregate": 0,
+            "matches": false
+          },
+          "cost": {
+            "sum": 0.01469844,
+            "aggregate": 0.01469844,
+            "matches": true
+          }
+        }
+      },
+      "durationMs": 56382,
+      "metrics": {
+        "context": {
+          "averageInputTokens": 15092.08,
+          "composition": {
+            "categoryBytes": {
+              "user_text": 45513,
+              "assistant_reasoning": 5847,
+              "tool_input.search_code": 20624,
+              "tool_input.read_code": 19493,
+              "tool_result.search_code": 208789,
+              "tool_result.read_code": 381847,
+              "tool_input.run_task": 2029,
+              "tool_result.run_task": 4262,
+              "tool_input.edit_code": 3923,
+              "tool_result.edit_code": 4305
+            },
+            "composedBytes": 865460,
+            "duplicateBytes": 0,
+            "latestComposedBytes": 90327,
+            "latestDuplicateBytes": 0,
+            "latestMessageBytes": 77783,
+            "latestProjectedBytesSaved": 1161,
+            "latestSystemPromptBytes": 5175,
+            "latestToolDefinitionBytes": 7369,
+            "maximumComposedBytes": 90327,
+            "messageBytes": 702388,
+            "projectedBytesSaved": 9197,
+            "requests": 13,
+            "staleReadReplacements": 0,
+            "successfulEditReplacements": 0,
+            "validatedEditReplacements": 0,
+            "systemPromptBytes": 67275,
+            "toolDefinitionBytes": 95797
+          },
+          "compactions": 0,
+          "maximumInputTokens": 20385,
+          "modelRequests": 13,
+          "projectMemory": {
+            "candidates": 0,
+            "injectedBytes": 0,
+            "relevant": 0,
+            "requests": 0,
+            "selected": 0,
+            "stale": 0
+          },
+          "toolPayloadBytes": 63948,
+          "toolPayloadReplayExposureBytes": 558817
+        },
+        "editing": {
+          "attempts": 2,
+          "blocked": 0,
+          "firstAttemptMs": 25854,
+          "firstSuccessMs": 27229,
+          "hybridCalls": 0,
+          "patchOperations": 0,
+          "successful": 2,
+          "symbolOperations": 4
+        },
+        "navigation": {
+          "deduplicatedReads": 0,
+          "readCalls": 15,
+          "returnedBytes": 56192,
+          "searchCalls": 13
+        },
+        "toolFreeGaps": {
+          "countOverThirtySeconds": 0,
+          "maximumMs": 6180,
+          "totalOverThirtySecondsMs": 0
+        },
+        "tools": {
+          "blockedCalls": 0,
+          "calls": 35,
+          "failedCalls": 0,
+          "inputBytes": 3863,
+          "outputBytes": 60085,
+          "replayExposureBytes": 558817,
+          "distinctTools": 5
+        },
+        "toolsByName": {
+          "search_code": {
+            "blockedCalls": 0,
+            "calls": 13,
+            "failedCalls": 0,
+            "inputBytes": 849,
+            "outputBytes": 16967,
+            "replayExposureBytes": 179031
+          },
+          "read_code": {
+            "blockedCalls": 0,
+            "calls": 15,
+            "failedCalls": 0,
+            "inputBytes": 923,
+            "outputBytes": 39225,
+            "replayExposureBytes": 368570
+          },
+          "run_task": {
+            "blockedCalls": 0,
+            "calls": 4,
+            "failedCalls": 0,
+            "inputBytes": 309,
+            "outputBytes": 2225,
+            "replayExposureBytes": 4934
+          },
+          "edit_code": {
+            "blockedCalls": 0,
+            "calls": 2,
+            "failedCalls": 0,
+            "inputBytes": 960,
+            "outputBytes": 858,
+            "replayExposureBytes": 6282
+          },
+          "finish_task": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 822,
+            "outputBytes": 810,
+            "replayExposureBytes": 0
+          }
+        }
+      },
+      "completion": {
+        "source_revision_id": "src_9a4e7ccc8d90de9973317376776f784a",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "parseErrors": 0,
+      "error": null,
+      "eventsSha256": "fb8b02dd659673723f51efc9be684dac512afa7848579e6e231f2acfbeb78e55",
+      "diffSha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6",
+      "semanticRenameCalls": 0,
+      "semanticReferenceCalls": 0,
+      "scoreSha256": "8ec500e9085510959a8f2d6556b18764a0df9e62df0f40dd15f60ec974f70669",
+      "auditedCriteria": true,
+      "auditedSuccess": true,
+      "partition": "fresh-confirmation",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "reportingOnlySensitivity": null,
+      "manualCriteriaFailures": []
+    },
+    {
+      "repetition": 1,
+      "id": "lodash-own-symbol-options",
+      "arm": "bundle",
+      "name": "1-lodash-own-symbol-options-bundle",
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "watchdog": false,
+        "stderr": "(node:360441) Warning: AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning final lodash.js modifications and test runs**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning final lodash.js modifications and test runs**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js function inspection**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning final lodash.js modifications and test runs**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js function inspection**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning selective function inspection**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning final lodash.js modifications and test runs**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js function inspection**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning selective function inspection**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning exact node command checks**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning final lodash.js modifications and test runs**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js function inspection**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning selective function inspection**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning exact node command checks**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning key data extraction**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning final lodash.js modifications and test runs**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning lodash.js function inspection**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning selective function inspection**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning exact node command checks**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning key data extraction**\"}.\n(node:360441) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning keys and values implementation****Designing keys and values with symbol options****Planning simultaneous body edits for aliases**\"}.\n"
+      },
+      "preparationMs": 130.46778000006452,
+      "bindingsVerificationMs": 1030.4916300000623,
+      "outerAgentMs": 69491.0211149999,
+      "verificationMs": 12984.481722000055,
+      "status": "succeeded",
+      "officialRuntimeSuccess": true,
+      "independentFunctionalSuccess": true,
+      "auditedCompletion": true,
+      "usage": {
+        "input": 202080,
+        "output": 3323,
+        "cacheRead": 159744,
+        "cacheWrite": 0,
+        "cost": 0.015649680000000003,
+        "reasoning": null,
+        "completeness": "complete",
+        "normalizationVersion": "blame-usage-v1",
+        "complete": false,
+        "tokensCostReconciled": true,
+        "requests": 14,
+        "reports": 14,
+        "perRequest": [
+          {
+            "input": 3693,
+            "output": 263,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0010542,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 7300,
+            "output": 206,
+            "cacheRead": 3584,
+            "cacheWrite": null,
+            "cost": 0.00106208,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 9612,
+            "output": 249,
+            "cacheRead": 6656,
+            "cacheWrite": null,
+            "cost": 0.0010231199999999998,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 13424,
+            "output": 204,
+            "cacheRead": 8704,
+            "cacheWrite": null,
+            "cost": 0.0013628800000000003,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 15113,
+            "output": 48,
+            "cacheRead": 12800,
+            "cacheWrite": null,
+            "cost": 0.0007762000000000003,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 15787,
+            "output": 627,
+            "cacheRead": 14848,
+            "cacheWrite": null,
+            "cost": 0.0012371600000000002,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16062,
+            "output": 200,
+            "cacheRead": 14848,
+            "cacheWrite": null,
+            "cost": 0.00077976,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16494,
+            "output": 115,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.0005798399999999999,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 16732,
+            "output": 172,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.0006958399999999997,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 17114,
+            "output": 86,
+            "cacheRead": 15872,
+            "cacheWrite": null,
+            "cost": 0.000669040000000001,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 17259,
+            "output": 94,
+            "cacheRead": 16896,
+            "cacheWrite": null,
+            "cost": 0.0005233200000000007,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 17370,
+            "output": 187,
+            "cacheRead": 16896,
+            "cacheWrite": null,
+            "cost": 0.0006571200000000006,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 17622,
+            "output": 304,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.0038892000000000006,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 18498,
+            "output": 568,
+            "cacheRead": 16896,
+            "cacheWrite": null,
+            "cost": 0.0013399199999999997,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          }
+        ],
+        "reconciliation": {
+          "input": {
+            "sum": 202080,
+            "aggregate": 202080,
+            "matches": true
+          },
+          "output": {
+            "sum": 3323,
+            "aggregate": 3323,
+            "matches": true
+          },
+          "cacheRead": {
+            "sum": null,
+            "aggregate": 159744,
+            "matches": false
+          },
+          "cacheWrite": {
+            "sum": null,
+            "aggregate": 0,
+            "matches": false
+          },
+          "cost": {
+            "sum": 0.015649680000000003,
+            "aggregate": 0.015649680000000003,
+            "matches": true
+          }
+        }
+      },
+      "durationMs": 67458,
+      "metrics": {
+        "context": {
+          "averageInputTokens": 14434.29,
+          "composition": {
+            "categoryBytes": {
+              "user_text": 49014,
+              "assistant_reasoning": 7672,
+              "tool_input.search_code": 23909,
+              "tool_input.read_code": 19302,
+              "tool_result.search_code": 241045,
+              "tool_result.read_code": 327748,
+              "tool_input.edit_code": 10690,
+              "tool_result.edit_code": 25301,
+              "tool_input.run_task": 756,
+              "tool_result.run_task": 3007
+            },
+            "composedBytes": 904726,
+            "duplicateBytes": 0,
+            "latestComposedBytes": 83444,
+            "latestDuplicateBytes": 0,
+            "latestMessageBytes": 69901,
+            "latestProjectedBytesSaved": 1007,
+            "latestSystemPromptBytes": 5379,
+            "latestToolDefinitionBytes": 8164,
+            "maximumComposedBytes": 83444,
+            "messageBytes": 715124,
+            "projectedBytesSaved": 9518,
+            "requests": 14,
+            "staleReadReplacements": 0,
+            "successfulEditReplacements": 0,
+            "validatedEditReplacements": 0,
+            "systemPromptBytes": 75306,
+            "toolDefinitionBytes": 114296
+          },
+          "compactions": 0,
+          "maximumInputTokens": 18498,
+          "modelRequests": 14,
+          "projectMemory": {
+            "candidates": 0,
+            "injectedBytes": 0,
+            "relevant": 0,
+            "requests": 0,
+            "selected": 0,
+            "stale": 0
+          },
+          "toolPayloadBytes": 55326,
+          "toolPayloadReplayExposureBytes": 545375
+        },
+        "editing": {
+          "attempts": 4,
+          "blocked": 2,
+          "firstAttemptMs": 25647,
+          "firstSuccessMs": 26833,
+          "hybridCalls": 0,
+          "patchOperations": 5,
+          "successful": 2,
+          "symbolOperations": 2
+        },
+        "navigation": {
+          "deduplicatedReads": 0,
+          "readCalls": 14,
+          "returnedBytes": 43783,
+          "searchCalls": 13
+        },
+        "toolFreeGaps": {
+          "countOverThirtySeconds": 0,
+          "maximumMs": 8759,
+          "totalOverThirtySecondsMs": 0
+        },
+        "tools": {
+          "blockedCalls": 2,
+          "calls": 35,
+          "failedCalls": 0,
+          "inputBytes": 4499,
+          "outputBytes": 50827,
+          "replayExposureBytes": 545375,
+          "distinctTools": 5
+        },
+        "toolsByName": {
+          "search_code": {
+            "blockedCalls": 0,
+            "calls": 13,
+            "failedCalls": 0,
+            "inputBytes": 806,
+            "outputBytes": 16578,
+            "replayExposureBytes": 207752
+          },
+          "read_code": {
+            "blockedCalls": 0,
+            "calls": 14,
+            "failedCalls": 0,
+            "inputBytes": 771,
+            "outputBytes": 27205,
+            "replayExposureBytes": 305118
+          },
+          "edit_code": {
+            "blockedCalls": 2,
+            "calls": 4,
+            "failedCalls": 0,
+            "inputBytes": 1543,
+            "outputBytes": 3534,
+            "replayExposureBytes": 29396
+          },
+          "run_task": {
+            "blockedCalls": 0,
+            "calls": 3,
+            "failedCalls": 0,
+            "inputBytes": 483,
+            "outputBytes": 2626,
+            "replayExposureBytes": 3109
+          },
+          "finish_task": {
+            "blockedCalls": 0,
+            "calls": 1,
+            "failedCalls": 0,
+            "inputBytes": 896,
+            "outputBytes": 884,
+            "replayExposureBytes": 0
+          }
+        }
+      },
+      "completion": {
+        "source_revision_id": "src_d5c78468cf724ad8c6c3bf976a4cd43b",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "parseErrors": 0,
+      "error": null,
+      "eventsSha256": "ced43a0d5d49871f778462162b403525a2c1140741b7b2b9b026fae78a3be7e3",
+      "diffSha256": "db0364c882cba529c2dc743bdd14a7c01a48b528b221be73197382a5a61a4f34",
+      "semanticRenameCalls": 0,
+      "semanticReferenceCalls": 0,
+      "scoreSha256": "89d31172055221bddd6ad0ce31f13533d5d0cbec670030c04a4ce9a0c41ed2c6",
       "auditedCriteria": true,
       "auditedSuccess": true,
       "partition": "fresh-confirmation",

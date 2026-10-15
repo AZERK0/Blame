@@ -1,7 +1,7 @@
 {
   "paidRequests": 0,
   "planned": 108,
-  "completed": 24,
+  "completed": 36,
   "frozenInputsAndRuntimesVerified": true,
   "actualWireModelEffortByteGuardVerified": true,
   "nominalOutputCapEffective": false,
@@ -103,6 +103,54 @@
     "1-rxjs-promise-abort-config-cline": {
       "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
       "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "1-rxjs-promise-abort-config-references": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "1-rxjs-promise-abort-config-rename": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "1-rxjs-promise-abort-config-reading": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "1-lodash-own-symbol-options-baseline": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "1-lodash-own-symbol-options-scope": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "1-lodash-own-symbol-options-cline": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "1-lodash-own-symbol-options-references": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "1-lodash-own-symbol-options-rename": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "1-lodash-own-symbol-options-reading": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "1-lodash-own-symbol-options-reporting": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "1-lodash-own-symbol-options-patch": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "1-lodash-own-symbol-options-bundle": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
     }
   },
   "matchedInitialIdentities": [
@@ -147,7 +195,26 @@
         "bundle",
         "baseline",
         "scope",
-        "cline"
+        "cline",
+        "references",
+        "rename",
+        "reading"
+      ],
+      "sameHeadAndTree": true
+    },
+    {
+      "id": "lodash-own-symbol-options",
+      "repetition": 1,
+      "arms": [
+        "baseline",
+        "scope",
+        "cline",
+        "references",
+        "rename",
+        "reading",
+        "reporting",
+        "patch",
+        "bundle"
       ],
       "sameHeadAndTree": true
     }
@@ -296,6 +363,78 @@
       "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
       "promptSha256": "bac7502d02cd8f500a9b88d042c97c8a3dbfec7933a4bebb5ed34293a4b29476",
       "normalizedContractSha256": "c3f76ce7e18e8d97008b4198f9c361c73ef43e30bafd18fa0b77633802a1f5dd"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-references",
+      "toolsSha256": "10cc795fa74e6e03e3d2dc3c46d107081799ebb9f50987725be4dc7cafc03e48",
+      "promptSha256": "446b09719c96da135529eee8254869f84700c8ea53451dd499e0d628eb155c77",
+      "normalizedContractSha256": "36db67923f83495f4bd1dcd4081524d129ec9ea295b89b345de1698afa371535"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-rename",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "648fc1ae950f13766bfde21fff9eace0e32f216076fb0126207efef0058e9492",
+      "normalizedContractSha256": "9bc400e014209a153efbda8e5412495a37b7f174ce4ef07981380a6589fbaf97"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-reading",
+      "toolsSha256": "1eb5cb42345fd15d3ea582a399ee3b15275a8ea4fecd3a5b7dd4513544023129",
+      "promptSha256": "8b497a2b033ab99dc9626f1820abed4877e7c30381feda41ce38990098722bda",
+      "normalizedContractSha256": "ecc224128c56940fe296526dfcf20c9c56fa6a2e54a2bd89a95a22fed9af307c"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-baseline",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "92bb9fa76b7de3b6f7b62195119cbca64e0da6497068154e79d7c5fa2e830e1e",
+      "normalizedContractSha256": "80c324f0ea08ec549a11ee72f367fd4c79926672c60454a1e117cedea61aa063"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-scope",
+      "toolsSha256": "305c04a53b2eb79c5359c4dc7917683851c4df2de7fa5ab67ae59c39766e7e21",
+      "promptSha256": "6affbda36857497cf063c3d5c1fb7bd6e02bb496afdf85aca8927ff6f2769ad1",
+      "normalizedContractSha256": "6a8c2573dd4ee457a62f0e12031b212510de20fe9b2c9078c1dc0857f9087f5a"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-cline",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "42f99ff9d9b1bf25a79bdd852652b0ab5fac85602c4a28ad94c39099f2557846",
+      "normalizedContractSha256": "c3f76ce7e18e8d97008b4198f9c361c73ef43e30bafd18fa0b77633802a1f5dd"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-references",
+      "toolsSha256": "10cc795fa74e6e03e3d2dc3c46d107081799ebb9f50987725be4dc7cafc03e48",
+      "promptSha256": "fe8037b1076642cbe800096bb74aeea6fea6198a28e004592ac882ffcb63837c",
+      "normalizedContractSha256": "1b64d825aab4b0c55d8b09871bb7b755b9b4f02723ac32500e71df70e3a46a3c"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-rename",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "ace687740739b71af5042fc0d9fb6101116b202216735ec3664e88e50668627e",
+      "normalizedContractSha256": "80c324f0ea08ec549a11ee72f367fd4c79926672c60454a1e117cedea61aa063"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-reading",
+      "toolsSha256": "1eb5cb42345fd15d3ea582a399ee3b15275a8ea4fecd3a5b7dd4513544023129",
+      "promptSha256": "4e8fa19d9eada73572c22d217ec5d582f9155f133f35fffd36a35423f4ab925a",
+      "normalizedContractSha256": "c448190d35d90f91f197a7df4c0e4a26440d5cba30cbfd6bda2a35537f0de0c5"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-reporting",
+      "toolsSha256": "8c69fbc427868efe88a7c243364f66a6312958b44defa9038f3b01ed7d35772d",
+      "promptSha256": "d9c49a34b1746355676d6fb3246bda330357ed276ee8f20ec896a0b549942a23",
+      "normalizedContractSha256": "d7ee5af9c0c00b769d17e09f460afff2a55cfb07121ad54dec5e40acd94f6875"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-patch",
+      "toolsSha256": "845292da2156cdb1513f02910895e1d6631021f844e700caffb1181ca645d507",
+      "promptSha256": "2ab565bd48db414de421e4464e67ed545441f574cb63c3876e2a669177183402",
+      "normalizedContractSha256": "30b4fd50d8b6156dbbe91b9550945b114cff0ba515b628db84c7f18844d519cd"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-bundle",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "d5256d2886c0b8e73e493b14c6bc9659a11071d6c55b526e3256a57899c03f3b",
+      "normalizedContractSha256": "64a82befebecf339deab017bec1ae7ed2713e1a0a64f71927ca9bbd458b6732a"
     }
   ],
   "audits": [
@@ -683,6 +822,195 @@
           "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
           "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
           "functionName": "sP"
+        }
+      ]
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-references",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-rxjs-promise-abort-config-references.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-rename",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-rxjs-promise-abort-config-rename.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-reading",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-rxjs-promise-abort-config-reading.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-lodash-own-symbol-options-baseline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-lodash-own-symbol-options-baseline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-lodash-own-symbol-options-scope",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-lodash-own-symbol-options-scope.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-lodash-own-symbol-options-cline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-lodash-own-symbol-options-cline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-lodash-own-symbol-options-cline",
+      "file": "native-search-loads.jsonl",
+      "artifact": "execution-audits/1-lodash-own-symbol-options-cline.native-search-loads.jsonl.gz",
+      "sha256": "4ecd591c9570e57d85005a16da3a35c518b5750d93412d98a9bcc2eb216d8df1",
+      "bytes": 420,
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        },
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        }
+      ]
+    },
+    {
+      "name": "1-lodash-own-symbol-options-references",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-lodash-own-symbol-options-references.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-lodash-own-symbol-options-rename",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-lodash-own-symbol-options-rename.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-lodash-own-symbol-options-reading",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-lodash-own-symbol-options-reading.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-lodash-own-symbol-options-reporting",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-lodash-own-symbol-options-reporting.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-lodash-own-symbol-options-patch",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-lodash-own-symbol-options-patch.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "1-lodash-own-symbol-options-bundle",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/1-lodash-own-symbol-options-bundle.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
         }
       ]
     }

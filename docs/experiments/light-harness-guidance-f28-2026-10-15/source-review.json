@@ -280,6 +280,138 @@
       "eventsSha256": "3b7167e0efd5d1437ed8547e67cb0174e054c4031d8be54605d0cf812aad6f8f",
       "diffSha256": "4ce9e2ecd3d94e9f91ed252e535ef55705fc892a2d7ea3f3055f21f653209284",
       "scoreSha256": "caef1cac98928a197ea2ce204dcedda0113a58407ea85e2ccd7c146bbb6666f4"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-references",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 23 effective inputs and complete two-file final diff reviewed. File patch16 preserves defaults/overloads and keeps helpers in existing implementations with permitted import. Correct initialized subscriber, pre/post listener checks, cleanup and proper AbortError pass all12 private probes in both timezones plus selected/full suites. Exact final compiler/full Mocha17/18 pass3249/8pending, skipped unknown. Final wording only says no visibly named abort coverage in dot output, not that the supplied fixture is absent; accepted. Unconditional Error allocation retained as unregistered implementation tradeoff. No protected input changes or solution retrieval; no reference-hint runtime activation on this task.",
+      "eventsSha256": "545763676715cc8135cfbec1c856027ea799c186af002a23cc368136d2509eb0",
+      "diffSha256": "914e972106e9b4873d5db331c683e7a1811849fc4bbc6b892653b8c17e43b129",
+      "scoreSha256": "c8b60380607e73a1d2f322df51543b4cb80b54acaba9662492a5c78feec5503d"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-rename",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 29 effective inputs and complete two-file final diff reviewed. Preserve multiple literal whitespace scopes selecting no files, unqualified Observable#subscribe lookup (missing class qualification), and one rejected targeted multi-file patch23. File patch22 then explicit two-operation correction24 precede exact final checks25/26. Required defaults/overloads, optional signals, permitted import and nested helpers stay in scope; Error instances, initialized subscriber, abort teardown and terminal cleanup pass12 private probes in both timezones and full suites. Mocha3249/8pending, skipped unknown; dot reporter does not visibly name dedicated abort tests, qualified wording accepted. No protected changes or solution retrieval. No compiler rename/receipt activation on behavior task.",
+      "eventsSha256": "10157d53ec71c5048bfc4f0bd7f11c8ac0b348dd042aa0e9abb0a218af714033",
+      "diffSha256": "0e38a69070b9ee4fb8a6d38a4af7220d38eb6362c2cfdfbbbfd95c3aa1506599",
+      "scoreSha256": "922bf3ba9581aab4dc619180e642838f50cba7e8c9c4fd2794f56c155623c02d"
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-reading",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 15 effective inputs and complete two-file final diff reviewed. Two rejected edits9/10 (multi-file symbol scope then path alias used as symbol) have no source effects; explicit file patch11 succeeds. Optional signal/defaultValue/overloads/import remain in scope; pre-abort returns a rejected Promise, initialized subscriber prevents TDZ and abort/terminal handlers clean listeners. All12 probes in both timezones and selected/full suites pass. Exact final compiler/Mocha12/13 pass3249/8pending; skipped unknown accurately. Protected supplied abort fixture was read but not changed; no solution retrieval. Truncation recovery did not activate.",
+      "eventsSha256": "391b124b110f6035f1af777171447640c8ae73650733d43f939d4fc30886d060",
+      "diffSha256": "35650f3eff7d701515b7bc69651cca4ff67d6f33f4c2d228d5e10110a6df77f5",
+      "scoreSha256": "3c26264d5db993c275790e1685374806a97f2ca8359abe8fd331205083ec24f8"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 23 effective inputs and full final diff reviewed. Symbol body replacements15 plus signature patch16 alter only existing keys/values; own enumerable symbols use existing getSymbols/arrayPush, strict true opt-in and ordering preserved. All independent symbol/default/primitive/protected-input probes pass in both timezones. Exact final syntax/QUnit/Node fixture commands17/18/19 pass6794+5, Node explicitly0skipped. QUnit separate skipped category remains unreported. Final no limitations encountered is read as no encountered command failure, not formal admission; unverified retained. No assertions/new files/config changes or solution retrieval.",
+      "eventsSha256": "913fd564e62dc784c5588f57fcd3d33f02843c53e3c720acd2f6b321a79a1670",
+      "diffSha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6",
+      "scoreSha256": "9e93c85997556a8689f358257582205b89cbf183ddac9e299da02c7f6b7423e0"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-scope",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 30 effective inputs and full final diff reviewed. Atomic two-symbol replace25 modifies only keys/values; own enumerable symbol helper and strict true opt-in preserve defaults/order/coercion. Exact final syntax/QUnit/Node commands26/27/28 pass6794+5. Final distinguishes QUnit unknown skipped from Node explicit0skipped, with no extra verification claim. Extensive unrelated ranges/searches and one own-checkout grep retained as overhead. No protected changes, outside source access or solution retrieval.",
+      "eventsSha256": "4e17ef52dcd08cbe4d2798243f8a26c6fbb7f1b05d85fafcc0f8808e925c86ee",
+      "diffSha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1",
+      "scoreSha256": "d14452576c5b2a954c0b03a668f12236fd02832d2de121fdc2127cd0c5048b90"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All 15 effective inputs and full final diff reviewed. Same two-function endpoint hash as reviewed scope arm: strict true opt-in, getSymbols/arrayPush and corresponding baseValues ordering preserve defaults/coercion/inherited APIs. One patch9, all exact final commands12 report SDK success, QUnit raw PASS6794/FAIL0/TOTAL6794 and Node5cases explicit0skipped; final separates legacy unknown skipped/pending. Unsupported timeout_ms keys are inert. Many broad searches and unrelated code/test ranges retained as token overhead. Only lodash.js changes; no external/history/private solution retrieval or formal Light admission.",
+      "eventsSha256": "af1e3a0440965b8322678b95a61a59459d359fcd5131ada0ab78666db37a33ac",
+      "diffSha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1",
+      "scoreSha256": "c57a39ce0297b11641d563ce7bd536a106bb8346251269f5e8217cc2228f306c"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-references",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All26 effective inputs reviewed; final diff byte-identical to reviewed Lodash baseline. Atomic two-symbol replace21, exact three final commands22/23/24 pass QUnit6794 and Node5cases. Final separates legacy unknown pending/skipped from Node explicit0skipped/todo and limits environment coverage. No unrelated source/protected input changes or solution retrieval. Bare-reference follow-up hints do not activate on this task; broad and redundant ranges retained.",
+      "eventsSha256": "3c92094b6b6b6bd668eb37b51b79b200701c7cda80cfe6f467104e86563a50d7",
+      "diffSha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6",
+      "scoreSha256": "64a2c742f9558356c223988d509899e42eb17a661b89186293a55da250078d28"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-rename",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All26 effective inputs and full final diff reviewed. Body replacements16 initially use options without parameters; signature patch21 repairs both before exact checks22/23/24 passQUnit6794 and Node5cases. Only keys/values change, strict true own-symbol ordering and default/coercion behavior pass all private probes. Final0skipped/todo applies explicitly to Node; no skipped tests reported is qualified reporting wording, not an imputed QUnit0 category. QUnit separate skipped remains unknown. Repeated symbol reads, literal compound empty scopes and extra ranges retained. No compiler rename receipt activation, protected changes or solution retrieval.",
+      "eventsSha256": "6b34371b3f437b4afd30e94444b65bbbf9bf7078133238ba84915c703a64ab9f",
+      "diffSha256": "c1db8427d926791fe8bf70ccd3623464b6fe4b2c64b9fced4072dba943eb6aa9",
+      "scoreSha256": "223ff5135e4f8913ae3c4bfbaac84cf1a6491d52276c18469a15173e2ea84ac3"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-reading",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All35 effective inputs reviewed; full final diff equals reviewed scope/native endpoint. Initial two-body edit24 lacks options parameters; duplicate Update File headers in scoped signature patch27 are atomically rejected, then two whole-symbol replacements28 repair signatures before exact checks31/32/33 passQUnit6794 and Node5cases. Source scope/defaults/own-symbol ordering and private probes pass. Final separates unknown QUnit skipped from Node explicit0. No truncated-read guidance activation; unnecessary range/search calls and repair churn retained. No protected changes or solution retrieval.",
+      "eventsSha256": "4fa23be6e252d09333cf11ac9aed81d95a8bf2b6dd86e6f8994ca15687109672",
+      "diffSha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1",
+      "scoreSha256": "ab575c040cc367cdb58aadcd9f50c0c820992405e65bd7f3f29b8aea79721263"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-reporting",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All38 effective inputs and full final diff reviewed. Two-body edit29 initially omits options parameters; whole-symbol edit33 repairs both before exact final syntax/QUnit/Node34/35/36 pass6794+5. Only registered functions change; defaults/coercion/own-enumerable-symbol ordering and private checks pass. Final reproduces runner-specific QUnit counters and Node5case/0skipped/todo counts without broader claims; formal unverified retained. Many repeated text queries/ranges and signature repair retained as overhead. No protected changes or solution retrieval.",
+      "eventsSha256": "4e48bdada6790760e1bf97352e892d6f66fe5b32773438e5f9112b6a3f2b1c6b",
+      "diffSha256": "08fdf33effd17e34cb1a3e05fe0ca79250e834c57707ef91f341744862b7c58b",
+      "scoreSha256": "433fd70ed41c8b82a7ac2a9d50282e73abdb9541d971ce0fa872508495472bab"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-patch",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All35 effective inputs reviewed; final diff matches reviewed Lodash baseline exactly. Body edit27 lacks options parameters, whole-symbol replacement30 fixes signatures before exact final checks31/32/33 passQUnit6794 and Node5cases. Own-symbol/default/coercion/order private probes pass; only keys/values change. Node0skipped/todo is explicitly scoped; no skipped categories observed is qualified observation wording, not an imputed QUnit numeric0. Extensive redundant searches/ranges and signature-only inspection retained. No patch correction runtime exposure, protected changes or solution retrieval.",
+      "eventsSha256": "fb8b02dd659673723f51efc9be684dac512afa7848579e6e231f2acfbeb78e55",
+      "diffSha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6",
+      "scoreSha256": "8ec500e9085510959a8f2d6556b18764a0df9e62df0f40dd15f60ec974f70669"
+    },
+    {
+      "name": "1-lodash-own-symbol-options-bundle",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All35 effective inputs and full final diff reviewed. Body replacements23 omit options parameters; two atomic rejections24/27 preserve source (duplicate headers in one file, then scoped indentation/preimage mismatch), explicit file operations30 add both parameters. Exact final commands31/32/33 passQUnit6794 and Node5cases; private defaults/own-symbol/order/primitive probes pass. Final distinguishes unknown QUnit skipped/pending and Node explicit0skipped/todo. New patchCorrection is naturally exposed at24 and shows duplicate lodash.js headers mislabeled multiple_files_for_symbol; retain as diagnostic wording limitation, not source failure. No other source/protected changes or solution retrieval.",
+      "eventsSha256": "ced43a0d5d49871f778462162b403525a2c1140741b7b2b9b026fae78a3be7e3",
+      "diffSha256": "db0364c882cba529c2dc743bdd14a7c01a48b528b221be73197382a5a61a4f34",
+      "scoreSha256": "89d31172055221bddd6ad0ce31f13533d5d0cbec670030c04a4ce9a0c41ed2c6"
     }
   ]
 }

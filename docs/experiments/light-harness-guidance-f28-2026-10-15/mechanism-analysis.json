@@ -2411,6 +2411,1295 @@
       "classifiedRawNpmInvocations": 0,
       "classifiedInvocations": [],
       "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-references",
+      "id": "rxjs-promise-abort-config",
+      "arm": "references",
+      "repetition": 1,
+      "searchCalls": 5,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 13,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "FirstValueFromConfig LastValueFromConfig firstValueFrom lastValueFrom",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "firstValueFrom(",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "lastValueFrom(",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 6
+        },
+        {
+          "input": {
+            "query": "AbortError",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "AbortSignal",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 3
+        }
+      ],
+      "eventsSha256": "545763676715cc8135cfbec1c856027ea799c186af002a23cc368136d2509eb0",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-rename",
+      "id": "rxjs-promise-abort-config",
+      "arm": "rename",
+      "repetition": 1,
+      "searchCalls": 9,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 4,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 14,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 1,
+      "activeCaseCaptions": 0,
+      "readTargets": 14,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 1,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "FirstValueFromConfig LastValueFromConfig firstValueFrom lastValueFrom",
+            "scope": "src spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "firstValueFrom",
+            "scope": "src/internal src spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "lastValueFrom",
+            "scope": "src/internal src spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "FirstValueFromConfig",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 3
+        },
+        {
+          "input": {
+            "query": "firstValueFrom",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "lastValueFrom",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "AbortSignal",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 3
+        },
+        {
+          "input": {
+            "query": "addEventListener('abort' removeEventListener('abort'",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "new AbortController AbortController",
+            "scope": "spec src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "10157d53ec71c5048bfc4f0bd7f11c8ac0b348dd042aa0e9abb0a218af714033",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-promise-abort-config-reading",
+      "id": "rxjs-promise-abort-config",
+      "arm": "reading",
+      "repetition": 1,
+      "searchCalls": 2,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 7,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 1,
+      "activeCaseCaptions": 0,
+      "readTargets": 7,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 2,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "FirstValueFromConfig LastValueFromConfig firstValueFrom lastValueFrom",
+            "scope": "src",
+            "mode": "auto"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "firstValueFrom lastValueFrom",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "391b124b110f6035f1af777171447640c8ae73650733d43f939d4fc30886d060",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-own-symbol-options-baseline",
+      "id": "lodash-own-symbol-options",
+      "arm": "baseline",
+      "repetition": 1,
+      "searchCalls": 7,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 10,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keys(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "values(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getAllKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "baseKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 6
+        }
+      ],
+      "eventsSha256": "913fd564e62dc784c5588f57fcd3d33f02843c53e3c720acd2f6b321a79a1670",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-own-symbol-options-scope",
+      "id": "lodash-own-symbol-options",
+      "arm": "scope",
+      "repetition": 1,
+      "searchCalls": 11,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 13,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keysIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "valuesIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "Object.getOwnPropertySymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 1
+        },
+        {
+          "input": {
+            "query": "getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keys(",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "Creates an array of the own enumerable string keyed property names",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "arrayLikeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 3
+        }
+      ],
+      "eventsSha256": "4e17ef52dcd08cbe4d2798243f8a26c6fbb7f1b05d85fafcc0f8808e925c86ee",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-own-symbol-options-cline",
+      "id": "lodash-own-symbol-options",
+      "arm": "cline",
+      "repetition": 1,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 6,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 16,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "af1e3a0440965b8322678b95a61a59459d359fcd5131ada0ab78666db37a33ac",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-own-symbol-options-references",
+      "id": "lodash-own-symbol-options",
+      "arm": "references",
+      "repetition": 1,
+      "searchCalls": 8,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 13,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keys(object)",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values(object)",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "baseKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 6
+        },
+        {
+          "input": {
+            "query": "baseValues",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 4
+        },
+        {
+          "input": {
+            "query": "getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getAllKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "3c92094b6b6b6bd668eb37b51b79b200701c7cda80cfe6f467104e86563a50d7",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-own-symbol-options-rename",
+      "id": "lodash-own-symbol-options",
+      "arm": "rename",
+      "repetition": 1,
+      "searchCalls": 8,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 11,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 11,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keysIn valuesIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keys(",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values(",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "baseKeys(object)",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "getAllKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "baseValues(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 3
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "6b34371b3f437b4afd30e94444b65bbbf9bf7078133238ba84915c703a64ab9f",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-own-symbol-options-reading",
+      "id": "lodash-own-symbol-options",
+      "arm": "reading",
+      "repetition": 1,
+      "searchCalls": 14,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 2,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 14,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 1,
+      "activeCaseCaptions": 0,
+      "readTargets": 14,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 1,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseValues",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keys =",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "values =",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "baseKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 6
+        },
+        {
+          "input": {
+            "query": "keysIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "Creates an array of the own enumerable property values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "baseValues",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 4
+        }
+      ],
+      "eventsSha256": "4fa23be6e252d09333cf11ac9aed81d95a8bf2b6dd86e6f8994ca15687109672",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-own-symbol-options-reporting",
+      "id": "lodash-own-symbol-options",
+      "arm": "reporting",
+      "repetition": 1,
+      "searchCalls": 16,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 14,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 14,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keys(",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "values(",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keys =",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "values =",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseValues",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "@param {Object} object The object to query.",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "The own enumerable property names",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "The own enumerable string keyed property values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseKeys(object)",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keys(object)",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "nativeKeys =",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function arrayLikeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "4e48bdada6790760e1bf97352e892d6f66fe5b32773438e5f9112b6a3f2b1c6b",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-own-symbol-options-patch",
+      "id": "lodash-own-symbol-options",
+      "arm": "patch",
+      "repetition": 1,
+      "searchCalls": 13,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 15,
+      "signatureRequests": 1,
+      "signatureRendered": 1,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 15,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keys(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "values(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getAllKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "nativeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 4
+        },
+        {
+          "input": {
+            "query": "function arrayLikeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "Creates an array of the own enumerable string keyed property names",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function getSymbolsIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keys(",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function getSymbols",
+            "scope": "lodash.js",
+            "mode": "auto"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getSymbols(object)",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 2
+        }
+      ],
+      "eventsSha256": "fb8b02dd659673723f51efc9be684dac512afa7848579e6e231f2acfbeb78e55",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-own-symbol-options-bundle",
+      "id": "lodash-own-symbol-options",
+      "arm": "bundle",
+      "repetition": 1,
+      "searchCalls": 13,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 14,
+      "signatureRequests": 2,
+      "signatureRendered": 2,
+      "scopedRecoveryHints": 2,
+      "activeCaseCaptions": 0,
+      "readTargets": 14,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 2,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function values",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "guidance-symbols",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 1
+        },
+        {
+          "input": {
+            "query": "keys(",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keys(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "values(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "nativeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 4
+        },
+        {
+          "input": {
+            "query": "function keysIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function valuesIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keys",
+            "scope": "lodash.js",
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "keys(object)",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "Creates an array of the own enumerable string keyed property names",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "ced43a0d5d49871f778462162b403525a2c1140741b7b2b9b026fae78a3be7e3",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
     }
   ]
 }
