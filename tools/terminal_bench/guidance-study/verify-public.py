@@ -116,6 +116,21 @@ if (root/'window-timing-diagnostic.json').exists():
   assert controls[1]['diffSha256']==diagnostic['originalDiffSha256']
   assert all(len(r['invocations'])==6 for r in controls)
   assert all(i['scope']==('full-suite' if i['repetition']==6 else 'targeted') for r in controls for i in r['invocations'])
+for stage in ['before','after']:
+ if (root/f'duplicate-header-{stage}.json').exists():
+  diagnostic=read(f'duplicate-header-{stage}.json');name=diagnostic['trial']
+  assert diagnostic['paidRequests']==0 and diagnostic['postSelectedDiagnostic']
+  assert diagnostic['eventsSha256']==sha(raw[name,'events.jsonl'])
+  assert diagnostic['recordedPrefixCalls']==24 and diagnostic['rejectedCall']==24
+  assert diagnostic['sourceBeforeSha256']==diagnostic['sourceAfterSha256']
+  assert diagnostic['rejected']['status']=='blocked'
+  recovery=diagnostic['rejected']['recovery'];correction=json.loads(recovery[recovery.index('{'):])['patchCorrection']
+  assert correction['patchPaths']==['lodash.js','lodash.js']
+  assert correction['reason']==('multiple_files_for_symbol' if stage=='before' else 'multiple_headers_for_symbol')
+  if stage=='after':
+   before=read('duplicate-header-before.json')
+   assert diagnostic['sourceBeforeSha256']==before['sourceBeforeSha256']
+   assert diagnostic['editModuleSha256']!=before['editModuleSha256']
 evidence=read('evidence-checks.json')
 for audit in evidence['audits']:
  b=gzip.decompress((root/audit['artifact']).read_bytes());assert len(b)==audit['bytes'] and sha(b)==audit['sha256']

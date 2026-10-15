@@ -23,3 +23,9 @@ After 13 completed trials, inode exhaustion stopped the next preparation during 
 `root-scope-diagnostic.json` is a separate zero-model replay: a nonempty `"*"` scope searches root files only; omitted scope or `"**"` reaches nested references. No F28 treatment is modified. `publication-controls.json` retains five rejected corrupted-evidence/accounting controls and a valid replay.
 
 `native-projection-diagnostic.json` replays the pinned SDK’s pure text clipping helper: the raw Cline date-fns result contains the full Vitest aggregate, but default8,000-character middle clipping removes it before model presentation. Qualified unknown totals are accepted in the audit. Recorded tool output is not proof of model-visible information. The public Python replay independently reconstructs this specific projection from archived events.
+
+`window-timing-diagnostic.json` preserves a later independent full-suite failure and a separate finite replay of the unchanged RxJS 3ms/8ms timer test. Identical source passes and fails; the original primary failure remains counted. Diagnostic reruns never replace a trial.
+
+`duplicate-header-before.json` replays the first24 recorded calls of the first Lodash bundle trial, then its rejected request. Two `Update File: lodash.js` headers leave source untouched but produce the imprecise `multiple_files_for_symbol` reason. Any later diagnostic correction is outside the measured versions and cannot establish a new model success.
+
+Project-task display labels can contain the package-script body. The frozen `taskInvocation` resolver maps date-fns `types` to executable `npm`, arguments `run types`, despite display label `tsc --noEmit`; its package-script output agrees. Audit the resolved invocation before treating a display label as evidence of a missing requested command. This source-based reconstruction is not an independent process-system-call capture.

@@ -43,8 +43,8 @@
     {
       "file": "continued-orchestration.log",
       "artifact": "administration/continued-orchestration.log.gz",
-      "bytes": 3878,
-      "sha256": "f0fa877999bbe0605a9e8442d05b8ca608d311a97b4bc8a8aa6284202b8dd788"
+      "bytes": 5198,
+      "sha256": "7781208b6a6a9f61d2ce27b8e28c49c1ce2336dbb92b02ff8e33464c547b535b"
     },
     {
       "file": "continuation.json",

@@ -1,7 +1,7 @@
 {
   "paidRequests": 0,
   "planned": 108,
-  "completed": 50,
+  "completed": 63,
   "frozenInputsAndRuntimesVerified": true,
   "actualWireModelEffortByteGuardVerified": true,
   "nominalOutputCapEffective": false,
@@ -207,6 +207,58 @@
     "2-date-fns-offset-helper-migration-bundle": {
       "head": "1433f8302900180616a16287948552a8c30dcfb0",
       "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "2-date-fns-offset-helper-migration-patch": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "2-date-fns-offset-helper-migration-reporting": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "2-date-fns-offset-helper-migration-reading": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "2-date-fns-offset-helper-migration-rename": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "2-rxjs-promise-abort-config-reporting": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "2-rxjs-promise-abort-config-reading": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "2-rxjs-promise-abort-config-rename": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "2-rxjs-promise-abort-config-references": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "2-rxjs-promise-abort-config-cline": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "2-rxjs-promise-abort-config-scope": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "2-rxjs-promise-abort-config-baseline": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "2-rxjs-promise-abort-config-bundle": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "2-rxjs-promise-abort-config-patch": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
     }
   },
   "matchedInitialIdentities": [
@@ -266,7 +318,11 @@
         "cline",
         "scope",
         "baseline",
-        "bundle"
+        "bundle",
+        "patch",
+        "reporting",
+        "reading",
+        "rename"
       ],
       "sameHeadAndTree": true
     },
@@ -283,6 +339,22 @@
         "references",
         "rename",
         "reading"
+      ],
+      "sameHeadAndTree": true
+    },
+    {
+      "id": "rxjs-promise-abort-config",
+      "repetition": 2,
+      "arms": [
+        "reporting",
+        "reading",
+        "rename",
+        "references",
+        "cline",
+        "scope",
+        "baseline",
+        "bundle",
+        "patch"
       ],
       "sameHeadAndTree": true
     },
@@ -603,6 +675,84 @@
       "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
       "promptSha256": "930239c02ff8b06ea86cbfcd443efe51d99aea9a5771dd7601de9a99546eff05",
       "normalizedContractSha256": "b2b1e380872733ec5d227c9778fffb6c6c593458ee91d79641857c607bf4e177"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-patch",
+      "toolsSha256": "845292da2156cdb1513f02910895e1d6631021f844e700caffb1181ca645d507",
+      "promptSha256": "05e3de3f3bc456f04b607aa7e2e0755430a8f1c6721212603c21c5480d416323",
+      "normalizedContractSha256": "21d1920acf95a162332c1836cf08eb5ce48e572d119b259af11411bc432e4d8d"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-reporting",
+      "toolsSha256": "8c69fbc427868efe88a7c243364f66a6312958b44defa9038f3b01ed7d35772d",
+      "promptSha256": "354a5a8de01f10257d6156958ed4f26f541a3827f1e5bdb067bb6a813c526a78",
+      "normalizedContractSha256": "b530cb0cd83c5f68d0ea35f935c862ebb2e7bcfabc1acbc30ef36662297e441f"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-reading",
+      "toolsSha256": "1eb5cb42345fd15d3ea582a399ee3b15275a8ea4fecd3a5b7dd4513544023129",
+      "promptSha256": "5fdf80837db2146d8daaacb3df58a8c92d948b3727c8c3ccf5704ad44e1bc3d0",
+      "normalizedContractSha256": "669286124529a040b7b62f7466f0d04afa4c4dc0ae0e7d25e4f3b7f2f00cc56e"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-rename",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "c0ca182c46a212fcd5b6c238f1eec8cc436b18104e9c4954920fa6332574fb25",
+      "normalizedContractSha256": "93e05a41ab78d023ebf1df9b16c2eb13e999ae020d4ade70707b369c29d0edbf"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-reporting",
+      "toolsSha256": "8c69fbc427868efe88a7c243364f66a6312958b44defa9038f3b01ed7d35772d",
+      "promptSha256": "663fb0b077190e704c7cea1468af092ce85b8bd30f9014606d706274ce8faf72",
+      "normalizedContractSha256": "47f2d9eefb0481f760fdef8391877edc66e652c571496cb54617a606c4dec31b"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-reading",
+      "toolsSha256": "1eb5cb42345fd15d3ea582a399ee3b15275a8ea4fecd3a5b7dd4513544023129",
+      "promptSha256": "602b93e532c588b5618d674bf8280d9f3575a8fd2db0e7535a5e98fdbe21cf23",
+      "normalizedContractSha256": "ecc224128c56940fe296526dfcf20c9c56fa6a2e54a2bd89a95a22fed9af307c"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-rename",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "cfab86e1fe2bbd315c3477b0c569b45ee4bdc85a546b7254e2d8621d60ef001f",
+      "normalizedContractSha256": "9bc400e014209a153efbda8e5412495a37b7f174ce4ef07981380a6589fbaf97"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-references",
+      "toolsSha256": "10cc795fa74e6e03e3d2dc3c46d107081799ebb9f50987725be4dc7cafc03e48",
+      "promptSha256": "e73633effc3075e32e85dd7b64d807fc33761bf40b5adcaab12a0b5ea0e2b4fa",
+      "normalizedContractSha256": "36db67923f83495f4bd1dcd4081524d129ec9ea295b89b345de1698afa371535"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-cline",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "8befa82b93c1a5df66c579c13b1991947c397f31dc60f335de78a23d5bacd2be",
+      "normalizedContractSha256": "c3f76ce7e18e8d97008b4198f9c361c73ef43e30bafd18fa0b77633802a1f5dd"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-scope",
+      "toolsSha256": "305c04a53b2eb79c5359c4dc7917683851c4df2de7fa5ab67ae59c39766e7e21",
+      "promptSha256": "7d34b5d43f5a72733ec918e28c9da0bfcb20f6bd60acfe9d23eaf00db1332ca1",
+      "normalizedContractSha256": "2c94371d7b65519363f8152dd61037675b2bb5e3ee7ddb178634d2c0861ff577"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-baseline",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "8ae4cd39baf5d83de346466c2344c834eb9a9ec6e85982ae737d035b79ba965a",
+      "normalizedContractSha256": "9bc400e014209a153efbda8e5412495a37b7f174ce4ef07981380a6589fbaf97"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-bundle",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "bdf37598df726315a6822ad9b324d28599aed4debdb71700fb193f5d873758f9",
+      "normalizedContractSha256": "2facddd917464b581b29225d8a286d9bac14383ce6442e426e6ccbd16aebfa03"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-patch",
+      "toolsSha256": "845292da2156cdb1513f02910895e1d6631021f844e700caffb1181ca645d507",
+      "promptSha256": "a815971858afbec30247790b0ce9d3469bcf18f8b68fd831a896e67d5aaf5e05",
+      "normalizedContractSha256": "10d5b9e67ec650bb6ffdd72df45268b6d0ed9cdaa27a324e0de2d34b38abceae"
     }
   ],
   "audits": [
@@ -1404,6 +1554,203 @@
       "name": "2-date-fns-offset-helper-migration-bundle",
       "file": "prompt-date-loads.jsonl",
       "artifact": "execution-audits/2-date-fns-offset-helper-migration-bundle.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-patch",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-date-fns-offset-helper-migration-patch.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-reporting",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-date-fns-offset-helper-migration-reporting.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-reading",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-date-fns-offset-helper-migration-reading.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-rename",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-date-fns-offset-helper-migration-rename.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-reporting",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-promise-abort-config-reporting.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-reading",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-promise-abort-config-reading.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-rename",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-promise-abort-config-rename.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-references",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-promise-abort-config-references.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-cline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-promise-abort-config-cline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-cline",
+      "file": "native-search-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-promise-abort-config-cline.native-search-loads.jsonl.gz",
+      "sha256": "5ab5181179b067ca7ebafaa4d5035b668a2fab7b3232200eb8e3e5e744899691",
+      "bytes": 210,
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-scope",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-promise-abort-config-scope.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-baseline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-promise-abort-config-baseline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-bundle",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-promise-abort-config-bundle.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-patch",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-promise-abort-config-patch.prompt-date-loads.jsonl.gz",
       "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
       "bytes": 194,
       "records": [

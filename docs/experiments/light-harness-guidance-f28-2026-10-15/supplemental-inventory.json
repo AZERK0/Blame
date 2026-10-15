@@ -352,6 +352,97 @@
       "artifact": "journals/2-date-fns-offset-helper-migration-bundle.4af48c58394a0d31391f19ab.jsonl.gz",
       "bytes": 47887,
       "sha256": "11b632ab9045346236814319f2d9d5700e0e076fac64329944f0ddd648f8e4f6"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-patch",
+      "file": "240ad11ce95b587ba9f8ae66.jsonl",
+      "artifact": "journals/2-date-fns-offset-helper-migration-patch.240ad11ce95b587ba9f8ae66.jsonl.gz",
+      "bytes": 114437,
+      "sha256": "0054c87ea3bbf566cfc1de2873fdfd3fe2bf2f23b52a77b2e27c587b0bffae6b"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-reporting",
+      "file": "3ed67ca947028d1753aca0f2.jsonl",
+      "artifact": "journals/2-date-fns-offset-helper-migration-reporting.3ed67ca947028d1753aca0f2.jsonl.gz",
+      "bytes": 97274,
+      "sha256": "a4f783d4669ca61612dc1f6ded20079b67cb114dea250d4866bdfae9fed12188"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-reading",
+      "file": "86b2eb12c34e071038b483c3.jsonl",
+      "artifact": "journals/2-date-fns-offset-helper-migration-reading.86b2eb12c34e071038b483c3.jsonl.gz",
+      "bytes": 117800,
+      "sha256": "90cb3042863ba3ed2527ff3e23ffeafab8db61f374f2af564ae553a4147ac672"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-rename",
+      "file": "6def7af289790d65968c2bb8.jsonl",
+      "artifact": "journals/2-date-fns-offset-helper-migration-rename.6def7af289790d65968c2bb8.jsonl.gz",
+      "bytes": 123607,
+      "sha256": "f7e73088cd142ef3b1b3d3854e6471a4408312c828eb2f42dff0dd628d44cf18"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-reporting",
+      "file": "15cb420740f8c31d8c75df2e.jsonl",
+      "artifact": "journals/2-rxjs-promise-abort-config-reporting.15cb420740f8c31d8c75df2e.jsonl.gz",
+      "bytes": 155310,
+      "sha256": "acc35978140ee52a86f602997ac5644b0c1a2dfd0c007bc77865d1da1ddac514"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-reading",
+      "file": "f08d7357d6b5edc256fff37f.jsonl",
+      "artifact": "journals/2-rxjs-promise-abort-config-reading.f08d7357d6b5edc256fff37f.jsonl.gz",
+      "bytes": 189002,
+      "sha256": "f1f128f760251411fdbb7dc5dc8c49133f70a9271fa26e980b51591f44f91ca8"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-rename",
+      "file": "92fbe2ffda173d12af8ab456.jsonl",
+      "artifact": "journals/2-rxjs-promise-abort-config-rename.92fbe2ffda173d12af8ab456.jsonl.gz",
+      "bytes": 77606,
+      "sha256": "4a91f8514ee0cb97cbe72c7841dbf9657afdb383114da437d98ee8391f49f800"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-references",
+      "file": "37cabbce0bed34c53b6d9312.jsonl",
+      "artifact": "journals/2-rxjs-promise-abort-config-references.37cabbce0bed34c53b6d9312.jsonl.gz",
+      "bytes": 158939,
+      "sha256": "a5cb5e1cb509e04cee5ba46b0b494e1da5346d898e1c7363cf26eb0cc701e16d"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-cline",
+      "file": "75ec0868cc1d1742401c9e28.jsonl",
+      "artifact": "journals/2-rxjs-promise-abort-config-cline.75ec0868cc1d1742401c9e28.jsonl.gz",
+      "bytes": 79,
+      "sha256": "5fa95cd14f8c733ad58287fa04594a3dc96e721231e062df26d9495768116d1a"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-scope",
+      "file": "42282a4899f0d5eb3f7a0251.jsonl",
+      "artifact": "journals/2-rxjs-promise-abort-config-scope.42282a4899f0d5eb3f7a0251.jsonl.gz",
+      "bytes": 193428,
+      "sha256": "fdcd75cb5fe66dc21649325bfaa3c5de291152b4cd5e75113558cb2b57037b37"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-baseline",
+      "file": "7682b56129e4f6b548805d2f.jsonl",
+      "artifact": "journals/2-rxjs-promise-abort-config-baseline.7682b56129e4f6b548805d2f.jsonl.gz",
+      "bytes": 118458,
+      "sha256": "f325602d553a916e0cc946999fad5b204b68225e5e3ee288afd26f395d4a8341"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-bundle",
+      "file": "0ec0f6c034097a802238b209.jsonl",
+      "artifact": "journals/2-rxjs-promise-abort-config-bundle.0ec0f6c034097a802238b209.jsonl.gz",
+      "bytes": 196290,
+      "sha256": "a8a4684c5e3359eb51693cf8d3632aff39dda8f083623d593899193269ec4dd2"
+    },
+    {
+      "name": "2-rxjs-promise-abort-config-patch",
+      "file": "22b3b1edd67f0c632c6b23db.jsonl",
+      "artifact": "journals/2-rxjs-promise-abort-config-patch.22b3b1edd67f0c632c6b23db.jsonl.gz",
+      "bytes": 77822,
+      "sha256": "0f5476bf28c2604cd267179c34eab2e45beb929171c6e6c737d9ea9c5663cee1"
     }
   ]
 }

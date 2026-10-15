@@ -1,4 +1,4 @@
-# F28 recorded results (50/108 assignments)
+# F28 recorded results (63/108 assignments)
 
 **Ongoing prefix only.** Later registered assignments continue; these numbers are not a completed-panel comparison.
 
@@ -6,15 +6,15 @@ Four new constructed clusters on three familiar projects, three dependent repeti
 
 | Arm | Trials/planned | Official | Functional | Actual checks | Full audited | Observed tokens | SDK USD | Wire/usage gaps |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| baseline | 6/12 | 6 | 6 | 6 | 6 | 506277 | 0.059026 | 0 |
-| scope | 6/12 | 6 | 6 | 6 | 6 | 558878 | 0.059075 | 0 |
-| cline | 6/12 | 6 | 6 | 6 | 6 | 891810 | 0.095258 | 0 |
-| references | 6/12 | 6 | 5 | 6 | 5 | 563106 | 0.061261 | 0 |
-| rename | 5/12 | 5 | 5 | 5 | 5 | 571926 | 0.052750 | 0 |
-| reading | 5/12 | 5 | 5 | 5 | 5 | 533767 | 0.053933 | 0 |
-| reporting | 5/12 | 5 | 5 | 5 | 3 | 602325 | 0.055884 | 0 |
-| patch | 5/12 | 5 | 5 | 5 | 5 | 526038 | 0.054805 | 0 |
-| bundle | 6/12 | 6 | 6 | 6 | 6 | 648902 | 0.062460 | 0 |
+| baseline | 7/12 | 7 | 7 | 7 | 7 | 658064 | 0.077180 | 0 |
+| scope | 7/12 | 7 | 7 | 7 | 7 | 822837 | 0.083592 | 0 |
+| cline | 7/12 | 7 | 7 | 7 | 7 | 1134381 | 0.118618 | 0 |
+| references | 7/12 | 7 | 6 | 7 | 6 | 709068 | 0.078858 | 0 |
+| rename | 7/12 | 7 | 7 | 7 | 7 | 780344 | 0.078051 | 0 |
+| reading | 7/12 | 7 | 7 | 7 | 7 | 770377 | 0.078947 | 0 |
+| reporting | 7/12 | 7 | 7 | 7 | 5 | 881833 | 0.087593 | 0 |
+| patch | 7/12 | 7 | 7 | 7 | 7 | 732337 | 0.084558 | 0 |
+| bundle | 7/12 | 7 | 7 | 7 | 7 | 908702 | 0.084704 | 0 |
 
 Token/cost columns are observed subtotals over all attempts. Missing aggregates and request gaps are counted separately in `guidance-summary.json`; they are never imputed as zero consumption. Official runtime completion is not audited user success. Formal admission remains separate. Cache reads are a subset of input, reasoning a subset of output; full per-request cache ledgers and invoices remain unverified.
 
@@ -24,15 +24,15 @@ Identical task/repetition pairs must both complete officially, pass the independ
 
 | Left / right | Discordant audited successes (left/right) | Eligible pairs | Tokens | Estimated cost | Worker time |
 |---|---:|---:|---:|---:|---:|
-| scope / baseline | 0/0 | 6 | 10.4% | 0.1% | 11.3% |
-| references / baseline | 0/1 | 5 | 7.8% | 3.2% | 22.9% |
-| rename / baseline | 0/0 | 5 | 28.6% | 1.9% | 8.7% |
-| reading / baseline | 0/0 | 5 | 20.1% | 4.2% | 3.9% |
-| reporting / baseline | 0/2 | 3 | 57.1% | 11.8% | 16.0% |
-| patch / baseline | 0/0 | 5 | 18.3% | 5.9% | 17.1% |
-| bundle / baseline | 0/0 | 6 | 28.2% | 5.8% | 10.8% |
-| bundle / cline | 0/0 | 6 | -27.2% | -34.4% | 2.4% |
-| baseline / cline | 0/0 | 6 | -43.2% | -38.0% | -7.5% |
+| scope / baseline | 0/0 | 7 | 25.0% | 8.3% | 14.2% |
+| references / baseline | 0/1 | 6 | 4.8% | 1.6% | 12.6% |
+| rename / baseline | 0/0 | 7 | 18.6% | 1.1% | 12.6% |
+| reading / baseline | 0/0 | 7 | 17.1% | 2.3% | -0.7% |
+| reporting / baseline | 0/2 | 5 | 46.0% | 17.0% | 15.5% |
+| patch / baseline | 0/0 | 7 | 11.3% | 9.6% | 9.0% |
+| bundle / baseline | 0/0 | 7 | 38.1% | 9.7% | 16.9% |
+| bundle / cline | 0/0 | 7 | -19.9% | -28.6% | 15.2% |
+| baseline / cline | 0/0 | 7 | -42.0% | -34.9% | -1.4% |
 
 Changes are `(left/right)-1`. Keep task-specific pairs and all adverse attempts in the JSON; dependent repetitions and differing successful subsets cannot establish equivalence or identify a generally optimal factor.
 
@@ -44,17 +44,17 @@ Changes are `(left/right)-1`. Keep task-specific pairs and all adverse attempts 
 | scope | 0 | 2 | 0 | 0 | 0/0 | 0 | 0 |
 | cline | 0 | 0 | 0 | 0 | 0/0 | 0 | 0 |
 | references | 3 | 1 | 1 | 0 | 0/0 | 0 | 0 |
-| rename | 4 | 1 | 0 | 3 | 0/0 | 0 | 0 |
+| rename | 6 | 1 | 0 | 4 | 0/0 | 0 | 0 |
 | reading | 2 | 2 | 0 | 0 | 0/0 | 0 | 0 |
-| reporting | 0 | 2 | 0 | 0 | 0/0 | 0 | 0 |
-| patch | 0 | 5 | 0 | 0 | 0/0 | 0 | 0 |
+| reporting | 6 | 3 | 0 | 0 | 1/0 | 0 | 0 |
+| patch | 1 | 6 | 0 | 0 | 0/0 | 0 | 0 |
 | bundle | 0 | 2 | 2 | 4 | 2/1 | 2 | 1 |
 
 Exposure is descriptive: an exact later call matching a hint does not prove that the hint caused it. Tool output bytes are not billed tokens. Common task instructions already require unknown skipped counts. Native changes multiple mechanisms. Absent runtime-hint activation leaves that particular recovery mechanism untested. Changed descriptions may still affect tool choice; do not attribute a global arm difference specifically to an unexposed response. Empty queries and repeated calls are not automatically errors.
 
 ## Financial accounting
 
-New observed SDK estimates: USD0.554452; new missing-response reserves: USD0.000000. Prior observed/reserved accounting: USD1.867376. Cumulative accounted: **USD2.421827**, reference equivalent **EUR2.1672**, against the cumulative EUR10 authorization and USD10.951612 operational stop.
+New observed SDK estimates: USD0.772101; new missing-response reserves: USD0.000000. Prior observed/reserved accounting: USD1.867376. Cumulative accounted: **USD2.639477**, reference equivalent **EUR2.3619**, against the cumulative EUR10 authorization and USD10.951612 operational stop.
 
 The nominal 8192 output cap is ineffective on actual OAuth. Admission retains a USD0.23 full-response allowance in addition to the USD0.04 SDK soft stop. Exchange reference is not an invoice exchange rate; host/setup/tool compute is unpriced. Preserve failures, timeouts, byte stops, missing usage and every remaining assignment.
 
@@ -73,9 +73,9 @@ Dependent repeats of the same four clusters, not twelve independent tasks.
 | 1 | baseline | 4/4 | 4 | 370212 | 0.043714 | 232.217 |
 | 1 | bundle | 4/4 | 4 | 529395 | 0.049313 | 268.452 |
 | 1 | cline | 4/4 | 4 | 665081 | 0.066928 | 227.660 |
-| 2 | baseline | 2/4 | 2 | 136065 | 0.015312 | 93.354 |
-| 2 | bundle | 2/4 | 2 | 119507 | 0.013147 | 92.266 |
-| 2 | cline | 2/4 | 2 | 226729 | 0.028330 | 124.442 |
+| 2 | baseline | 3/4 | 3 | 287852 | 0.033466 | 199.066 |
+| 2 | bundle | 3/4 | 3 | 379307 | 0.035391 | 235.871 |
+| 2 | cline | 3/4 | 3 | 469300 | 0.051690 | 209.952 |
 | 3 | baseline | 0/4 | 0 | 0 | 0.000000 | 0.000 |
 | 3 | bundle | 0/4 | 0 | 0 | 0.000000 | 0.000 |
 | 3 | cline | 0/4 | 0 | 0 | 0.000000 | 0.000 |
