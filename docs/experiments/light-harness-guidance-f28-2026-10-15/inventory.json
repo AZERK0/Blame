@@ -6298,5 +6298,1265 @@
     "artifact": "traces/3-date-fns-offset-helper-migration-rename.model-exit.json.gz",
     "bytes": 5790,
     "sha256": "a18266ff907457d0504e25edfdc6a419abdf30e2c6a2e663d0a7cc39786c6d73"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-bundle",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-promise-abort-config-bundle.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-bundle",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-promise-abort-config-bundle.events.jsonl.gz",
+    "bytes": 198663,
+    "sha256": "de7ec43d23ca039830db6b3d4cb46116ce569a17a95a9a47ef7e9e2941ab12fb"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-bundle",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-bundle.result.json.gz",
+    "bytes": 4836,
+    "sha256": "a3fc53de10104912286ee46cb71b8186b60ebd714b19a3423b8033a79f0d09d4"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-bundle",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-promise-abort-config-bundle.workspace.diff.gz",
+    "bytes": 4572,
+    "sha256": "4e7749e54284df770a5e19aba7889e3e2a880bf5ce8ee388d3a62229279a2710"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-bundle",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-bundle.trial.json.gz",
+    "bytes": 5189,
+    "sha256": "3f664c4b74567e1aaa008083ebcfd1a684f1914d0da0db9e13602c796615c4b4"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-bundle",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-bundle.score.json.gz",
+    "bytes": 19728,
+    "sha256": "68b5f3b200332275550dbef3b11bfd76f97a1f62ebb6b03ae4bc883a4569fa38"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-bundle",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-bundle.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-bundle",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-bundle.model-start.json.gz",
+    "bytes": 204,
+    "sha256": "591e177c46868e010d6006f6ed3153f69aabc889f6b2f7894e079e89970488fd"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-bundle",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-bundle.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "d3b951584582fe20871b7c0addd39418d6f8a6c82991e60babdbdd5e84c5310a"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-bundle",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-bundle.model-exit.json.gz",
+    "bytes": 4988,
+    "sha256": "d6ba193e869e6c645d689f704bdbfb90de226fbe0a0d6e816cfb214bbb139ba9"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-promise-abort-config-baseline.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-promise-abort-config-baseline.events.jsonl.gz",
+    "bytes": 168858,
+    "sha256": "91f663a78baac175edeef1d69462d0ee8cd4b669b825d72f734a227197e5a191"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-baseline",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-baseline.result.json.gz",
+    "bytes": 4821,
+    "sha256": "9901318f2a633a2fa6d31e6f89c7ee1c258c001bf9ad601ba6042cdb9abcd4a6"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-promise-abort-config-baseline.workspace.diff.gz",
+    "bytes": 4509,
+    "sha256": "a23aa084c02debef2f1eeca6575f1c91bfcedbae8fb8c329165b47a9020039de"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-baseline",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-baseline.trial.json.gz",
+    "bytes": 5497,
+    "sha256": "46592d1bd333f0a6dd8bc0feff051e6ae069a3c14271e140869a70ac28e12283"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-baseline",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-baseline.score.json.gz",
+    "bytes": 19739,
+    "sha256": "d5d2c763718845290eaa685727b53b64e0b61f1cfbab03aad909e6037f380b62"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-baseline.model-start.json.gz",
+    "bytes": 206,
+    "sha256": "288298933ea3b940b6e4a6899c8298f2810928a384b854b4757f085ca7156ae5"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "24c0090098f884465f7ff87c0a96aaf3253ace0c1acca1f2572b7564f21f8f4e"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-baseline.model-exit.json.gz",
+    "bytes": 5292,
+    "sha256": "5fa2cdb0a37f796f35d1596677fe0bb6c1729ab456b5f1c1149d8bdfe0c1ffa1"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-scope",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-promise-abort-config-scope.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-scope",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-promise-abort-config-scope.events.jsonl.gz",
+    "bytes": 208411,
+    "sha256": "7dc03674d7c9c5ccbfbc5886bdf0a1da64d69c31b23114af8a14761a06c3d5c8"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-scope",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-scope.result.json.gz",
+    "bytes": 4225,
+    "sha256": "254b57d494532d5549545da38624d6194a6ccb6a654c415b6542e6383be29eab"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-scope",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-promise-abort-config-scope.workspace.diff.gz",
+    "bytes": 4422,
+    "sha256": "4782eb0191efee0a2cc2a23bbeb867649ca52bc755176287357c0d91242983c6"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-scope",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-scope.trial.json.gz",
+    "bytes": 4693,
+    "sha256": "0f7dd440b22cc1ba1536a7be2f332fc0a9cb558bfcff809b4460aa7d83f7fbc2"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-scope",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-scope.score.json.gz",
+    "bytes": 19724,
+    "sha256": "f9ab7d953dbcfaa48eb76a6fc8b6273719c90cccc959af5f8e126171f0b18ec8"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-scope",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-scope.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-scope",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-scope.model-start.json.gz",
+    "bytes": 203,
+    "sha256": "91d59fe511cdc0fbee42b474a4d009387ca897d07680103debd6aabeac9d468a"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-scope",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-scope.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "994838245f3cd2ac56fac0df49e3f54de3b7113f3c0efa67e22b33a7d59af641"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-scope",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-scope.model-exit.json.gz",
+    "bytes": 4496,
+    "sha256": "b81d895d2af09d92690449c48eadc507a911238ce6c82695150e15de96dcb924"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-promise-abort-config-cline.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-promise-abort-config-cline.events.jsonl.gz",
+    "bytes": 495412,
+    "sha256": "f8f7a6ad7a5f8bc7dd74a2735f40be835e251f8a3d841d4601e00f0e2ac14012"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-cline",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-cline.result.json.gz",
+    "bytes": 3740,
+    "sha256": "7e4a45a8936395993ec87ec6e6476be5b22bedbb1e682e157d172930f03afe35"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-promise-abort-config-cline.workspace.diff.gz",
+    "bytes": 5565,
+    "sha256": "cfbeb4091a5cc1dff32166821a0be4de0dc551ca6e29af67bf6a6f1a5c4692b3"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-cline",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-cline.trial.json.gz",
+    "bytes": 6072,
+    "sha256": "753a3beabf5a2422c97f004651cb5b7f5c518c966c986badced30d472515dda3"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-cline",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-cline.score.json.gz",
+    "bytes": 19727,
+    "sha256": "d941270a90c524a41d94e24328b69a32ca25f77f010060538990ec8a8188697f"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-cline",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-cline.model-start.json.gz",
+    "bytes": 203,
+    "sha256": "3a4596494c63dcac8b44b429a9b54fbb9c9919cedbb828db046adf10b6506d73"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-cline",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "6d869eb1f10f5077f4c9c99149d5e7d446e78391a40b72d3722ee50f3b83fef3"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-cline.model-exit.json.gz",
+    "bytes": 5874,
+    "sha256": "e5c2b19287db6075030d13f8d8dbc9fee282d4dc62e5b911d0a0ad94277394dc"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-references",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-promise-abort-config-references.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-references",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-promise-abort-config-references.events.jsonl.gz",
+    "bytes": 165178,
+    "sha256": "e5044e6d3f1cba3f6b5559e7fdf802496e5b5a622d9dd0f571c8de247a90faf1"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-references",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-references.result.json.gz",
+    "bytes": 4816,
+    "sha256": "c826ad03a0a90c8ca4cb5414b3148c8cf5caeb840d61a7efddc207f5c49f5e51"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-references",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-promise-abort-config-references.workspace.diff.gz",
+    "bytes": 5377,
+    "sha256": "05856b6d3b87837a3131d2dc45dda81e90e973bb688c32dd579a8bb727af0bf7"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-references",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-references.trial.json.gz",
+    "bytes": 5234,
+    "sha256": "7e50fb7460102345e674409cbe2ca2713b57ba59ad50511997c5545c792e30bb"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-references",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-references.score.json.gz",
+    "bytes": 19749,
+    "sha256": "f2e0e56db2a42a3225ee14c923e39d27aa02dfdd3e1fb63148b3dc1d7acf8a6f"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-references",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-references.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-references",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-references.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "cfbe8869643033eb3fc7ccd3001cec9fc216cad30d579197843a60243b43cbc2"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-references",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-references.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "d5161f175f35e770cea19b5a172f668ac602aca4b813e28fe551b651ab5610d9"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-references",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-references.model-exit.json.gz",
+    "bytes": 5025,
+    "sha256": "cdbcb7df7baa978d3876144fe7615f2b343349d6c99850f414389bffb9a127e9"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-rename",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-promise-abort-config-rename.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-rename",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-promise-abort-config-rename.events.jsonl.gz",
+    "bytes": 188365,
+    "sha256": "0dbc6b6be2cfccdbb965b830acce4e3938fe87f6ce1ca72956c1373dee1ad027"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-rename",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-rename.result.json.gz",
+    "bytes": 4805,
+    "sha256": "eb3807847c506e335cd2c7ba33fe59e264c3c1d112d12a70f40ebf641a5c6bfb"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-rename",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-promise-abort-config-rename.workspace.diff.gz",
+    "bytes": 4588,
+    "sha256": "64522e33d4537c8ea56b05162af1d9ce1c823ce7306fa559686f7342d0c7189d"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-rename",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-rename.trial.json.gz",
+    "bytes": 6461,
+    "sha256": "e954e123b3ac9e9b00b1ea77c3be50662edf5be468239c9624047d8c6e02f51b"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-rename",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-rename.score.json.gz",
+    "bytes": 19731,
+    "sha256": "4f4dade06aea64d115b43430a04fadf21b4b5a024a6897c475038143a11aaa49"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-rename",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-rename.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-rename",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-rename.model-start.json.gz",
+    "bytes": 204,
+    "sha256": "213e15ea0b3a72f4248f15de2c0c51bed8203b1a632288a5c5f8681398107703"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-rename",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-rename.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "319f3ff6c53ddc0c1435bfb18d1f4f617f1dd5f06c9606b79c287f535b7b5e4e"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-rename",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-rename.model-exit.json.gz",
+    "bytes": 6261,
+    "sha256": "1c856b66a52351d5de6a18cc9c4143931cc04f1393b35e7861664e3c5727433e"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reading",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-promise-abort-config-reading.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reading",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-promise-abort-config-reading.events.jsonl.gz",
+    "bytes": 163883,
+    "sha256": "0b0e403336ea2584389df6a5a6567b7c2eca10e664d7b885a19251ec726f4b0e"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reading",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reading.result.json.gz",
+    "bytes": 4793,
+    "sha256": "6f5f41dfd875c16e73e38958eaafdb75e1ff17692f340534a95e38dca3aae16d"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reading",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-promise-abort-config-reading.workspace.diff.gz",
+    "bytes": 4980,
+    "sha256": "93f3fbf40b86cb38402999a04afe1190665439b17af0a7bffb951349fab92e4a"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reading",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reading.trial.json.gz",
+    "bytes": 4971,
+    "sha256": "254a3811b5fd2db19929765d32332303c8e3a89856a27e1036dec0890809809e"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reading",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reading.score.json.gz",
+    "bytes": 19730,
+    "sha256": "4f45b2fd1cdc645a092489a908ba9b1d464e32d5efdcedb1384690a276778085"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reading",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reading.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reading",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reading.model-start.json.gz",
+    "bytes": 205,
+    "sha256": "7443ae696eae6c173f7d1f815d793b5db89f896cc8262449e3d89a395c39c6ab"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reading",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reading.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "537b8a17b3416d5e39999fc8498dedb01dd15078921354f77166f45bb85f7017"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reading",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reading.model-exit.json.gz",
+    "bytes": 4768,
+    "sha256": "bdee2c680496e9bd7a8c6054f2fdd92777c4fc30a2d68e4cf22739545880664a"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reporting",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-promise-abort-config-reporting.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reporting",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-promise-abort-config-reporting.events.jsonl.gz",
+    "bytes": 180356,
+    "sha256": "4a3fa20ea02869fb5c6ef97428ef8909c5474071eea7adac77ff1c75f4819327"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reporting",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reporting.result.json.gz",
+    "bytes": 4824,
+    "sha256": "5401a6cb4b9fcce387137ebf46b6206e1651682b76768b6b0d516631adc05050"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reporting",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-promise-abort-config-reporting.workspace.diff.gz",
+    "bytes": 5023,
+    "sha256": "d88f671500b17ee98d0f69f1b4e3ef7470377e85b01adbed58b62446b90ce68f"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reporting",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reporting.trial.json.gz",
+    "bytes": 4631,
+    "sha256": "85b262b4e3bd0aef18721bbcf74137f49fab13269cc14c91c1b3b9ba33b40563"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reporting",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reporting.score.json.gz",
+    "bytes": 19746,
+    "sha256": "0eed6f61fddd12b736130bc8bba84f878ab088830abc989b1efad1e63df3f1b4"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reporting",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reporting.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reporting",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reporting.model-start.json.gz",
+    "bytes": 207,
+    "sha256": "29b937fdecb341d75c36c6d55884f9bc4821f2c3795476d17f5d2e9ba05d3a4b"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reporting",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reporting.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "c3ed439afca83e37fdc65303d36c747800635186f10c1acd0601f27227a470da"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-reporting",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-reporting.model-exit.json.gz",
+    "bytes": 4424,
+    "sha256": "84cc29ce5b00a49463da89cd9f4a68d883b4e9d485cebda1bff38effa592cb62"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-patch",
+    "file": "instruction.txt",
+    "artifact": "traces/3-rxjs-promise-abort-config-patch.instruction.txt.gz",
+    "bytes": 1935,
+    "sha256": "95d35e285d07547ce0ea4e99dd6433d4110a92685a85c30663de2832fc86a1eb"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-patch",
+    "file": "events.jsonl",
+    "artifact": "traces/3-rxjs-promise-abort-config-patch.events.jsonl.gz",
+    "bytes": 130229,
+    "sha256": "ed136193d1137dbe97ac1af38a82ec1aa3b52d1f91012f835aa3ca43d44434e0"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-patch",
+    "file": "result.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-patch.result.json.gz",
+    "bytes": 4783,
+    "sha256": "19ce0deb379aa6108be16a5c6f260baaddfe36b4915021db167680d147c3d916"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-patch",
+    "file": "workspace.diff",
+    "artifact": "traces/3-rxjs-promise-abort-config-patch.workspace.diff.gz",
+    "bytes": 4769,
+    "sha256": "ba44eff6b276b30e3022540a10c6d947a07b1753bb49e1a09567e24bffb77bc0"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-patch",
+    "file": "trial.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-patch.trial.json.gz",
+    "bytes": 5292,
+    "sha256": "598aac9a46dc59cb6c6458ba3d348e8c22e771cec67e719660afa4799c3fd75e"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-patch",
+    "file": "score.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-patch.score.json.gz",
+    "bytes": 19726,
+    "sha256": "018ff1483eabb49c96db878a50bc65d9d5b1ec1f7d716b5c03ac1de670e09563"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-patch",
+    "file": "required-checks.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-patch.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-patch",
+    "file": "model-start.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-patch.model-start.json.gz",
+    "bytes": 203,
+    "sha256": "cacde0a0b248108308b61674b0574ee969fd50c390976657d5dd4f2bb2cd1b20"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-patch",
+    "file": "model-child.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-patch.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "c036bdbc00909840ea4c27b66f7ec42da503f47fee34cfc82846a08e88c870b5"
+  },
+  {
+    "trial": "3-rxjs-promise-abort-config-patch",
+    "file": "model-exit.json",
+    "artifact": "traces/3-rxjs-promise-abort-config-patch.model-exit.json.gz",
+    "bytes": 5092,
+    "sha256": "e3ed9f8488fc0a550a00d99350f301ac2d0738124ad1d7793d2a0e7666ff3119"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-lodash-own-symbol-options-cline.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-lodash-own-symbol-options-cline.events.jsonl.gz",
+    "bytes": 407235,
+    "sha256": "fa8e4d42961cd20d5306f8a2c46cfb75421d50a8bd2becd202a1c4a6f6bce135"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-cline",
+    "file": "result.json",
+    "artifact": "traces/3-lodash-own-symbol-options-cline.result.json.gz",
+    "bytes": 3726,
+    "sha256": "02e59620c8351753992b78eebaa57d25bcd2de898f9b5d0ef77c133d8180595e"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-lodash-own-symbol-options-cline.workspace.diff.gz",
+    "bytes": 1143,
+    "sha256": "1a0862246215c9402b3cedcb2a68363dc0ca92ac931dce7a2e91cf8cc3594a76"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-cline",
+    "file": "trial.json",
+    "artifact": "traces/3-lodash-own-symbol-options-cline.trial.json.gz",
+    "bytes": 6204,
+    "sha256": "b18f4f03b890425a0c6ff21649695d104032b94ad9c7d33c650d3f7010f18dc1"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-cline",
+    "file": "score.json",
+    "artifact": "traces/3-lodash-own-symbol-options-cline.score.json.gz",
+    "bytes": 7285,
+    "sha256": "ca2d735ce6e7b5f49e6303e97ec09745f24e996a78acfc5d515559851cf88ccf"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-lodash-own-symbol-options-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-cline",
+    "file": "model-start.json",
+    "artifact": "traces/3-lodash-own-symbol-options-cline.model-start.json.gz",
+    "bytes": 203,
+    "sha256": "bd2014e4a18fb1e0d3c4cc8b287e4843fede1ef87a917b422f737c57eae10ad1"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-cline",
+    "file": "model-child.json",
+    "artifact": "traces/3-lodash-own-symbol-options-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "4c2573414c3447ef21eaa774d63569265b2a154722b6236f2de2cd6fdde69113"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-lodash-own-symbol-options-cline.model-exit.json.gz",
+    "bytes": 6004,
+    "sha256": "00d8b0a13ec3e5fb76a41bbe70894cab8443c2fa82b348949df9a4d70c43da8c"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-references",
+    "file": "instruction.txt",
+    "artifact": "traces/3-lodash-own-symbol-options-references.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-references",
+    "file": "events.jsonl",
+    "artifact": "traces/3-lodash-own-symbol-options-references.events.jsonl.gz",
+    "bytes": 104411,
+    "sha256": "1675dfc51b3d81eb5d62384fe2b082f713ae9306923483a3360acff21620f2db"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-references",
+    "file": "result.json",
+    "artifact": "traces/3-lodash-own-symbol-options-references.result.json.gz",
+    "bytes": 4838,
+    "sha256": "7a9c33aa5b397c49b6968ca57e47df6e9fc1b21317d5a153b439f50bd3d6239d"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-references",
+    "file": "workspace.diff",
+    "artifact": "traces/3-lodash-own-symbol-options-references.workspace.diff.gz",
+    "bytes": 863,
+    "sha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-references",
+    "file": "trial.json",
+    "artifact": "traces/3-lodash-own-symbol-options-references.trial.json.gz",
+    "bytes": 5620,
+    "sha256": "940b439858b5283d4cf5f9dfcf8a60c781b798936f6819f4cd74181afdf5b4ce"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-references",
+    "file": "score.json",
+    "artifact": "traces/3-lodash-own-symbol-options-references.score.json.gz",
+    "bytes": 7331,
+    "sha256": "1bba29c7d1026c5f37bd3193a05e72bd68eac59baa88cceb22d45f65feb42910"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-references",
+    "file": "required-checks.json",
+    "artifact": "traces/3-lodash-own-symbol-options-references.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-references",
+    "file": "model-start.json",
+    "artifact": "traces/3-lodash-own-symbol-options-references.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "c98d7b4e4552387a92e297e06a5337a43ceee8627f70ebd989a25ef1e1d8850b"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-references",
+    "file": "model-child.json",
+    "artifact": "traces/3-lodash-own-symbol-options-references.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "e34e268d12609b79f904b4b6ea74ebb6f1a9373236c2073944cfe900a83169ea"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-references",
+    "file": "model-exit.json",
+    "artifact": "traces/3-lodash-own-symbol-options-references.model-exit.json.gz",
+    "bytes": 5410,
+    "sha256": "39672aa030f4faf5ec34d3629ce2ac33a70ef7f802b1dd958c0839f021b6a4fd"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-rename",
+    "file": "instruction.txt",
+    "artifact": "traces/3-lodash-own-symbol-options-rename.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-rename",
+    "file": "events.jsonl",
+    "artifact": "traces/3-lodash-own-symbol-options-rename.events.jsonl.gz",
+    "bytes": 142618,
+    "sha256": "fe36758448ee1ff9b90ae89bba527a98e595dae976b8c24530483f4e3c264870"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-rename",
+    "file": "result.json",
+    "artifact": "traces/3-lodash-own-symbol-options-rename.result.json.gz",
+    "bytes": 4882,
+    "sha256": "47cfa0da6671865291d56812dae5e3ba9d834373fc749ef884f1bcc0f46293a0"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-rename",
+    "file": "workspace.diff",
+    "artifact": "traces/3-lodash-own-symbol-options-rename.workspace.diff.gz",
+    "bytes": 874,
+    "sha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-rename",
+    "file": "trial.json",
+    "artifact": "traces/3-lodash-own-symbol-options-rename.trial.json.gz",
+    "bytes": 5247,
+    "sha256": "737bb4542f9ffb05fb192c5248bf8d9d5e5516ab20081fc05ee842e612f670c3"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-rename",
+    "file": "score.json",
+    "artifact": "traces/3-lodash-own-symbol-options-rename.score.json.gz",
+    "bytes": 7288,
+    "sha256": "35986b9bad4dbe9c4549e82282c893687f3c23261242499c9ae7e0bca24d9b60"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-rename",
+    "file": "required-checks.json",
+    "artifact": "traces/3-lodash-own-symbol-options-rename.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-rename",
+    "file": "model-start.json",
+    "artifact": "traces/3-lodash-own-symbol-options-rename.model-start.json.gz",
+    "bytes": 204,
+    "sha256": "d717b51a3c97b976c860b87e6306f0c532a76301adf25a803d33d8ac6c7ac31f"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-rename",
+    "file": "model-child.json",
+    "artifact": "traces/3-lodash-own-symbol-options-rename.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "2ffaa3c5db8901c273a21063b9aa3c7dd607f66184aecd66236e2ee2d7f03e9d"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-rename",
+    "file": "model-exit.json",
+    "artifact": "traces/3-lodash-own-symbol-options-rename.model-exit.json.gz",
+    "bytes": 5040,
+    "sha256": "24e24193f3705964234c5de3360b36d280237a9ca0f567fb05ef8bb41a55ee2c"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reading",
+    "file": "instruction.txt",
+    "artifact": "traces/3-lodash-own-symbol-options-reading.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reading",
+    "file": "events.jsonl",
+    "artifact": "traces/3-lodash-own-symbol-options-reading.events.jsonl.gz",
+    "bytes": 99204,
+    "sha256": "21020eb2faf6ed8fece3dd3764a053fbbcfe88c1fa2090ae894ef9d3147bd31a"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reading",
+    "file": "result.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reading.result.json.gz",
+    "bytes": 4843,
+    "sha256": "b94931f7af03de0a337e07fe2a166ccfb5cfae604125042e64d1abed235a90f4"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reading",
+    "file": "workspace.diff",
+    "artifact": "traces/3-lodash-own-symbol-options-reading.workspace.diff.gz",
+    "bytes": 874,
+    "sha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reading",
+    "file": "trial.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reading.trial.json.gz",
+    "bytes": 6106,
+    "sha256": "c035c29aef31cfd88c2fdeeeddce40ab707f93ab5fbbff46ec3c86e56c9f16e1"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reading",
+    "file": "score.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reading.score.json.gz",
+    "bytes": 7297,
+    "sha256": "5ca007fd11ea71d73c52e531ed89b14d11420149a5640392f493be31d1aa0763"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reading",
+    "file": "required-checks.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reading.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reading",
+    "file": "model-start.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reading.model-start.json.gz",
+    "bytes": 205,
+    "sha256": "31766ebd0620504a846459afd19518a5667032ae0675abb599756171afdc92a4"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reading",
+    "file": "model-child.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reading.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "551f4b6c421393ffcb3e1f289354a7436d0c0694e91c65e3e81adc41966ac93a"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reading",
+    "file": "model-exit.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reading.model-exit.json.gz",
+    "bytes": 5904,
+    "sha256": "9df369d803b635f7a9986e669303bae92ac7c04f2be6be7d86874ac88df6d300"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reporting",
+    "file": "instruction.txt",
+    "artifact": "traces/3-lodash-own-symbol-options-reporting.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reporting",
+    "file": "events.jsonl",
+    "artifact": "traces/3-lodash-own-symbol-options-reporting.events.jsonl.gz",
+    "bytes": 108158,
+    "sha256": "a175095cf9f3780f06d19221cd3c8a645fc30fe442c8afb7124c09d48d1cb0d9"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reporting",
+    "file": "result.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reporting.result.json.gz",
+    "bytes": 4848,
+    "sha256": "aded33e7838bf84eeddcc3c0c727f790de9fbb406db247e4b4ee7af6c44060ee"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reporting",
+    "file": "workspace.diff",
+    "artifact": "traces/3-lodash-own-symbol-options-reporting.workspace.diff.gz",
+    "bytes": 911,
+    "sha256": "08fdf33effd17e34cb1a3e05fe0ca79250e834c57707ef91f341744862b7c58b"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reporting",
+    "file": "trial.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reporting.trial.json.gz",
+    "bytes": 5553,
+    "sha256": "5935050551fd09973b8519e58cdbb7fea2ca6cf83bc67ee81605e8f8cf494e3b"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reporting",
+    "file": "score.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reporting.score.json.gz",
+    "bytes": 7310,
+    "sha256": "8c2dfcbae05c2dd221e0269eeebb800172eb22ce93a3de192952f354bc55f441"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reporting",
+    "file": "required-checks.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reporting.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reporting",
+    "file": "model-start.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reporting.model-start.json.gz",
+    "bytes": 207,
+    "sha256": "b093cbd56cbe7b28a7551caada20b60e8c69479979407ce324facf18f5b0a51c"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reporting",
+    "file": "model-child.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reporting.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "beab10c1d0b4f8c5a3b135bcd67705a538a7c5825f4c87935b2ffc645d5f8ad4"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-reporting",
+    "file": "model-exit.json",
+    "artifact": "traces/3-lodash-own-symbol-options-reporting.model-exit.json.gz",
+    "bytes": 5346,
+    "sha256": "afdbbdba79a2096cb4791821b30c308ef8e4bf75f728618724bc67892c6adaa8"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-patch",
+    "file": "instruction.txt",
+    "artifact": "traces/3-lodash-own-symbol-options-patch.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-patch",
+    "file": "events.jsonl",
+    "artifact": "traces/3-lodash-own-symbol-options-patch.events.jsonl.gz",
+    "bytes": 143401,
+    "sha256": "afc6a912ba45143df34c039b926b3029c3989344425222c225185a4a70fffc24"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-patch",
+    "file": "result.json",
+    "artifact": "traces/3-lodash-own-symbol-options-patch.result.json.gz",
+    "bytes": 4856,
+    "sha256": "8642caad709483a8e31b69651ec66ac0e04a4591201e8a6e273dd97df97432bc"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-patch",
+    "file": "workspace.diff",
+    "artifact": "traces/3-lodash-own-symbol-options-patch.workspace.diff.gz",
+    "bytes": 863,
+    "sha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-patch",
+    "file": "trial.json",
+    "artifact": "traces/3-lodash-own-symbol-options-patch.trial.json.gz",
+    "bytes": 5478,
+    "sha256": "c456814153824eb19fc67e20bc3d8b1da42f0d243a30e2588eeac2dc78f7b9d7"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-patch",
+    "file": "score.json",
+    "artifact": "traces/3-lodash-own-symbol-options-patch.score.json.gz",
+    "bytes": 7301,
+    "sha256": "94a0065ce8843c2dce59cd1ecdcbce9eb3ec16445e568175abb57433bd853245"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-patch",
+    "file": "required-checks.json",
+    "artifact": "traces/3-lodash-own-symbol-options-patch.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-patch",
+    "file": "model-start.json",
+    "artifact": "traces/3-lodash-own-symbol-options-patch.model-start.json.gz",
+    "bytes": 203,
+    "sha256": "63201f2a673cc4fa227b50846e91f5111b4a75cf469cb35638b7590fedfd1bbd"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-patch",
+    "file": "model-child.json",
+    "artifact": "traces/3-lodash-own-symbol-options-patch.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "c4a9cb86fd7a9296faf0932f191ae401d48ef950b58f9f6cc82687a649474450"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-patch",
+    "file": "model-exit.json",
+    "artifact": "traces/3-lodash-own-symbol-options-patch.model-exit.json.gz",
+    "bytes": 5278,
+    "sha256": "55d35f578c7344ad967969d066c22371816b5609c6218ed0eb5988d2312105ea"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-bundle",
+    "file": "instruction.txt",
+    "artifact": "traces/3-lodash-own-symbol-options-bundle.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-bundle",
+    "file": "events.jsonl",
+    "artifact": "traces/3-lodash-own-symbol-options-bundle.events.jsonl.gz",
+    "bytes": 136185,
+    "sha256": "21dfa99615227d429b4590a0dbda68c8776d0688860fb42754774d4fc1f371be"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-bundle",
+    "file": "result.json",
+    "artifact": "traces/3-lodash-own-symbol-options-bundle.result.json.gz",
+    "bytes": 4847,
+    "sha256": "95729b27ce544da0eaccd10d4435545f6b015f0aca6829620d85eaaa8524dc32"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-bundle",
+    "file": "workspace.diff",
+    "artifact": "traces/3-lodash-own-symbol-options-bundle.workspace.diff.gz",
+    "bytes": 919,
+    "sha256": "f1e9ce96ddabed0a571e42242ce8950c311cb2de844123bea5908d90e034a765"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-bundle",
+    "file": "trial.json",
+    "artifact": "traces/3-lodash-own-symbol-options-bundle.trial.json.gz",
+    "bytes": 5510,
+    "sha256": "07b8db215f86214458c3dca96c1c6d2ca10e58c16889427e85c0b7cb3ca63ba3"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-bundle",
+    "file": "score.json",
+    "artifact": "traces/3-lodash-own-symbol-options-bundle.score.json.gz",
+    "bytes": 7290,
+    "sha256": "6205a819f2af8b3480b28f0781156368c23241f245c8988255825e23fd815d16"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-bundle",
+    "file": "required-checks.json",
+    "artifact": "traces/3-lodash-own-symbol-options-bundle.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-bundle",
+    "file": "model-start.json",
+    "artifact": "traces/3-lodash-own-symbol-options-bundle.model-start.json.gz",
+    "bytes": 204,
+    "sha256": "0cc3205ac02a864613267bc58dd3321341cc8d7c35d56963fa6fd3763d6cf332"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-bundle",
+    "file": "model-child.json",
+    "artifact": "traces/3-lodash-own-symbol-options-bundle.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "c4c81ac676e6634e9e4731d9ad3021cc5b05b3a0ffd2071568ac48117047ff02"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-bundle",
+    "file": "model-exit.json",
+    "artifact": "traces/3-lodash-own-symbol-options-bundle.model-exit.json.gz",
+    "bytes": 5308,
+    "sha256": "a14ae661e9e4912fbfcadbf15e061c8ea8b4bc02901f9ec8572bb97e427e5740"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/3-lodash-own-symbol-options-baseline.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/3-lodash-own-symbol-options-baseline.events.jsonl.gz",
+    "bytes": 142679,
+    "sha256": "cf045abc7096b75e2f6adbc4c6f98e297ad52011f4f1bfab937082e3e1e8eab4"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-baseline",
+    "file": "result.json",
+    "artifact": "traces/3-lodash-own-symbol-options-baseline.result.json.gz",
+    "bytes": 4878,
+    "sha256": "7bdfc0cf466bc6a34eb568019b596074c95c1e66b860fefafab525eb0de4ee1c"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/3-lodash-own-symbol-options-baseline.workspace.diff.gz",
+    "bytes": 863,
+    "sha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-baseline",
+    "file": "trial.json",
+    "artifact": "traces/3-lodash-own-symbol-options-baseline.trial.json.gz",
+    "bytes": 5262,
+    "sha256": "4aecff8dfa1e7c02bee7c99df6b9e393c709f35496f4a6c6c70f4aa6bf19ee3b"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-baseline",
+    "file": "score.json",
+    "artifact": "traces/3-lodash-own-symbol-options-baseline.score.json.gz",
+    "bytes": 7304,
+    "sha256": "8d1f70481979fd9ce5da9dc1640e8c7391517f111f65a4104ccd84cf24ea9978"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/3-lodash-own-symbol-options-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/3-lodash-own-symbol-options-baseline.model-start.json.gz",
+    "bytes": 206,
+    "sha256": "6fcfcf527e2e21d60123430674567e05534aefbc3290a567b32f82572e13f764"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/3-lodash-own-symbol-options-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "1eb3d8be543183ee138b8a503e3bd828aceb19ccb0d63eb4ced406355bb6fdf2"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/3-lodash-own-symbol-options-baseline.model-exit.json.gz",
+    "bytes": 5056,
+    "sha256": "1dc0ede157d0546c19cb8a5b242c0073f0626c8acf51b6fe7b4e41b7b2b06c65"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-scope",
+    "file": "instruction.txt",
+    "artifact": "traces/3-lodash-own-symbol-options-scope.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "348be8003698a6304236bd72515b876a63e4e44c18d1a9988638f5ad7939e3d2"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-scope",
+    "file": "events.jsonl",
+    "artifact": "traces/3-lodash-own-symbol-options-scope.events.jsonl.gz",
+    "bytes": 144261,
+    "sha256": "497d03da40e07afd1e3742086c1b7e2b36112188ba215e4cbfa6cd19f6f73973"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-scope",
+    "file": "result.json",
+    "artifact": "traces/3-lodash-own-symbol-options-scope.result.json.gz",
+    "bytes": 4878,
+    "sha256": "54b12c568be3770d8292c6cac159216d57e43edcba7206d76d46d928ed1b3595"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-scope",
+    "file": "workspace.diff",
+    "artifact": "traces/3-lodash-own-symbol-options-scope.workspace.diff.gz",
+    "bytes": 2633,
+    "sha256": "9edb89e986a2431df537ec17f478c65a9ccb0e16295936715fbc5bf84e204cff"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-scope",
+    "file": "trial.json",
+    "artifact": "traces/3-lodash-own-symbol-options-scope.trial.json.gz",
+    "bytes": 5102,
+    "sha256": "a5bf6ba96cd9a513abc7ee5dce5991cdc36654e91ceaee1b1c3b0a974bb9eee3"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-scope",
+    "file": "score.json",
+    "artifact": "traces/3-lodash-own-symbol-options-scope.score.json.gz",
+    "bytes": 7303,
+    "sha256": "38e2bb6d46b6ad7533cedb26b23e3c96a9f6eb80e48c16b85e588ea4a0c27f36"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-scope",
+    "file": "required-checks.json",
+    "artifact": "traces/3-lodash-own-symbol-options-scope.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-scope",
+    "file": "model-start.json",
+    "artifact": "traces/3-lodash-own-symbol-options-scope.model-start.json.gz",
+    "bytes": 203,
+    "sha256": "82b22b208eb1674d049d4446e64592457f609607c2e191fac9c270770ad06cc1"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-scope",
+    "file": "model-child.json",
+    "artifact": "traces/3-lodash-own-symbol-options-scope.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "88fefa1ed218277baf36c7f958dc0e5f4f144d2dfd8d450b82cdef5c7a74f774"
+  },
+  {
+    "trial": "3-lodash-own-symbol-options-scope",
+    "file": "model-exit.json",
+    "artifact": "traces/3-lodash-own-symbol-options-scope.model-exit.json.gz",
+    "bytes": 4902,
+    "sha256": "ed911c1d7b546c2158f4934817e8aecbc57df21dfe9eba5d01d629f091387990"
   }
 ]

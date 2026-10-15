@@ -1014,6 +1014,208 @@
       "eventsSha256": "07cd1ef8f5b2e5826fed2dadb6354d77f7d082174a9bdf1131ec71aba574bbfb",
       "diffSha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822",
       "scoreSha256": "047609b46d75e9453832a397f92c62de2ef9bfab7e9d5a64da80d2d971897dab"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-bundle",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All34 effective inputs and complete two-file final diff reviewed. Body batches21/25 extend config interfaces/functions; a wrongly scoped file/import patch22 is rejected atomically, then explicit import patch26 completes the change. Required defaults/overloads remain and all new helpers are nested. Initialized optional subscriber, assigned abort callback, double pre-subscribe abort checks, settled guards, cleanup and proper Error instances pass12 private probes in both timezones plus selected/full suites. Exact final compiler/Mocha28/29 pass3249/8pending; @checks and final accurately retain unknown failed/skipped and unverified admission. Long overlapping reads and multiple edits remain in352992tokens/289.892worker seconds; no protected changes or solution retrieval. No causal treatment regression inferred from this individual long path.",
+      "eventsSha256": "de7ec43d23ca039830db6b3d4cb46116ce569a17a95a9a47ef7e9e2941ab12fb",
+      "diffSha256": "4e7749e54284df770a5e19aba7889e3e2a880bf5ce8ee388d3a62229279a2710",
+      "scoreSha256": "68b5f3b200332275550dbef3b11bfd76f97a1f62ebb6b03ae4bc883a4569fa38"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed every effective tool input and the full new source diff a23aa084. Only the two allowed files change: required defaultValue and overloads preserved, optional signal, prebuilt SafeSubscriber, settled abort guard and teardown listener removal. Both required exact commands run after final import correction, TypeScript exit0 and Mocha3249 passing/8 pending. Independent feature probes in both timezones and suites pass. Final correctly distinguishes unknown skipped count and unavailable admission. Wrong EmptyError path, file signature request and wrong interface-scoped import patch recover without unsafe source access. No reference solution, history or oracle access.",
+      "eventsSha256": "91f663a78baac175edeef1d69462d0ee8cd4b669b825d72f734a227197e5a191",
+      "diffSha256": "a23aa084c02debef2f1eeca6575f1c91bfcedbae8fb8c329165b47a9020039de",
+      "scoreSha256": "d5d2c763718845290eaa685727b53b64e0b61f1cfbab03aad909e6037f380b62"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-scope",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": false,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all effective inputs and full new diff4782eb01. Optional signal and required defaults/overloads retained; SafeSubscriber instantiated before abort handling with settled guard and listener cleanup, only two allowed files. Wrong explicit-path scoped multi-file patch blocked and body replacement initially misses import; exact compiler catches it, subsequent file patch repairs. Both required commands then pass, Mocha3249/8; independent feature probes and suites pass. Runtime stops at the unchanged USD0.04 soft cost limit (observed0.04090672) before any finish/final report, so official and full-request completion remain failures despite correct functional endpoint and executed checks. No retry or rescue, no solution retrieval. Lifecycle audit also reviews the raw unfinished read-only git-status/diff attempt; its outcome is unknown and is not used as validation.",
+      "eventsSha256": "7dc03674d7c9c5ccbfbc5886bdf0a1da64d69c31b23114af8a14761a06c3d5c8",
+      "diffSha256": "4782eb0191efee0a2cc2a23bbeb867649ca52bc755176287357c0d91242983c6",
+      "scoreSha256": "f9ab7d953dbcfaa48eb76a6fc8b6273719c90cccc959af5f8e126171f0b18ec8",
+      "criteriaFailures": [
+        "SDK USD0.04 soft cost stop before finish/final user report; correct functional endpoint does not establish full delivery."
+      ],
+      "lifecycleAdditionalReview": "Reviewed the sole started-without-finish call_32ec79d1842d422d9d1d3dc8baf425ea from raw events: run_task git status --short && git diff -- src/internal/firstValueFrom.ts src/internal/lastValueFrom.ts,own workspace. Read-only input,no solution retrieval or mutation; no result/execution claim admitted. All exact required compiler/Mocha commands had finished successfully before this attempt. Last usage crosses soft USD0.04,then started event then cost-limit error. Delivery failure and unknown orphan outcome retained."
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all effective native inputs including inert malformed extra run_commands key and search extras; only commands/queries are implemented. Full source diff cfbeb409 changes the two allowed files with optional signal, required defaults and overloads retained, pre-abort short circuit, settled-safe SafeSubscriber and explicit cleanup/error paths. Supplied fixture is read, never modified; no hidden verifier or solution access. Both exact commands after final apply_patch pass compiler and Mocha3249/8; independent probes in both timezones and suites pass. Final identifies changed files and accurately distinguishes unknown skipped totals and supplied-only validation.",
+      "eventsSha256": "f8f7a6ad7a5f8bc7dd74a2735f40be835e251f8a3d841d4601e00f0e2ac14012",
+      "diffSha256": "cfbeb4091a5cc1dff32166821a0be4de0dc551ca6e29af67bf6a6f1a5c4692b3",
+      "scoreSha256": "d941270a90c524a41d94e24328b69a32ca25f77f010060538990ec8a8188697f"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-references",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all effective inputs and full new diff05856b6d. Both config interfaces retain required defaults and overloads, signal optional, nested abort/settled logic with listener removal and SafeSubscriber initialization before subscription. Pre-abort safely handles unassigned let subscriber; only allowed two files plus supporting import. Initial two-file interface-scoped patch correctly rejected and explicit file patch recovers. Both exact required commands pass after final mutation, Mocha3249/8 and compiler0; private probes in both timezones and all suites pass. Final counts and unknown skipped/admission accurately qualified. No history, reference solution or hidden verifier retrieval.",
+      "eventsSha256": "e5044e6d3f1cba3f6b5559e7fdf802496e5b5a622d9dd0f571c8de247a90faf1",
+      "diffSha256": "05856b6d3b87837a3131d2dc45dda81e90e973bb688c32dd579a8bb727af0bf7",
+      "scoreSha256": "f2e0e56db2a42a3225ee14c923e39d27aa02dfdd3e1fb63148b3dc1d7acf8a6f"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-rename",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all effective inputs and complete new diff64522e33. Required defaults/overloads preserved with optional signal, nested settled/cleanup abort logic and initialized SafeSubscriber, only the two allowed files change. Scoped multi-file and export-wrapper context patches reject without mutation; symbol replacements recover, missing supporting import caught by exact compiler and repaired with a file patch. Both required commands then pass compiler and3249/8 Mocha; independent lifecycle probes in both timezones and suites pass. Final counts preserve unknown skipped, reports command success rather than formal admission; completion remains unverified. No reference solution/history/private verifier retrieval.",
+      "eventsSha256": "0dbc6b6be2cfccdbb965b830acce4e3938fe87f6ce1ca72956c1373dee1ad027",
+      "diffSha256": "64522e33d4537c8ea56b05162af1d9ce1c823ce7306fa559686f7342d0c7189d",
+      "scoreSha256": "4f4dade06aea64d115b43430a04fadf21b4b5a024a6897c475038143a11aaa49"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-reading",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all effective inputs and full new source diff93f3fbf4. Only allowed two implementations/configs and permitted supporting SafeSubscriber import change, retaining required defaults and overloads. Nested settled/abort cleanup with optional initialized subscriber handles pre-abort, pending abort and sync terminal paths; private probes in both timezones and all independent suites pass. Atomic parse guard first prevents invalid body batch; compiler and initial full run expose missing import, file patch repairs, then both exact final-source commands pass compiler0 and Mocha3249/8. Final preserves unknown skipped and supplied-only validation. These recovered intermediate failures are retained; no researcher repair, solution/history/private verifier access.",
+      "eventsSha256": "0b0e403336ea2584389df6a5a6567b7c2eca10e664d7b885a19251ec726f4b0e",
+      "diffSha256": "93f3fbf40b86cb38402999a04afe1190665439b17af0a7bffb951349fab92e4a",
+      "scoreSha256": "4f45b2fd1cdc645a092489a908ba9b1d464e32d5efdcedb1384690a276778085"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-reporting",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all effective inputs and full new diffd88f6715: only two allowed source files, required defaults/overloads and optional signal maintained, initialized SafeSubscriber/abort cleanup with pre/double-abort checks and settled guard. All private lifecycle probes in both timezones and independent suites pass. Three malformed read_code cmd/cwd requests are schema-blocked and never execute; scoped two-file follow-up is blocked then split into observed symbol operations. Exact compiler and Mocha commands after final edit pass,3249/8. Final accurately distinguishes exit0 and counters from unknown execution/admission/failed/skipped counts. No assertion/config/other source change or external/history/private solution retrieval.",
+      "eventsSha256": "4a3fa20ea02869fb5c6ef97428ef8909c5474071eea7adac77ff1c75f4819327",
+      "diffSha256": "d88f671500b17ee98d0f69f1b4e3ef7470377e85b01adbed58b62446b90ce68f",
+      "scoreSha256": "0eed6f61fddd12b736130bc8bba84f878ab088830abc989b1efad1e63df3f1b4"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-patch",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all effective inputs and full new diffba44eff6. Allowed two files only, required defaultValue and overloads retained, optional signals and nested settled/abort listener cleanup with SafeSubscriber initialized before pre-abort/subscription. Dedicated body/config batch and explicit supporting import patch precede both exact compiler/Mocha commands, pass0 and3249/8. Independent probes both timezones plus suites pass. One malformed top-level read range request rejects without execution. Final reports observed successes and pending, skipped unreported, no formal verification claim; actual completion remains unverified. No external/history/private verifier or solution retrieval.",
+      "eventsSha256": "ed136193d1137dbe97ac1af38a82ec1aa3b52d1f91012f835aa3ca43d44434e0",
+      "diffSha256": "ba44eff6b276b30e3022540a10c6d947a07b1753bb49e1a09567e24bffb77bc0",
+      "scoreSha256": "018ff1483eabb49c96db878a50bc65d9d5b1ec1f7d716b5c03ac1de670e09563"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed every effective native input and full new diff1a086224. Only existing keys/values signatures and bodies change, strict symbols===true, own enumerable symbols appended after original string/index enumeration with corresponding forwarded values and null/primitive behavior. No unrelated declarations/assertions/config/files change; private preservation/behavior probes and all suites pass. One apply_patch8 precedes all three exact required commands11, syntax0, legacy6794/0 and supplied Node5/0 with explicit0skip/todo. Final correctly leaves legacy skipped/pending unknown and distinguishes existing deprecation warning. Read-only local scans/diff and behavior sample only, no solution/history/private verifier access.",
+      "eventsSha256": "fa8e4d42961cd20d5306f8a2c46cfb75421d50a8bd2becd202a1c4a6f6bce135",
+      "diffSha256": "1a0862246215c9402b3cedcb2a68363dc0ca92ac931dce7a2e91cf8cc3594a76",
+      "scoreSha256": "ca2d735ce6e7b5f49e6303e97ec09745f24e996a78acfc5d515559851cf88ccf"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-references",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all27 effective inputs and complete final diffSHA matching the previously reviewed e1e2b36d endpoint. Only keys/values signatures and bodies change; strict opt-in,getSymbols own enumerable sequence and forwarded values preserve defaults and other APIs. Three exact required commands24-26 run after final edit23, syntax0, legacy6794/0/6794 and Node5/0/0skip/todo; all independent feature/suite checks pass. Final scopes numeric skip0 to Node, observes no skipped category without inventing an unreported legacy total, and qualifies hidden/runtime coverage; formal admission remains unverified. Generic function queries0/1,9/10 cannot reach target and grep12 recovers, retaining retrieval friction. No solution/history/private verifier retrieval.",
+      "eventsSha256": "1675dfc51b3d81eb5d62384fe2b082f713ae9306923483a3360acff21620f2db",
+      "diffSha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6",
+      "scoreSha256": "1bba29c7d1026c5f37bd3193a05e72bd68eac59baa88cceb22d45f65feb42910"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-rename",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all38 effective inputs; final sourceSHA99869e56 exactly matches previously reviewed correct keys/values endpoint. Only allowed functions change, strict opt-in own enumerable symbols and ordering/default/null/value invariants pass private checks. Generic OR queries and guessed off-file range16 fail navigation, own-checkout grep18/20/25 recovers. Body-only keys30 initially preserves old signature, explicit whole-symbol31 repairs it. All three exact required commands32-34 then pass syntax0,legacy6794/0/6794,Node5/0/0skip/todo; independent suites pass. Final numeric skipped0 is explicitly Node-scoped, broader coverage qualified, formal admission unverified. No external/history/private solution retrieval or forbidden source/config/test mutation.",
+      "eventsSha256": "fe36758448ee1ff9b90ae89bba527a98e595dae976b8c24530483f4e3c264870",
+      "diffSha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1",
+      "scoreSha256": "35986b9bad4dbe9c4549e82282c893687f3c23261242499c9ae7e0bca24d9b60"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-reading",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all24 effective inputs; complete final diffSHA99869e56 matches reviewed correct opt-in endpoint. Only existing keys/values signatures/bodies change, all behavior/preservation probes and independent suites pass. Body-only operations17 retain headers; scoped duplicate same-file headers18 correctly reject, read19 and explicit file patch20 repair signatures. Three exact required commands21-23 follow last mutation and pass syntax0,6794/0/6794 legacy and5/0/0skip/todo Node. Final explicitly distinguishes unknown legacy pending/skipped from Node counters and unchanged deprecation warning. No outside solution/history/private verifier retrieval or protected source/config/assertion edits. Source-path and signature-repair friction retained in resources.",
+      "eventsSha256": "21020eb2faf6ed8fece3dd3764a053fbbcfe88c1fa2090ae894ef9d3147bd31a",
+      "diffSha256": "99869e561aa0e3d0448e5d578bade056862a19634c757274e89f4b6eef6a73b1",
+      "scoreSha256": "5ca007fd11ea71d73c52e531ed89b14d11420149a5640392f493be31d1aa0763"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-reporting",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all30 effective inputs; final full diffSHA08fdf33e matches previously reviewed strict opt-in/null-preserving endpoint. Only existing keys/values function headers/bodies change; own string/symbol order, defaults and unrelated declarations preserved in private probes and independent suites. Body-only22 followed by explicit signature file patch23; all three exact required commands24-26 then pass syntax0,legacy6794/0/6794 andNode5/0/0skip/todo. Final numerical skip/todo scoped to Node, does not invent legacy totals, limits coverage and makes no formal admission claim; no additional files/config changed. No external/history/private verifier or solution access. Generic lexical searches and body/signature repair retained.",
+      "eventsSha256": "a175095cf9f3780f06d19221cd3c8a645fc30fe442c8afb7124c09d48d1cb0d9",
+      "diffSha256": "08fdf33effd17e34cb1a3e05fe0ca79250e834c57707ef91f341744862b7c58b",
+      "scoreSha256": "8c2dfcbae05c2dd221e0269eeebb800172eb22ce93a3de192952f354bc55f441"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-patch",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all36 effective inputs; final diffSHAe1e2b36d exactly matches reviewed correct endpoint. Only allowed keys/values changes, strict symbol opt-in, own enumeration/order/default/null and unrelated APIs preserved by private probes and independent suites. Many OR searches before grep21 and targeted reads retained. Body-only31 initially leaves signatures; whole-symbol32 corrects both before three exact required commands33-35, all pass syntax0,legacy6794/0/6794 and Node5/0/0skip/todo. Final preserves category limits and makes no formal source admission claim. No solution/history/private verifier retrieval, protected assertions or unrelated files changed.",
+      "eventsSha256": "afc6a912ba45143df34c039b926b3029c3989344425222c225185a4a70fffc24",
+      "diffSha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6",
+      "scoreSha256": "94a0065ce8843c2dce59cd1ecdcbce9eb3ec16445e568175abb57433bd853245"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-bundle",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all34 effective inputs and full new difff1e9ce96. Only keys/values function headers/bodies change: strict symbols===true under non-null options, original string/index enumeration then getSymbols own enumerable order; explicit null return in values and forwarded options. No unrelated declaration/assertion/config/file edits, all private behavior/preservation probes and suites pass. Body batch25 followed by whole-symbol26 repairs signatures before exact required commands31-33, syntax0,legacy6794/0/6794 andNode5/0/0skip/todo. Final explicitly leaves legacy pending/skipped unknown, no formal admission claim. Generic OR search/large outline and speculative ranges retained, no external/history/private solution retrieval.",
+      "eventsSha256": "21dfa99615227d429b4590a0dbda68c8776d0688860fb42754774d4fc1f371be",
+      "diffSha256": "f1e9ce96ddabed0a571e42242ce8950c311cb2de844123bea5908d90e034a765",
+      "scoreSha256": "6205a819f2af8b3480b28f0781156368c23241f245c8988255825e23fd815d16"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed all34 effective inputs; full final diffSHAe1e2b36d equals previously reviewed correct strict opt-in keys/values implementation. Only allowed functions change and private invariant/preservation checks plus independent suites pass. OR queries0/1/16 and guessed ranges fail precise retrieval; own-checkout grep20 and read23 recover. Body-only24 leaves signature, duplicate scoped headers28 reject, whole-symbol30 fixes both. Three exact required final-source commands31-33 pass syntax0,legacy6794/0/6794 andNode5/0/0skip/todo. Final accurately distinguishes unknown legacy skips, no test/config/other source changes or formal admission claim. No external/history/private verifier or solution retrieval.",
+      "eventsSha256": "cf045abc7096b75e2f6adbc4c6f98e297ad52011f4f1bfab937082e3e1e8eab4",
+      "diffSha256": "e1e2b36dcfbbea2043fc81855ac080598ebb1a4fdcdb23e0f134bc020dc905a6",
+      "scoreSha256": "8d1f70481979fd9ce5da9dc1640e8c7391517f111f65a4104ccd84cf24ea9978"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-scope",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Reviewed every39 effective input and the complete new diff9edb89e9 after the driver finished (one read-only inspection hit a transient tool-ledger write race, retried without trial mutation). Only keys/values executable signatures/bodies change; strict true own enumerable symbols/order, null/default behavior and protected declarations pass all private/independent checks. Whole-symbol35 includes duplicated JSDoc before both declarations, an unnecessary code-hygiene defect; original comments remain and no new executable declaration or forbidden file/assertion/config changes occur, so no post-result stylistic acceptance rule is invented. Many OR searches, body-only29 and rejected duplicate scoped headers32 precede signature recovery35. Exact required commands36-38 pass syntax0,legacy6794/0/6794 andNode5/0/0skip/todo. Final counts explicitly refer to runners, no invented legacy skip total/formal admission. No solution/history/private verifier retrieval.",
+      "eventsSha256": "497d03da40e07afd1e3742086c1b7e2b36112188ba215e4cbfa6cd19f6f73973",
+      "diffSha256": "9edb89e986a2431df537ec17f478c65a9ccb0e16295936715fbc5bf84e204cff",
+      "scoreSha256": "38e2bb6d46b6ad7533cedb26b23e3c96a9f6eb80e48c16b85e588ea4a0c27f36"
     }
   ]
 }

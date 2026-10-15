@@ -1,7 +1,7 @@
 {
   "paidRequests": 0,
   "planned": 108,
-  "completed": 90,
+  "completed": 108,
   "frozenInputsAndRuntimesVerified": true,
   "actualWireModelEffortByteGuardVerified": true,
   "nominalOutputCapEffective": false,
@@ -367,6 +367,78 @@
     "3-date-fns-offset-helper-migration-rename": {
       "head": "1433f8302900180616a16287948552a8c30dcfb0",
       "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "3-rxjs-promise-abort-config-bundle": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "3-rxjs-promise-abort-config-baseline": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "3-rxjs-promise-abort-config-scope": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "3-rxjs-promise-abort-config-cline": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "3-rxjs-promise-abort-config-references": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "3-rxjs-promise-abort-config-rename": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "3-rxjs-promise-abort-config-reading": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "3-rxjs-promise-abort-config-reporting": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "3-rxjs-promise-abort-config-patch": {
+      "head": "019bf04080de5bfef6e3034714cfc48cc7de3a8b",
+      "tree": "18652b0a8a6c5496e0a648584a3a5d6c6266ae8f"
+    },
+    "3-lodash-own-symbol-options-cline": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "3-lodash-own-symbol-options-references": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "3-lodash-own-symbol-options-rename": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "3-lodash-own-symbol-options-reading": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "3-lodash-own-symbol-options-reporting": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "3-lodash-own-symbol-options-patch": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "3-lodash-own-symbol-options-bundle": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "3-lodash-own-symbol-options-baseline": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "3-lodash-own-symbol-options-scope": {
+      "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
+      "tree": "601995db95e9fa51c68ce09809083160936604be"
     }
   },
   "matchedInitialIdentities": [
@@ -499,6 +571,22 @@
       "sameHeadAndTree": true
     },
     {
+      "id": "rxjs-promise-abort-config",
+      "repetition": 3,
+      "arms": [
+        "bundle",
+        "baseline",
+        "scope",
+        "cline",
+        "references",
+        "rename",
+        "reading",
+        "reporting",
+        "patch"
+      ],
+      "sameHeadAndTree": true
+    },
+    {
       "id": "lodash-own-symbol-options",
       "repetition": 1,
       "arms": [
@@ -526,6 +614,22 @@
         "rename",
         "references",
         "cline",
+        "scope"
+      ],
+      "sameHeadAndTree": true
+    },
+    {
+      "id": "lodash-own-symbol-options",
+      "repetition": 3,
+      "arms": [
+        "cline",
+        "references",
+        "rename",
+        "reading",
+        "reporting",
+        "patch",
+        "bundle",
+        "baseline",
         "scope"
       ],
       "sameHeadAndTree": true
@@ -1071,6 +1175,114 @@
       "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
       "promptSha256": "84b481fc074e8469e2c6439d426809af6a449731a03ddf867b1a59c2a6aa0e5e",
       "normalizedContractSha256": "93e05a41ab78d023ebf1df9b16c2eb13e999ae020d4ade70707b369c29d0edbf"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-bundle",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "833cd45472a3eda52860ca028e5a703b44b6d599a12011a8ef2e841e89fff86b",
+      "normalizedContractSha256": "2facddd917464b581b29225d8a286d9bac14383ce6442e426e6ccbd16aebfa03"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-baseline",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "1b561ca712f96bcef50a9be2e1866363e5c7a16096e7a000dee2ee763d04722f",
+      "normalizedContractSha256": "9bc400e014209a153efbda8e5412495a37b7f174ce4ef07981380a6589fbaf97"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-scope",
+      "toolsSha256": "305c04a53b2eb79c5359c4dc7917683851c4df2de7fa5ab67ae59c39766e7e21",
+      "promptSha256": "3a72e2aede4e09b9cecc77b23dae29c368e94ca2641b29a7adf8c6f0ade0cb2b",
+      "normalizedContractSha256": "2c94371d7b65519363f8152dd61037675b2bb5e3ee7ddb178634d2c0861ff577"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-cline",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "d8124a03a6a45c28b8ac7a4948667bb0fd9b55e93bf38a6e1a7a0a6dd64c1121",
+      "normalizedContractSha256": "c3f76ce7e18e8d97008b4198f9c361c73ef43e30bafd18fa0b77633802a1f5dd"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-references",
+      "toolsSha256": "10cc795fa74e6e03e3d2dc3c46d107081799ebb9f50987725be4dc7cafc03e48",
+      "promptSha256": "b293826bb9a7e7121cb3aae2acb3232b6b20cea53bbd8971cb2fac2951506b5e",
+      "normalizedContractSha256": "36db67923f83495f4bd1dcd4081524d129ec9ea295b89b345de1698afa371535"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-rename",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "d6e9d8a25ac47cca82ca3f05c269d7d84a880a7e07f046d66673febc2f6a9746",
+      "normalizedContractSha256": "9bc400e014209a153efbda8e5412495a37b7f174ce4ef07981380a6589fbaf97"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-reading",
+      "toolsSha256": "1eb5cb42345fd15d3ea582a399ee3b15275a8ea4fecd3a5b7dd4513544023129",
+      "promptSha256": "38966ad087fbb57738962351b4f9bff6b56ae7154e91652e75568a7250deb286",
+      "normalizedContractSha256": "ecc224128c56940fe296526dfcf20c9c56fa6a2e54a2bd89a95a22fed9af307c"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-reporting",
+      "toolsSha256": "8c69fbc427868efe88a7c243364f66a6312958b44defa9038f3b01ed7d35772d",
+      "promptSha256": "2137eef7fcd19e116aebc878e1756bc0141d3aca3af459ba64c9d5d1647947c9",
+      "normalizedContractSha256": "47f2d9eefb0481f760fdef8391877edc66e652c571496cb54617a606c4dec31b"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-patch",
+      "toolsSha256": "845292da2156cdb1513f02910895e1d6631021f844e700caffb1181ca645d507",
+      "promptSha256": "6e533f4018cbd6f757acc9e6bda44f0b68e079b0f417742fa0a8365bac92252f",
+      "normalizedContractSha256": "10d5b9e67ec650bb6ffdd72df45268b6d0ed9cdaa27a324e0de2d34b38abceae"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-cline",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "6b9eb455b707082e5d541ca4b6e79d321fb93c1bf8c6db4268ba8725dbbe1f43",
+      "normalizedContractSha256": "c3f76ce7e18e8d97008b4198f9c361c73ef43e30bafd18fa0b77633802a1f5dd"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-references",
+      "toolsSha256": "10cc795fa74e6e03e3d2dc3c46d107081799ebb9f50987725be4dc7cafc03e48",
+      "promptSha256": "55c96607319a8f18f7f2da84c3f2228a79a008434693b3846bbdf2a9259047fa",
+      "normalizedContractSha256": "1b64d825aab4b0c55d8b09871bb7b755b9b4f02723ac32500e71df70e3a46a3c"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-rename",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "6d3cfec9c1a9430fcea8aa76af26e4b6512c4326c617a874c39272cc0df7dcbd",
+      "normalizedContractSha256": "80c324f0ea08ec549a11ee72f367fd4c79926672c60454a1e117cedea61aa063"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-reading",
+      "toolsSha256": "1eb5cb42345fd15d3ea582a399ee3b15275a8ea4fecd3a5b7dd4513544023129",
+      "promptSha256": "779d1ff2b0e8e99952f654fe5dbac155df35217aced47442ddac2b54c0d86382",
+      "normalizedContractSha256": "c448190d35d90f91f197a7df4c0e4a26440d5cba30cbfd6bda2a35537f0de0c5"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-reporting",
+      "toolsSha256": "8c69fbc427868efe88a7c243364f66a6312958b44defa9038f3b01ed7d35772d",
+      "promptSha256": "56595a53e3d4cd53f37aae8ed0033d77a0bb8c7a45ce6e5df921edecfed933c6",
+      "normalizedContractSha256": "d7ee5af9c0c00b769d17e09f460afff2a55cfb07121ad54dec5e40acd94f6875"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-patch",
+      "toolsSha256": "845292da2156cdb1513f02910895e1d6631021f844e700caffb1181ca645d507",
+      "promptSha256": "90a4d61d5bcf9ca670207231c30bc0bc8aa15929c473aa71affadec6e3db707c",
+      "normalizedContractSha256": "30b4fd50d8b6156dbbe91b9550945b114cff0ba515b628db84c7f18844d519cd"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-bundle",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "a82c4bae4a04c035b5ba8b566db79103ca1f687efbc01dd1d90b5aee7ec20656",
+      "normalizedContractSha256": "64a82befebecf339deab017bec1ae7ed2713e1a0a64f71927ca9bbd458b6732a"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-baseline",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "0593a2be1fb551a43a85511743037b69081f6bb1154948fc24fcc8001c4eacd6",
+      "normalizedContractSha256": "80c324f0ea08ec549a11ee72f367fd4c79926672c60454a1e117cedea61aa063"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-scope",
+      "toolsSha256": "305c04a53b2eb79c5359c4dc7917683851c4df2de7fa5ab67ae59c39766e7e21",
+      "promptSha256": "a4be49b7e8a4705900cb0b4767dacd933e76acdd1300dc64ac1fa8b32c722039",
+      "normalizedContractSha256": "6a8c2573dd4ee457a62f0e12031b212510de20fe9b2c9078c1dc0857f9087f5a"
     }
   ],
   "audits": [
@@ -2504,6 +2716,300 @@
       "name": "3-date-fns-offset-helper-migration-rename",
       "file": "prompt-date-loads.jsonl",
       "artifact": "execution-audits/3-date-fns-offset-helper-migration-rename.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-bundle",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-rxjs-promise-abort-config-bundle.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-baseline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-rxjs-promise-abort-config-baseline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-scope",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-rxjs-promise-abort-config-scope.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-cline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-rxjs-promise-abort-config-cline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-cline",
+      "file": "native-search-loads.jsonl",
+      "artifact": "execution-audits/3-rxjs-promise-abort-config-cline.native-search-loads.jsonl.gz",
+      "sha256": "4ecd591c9570e57d85005a16da3a35c518b5750d93412d98a9bcc2eb216d8df1",
+      "bytes": 420,
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        },
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        }
+      ]
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-references",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-rxjs-promise-abort-config-references.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-rename",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-rxjs-promise-abort-config-rename.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-reading",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-rxjs-promise-abort-config-reading.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-reporting",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-rxjs-promise-abort-config-reporting.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-patch",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-rxjs-promise-abort-config-patch.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-lodash-own-symbol-options-cline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-lodash-own-symbol-options-cline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-lodash-own-symbol-options-cline",
+      "file": "native-search-loads.jsonl",
+      "artifact": "execution-audits/3-lodash-own-symbol-options-cline.native-search-loads.jsonl.gz",
+      "sha256": "4ecd591c9570e57d85005a16da3a35c518b5750d93412d98a9bcc2eb216d8df1",
+      "bytes": 420,
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        },
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        }
+      ]
+    },
+    {
+      "name": "3-lodash-own-symbol-options-references",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-lodash-own-symbol-options-references.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-lodash-own-symbol-options-rename",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-lodash-own-symbol-options-rename.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-lodash-own-symbol-options-reading",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-lodash-own-symbol-options-reading.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-lodash-own-symbol-options-reporting",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-lodash-own-symbol-options-reporting.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-lodash-own-symbol-options-patch",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-lodash-own-symbol-options-patch.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-lodash-own-symbol-options-bundle",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-lodash-own-symbol-options-bundle.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-lodash-own-symbol-options-baseline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-lodash-own-symbol-options-baseline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "3-lodash-own-symbol-options-scope",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/3-lodash-own-symbol-options-scope.prompt-date-loads.jsonl.gz",
       "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
       "bytes": 194,
       "records": [

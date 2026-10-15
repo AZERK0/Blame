@@ -632,6 +632,132 @@
       "artifact": "journals/3-date-fns-offset-helper-migration-rename.cbb3a7f4dcd9095fc2e00793.jsonl.gz",
       "bytes": 71005,
       "sha256": "aab509e4c79c86c3c930893065c3176ec7dc8bafafc30dd9510257643e3452e3"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-bundle",
+      "file": "0354f2bf3257a27191720e91.jsonl",
+      "artifact": "journals/3-rxjs-promise-abort-config-bundle.0354f2bf3257a27191720e91.jsonl.gz",
+      "bytes": 247969,
+      "sha256": "163e513f6ecc8bb4578d9df21cd4f19337e05eea24c0928d9e87e670b814b2c4"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-baseline",
+      "file": "5f40c5a192ade8d916e8206b.jsonl",
+      "artifact": "journals/3-rxjs-promise-abort-config-baseline.5f40c5a192ade8d916e8206b.jsonl.gz",
+      "bytes": 152969,
+      "sha256": "5b8882aaf579567010f4f6057a4137137b6aa628d33f86f2897f3b9962b0e1f5"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-scope",
+      "file": "0c82707a9fff12bc9e5f35b2.jsonl",
+      "artifact": "journals/3-rxjs-promise-abort-config-scope.0c82707a9fff12bc9e5f35b2.jsonl.gz",
+      "bytes": 238713,
+      "sha256": "77f0b4035ec0b094219a89810a4a7e654835e7fcca8f94b5452f529b5c257464"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-cline",
+      "file": "bff98a6ea5a81f102a2745e9.jsonl",
+      "artifact": "journals/3-rxjs-promise-abort-config-cline.bff98a6ea5a81f102a2745e9.jsonl.gz",
+      "bytes": 79,
+      "sha256": "193bcbeedb4ff2907f6246f69fa1ee29255f96a073aadfdb19cb44cefb3fdf91"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-references",
+      "file": "6b0219d42350a5044540b011.jsonl",
+      "artifact": "journals/3-rxjs-promise-abort-config-references.6b0219d42350a5044540b011.jsonl.gz",
+      "bytes": 136440,
+      "sha256": "ddf60104d2654145d9b44cd12458477710f0136a2eac5bd6ed1d627388513611"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-rename",
+      "file": "3d4e3ee775453b0eb539c495.jsonl",
+      "artifact": "journals/3-rxjs-promise-abort-config-rename.3d4e3ee775453b0eb539c495.jsonl.gz",
+      "bytes": 150725,
+      "sha256": "7000e845bb747e40756e6937a350cb1f922afed23839b30fca116971797a911d"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-reading",
+      "file": "d7b91013014228b1ae92ee90.jsonl",
+      "artifact": "journals/3-rxjs-promise-abort-config-reading.d7b91013014228b1ae92ee90.jsonl.gz",
+      "bytes": 260372,
+      "sha256": "c8d2eff71356429514f97a83ac7f119db7d996323589f0e7f84606b4e36efafa"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-reporting",
+      "file": "465b81511a0ebb14224e7cc8.jsonl",
+      "artifact": "journals/3-rxjs-promise-abort-config-reporting.465b81511a0ebb14224e7cc8.jsonl.gz",
+      "bytes": 167403,
+      "sha256": "707eac73e5c54f28edc71899678d5fd8eea894c278cb497aba0cd8fffcd1013d"
+    },
+    {
+      "name": "3-rxjs-promise-abort-config-patch",
+      "file": "d61f7cca1a4c55c1aeffc32b.jsonl",
+      "artifact": "journals/3-rxjs-promise-abort-config-patch.d61f7cca1a4c55c1aeffc32b.jsonl.gz",
+      "bytes": 106656,
+      "sha256": "568bfd13f48e2510a169ac9db980320f924ec4d2ba814d84a0ddcb937ea6f12f"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-cline",
+      "file": "256573c1eef0cf30e2402139.jsonl",
+      "artifact": "journals/3-lodash-own-symbol-options-cline.256573c1eef0cf30e2402139.jsonl.gz",
+      "bytes": 79,
+      "sha256": "a3873e16176c01514228ec050738167599120d3b30101ed46173461fb4fe0914"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-references",
+      "file": "401d3af3120ff51351357684.jsonl",
+      "artifact": "journals/3-lodash-own-symbol-options-references.401d3af3120ff51351357684.jsonl.gz",
+      "bytes": 157439,
+      "sha256": "2f3d09ef3310662a025bde70dc78bb3b9a9303c9b6ff1fa649c45936a9d35962"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-rename",
+      "file": "90e127f5afd6f65ad163e661.jsonl",
+      "artifact": "journals/3-lodash-own-symbol-options-rename.90e127f5afd6f65ad163e661.jsonl.gz",
+      "bytes": 190644,
+      "sha256": "6062f25027999f404c5f3728e23be70830a8b1f6cfb69cba615eee5e9719155a"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-reading",
+      "file": "f5c45b1de10c7af99b6a87b9.jsonl",
+      "artifact": "journals/3-lodash-own-symbol-options-reading.f5c45b1de10c7af99b6a87b9.jsonl.gz",
+      "bytes": 280088,
+      "sha256": "2fe4627e0ed4d44fdf1ec83f780c4cba91e42065564c1bcb09b9db4a9364b58f"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-reporting",
+      "file": "9db77a115f7eebe24ea643aa.jsonl",
+      "artifact": "journals/3-lodash-own-symbol-options-reporting.9db77a115f7eebe24ea643aa.jsonl.gz",
+      "bytes": 199116,
+      "sha256": "4532240b77d089e555cfab2c9bc344e87e6e1c0952d83ad27fc926b2f7cc9846"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-patch",
+      "file": "ad63fcece7bce6c19ac8524e.jsonl",
+      "artifact": "journals/3-lodash-own-symbol-options-patch.ad63fcece7bce6c19ac8524e.jsonl.gz",
+      "bytes": 317376,
+      "sha256": "2484bc0849d2edb6040fc7930679ba1181802a8acb957ffdd14b0764ee6430e4"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-bundle",
+      "file": "2e20aaae77097d6affbf36f2.jsonl",
+      "artifact": "journals/3-lodash-own-symbol-options-bundle.2e20aaae77097d6affbf36f2.jsonl.gz",
+      "bytes": 515888,
+      "sha256": "486113d74381cfd970e2ce857b91a03386069c7d1908a7b422400482b7eac146"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-baseline",
+      "file": "9ed871cbb9749d84bed5131c.jsonl",
+      "artifact": "journals/3-lodash-own-symbol-options-baseline.9ed871cbb9749d84bed5131c.jsonl.gz",
+      "bytes": 244681,
+      "sha256": "4a180468a7b4671f8b3280f5c82b1367334ffe32dc649611447987fadb84b21d"
+    },
+    {
+      "name": "3-lodash-own-symbol-options-scope",
+      "file": "4aea389bd686a8debe176d3e.jsonl",
+      "artifact": "journals/3-lodash-own-symbol-options-scope.4aea389bd686a8debe176d3e.jsonl.gz",
+      "bytes": 295958,
+      "sha256": "caa57a220cc59057413ef5188810aa5fecfb97329094e4c6c05039c3791bc7dc"
     }
   ]
 }

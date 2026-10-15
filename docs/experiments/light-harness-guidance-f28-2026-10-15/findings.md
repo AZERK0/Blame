@@ -1,6 +1,6 @@
 # F28 trace diagnosis
 
-Observed through the reviewed prefix90. Remaining registered assignments continue. These diagnoses explain recorded paths; they do not identify a generally superior variant. Zero-based call indices refer to the public finished-tool ledger and original event archives.
+All108 registered assignments are complete and reviewed. These diagnoses explain recorded paths; they do not identify a generally superior variant. Zero-based call indices refer to the public finished-tool ledger and original event archives.
 
 | Observation and category | Evidence | Status in the measured versions/current code |
 |---|---|---|
@@ -20,3 +20,9 @@ Intermediate compiler failures, rejected edits and repeated validation are inclu
 Keep official completion, frozen functional checks, actual final-source commands, formal admission and truthful full user criteria distinct. The public verifier replays SHA-bound manual decisions and calculations; it is not an independent re-adjudication. Counter-only wording sensitivity does not replace the registered full endpoint. No causal regression is inferred merely from an intermediate model error or a slower stochastic path.
 
 Repetition3 RxJS migration bundle adds a natural validation-guard observation: Mocha23 fails the same timing test; finish24 truthfully reports the failure but is refused because validation is still failing. The agent investigates without editing source, reruns the exact command29 successfully, and discloses both outcomes. This permitted within-trial recovery is distinct from researcher model retries or overwriting the independently failed score in repetition2. Guard activation alone does not establish a comparative global success gain.
+
+The final scope/Lodash trial35 duplicates JSDoc in whole-symbol replacements while preserving the original documentation and all executable declarations outside the allowed functions. This is unnecessary code-hygiene damage,not a newly invented functional rejection criterion. It strengthens the case for clearer replacement boundaries; no automatic comment removal is justified.
+
+The scope/RxJS-abort trial reaches USD0.04090672 after both final-source commands pass,then records a read-only git status/diff start with no finish before the soft-cost error. Its outcome remains unknown and full delivery fails. The explicit additional lifecycle review preserves all raw bytes and outcome flags (`lifecycle-audit-amendment.json`).
+
+The final reading/Lodash trial records11 forwarded requests and10 usage reports,including two identical request-body hashes2.075seconds apart. The cause,billing and missing consumption are not established. Retain its successful outcome,add USD0.23 unreported-response reserve,and exclude it from primary resource pairs. It is not a researcher model retry or zero-cost call.

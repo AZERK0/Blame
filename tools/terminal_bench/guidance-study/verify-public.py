@@ -19,6 +19,21 @@ for entry in read('inventory.json'):
  assert len(b)==entry['bytes'] and sha(b)==entry['sha256'],entry['artifact']
  raw[entry['trial'],entry['file']]=b
 reviews={r['name']:r for r in read('source-review.json')['decisions']}
+if (root/'lifecycle-audit-amendment.json').exists():
+ amendment=read('lifecycle-audit-amendment.json');entry=amendment['oldReview']
+ previous=gzip.decompress((root/entry['artifact']).read_bytes())
+ assert len(previous)==entry['bytes'] and sha(previous)==entry['sha256']
+ assert amendment['currentReviewSha256']==sha((root/'source-review.json').read_bytes())
+ assert amendment['paidRequests']==0 and amendment['sourceAndScoreUnchanged'] and amendment['manualOutcomeFlagsUnchanged']
+ for old in json.loads(previous)['decisions']:
+  current=reviews[old['name']]
+  for key in ['agentRequiredChecksPassed','fullRequestCriteriaPassed','noSolutionRetrieval','eventsSha256','diffSha256','scoreSha256']:assert old[key]==current[key]
+ name=amendment['trial'];assert reviews[name]['lifecycleAdditionalReview']==amendment['additionalReview']
+ orphan=[json.loads(line)['event'] for line in raw[name,'events.jsonl'].splitlines() if line]
+ starts=[e['payload']['toolCall'] for e in orphan if e['type']=='tool' and e['payload'].get('phase')=='started' and e['payload'].get('toolCall',{}).get('id')=='call_32ec79d1842d422d9d1d3dc8baf425ea']
+ assert len(starts)==1 and starts[0]['name']=='run_task'
+ assert starts[0]['input']['command']=='git status --short && git diff -- src/internal/firstValueFrom.ts src/internal/lastValueFrom.ts'
+ assert not any(e['type']=='tool' and e['payload'].get('phase')=='finished' and e['payload'].get('toolCallId')==starts[0]['id'] for e in orphan)
 wire_bytes=(root/'wire-contracts.json.gz').read_bytes()
 assert sha(wire_bytes)==read('wire-inventory.json')['sha256']
 wire_data=json.loads(gzip.decompress(wire_bytes))
