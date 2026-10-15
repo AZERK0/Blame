@@ -74,26 +74,10 @@ export function LandingRevealStyles() {
 
       .user-story-state-effect {
         position: relative;
-      }
-
-      .user-story-state-effect[data-story-state="in-progress"] {
-        overflow: hidden;
         padding: 1px;
-      }
-
-      .user-story-state-effect[data-story-state="in-progress"]::before {
-        position: absolute;
-        inset: -150%;
-        background: conic-gradient(
-          from 0deg,
-          transparent 0deg 245deg,
-          oklch(0.85 0.12 235 / 75%) 285deg,
-          oklch(0.65 0.22 255) 325deg,
-          transparent 360deg
-        );
-        content: "";
-        animation: userStoryBorderRotation 2.6s linear infinite;
-        pointer-events: none;
+        box-shadow:
+          0 0 0 1px oklch(0.7 0.17 250 / 25%),
+          0 0 14px oklch(0.65 0.2 250 / 32%);
       }
 
       .workspace-smart-sweep {
@@ -210,12 +194,6 @@ export function LandingRevealStyles() {
         }
       }
 
-      @keyframes userStoryBorderRotation {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
       @keyframes workspaceSmartSweep {
         from {
           background-position: 100% 0;
@@ -234,7 +212,6 @@ export function LandingRevealStyles() {
         .story-reveal[data-visible="false"],
         .story-reveal[data-visible="true"],
         .specialist-card,
-        .user-story-state-effect[data-story-state="in-progress"]::before,
         .workspace-smart-sweep {
           animation: none;
           opacity: 1;
