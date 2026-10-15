@@ -1,0 +1,28 @@
+{
+  "artifact": "added-test-sources.json.gz",
+  "sha256": "952ecf46d3e3e6aa219cc1d5679f9672b7314199dffda5dd06117c76f9dc3b3a",
+  "sources": [],
+  "journals": [
+    {
+      "name": "1-yaml-anchor-ranges-baseline",
+      "file": "05c6b729faf950981b4cabc4.jsonl",
+      "artifact": "journals/1-yaml-anchor-ranges-baseline.05c6b729faf950981b4cabc4.jsonl.gz",
+      "bytes": 279345,
+      "sha256": "a9638fe3ddd0a7f42642e0f16047db264eb629c943cb55b064a85ac0f56d757d"
+    },
+    {
+      "name": "1-yaml-anchor-ranges-candidate",
+      "file": "e3757a6979fc2410e8cd050c.jsonl",
+      "artifact": "journals/1-yaml-anchor-ranges-candidate.e3757a6979fc2410e8cd050c.jsonl.gz",
+      "bytes": 658353,
+      "sha256": "759fec5b4f259b96a4adc1ec718e5634a255f0290d4033ab2fbfae1473ab77ee"
+    },
+    {
+      "name": "1-yaml-anchor-ranges-cline",
+      "file": "f816c21aae889bfcf5b20829.jsonl",
+      "artifact": "journals/1-yaml-anchor-ranges-cline.f816c21aae889bfcf5b20829.jsonl.gz",
+      "bytes": 79,
+      "sha256": "f0c44541118dffd0413469fa2b14a30d3e659c16551a992de0104d4968465853"
+    }
+  ]
+}

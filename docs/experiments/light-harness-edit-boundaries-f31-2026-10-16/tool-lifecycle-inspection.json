@@ -1,0 +1,35 @@
+{
+  "method": "Read every raw started/finished tool input independently of the driver's completed-tool ledger. Orphan, changed-input and missing-ID observations require explicit review; this extractor does not adjudicate external effects or leakage.",
+  "trials": [
+    {
+      "name": "1-yaml-anchor-ranges-baseline",
+      "eventsSha256": "36f4586e551705ae303d0c2eaea78f35233e5ac782f850fdf38027cfb6d84257",
+      "started": 33,
+      "finished": 33,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-yaml-anchor-ranges-candidate",
+      "eventsSha256": "af561ba1a9358240423f329b163359641c9b7b9a50246ebc50b00e5e37570c62",
+      "started": 46,
+      "finished": 46,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-yaml-anchor-ranges-cline",
+      "eventsSha256": "d4a7c1b7896b7ab9f2e2ec6c11c6863e473d00cda8b5d75350b38b490a9dcff0",
+      "started": 19,
+      "finished": 19,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    }
+  ]
+}

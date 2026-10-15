@@ -68,7 +68,14 @@ for(const row of analysis.rows){
     return {tool:t.tool,input:t.input,reportedStatus:t.output?.status??null,run:data?.run??null,
       command:completed?.command??data?.command??null,
       observedExitCode:completed?.exitCode??data?.exitCode??null,
-      process:data?.process??null,reportedEnvironment:completed?.environment??data?.environment??null,
+      process:completed?.reporting?.process??completed?.check?.process??data?.process??null,
+      observedCheck:completed?.check??null,reporting:completed?.reporting??null,
+      recordedSourceBinding:completed?.reporting?{
+        invocation:completed.reporting.invocationSourceRevisionId??null,
+        completed:completed.reporting.completedSourceRevisionId??null,
+      }:null,
+      reportedEnvironment:completed?.environment??data?.environment??null,
+      manifestEnvironmentEvidence:completed?.check?.evidence?.manifestEnvironment??null,
       admittedValidation:completed?.validation??data?.validation??null,
       nativeResults:t.tool==="run_commands"?t.output:null};
   });
@@ -76,7 +83,8 @@ for(const row of analysis.rows){
     finalScoredSources:score.sourceSha256,actualRecordedAgentCommands:calls,
     officialRuntimeSuccess:row.officialRuntimeSuccess,
     completionAsReported:row.completion,
-    independent:{feature:score.featureInvocation,nonUtcFeature:score.nonUtcFeatureInvocation,
+    independent:{build:score.build,e2e:score.e2e??null,
+      feature:score.featureInvocation,nonUtcFeature:score.nonUtcFeatureInvocation,
       selected:score.selected,typesOrSyntax:score.types,fullDefinedSuite:score.full,
       addedTests:score.addedTests,addedTestsOnOriginalSource:score.testCounterexample},
     boundEnvironment:{node:bindings.node,project:bindings.projects[task.project],

@@ -1,0 +1,39 @@
+{
+  "method": "Registered observed task-quality and resource gates. Local byte-correctness is separate from model efficacy; no population equivalence test.",
+  "completed": 3,
+  "planned": 18,
+  "complete": false,
+  "registeredGate": {
+    "qualityFirst": "No fewer full audited completions or behavioral passes per task than baseline. All local guard/round-trip controls pass. Discordance is observed,not automatically causal.",
+    "resourceSignal": "At no lower quality,seek at least10% reduction in strict paired tokens or estimated cost; estimated cost increase <=5%,worker time increase <=10%. Keep all-attempt adverse results.",
+    "retain": "Retain local correctness fix if local invariants pass and no observed task-quality loss; claim model efficiency only when resource gate passes. Otherwise keep isolated or investigate/revert. No outcome-based extension."
+  },
+  "qualityGate": true,
+  "resourceGate": false,
+  "eligiblePairs": 1,
+  "resources": {
+    "tokens": {
+      "left": 357062,
+      "right": 331714,
+      "pairs": 1,
+      "missingPairs": 0,
+      "relativeChange": 0.07641522516384591
+    },
+    "cost": {
+      "left": 0.0230044,
+      "right": 0.020435599999999998,
+      "pairs": 1,
+      "missingPairs": 0,
+      "relativeChange": 0.12570220595431514
+    },
+    "seconds": {
+      "left": 78.926,
+      "right": 89.146,
+      "pairs": 1,
+      "missingPairs": 0,
+      "relativeChange": -0.11464339398290446
+    }
+  },
+  "decision": "pending-complete-panel",
+  "limitation": "Two researcher-specified public feature instances,two projects,dependent repeats and unblinded research-agent review. Resource contrasts condition on joint audited acceptance; all-attempt failures remain. No outcome-based extra trials."
+}

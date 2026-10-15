@@ -1,0 +1,69 @@
+{
+  "paidRequests": 0,
+  "method": "Public byte/hash,recorded outcomes,research-agent decisions,full initial contracts,paired resources and reserve replay; no independent adjudication or model calls.",
+  "completed": 3,
+  "planned": 18,
+  "rawArtifactsVerified": 30,
+  "executionAuditsVerified": 4,
+  "strata": {
+    "fresh-confirmation": {
+      "baseline": {
+        "trials": 1,
+        "official": 1,
+        "functional": 1,
+        "strict": 1,
+        "tokensObserved": 331714,
+        "estimatedUsdObserved": 0.020435599999999998,
+        "runnerSecondsObserved": 89.146,
+        "missingConsumption": 0,
+        "inputTokensObserved": 325090,
+        "outputTokensObserved": 6624,
+        "cacheReadTokensObserved": 291840,
+        "cacheWriteTokensObserved": 0,
+        "missingCacheReadAggregates": 0,
+        "missingCacheWriteAggregates": 0,
+        "missingReasoningAggregates": 1
+      },
+      "candidate": {
+        "trials": 1,
+        "official": 1,
+        "functional": 1,
+        "strict": 1,
+        "tokensObserved": 357062,
+        "estimatedUsdObserved": 0.0230044,
+        "runnerSecondsObserved": 78.926,
+        "missingConsumption": 0,
+        "inputTokensObserved": 350174,
+        "outputTokensObserved": 6888,
+        "cacheReadTokensObserved": 307200,
+        "cacheWriteTokensObserved": 0,
+        "missingCacheReadAggregates": 0,
+        "missingCacheWriteAggregates": 0,
+        "missingReasoningAggregates": 1
+      },
+      "cline": {
+        "trials": 1,
+        "official": 1,
+        "functional": 1,
+        "strict": 1,
+        "tokensObserved": 375705,
+        "estimatedUsdObserved": 0.03466612,
+        "runnerSecondsObserved": 114.78,
+        "missingConsumption": 0,
+        "inputTokensObserved": 361529,
+        "outputTokensObserved": 14176,
+        "cacheReadTokensObserved": 303616,
+        "cacheWriteTokensObserved": 0,
+        "missingCacheReadAggregates": 0,
+        "missingCacheWriteAggregates": 0,
+        "missingReasoningAggregates": 1
+      }
+    }
+  },
+  "newWireUsageGaps": 0,
+  "observedUsd": 0.07810612,
+  "reservedUsd": 0.0,
+  "priorAccountedUsd": 4.28706008,
+  "totalAccountedUsd": 4.3651662,
+  "pairedComparisonsVerified": 12
+}

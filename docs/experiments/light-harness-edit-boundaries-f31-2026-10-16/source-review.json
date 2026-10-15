@@ -1,0 +1,41 @@
+{
+  "method": "Unblinded manual source,all effective tool inputs,final-source command evidence and final-report review. Explicit decisions bound to original events/diffs/scores; not a third-party audit. Independent grading is separate and never fed back.",
+  "decisions": [
+    {
+      "name": "1-yaml-anchor-ranges-baseline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected complete six-file diff and every effective input. Parsed scalar/collection/empty paths capture token offsets; alias/default behavior remains. NodeBase and Collection clone tuples independently. Public optional precise tuples pass frozen type/behavior probes and original25/3483 suite with11 skipped. Initial Rollup success includes a tuple warning; the model repairs Collection typing and reruns all four exact commands after the final edit. Final12/3483/11 counts match output and typecheck counters stay unknown. Scoped multi-file patch is correctly refused then explicit file patch recovers. No protected/out-of-scope writes or external/reference solution retrieval observed.",
+      "review": "reviewed",
+      "eventsSha256": "36f4586e551705ae303d0c2eaea78f35233e5ac782f850fdf38027cfb6d84257",
+      "diffSha256": "2f3ea3b1974cae1b1550e60f3e5ddebb09dd7b329a9eac8bd5ade7f8dd23f3b0",
+      "scoreSha256": "3a52de3f6e52243848488005fe25f8af1489a7f1adbf3bb6d33b1109e22a2603"
+    },
+    {
+      "name": "1-yaml-anchor-ranges-candidate",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected complete three-file diff and all effective tool inputs. NodeBase optional tuple reaches the ParsedNode union without redundant declarations; composer covers scalar/collection/empty paths and both NodeBase/Collection clones copy arrays. Frozen probes,type constraints,25 upstream suites/3483 passes/11 skipped all pass. The model uses file patches only; no whole-symbol indentation treatment is exercised. A scoped multi-file request is refused then explicit headers recover. After the final formatting patch all four exact commands run in order. Final12/3483/11 counts match actual outputs,unknown type counters are explicitly retained,and changed-path statement is accurate. No protected writes or solution retrieval observed.",
+      "review": "reviewed",
+      "eventsSha256": "af561ba1a9358240423f329b163359641c9b7b9a50246ebc50b00e5e37570c62",
+      "diffSha256": "39c0f93240dbbc238e2492f9e3b817b86228c1fe2ab9ddf4486fe6061aae1a9d",
+      "scoreSha256": "1579ebbaab7682e13e75fca49608ed0a96b1f54c57a1f78e808bbbf0911c2eaf"
+    },
+    {
+      "name": "1-yaml-anchor-ranges-cline",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "manualBehaviorPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "Inspected complete six-file diff and every effective native command/search/read/patch. Both composer paths and empty values retain string anchors and correct token offsets; NodeBase/Collection copy tuples and public node types stay precise. First patch is atomically refused; subsequent read/refined patch recovers. After the final mutation,the successful literal chain contains all four exact requested commands in order;12 supplied cases and25/3483/11 original aggregate results are visible and correct. Final path/count claims match. The bracket notation describes a tuple and does not explicitly claim inclusive end; source comments/behavior are exclusive. git log inspects the single initial checkout commit only. Ignored timeout keys are not actual budgets. No protected edits or external/reference retrieval.",
+      "review": "reviewed",
+      "eventsSha256": "d4a7c1b7896b7ab9f2e2ec6c11c6863e473d00cda8b5d75350b38b490a9dcff0",
+      "diffSha256": "0ab3308233309664dff5ce3d972429b0950290ae2fc67e37c1ca591318a2ef01",
+      "scoreSha256": "a8ec9392538317326d84cfd10cafac7c84f2e34a2d922cfac42bd293107ca2e1"
+    }
+  ]
+}

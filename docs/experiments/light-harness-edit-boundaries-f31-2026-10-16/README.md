@@ -59,3 +59,10 @@ OAuth transport and must not be advertised as effective.
 No model results exist at initial registration. Protocol and controls determine
 whether the local correctness fix is retained and whether any model-resource
 gain is supported. No outcome-based additional trials or repaired solutions.
+
+The first balanced YAML repetition is published as prefix3: all three official,
+frozen and audited outcomes pass. Both Light trajectories use file patches only,
+so neither exercises the new whole-symbol indentation mechanism. These outcomes
+are early observations,not a resource or efficacy conclusion;15 fixed assignments
+remain at this publication. Original compressed traces and the SHA-bound review,
+wire contracts,resource accounting and corruption-control replay remain public.

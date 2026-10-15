@@ -1,0 +1,144 @@
+{
+  "partition": "confirmation",
+  "definition": "Internal real-repository panel, not an external benchmark certification. Official runtime success, frozen independent feature/existing-suite success, actual required agent validation and full audited completion are separate. Post-selected wording sensitivity never replaces the registered endpoint. Cache tokens subset input, reasoning subset output; incomplete usage is never zero-filled.",
+  "planned": 18,
+  "completed": 3,
+  "unexecuted": 15,
+  "arms": {
+    "baseline": {
+      "trials": 1,
+      "planned": 6,
+      "officialRuntimeSuccess": 1,
+      "independentFunctionalSuccess": 1,
+      "agentRequiredChecksPassed": 1,
+      "manuallyReviewedRequestCriteriaPassed": 1,
+      "auditedCriteria": 1,
+      "auditedCompletion": 1,
+      "timeouts": 0,
+      "failed": 0,
+      "missingResult": 0,
+      "watchdogs": 0,
+      "tokensCostReconciled": 1,
+      "fullRequestCacheAccounting": 0,
+      "runnerSeconds": 89.146,
+      "outerAgentSeconds": 91.112032578,
+      "preparationSeconds": 0.15998070800000005,
+      "verificationSeconds": 14.077885262000011,
+      "input": {
+        "observed": 325090,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "output": {
+        "observed": 6624,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "cacheRead": {
+        "observed": 291840,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "cacheWrite": {
+        "observed": 0,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "cost": {
+        "observed": 0.020435599999999998,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      }
+    },
+    "candidate": {
+      "trials": 1,
+      "planned": 6,
+      "officialRuntimeSuccess": 1,
+      "independentFunctionalSuccess": 1,
+      "agentRequiredChecksPassed": 1,
+      "manuallyReviewedRequestCriteriaPassed": 1,
+      "auditedCriteria": 1,
+      "auditedCompletion": 1,
+      "timeouts": 0,
+      "failed": 0,
+      "missingResult": 0,
+      "watchdogs": 0,
+      "tokensCostReconciled": 1,
+      "fullRequestCacheAccounting": 0,
+      "runnerSeconds": 78.926,
+      "outerAgentSeconds": 80.85444253600002,
+      "preparationSeconds": 0.1294147479999956,
+      "verificationSeconds": 14.329081680999982,
+      "input": {
+        "observed": 350174,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "output": {
+        "observed": 6888,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "cacheRead": {
+        "observed": 307200,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "cacheWrite": {
+        "observed": 0,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "cost": {
+        "observed": 0.0230044,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      }
+    },
+    "cline": {
+      "trials": 1,
+      "planned": 6,
+      "officialRuntimeSuccess": 1,
+      "independentFunctionalSuccess": 1,
+      "agentRequiredChecksPassed": 1,
+      "manuallyReviewedRequestCriteriaPassed": 1,
+      "auditedCriteria": 1,
+      "auditedCompletion": 1,
+      "timeouts": 0,
+      "failed": 0,
+      "missingResult": 0,
+      "watchdogs": 0,
+      "tokensCostReconciled": 1,
+      "fullRequestCacheAccounting": 0,
+      "runnerSeconds": 114.78,
+      "outerAgentSeconds": 116.67405043699999,
+      "preparationSeconds": 0.13650681099999928,
+      "verificationSeconds": 15.455802215000032,
+      "input": {
+        "observed": 361529,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "output": {
+        "observed": 14176,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "cacheRead": {
+        "observed": 303616,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "cacheWrite": {
+        "observed": 0,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      },
+      "cost": {
+        "observed": 0.03466612,
+        "missingAggregates": 0,
+        "incompleteTrialAccounting": 0
+      }
+    }
+  }
+}

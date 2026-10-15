@@ -1,0 +1,326 @@
+{
+  "method": "F31 SHA-bound finished tools, full command outcomes, check journals and original independent scores. Three arms and two fresh issue-derived multi-file feature tasks; earlier outcomes remain separate. No source repair,rescoring,oracle feedback or solution recovery. Apparent navigation repetition is descriptive and not automatically an error.",
+  "rows": [
+    {
+      "name": "1-yaml-anchor-ranges-baseline",
+      "id": "yaml-anchor-ranges",
+      "arm": "baseline",
+      "repetition": 1,
+      "searchCalls": 5,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 16,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 1,
+      "activeCaseCaptions": 0,
+      "readTargets": 16,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 1,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "anchor",
+            "scope": [
+              "src/compose",
+              "src/nodes",
+              "tests"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "new Scalar|anchor =|anchor:",
+            "scope": [
+              "src",
+              "tests"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "clone()",
+            "scope": [
+              "tests",
+              "src"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "anchorRange",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "interface Parsed",
+            "scope": "src/nodes",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "36f4586e551705ae303d0c2eaea78f35233e5ac782f850fdf38027cfb6d84257",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://39220f558529b494b134f06152aba73a4f9004d4b1576901673a5c80dce08d3c",
+          "command": "npm test -- --runInBand",
+          "taskId": "test",
+          "args": [
+            "--runInBand"
+          ],
+          "sourceRevisionId": "src_749fc9b215a93d5a04079eb9cefb96f3",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-yaml-anchor-ranges-candidate",
+      "id": "yaml-anchor-ranges",
+      "arm": "candidate",
+      "repetition": 1,
+      "searchCalls": 15,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 22,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 1,
+      "activeCaseCaptions": 0,
+      "readTargets": 22,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 1,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "anchorRange",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "class ParsedNode",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "anchor",
+            "scope": [
+              "src/compose/compose-node.ts",
+              "src/nodes/Node.ts",
+              "src/nodes/Scalar.ts",
+              "src/nodes/Collection.ts",
+              "src/nodes/YAMLMap.ts",
+              "src/nodes/YAMLSeq.ts"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "agent-anchor-ranges",
+            "scope": "tests"
+          },
+          "status": "ok",
+          "resultCount": 1
+        },
+        {
+          "input": {
+            "query": "newlineAfterProp",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 5
+        },
+        {
+          "input": {
+            "query": "composeNode(",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 5
+        },
+        {
+          "input": {
+            "query": "anchor:",
+            "scope": "src/compose"
+          },
+          "status": "ok",
+          "resultCount": 3
+        },
+        {
+          "input": {
+            "query": "new Scalar",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "anchor =",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 6
+        },
+        {
+          "input": {
+            "query": "clone()",
+            "scope": "tests"
+          },
+          "status": "ok",
+          "resultCount": 7
+        },
+        {
+          "input": {
+            "query": "ParsedNode",
+            "scope": "tests"
+          },
+          "status": "ok",
+          "resultCount": 5
+        },
+        {
+          "input": {
+            "query": ".anchor",
+            "scope": "tests",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "interface Parsed",
+            "scope": "src/nodes"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "range =",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 5
+        },
+        {
+          "input": {
+            "query": "range:",
+            "scope": "src/nodes"
+          },
+          "status": "ok",
+          "resultCount": 4
+        }
+      ],
+      "eventsSha256": "af561ba1a9358240423f329b163359641c9b7b9a50246ebc50b00e5e37570c62",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://3b1da78869e1c883dc9ebde7986709d81baead33fb215591a60e01d00e6b81e1",
+          "command": "npm test -- --runInBand",
+          "taskId": "test",
+          "args": [
+            "--runInBand"
+          ],
+          "sourceRevisionId": "src_d56820382b579eb181389aa824c29bc7",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3483,
+              "passed": 3483,
+              "failed": 0,
+              "skipped": 11
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-yaml-anchor-ranges-cline",
+      "id": "yaml-anchor-ranges",
+      "arm": "cline",
+      "repetition": 1,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 6,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 30,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "d4a7c1b7896b7ab9f2e2ec6c11c6863e473d00cda8b5d75350b38b490a9dcff0",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    }
+  ]
+}
