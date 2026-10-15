@@ -1,0 +1,1071 @@
+{
+  "method": "Read-only trace and original-score extraction. Suites/behavior counters do not rescore source-scope failures or establish user completion.",
+  "rows": [
+    {
+      "name": "1-rxjs-unhandled-error-migration-baseline",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "baseline",
+      "repetition": 1,
+      "eventsSha256": "6469a4c3927175b25de8dc2d0b9996b831ce173e9633630152c120c3d17ea03b",
+      "compilerReferenceCalls": 1,
+      "compilerRenameCalls": 1,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "query": "reportUnhandledError",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "spec",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "docs_app",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "integration",
+          "mode": "text"
+        },
+        {
+          "query": "s1",
+          "scope": "*",
+          "mode": "references"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "*",
+          "mode": "text"
+        },
+        {
+          "query": "notifyUnhandledError",
+          "scope": "*",
+          "mode": "text"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s1",
+                "action": "rename",
+                "content": "notifyUnhandledError"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 10,
+      "readBytes": 21284,
+      "commands": [
+        {
+          "index": 11,
+          "input": {
+            "kind": "command",
+            "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' 'reportUnhandledError' .",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-baseline/workspace"
+          },
+          "status": "ok",
+          "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' 'reportUnhandledError' .",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' 'reportUnhandledError' .",
+              "exitCode": 0,
+              "output": "./src/internal/observable/innerFrom.ts:12:import { reportUnhandledError } from '../util/reportUnhandledError';\n./src/internal/observable/innerFrom.ts:96:      .then(null, reportUnhandledError);\n./src/internal/Subscriber.ts:5:import { reportUnhandledError } from './util/reportUnhandledError';\n./src/internal/Subscriber.ts:236:    reportUnhandledError(error);\n./src/internal/util/guidance-navigation-fixture.ts:1:import { reportUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:2:import * as helpers from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:3:export { reportUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:4:// Preserve reportUnhandledError in this comment and the local homonym/literal.\n./src/internal/util/guidance-navigation-fixture.ts:5:function reportUnhandledError() { return \"reportUnhandledError\"; }\n./src/internal/util/guidance-navigation-fixture.ts:6:export const localExample = reportUnhandledError();\n./src/internal/util/guidance-navigation-fixture.ts:8:export const namespaceExample = helpers.reportUnhandledError;\n./src/internal/util/reportUnhandledError.ts:13:export function reportUnhandledError(err: any) {",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 19,
+          "input": {
+            "kind": "command",
+            "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-baseline/workspace"
+          },
+          "status": "ok",
+          "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+              "exitCode": 0,
+              "output": "",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 20,
+          "input": {
+            "kind": "command",
+            "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-baseline/workspace"
+          },
+          "status": "ok",
+          "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+              "exitCode": 0,
+              "output": "․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․,,,,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․\n\n  3243 passing (3s)\n  8 pending",
+              "environment": "linux-native"
+            }
+          }
+        }
+      ],
+      "lastEditIndex": 12,
+      "finalReport": "Implemented the internal rename from `reportUnhandledError` to `notifyUnhandledError` while preserving the module filename, explicit local alias `retainedLocal`, public export alias `stablePublicName`, unrelated fixture homonym, comment, and literal. Updated all resolved production references and the namespace fixture reference; no dependency/config/assertion/filesystem additions were made.\n\nVerification:\n- TypeScript command: passed (exit code 0).\n- Mocha command: passed; 3243 passing, 8 pending. No skipped category was reported by the supplied output, so skipped count is unknown rather than assumed zero.\n\nLimitations: validation covered the two explicitly requested commands only; no separate runtime or external-reference verification was performed.】【。",
+      "verification": "unverified",
+      "dispatchedRequests": 6,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 3,
+        "bareReferenceFallbacks": 0,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 0,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 0,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-scope",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "scope",
+      "repetition": 1,
+      "eventsSha256": "b256f59b216c9ccf3e886f8e8bbeee7fc2fe2edae602b3852dab76193fa2196e",
+      "compilerReferenceCalls": 1,
+      "compilerRenameCalls": 1,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "query": "reportUnhandledError",
+          "scope": [
+            "src",
+            "spec",
+            "spec-dtslint",
+            "integration",
+            "docs_app",
+            "tools",
+            "resources"
+          ],
+          "mode": "references"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": [
+            "src",
+            "spec",
+            "spec-dtslint",
+            "integration",
+            "docs_app",
+            "tools",
+            "resources"
+          ],
+          "mode": "text"
+        },
+        {
+          "query": "s2",
+          "scope": "*",
+          "mode": "references"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "spec",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "spec-dtslint",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "integration",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "docs_app",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "tools",
+          "mode": "text"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s2",
+                "action": "rename",
+                "content": "notifyUnhandledError"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 10,
+      "readBytes": 21284,
+      "commands": [
+        {
+          "index": 20,
+          "input": {
+            "kind": "command",
+            "command": "git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fixture.ts && printf '\\n--- remaining identifiers ---\\n' && rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' '\\breportUnhandledError\\b|\\bnotifyUnhandledError\\b' .",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-scope/workspace"
+          },
+          "status": "ok",
+          "command": "git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fixture.ts && printf '\\n--- remaining identifiers ---\\n' && rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' '\\breportUnhandledError\\b|\\bnotifyUnhandledError\\b' .",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fixture.ts && printf '\\n--- remaining identifiers ---\\n' && rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' '\\breportUnhandledError\\b|\\bnotifyUnhandledError\\b' .",
+              "exitCode": 0,
+              "output": "diff --git a/src/internal/Subscriber.ts b/src/internal/Subscriber.ts\nindex 4a96c0e..b08410e 100644\n--- a/src/internal/Subscriber.ts\n+++ b/src/internal/Subscriber.ts\n@@ -2,7 +2,7 @@ import { isFunction } from './util/isFunction';\n import { Observer, ObservableNotification } from './types';\n import { isSubscription, Subscription } from './Subscription';\n import { config } from './config';\n-import { reportUnhandledError } from './util/reportUnhandledError';\n+import { notifyUnhandledError } from './util/reportUnhandledError';\n import { noop } from './util/noop';\n import { nextNotification, errorNotification, COMPLETE_NOTIFICATION } from './NotificationFactories';\n import { timeoutProvider } from './scheduler/timeoutProvider';\n@@ -233,7 +233,7 @@ function handleUnhandledError(error: any) {\n   } else {\n     // Ideal path, we report this as an unhandled error,\n     // which is thrown on a new call stack.\n-    reportUnhandledError(error);\n+    notifyUnhandledError(error);\n   }\n }\n \ndiff --git a/src/internal/observable/innerFrom.ts b/src/internal/observable/innerFrom.ts\nindex c3852c1..7e4e5bd 100644\n--- a/src/internal/observable/innerFrom.ts\n+++ b/src/internal/observable/innerFrom.ts\n@@ -9,7 +9,7 @@ import { isIterable } from '../util/isIterable';\n import { isReadableStreamLike, readableStreamLikeToAsyncGenerator } from '../util/isReadableStreamLike';\n import { Subscriber } from '../Subscriber';\n import { isFunction } from '../util/isFunction';\n-import { reportUnhandledError } from '../util/reportUnhandledError';\n+import { notifyUnhandledError } from '../util/reportUnhandledError';\n import { observable as Symbol_observable } from '../symbol/observable';\n \n export function innerFrom<O extends ObservableInput<any>>(input: O): Observable<ObservedValueOf<O>>;\n@@ -93,7 +93,7 @@ export function fromPromise<T>(promise: PromiseLike<T>) {\n         },\n         (err: any) => subscriber.error(err)\n       )\n-      .then(null, reportUnhandledError);\n+      .then(null, noti\n… diagnostic truncated …\nhelpers.reportUnhandledError;\n+export const namespaceExample = helpers.notifyUnhandledError;\ndiff --git a/src/internal/util/reportUnhandledError.ts b/src/internal/util/reportUnhandledError.ts\nindex d996956..7e333f2 100644\n--- a/src/internal/util/reportUnhandledError.ts\n+++ b/src/internal/util/reportUnhandledError.ts\n@@ -10,7 +10,7 @@ import { timeoutProvider } from '../scheduler/timeoutProvider';\n  *\n  * @param err the error to report\n  */\n-export function reportUnhandledError(err: any) {\n+export function notifyUnhandledError(err: any) {\n   timeoutProvider.setTimeout(() => {\n     const { onUnhandledError } = config;\n     if (onUnhandledError) {\n\n--- remaining identifiers ---\n./src/internal/observable/innerFrom.ts:12:import { notifyUnhandledError } from '../util/reportUnhandledError';\n./src/internal/observable/innerFrom.ts:96:      .then(null, notifyUnhandledError);\n./src/internal/Subscriber.ts:5:import { notifyUnhandledError } from './util/reportUnhandledError';\n./src/internal/Subscriber.ts:236:    notifyUnhandledError(error);\n./src/internal/util/guidance-navigation-fixture.ts:1:import { notifyUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:2:import * as helpers from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:3:export { notifyUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:4:// Preserve reportUnhandledError in this comment and the local homonym/literal.\n./src/internal/util/guidance-navigation-fixture.ts:5:function reportUnhandledError() { return \"reportUnhandledError\"; }\n./src/internal/util/guidance-navigation-fixture.ts:6:export const localExample = reportUnhandledError();\n./src/internal/util/guidance-navigation-fixture.ts:8:export const namespaceExample = helpers.notifyUnhandledError;\n./src/internal/util/reportUnhandledError.ts:13:export function notifyUnhandledError(err: any) {",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 21,
+          "input": {
+            "kind": "command",
+            "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-scope/workspace"
+          },
+          "status": "ok",
+          "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+              "exitCode": 0,
+              "output": "",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 22,
+          "input": {
+            "kind": "command",
+            "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-scope/workspace"
+          },
+          "status": "ok",
+          "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+              "exitCode": 0,
+              "output": "․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․,,,,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․\n\n  3243 passing (2s)\n  8 pending",
+              "environment": "linux-native"
+            }
+          }
+        }
+      ],
+      "lastEditIndex": 15,
+      "finalReport": "Renamed the internal exported declaration to `notifyUnhandledError` and updated all compiler-resolved imports/usages, including the supplied navigation fixture. Preserved the module filename/path, explicit local alias `retainedLocal`, public alias `stablePublicName`, local homonym, comment, and literal.\n\nVerification completed with the exact requested commands:\n- TypeScript compiler: passed, exit code 0, no diagnostics.\n- Mocha: passed, exit code 0; observed 3243 passing and 8 pending.\n\nThe test output did not report a skipped category, so skipped count is unknown rather than zero. No dependency manifests, lockfiles, configuration, assertions, or new files were changed. Broader behavioral equivalence beyond the requested compiler and test runs was not independently verified.",
+      "verification": "unverified",
+      "dispatchedRequests": 6,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 1,
+        "bareReferenceFallbacks": 1,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 0,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 0,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-cline",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "cline",
+      "repetition": 1,
+      "eventsSha256": "1bd7c760d255c6c78f4712a8ae890f4a27a91fe316c290f1d40bb0a5ae436fb4",
+      "compilerReferenceCalls": 0,
+      "compilerRenameCalls": 0,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "queries": [
+            "\\breportUnhandledError\\b",
+            "notifyUnhandledError",
+            "reportUnhandledError\\.ts"
+          ]
+        },
+        {
+          "queries": [
+            "export\\s+\\{[^}]*reportUnhandledError|export\\s+\\*[^;]*reportUnhandledError|import\\s+[^;]*reportUnhandledError|\\bhelpers\\.reportUnhandledError\\b|\\breportUnhandledError\\s*\\("
+          ]
+        },
+        {
+          "queries": [
+            "\\bnotifyUnhandledError\\b",
+            "\\breportUnhandledError\\b"
+          ]
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "input": "*** Begin Patch\n*** Update File: /workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-cline/workspace/src/internal/util/reportUnhandledError.ts\n@@\n-export function reportUnhandledError(err: any) {\n+export function notifyUnhandledError(err: any) {\n*** Update File: /workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-cline/workspace/src/internal/observable/innerFrom.ts\n@@\n-import { reportUnhandledError } from '../util/reportUnhandledError';\n+import { notifyUnhandledError } from '../util/reportUnhandledError';\n@@\n-      .then(null, reportUnhandledError);\n+      .then(null, notifyUnhandledError);\n*** Update File: /workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-cline/workspace/src/internal/Subscriber.ts\n@@\n-import { reportUnhandledError } from './util/reportUnhandledError';\n+import { notifyUnhandledError } from './util/reportUnhandledError';\n@@\n-    reportUnhandledError(error);\n+    notifyUnhandledError(error);\n*** Update File: /workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-cline/workspace/src/internal/util/guidance-navigation-fixture.ts\n@@\n-import { reportUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n+import { notifyUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n import * as helpers from \"./reportUnhandledError\";\n-export { reportUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n+export { notifyUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n@@\n-export const namespaceExample = helpers.reportUnhandledError;\n+export const namespaceExample = helpers.notifyUnhandledError;\n*** End Patch"
+          }
+        }
+      ],
+      "readCalls": 3,
+      "readBytes": 32220,
+      "commands": [
+        {
+          "index": 0,
+          "command": "pwd && printf '\\nTop-level entries:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p' && printf '\\nGit status:\\n' && git status --short --branch",
+          "output": [
+            {
+              "query": "pwd && printf '\\nTop-level entries:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p' && printf '\\nGit status:\\n' && git status --short --branch",
+              "result": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-cline/workspace\n\nTop-level entries:\n./.dependency-cruiser.json\n./.dockerignore\n./.eslintignore\n./.eslintrc\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.gitattributes\n./.github/PULL_REQUEST_TEMPLATE.md\n./.github/lock.yml\n./.gitignore\n./.make-helpers.js\n./.prettierrc.json\n./CHANGELOG.md\n./CODE_OF_CONDUCT.md\n./CONTRIBUTING.md\n./Dockerfile\n./LICENSE.txt\n./README.md\n./docs_app/.browserslistrc\n./docs_app/.firebaserc\n./docs_app/.gitignore\n./docs_app/README.md\n./docs_app/angular.json\n./docs_app/database.rules.json\n./docs_app/firebase.json\n./docs_app/ngsw-config.json\n./docs_app/package-lock.json\n./docs_app/package.json\n./docs_app/tsconfig.docs.json\n./docs_app/tsconfig.json\n./docs_app/tsconfig.worker.json\n./docs_app/tslint.json\n./package-lock.json\n./package.json\n./spec-dtslint/AsyncSubject-spec.ts\n./spec-dtslint/BehaviorSubject-spec.ts\n./spec-dtslint/Notification-spec.ts\n./spec-dtslint/Observable-spec.ts\n./spec-dtslint/ReplaySubject-spec.ts\n./spec-dtslint/Subject-spec.ts\n./spec-dtslint/errors-spec.ts\n./spec-dtslint/firstValueFrom-spec.ts\n./spec-dtslint/helpers.ts\n./spec-dtslint/index.d.ts\n./spec-dtslint/lastValueFrom-spec.ts\n./spec-dtslint/tsconfig.json\n./spec-dtslint/tslint.json\n./spec-dtslint/types-spec.ts\n./spec/Notification-spec.ts\n./spec/Observable-spec.ts\n./spec/Scheduler-spec.ts\n./spec/Subject-spec.ts\n./spec/Subscriber-spec.ts\n./spec/Subscription-spec.ts\n./spec/config-spec.ts\n./spec/exports-spec.ts.disabled\n./spec/firstValueFrom-spec.ts\n./spec/index-spec.ts\n./spec/lastValueFrom-spec.ts\n./spec/module-test-spec.mjs\n./spec/tsconfig.json\n./spec/tslint.json\n./src/Rx.global.js\n./src/index.ts\n./src/tsconfig.base.json\n./src/tsconfig.cjs.json\n./src/tsconfig.cjs.spec.json\n./src/tsconfig.esm.json\n./src/tsconfig.esm5.json\n./src/tsconfig.esm5.rollup.json\n./src/tsconfig.json\n./src/tsconfig.types.json\n./src/tsconfig.types.spec.json\n./tools/add-license-to-file.js\n./tools/generate-alias.js\n./tools/make-closure-core.js\n./tools/make-closure.js\n./tools/make-umd-bundle.js\n./tools/prepare-package.js\n./tools/rollup-bundle.js\n./tsconfig.json\n./tsconfig.mocha.json\n./tslint.json\n./wallaby.js\n\nGit status:\n## master\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "command": "printf '%s\\n' 'Relevant directories:' && find src spec -maxdepth 4 -type d 2>/dev/null | sort | sed -n '1,240p' && printf '%s\\n' 'TypeScript/package config files:' && find . -maxdepth 3 -type f \\( -name 'tsconfig*.json' -o -name 'package.json' -o -name '.mocharc*' \\) -print | sort",
+          "output": [
+            {
+              "query": "printf '%s\\n' 'Relevant directories:' && find src spec -maxdepth 4 -type d 2>/dev/null | sort | sed -n '1,240p' && printf '%s\\n' 'TypeScript/package config files:' && find . -maxdepth 3 -type f \\( -na ... [command truncated: 81 more chars; full command is in the tool call input]",
+              "result": "Relevant directories:\nspec\nspec/ajax\nspec/deprecation-equivalents\nspec/helpers\nspec/observables\nspec/observables/dom\nspec/operators\nspec/scheduled\nspec/schedulers\nspec/subjects\nspec/support\nspec/testing\nspec/util\nspec/websocket\nsrc\nsrc/ajax\nsrc/fetch\nsrc/internal\nsrc/internal/ajax\nsrc/internal/observable\nsrc/internal/observable/dom\nsrc/internal/operators\nsrc/internal/scheduled\nsrc/internal/scheduler\nsrc/internal/symbol\nsrc/internal/testing\nsrc/internal/util\nsrc/operators\nsrc/testing\nsrc/webSocket\nTypeScript/package config files:\n./docs_app/package.json\n./docs_app/src/tsconfig.app.json\n./docs_app/src/tsconfig.spec.json\n./docs_app/tsconfig.docs.json\n./docs_app/tsconfig.json\n./docs_app/tsconfig.worker.json\n./integration/systemjs/tsconfig.json\n./package.json\n./spec-dtslint/tsconfig.json\n./spec/support/.mocharc.js\n./spec/tsconfig.json\n./src/tsconfig.base.json\n./src/tsconfig.cjs.json\n./src/tsconfig.cjs.spec.json\n./src/tsconfig.esm.json\n./src/tsconfig.esm5.json\n./src/tsconfig.esm5.rollup.json\n./src/tsconfig.json\n./src/tsconfig.types.json\n./src/tsconfig.types.spec.json\n./tsconfig.json\n./tsconfig.mocha.json\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+          "output": [
+            {
+              "query": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+              "result": "",
+              "success": true
+            },
+            {
+              "query": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+              "result": "\n\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․,,,,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․\n\n  3243 passing (3s)\n  8 pending\n\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+          "output": [
+            {
+              "query": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+              "result": "",
+              "success": true
+            },
+            {
+              "query": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+              "result": "\n\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․,,,,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․\n\n  3243 passing (3s)\n  8 pending\n\n",
+              "success": true
+            }
+          ]
+        },
+        {
+          "index": 8,
+          "command": "git diff --check && git status --short && git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fixture.ts",
+          "output": [
+            {
+              "query": "git diff --check && git status --short && git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fi ... [command truncated: 8 more chars; full command is in the tool call input]",
+              "result": " M src/internal/Subscriber.ts\n M src/internal/observable/innerFrom.ts\n M src/internal/util/guidance-navigation-fixture.ts\n M src/internal/util/reportUnhandledError.ts\ndiff --git a/src/internal/Subscriber.ts b/src/internal/Subscriber.ts\nindex 4a96c0e..b08410e 100644\n--- a/src/internal/Subscriber.ts\n+++ b/src/internal/Subscriber.ts\n@@ -2,7 +2,7 @@ import { isFunction } from './util/isFunction';\n import { Observer, ObservableNotification } from './types';\n import { isSubscription, Subscription } from './Subscription';\n import { config } from './config';\n-import { reportUnhandledError } from './util/reportUnhandledError';\n+import { notifyUnhandledError } from './util/reportUnhandledError';\n import { noop } from './util/noop';\n import { nextNotification, errorNotification, COMPLETE_NOTIFICATION } from './NotificationFactories';\n import { timeoutProvider } from './scheduler/timeoutProvider';\n@@ -233,7 +233,7 @@ function handleUnhandledError(error: any) {\n   } else {\n     // Ideal path, we report this as an unhandled error,\n     // which is thrown on a new call stack.\n-    reportUnhandledError(error);\n+    notifyUnhandledError(error);\n   }\n }\n \ndiff --git a/src/internal/observable/innerFrom.ts b/src/internal/observable/innerFrom.ts\nindex c3852c1..7e4e5bd 100644\n--- a/src/internal/observable/innerFrom.ts\n+++ b/src/internal/observable/innerFrom.ts\n@@ -9,7 +9,7 @@ import { isIterable } from '../util/isIterable';\n import { isReadableStreamLike, readableStreamLikeToAsyncGenerator } from '../util/isReadableStreamLike';\n import { Subscriber } from '../Subscriber';\n import { isFunction } from '../util/isFunction';\n-import { reportUnhandledError } from '../util/reportUnhandledError';\n+import { notifyUnhandledError } from '../util/reportUnhandledError';\n import { observable as Symbol_observable } from '../symbol/observable';\n \n export function innerFrom<O extends ObservableInput<any>>(input: O): Observable<ObservedValueOf<O>>;\n@@ -93,7 +93,7 @@ export function fromPromise<T>(promise: PromiseLike<T>) {\n         },\n         (err: any) => subscriber.error(err)\n       )\n-      .then(null, reportUnhandledError);\n+      .then(null, notifyUnhandledError);\n   });\n }\n \ndiff --git a/src/internal/util/guidance-navigation-fixture.ts b/src/internal/util/guidance-navigation-fixture.ts\nindex 2719b58..2e5af72 100644\n--- a/src/internal/util/guidance-navigation-fixture.ts\n+++ b/src/internal/util/guidance-navigation-fixture.ts\n@@ -1,8 +1,8 @@\n-import { reportUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n+import { notifyUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n import * as helpers from \"./reportUnhandledError\";\n-export { reportUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n+export { notifyUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n // Preserve reportUnhandledError in this comment and the local homonym/literal.\n function reportUnhandledError() { return \"reportUnhandledError\"; }\n export const localExample = reportUnhandledError();\n export const aliasExample = retainedLocal;\n-export const namespaceExample = helpers.reportUnhandledError;\n+export const namespaceExample = helpers.notifyUnhandledError;\ndiff --git a/src/internal/util/reportUnhandledError.ts b/src/internal/util/reportUnhandledError.ts\nindex d996956..7e333f2 100644\n--- a/src/internal/util/reportUnhandledError.ts\n+++ b/src/internal/util/reportUnhandledError.ts\n@@ -10,7 +10,7 @@ import { timeoutProvider } from '../scheduler/timeoutProvider';\n  *\n  * @param err the error to report\n  */\n-export function reportUnhandledError(err: any) {\n+export function notifyUnhandledError(err: any) {\n   timeoutProvider.setTimeout(() => {\n     const { onUnhandledError } = config;\n     if (onUnhandledError) {\n",
+              "success": true
+            }
+          ]
+        }
+      ],
+      "lastEditIndex": 6,
+      "finalReport": "Implemented the internal rename from `reportUnhandledError` to `notifyUnhandledError`.\n\nChanges:\n- Renamed the exported function declaration in `/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-cline/workspace/src/internal/util/reportUnhandledError.ts`.\n- Updated resolving imports/usages in:\n  - `/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-cline/workspace/src/internal/observable/innerFrom.ts`\n  - `/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-cline/workspace/src/internal/Subscriber.ts`\n- Updated the supplied navigation fixture while preserving:\n  - The module filename and import paths\n  - `retainedLocal`\n  - `stablePublicName`\n  - The unrelated local homonym\n  - Comments and string literals\n- No files were added, and no configuration, dependency manifests, lockfiles, or assertions were changed.\n\nVerification:\n\n1. TypeScript:\n```text\nnode_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck\n```\nOutcome: passed, exit status 0, no diagnostics.\n\n2. Mocha:\n```text\nTS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'\n```\nOutcome: passed, exit status 0:\n- 3243 passing\n- 8 pending\n- Skipped count: unknown; the reporter did not emit a skipped count, so it is not reported as zero.\n\nFinal diff and whitespace checks passed. The remaining `reportUnhandledError` occurrences are only preserved module paths, comments, string literals, and the unrelated local homonym.",
+      "verification": null,
+      "dispatchedRequests": 6,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 0,
+        "bareReferenceFallbacks": 0,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 0,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 0,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-references",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "references",
+      "repetition": 1,
+      "eventsSha256": "0ff7d67d748e1650ac15f898d9c64c880e9e0fb6e36bc79fda58c909c0e1b02c",
+      "compilerReferenceCalls": 1,
+      "compilerRenameCalls": 1,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "query": "reportUnhandledError",
+          "scope": "**",
+          "mode": "references"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "**",
+          "mode": "text"
+        },
+        {
+          "query": "src/internal/util/reportUnhandledError.ts#reportUnhandledError",
+          "scope": "**",
+          "mode": "references"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "src spec integration docs_app tools resources",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "**",
+          "mode": "text"
+        },
+        {
+          "query": "notifyUnhandledError",
+          "scope": "**",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "src/internal",
+          "mode": "text"
+        },
+        {
+          "query": "notifyUnhandledError",
+          "scope": "src/internal",
+          "mode": "text"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s2",
+                "action": "rename",
+                "content": "notifyUnhandledError"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 12,
+      "readBytes": 25844,
+      "commands": [
+        {
+          "index": 19,
+          "input": {
+            "kind": "command",
+            "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck"
+          },
+          "status": "ok",
+          "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+              "exitCode": 0,
+              "output": "",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 20,
+          "input": {
+            "kind": "command",
+            "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'"
+          },
+          "status": "ok",
+          "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+              "exitCode": 0,
+              "output": "․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․,,,,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․\n\n  3243 passing (3s)\n  8 pending",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 21,
+          "input": {
+            "kind": "command",
+            "command": "git status --short && git diff --stat && git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fixture.ts"
+          },
+          "status": "ok",
+          "command": "git status --short && git diff --stat && git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fixture.ts",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "git status --short && git diff --stat && git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fixture.ts",
+              "exitCode": 0,
+              "output": "M src/internal/Subscriber.ts\n M src/internal/observable/innerFrom.ts\n M src/internal/util/guidance-navigation-fixture.ts\n M src/internal/util/reportUnhandledError.ts\n src/internal/Subscriber.ts                       | 4 ++--\n src/internal/observable/innerFrom.ts             | 4 ++--\n src/internal/util/guidance-navigation-fixture.ts | 6 +++---\n src/internal/util/reportUnhandledError.ts        | 2 +-\n 4 files changed, 8 insertions(+), 8 deletions(-)\ndiff --git a/src/internal/Subscriber.ts b/src/internal/Subscriber.ts\nindex 4a96c0e..b08410e 100644\n--- a/src/internal/Subscriber.ts\n+++ b/src/internal/Subscriber.ts\n@@ -2,7 +2,7 @@ import { isFunction } from './util/isFunction';\n import { Observer, ObservableNotification } from './types';\n import { isSubscription, Subscription } from './Subscription';\n import { config } from './config';\n-import { reportUnhandledError } from './util/reportUnhandledError';\n+import { notifyUnhandledError } from './util/reportUnhandledError';\n import { noop } from './util/noop';\n import { nextNotification, errorNotification, COMPLETE_NOTIFICATION } from './NotificationFactories';\n import { timeoutProvider } from './scheduler/timeoutProvider';\n@@ -233,7 +233,7 @@ function handleUnhandledError(error: any) {\n   } else {\n     // Ideal path, we report this as an unhandled error,\n     // which is thrown on a new call stack.\n-    reportUnhandledError(error);\n+    notifyUnhandledError(error);\n   }\n }\n \ndiff --git a/src/internal/observable/innerFrom.ts b/src/internal/observable/innerFrom.ts\nindex c3852c1..7e4e5bd 100644\n--- a/src/internal/observable/innerFrom.ts\n+++ b/src/internal/observable/innerFrom.ts\n@@ -9,7 +9,7 @@ import { isIterable } from '../util/isIterable';\n import { isReadableStreamLike, readableStreamLikeToAsyncGenerator } from '../util/isReadableStreamLike';\n import { Subscriber } from '../Subscriber';\n import { isFunction } from '../util/isFunction';\n-import { reportUnhandledError } from '../util/reportUnhandledError';\n+i\n… diagnostic truncated …\nervable as Symbol_observable } from '../symbol/observable';\n \n export function innerFrom<O extends ObservableInput<any>>(input: O): Observable<ObservedValueOf<O>>;\n@@ -93,7 +93,7 @@ export function fromPromise<T>(promise: PromiseLike<T>) {\n         },\n         (err: any) => subscriber.error(err)\n       )\n-      .then(null, reportUnhandledError);\n+      .then(null, notifyUnhandledError);\n   });\n }\n \ndiff --git a/src/internal/util/guidance-navigation-fixture.ts b/src/internal/util/guidance-navigation-fixture.ts\nindex 2719b58..2e5af72 100644\n--- a/src/internal/util/guidance-navigation-fixture.ts\n+++ b/src/internal/util/guidance-navigation-fixture.ts\n@@ -1,8 +1,8 @@\n-import { reportUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n+import { notifyUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n import * as helpers from \"./reportUnhandledError\";\n-export { reportUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n+export { notifyUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n // Preserve reportUnhandledError in this comment and the local homonym/literal.\n function reportUnhandledError() { return \"reportUnhandledError\"; }\n export const localExample = reportUnhandledError();\n export const aliasExample = retainedLocal;\n-export const namespaceExample = helpers.reportUnhandledError;\n+export const namespaceExample = helpers.notifyUnhandledError;\ndiff --git a/src/internal/util/reportUnhandledError.ts b/src/internal/util/reportUnhandledError.ts\nindex d996956..7e333f2 100644\n--- a/src/internal/util/reportUnhandledError.ts\n+++ b/src/internal/util/reportUnhandledError.ts\n@@ -10,7 +10,7 @@ import { timeoutProvider } from '../scheduler/timeoutProvider';\n  *\n  * @param err the error to report\n  */\n-export function reportUnhandledError(err: any) {\n+export function notifyUnhandledError(err: any) {\n   timeoutProvider.setTimeout(() => {\n     const { onUnhandledError } = config;\n     if (onUnhandledError) {",
+              "environment": "linux-native"
+            }
+          }
+        }
+      ],
+      "lastEditIndex": 12,
+      "finalReport": "Renamed the internal exported declaration to `notifyUnhandledError` and migrated all semantic references in production code plus the supplied navigation fixture. Preserved the module filename/path, `retainedLocal` import alias, `stablePublicName` public export alias, fixture comment/literal/local homonym, and runtime behavior; no manifests, configuration, assertions, or new files were changed.\n\nVerification:\n- TypeScript command: passed (exit code 0).\n- Mocha command: passed (exit code 0): 3243 passing, 8 pending, 0 skipped reported. The test output did not report a skipped category, so skipped count is unknown rather than zero.\n\nThe required compiler and test commands were run exactly as specified. No additional behavioral or external-environment verification was performed.",
+      "verification": "unverified",
+      "dispatchedRequests": 8,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "emptyFileScopes": 1,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 0,
+        "bareReferenceFallbacks": 1,
+        "referenceFollowupHints": 1,
+        "richRenameReceipts": 0,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 0,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-rename",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "rename",
+      "repetition": 1,
+      "eventsSha256": "751952934ceff418621905a46aa032cffea09e71248a0bdff9e1464af072c878",
+      "compilerReferenceCalls": 1,
+      "compilerRenameCalls": 1,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "query": "src/internal/util/reportUnhandledError.ts#reportUnhandledError",
+          "scope": "**",
+          "mode": "references"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "spec",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "docs_app",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "integration",
+          "mode": "text"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s9",
+                "action": "rename",
+                "content": "notifyUnhandledError"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 7,
+      "readBytes": 6202,
+      "commands": [
+        {
+          "index": 11,
+          "input": {
+            "kind": "command",
+            "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' --glob '!docs_app/dist/**' 'reportUnhandledError' .",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-rename/workspace"
+          },
+          "status": "ok",
+          "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' --glob '!docs_app/dist/**' 'reportUnhandledError' .",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' --glob '!docs_app/dist/**' 'reportUnhandledError' .",
+              "exitCode": 0,
+              "output": "./src/internal/observable/innerFrom.ts:12:import { reportUnhandledError } from '../util/reportUnhandledError';\n./src/internal/observable/innerFrom.ts:96:      .then(null, reportUnhandledError);\n./src/internal/Subscriber.ts:5:import { reportUnhandledError } from './util/reportUnhandledError';\n./src/internal/Subscriber.ts:236:    reportUnhandledError(error);\n./src/internal/util/guidance-navigation-fixture.ts:1:import { reportUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:2:import * as helpers from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:3:export { reportUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:4:// Preserve reportUnhandledError in this comment and the local homonym/literal.\n./src/internal/util/guidance-navigation-fixture.ts:5:function reportUnhandledError() { return \"reportUnhandledError\"; }\n./src/internal/util/guidance-navigation-fixture.ts:6:export const localExample = reportUnhandledError();\n./src/internal/util/guidance-navigation-fixture.ts:8:export const namespaceExample = helpers.reportUnhandledError;\n./src/internal/util/reportUnhandledError.ts:13:export function reportUnhandledError(err: any) {",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 14,
+          "input": {
+            "kind": "command",
+            "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' --glob '!docs_app/dist/**' 'reportUnhandledError|notifyUnhandledError' .",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-rename/workspace"
+          },
+          "status": "ok",
+          "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' --glob '!docs_app/dist/**' 'reportUnhandledError|notifyUnhandledError' .",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' --glob '!docs_app/dist/**' 'reportUnhandledError|notifyUnhandledError' .",
+              "exitCode": 0,
+              "output": "./src/internal/observable/innerFrom.ts:12:import { notifyUnhandledError } from '../util/reportUnhandledError';\n./src/internal/observable/innerFrom.ts:96:      .then(null, notifyUnhandledError);\n./src/internal/Subscriber.ts:5:import { notifyUnhandledError } from './util/reportUnhandledError';\n./src/internal/Subscriber.ts:236:    notifyUnhandledError(error);\n./src/internal/util/guidance-navigation-fixture.ts:1:import { notifyUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:2:import * as helpers from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:3:export { notifyUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:4:// Preserve reportUnhandledError in this comment and the local homonym/literal.\n./src/internal/util/guidance-navigation-fixture.ts:5:function reportUnhandledError() { return \"reportUnhandledError\"; }\n./src/internal/util/guidance-navigation-fixture.ts:6:export const localExample = reportUnhandledError();\n./src/internal/util/guidance-navigation-fixture.ts:8:export const namespaceExample = helpers.notifyUnhandledError;\n./src/internal/util/reportUnhandledError.ts:13:export function notifyUnhandledError(err: any) {",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 15,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git diff -- src/internal/util/reportUnhandledError.ts src/internal/Subscriber.ts src/internal/observable/innerFrom.ts src/internal/util/guidance-navigation-fixture.ts",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-rename/workspace"
+          },
+          "status": "ok",
+          "command": "git diff --check && git diff -- src/internal/util/reportUnhandledError.ts src/internal/Subscriber.ts src/internal/observable/innerFrom.ts src/internal/util/guidance-navigation-fixture.ts",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "git diff --check && git diff -- src/internal/util/reportUnhandledError.ts src/internal/Subscriber.ts src/internal/observable/innerFrom.ts src/internal/util/guidance-navigation-fixture.ts",
+              "exitCode": 0,
+              "output": "diff --git a/src/internal/Subscriber.ts b/src/internal/Subscriber.ts\nindex 4a96c0e..b08410e 100644\n--- a/src/internal/Subscriber.ts\n+++ b/src/internal/Subscriber.ts\n@@ -2,7 +2,7 @@ import { isFunction } from './util/isFunction';\n import { Observer, ObservableNotification } from './types';\n import { isSubscription, Subscription } from './Subscription';\n import { config } from './config';\n-import { reportUnhandledError } from './util/reportUnhandledError';\n+import { notifyUnhandledError } from './util/reportUnhandledError';\n import { noop } from './util/noop';\n import { nextNotification, errorNotification, COMPLETE_NOTIFICATION } from './NotificationFactories';\n import { timeoutProvider } from './scheduler/timeoutProvider';\n@@ -233,7 +233,7 @@ function handleUnhandledError(error: any) {\n   } else {\n     // Ideal path, we report this as an unhandled error,\n     // which is thrown on a new call stack.\n-    reportUnhandledError(error);\n+    notifyUnhandledError(error);\n   }\n }\n \ndiff --git a/src/internal/observable/innerFrom.ts b/src/internal/observable/innerFrom.ts\nindex c3852c1..7e4e5bd 100644\n--- a/src/internal/observable/innerFrom.ts\n+++ b/src/internal/observable/innerFrom.ts\n@@ -9,7 +9,7 @@ import { isIterable } from '../util/isIterable';\n import { isReadableStreamLike, readableStreamLikeToAsyncGenerator } from '../util/isReadableStreamLike';\n import { Subscriber } from '../Subscriber';\n import { isFunction } from '../util/isFunction';\n-import { reportUnhandledError } from '../util/reportUnhandledError';\n+import { notifyUnhandledError } from '../util/reportUnhandledError';\n import { observable as Symbol_observable } from '../symbol/observable';\n \n export function innerFrom<O extends ObservableInput<any>>(input: O): Observable<ObservedValueOf<O>>;\n@@ -93,7 +93,7 @@ export function fromPromise<T>(promise: PromiseLike<T>) {\n         },\n         (err: any) => subscriber.error(err)\n       )\n-      .then(null, reportUnhandledError);\n+      .then(null, notifyUnhandledError);\n   });\n }\n \ndiff --git a/src/internal/util/guidance-navigation-fixture.ts b/src/internal/util/guidance-navigation-fixture.ts\nindex 2719b58..2e5af72 100644\n--- a/src/internal/util/guidance-navigation-fixture.ts\n+++ b/src/internal/util/guidance-navigation-fixture.ts\n@@ -1,8 +1,8 @@\n-import { reportUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n+import { notifyUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n import * as helpers from \"./reportUnhandledError\";\n-export { reportUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n+export { notifyUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n // Preserve reportUnhandledError in this comment and the local homonym/literal.\n function reportUnhandledError() { return \"reportUnhandledError\"; }\n export const localExample = reportUnhandledError();\n export const aliasExample = retainedLocal;\n-export const namespaceExample = helpers.reportUnhandledError;\n+export const namespaceExample = helpers.notifyUnhandledError;\ndiff --git a/src/internal/util/reportUnhandledError.ts b/src/internal/util/reportUnhandledError.ts\nindex d996956..7e333f2 100644\n--- a/src/internal/util/reportUnhandledError.ts\n+++ b/src/internal/util/reportUnhandledError.ts\n@@ -10,7 +10,7 @@ import { timeoutProvider } from '../scheduler/timeoutProvider';\n  *\n  * @param err the error to report\n  */\n-export function reportUnhandledError(err: any) {\n+export function notifyUnhandledError(err: any) {\n   timeoutProvider.setTimeout(() => {\n     const { onUnhandledError } = config;\n     if (onUnhandledError) {",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 16,
+          "input": {
+            "kind": "command",
+            "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-rename/workspace"
+          },
+          "status": "ok",
+          "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+              "exitCode": 0,
+              "output": "",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 17,
+          "input": {
+            "kind": "command",
+            "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-rename/workspace"
+          },
+          "status": "ok",
+          "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+              "exitCode": 0,
+              "output": "․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․,,,,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․\n\n  3243 passing (3s)\n  8 pending",
+              "environment": "linux-native"
+            }
+          }
+        }
+      ],
+      "lastEditIndex": 12,
+      "finalReport": "Implemented the internal rename from `reportUnhandledError` to `notifyUnhandledError` while preserving the module filename/path, explicit local alias `retainedLocal`, public alias `stablePublicName`, comments, literals, and the fixture’s unrelated local homonym. Updated all resolved production and fixture references; no dependency/config/assertion files or new files were changed.\n\nVerification:\n- TypeScript command completed successfully with exit code 0 and no diagnostics.\n- Mocha command completed successfully with exit code 0: 3243 passing, 8 pending, and no skipped category reported by the runner (therefore skipped count is unknown, not zero).\n\nLimitations: verification was limited to the requested compiler and Mocha commands; no broader build, lint, browser, or external-environment verification was run.",
+      "verification": "unverified",
+      "dispatchedRequests": 6,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 0,
+        "bareReferenceFallbacks": 0,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 1,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 0,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-reading",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "reading",
+      "repetition": 1,
+      "eventsSha256": "af94f1506a221d9d32d322f90cf55c4703f43593e5d430ec3ed54efea6c85992",
+      "compilerReferenceCalls": 0,
+      "compilerRenameCalls": 1,
+      "disabledRenameCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "query": "reportUnhandledError",
+          "scope": "src",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "spec",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "docs_app",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "integration",
+          "mode": "text"
+        },
+        {
+          "query": "src/internal/util/reportUnhandledError#reportUnhandledError",
+          "scope": "*",
+          "mode": "references"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "src/internal",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "src/index.ts",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "spec-dtslint",
+          "mode": "text"
+        },
+        {
+          "query": "reportUnhandledError",
+          "scope": "tools",
+          "mode": "text"
+        }
+      ],
+      "editCalls": [
+        {
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s10",
+                "action": "rename",
+                "content": "notifyUnhandledError"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      ],
+      "readCalls": 8,
+      "readBytes": 18473,
+      "commands": [
+        {
+          "index": 13,
+          "input": {
+            "kind": "command",
+            "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' 'reportUnhandledError' .",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-reading/workspace"
+          },
+          "status": "ok",
+          "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' 'reportUnhandledError' .",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' 'reportUnhandledError' .",
+              "exitCode": 0,
+              "output": "./src/internal/observable/innerFrom.ts:12:import { reportUnhandledError } from '../util/reportUnhandledError';\n./src/internal/observable/innerFrom.ts:96:      .then(null, reportUnhandledError);\n./src/internal/Subscriber.ts:5:import { reportUnhandledError } from './util/reportUnhandledError';\n./src/internal/Subscriber.ts:236:    reportUnhandledError(error);\n./src/internal/util/guidance-navigation-fixture.ts:1:import { reportUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:2:import * as helpers from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:3:export { reportUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:4:// Preserve reportUnhandledError in this comment and the local homonym/literal.\n./src/internal/util/guidance-navigation-fixture.ts:5:function reportUnhandledError() { return \"reportUnhandledError\"; }\n./src/internal/util/guidance-navigation-fixture.ts:6:export const localExample = reportUnhandledError();\n./src/internal/util/guidance-navigation-fixture.ts:8:export const namespaceExample = helpers.reportUnhandledError;\n./src/internal/util/reportUnhandledError.ts:13:export function reportUnhandledError(err: any) {",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 14,
+          "input": {
+            "kind": "command",
+            "command": "git status --short",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-reading/workspace"
+          },
+          "status": "ok",
+          "command": "git status --short",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "git status --short",
+              "exitCode": 0,
+              "output": "",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 18,
+          "input": {
+            "kind": "command",
+            "command": "git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fixture.ts && printf '\\n-- remaining identifiers --\\n' && rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' 'reportUnhandledError|notifyUnhandledError' .",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-reading/workspace"
+          },
+          "status": "ok",
+          "command": "git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fixture.ts && printf '\\n-- remaining identifiers --\\n' && rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' 'reportUnhandledError|notifyUnhandledError' .",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "git diff -- src/internal/util/reportUnhandledError.ts src/internal/observable/innerFrom.ts src/internal/Subscriber.ts src/internal/util/guidance-navigation-fixture.ts && printf '\\n-- remaining identifiers --\\n' && rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' 'reportUnhandledError|notifyUnhandledError' .",
+              "exitCode": 0,
+              "output": "diff --git a/src/internal/Subscriber.ts b/src/internal/Subscriber.ts\nindex 4a96c0e..b08410e 100644\n--- a/src/internal/Subscriber.ts\n+++ b/src/internal/Subscriber.ts\n@@ -2,7 +2,7 @@ import { isFunction } from './util/isFunction';\n import { Observer, ObservableNotification } from './types';\n import { isSubscription, Subscription } from './Subscription';\n import { config } from './config';\n-import { reportUnhandledError } from './util/reportUnhandledError';\n+import { notifyUnhandledError } from './util/reportUnhandledError';\n import { noop } from './util/noop';\n import { nextNotification, errorNotification, COMPLETE_NOTIFICATION } from './NotificationFactories';\n import { timeoutProvider } from './scheduler/timeoutProvider';\n@@ -233,7 +233,7 @@ function handleUnhandledError(error: any) {\n   } else {\n     // Ideal path, we report this as an unhandled error,\n     // which is thrown on a new call stack.\n-    reportUnhandledError(error);\n+    notifyUnhandledError(error);\n   }\n }\n \ndiff --git a/src/internal/observable/innerFrom.ts b/src/internal/observable/innerFrom.ts\nindex c3852c1..7e4e5bd 100644\n--- a/src/internal/observable/innerFrom.ts\n+++ b/src/internal/observable/innerFrom.ts\n@@ -9,7 +9,7 @@ import { isIterable } from '../util/isIterable';\n import { isReadableStreamLike, readableStreamLikeToAsyncGenerator } from '../util/isReadableStreamLike';\n import { Subscriber } from '../Subscriber';\n import { isFunction } from '../util/isFunction';\n-import { reportUnhandledError } from '../util/reportUnhandledError';\n+import { notifyUnhandledError } from '../util/reportUnhandledError';\n import { observable as Symbol_observable } from '../symbol/observable';\n \n export function innerFrom<O extends ObservableInput<any>>(input: O): Observable<ObservedValueOf<O>>;\n@@ -93,7 +93,7 @@ export function fromPromise<T>(promise: PromiseLike<T>) {\n         },\n         (err: any) => subscriber.error(err)\n       )\n-      .then(null, reportUnhandledError);\n+      .then(null, noti\n… diagnostic truncated …\n= helpers.reportUnhandledError;\n+export const namespaceExample = helpers.notifyUnhandledError;\ndiff --git a/src/internal/util/reportUnhandledError.ts b/src/internal/util/reportUnhandledError.ts\nindex d996956..7e333f2 100644\n--- a/src/internal/util/reportUnhandledError.ts\n+++ b/src/internal/util/reportUnhandledError.ts\n@@ -10,7 +10,7 @@ import { timeoutProvider } from '../scheduler/timeoutProvider';\n  *\n  * @param err the error to report\n  */\n-export function reportUnhandledError(err: any) {\n+export function notifyUnhandledError(err: any) {\n   timeoutProvider.setTimeout(() => {\n     const { onUnhandledError } = config;\n     if (onUnhandledError) {\n\n-- remaining identifiers --\n./src/internal/observable/innerFrom.ts:12:import { notifyUnhandledError } from '../util/reportUnhandledError';\n./src/internal/observable/innerFrom.ts:96:      .then(null, notifyUnhandledError);\n./src/internal/Subscriber.ts:5:import { notifyUnhandledError } from './util/reportUnhandledError';\n./src/internal/Subscriber.ts:236:    notifyUnhandledError(error);\n./src/internal/util/reportUnhandledError.ts:13:export function notifyUnhandledError(err: any) {\n./src/internal/util/guidance-navigation-fixture.ts:1:import { notifyUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:2:import * as helpers from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:3:export { notifyUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:4:// Preserve reportUnhandledError in this comment and the local homonym/literal.\n./src/internal/util/guidance-navigation-fixture.ts:5:function reportUnhandledError() { return \"reportUnhandledError\"; }\n./src/internal/util/guidance-navigation-fixture.ts:6:export const localExample = reportUnhandledError();\n./src/internal/util/guidance-navigation-fixture.ts:8:export const namespaceExample = helpers.notifyUnhandledError;",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 21,
+          "input": {
+            "kind": "command",
+            "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-reading/workspace"
+          },
+          "status": "ok",
+          "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck",
+              "exitCode": 0,
+              "output": "",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 22,
+          "input": {
+            "kind": "command",
+            "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-reading/workspace"
+          },
+          "status": "ok",
+          "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'",
+              "exitCode": 0,
+              "output": "․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․,,,,․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․,․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․․\n  ․․․\n\n  3243 passing (3s)\n  8 pending",
+              "environment": "linux-native"
+            }
+          }
+        },
+        {
+          "index": 23,
+          "input": {
+            "kind": "command",
+            "command": "git status --short && git diff --stat && git diff --check && printf '\\n-- residual declaration references --\\n' && rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' 'reportUnhandledError' .",
+            "cwd": "/workspace/Blame/.blame/research/guidance-f28/f28/1-rxjs-unhandled-error-migration-reading/workspace"
+          },
+          "status": "ok",
+          "command": "git status --short && git diff --stat && git diff --check && printf '\\n-- residual declaration references --\\n' && rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' 'reportUnhandledError' .",
+          "exitCode": 0,
+          "check": null,
+          "output": {
+            "status": "ok",
+            "data": {
+              "command": "git status --short && git diff --stat && git diff --check && printf '\\n-- residual declaration references --\\n' && rg -n --hidden --glob '!node_modules/**' --glob '!.git/**' 'reportUnhandledError' .",
+              "exitCode": 0,
+              "output": "M src/internal/Subscriber.ts\n M src/internal/observable/innerFrom.ts\n M src/internal/util/guidance-navigation-fixture.ts\n M src/internal/util/reportUnhandledError.ts\n src/internal/Subscriber.ts                       | 4 ++--\n src/internal/observable/innerFrom.ts             | 4 ++--\n src/internal/util/guidance-navigation-fixture.ts | 6 +++---\n src/internal/util/reportUnhandledError.ts        | 2 +-\n 4 files changed, 8 insertions(+), 8 deletions(-)\n\n-- residual declaration references --\n./src/internal/observable/innerFrom.ts:12:import { notifyUnhandledError } from '../util/reportUnhandledError';\n./src/internal/Subscriber.ts:5:import { notifyUnhandledError } from './util/reportUnhandledError';\n./src/internal/util/guidance-navigation-fixture.ts:1:import { notifyUnhandledError as retainedLocal } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:2:import * as helpers from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:3:export { notifyUnhandledError as stablePublicName } from \"./reportUnhandledError\";\n./src/internal/util/guidance-navigation-fixture.ts:4:// Preserve reportUnhandledError in this comment and the local homonym/literal.\n./src/internal/util/guidance-navigation-fixture.ts:5:function reportUnhandledError() { return \"reportUnhandledError\"; }\n./src/internal/util/guidance-navigation-fixture.ts:6:export const localExample = reportUnhandledError();",
+              "environment": "linux-native"
+            }
+          }
+        }
+      ],
+      "lastEditIndex": 17,
+      "finalReport": "Implemented the internal rename from `reportUnhandledError` to `notifyUnhandledError` across its resolving imports, calls, export declaration, and namespace access. Preserved the module path/filename, explicit local alias `retainedLocal`, public alias `stablePublicName`, unrelated homonym, comment, literal, and runtime behavior in the navigation fixture. No manifests, lockfiles, configuration, assertions, or new files were changed.\n\nVerification:\n- `node_modules/node-linux-x64/bin/node node_modules/typescript/bin/tsc --project src/tsconfig.base.json --noEmit --incremental false --module commonjs --target es2018 --skipLibCheck`: passed (exit code 0).\n- `TS_NODE_PROJECT=tsconfig.mocha.json node_modules/node-linux-x64/bin/node node_modules/mocha/bin/mocha --config spec/support/.mocharc.js 'spec/**/*-spec.ts'`: passed (exit code 0); 3243 passing, 8 pending. The output did not report a skipped category, so skipped count is unknown rather than zero.\n\n`git diff --check` also passed. Verification is limited to the requested TypeScript compilation and Mocha suite; no broader build, lint, dtslint, or external verification was run.",
+      "verification": "unverified",
+      "dispatchedRequests": 8,
+      "byteRejected": 0,
+      "missingWireResponseUsage": 0,
+      "actualOutputLimits": [
+        null
+      ],
+      "exposure": {
+        "emptyFileScopes": 0,
+        "emptyScopeGuidance": 0,
+        "rootStarSearches": 1,
+        "bareReferenceFallbacks": 0,
+        "referenceFollowupHints": 0,
+        "richRenameReceipts": 0,
+        "truncatedReads": 0,
+        "continuationHints": 0,
+        "checkJournalReads": 0,
+        "reportingReceipts": 0,
+        "patchRecoveryHints": 0
+      },
+      "partition": "fresh-confirmation"
+    }
+  ],
+  "scoredEvidence": {
+    "1-rxjs-unhandled-error-migration-baseline": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "1-rxjs-unhandled-error-migration-scope": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "1-rxjs-unhandled-error-migration-cline": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "1-rxjs-unhandled-error-migration-references": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "1-rxjs-unhandled-error-migration-rename": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    },
+    "1-rxjs-unhandled-error-migration-reading": {
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "method": "Unblinded inspection of recorded effective tool inputs,command outcomes and complete final source diffs. Private grader never feeds back or repairs model source. Reviews are SHA-bound; finite constructed tasks and unknown usage/admission remain separate.",
+  "decisions": [
+    {
+      "name": "1-rxjs-unhandled-error-migration-baseline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All22 finished tool inputs inspected. One compiler rename modifies the8 registered resolving identifiers across4files; complete diff preserves aliases,local homonym,literal,comment and paths. Exact typecheck/fullMocha commands run after final edit,exit0; summary reports3243passing/8pending and explicitly unknown skipped. No external/old solution retrieval. Harness completion correctly unverified. Extra unrelated source/template reads remain resource overhead.",
+      "eventsSha256": "6469a4c3927175b25de8dc2d0b9996b831ce173e9633630152c120c3d17ea03b",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "548015abaa163a6dcdf4565c04b131c94f85d87fea273ce4cca36267a07c789e"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-scope",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All24 effective finished inputs reviewed. Compiler rename at15 changes8 resolving identifiers in4files; full final diff matches reviewed baseline byte-for-byte. Exact typecheck/fullMocha at21/22 after edit pass3243/8pending, skipped explicitly unknown. Initial bare fallback and later root-only star reference query retained; extra reads/scans overhead. No solution retrieval. Formal verification unverified.",
+      "eventsSha256": "b256f59b216c9ccf3e886f8e8bbeee7fc2fe2edae602b3852dab76193fa2196e",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "d8df48fc9162a9a8c90290b44813ea25a07e5239dac98017f22edcfe9612e3a6"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-cline",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All11 effective finished inputs and full final diff reviewed; exact same preserved8-identifier endpoint as baseline. One local patch at6, exact requested typecheck/Mocha commands at7 after final edit both success;3243passing8pending, skipped unknown. Shell scans read own initial checkout only; native timeout extra keys inert. No external/history/private oracle solution retrieval. No formal Light admission.",
+      "eventsSha256": "1bd7c760d255c6c78f4712a8ae890f4a27a91fe316c290f1d40bb0a5ae436fb4",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "990a413efdba4424e8a1664ab9cab7eef7b41026de0578e2bdb92e89b314e8bf"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-references",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All25 effective inputs reviewed. Complete endpoint SHA matches the already reviewed8-identifier4-file migration. Exact compiler and fullMocha19/20 follow rename12;3243passing8pending. Report says0 skipped reported followed immediately by explicit unknown skipped rather than zero: qualified wording accepted under the registered rule, not an observed numeric skipped category. Retain awkward phrasing and a whitespace-delimited empty scope at11; no external/history/private solution retrieval. Formal unverified.",
+      "eventsSha256": "0ff7d67d748e1650ac15f898d9c64c880e9e0fb6e36bc79fda58c909c0e1b02c",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "bfd6fc5b3fb49937ac865535bc26c2234b4ff34c68eada9519a8865c5a0310c8"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-rename",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All19 effective inputs reviewed. Rich rename receipt at12 followed by @changes and full diff. Endpoint hash equals reviewed baseline,8 identifiers4files and preservation intact. Exact typecheck/fullMocha16/17 after edit pass3243/8pending with skipped explicitly unknown. No outside/old/private solution retrieval. Unverified retained.",
+      "eventsSha256": "751952934ceff418621905a46aa032cffea09e71248a0bdff9e1464af072c878",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "755065c9867cd5c282313150e7e88b7e971db2918eef9dfdf03d468a8933a6a7"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-reading",
+      "review": "reviewed",
+      "agentRequiredChecksPassed": true,
+      "fullRequestCriteriaPassed": true,
+      "noSolutionRetrieval": true,
+      "notes": "All25 effective inputs reviewed. Missing .ts in initial explicit reference target yields blocked ENOENT; model recovers via exact file read without repair. One compiler rename17, identical reviewed8-identifier endpoint. Exact commands21/22 pass3243/8pending after final edit; skipped explicitly unknown. No external/history/private solution retrieval. Keep blocked search and extra reads as overhead; unverified retained.",
+      "eventsSha256": "af94f1506a221d9d32d322f90cf55c4703f43593e5d430ec3ed54efea6c85992",
+      "diffSha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783",
+      "scoreSha256": "8d849a2cfef41ade803aa5f844cc00db8f8d79fa4c3cdc5d10b8f1a1e5f509a8"
+    }
+  ]
+}

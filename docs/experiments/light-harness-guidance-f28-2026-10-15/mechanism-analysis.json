@@ -1,0 +1,530 @@
+{
+  "method": "F28 SHA-bound finished tools, full command outcomes, check journals and original independent scores. Nine arms and four fresh constructed tasks; earlier outcomes remain separate. No source repair,rescoring,oracle feedback or solution recovery. Apparent navigation repetition is descriptive and not automatically an error.",
+  "rows": [
+    {
+      "name": "1-rxjs-unhandled-error-migration-baseline",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "baseline",
+      "repetition": 1,
+      "searchCalls": 7,
+      "rootStarCalls": 3,
+      "rootStarEmpty": 3,
+      "emptySearches": 6,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 10,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "integration",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s1",
+            "scope": "*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "6469a4c3927175b25de8dc2d0b9996b831ce173e9633630152c120c3d17ea03b",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-scope",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "scope",
+      "repetition": 1,
+      "searchCalls": 9,
+      "rootStarCalls": 1,
+      "rootStarEmpty": 1,
+      "emptySearches": 6,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 10,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app",
+              "tools",
+              "resources"
+            ],
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app",
+              "tools",
+              "resources"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "s2",
+            "scope": "*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec-dtslint",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "integration",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "tools",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "b256f59b216c9ccf3e886f8e8bbeee7fc2fe2edae602b3852dab76193fa2196e",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-cline",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "cline",
+      "repetition": 1,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 3,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "1bd7c760d255c6c78f4712a8ae890f4a27a91fe316c290f1d40bb0a5ae436fb4",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-references",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "references",
+      "repetition": 1,
+      "searchCalls": 8,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 12,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 12,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "src/internal/util/reportUnhandledError.ts#reportUnhandledError",
+            "scope": "**",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src spec integration docs_app tools resources",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/internal",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "src/internal",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "0ff7d67d748e1650ac15f898d9c64c880e9e0fb6e36bc79fda58c909c0e1b02c",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-rename",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "rename",
+      "repetition": 1,
+      "searchCalls": 5,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 3,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 7,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 7,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "src/internal/util/reportUnhandledError.ts#reportUnhandledError",
+            "scope": "**",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "integration",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "751952934ceff418621905a46aa032cffea09e71248a0bdff9e1464af072c878",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-reading",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "reading",
+      "repetition": 1,
+      "searchCalls": 9,
+      "rootStarCalls": 1,
+      "rootStarEmpty": 0,
+      "emptySearches": 6,
+      "blockedSearches": 1,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 8,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 8,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "integration",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "src/internal/util/reportUnhandledError#reportUnhandledError",
+            "scope": "*",
+            "mode": "references"
+          },
+          "status": "blocked",
+          "resultCount": null
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/internal",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/index.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec-dtslint",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "tools",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "af94f1506a221d9d32d322f90cf55c4703f43593e5d430ec3ed54efea6c85992",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    }
+  ]
+}

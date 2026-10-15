@@ -1,0 +1,49 @@
+{
+  "artifact": "added-test-sources.json.gz",
+  "sha256": "952ecf46d3e3e6aa219cc1d5679f9672b7314199dffda5dd06117c76f9dc3b3a",
+  "sources": [],
+  "journals": [
+    {
+      "name": "1-rxjs-unhandled-error-migration-baseline",
+      "file": "f5760ab071be52442a591de4.jsonl",
+      "artifact": "journals/1-rxjs-unhandled-error-migration-baseline.f5760ab071be52442a591de4.jsonl.gz",
+      "bytes": 65656,
+      "sha256": "2fb9d1b2891b9229c89e2341171486908deb9f1463d04c2051d0fd15ee37d0c3"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-scope",
+      "file": "5b351193be5ad191ed028dea.jsonl",
+      "artifact": "journals/1-rxjs-unhandled-error-migration-scope.5b351193be5ad191ed028dea.jsonl.gz",
+      "bytes": 75248,
+      "sha256": "9d25ebe37158a59bafba5edb7afd3656af4da320b61d55e1e2870da85f6bed34"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-cline",
+      "file": "c55e1ba8f4998ec175e72a49.jsonl",
+      "artifact": "journals/1-rxjs-unhandled-error-migration-cline.c55e1ba8f4998ec175e72a49.jsonl.gz",
+      "bytes": 79,
+      "sha256": "1d8e396c275454de9e4422b6332af68f3de1373e97ee3ddcf16aaad4cb0be014"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-references",
+      "file": "9ccdf92173560d8c7bd904b1.jsonl",
+      "artifact": "journals/1-rxjs-unhandled-error-migration-references.9ccdf92173560d8c7bd904b1.jsonl.gz",
+      "bytes": 113146,
+      "sha256": "cbc8aaa66b945e98e9d7789c3b77f79c513785e10eb65687fd2d1940f15d94cd"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-rename",
+      "file": "198d7835c4836f175dfd253a.jsonl",
+      "artifact": "journals/1-rxjs-unhandled-error-migration-rename.198d7835c4836f175dfd253a.jsonl.gz",
+      "bytes": 54913,
+      "sha256": "42974764fca861882759aa39913323c1c3a854d13b39fb6de027b1983765dd81"
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-reading",
+      "file": "ec0ad4af7313133d56a2aab9.jsonl",
+      "artifact": "journals/1-rxjs-unhandled-error-migration-reading.ec0ad4af7313133d56a2aab9.jsonl.gz",
+      "bytes": 48472,
+      "sha256": "9ca8dac1b6891362901316407490899a835ca9d5ff362bdfd506ca4b2abb7374"
+    }
+  ]
+}

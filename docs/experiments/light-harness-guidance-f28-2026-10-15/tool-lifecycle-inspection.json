@@ -1,0 +1,65 @@
+{
+  "method": "Read every raw started/finished tool input independently of the driver's completed-tool ledger. Orphan, changed-input and missing-ID observations require explicit review; this extractor does not adjudicate external effects or leakage.",
+  "trials": [
+    {
+      "name": "1-rxjs-unhandled-error-migration-baseline",
+      "eventsSha256": "6469a4c3927175b25de8dc2d0b9996b831ce173e9633630152c120c3d17ea03b",
+      "started": 22,
+      "finished": 22,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-scope",
+      "eventsSha256": "b256f59b216c9ccf3e886f8e8bbeee7fc2fe2edae602b3852dab76193fa2196e",
+      "started": 24,
+      "finished": 24,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-cline",
+      "eventsSha256": "1bd7c760d255c6c78f4712a8ae890f4a27a91fe316c290f1d40bb0a5ae436fb4",
+      "started": 11,
+      "finished": 11,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-references",
+      "eventsSha256": "0ff7d67d748e1650ac15f898d9c64c880e9e0fb6e36bc79fda58c909c0e1b02c",
+      "started": 25,
+      "finished": 25,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-rename",
+      "eventsSha256": "751952934ceff418621905a46aa032cffea09e71248a0bdff9e1464af072c878",
+      "started": 19,
+      "finished": 19,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-rxjs-unhandled-error-migration-reading",
+      "eventsSha256": "af94f1506a221d9d32d322f90cf55c4703f43593e5d430ec3ed54efea6c85992",
+      "started": 25,
+      "finished": 25,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    }
+  ]
+}
