@@ -592,7 +592,7 @@ function symbolReplacement(
     return insertionReplacement(range[0], replacement, source);
   if (operation.action === "insert_after")
     return insertionReplacement(range[1], replacement, source);
-  return wholeSymbolReplacement(operation, range, source);
+  return wholeSymbolReplacement(operation, range, source, resolved);
 }
 
 function symbolBodyReplacement(
@@ -676,13 +676,33 @@ function wholeSymbolReplacement(
   >,
   range: [number, number],
   source: string,
+  resolved: ResolvedLightSymbol,
 ): Replacement {
   return {
     start: range[0],
     end: range[1],
-    replacement: operation.action === "delete" ? "" : (operation.content ?? ""),
+    replacement: operation.action === "delete" ? "" :
+      withoutRepeatedFirstLineIndent(resolved, range[0], operation.content ?? ""),
     source,
   };
+}
+
+function withoutRepeatedFirstLineIndent(
+  resolved: ResolvedLightSymbol,
+  start: number,
+  replacement: string,
+) {
+  const language = capabilityForPath(resolved.path)?.language;
+  if (!["javascript", "typescript", "jsx", "tsx"].includes(language ?? ""))
+    return replacement;
+  if (start === 0) return replacement;
+  const lineStart = resolved.content.lastIndexOf(10, start - 1) + 1;
+  const prefix = resolved.content.subarray(lineStart, start).toString("utf8");
+  // The AST span starts after this whitespace, which remains in the file.
+  // Accept the same absolute first-line indent once. Never reindent later
+  // lines: they may contain template literals or explicitly chosen layout.
+  return /^[\t ]+$/u.test(prefix) && replacement.startsWith(prefix)
+    ? replacement.slice(prefix.length) : replacement;
 }
 
 function assertSymbolEditAvailable(path: string) {
