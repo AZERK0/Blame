@@ -230,9 +230,23 @@ export class LightAliasRegistry {
     const path = files.normalizePath(target.slice(0, separator));
     const qualifiedName = target.slice(separator + 1);
     const content = (await files.read(path)).content;
-    const candidates = parseCode(path, content).symbols.filter(
+    const symbols = parseCode(path, content).symbols;
+    const candidates = symbols.filter(
       (symbol) => symbol.qualified_name === qualifiedName,
     );
+    if (candidates.length === 0) {
+      const trimmed = qualifiedName.trim();
+      const canonical = `${path}#${trimmed}`;
+      const alternatives = trimmed && trimmed !== qualifiedName
+        ? symbols.filter(symbol => symbol.qualified_name === trimmed) : [];
+      const entry = alternatives.length === 1 ? this.targetAlias(canonical, files) : undefined;
+      const safeSuggestion = !entry || entry.kind === "symbol" &&
+        entry.qualifiedName === trimmed && entry.fileHash === sha256(content);
+      const suggestion = alternatives.length === 1 && safeSuggestion
+        ? ` Whitespace around the qualified name prevents an exact match. Suggested read_code input: ${JSON.stringify({ target: canonical })}`
+        : "";
+      throw new SymbolResolutionError(`No indexed declaration matches ${JSON.stringify(qualifiedName)} in ${path}.${suggestion || " Use a text search or short file range for source not indexed here."}`);
+    }
     if (candidates.length !== 1)
       throw resolutionConflict(qualifiedName, candidates);
     return resolved(path, content, candidates[0]!, revision);
