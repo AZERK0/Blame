@@ -1,0 +1,498 @@
+{
+  "method": "F29 SHA-bound finished tools, full command outcomes, check journals and original independent scores. Three arms and two related fresh constructed tasks; earlier outcomes remain separate. No source repair,rescoring,oracle feedback or solution recovery. Apparent navigation repetition is descriptive and not automatically an error.",
+  "rows": [
+    {
+      "name": "1-lodash-iterator-own-mode-baseline",
+      "id": "lodash-iterator-own-mode",
+      "arm": "baseline",
+      "repetition": 1,
+      "searchCalls": 9,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 9,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 9,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function forIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "forOwnRight",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "forIn",
+            "scope": "test",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseForOwn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "options.own",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "options)",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function createBaseFor",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keysIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keys(object",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "cbd561005a53bac0e19372ee5967df1dbab044df7d23d2a41f111864d5aa20d3",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-iterator-own-mode-candidate",
+      "id": "lodash-iterator-own-mode",
+      "arm": "candidate",
+      "repetition": 1,
+      "searchCalls": 5,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 8,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 8,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function forIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function forOwn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "forInRight",
+            "scope": [
+              "lodash.js",
+              "test"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseForOwn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseForIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "5e828b161eeb1c74ca5ce048066487880d628968194da7f883958e30df82f6f3",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-iterator-own-mode-cline",
+      "id": "lodash-iterator-own-mode",
+      "arm": "cline",
+      "repetition": 1,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 4,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "696ad31837cdee791927ba7031a864402c44a1d4092dbe5b0465903f05add872",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-predicate-own-filter-candidate",
+      "id": "lodash-predicate-own-filter",
+      "arm": "candidate",
+      "repetition": 1,
+      "searchCalls": 9,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 22,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 1,
+      "activeCaseCaptions": 0,
+      "readTargets": 22,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 1,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "pickBy",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "omitBy",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 4
+        },
+        {
+          "input": {
+            "query": "function getAllKeysIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function keysIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "ownOnly",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "getAllKeys(object)",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "function arrayLikeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function baseKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "1750a2d5eddfea852d92363e8f2421c66947a8a8edef2a868f137b2fad243361",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-predicate-own-filter-cline",
+      "id": "lodash-predicate-own-filter",
+      "arm": "cline",
+      "repetition": 1,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 5,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 9,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "7fbb386fc21da1beb2df9adae0254dc582e821ed3334c53dcf062ac4e89e9733",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "1-lodash-predicate-own-filter-baseline",
+      "id": "lodash-predicate-own-filter",
+      "arm": "baseline",
+      "repetition": 1,
+      "searchCalls": 13,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 20,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 1,
+      "activeCaseCaptions": 0,
+      "readTargets": 20,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 1,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "function pickBy",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function omitBy",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "pickBy",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "omitBy",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 4
+        },
+        {
+          "input": {
+            "query": "function keysIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "keysIn(object)",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getAllKeysIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 5
+        },
+        {
+          "input": {
+            "query": "getAllKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function arrayLikeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function getSymbols",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "function getIteratee",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "arrayLikeKeys",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 3
+        },
+        {
+          "input": {
+            "query": "getSymbolsIn",
+            "scope": "lodash.js",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 3
+        }
+      ],
+      "eventsSha256": "3d1bc57b97bb5558033ee481c9a70470749e4b369a0a920df3952c1d4b3b25fa",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    }
+  ]
+}

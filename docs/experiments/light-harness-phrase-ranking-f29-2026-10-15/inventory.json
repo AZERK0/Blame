@@ -1,0 +1,422 @@
+[
+  {
+    "trial": "1-lodash-iterator-own-mode-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-lodash-iterator-own-mode-baseline.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "044f9cc88dd5675a90e72c255ccb78a9dee5ba2e27cbb7196064cb24488a3a02"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-lodash-iterator-own-mode-baseline.events.jsonl.gz",
+    "bytes": 92784,
+    "sha256": "cbd561005a53bac0e19372ee5967df1dbab044df7d23d2a41f111864d5aa20d3"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-baseline",
+    "file": "result.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-baseline.result.json.gz",
+    "bytes": 4853,
+    "sha256": "7de3543dc7c66588ff331583e821373b9f6fcc5c6b2d6f880dadf973109a48cc"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-lodash-iterator-own-mode-baseline.workspace.diff.gz",
+    "bytes": 1189,
+    "sha256": "c39e66bb5dfef59ea49bfd8bc5b5436bdbd830ac46a524c3215aac2df1767e8d"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-baseline",
+    "file": "trial.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-baseline.trial.json.gz",
+    "bytes": 4718,
+    "sha256": "c68b177b031ceb666ddc172a3111e0d0577b3aad72511a83a881f132f66c3a30"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-baseline",
+    "file": "score.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-baseline.score.json.gz",
+    "bytes": 20071,
+    "sha256": "2dcaac9ca73bae3ebc0262fe21c233582e7efe1b3efb29b89675e3e0232fe846"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-baseline.model-start.json.gz",
+    "bytes": 205,
+    "sha256": "6da848312fed550b33f24e1182a3f15c23ef3dd423e2a3e62acd87f2e7d5bab6"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "4b4c4629cd3043f6231dbceb3536349cb43adb1b8be516e0d6be427fd4ded136"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-baseline.model-exit.json.gz",
+    "bytes": 4519,
+    "sha256": "e93690e1b0fb5d658706e18a23b9ddcf5f1dfad51be1924471305c2b8f6d47ae"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-candidate",
+    "file": "instruction.txt",
+    "artifact": "traces/1-lodash-iterator-own-mode-candidate.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "044f9cc88dd5675a90e72c255ccb78a9dee5ba2e27cbb7196064cb24488a3a02"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-candidate",
+    "file": "events.jsonl",
+    "artifact": "traces/1-lodash-iterator-own-mode-candidate.events.jsonl.gz",
+    "bytes": 68676,
+    "sha256": "5e828b161eeb1c74ca5ce048066487880d628968194da7f883958e30df82f6f3"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-candidate",
+    "file": "result.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-candidate.result.json.gz",
+    "bytes": 4826,
+    "sha256": "47a9f1a5695144dcd38d8c34a361e8af851cf0d83ef641d5f645a6138e11cbac"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-candidate",
+    "file": "workspace.diff",
+    "artifact": "traces/1-lodash-iterator-own-mode-candidate.workspace.diff.gz",
+    "bytes": 1189,
+    "sha256": "c39e66bb5dfef59ea49bfd8bc5b5436bdbd830ac46a524c3215aac2df1767e8d"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-candidate",
+    "file": "trial.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-candidate.trial.json.gz",
+    "bytes": 4411,
+    "sha256": "2eecfee46372a9bc358d7b590eca84d9a03725208ab5d7f3961301d344791072"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-candidate",
+    "file": "score.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-candidate.score.json.gz",
+    "bytes": 20080,
+    "sha256": "2523d34f90fc45ac550cb8182c27cc2eeef4b1a2757848502c70659116f7a1e1"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-candidate",
+    "file": "required-checks.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-candidate.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-candidate",
+    "file": "model-start.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-candidate.model-start.json.gz",
+    "bytes": 206,
+    "sha256": "46d2219ec29d615e6c7b960b0ade711918e33d2d2aeffe154cfc40177015ff08"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-candidate",
+    "file": "model-child.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-candidate.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "3d5c90db390a46410872145955fa9cd0da63e99d88592c8589dce19adae17d43"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-candidate",
+    "file": "model-exit.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-candidate.model-exit.json.gz",
+    "bytes": 4211,
+    "sha256": "7adb4a596ec75c4e467be4e615abd6ed24cc19dc19abae7ad4c28a706ceddfce"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-lodash-iterator-own-mode-cline.instruction.txt.gz",
+    "bytes": 1323,
+    "sha256": "044f9cc88dd5675a90e72c255ccb78a9dee5ba2e27cbb7196064cb24488a3a02"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-lodash-iterator-own-mode-cline.events.jsonl.gz",
+    "bytes": 444030,
+    "sha256": "696ad31837cdee791927ba7031a864402c44a1d4092dbe5b0465903f05add872"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-cline",
+    "file": "result.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-cline.result.json.gz",
+    "bytes": 3707,
+    "sha256": "c4c472dd3fc33ddd3837fbd176553476de5d3f819da1dea637479acb39dfdfdc"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-lodash-iterator-own-mode-cline.workspace.diff.gz",
+    "bytes": 1249,
+    "sha256": "dad91387c10875dce16812d489a4d81479837c763d6fb4e28bca41d59ab1d4b0"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-cline",
+    "file": "trial.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-cline.trial.json.gz",
+    "bytes": 6025,
+    "sha256": "133f808eaeabff583cd0b01b45e01116fe7545b844dd8dcb683cbb57b9fe3c1c"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-cline",
+    "file": "score.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-cline.score.json.gz",
+    "bytes": 20055,
+    "sha256": "6cf0aaf062d4a9f2782f39e570caa430098dbfa1d23a0fcd0b1fb47e83e0b5be"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-cline",
+    "file": "model-start.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-cline.model-start.json.gz",
+    "bytes": 202,
+    "sha256": "b6194edfffc6759059e558c98f2e0e4970e5d393f7d10cf286ce000009e7fa86"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-cline",
+    "file": "model-child.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "3450754ec46f331d621ea922a24638d1d7ff7d7872e9d5d263e98563cd36e57f"
+  },
+  {
+    "trial": "1-lodash-iterator-own-mode-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/1-lodash-iterator-own-mode-cline.model-exit.json.gz",
+    "bytes": 5834,
+    "sha256": "11016d25b2bf997fabf9d1d6dfa7b2e84dc9d781d596532b63686bdef8c941dd"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-candidate",
+    "file": "instruction.txt",
+    "artifact": "traces/1-lodash-predicate-own-filter-candidate.instruction.txt.gz",
+    "bytes": 1390,
+    "sha256": "3cb567bc14e99cb092ad670a68ee2bfef5bed330a3fbe8d62fbc7baa378c6941"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-candidate",
+    "file": "events.jsonl",
+    "artifact": "traces/1-lodash-predicate-own-filter-candidate.events.jsonl.gz",
+    "bytes": 129475,
+    "sha256": "1750a2d5eddfea852d92363e8f2421c66947a8a8edef2a868f137b2fad243361"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-candidate",
+    "file": "result.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-candidate.result.json.gz",
+    "bytes": 4854,
+    "sha256": "5a0428affed6792819adae01ea5a5d37431ba5e9b70feae8e4d4047e5113aba7"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-candidate",
+    "file": "workspace.diff",
+    "artifact": "traces/1-lodash-predicate-own-filter-candidate.workspace.diff.gz",
+    "bytes": 1108,
+    "sha256": "ad9aeec4ab9b90355b7016ac0f45ca0e7df47cd77af3363c2f42ae43d73cfa80"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-candidate",
+    "file": "trial.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-candidate.trial.json.gz",
+    "bytes": 5724,
+    "sha256": "8697684fd100a3d64c2a3002fea37d33ad6d8dfec8312210d30109e7a80d58b8"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-candidate",
+    "file": "score.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-candidate.score.json.gz",
+    "bytes": 63699,
+    "sha256": "9b42870c75a262405de65e67e94bff59936f8339430bbb01ba510a8655c1a565"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-candidate",
+    "file": "required-checks.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-candidate.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-candidate",
+    "file": "model-start.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-candidate.model-start.json.gz",
+    "bytes": 209,
+    "sha256": "75e5fd5a95503d21e84f821edc1f8533c67f0769ded660d9c2d385733e80f065"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-candidate",
+    "file": "model-child.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-candidate.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "e5c307016e3292196a8b07786197d7bf69769d8a9d60bc25a41349ef9d45b6ef"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-candidate",
+    "file": "model-exit.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-candidate.model-exit.json.gz",
+    "bytes": 5511,
+    "sha256": "f8f55570859cab1154fa3c5e614a3d6574f7484869f9ca450e453bf4e313a85e"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-lodash-predicate-own-filter-cline.instruction.txt.gz",
+    "bytes": 1390,
+    "sha256": "3cb567bc14e99cb092ad670a68ee2bfef5bed330a3fbe8d62fbc7baa378c6941"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-lodash-predicate-own-filter-cline.events.jsonl.gz",
+    "bytes": 427081,
+    "sha256": "7fbb386fc21da1beb2df9adae0254dc582e821ed3334c53dcf062ac4e89e9733"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-cline",
+    "file": "result.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-cline.result.json.gz",
+    "bytes": 3728,
+    "sha256": "fe07a517528209792e69286d453806f8493ac98fabce2a62c17420a5d646d8ee"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-lodash-predicate-own-filter-cline.workspace.diff.gz",
+    "bytes": 1084,
+    "sha256": "181028c062256cf51ca3db6608dd4cb01afc80500d86465abe933e89d2329751"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-cline",
+    "file": "trial.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-cline.trial.json.gz",
+    "bytes": 4986,
+    "sha256": "682f182a62f0eb95f878769ba9814e6cf538fe670a9f64e13ab1b56d411e4340"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-cline",
+    "file": "score.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-cline.score.json.gz",
+    "bytes": 63695,
+    "sha256": "c0c56bd4273afe611558861569a1e2b7cca37682f722de0ece0072e4da5336cf"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-cline",
+    "file": "model-start.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-cline.model-start.json.gz",
+    "bytes": 205,
+    "sha256": "121a13b7d184b1e91da7d61b54c813da426fd488e2437909aa9332a5026c25e2"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-cline",
+    "file": "model-child.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "78c2facdfb4ed8354c137681017a50cd81db0caaf4896e1011faaaa9366900e3"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-cline.model-exit.json.gz",
+    "bytes": 4786,
+    "sha256": "f6e1105038863a7c84fd3411a12070193c14b25e6c666a7fd8656ea0d6866fb7"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/1-lodash-predicate-own-filter-baseline.instruction.txt.gz",
+    "bytes": 1390,
+    "sha256": "3cb567bc14e99cb092ad670a68ee2bfef5bed330a3fbe8d62fbc7baa378c6941"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/1-lodash-predicate-own-filter-baseline.events.jsonl.gz",
+    "bytes": 142675,
+    "sha256": "3d1bc57b97bb5558033ee481c9a70470749e4b369a0a920df3952c1d4b3b25fa"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-baseline",
+    "file": "result.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-baseline.result.json.gz",
+    "bytes": 4857,
+    "sha256": "4ddeb5e568fc5c470510ad1e640af144c5aef0edf555607aec33959bb1bd4762"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/1-lodash-predicate-own-filter-baseline.workspace.diff.gz",
+    "bytes": 1085,
+    "sha256": "c75f8bd80219001bae0087d1c9b746729d07aefda6e361a7fc737b9bdeb897b7"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-baseline",
+    "file": "trial.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-baseline.trial.json.gz",
+    "bytes": 5471,
+    "sha256": "487a22f92aad91ad6e53801771e645760d2169ea6e22040def3d91e02ea9b74c"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-baseline",
+    "file": "score.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-baseline.score.json.gz",
+    "bytes": 63709,
+    "sha256": "3f8e1ba4f23cde1508331dde28771fbfb116061500fd83ec516f65db9fbec67e"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-baseline.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "a4f95a6c3a281d2800fe00b92a9d1369be72cee86595253b5005ec44e8bea30b"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "86d2ce412c3c9b920d5842a11c62ffad8b41d536469da6d39b882486d37f7808"
+  },
+  {
+    "trial": "1-lodash-predicate-own-filter-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/1-lodash-predicate-own-filter-baseline.model-exit.json.gz",
+    "bytes": 5261,
+    "sha256": "d57cc18edd1390c3c400675dbd7cff25183e0a2a2018e1bc679bd125ec7a6426"
+  }
+]

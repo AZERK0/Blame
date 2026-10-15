@@ -1,0 +1,2584 @@
+{
+  "method": "Two fresh constructed tasks in one familiar monolithic project and related option-extension family,three dependent repeats,18 fixed assignments. Known F28 searches are mechanism diagnostics only. Preserve every failure,timeout,missing usage and unexecuted slot. No model retry,source repair,reference recovery or grader feedback. Raw output alone does not establish model-visible evidence; unblinded audit and arm-labeled checkout limitations remain. No population-equivalence or universally optimal ranking claim.",
+  "planned": 18,
+  "completed": 6,
+  "unexecuted": 12,
+  "arms": {
+    "baseline": {
+      "planned": 6,
+      "trials": 2,
+      "official": 2,
+      "functional": 2,
+      "admittedVerified": 0,
+      "actualChecks": 2,
+      "strict": 2,
+      "factualWordingSensitivityOnly": 0,
+      "tokensObserved": 286520,
+      "estimatedUsdObserved": 0.025335160000000002,
+      "inputTokensObserved": 279413,
+      "outputTokensObserved": 7107,
+      "cacheReadTokensObserved": 217088,
+      "cacheWriteTokensObserved": 0,
+      "missingCacheReadAggregates": 0,
+      "missingCacheWriteAggregates": 0,
+      "missingReasoningAggregates": 2,
+      "runnerSecondsObserved": 129.002,
+      "fullCacheAccounting": 0,
+      "tokenCostReconciled": 2,
+      "timeouts": 0,
+      "failed": 0,
+      "missingResults": 0,
+      "outerWatchdogKills": 0,
+      "missingWorkerDurations": 0,
+      "missingWireUsageResponses": 0,
+      "wireMatchedTrialLedgers": 2,
+      "orchestrationInterruptions": 0,
+      "outerSecondsObserved": 132.75936836900004,
+      "missingOuterDurations": 0,
+      "suitesAndBehaviorPassed": 2,
+      "sourceScopeOnlyRejections": 0,
+      "missingConsumption": 0
+    },
+    "candidate": {
+      "planned": 6,
+      "trials": 2,
+      "official": 2,
+      "functional": 2,
+      "admittedVerified": 0,
+      "actualChecks": 2,
+      "strict": 2,
+      "factualWordingSensitivityOnly": 0,
+      "tokensObserved": 198899,
+      "estimatedUsdObserved": 0.019556439999999998,
+      "inputTokensObserved": 191843,
+      "outputTokensObserved": 7056,
+      "cacheReadTokensObserved": 151552,
+      "cacheWriteTokensObserved": 0,
+      "missingCacheReadAggregates": 0,
+      "missingCacheWriteAggregates": 0,
+      "missingReasoningAggregates": 2,
+      "runnerSecondsObserved": 117.827,
+      "fullCacheAccounting": 0,
+      "tokenCostReconciled": 2,
+      "timeouts": 0,
+      "failed": 0,
+      "missingResults": 0,
+      "outerWatchdogKills": 0,
+      "missingWorkerDurations": 0,
+      "missingWireUsageResponses": 0,
+      "wireMatchedTrialLedgers": 2,
+      "orchestrationInterruptions": 0,
+      "outerSecondsObserved": 121.54848453399998,
+      "missingOuterDurations": 0,
+      "suitesAndBehaviorPassed": 2,
+      "sourceScopeOnlyRejections": 0,
+      "missingConsumption": 0
+    },
+    "cline": {
+      "planned": 6,
+      "trials": 2,
+      "official": 2,
+      "functional": 2,
+      "admittedVerified": 0,
+      "actualChecks": 2,
+      "strict": 1,
+      "factualWordingSensitivityOnly": 1,
+      "tokensObserved": 391473,
+      "estimatedUsdObserved": 0.03489476,
+      "inputTokensObserved": 381973,
+      "outputTokensObserved": 9500,
+      "cacheReadTokensObserved": 293888,
+      "cacheWriteTokensObserved": 0,
+      "missingCacheReadAggregates": 0,
+      "missingCacheWriteAggregates": 0,
+      "missingReasoningAggregates": 2,
+      "runnerSecondsObserved": 143.741,
+      "fullCacheAccounting": 0,
+      "tokenCostReconciled": 2,
+      "timeouts": 0,
+      "failed": 0,
+      "missingResults": 0,
+      "outerWatchdogKills": 0,
+      "missingWorkerDurations": 0,
+      "missingWireUsageResponses": 0,
+      "wireMatchedTrialLedgers": 2,
+      "orchestrationInterruptions": 0,
+      "outerSecondsObserved": 147.307645968,
+      "missingOuterDurations": 0,
+      "suitesAndBehaviorPassed": 2,
+      "sourceScopeOnlyRejections": 0,
+      "missingConsumption": 0
+    }
+  },
+  "repetitions": [
+    {
+      "repetition": 1,
+      "arms": {
+        "baseline": {
+          "planned": 2,
+          "trials": 2,
+          "official": 2,
+          "functional": 2,
+          "admittedVerified": 0,
+          "actualChecks": 2,
+          "strict": 2,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 286520,
+          "estimatedUsdObserved": 0.025335160000000002,
+          "inputTokensObserved": 279413,
+          "outputTokensObserved": 7107,
+          "cacheReadTokensObserved": 217088,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 2,
+          "runnerSecondsObserved": 129.002,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 2,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 2,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 132.75936836900004,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 2,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "candidate": {
+          "planned": 2,
+          "trials": 2,
+          "official": 2,
+          "functional": 2,
+          "admittedVerified": 0,
+          "actualChecks": 2,
+          "strict": 2,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 198899,
+          "estimatedUsdObserved": 0.019556439999999998,
+          "inputTokensObserved": 191843,
+          "outputTokensObserved": 7056,
+          "cacheReadTokensObserved": 151552,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 2,
+          "runnerSecondsObserved": 117.827,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 2,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 2,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 121.54848453399998,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 2,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "cline": {
+          "planned": 2,
+          "trials": 2,
+          "official": 2,
+          "functional": 2,
+          "admittedVerified": 0,
+          "actualChecks": 2,
+          "strict": 1,
+          "factualWordingSensitivityOnly": 1,
+          "tokensObserved": 391473,
+          "estimatedUsdObserved": 0.03489476,
+          "inputTokensObserved": 381973,
+          "outputTokensObserved": 9500,
+          "cacheReadTokensObserved": 293888,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 2,
+          "runnerSecondsObserved": 143.741,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 2,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 2,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 147.307645968,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 2,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        }
+      }
+    },
+    {
+      "repetition": 2,
+      "arms": {
+        "baseline": {
+          "planned": 2,
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "admittedVerified": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "inputTokensObserved": 0,
+          "outputTokensObserved": 0,
+          "cacheReadTokensObserved": 0,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 0,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "candidate": {
+          "planned": 2,
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "admittedVerified": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "inputTokensObserved": 0,
+          "outputTokensObserved": 0,
+          "cacheReadTokensObserved": 0,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 0,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "cline": {
+          "planned": 2,
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "admittedVerified": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "inputTokensObserved": 0,
+          "outputTokensObserved": 0,
+          "cacheReadTokensObserved": 0,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 0,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        }
+      }
+    },
+    {
+      "repetition": 3,
+      "arms": {
+        "baseline": {
+          "planned": 2,
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "admittedVerified": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "inputTokensObserved": 0,
+          "outputTokensObserved": 0,
+          "cacheReadTokensObserved": 0,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 0,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "candidate": {
+          "planned": 2,
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "admittedVerified": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "inputTokensObserved": 0,
+          "outputTokensObserved": 0,
+          "cacheReadTokensObserved": 0,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 0,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "cline": {
+          "planned": 2,
+          "trials": 0,
+          "official": 0,
+          "functional": 0,
+          "admittedVerified": 0,
+          "actualChecks": 0,
+          "strict": 0,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 0,
+          "estimatedUsdObserved": 0,
+          "inputTokensObserved": 0,
+          "outputTokensObserved": 0,
+          "cacheReadTokensObserved": 0,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 0,
+          "runnerSecondsObserved": 0,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 0,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 0,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 0,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 0,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        }
+      }
+    }
+  ],
+  "strata": {
+    "fresh-confirmation": {
+      "arms": {
+        "baseline": {
+          "trials": 2,
+          "official": 2,
+          "functional": 2,
+          "admittedVerified": 0,
+          "actualChecks": 2,
+          "strict": 2,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 286520,
+          "estimatedUsdObserved": 0.025335160000000002,
+          "inputTokensObserved": 279413,
+          "outputTokensObserved": 7107,
+          "cacheReadTokensObserved": 217088,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 2,
+          "runnerSecondsObserved": 129.002,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 2,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 2,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 132.75936836900004,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 2,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "candidate": {
+          "trials": 2,
+          "official": 2,
+          "functional": 2,
+          "admittedVerified": 0,
+          "actualChecks": 2,
+          "strict": 2,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 198899,
+          "estimatedUsdObserved": 0.019556439999999998,
+          "inputTokensObserved": 191843,
+          "outputTokensObserved": 7056,
+          "cacheReadTokensObserved": 151552,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 2,
+          "runnerSecondsObserved": 117.827,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 2,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 2,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 121.54848453399998,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 2,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "cline": {
+          "trials": 2,
+          "official": 2,
+          "functional": 2,
+          "admittedVerified": 0,
+          "actualChecks": 2,
+          "strict": 1,
+          "factualWordingSensitivityOnly": 1,
+          "tokensObserved": 391473,
+          "estimatedUsdObserved": 0.03489476,
+          "inputTokensObserved": 381973,
+          "outputTokensObserved": 9500,
+          "cacheReadTokensObserved": 293888,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 2,
+          "runnerSecondsObserved": 143.741,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 2,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 2,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 147.307645968,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 2,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "id": "lodash-iterator-own-mode",
+      "partition": "fresh-confirmation",
+      "arms": {
+        "baseline": {
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "admittedVerified": 0,
+          "actualChecks": 1,
+          "strict": 1,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 76210,
+          "estimatedUsdObserved": 0.009030360000000001,
+          "inputTokensObserved": 72837,
+          "outputTokensObserved": 3373,
+          "cacheReadTokensObserved": 53248,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 1,
+          "runnerSecondsObserved": 57.191,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 1,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 1,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 58.997659843,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 1,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "candidate": {
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "admittedVerified": 0,
+          "actualChecks": 1,
+          "strict": 1,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 53315,
+          "estimatedUsdObserved": 0.00629964,
+          "inputTokensObserved": 51135,
+          "outputTokensObserved": 2180,
+          "cacheReadTokensObserved": 36352,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 1,
+          "runnerSecondsObserved": 40.022,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 1,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 1,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 41.874581338999995,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 1,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "cline": {
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "admittedVerified": 0,
+          "actualChecks": 1,
+          "strict": 1,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 190834,
+          "estimatedUsdObserved": 0.01819204,
+          "inputTokensObserved": 186755,
+          "outputTokensObserved": 4079,
+          "cacheReadTokensObserved": 133632,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 1,
+          "runnerSecondsObserved": 59.821,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 1,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 1,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 61.641299145,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 1,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        }
+      }
+    },
+    {
+      "id": "lodash-predicate-own-filter",
+      "partition": "fresh-confirmation",
+      "arms": {
+        "baseline": {
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "admittedVerified": 0,
+          "actualChecks": 1,
+          "strict": 1,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 210310,
+          "estimatedUsdObserved": 0.0163048,
+          "inputTokensObserved": 206576,
+          "outputTokensObserved": 3734,
+          "cacheReadTokensObserved": 163840,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 1,
+          "runnerSecondsObserved": 71.811,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 1,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 1,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 73.76170852600004,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 1,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "candidate": {
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "admittedVerified": 0,
+          "actualChecks": 1,
+          "strict": 1,
+          "factualWordingSensitivityOnly": 0,
+          "tokensObserved": 145584,
+          "estimatedUsdObserved": 0.0132568,
+          "inputTokensObserved": 140708,
+          "outputTokensObserved": 4876,
+          "cacheReadTokensObserved": 115200,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 1,
+          "runnerSecondsObserved": 77.805,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 1,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 1,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 79.673903195,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 1,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        },
+        "cline": {
+          "trials": 1,
+          "official": 1,
+          "functional": 1,
+          "admittedVerified": 0,
+          "actualChecks": 1,
+          "strict": 0,
+          "factualWordingSensitivityOnly": 1,
+          "tokensObserved": 200639,
+          "estimatedUsdObserved": 0.016702719999999997,
+          "inputTokensObserved": 195218,
+          "outputTokensObserved": 5421,
+          "cacheReadTokensObserved": 160256,
+          "cacheWriteTokensObserved": 0,
+          "missingCacheReadAggregates": 0,
+          "missingCacheWriteAggregates": 0,
+          "missingReasoningAggregates": 1,
+          "runnerSecondsObserved": 83.92,
+          "fullCacheAccounting": 0,
+          "tokenCostReconciled": 1,
+          "timeouts": 0,
+          "failed": 0,
+          "missingResults": 0,
+          "outerWatchdogKills": 0,
+          "missingWorkerDurations": 0,
+          "missingWireUsageResponses": 0,
+          "wireMatchedTrialLedgers": 1,
+          "orchestrationInterruptions": 0,
+          "outerSecondsObserved": 85.666346823,
+          "missingOuterDurations": 0,
+          "suitesAndBehaviorPassed": 1,
+          "sourceScopeOnlyRejections": 0,
+          "missingConsumption": 0
+        }
+      }
+    }
+  ],
+  "adverseOutcomes": [
+    {
+      "name": "1-lodash-predicate-own-filter-cline",
+      "status": "succeeded",
+      "official": true,
+      "functional": true,
+      "audited": false,
+      "manualCriteriaFailures": [
+        "Final absolute modified-file path omits workspace/ and does not identify the scored existing file.",
+        "Unqualified no-declarations-changed statement contradicts the two changed function parameter lists; required checks and final code remain correct."
+      ],
+      "narrowRunnerCountSensitivity": true,
+      "orchestrationInterrupted": false,
+      "missingWireUsageResponses": 0,
+      "requestedIndependentSuitesPassed": true,
+      "behaviorAndProtectedInputProbesPassed": true,
+      "sourceScopeFailures": [],
+      "allFeatureFailures": []
+    }
+  ],
+  "comparisons": [
+    {
+      "left": "candidate",
+      "right": "baseline",
+      "tier": "strict",
+      "partition": "fresh-confirmation",
+      "accountingTier": "wire_matched",
+      "quality": {
+        "observedPairs": 2,
+        "unobservedPairs": 4,
+        "bothAudited": 2,
+        "leftOnlyAudited": 0,
+        "rightOnlyAudited": 0,
+        "neitherAudited": 0
+      },
+      "pairs": 2,
+      "resources": {
+        "tokens": {
+          "left": 198899,
+          "right": 286520,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.30581111266229233
+        },
+        "cost": {
+          "left": 0.019556439999999998,
+          "right": 0.025335160000000002,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.22809092186510782
+        },
+        "seconds": {
+          "left": 117.827,
+          "right": 129.002,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.0866265639292415
+        }
+      },
+      "tasks": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 76210,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.30041989240257183
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.009030360000000001,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3023932600693662
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 57.191,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3002045776433355
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 145584,
+              "right": 210310,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3077647282582854
+            },
+            "cost": {
+              "left": 0.0132568,
+              "right": 0.0163048,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.1869388155635151
+            },
+            "seconds": {
+              "left": 77.805,
+              "right": 71.811,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.08346910640431138
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 76210,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.30041989240257183
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.009030360000000001,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3023932600693662
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 57.191,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3002045776433355
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 145584,
+              "right": 210310,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3077647282582854
+            },
+            "cost": {
+              "left": 0.0132568,
+              "right": 0.0163048,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.1869388155635151
+            },
+            "seconds": {
+              "left": 77.805,
+              "right": 71.811,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.08346910640431138
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "candidate",
+      "right": "cline",
+      "tier": "strict",
+      "partition": "fresh-confirmation",
+      "accountingTier": "wire_matched",
+      "quality": {
+        "observedPairs": 2,
+        "unobservedPairs": 4,
+        "bothAudited": 1,
+        "leftOnlyAudited": 1,
+        "rightOnlyAudited": 0,
+        "neitherAudited": 0
+      },
+      "pairs": 1,
+      "resources": {
+        "tokens": {
+          "left": 53315,
+          "right": 190834,
+          "pairs": 1,
+          "missingPairs": 0,
+          "relativeChange": -0.7206210633325298
+        },
+        "cost": {
+          "left": 0.00629964,
+          "right": 0.01819204,
+          "pairs": 1,
+          "missingPairs": 0,
+          "relativeChange": -0.653714481718378
+        },
+        "seconds": {
+          "left": 40.022,
+          "right": 59.821,
+          "pairs": 1,
+          "missingPairs": 0,
+          "relativeChange": -0.33097072934253857
+        }
+      },
+      "tasks": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.7206210633325298
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.653714481718378
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.33097072934253857
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
+              "missingPairs": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
+              "missingPairs": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
+              "missingPairs": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.7206210633325298
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.653714481718378
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.33097072934253857
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "baseline",
+      "right": "cline",
+      "tier": "strict",
+      "partition": "fresh-confirmation",
+      "accountingTier": "wire_matched",
+      "quality": {
+        "observedPairs": 2,
+        "unobservedPairs": 4,
+        "bothAudited": 1,
+        "leftOnlyAudited": 1,
+        "rightOnlyAudited": 0,
+        "neitherAudited": 0
+      },
+      "pairs": 1,
+      "resources": {
+        "tokens": {
+          "left": 76210,
+          "right": 190834,
+          "pairs": 1,
+          "missingPairs": 0,
+          "relativeChange": -0.6006476833268705
+        },
+        "cost": {
+          "left": 0.009030360000000001,
+          "right": 0.01819204,
+          "pairs": 1,
+          "missingPairs": 0,
+          "relativeChange": -0.503609270867918
+        },
+        "seconds": {
+          "left": 57.191,
+          "right": 59.821,
+          "pairs": 1,
+          "missingPairs": 0,
+          "relativeChange": -0.04396449407398728
+        }
+      },
+      "tasks": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 76210,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.6006476833268705
+            },
+            "cost": {
+              "left": 0.009030360000000001,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.503609270867918
+            },
+            "seconds": {
+              "left": 57.191,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.04396449407398728
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
+              "missingPairs": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
+              "missingPairs": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
+              "missingPairs": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 76210,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.6006476833268705
+            },
+            "cost": {
+              "left": 0.009030360000000001,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.503609270867918
+            },
+            "seconds": {
+              "left": 57.191,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.04396449407398728
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "candidate",
+      "right": "baseline",
+      "tier": "functional",
+      "partition": "fresh-confirmation",
+      "accountingTier": "wire_matched",
+      "quality": {
+        "observedPairs": 2,
+        "unobservedPairs": 4,
+        "bothAudited": 2,
+        "leftOnlyAudited": 0,
+        "rightOnlyAudited": 0,
+        "neitherAudited": 0
+      },
+      "pairs": 2,
+      "resources": {
+        "tokens": {
+          "left": 198899,
+          "right": 286520,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.30581111266229233
+        },
+        "cost": {
+          "left": 0.019556439999999998,
+          "right": 0.025335160000000002,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.22809092186510782
+        },
+        "seconds": {
+          "left": 117.827,
+          "right": 129.002,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.0866265639292415
+        }
+      },
+      "tasks": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 76210,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.30041989240257183
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.009030360000000001,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3023932600693662
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 57.191,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3002045776433355
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 145584,
+              "right": 210310,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3077647282582854
+            },
+            "cost": {
+              "left": 0.0132568,
+              "right": 0.0163048,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.1869388155635151
+            },
+            "seconds": {
+              "left": 77.805,
+              "right": 71.811,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.08346910640431138
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 76210,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.30041989240257183
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.009030360000000001,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3023932600693662
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 57.191,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3002045776433355
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 145584,
+              "right": 210310,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3077647282582854
+            },
+            "cost": {
+              "left": 0.0132568,
+              "right": 0.0163048,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.1869388155635151
+            },
+            "seconds": {
+              "left": 77.805,
+              "right": 71.811,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.08346910640431138
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "candidate",
+      "right": "cline",
+      "tier": "functional",
+      "partition": "fresh-confirmation",
+      "accountingTier": "wire_matched",
+      "quality": {
+        "observedPairs": 2,
+        "unobservedPairs": 4,
+        "bothAudited": 1,
+        "leftOnlyAudited": 1,
+        "rightOnlyAudited": 0,
+        "neitherAudited": 0
+      },
+      "pairs": 2,
+      "resources": {
+        "tokens": {
+          "left": 198899,
+          "right": 391473,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.49192153737294786
+        },
+        "cost": {
+          "left": 0.019556439999999998,
+          "right": 0.03489476,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.43955940662724147
+        },
+        "seconds": {
+          "left": 117.827,
+          "right": 143.74099999999999,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.18028259160573523
+        }
+      },
+      "tasks": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.7206210633325298
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.653714481718378
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.33097072934253857
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 145584,
+              "right": 200639,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.27439829743968025
+            },
+            "cost": {
+              "left": 0.0132568,
+              "right": 0.016702719999999997,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.20630891256034933
+            },
+            "seconds": {
+              "left": 77.805,
+              "right": 83.92,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.0728670162059103
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.7206210633325298
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.653714481718378
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.33097072934253857
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 145584,
+              "right": 200639,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.27439829743968025
+            },
+            "cost": {
+              "left": 0.0132568,
+              "right": 0.016702719999999997,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.20630891256034933
+            },
+            "seconds": {
+              "left": 77.805,
+              "right": 83.92,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.0728670162059103
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "baseline",
+      "right": "cline",
+      "tier": "functional",
+      "partition": "fresh-confirmation",
+      "accountingTier": "wire_matched",
+      "quality": {
+        "observedPairs": 2,
+        "unobservedPairs": 4,
+        "bothAudited": 1,
+        "leftOnlyAudited": 1,
+        "rightOnlyAudited": 0,
+        "neitherAudited": 0
+      },
+      "pairs": 2,
+      "resources": {
+        "tokens": {
+          "left": 286520,
+          "right": 391473,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.26809767212553615
+        },
+        "cost": {
+          "left": 0.025335160000000002,
+          "right": 0.03489476,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.27395517263910096
+        },
+        "seconds": {
+          "left": 129.002,
+          "right": 143.74099999999999,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.10253859372065022
+        }
+      },
+      "tasks": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 76210,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.6006476833268705
+            },
+            "cost": {
+              "left": 0.009030360000000001,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.503609270867918
+            },
+            "seconds": {
+              "left": 57.191,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.04396449407398728
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 210310,
+              "right": 200639,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.04820099781199061
+            },
+            "cost": {
+              "left": 0.0163048,
+              "right": 0.016702719999999997,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.023823664648631837
+            },
+            "seconds": {
+              "left": 71.811,
+              "right": 83.92,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.14429218303145852
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 76210,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.6006476833268705
+            },
+            "cost": {
+              "left": 0.009030360000000001,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.503609270867918
+            },
+            "seconds": {
+              "left": 57.191,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.04396449407398728
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 210310,
+              "right": 200639,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.04820099781199061
+            },
+            "cost": {
+              "left": 0.0163048,
+              "right": 0.016702719999999997,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.023823664648631837
+            },
+            "seconds": {
+              "left": 71.811,
+              "right": 83.92,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.14429218303145852
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "observedAggregateComparisons": [
+    {
+      "left": "candidate",
+      "right": "baseline",
+      "tier": "strict",
+      "partition": "fresh-confirmation",
+      "accountingTier": "aggregate_only",
+      "quality": {
+        "observedPairs": 2,
+        "unobservedPairs": 4,
+        "bothAudited": 2,
+        "leftOnlyAudited": 0,
+        "rightOnlyAudited": 0,
+        "neitherAudited": 0
+      },
+      "pairs": 2,
+      "resources": {
+        "tokens": {
+          "left": 198899,
+          "right": 286520,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.30581111266229233
+        },
+        "cost": {
+          "left": 0.019556439999999998,
+          "right": 0.025335160000000002,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.22809092186510782
+        },
+        "seconds": {
+          "left": 117.827,
+          "right": 129.002,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.0866265639292415
+        }
+      },
+      "tasks": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 76210,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.30041989240257183
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.009030360000000001,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3023932600693662
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 57.191,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3002045776433355
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 145584,
+              "right": 210310,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3077647282582854
+            },
+            "cost": {
+              "left": 0.0132568,
+              "right": 0.0163048,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.1869388155635151
+            },
+            "seconds": {
+              "left": 77.805,
+              "right": 71.811,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.08346910640431138
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 76210,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.30041989240257183
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.009030360000000001,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3023932600693662
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 57.191,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3002045776433355
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 145584,
+              "right": 210310,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3077647282582854
+            },
+            "cost": {
+              "left": 0.0132568,
+              "right": 0.0163048,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.1869388155635151
+            },
+            "seconds": {
+              "left": 77.805,
+              "right": 71.811,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.08346910640431138
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "candidate",
+      "right": "cline",
+      "tier": "strict",
+      "partition": "fresh-confirmation",
+      "accountingTier": "aggregate_only",
+      "quality": {
+        "observedPairs": 2,
+        "unobservedPairs": 4,
+        "bothAudited": 1,
+        "leftOnlyAudited": 1,
+        "rightOnlyAudited": 0,
+        "neitherAudited": 0
+      },
+      "pairs": 1,
+      "resources": {
+        "tokens": {
+          "left": 53315,
+          "right": 190834,
+          "pairs": 1,
+          "missingPairs": 0,
+          "relativeChange": -0.7206210633325298
+        },
+        "cost": {
+          "left": 0.00629964,
+          "right": 0.01819204,
+          "pairs": 1,
+          "missingPairs": 0,
+          "relativeChange": -0.653714481718378
+        },
+        "seconds": {
+          "left": 40.022,
+          "right": 59.821,
+          "pairs": 1,
+          "missingPairs": 0,
+          "relativeChange": -0.33097072934253857
+        }
+      },
+      "tasks": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.7206210633325298
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.653714481718378
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.33097072934253857
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
+              "missingPairs": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
+              "missingPairs": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
+              "missingPairs": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.7206210633325298
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.653714481718378
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.33097072934253857
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "baseline",
+      "right": "cline",
+      "tier": "strict",
+      "partition": "fresh-confirmation",
+      "accountingTier": "aggregate_only",
+      "quality": {
+        "observedPairs": 2,
+        "unobservedPairs": 4,
+        "bothAudited": 1,
+        "leftOnlyAudited": 1,
+        "rightOnlyAudited": 0,
+        "neitherAudited": 0
+      },
+      "pairs": 1,
+      "resources": {
+        "tokens": {
+          "left": 76210,
+          "right": 190834,
+          "pairs": 1,
+          "missingPairs": 0,
+          "relativeChange": -0.6006476833268705
+        },
+        "cost": {
+          "left": 0.009030360000000001,
+          "right": 0.01819204,
+          "pairs": 1,
+          "missingPairs": 0,
+          "relativeChange": -0.503609270867918
+        },
+        "seconds": {
+          "left": 57.191,
+          "right": 59.821,
+          "pairs": 1,
+          "missingPairs": 0,
+          "relativeChange": -0.04396449407398728
+        }
+      },
+      "tasks": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 76210,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.6006476833268705
+            },
+            "cost": {
+              "left": 0.009030360000000001,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.503609270867918
+            },
+            "seconds": {
+              "left": 57.191,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.04396449407398728
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "pairs": 0,
+          "resources": {
+            "tokens": {
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
+              "missingPairs": 0,
+              "relativeChange": null
+            },
+            "cost": {
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
+              "missingPairs": 0,
+              "relativeChange": null
+            },
+            "seconds": {
+              "left": 0,
+              "right": 0,
+              "pairs": 0,
+              "missingPairs": 0,
+              "relativeChange": null
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 76210,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.6006476833268705
+            },
+            "cost": {
+              "left": 0.009030360000000001,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.503609270867918
+            },
+            "seconds": {
+              "left": 57.191,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.04396449407398728
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "candidate",
+      "right": "baseline",
+      "tier": "functional",
+      "partition": "fresh-confirmation",
+      "accountingTier": "aggregate_only",
+      "quality": {
+        "observedPairs": 2,
+        "unobservedPairs": 4,
+        "bothAudited": 2,
+        "leftOnlyAudited": 0,
+        "rightOnlyAudited": 0,
+        "neitherAudited": 0
+      },
+      "pairs": 2,
+      "resources": {
+        "tokens": {
+          "left": 198899,
+          "right": 286520,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.30581111266229233
+        },
+        "cost": {
+          "left": 0.019556439999999998,
+          "right": 0.025335160000000002,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.22809092186510782
+        },
+        "seconds": {
+          "left": 117.827,
+          "right": 129.002,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.0866265639292415
+        }
+      },
+      "tasks": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 76210,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.30041989240257183
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.009030360000000001,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3023932600693662
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 57.191,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3002045776433355
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 145584,
+              "right": 210310,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3077647282582854
+            },
+            "cost": {
+              "left": 0.0132568,
+              "right": 0.0163048,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.1869388155635151
+            },
+            "seconds": {
+              "left": 77.805,
+              "right": 71.811,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.08346910640431138
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 76210,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.30041989240257183
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.009030360000000001,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3023932600693662
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 57.191,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3002045776433355
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 145584,
+              "right": 210310,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.3077647282582854
+            },
+            "cost": {
+              "left": 0.0132568,
+              "right": 0.0163048,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.1869388155635151
+            },
+            "seconds": {
+              "left": 77.805,
+              "right": 71.811,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.08346910640431138
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "candidate",
+      "right": "cline",
+      "tier": "functional",
+      "partition": "fresh-confirmation",
+      "accountingTier": "aggregate_only",
+      "quality": {
+        "observedPairs": 2,
+        "unobservedPairs": 4,
+        "bothAudited": 1,
+        "leftOnlyAudited": 1,
+        "rightOnlyAudited": 0,
+        "neitherAudited": 0
+      },
+      "pairs": 2,
+      "resources": {
+        "tokens": {
+          "left": 198899,
+          "right": 391473,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.49192153737294786
+        },
+        "cost": {
+          "left": 0.019556439999999998,
+          "right": 0.03489476,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.43955940662724147
+        },
+        "seconds": {
+          "left": 117.827,
+          "right": 143.74099999999999,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.18028259160573523
+        }
+      },
+      "tasks": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.7206210633325298
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.653714481718378
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.33097072934253857
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 145584,
+              "right": 200639,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.27439829743968025
+            },
+            "cost": {
+              "left": 0.0132568,
+              "right": 0.016702719999999997,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.20630891256034933
+            },
+            "seconds": {
+              "left": 77.805,
+              "right": 83.92,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.0728670162059103
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 53315,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.7206210633325298
+            },
+            "cost": {
+              "left": 0.00629964,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.653714481718378
+            },
+            "seconds": {
+              "left": 40.022,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.33097072934253857
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 145584,
+              "right": 200639,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.27439829743968025
+            },
+            "cost": {
+              "left": 0.0132568,
+              "right": 0.016702719999999997,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.20630891256034933
+            },
+            "seconds": {
+              "left": 77.805,
+              "right": 83.92,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.0728670162059103
+            }
+          }
+        }
+      ]
+    },
+    {
+      "left": "baseline",
+      "right": "cline",
+      "tier": "functional",
+      "partition": "fresh-confirmation",
+      "accountingTier": "aggregate_only",
+      "quality": {
+        "observedPairs": 2,
+        "unobservedPairs": 4,
+        "bothAudited": 1,
+        "leftOnlyAudited": 1,
+        "rightOnlyAudited": 0,
+        "neitherAudited": 0
+      },
+      "pairs": 2,
+      "resources": {
+        "tokens": {
+          "left": 286520,
+          "right": 391473,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.26809767212553615
+        },
+        "cost": {
+          "left": 0.025335160000000002,
+          "right": 0.03489476,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.27395517263910096
+        },
+        "seconds": {
+          "left": 129.002,
+          "right": 143.74099999999999,
+          "pairs": 2,
+          "missingPairs": 0,
+          "relativeChange": -0.10253859372065022
+        }
+      },
+      "tasks": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 76210,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.6006476833268705
+            },
+            "cost": {
+              "left": 0.009030360000000001,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.503609270867918
+            },
+            "seconds": {
+              "left": 57.191,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.04396449407398728
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "pairs": 1,
+          "resources": {
+            "tokens": {
+              "left": 210310,
+              "right": 200639,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.04820099781199061
+            },
+            "cost": {
+              "left": 0.0163048,
+              "right": 0.016702719999999997,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.023823664648631837
+            },
+            "seconds": {
+              "left": 71.811,
+              "right": 83.92,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.14429218303145852
+            }
+          }
+        }
+      ],
+      "individual": [
+        {
+          "id": "lodash-iterator-own-mode",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 76210,
+              "right": 190834,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.6006476833268705
+            },
+            "cost": {
+              "left": 0.009030360000000001,
+              "right": 0.01819204,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.503609270867918
+            },
+            "seconds": {
+              "left": 57.191,
+              "right": 59.821,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.04396449407398728
+            }
+          }
+        },
+        {
+          "id": "lodash-predicate-own-filter",
+          "repetition": 1,
+          "resources": {
+            "tokens": {
+              "left": 210310,
+              "right": 200639,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": 0.04820099781199061
+            },
+            "cost": {
+              "left": 0.0163048,
+              "right": 0.016702719999999997,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.023823664648631837
+            },
+            "seconds": {
+              "left": 71.811,
+              "right": 83.92,
+              "pairs": 1,
+              "missingPairs": 0,
+              "relativeChange": -0.14429218303145852
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accountingComparisonRule": "Require matched audited quality,reconciled input/output/cost and zero observed wire/report gap; aggregate-only sensitivity never replaces missing usage or complete cache/invoice evidence.",
+  "accounting": {
+    "method": "Known SDK estimates plus explicit missing-aggregate/unreported-request reserves, not imputed consumption. Wire/report counts do not establish billing or hidden retries.",
+    "trials": [
+      {
+        "name": "1-lodash-iterator-own-mode-baseline",
+        "observedUsd": 0.009030360000000001,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.009030360000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-lodash-iterator-own-mode-candidate",
+        "observedUsd": 0.00629964,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00629964,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-lodash-iterator-own-mode-cline",
+        "observedUsd": 0.01819204,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01819204,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-lodash-predicate-own-filter-candidate",
+        "observedUsd": 0.0132568,
+        "forwardedAttempts": 12,
+        "usageReports": 12,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0132568,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-lodash-predicate-own-filter-cline",
+        "observedUsd": 0.016702719999999997,
+        "forwardedAttempts": 10,
+        "usageReports": 10,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.016702719999999997,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-lodash-predicate-own-filter-baseline",
+        "observedUsd": 0.0163048,
+        "forwardedAttempts": 14,
+        "usageReports": 14,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0163048,
+        "basis": "wire/report counts; billing unknown"
+      }
+    ],
+    "observedUsd": 0.07978636,
+    "reservedUsd": 0,
+    "accountedUsd": 0.07978636
+  },
+  "priorAccountedUsd": 3.50047236,
+  "totalAccountedUsd": 3.58025872,
+  "referenceEquivalentEur": 3.2037778795893046,
+  "limits": {
+    "authorizedEur": 10,
+    "operationalUsd": 10.951612,
+    "invoiceVerified": false
+  },
+  "newMissingWireResponseUsage": 0,
+  "limitations": "Two fresh constructed tasks in one familiar monolithic project and related option-extension family,three dependent repeats,18 fixed assignments. Known F28 searches are mechanism diagnostics only. Preserve every failure,timeout,missing usage and unexecuted slot. No model retry,source repair,reference recovery or grader feedback. Raw output alone does not establish model-visible evidence; unblinded audit and arm-labeled checkout limitations remain. No population-equivalence or universally optimal ranking claim. Full request cache accounting,provider seeds/revision,invoices and hidden retries remain unknown. Observed passing checks are separate from formal admission."
+}

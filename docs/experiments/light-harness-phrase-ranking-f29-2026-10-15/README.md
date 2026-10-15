@@ -1,5 +1,7 @@
 # F29 lexical phrase priority — preregistered confirmation
 
+The registered model phase is running. The first balanced repetition has6/18 audited records; all remaining assignments continue unchanged. See [report.md](report.md) and `results.json`; this prefix is not a completed-panel efficacy result.
+
 This separate follow-up tests one source change suggested by recorded F28 navigation. The existing lexical OR search collects32 occurrences before ranking; common words such as `function` can exhaust that pool before a late declaration is considered. The candidate makes a second bounded literal pass for the contiguous normalized terms and ranks those matches first. Original OR fallback,path-result precedence,result/file limits,scope filtering and read-before-edit authority remain. The Node fallback prefers a phrase within each visited file under its existing traversal bounds.
 
 The reference is F28’s **all-six bundle5f310425**, distinct from F28’s reference50680158. Candidate and reference share tool schemas,prompt sources,edit/validation code and production file set. Only two executable modules and their declaration maps differ; `candidate.patch`, `variant-sources.json` and `isolation-controls.json` identify the bytes. The candidate is an isolated prototype; production source is not changed by preparation.

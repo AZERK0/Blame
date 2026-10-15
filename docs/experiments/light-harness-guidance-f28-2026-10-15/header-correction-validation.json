@@ -51,5 +51,7 @@
     "passed": true,
     "configurationCwd": "packages/agent-runtime",
     "initialWrongCwdInvocationRetained": true
-  }
+  },
+  "fixedSourceCommit": "06ed54054930decb147228d8e10255639bce175a",
+  "reproduction": "Rebuild the correction-only source at06ed5405 against the registered bundle/toolchain before replaying its original alias sequence. Later lexical changes can allocate different aliases and are a different intervention."
 }

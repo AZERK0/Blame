@@ -1,10 +1,10 @@
 {
   "path": "docs/semantic-harness-study.tex",
-  "sha256": "973f2b0443f3ea5d2426c40d292af7cce3654e1d29421969a65af0224a1228d2",
+  "sha256": "13525a4b110b8a0cf92cbad965dfa2c60b15821ef4558d125b17768e030519e4",
   "compiler": "Codex native LaTeX editor",
   "result": "unverified",
-  "scope": "Completed F28 all108, later local-only header correction and F29 preparation; current source awaiting final native compilation",
-  "recordedAtUTC": "2026-10-15T02:53:00.312759+00:00",
+  "scope": "Completed F28 and ongoing F29 prefix6; final native compilation pending",
+  "recordedAtUTC": "2026-10-15T03:03:53.607719+00:00",
   "lastConfirmedCompilation": {
     "path": "docs/semantic-harness-study.tex",
     "sha256": "32a0082bc84b3c75d7b99930c60feae60a22cb1c28ab653e8404c290287ed261",

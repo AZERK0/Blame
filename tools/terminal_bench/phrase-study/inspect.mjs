@@ -3,7 +3,15 @@ import {readFile} from "node:fs/promises";
 import {join} from "node:path";
 import {createHash} from "node:crypto";
 import {work} from "./paths.mjs";
-const name=process.argv[2],mode=process.argv[3]??"inputs",root=join(work,"f29"),json=async p=>JSON.parse(await readFile(p,"utf8"));
+const name=process.argv[2],mode=process.argv[3]??"inputs",root=join(work,"f29");
+// The detached writer replaces analysis/ledger files between completed trials.
+// Retry transient partial JSON only; original event/diff/score bytes are untouched.
+const json=async p=>{
+ for(let attempt=0;;attempt++){
+  try{return JSON.parse(await readFile(p,"utf8"));}
+  catch(error){if(attempt===9||!(error instanceof SyntaxError||error.code==="ENOENT"))throw error;await new Promise(resolve=>setTimeout(resolve,50));}
+ }
+};
 const row=(await json(join(root,"analysis.json"))).rows.find(r=>r.name===name);if(!row)throw Error("Completed trial not found");
 const score=await json(join(root,name,"score.json")),tools=(await json(join(root,"tool-ledger.json"))).find(r=>r.name===name).tools;
 const normalize=s=>s.replaceAll(join(root,name,"workspace"),"<workspace>");

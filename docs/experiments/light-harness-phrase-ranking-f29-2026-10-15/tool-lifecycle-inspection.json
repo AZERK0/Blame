@@ -1,0 +1,65 @@
+{
+  "method": "Read every raw started/finished tool input independently of the driver's completed-tool ledger. Orphan, changed-input and missing-ID observations require explicit review; this extractor does not adjudicate external effects or leakage.",
+  "trials": [
+    {
+      "name": "1-lodash-iterator-own-mode-baseline",
+      "eventsSha256": "cbd561005a53bac0e19372ee5967df1dbab044df7d23d2a41f111864d5aa20d3",
+      "started": 23,
+      "finished": 23,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-lodash-iterator-own-mode-candidate",
+      "eventsSha256": "5e828b161eeb1c74ca5ce048066487880d628968194da7f883958e30df82f6f3",
+      "started": 18,
+      "finished": 18,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-lodash-iterator-own-mode-cline",
+      "eventsSha256": "696ad31837cdee791927ba7031a864402c44a1d4092dbe5b0465903f05add872",
+      "started": 13,
+      "finished": 13,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-lodash-predicate-own-filter-candidate",
+      "eventsSha256": "1750a2d5eddfea852d92363e8f2421c66947a8a8edef2a868f137b2fad243361",
+      "started": 38,
+      "finished": 38,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-lodash-predicate-own-filter-cline",
+      "eventsSha256": "7fbb386fc21da1beb2df9adae0254dc582e821ed3334c53dcf062ac4e89e9733",
+      "started": 15,
+      "finished": 15,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "1-lodash-predicate-own-filter-baseline",
+      "eventsSha256": "3d1bc57b97bb5558033ee481c9a70470749e4b369a0a920df3952c1d4b3b25fa",
+      "started": 39,
+      "finished": 39,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    }
+  ]
+}
