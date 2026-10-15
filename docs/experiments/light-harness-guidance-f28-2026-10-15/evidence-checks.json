@@ -1,7 +1,7 @@
 {
   "paidRequests": 0,
   "planned": 108,
-  "completed": 36,
+  "completed": 50,
   "frozenInputsAndRuntimesVerified": true,
   "actualWireModelEffortByteGuardVerified": true,
   "nominalOutputCapEffective": false,
@@ -151,6 +151,62 @@
     "1-lodash-own-symbol-options-bundle": {
       "head": "98630e48da74d29a5dadb3bab4fb2f3a22dae527",
       "tree": "601995db95e9fa51c68ce09809083160936604be"
+    },
+    "2-rxjs-unhandled-error-migration-baseline": {
+      "head": "064257d8586aa20a91efc2e4d2682d251c112743",
+      "tree": "8a057ba0b5c6190057f72e14f70629af9c3fd318"
+    },
+    "2-rxjs-unhandled-error-migration-bundle": {
+      "head": "064257d8586aa20a91efc2e4d2682d251c112743",
+      "tree": "8a057ba0b5c6190057f72e14f70629af9c3fd318"
+    },
+    "2-rxjs-unhandled-error-migration-patch": {
+      "head": "064257d8586aa20a91efc2e4d2682d251c112743",
+      "tree": "8a057ba0b5c6190057f72e14f70629af9c3fd318"
+    },
+    "2-rxjs-unhandled-error-migration-reporting": {
+      "head": "064257d8586aa20a91efc2e4d2682d251c112743",
+      "tree": "8a057ba0b5c6190057f72e14f70629af9c3fd318"
+    },
+    "2-rxjs-unhandled-error-migration-reading": {
+      "head": "064257d8586aa20a91efc2e4d2682d251c112743",
+      "tree": "8a057ba0b5c6190057f72e14f70629af9c3fd318"
+    },
+    "2-rxjs-unhandled-error-migration-rename": {
+      "head": "064257d8586aa20a91efc2e4d2682d251c112743",
+      "tree": "8a057ba0b5c6190057f72e14f70629af9c3fd318"
+    },
+    "2-rxjs-unhandled-error-migration-references": {
+      "head": "064257d8586aa20a91efc2e4d2682d251c112743",
+      "tree": "8a057ba0b5c6190057f72e14f70629af9c3fd318"
+    },
+    "2-rxjs-unhandled-error-migration-cline": {
+      "head": "064257d8586aa20a91efc2e4d2682d251c112743",
+      "tree": "8a057ba0b5c6190057f72e14f70629af9c3fd318"
+    },
+    "2-rxjs-unhandled-error-migration-scope": {
+      "head": "064257d8586aa20a91efc2e4d2682d251c112743",
+      "tree": "8a057ba0b5c6190057f72e14f70629af9c3fd318"
+    },
+    "2-date-fns-offset-helper-migration-references": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "2-date-fns-offset-helper-migration-cline": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "2-date-fns-offset-helper-migration-scope": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "2-date-fns-offset-helper-migration-baseline": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
+    },
+    "2-date-fns-offset-helper-migration-bundle": {
+      "head": "1433f8302900180616a16287948552a8c30dcfb0",
+      "tree": "23cb14f3f14d74d8ccc946ba887b8efd05d5b04f"
     }
   },
   "matchedInitialIdentities": [
@@ -171,6 +227,22 @@
       "sameHeadAndTree": true
     },
     {
+      "id": "rxjs-unhandled-error-migration",
+      "repetition": 2,
+      "arms": [
+        "baseline",
+        "bundle",
+        "patch",
+        "reporting",
+        "reading",
+        "rename",
+        "references",
+        "cline",
+        "scope"
+      ],
+      "sameHeadAndTree": true
+    },
+    {
       "id": "date-fns-offset-helper-migration",
       "repetition": 1,
       "arms": [
@@ -183,6 +255,18 @@
         "baseline",
         "scope",
         "cline"
+      ],
+      "sameHeadAndTree": true
+    },
+    {
+      "id": "date-fns-offset-helper-migration",
+      "repetition": 2,
+      "arms": [
+        "references",
+        "cline",
+        "scope",
+        "baseline",
+        "bundle"
       ],
       "sameHeadAndTree": true
     },
@@ -435,6 +519,90 @@
       "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
       "promptSha256": "d5256d2886c0b8e73e493b14c6bc9659a11071d6c55b526e3256a57899c03f3b",
       "normalizedContractSha256": "64a82befebecf339deab017bec1ae7ed2713e1a0a64f71927ca9bbd458b6732a"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-baseline",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "a53effbdcfe0434c8b6bda5d1b26b429c314ae3b424001994aea9e83fa18c706",
+      "normalizedContractSha256": "6ee85b4b99a4ae75ee2de05c315dabc29c2a7ede5ffdb3121c4661ff529a356e"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-bundle",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "2b113678285be58f50f167372dbe2b657a534cca768c97866cb130c055121cc3",
+      "normalizedContractSha256": "0f9a6e663361942d60466aeef7924f2014fcc7976055fd22f7c4b7c4797a35e6"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-patch",
+      "toolsSha256": "845292da2156cdb1513f02910895e1d6631021f844e700caffb1181ca645d507",
+      "promptSha256": "289fcc695d8fccd729e5d93830a372ab4825022ec76e0c6ca01481e1e5c3e43c",
+      "normalizedContractSha256": "d1a2312cbba63b32270979dd9e6147a8b93746aaf0de976916be6003dd9ea1e9"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-reporting",
+      "toolsSha256": "8c69fbc427868efe88a7c243364f66a6312958b44defa9038f3b01ed7d35772d",
+      "promptSha256": "e61c13003e73a8c026985f5d6d03e24e34953bd3cae0b4866a49ae6fe731255b",
+      "normalizedContractSha256": "029bb52ca88555c6bbf6ab99c6337f676677158b4b94f7a3f4babad502bc3709"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-reading",
+      "toolsSha256": "1eb5cb42345fd15d3ea582a399ee3b15275a8ea4fecd3a5b7dd4513544023129",
+      "promptSha256": "680dde21b6d4fa739f8dc3cc2c34d6c1795def44aa608cead8a1e53102aa2d50",
+      "normalizedContractSha256": "9675fc80d77fe8c2705e4fdea4ec1f296f4b22769b1d1e6090004de9ef63a88f"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-rename",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "bc42ce29e76b9a38bc61390ac641804a18bae01863caaada4e402eda4fd8e3c3",
+      "normalizedContractSha256": "6ee85b4b99a4ae75ee2de05c315dabc29c2a7ede5ffdb3121c4661ff529a356e"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-references",
+      "toolsSha256": "10cc795fa74e6e03e3d2dc3c46d107081799ebb9f50987725be4dc7cafc03e48",
+      "promptSha256": "44fa30abb87c7c4853f023d56c90d18c069f8375f8a6057e89d7cbec416cd3cf",
+      "normalizedContractSha256": "18cbc1fc33832f43255b9a731448c440df5a353d3e1ac0804b5deb6f18fb54ab"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-cline",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "951d85b6512da5c10dffb2f0e3207b085224cdd64ffbc6ef36157ea62186b20a",
+      "normalizedContractSha256": "c3f76ce7e18e8d97008b4198f9c361c73ef43e30bafd18fa0b77633802a1f5dd"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-scope",
+      "toolsSha256": "305c04a53b2eb79c5359c4dc7917683851c4df2de7fa5ab67ae59c39766e7e21",
+      "promptSha256": "a2ee8677f9e1a8cf6e62f74025748e76995ef3bb6d1edde9e7642d864d618ff0",
+      "normalizedContractSha256": "aa54389bf565d8f39b0878be84068cdc142c5c522e958ec1a3e42c71e8baef4e"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-references",
+      "toolsSha256": "10cc795fa74e6e03e3d2dc3c46d107081799ebb9f50987725be4dc7cafc03e48",
+      "promptSha256": "5dda8009ef5229b7b60143a4d51b1128c936de7f130e6773fb3077ad23f32685",
+      "normalizedContractSha256": "c21af921c57acecc57d4dd068d40be9bc86a4813bccf03b48ddb0fb47124b1a2"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-cline",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "188042d3989a037def17f77159a512247a8bf851789f6e1b7d395d447650f8bf",
+      "normalizedContractSha256": "c3f76ce7e18e8d97008b4198f9c361c73ef43e30bafd18fa0b77633802a1f5dd"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-scope",
+      "toolsSha256": "305c04a53b2eb79c5359c4dc7917683851c4df2de7fa5ab67ae59c39766e7e21",
+      "promptSha256": "80c463118cbe11cd8b286ba8224d9face18a7202756ec4c7470b361b381dc882",
+      "normalizedContractSha256": "788e8e4e31b87f95818e7d3b26fc0618c74d50975ef07d0192707ee1f2b274bb"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-baseline",
+      "toolsSha256": "1a634e00ac130dd08218b4b40296915b663e0e7e19d7dba14682c7ffca46684e",
+      "promptSha256": "24443b15e1bb7d335feef89bbbdb21413ade940e05ea15b6041129f96fa6542e",
+      "normalizedContractSha256": "93e05a41ab78d023ebf1df9b16c2eb13e999ae020d4ade70707b369c29d0edbf"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-bundle",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "930239c02ff8b06ea86cbfcd443efe51d99aea9a5771dd7601de9a99546eff05",
+      "normalizedContractSha256": "b2b1e380872733ec5d227c9778fffb6c6c593458ee91d79641857c607bf4e177"
     }
   ],
   "audits": [
@@ -1004,6 +1172,238 @@
       "name": "1-lodash-own-symbol-options-bundle",
       "file": "prompt-date-loads.jsonl",
       "artifact": "execution-audits/1-lodash-own-symbol-options-bundle.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-baseline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-unhandled-error-migration-baseline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-bundle",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-unhandled-error-migration-bundle.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-patch",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-unhandled-error-migration-patch.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-reporting",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-unhandled-error-migration-reporting.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-reading",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-unhandled-error-migration-reading.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-rename",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-unhandled-error-migration-rename.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-references",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-unhandled-error-migration-references.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-cline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-unhandled-error-migration-cline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-cline",
+      "file": "native-search-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-unhandled-error-migration-cline.native-search-loads.jsonl.gz",
+      "sha256": "5ab5181179b067ca7ebafaa4d5035b668a2fab7b3232200eb8e3e5e744899691",
+      "bytes": 210,
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        }
+      ]
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-scope",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-rxjs-unhandled-error-migration-scope.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-references",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-date-fns-offset-helper-migration-references.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-cline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-date-fns-offset-helper-migration-cline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-cline",
+      "file": "native-search-loads.jsonl",
+      "artifact": "execution-audits/2-date-fns-offset-helper-migration-cline.native-search-loads.jsonl.gz",
+      "sha256": "4ecd591c9570e57d85005a16da3a35c518b5750d93412d98a9bcc2eb216d8df1",
+      "bytes": 420,
+      "records": [
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        },
+        {
+          "module": "index.js",
+          "originalSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+          "repairedSha256": "70d7824110614835bdd3432953ba6b783a1474395e9d9afe730356ad08c5ff6d",
+          "functionName": "sP"
+        }
+      ]
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-scope",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-date-fns-offset-helper-migration-scope.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-baseline",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-date-fns-offset-helper-migration-baseline.prompt-date-loads.jsonl.gz",
+      "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
+      "bytes": 194,
+      "records": [
+        {
+          "originalSha256": "b3f81e611bb91230920d1d04e4ef73ef5704645f9c94a6ed023a56040eb45868",
+          "patchedSha256": "e80004eceed88ea26e82ad4ed635b2f469701c041122b5ed9b0ea582fed03fbc",
+          "fixedDate": "2026-10-15"
+        }
+      ]
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-bundle",
+      "file": "prompt-date-loads.jsonl",
+      "artifact": "execution-audits/2-date-fns-offset-helper-migration-bundle.prompt-date-loads.jsonl.gz",
       "sha256": "c1b5d7e7c1468173714c57f2353409dfd4edbb7e208275febe81c7bd8611a621",
       "bytes": 194,
       "records": [

@@ -3700,6 +3700,1287 @@
       "classifiedRawNpmInvocations": 0,
       "classifiedInvocations": [],
       "automaticValidationInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-baseline",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "baseline",
+      "repetition": 2,
+      "searchCalls": 10,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 5,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 7,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 7,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "s2",
+            "scope": "src/**",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "integration/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec-dtslint/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "tools/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "cef303670a99aa89e4f992fda4799c77510cc8d2d0a3af676f833d47ee0e4722",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-bundle",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "bundle",
+      "repetition": 2,
+      "searchCalls": 4,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 10,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 10,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ],
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "src/internal/util/reportUnhandledError.ts#reportUnhandledError",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ],
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "3bf3aded854614674e0b4b835140d72386c46764a681eb66e6c55e2678174dfc",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-patch",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "patch",
+      "repetition": 2,
+      "searchCalls": 9,
+      "rootStarCalls": 1,
+      "rootStarEmpty": 1,
+      "emptySearches": 3,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 5,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 5,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s2",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "847f696e1d64bcdcd58e346239c4b2fba6c9986784dcc7014568e150e2d5c2ff",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-reporting",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "reporting",
+      "repetition": 2,
+      "searchCalls": 11,
+      "rootStarCalls": 2,
+      "rootStarEmpty": 2,
+      "emptySearches": 4,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 7,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 7,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 2,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src/**/*.ts",
+              "spec/**/*.ts",
+              "docs_app/**/*.ts",
+              "tools/**/*.ts"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "s2",
+            "scope": "*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "src/internal/util/reportUnhandledError.ts#reportUnhandledError",
+            "scope": "*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/**/*.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**/*.ts",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "ba4ca50ddf15534ca64b8aa9c5eba3c87636539281737c3cf5499ba31bb2dfe9",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-reading",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "reading",
+      "repetition": 2,
+      "searchCalls": 10,
+      "rootStarCalls": 1,
+      "rootStarEmpty": 1,
+      "emptySearches": 4,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 4,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 4,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "**/*",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "integration/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s2",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "*",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/internal",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "4ccebd7831c9454e2aaa9036b728963cecd6e47f7088251acc740a46150d6f68",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-rename",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "rename",
+      "repetition": 2,
+      "searchCalls": 8,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 4,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 5,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 5,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "integration/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec-dtslint/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "src/internal/util/reportUnhandledError.ts#reportUnhandledError",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "notifyUnhandledError",
+            "scope": "src/**",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "92e40468d2a36e8c1f27978fa93c50fb4215b58ab5c58f1a58d4a65dcc5b0e97",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-references",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "references",
+      "repetition": 2,
+      "searchCalls": 5,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 3,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 13,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "spec"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "integration"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "src/internal/util/reportUnhandledError.ts#reportUnhandledError",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "162d4e3e8f1ad451cdcf0423193d79348bcb4565cf96f3b9cb12075f5b0b4298",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-cline",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "cline",
+      "repetition": 2,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 2,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 7,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "f24f396c7ceacb6b148d2e968f9e4e8ec3f385d6201569346664df377ef404a7",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-scope",
+      "id": "rxjs-unhandled-error-migration",
+      "arm": "scope",
+      "repetition": 2,
+      "searchCalls": 5,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 2,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 11,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 11,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "s10",
+            "scope": [
+              "src",
+              "spec",
+              "spec-dtslint",
+              "integration",
+              "docs_app"
+            ],
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": [
+              "spec",
+              "spec-dtslint",
+              "integration"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "reportUnhandledError",
+            "scope": "docs_app",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "14509fb6a2c4a6c3594b53f642f20e67ddb53aa286b70b2992fc65dc7f08e1b3",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-references",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "references",
+      "repetition": 2,
+      "searchCalls": 6,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 2,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 8,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 8,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src test examples scripts docs",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s1",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "**",
+            "mode": "auto"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src/differenceInCalendarDays src/differenceInCalendarISOWeeks src/differenceInCalendarWeeks src/formatDistance src/formatDistanceStrict src/getOverlappingDaysInIntervals src/parse/_lib/parsers",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 0
+        }
+      ],
+      "eventsSha256": "436a82f407e05998b4b1ef19908f272de1494ddbe050adfdf7da56d0e7a0504d",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://0c061148efd0e4c35b0627c2da15d2895a3b748b0b536cf872854d443ea23ab6",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-cline",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "cline",
+      "repetition": 2,
+      "searchCalls": 0,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 4,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 13,
+      "nativeRenameCalls": 0,
+      "compilerReferenceCalls": 0,
+      "blockedEdits": 0,
+      "searchInputs": [],
+      "eventsSha256": "0e180b8f702d916f95d03453164aff060518564d86f3b72cc67e43f181df3ed4",
+      "rawNpmCalls": 0,
+      "classifiedRawNpmInvocations": 0,
+      "classifiedInvocations": [],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-scope",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "scope",
+      "repetition": 2,
+      "searchCalls": 6,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 6,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 6,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src"
+            ],
+            "mode": "symbol"
+          },
+          "status": "ok",
+          "resultCount": 2
+        },
+        {
+          "input": {
+            "query": "src/_lib/getTimezoneOffsetInMilliseconds/index.ts#getTimezoneOffsetInMilliseconds",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "src/_lib",
+              "src/locale",
+              "test",
+              "examples",
+              "scripts"
+            ],
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getLocalTimezoneOffsetMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src",
+            "mode": "text"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "358a13f7a9639c636bface361447cef457607edd42dde1f14b159018aef4414b",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://b6421f1aa0f89c7b1161a8f0bc2ca8221bb1abdeb68724c5b4f2bbe010ce086e",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-baseline",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "baseline",
+      "repetition": 2,
+      "searchCalls": 2,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 0,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 0,
+      "readCalls": 6,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 6,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "src/_lib/getTimezoneOffsetInMilliseconds/index.ts#getTimezoneOffsetInMilliseconds",
+            "mode": "references",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "mode": "text",
+            "scope": [
+              "src",
+              "test",
+              "examples",
+              "scripts",
+              "codemods"
+            ]
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "56261c34091533937af21a6d1d680a91a6d03d7dc0e9e1207253facc8a3bc544",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://9d7c5d040dd5ebb3a9c2b1983bec095ca746e5e96ede897deb4f033f8efce657",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-bundle",
+      "id": "date-fns-offset-helper-migration",
+      "arm": "bundle",
+      "repetition": 2,
+      "searchCalls": 4,
+      "rootStarCalls": 0,
+      "rootStarEmpty": 0,
+      "emptySearches": 1,
+      "blockedSearches": 0,
+      "repeatedIdenticalSearchInputs": 1,
+      "readCalls": 4,
+      "signatureRequests": 0,
+      "signatureRendered": 0,
+      "scopedRecoveryHints": 0,
+      "activeCaseCaptions": 0,
+      "readTargets": 4,
+      "nativeRenameCalls": 1,
+      "compilerReferenceCalls": 1,
+      "blockedEdits": 0,
+      "searchInputs": [
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": [
+              "test",
+              "examples",
+              "scripts",
+              "docs"
+            ]
+          },
+          "status": "ok",
+          "resultCount": 0
+        },
+        {
+          "input": {
+            "query": "s3",
+            "scope": "src",
+            "mode": "references"
+          },
+          "status": "ok",
+          "resultCount": 8
+        },
+        {
+          "input": {
+            "query": "getTimezoneOffsetInMilliseconds",
+            "scope": "src"
+          },
+          "status": "ok",
+          "resultCount": 8
+        }
+      ],
+      "eventsSha256": "1017787f2133fdbce036e07d03157aab5ab7d7eb27d9ecd4fb1678275ea80924",
+      "rawNpmCalls": 1,
+      "classifiedRawNpmInvocations": 1,
+      "classifiedInvocations": [
+        {
+          "id": "validation://616cf7d654b149a8daa6ef5598ca5f63c6b748933ee147f0a9646a9a64064088",
+          "command": "npm test -- --maxWorkers=1 --minWorkers=1 --pool=forks",
+          "taskId": "test",
+          "args": [
+            "--maxWorkers=1",
+            "--minWorkers=1",
+            "--pool=forks"
+          ],
+          "sourceRevisionId": "src_8b712cb0330471ff2e1288683592b33f",
+          "status": "unknown",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3140,
+              "passed": 3140,
+              "failed": 0,
+              "skipped": 18
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "automaticValidationInputs": []
     }
   ]
 }

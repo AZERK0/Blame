@@ -2149,6 +2149,19 @@ helper, projected text and raw-event hashes; this is not a new model comparison
 or a modification to the measured SDK. Full recorded output alone does not
 establish what the model saw.
 
+In repetition two, one independent RxJS migration full-suite invocation fails
+the unchanged window/Promise test, which compares 3\,ms interval emissions with
+an 8\,ms Promise timer. The model's exact requested suite passed before delivery;
+its source diff is byte-identical to other successful migration endpoints, and
+all independent feature, selected-suite and type checks pass. A separate,
+post-selected zero-model diagnostic runs five targeted invocations and one full
+suite on each of unchanged input and the recorded endpoint: unchanged input
+passes 6/6; the endpoint passes 5/6, reproducing the same timing failure once
+before its full suite passes. This demonstrates inconsistent outcomes for
+identical source, not a rescued primary result. Retain the original independent
+failure and all diagnostic outputs; attribution to the treatment or population
+stability is not established.
+
 \section{Next testable priorities: proposals only}
 \begin{enumerate}
 \item Isolate the later POSIX unavailable-tool repair in its own model phase.

@@ -254,6 +254,104 @@
       "artifact": "journals/1-lodash-own-symbol-options-bundle.c74a71d98d5aa6b6547b3162.jsonl.gz",
       "bytes": 410032,
       "sha256": "b4ce6b68f20d317e883659dd3bbf44faa73af057e19ca4ec46e9e9a4a302b954"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-baseline",
+      "file": "e69a03f4add93b6a1ae8fefe.jsonl",
+      "artifact": "journals/2-rxjs-unhandled-error-migration-baseline.e69a03f4add93b6a1ae8fefe.jsonl.gz",
+      "bytes": 74126,
+      "sha256": "bae890dcecad2a0f9bfad7306ee5bee05dc0cf77b1da1735d6ee37ebb0f63b7a"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-bundle",
+      "file": "65f904e904a5a46c7423cac3.jsonl",
+      "artifact": "journals/2-rxjs-unhandled-error-migration-bundle.65f904e904a5a46c7423cac3.jsonl.gz",
+      "bytes": 65887,
+      "sha256": "8cf1edbc1f8f75a25638feb9318a6de27d908ec888379acce6b128a01a71dc7a"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-patch",
+      "file": "6713fd92bcc85031d5450d97.jsonl",
+      "artifact": "journals/2-rxjs-unhandled-error-migration-patch.6713fd92bcc85031d5450d97.jsonl.gz",
+      "bytes": 61867,
+      "sha256": "3949373851c00f20abc537fdac6384fb140aa5696049c256fb9649cb6b29874c"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-reporting",
+      "file": "cdef5102b1928bb7e276a9f9.jsonl",
+      "artifact": "journals/2-rxjs-unhandled-error-migration-reporting.cdef5102b1928bb7e276a9f9.jsonl.gz",
+      "bytes": 64667,
+      "sha256": "9acb8e17ed9ab141f92968d7e32d8c572b3275247556823bf051263caef8d576"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-reading",
+      "file": "e83f4b1fe9cbbc18b1e6c000.jsonl",
+      "artifact": "journals/2-rxjs-unhandled-error-migration-reading.e83f4b1fe9cbbc18b1e6c000.jsonl.gz",
+      "bytes": 66205,
+      "sha256": "1331b2477eb9cd479dca24c955a5bdc9c249832d76c16b7e8cfa7d616c8b382c"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-rename",
+      "file": "802be1f924d39b21d038f5bb.jsonl",
+      "artifact": "journals/2-rxjs-unhandled-error-migration-rename.802be1f924d39b21d038f5bb.jsonl.gz",
+      "bytes": 64405,
+      "sha256": "8701330a83ea5c0fe735a1e2dea5c91f923417119d5d2e44171fffe48975262d"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-references",
+      "file": "cb8d704745cd3a97df7d14cf.jsonl",
+      "artifact": "journals/2-rxjs-unhandled-error-migration-references.cb8d704745cd3a97df7d14cf.jsonl.gz",
+      "bytes": 81500,
+      "sha256": "df9a76cc3ab13e3a7cc1767abba6c9760cc3f41e0a9a21d8b6ff8bb1802d90a3"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-cline",
+      "file": "ef64cc60166981ae71adbbac.jsonl",
+      "artifact": "journals/2-rxjs-unhandled-error-migration-cline.ef64cc60166981ae71adbbac.jsonl.gz",
+      "bytes": 79,
+      "sha256": "cead4a5a851d7c55d01840b64ba4d39e6f5bc1b42e6ef81f999abed31c462f37"
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-scope",
+      "file": "4d65d39ba908a476305cd0b0.jsonl",
+      "artifact": "journals/2-rxjs-unhandled-error-migration-scope.4d65d39ba908a476305cd0b0.jsonl.gz",
+      "bytes": 82116,
+      "sha256": "6815d353e1d91810a055aa3f45c9af8c4db3f8340ffe5e0e3093ea17e0335ac8"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-references",
+      "file": "28811639cc83627ec182f7b7.jsonl",
+      "artifact": "journals/2-date-fns-offset-helper-migration-references.28811639cc83627ec182f7b7.jsonl.gz",
+      "bytes": 58172,
+      "sha256": "d569b4d3d27262efe2a9aef3bbf55a0dc2f924e8cff965417519e084a8441ab3"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-cline",
+      "file": "bc00aa824486d73150dbd8ea.jsonl",
+      "artifact": "journals/2-date-fns-offset-helper-migration-cline.bc00aa824486d73150dbd8ea.jsonl.gz",
+      "bytes": 79,
+      "sha256": "f8597c9e26da3cd27e13aa6d629fd5f340c8f057dc77a2af8d54950d5a4c065e"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-scope",
+      "file": "59007ce411564ff43849eb4c.jsonl",
+      "artifact": "journals/2-date-fns-offset-helper-migration-scope.59007ce411564ff43849eb4c.jsonl.gz",
+      "bytes": 65436,
+      "sha256": "9c05fe82db1447e9c02d2d8b94dcc18daac43de70a143748abc9d6ede605e845"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-baseline",
+      "file": "8b22b674b7e3281d2a8e4fa0.jsonl",
+      "artifact": "journals/2-date-fns-offset-helper-migration-baseline.8b22b674b7e3281d2a8e4fa0.jsonl.gz",
+      "bytes": 40492,
+      "sha256": "fd9219ec83bbac6d1aa414335111607ae04eb4fe74fd2958b24706899ca278da"
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-bundle",
+      "file": "4af48c58394a0d31391f19ab.jsonl",
+      "artifact": "journals/2-date-fns-offset-helper-migration-bundle.4af48c58394a0d31391f19ab.jsonl.gz",
+      "bytes": 47887,
+      "sha256": "11b632ab9045346236814319f2d9d5700e0e076fac64329944f0ddd648f8e4f6"
     }
   ]
 }

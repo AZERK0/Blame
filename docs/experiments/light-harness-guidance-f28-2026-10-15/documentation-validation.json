@@ -1,8 +1,8 @@
 {
   "path": "docs/semantic-harness-study.tex",
-  "sha256": "4460b6d1947f927bcbee74f2ec051f18e25d2fe6076a9c5c47934b56c4bbdb16",
+  "sha256": "32a0082bc84b3c75d7b99930c60feae60a22cb1c28ab653e8404c290287ed261",
   "compiler": "Codex native LaTeX editor",
   "result": "success",
-  "scope": "F28 first balanced36 checkpoint; remaining72 assigned trials continue",
-  "recordedAtUTC": "2026-10-15T00:58:20.667470+00:00"
+  "scope": "F28 ongoing prefix50 including registered independent timing failure; first balanced36 remains explicitly labeled",
+  "recordedAtUTC": "2026-10-15T01:11:43.663197+00:00"
 }

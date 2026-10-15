@@ -30,5 +30,18 @@ lines.push('', 'Exposure is descriptive: an exact later call matching a hint doe
  '', '## Evidence and limits',
  '', '`source-review.json` binds unblinded manual decisions to complete recorded inputs, final diffs and scores. Public replay checks these decisions and calculations, not their independent re-adjudication. The private grader never repairs source or feeds back to a model. RxJS original async-suite limitations persist; supplied new callback-style tests and independent lifecycle probes complement the full suite. Models may still make incorrect scope assumptions or factual claims despite a correct source endpoint.',
  '', 'Local controls establish the six implemented contracts and factor isolation; they do not establish net model benefit. The frozen source, date projection, native search repair, initial Git identities and actual model/effort/byte guard are checked separately. Provider revision/seeds, hidden retries and complete cache remain unknown.', '');
+lines.push('## Main-arm repetition breakdown', '', 'Dependent repeats of the same four clusters, not twelve independent tasks.',
+ '', '| Repetition | Arm | Observed trials | Full audited | Observed tokens | SDK USD | Worker seconds |',
+ '|---|---|---:|---:|---:|---:|---:|');
+for(const repeat of summary.repetitions)for(const arm of ['baseline','bundle','cline']){
+ const r=repeat.arms[arm];lines.push(`| ${repeat.repetition} | ${arm} | ${r.trials}/${r.planned} | ${r.strict} | ${r.tokensObserved} | ${money(r.estimatedUsdObserved)} | ${r.runnerSecondsObserved.toFixed(3)} |`);
+}
+try{
+ const diagnostic=await json('window-timing-diagnostic.json');
+ if((await json('results.json')).rows.some(r=>r.name===diagnostic.trial)){
+  const counts=diagnostic.rows.map(r=>`${r.endpoint}: ${r.invocations.filter(i=>i.exitCode===0).length}/${r.invocations.length} passing invocations`).join('; ');
+  lines.push('', '## Post-result timing diagnostic', '', `The original independent full-suite failure in ${diagnostic.trial} remains a primary failure. The unchanged RxJS window/Promise test relies on 3ms/8ms timers; a separate zero-model replay produces ${counts}. Targeted and full scopes stay distinct in window-timing-diagnostic.json. Identical source can pass and fail this timing test; this finite diagnostic does not replace scores or establish population stability.`, '');
+ }
+}catch(error){if(error.code!=='ENOENT')throw error;}
 await writeFile(join(study,'report.md'),lines.join('\n'));
 console.log(JSON.stringify({completed:summary.completed,planned:summary.planned,report:join(study,'report.md')}));

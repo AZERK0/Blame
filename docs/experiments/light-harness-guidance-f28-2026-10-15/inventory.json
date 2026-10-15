@@ -2518,5 +2518,985 @@
     "artifact": "traces/1-lodash-own-symbol-options-bundle.model-exit.json.gz",
     "bytes": 5416,
     "sha256": "176f17812cb93afe3130fc93d5f4f5965e1ea1cce721f19ae9f4f3c599e65439"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-baseline.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-baseline.events.jsonl.gz",
+    "bytes": 93891,
+    "sha256": "cef303670a99aa89e4f992fda4799c77510cc8d2d0a3af676f833d47ee0e4722"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-baseline",
+    "file": "result.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-baseline.result.json.gz",
+    "bytes": 4793,
+    "sha256": "5e889cf7c4b795ccf250853154728e270451de46dfa29905e2aceafb0e33ff32"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-baseline.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-baseline",
+    "file": "trial.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-baseline.trial.json.gz",
+    "bytes": 5996,
+    "sha256": "d89b188159c334c70a484fb67ece0b6c16acbb4e3750622899f6eb7734761c87"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-baseline",
+    "file": "score.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-baseline.score.json.gz",
+    "bytes": 16841,
+    "sha256": "e96e10a99a3f65c9d4573a7c57b76e8c772aaf5a4ac8aafb338b8345049a09d3"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-baseline.model-start.json.gz",
+    "bytes": 211,
+    "sha256": "c1436992e34c26c694b76c76d5ab12450d641ceb63ac09763a220db5ef546532"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "62edafb7036cfa7565bd904f7a01fe82c68d97805dcb017472d0313d5696c8f8"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-baseline.model-exit.json.gz",
+    "bytes": 5780,
+    "sha256": "34d023135458458d5b1080ccc094b69c3ab722be7d39dea271911070c51a2443"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-bundle",
+    "file": "instruction.txt",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-bundle.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-bundle",
+    "file": "events.jsonl",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-bundle.events.jsonl.gz",
+    "bytes": 87832,
+    "sha256": "3bf3aded854614674e0b4b835140d72386c46764a681eb66e6c55e2678174dfc"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-bundle",
+    "file": "result.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-bundle.result.json.gz",
+    "bytes": 4791,
+    "sha256": "8052b8b8897a66b155570c8ee4dbee672755516639a18283ab0a2e45e01dea2c"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-bundle",
+    "file": "workspace.diff",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-bundle.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-bundle",
+    "file": "trial.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-bundle.trial.json.gz",
+    "bytes": 4446,
+    "sha256": "53ec9d704b6085189698e8654dfef1e87fd6589be69e4e6be0db2de7b6000a34"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-bundle",
+    "file": "score.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-bundle.score.json.gz",
+    "bytes": 16833,
+    "sha256": "8d3044e90aa80a7eca24f230dc19dec6f92b902b9004c788de2290879c60648d"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-bundle",
+    "file": "required-checks.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-bundle.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-bundle",
+    "file": "model-start.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-bundle.model-start.json.gz",
+    "bytes": 209,
+    "sha256": "7a8d69b13039850dec9238803675b27c7c4ddd36cb5ae2559dfd990c2566bcd6"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-bundle",
+    "file": "model-child.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-bundle.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "0b8bbca72e2efee060017e7016dfae567d242fca763c2bd54efa3c80d7264b4f"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-bundle",
+    "file": "model-exit.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-bundle.model-exit.json.gz",
+    "bytes": 4235,
+    "sha256": "426c7c9dcecf6a5d68aaefbd7342d69e2e9f2c1a3f381379f007f5b4cbf5c049"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-patch",
+    "file": "instruction.txt",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-patch.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-patch",
+    "file": "events.jsonl",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-patch.events.jsonl.gz",
+    "bytes": 94735,
+    "sha256": "847f696e1d64bcdcd58e346239c4b2fba6c9986784dcc7014568e150e2d5c2ff"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-patch",
+    "file": "result.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-patch.result.json.gz",
+    "bytes": 4792,
+    "sha256": "82dff0dfcea9063efa49f1716167d3a3f9e75eb8f7b23fad4a8420a378c6f047"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-patch",
+    "file": "workspace.diff",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-patch.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-patch",
+    "file": "trial.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-patch.trial.json.gz",
+    "bytes": 5725,
+    "sha256": "117e48594b325fe5b9bffa8d9acb444c16a1b649cb043218b8ec791bd8f54c53"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-patch",
+    "file": "score.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-patch.score.json.gz",
+    "bytes": 16827,
+    "sha256": "c8a39413bb68ad0d44df397913dad579be1aa882ba92c84cb7988c42521665d1"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-patch",
+    "file": "required-checks.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-patch.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-patch",
+    "file": "model-start.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-patch.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "df4789fbc2dcf603e1d781b6e62925a0cbabe047e0f14d26cf863c55155eb3de"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-patch",
+    "file": "model-child.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-patch.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "9b8bd5b4d04ae06e94c03d33cff90fa367f50202a3159aa2ef9f7a88bd0e5b84"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-patch",
+    "file": "model-exit.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-patch.model-exit.json.gz",
+    "bytes": 5516,
+    "sha256": "4b50de34d49065a74aad9096f337d23f6a507e5e3ff9131d132ce70d0ae6a24c"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reporting",
+    "file": "instruction.txt",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reporting.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reporting",
+    "file": "events.jsonl",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reporting.events.jsonl.gz",
+    "bytes": 91648,
+    "sha256": "ba4ca50ddf15534ca64b8aa9c5eba3c87636539281737c3cf5499ba31bb2dfe9"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reporting",
+    "file": "result.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reporting.result.json.gz",
+    "bytes": 4791,
+    "sha256": "4b3246d7583d49d3e8f93018c407ae9747af2fa50e7a682baba18e030f18746c"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reporting",
+    "file": "workspace.diff",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reporting.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reporting",
+    "file": "trial.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reporting.trial.json.gz",
+    "bytes": 5557,
+    "sha256": "e93735c5e6cdc33448b8f4f9afb23fe7d306772879a995e07c7c9a8754060393"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reporting",
+    "file": "score.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reporting.score.json.gz",
+    "bytes": 16846,
+    "sha256": "0dc2551997ba13748c9d1175c28a9d22ee7cc9adba1551a4a04f3cd828f8ddf3"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reporting",
+    "file": "required-checks.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reporting.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reporting",
+    "file": "model-start.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reporting.model-start.json.gz",
+    "bytes": 212,
+    "sha256": "79fcabd6dd83fa7b0aae858a8d80df02d4c31ce241b18338411c237d07c0e846"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reporting",
+    "file": "model-child.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reporting.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "ead841693e5bf26f1d82d953d2e9b21f5135696a295c7671923236f178df9174"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reporting",
+    "file": "model-exit.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reporting.model-exit.json.gz",
+    "bytes": 5339,
+    "sha256": "593488a92ad2b423824121f0256a90e24fbc065f439b0f9213473d6de1c230e8"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reading",
+    "file": "instruction.txt",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reading.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reading",
+    "file": "events.jsonl",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reading.events.jsonl.gz",
+    "bytes": 93843,
+    "sha256": "4ccebd7831c9454e2aaa9036b728963cecd6e47f7088251acc740a46150d6f68"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reading",
+    "file": "result.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reading.result.json.gz",
+    "bytes": 4794,
+    "sha256": "35ef6cd6e2b087ab71cd130015f2702be0ee31593a57ecf30b979efe2289cf22"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reading",
+    "file": "workspace.diff",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reading.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reading",
+    "file": "trial.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reading.trial.json.gz",
+    "bytes": 4909,
+    "sha256": "04fb4a9e265e6d41f95fd6a74862d6597efbd34de5b05ebbe5b8fd5afeb7554f"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reading",
+    "file": "score.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reading.score.json.gz",
+    "bytes": 16835,
+    "sha256": "a789eb17aa1ee3f85aa24baf2549cb6e844513f8d173a023994c414d994085f0"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reading",
+    "file": "required-checks.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reading.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reading",
+    "file": "model-start.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reading.model-start.json.gz",
+    "bytes": 210,
+    "sha256": "3ead93c6d3b7485b7e8aa964f8d10d26a7807ccb59508496ecfc567c1c42a39d"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reading",
+    "file": "model-child.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reading.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "2f50e1e1a7bdc6ae1ca9d2a1ea60ed60c996917b9947694565039cffbdb69e46"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-reading",
+    "file": "model-exit.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-reading.model-exit.json.gz",
+    "bytes": 4694,
+    "sha256": "6d925c8923cc6cbf035ba6c0ab4b24812b7b9fabc06af5dd9ff8d59479e5a296"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-rename",
+    "file": "instruction.txt",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-rename.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-rename",
+    "file": "events.jsonl",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-rename.events.jsonl.gz",
+    "bytes": 96647,
+    "sha256": "92e40468d2a36e8c1f27978fa93c50fb4215b58ab5c58f1a58d4a65dcc5b0e97"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-rename",
+    "file": "result.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-rename.result.json.gz",
+    "bytes": 4772,
+    "sha256": "bd4d9b10bd09e284ee7eb1af39a8aaa2b7ada00d0a6b79ef0c53aede4c68a638"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-rename",
+    "file": "workspace.diff",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-rename.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-rename",
+    "file": "trial.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-rename.trial.json.gz",
+    "bytes": 5713,
+    "sha256": "cb0dac7e877bd896b950269b3b594e0fc4563669f5029ed3195d8d8c99b27880"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-rename",
+    "file": "score.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-rename.score.json.gz",
+    "bytes": 16832,
+    "sha256": "23a81347db8ccc674f818e5b3063762fb185c16b580f71c8ef489f34b3c70c93"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-rename",
+    "file": "required-checks.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-rename.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-rename",
+    "file": "model-start.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-rename.model-start.json.gz",
+    "bytes": 209,
+    "sha256": "2308b99efa831c6f604df67b6c8b73b705cf1657d9f0f3f3cc8d8d6e88c9a8bd"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-rename",
+    "file": "model-child.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-rename.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "3efb2972294f6be0904c130f72ad06f1ef029db8d3497d022dc48b4ad46a8ea5"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-rename",
+    "file": "model-exit.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-rename.model-exit.json.gz",
+    "bytes": 5501,
+    "sha256": "3bdce494c900509f7559b7fc8721f2e2c8b0e4912706584e7718d190f61d9dbe"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-references",
+    "file": "instruction.txt",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-references.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-references",
+    "file": "events.jsonl",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-references.events.jsonl.gz",
+    "bytes": 119336,
+    "sha256": "162d4e3e8f1ad451cdcf0423193d79348bcb4565cf96f3b9cb12075f5b0b4298"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-references",
+    "file": "result.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-references.result.json.gz",
+    "bytes": 4778,
+    "sha256": "0e76d085898fccb501f93f30a84eb1f39b0c4fc3bb9dede3e13f8c6f2a86c407"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-references",
+    "file": "workspace.diff",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-references.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-references",
+    "file": "trial.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-references.trial.json.gz",
+    "bytes": 5719,
+    "sha256": "cca61cd8b239be36abddd49ab36f143ca1488a684d56de55f00cf5ff66a04229"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-references",
+    "file": "score.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-references.score.json.gz",
+    "bytes": 18541,
+    "sha256": "5d4d6e8bf2e30f2ee088a61ea4d2f63e1d4715175129878e61a00eabeec8c458"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-references",
+    "file": "required-checks.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-references.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-references",
+    "file": "model-start.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-references.model-start.json.gz",
+    "bytes": 213,
+    "sha256": "387e75a51b26948f7653bb7f4029e3269657276530ffba50232d78b309ce49ea"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-references",
+    "file": "model-child.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-references.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "9304156b4aa9f0f82c109a367fe5c5cfdbf11713bafccab4a013d4bc2a233efd"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-references",
+    "file": "model-exit.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-references.model-exit.json.gz",
+    "bytes": 5500,
+    "sha256": "89ae59dc9ad3e24a5175ff59e9be16a0ab950047d6b5dbf97b720b072ebb723a"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-cline.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-cline.events.jsonl.gz",
+    "bytes": 377730,
+    "sha256": "f24f396c7ceacb6b148d2e968f9e4e8ec3f385d6201569346664df377ef404a7"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-cline",
+    "file": "result.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-cline.result.json.gz",
+    "bytes": 3696,
+    "sha256": "5af8a5c328123ad4e05471485a01b42c49fa45801dee6ef24cd7f074dabce641"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-cline.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-cline",
+    "file": "trial.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-cline.trial.json.gz",
+    "bytes": 4851,
+    "sha256": "ebdcc5e1ca4f2ac4e8188c6293f48d71e5ba7c1f43af82c8a758d802cae3623d"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-cline",
+    "file": "score.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-cline.score.json.gz",
+    "bytes": 16827,
+    "sha256": "cdb2eb93708c15a8577ad8ccfad42c572c2dd0fe1727dae6a5d448c8e569f607"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-cline",
+    "file": "model-start.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-cline.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "defe5717558a904893fc8e7571dc93fb59f8c404342c8bbbaacbdb978205fcf9"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-cline",
+    "file": "model-child.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "c9471c364ba0b22e83e038edbc5c038b745765a047284cf8a3a90355e1549a80"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-cline.model-exit.json.gz",
+    "bytes": 4647,
+    "sha256": "3583671cdf0c1fd667dfb666c3d4e66ddbc8674c3a0d48a0d3fb208fc53e71d7"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-scope",
+    "file": "instruction.txt",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-scope.instruction.txt.gz",
+    "bytes": 1415,
+    "sha256": "4b57de152b0c9547dcbf6c429dae0609ffb731d5d87752c5ec70754a2cfd2a38"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-scope",
+    "file": "events.jsonl",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-scope.events.jsonl.gz",
+    "bytes": 80738,
+    "sha256": "14509fb6a2c4a6c3594b53f642f20e67ddb53aa286b70b2992fc65dc7f08e1b3"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-scope",
+    "file": "result.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-scope.result.json.gz",
+    "bytes": 4768,
+    "sha256": "fb2ef091e6baca5d8c033256cc040ddf463fcbeac1edb069e0aedc49458ade85"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-scope",
+    "file": "workspace.diff",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-scope.workspace.diff.gz",
+    "bytes": 3598,
+    "sha256": "669614744deb7803a947a950bc17aaa0426b49378d07a3a89195013d09190783"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-scope",
+    "file": "trial.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-scope.trial.json.gz",
+    "bytes": 4489,
+    "sha256": "4e5939c967597595bc72dc4388912a1c356125e5a4549ce89198a26a75e09c5d"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-scope",
+    "file": "score.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-scope.score.json.gz",
+    "bytes": 16828,
+    "sha256": "c7e82ed40580e4e461f707847fdeaf0f4b8d3bb78506dab6190a9a74099b9299"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-scope",
+    "file": "required-checks.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-scope.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-scope",
+    "file": "model-start.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-scope.model-start.json.gz",
+    "bytes": 208,
+    "sha256": "05d1ab940083e0db158ac0d73c6ae706f88b5a194e88b4a57b7918ca6bb22698"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-scope",
+    "file": "model-child.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-scope.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "cb45beb41f0e99de4f639127734a536f6ab1e25e7a00f1077d45f268c1630f56"
+  },
+  {
+    "trial": "2-rxjs-unhandled-error-migration-scope",
+    "file": "model-exit.json",
+    "artifact": "traces/2-rxjs-unhandled-error-migration-scope.model-exit.json.gz",
+    "bytes": 4280,
+    "sha256": "4b448eea7b0999cd8766c015fb72882d595c3dfadf5bccf71c5d43fd172496c5"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-references",
+    "file": "instruction.txt",
+    "artifact": "traces/2-date-fns-offset-helper-migration-references.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-references",
+    "file": "events.jsonl",
+    "artifact": "traces/2-date-fns-offset-helper-migration-references.events.jsonl.gz",
+    "bytes": 73619,
+    "sha256": "436a82f407e05998b4b1ef19908f272de1494ddbe050adfdf7da56d0e7a0504d"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-references",
+    "file": "result.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-references.result.json.gz",
+    "bytes": 4838,
+    "sha256": "4ae869b581920a44be6ba477d6d443e37002ec3a00c039cca4e76738724750bd"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-references",
+    "file": "workspace.diff",
+    "artifact": "traces/2-date-fns-offset-helper-migration-references.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-references",
+    "file": "trial.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-references.trial.json.gz",
+    "bytes": 5681,
+    "sha256": "ef4cfd5dcbed9d94b5097acc71162ee1c6570aa4178714dbf9f74aaa58bec24f"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-references",
+    "file": "score.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-references.score.json.gz",
+    "bytes": 40884,
+    "sha256": "f43e25d6cdb4fbf347e76ba2196c85d4e46fa92c5c303bc63d6ada01c9066230"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-references",
+    "file": "required-checks.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-references.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-references",
+    "file": "model-start.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-references.model-start.json.gz",
+    "bytes": 215,
+    "sha256": "34f03f9d3d0b9830edba80207e88262ee00b31e7bc8eb8b554973818df9728e2"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-references",
+    "file": "model-child.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-references.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "9001d66e2913c5ebec767d10a12e344a6990d28a14417b68afbfcf80933b9bf7"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-references",
+    "file": "model-exit.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-references.model-exit.json.gz",
+    "bytes": 5458,
+    "sha256": "24b72f32f5abb97d55663179bff548cdd5ab1a16cc091649b9eadc35b8442848"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-cline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-date-fns-offset-helper-migration-cline.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-cline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-date-fns-offset-helper-migration-cline.events.jsonl.gz",
+    "bytes": 552404,
+    "sha256": "0e180b8f702d916f95d03453164aff060518564d86f3b72cc67e43f181df3ed4"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-cline",
+    "file": "result.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-cline.result.json.gz",
+    "bytes": 3720,
+    "sha256": "385e02cc463e4c221c6b488105a3343f30ff15cbb68c06c65bf8bd677ccf7838"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-cline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-date-fns-offset-helper-migration-cline.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-cline",
+    "file": "trial.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-cline.trial.json.gz",
+    "bytes": 6112,
+    "sha256": "2520ba68b2646c7dbe2bb032756d024a5b340a91486b93c003a5e279703cfa60"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-cline",
+    "file": "score.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-cline.score.json.gz",
+    "bytes": 40828,
+    "sha256": "573f7c6876d0af2eec66eccc120a35cf8861e5f72bbc22b7ac2c9a5b48c14e5e"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-cline",
+    "file": "required-checks.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-cline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-cline",
+    "file": "model-start.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-cline.model-start.json.gz",
+    "bytes": 210,
+    "sha256": "d54f41da66d191589fa60b491a1e39996858376f27be922b660157ffd2c4b06c"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-cline",
+    "file": "model-child.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-cline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "a0a18531e9a22f2a15277a3c33b08c54ea65306ae169bed11e4438b13a8264e9"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-cline",
+    "file": "model-exit.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-cline.model-exit.json.gz",
+    "bytes": 5901,
+    "sha256": "5bcd2e7f91f7052c57d22febd081c435848ceb72a7e58e70c723961618ba8f5e"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-scope",
+    "file": "instruction.txt",
+    "artifact": "traces/2-date-fns-offset-helper-migration-scope.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-scope",
+    "file": "events.jsonl",
+    "artifact": "traces/2-date-fns-offset-helper-migration-scope.events.jsonl.gz",
+    "bytes": 71518,
+    "sha256": "358a13f7a9639c636bface361447cef457607edd42dde1f14b159018aef4414b"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-scope",
+    "file": "result.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-scope.result.json.gz",
+    "bytes": 4856,
+    "sha256": "e4db30cca1263ff32c740ad433b00b5f516353e2183eea4eaf3eb5b8e0073c26"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-scope",
+    "file": "workspace.diff",
+    "artifact": "traces/2-date-fns-offset-helper-migration-scope.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-scope",
+    "file": "trial.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-scope.trial.json.gz",
+    "bytes": 5979,
+    "sha256": "e5bbeba861304ccae05792b0f780882eeb926209609895a867781907dbac7af1"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-scope",
+    "file": "score.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-scope.score.json.gz",
+    "bytes": 40819,
+    "sha256": "62d91ffe86f441854989ce1cdb12408c26d95b0b1f6266713a97cf0ac968c7b3"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-scope",
+    "file": "required-checks.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-scope.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-scope",
+    "file": "model-start.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-scope.model-start.json.gz",
+    "bytes": 210,
+    "sha256": "5c8f2a96ce395faa8c8506ba3f3b6a272f399a0c5342a09b6c9e48b6d6c38a04"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-scope",
+    "file": "model-child.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-scope.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "8ca06bb9a2e46ef6a1fb31119be3f0fd8d5faef36dc655200ccdc9b33e6ab21a"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-scope",
+    "file": "model-exit.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-scope.model-exit.json.gz",
+    "bytes": 5768,
+    "sha256": "d6bc68a6b3340743545a5457f75d3e473a53a88e9390e8fbde74488020a5bfec"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-baseline",
+    "file": "instruction.txt",
+    "artifact": "traces/2-date-fns-offset-helper-migration-baseline.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-baseline",
+    "file": "events.jsonl",
+    "artifact": "traces/2-date-fns-offset-helper-migration-baseline.events.jsonl.gz",
+    "bytes": 74592,
+    "sha256": "56261c34091533937af21a6d1d680a91a6d03d7dc0e9e1207253facc8a3bc544"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-baseline",
+    "file": "result.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-baseline.result.json.gz",
+    "bytes": 4841,
+    "sha256": "04a29225cd487d86a72c798f71757e8c464afffeb04eaad94d754610aca5649a"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-baseline",
+    "file": "workspace.diff",
+    "artifact": "traces/2-date-fns-offset-helper-migration-baseline.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-baseline",
+    "file": "trial.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-baseline.trial.json.gz",
+    "bytes": 4731,
+    "sha256": "619ceda1c7151eb32cdcbb729ba6697e8695d76b80bea9e6512c6186d1f35506"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-baseline",
+    "file": "score.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-baseline.score.json.gz",
+    "bytes": 40856,
+    "sha256": "4f17f289b20afaa60485be0278309ce5d22a18edf12bfe603cf5024d79a59371"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-baseline",
+    "file": "required-checks.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-baseline.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-baseline",
+    "file": "model-start.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-baseline.model-start.json.gz",
+    "bytes": 213,
+    "sha256": "3e312511ccfa4b1171303a4aa20ead2d5bff73270df4338fcf04501f1f52000a"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-baseline",
+    "file": "model-child.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-baseline.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "cdf904b3db1c44f0a6d15e2cb03a8ecf03154ce013e2ce2314bdada4616d5a10"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-baseline",
+    "file": "model-exit.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-baseline.model-exit.json.gz",
+    "bytes": 4511,
+    "sha256": "28f05412a39fc63330d04da393248a0e28153bd43644adcab68ec88557259138"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-bundle",
+    "file": "instruction.txt",
+    "artifact": "traces/2-date-fns-offset-helper-migration-bundle.instruction.txt.gz",
+    "bytes": 1181,
+    "sha256": "f89b163574d046b9058488b2ef53fd0f039c5b18bc96404bd9e987c0c2b75334"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-bundle",
+    "file": "events.jsonl",
+    "artifact": "traces/2-date-fns-offset-helper-migration-bundle.events.jsonl.gz",
+    "bytes": 143788,
+    "sha256": "1017787f2133fdbce036e07d03157aab5ab7d7eb27d9ecd4fb1678275ea80924"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-bundle",
+    "file": "result.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-bundle.result.json.gz",
+    "bytes": 4850,
+    "sha256": "94704437fa961fef819703751c629efc03ed3b960f9ec288775e050be1e4aad7"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-bundle",
+    "file": "workspace.diff",
+    "artifact": "traces/2-date-fns-offset-helper-migration-bundle.workspace.diff.gz",
+    "bytes": 13030,
+    "sha256": "73854600a01aee540782219dcccdf1a3c7707ac1328bb6143a73c8f7d4fa1822"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-bundle",
+    "file": "trial.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-bundle.trial.json.gz",
+    "bytes": 4815,
+    "sha256": "86d24995516b82f383e53e9e5600d1adc1dabfba0c18cc1e0f34835014375e82"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-bundle",
+    "file": "score.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-bundle.score.json.gz",
+    "bytes": 40905,
+    "sha256": "cfc89fc878d55889545418fe1c67e46f930483dfbfc6315396d8b71c4a8faa55"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-bundle",
+    "file": "required-checks.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-bundle.required-checks.json.gz",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-bundle",
+    "file": "model-start.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-bundle.model-start.json.gz",
+    "bytes": 211,
+    "sha256": "7cf9ec40b4ed443bb5a86c39e9a79b2d03755a5d08f6f2f6a53ce4f16a42d53a"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-bundle",
+    "file": "model-child.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-bundle.model-child.json.gz",
+    "bytes": 57,
+    "sha256": "5da2897fd055c25b4f06f712a976c6f548f32065cea4ceee54bf2c5c01737a6a"
+  },
+  {
+    "trial": "2-date-fns-offset-helper-migration-bundle",
+    "file": "model-exit.json",
+    "artifact": "traces/2-date-fns-offset-helper-migration-bundle.model-exit.json.gz",
+    "bytes": 4601,
+    "sha256": "f8829456f8d8cc6008afa9c1ed6e8ea55be01efedeb8b39eefc2a3a98d3aa9ea"
   }
 ]

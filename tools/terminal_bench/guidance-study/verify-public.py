@@ -3,6 +3,7 @@ No model, private workspace, npm dependency, oracle execution or recovered solut
 Manual review decisions are verified/replayed, not independently re-adjudicated.
 """
 import gzip, hashlib, json, math, sys
+import re
 from pathlib import Path
 root=Path(sys.argv[1])
 read=lambda p:json.loads((root/p).read_text())
@@ -84,6 +85,11 @@ for phase in ['fresh-confirmation']:
   for field,key in [('missingCacheReadAggregates','cacheRead'),('missingCacheWriteAggregates','cacheWrite'),('missingReasoningAggregates','reasoning')]:totals[field]=sum(r['usage'][key] is None for r in rs)
   for key,value in totals.items():assert close(value,summary['strata'][phase]['arms'][arm][key]),(phase,arm,key)
   strata[phase][arm]=totals
+for repeat in summary['repetitions']:
+ for arm,total in repeat['arms'].items():
+  rs=[r for r in rows if r['repetition']==repeat['repetition'] and r['arm']==arm]
+  expected={'trials':len(rs),'official':sum(r['officialRuntimeSuccess'] for r in rs),'functional':sum(r['independentFunctionalSuccess'] for r in rs),'strict':sum(r['auditedCompletion'] for r in rs),'tokensObserved':sum((r['usage']['input'] or 0)+(r['usage']['output'] or 0) for r in rs),'estimatedUsdObserved':sum(r['usage']['cost'] or 0 for r in rs),'runnerSecondsObserved':sum(r['durationMs'] or 0 for r in rs)/1000}
+  for key,value in expected.items():assert close(value,total[key]),(repeat['repetition'],arm,key)
 for c in summary['comparisons']+summary['observedAggregateComparisons']:
  def accept(r):return r['partition']==c['partition'] and r['officialRuntimeSuccess'] and r['independentFunctionalSuccess'] and r['agentRequiredChecksPassed'] and r['noSolutionRetrieval'] and r['usage']['tokensCostReconciled'] and (c['tier']!='strict' or r['auditedCompletion']) and (c['accountingTier']=='aggregate_only' or gap_by_name[r['name']]==0)
  pairs=[(a,b) for a in rows if a['arm']==c['left'] and accept(a) for b in rows if b['arm']==c['right'] and b['id']==a['id'] and b['repetition']==a['repetition'] and accept(b)]
@@ -95,6 +101,21 @@ for c in summary['comparisons']+summary['observedAggregateComparisons']:
   assert close(left,resource['left']) and close(right,resource['right'])
   if not available:assert resource['relativeChange'] is None
   else:assert close(left/right-1,resource['relativeChange'])
+# Post-result timing replay must retain the registered failed score, never rescue it.
+if (root/'window-timing-diagnostic.json').exists():
+ diagnostic=read('window-timing-diagnostic.json');name=diagnostic['trial']
+ if name in reviews:
+  assert diagnostic['paidRequests']==0 and diagnostic['postSelectedDiagnostic']
+  assert diagnostic['originalScoreSha256']==sha(raw[name,'score.json'])
+  assert diagnostic['originalDiffSha256']==sha(raw[name,'workspace.diff'])
+  original=json.loads(raw[name,'score.json'])
+  assert not original['independentFunctionalSuccess'] and original['full']['exitCode']==1
+  assert 'should window when Promise resolves' in original['full']['stdout']
+  controls=diagnostic['rows'];assert [r['endpoint'] for r in controls]==['unchanged-input','recorded-model-endpoint']
+  assert controls[0]['specSha256']==controls[1]['specSha256']
+  assert controls[1]['diffSha256']==diagnostic['originalDiffSha256']
+  assert all(len(r['invocations'])==6 for r in controls)
+  assert all(i['scope']==('full-suite' if i['repetition']==6 else 'targeted') for r in controls for i in r['invocations'])
 evidence=read('evidence-checks.json')
 for audit in evidence['audits']:
  b=gzip.decompress((root/audit['artifact']).read_bytes());assert len(b)==audit['bytes'] and sha(b)==audit['sha256']
@@ -109,6 +130,12 @@ if admin_path.exists():
  assert not interruption['modelDispatched'] and interruption['modelRetries']==0 and not interruption['sourceRepair']
  assert continuation['completedPrefix']==13 and continuation['modelRetries']==0 and not continuation['sourceRepair']
  assert continuation['driverSha256']==results['provenance']['frozen']['inputs'][continuation['driver']]
+ assigned=['-'.join(str(t[k]) for k in ['repetition','id','arm']) for t in protocol['order']]
+ first_started=re.findall(r'^START (.+)$',artifacts['original-orchestration.log'].decode(),re.M)
+ next_started=re.findall(r'^START (.+)$',artifacts['continued-orchestration.log'].decode(),re.M)
+ assert first_started==assigned[:13]
+ assert next_started==assigned[13:13+len(next_started)]
+ assert len(set(first_started+next_started))==len(first_started)+len(next_started)
  for name,files in continuation['completedTrialHashes'].items():
   if name in reviews:
    for file,expected in files.items():assert sha(raw[name,file])==expected

@@ -360,6 +360,146 @@
       "startedWithoutFinish": [],
       "finishedWithoutStart": [],
       "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-baseline",
+      "eventsSha256": "cef303670a99aa89e4f992fda4799c77510cc8d2d0a3af676f833d47ee0e4722",
+      "started": 21,
+      "finished": 21,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-bundle",
+      "eventsSha256": "3bf3aded854614674e0b4b835140d72386c46764a681eb66e6c55e2678174dfc",
+      "started": 19,
+      "finished": 19,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-patch",
+      "eventsSha256": "847f696e1d64bcdcd58e346239c4b2fba6c9986784dcc7014568e150e2d5c2ff",
+      "started": 20,
+      "finished": 20,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-reporting",
+      "eventsSha256": "ba4ca50ddf15534ca64b8aa9c5eba3c87636539281737c3cf5499ba31bb2dfe9",
+      "started": 22,
+      "finished": 22,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-reading",
+      "eventsSha256": "4ccebd7831c9454e2aaa9036b728963cecd6e47f7088251acc740a46150d6f68",
+      "started": 19,
+      "finished": 19,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-rename",
+      "eventsSha256": "92e40468d2a36e8c1f27978fa93c50fb4215b58ab5c58f1a58d4a65dcc5b0e97",
+      "started": 20,
+      "finished": 20,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-references",
+      "eventsSha256": "162d4e3e8f1ad451cdcf0423193d79348bcb4565cf96f3b9cb12075f5b0b4298",
+      "started": 25,
+      "finished": 25,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-cline",
+      "eventsSha256": "f24f396c7ceacb6b148d2e968f9e4e8ec3f385d6201569346664df377ef404a7",
+      "started": 10,
+      "finished": 10,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-rxjs-unhandled-error-migration-scope",
+      "eventsSha256": "14509fb6a2c4a6c3594b53f642f20e67ddb53aa286b70b2992fc65dc7f08e1b3",
+      "started": 21,
+      "finished": 21,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-references",
+      "eventsSha256": "436a82f407e05998b4b1ef19908f272de1494ddbe050adfdf7da56d0e7a0504d",
+      "started": 19,
+      "finished": 19,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-cline",
+      "eventsSha256": "0e180b8f702d916f95d03453164aff060518564d86f3b72cc67e43f181df3ed4",
+      "started": 14,
+      "finished": 14,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-scope",
+      "eventsSha256": "358a13f7a9639c636bface361447cef457607edd42dde1f14b159018aef4414b",
+      "started": 16,
+      "finished": 16,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-baseline",
+      "eventsSha256": "56261c34091533937af21a6d1d680a91a6d03d7dc0e9e1207253facc8a3bc544",
+      "started": 16,
+      "finished": 16,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
+    },
+    {
+      "name": "2-date-fns-offset-helper-migration-bundle",
+      "eventsSha256": "1017787f2133fdbce036e07d03157aab5ab7d7eb27d9ecd4fb1678275ea80924",
+      "started": 14,
+      "finished": 14,
+      "missingIds": [],
+      "startedWithoutFinish": [],
+      "finishedWithoutStart": [],
+      "differentInputs": []
     }
   ]
 }
