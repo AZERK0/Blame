@@ -5,6 +5,9 @@ with identical input schemas, system prompts, execution, guards and receipts.
 Both Light arms include the production duplicate-header and qualified-name
 diagnostic repairs. The lexical-ranking prototype is absent. Cline is the
 integrated SDK 0.0.82 with the same pinned research search repair used in F28/F29.
+The descriptions are shortened and reworded, including an explicit reminder
+that parameter changes need whole-symbol replacement. This comparison tests
+that complete wording treatment; it cannot isolate character count from emphasis.
 
 The fixed panel has three new constructed tasks on Commander.js 13.1.0,
 three dependent repeats and three rotated serial arms (27 assignments).
