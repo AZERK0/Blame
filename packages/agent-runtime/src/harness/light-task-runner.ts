@@ -478,8 +478,8 @@ export class LightTaskRunner {
         check.outcome === "failed" ? "failed" : "unknown", snapshot,
         { ...metadata, taskKind: "test", check },
         failure);
-      const presented = await validationOutput(this.files.root, output);
-      if (failure || changedPaths.length) presented.output = boundedDiagnostic(output, "", 4_000);
+      const presented = await validationOutput(this.files.root, output,
+        failure || changedPaths.length ? 4_000 : 900);
       if (check.evidenceOrigin === "node_events" && check.counts)
         presented.output += `\nActive Node case results: ${check.counts.passed} passed, ${check.counts.failed} failed, ${check.counts.skipped} skipped/todo. File workers and suites are excluded. Command outcome: ${check.outcome}. Test scope, selection and freshness are not admitted by these counts.`;
       return { status: "ok", data: { command, exitCode: result.exitCode,
