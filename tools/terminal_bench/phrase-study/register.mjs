@@ -13,7 +13,7 @@ const p={studyKind:'bounded-lexical-phrase-priority',registeredAtUTC:new Date().
  upstreams:{lodash:parent.upstreams.lodash},nativeSearchRepair:true,captureWireContracts:true,
  budgets:{...parent.budgets,panelObservedCostStopUsd:2},budgetAmendment:parent.budgetAmendment,
  priorBudget:'docs/experiments/light-harness-phrase-ranking-f29-2026-10-15/prior-budget.json',
- driverInputs:['run.mjs','paths.mjs','register.mjs','freeze.mjs','features.mjs','tasks.mjs','task-controls.mjs','runtime-controls.mjs','local-controls.mjs','prompt-date.mjs','prompt-date-controls.mjs'],
+ driverInputs:['run.mjs','paths.mjs','register.mjs','freeze.mjs','finalize.mjs','features.mjs','tasks.mjs','task-controls.mjs','runtime-controls.mjs','local-controls.mjs','prompt-date.mjs','prompt-date-controls.mjs'],
  environmentArtifacts:['tools/terminal_bench/guidance-study/paths.mjs',
  'docs/experiments/light-harness-phrase-ranking-f29-2026-10-15/task-selection.json',
  'docs/experiments/light-harness-phrase-ranking-f29-2026-10-15/local-controls.json',

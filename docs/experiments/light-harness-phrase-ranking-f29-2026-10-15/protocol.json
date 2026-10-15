@@ -248,6 +248,7 @@
     "paths.mjs",
     "register.mjs",
     "freeze.mjs",
+    "finalize.mjs",
     "features.mjs",
     "tasks.mjs",
     "task-controls.mjs",

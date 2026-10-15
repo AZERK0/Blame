@@ -1,5 +1,5 @@
 // F29 source-derived driver: reuse registered preparation, transport, scoring and accounting.
-// Original F18--F27 driver is unchanged; F29 adds eight snapshots and a frozen balanced order.
+// Original drivers stay unchanged; F29 uses two snapshots and a frozen balanced order.
 import { createHash } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import { spawn, execFileSync, spawnSync } from "node:child_process";
@@ -292,7 +292,7 @@ async function run() {
   if(!resuming){
     const head=git(["rev-parse","HEAD"],repo).trim(),relative=join(study,"protocol.json").slice(repo.length+1);
     if(sha(execFileSync("git",["show",head+":"+relative],{cwd:repo}))!==sha(await readFile(join(study,"protocol.json"))))throw Error("Commit final registration before model dispatch");
-    await writeJson(join(study,"launch-registration.json"),{gitHead:head,protocolSha256:sha(await readFile(join(study,"protocol.json"))),recordedAtUTC:new Date().toISOString(),paidRequestsAtRegistration:0});
+    await writeFile(join(study,"launch-registration.json"),JSON.stringify({gitHead:head,protocolSha256:sha(await readFile(join(study,"protocol.json"))),recordedAtUTC:new Date().toISOString(),paidRequestsAtRegistration:0},null,2)+"\n",{flag:"wx"});
   }
   if(!resuming)await mkdir(campaign);
   const order = protocol.order;

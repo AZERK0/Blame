@@ -45,7 +45,7 @@ for(const row of results.rows) {
     actualOutputLimits:[...new Set(wire.filter(r=>!r.budgetRejected).map(r=>r.maximumOutputTokens))],
     exposure:{
       multiTermLexicalCalls:tools.filter(t=>t.tool==="search_code"&&["ripgrep","node"].includes(t.output?.data?.engine)&&t.input.mode!=="references"&&[...new Set(String(t.input.query).normalize("NFKC").toLocaleLowerCase().split(/\s+/u).filter(Boolean))].slice(0,12).length>1).length,
-      multiTermTopSnippetObservations:tools.filter(t=>t.tool==="search_code"&&["ripgrep","node"].includes(t.output?.data?.engine)&&t.input.mode!=="references"&&String(t.input.query).trim().split(/\s+/u).length>1&&typeof t.output?.data?.results?.[0]?.snippet==="string").length,
+      multiTermTopSnippetObservations:tools.filter(t=>t.tool==="search_code"&&["ripgrep","node"].includes(t.output?.data?.engine)&&t.input.mode!=="references"&&[...new Set(String(t.input.query).normalize("NFKC").toLocaleLowerCase().split(/\s+/u).filter(Boolean))].slice(0,12).length>1&&typeof t.output?.data?.results?.[0]?.snippet==="string").length,
       contiguousTopSnippets:tools.filter(t=>{const terms=[...new Set(String(t.input?.query??"").normalize("NFKC").toLocaleLowerCase().split(/\s+/u).filter(Boolean))].slice(0,12);return t.tool==="search_code"&&["ripgrep","node"].includes(t.output?.data?.engine)&&t.input.mode!=="references"&&terms.length>1&&typeof t.output?.data?.results?.[0]?.snippet==="string"&&t.output.data.results[0].snippet.toLocaleLowerCase().includes(terms.join(" "));}).length,
       emptyFileScopes:tools.filter(t=>t.tool==="search_code"&&t.output?.data?.candidateCount===0).length,
       emptyScopeGuidance:tools.filter(t=>t.tool==="search_code"&&t.output?.data?.scopeStatus==="empty").length,

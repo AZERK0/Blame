@@ -203,6 +203,26 @@ for row in local['real']:
 ledger=read('prior-budget.json')
 assert close(ledger['observedUsd']+ledger['reservedUsd'],ledger['accountedUsd'])
 assert close(ledger['accountedUsd'],prior['priorObservedCost'])
+assert protocol['readyForModel'] and protocol['financialBinding']['priorBudgetSha256']==sha((root/'prior-budget.json').read_bytes())
+witness_bytes=(root/ledger['witness']['artifact']).read_bytes()
+assert sha(witness_bytes)==ledger['witness']['sha256']==protocol['financialBinding']['parentWitnessSha256']
+witness=json.loads(gzip.decompress(witness_bytes))['documents']
+for name,document in witness.items():
+ assert sha(document['utf8'].encode())==document['sha256']==ledger['sourceDocuments'][name]
+parent={name:json.loads(document['utf8']) for name,document in witness.items()}
+for name in ['guidance-summary.json','public-replay.json','checks.json']:
+ assert parent[name]['completed']==parent[name]['planned']==108
+assert parent['checks.json']['reviewedTraces']==108
+assert parent['publication-controls.json']['validReplayPassed']
+assert all(c['rejected'] for c in parent['publication-controls.json']['negativeControls'])
+parent_summary,parent_shared=parent['guidance-summary.json'],parent['shared-budget-accounting.json']
+assert close(sum(e['accounting']['observedUsd'] for e in parent_shared['priorAccounting'])+parent_summary['accounting']['observedUsd'],ledger['observedUsd'])
+assert close(sum(e['accounting']['reservedUsd'] for e in parent_shared['priorAccounting'])+parent_summary['accounting']['reservedUsd'],ledger['reservedUsd'])
+assert close(parent_summary['totalAccountedUsd'],ledger['accountedUsd'])
+assert close(parent['public-replay.json']['totalAccountedUsd'],ledger['accountedUsd'])
+assert close(parent['protocol.json']['budgets']['sharedStudyObservedCostStopUsd'],protocol['budgets']['sharedStudyObservedCostStopUsd'])
+assert read('launch-registration.json')['protocolSha256']==sha((root/'protocol.json').read_bytes())
+assert read('launch-registration.json')['paidRequestsAtRegistration']==0
 assert results['completed']==len(rows)==len(reviews)
 assert sha((root/'results.json').read_bytes())==read('checks.json')['resultsSha256']
 assert results['planned']==len(protocol['order'])==len(protocol['tasks'])*protocol['repetitions']*len(protocol['arms'])
