@@ -94,19 +94,24 @@ test("capture overflow terminates the command instead of claiming success", asyn
 });
 
 test("a running command exposes stable incremental output cursors", async () => {
-  const execution = startWorkspaceCommand(
-    process.execPath,
-    ["-e", "console.log('first');setTimeout(()=>console.log('second'),100)"],
-    { cwd: tmpdir() },
-  );
-  await delay(50);
-  const first = execution.inspect();
-  assert.equal(first.process, "running");
-  assert.match(first.output, /first/u);
-  await execution.completion;
-  const second = execution.inspect(first.cursor);
-  assert.equal(second.process, "exited");
-  assert.equal(second.output.trim(), "second");
+  await fixture(async root => {
+    const controller = new AbortController();
+    const execution = startWorkspaceCommand(process.execPath,
+      ["-e", "console.log('first');const fs=require('node:fs');const timer=setInterval(()=>{if(fs.existsSync('release')){clearInterval(timer);console.log('second')}},10)"],
+      { cwd: root, signal: controller.signal });
+    try {
+      // Child startup is not guaranteed within 50ms under concurrent compilers.
+      // Hold the second chunk until the first cursor has actually been observed.
+      const deadline = Date.now() + 3000;
+      while (!execution.inspect().output.includes("first") && Date.now() < deadline) await delay(10);
+      const first = execution.inspect();
+      assert.equal(first.process, "running"); assert.match(first.output, /first/u);
+      await writeFile(join(root, "release"), "ready");
+      await execution.completion;
+      const second = execution.inspect(first.cursor);
+      assert.equal(second.process, "exited"); assert.equal(second.output.trim(), "second");
+    } finally { controller.abort(); await execution.completion; }
+  });
 });
 
 test("run_task inspects a long command without launching it again", async () => {
