@@ -22,6 +22,7 @@ FROM base AS builder
 
 # Copy workspace configuration
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY patches/ ./patches/
 
 # Copy the vitrine package manifest first for better dependency layer caching
 COPY packages/vitrine/package.json ./packages/vitrine/package.json
@@ -59,6 +60,7 @@ ENV PORT=3000
 
 # Copy workspace configuration
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY patches/ ./patches/
 COPY packages/vitrine/package.json ./packages/vitrine/package.json
 
 # Install production dependencies only for the vitrine app
