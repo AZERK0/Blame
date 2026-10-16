@@ -254,7 +254,8 @@ export class LightEditService {
       await this.planResolvedScopedPatch(plans, operation, resolved);
     } catch (error) {
       throw new ScopedEditRecovery(errorMessage(error), resolved,
-        error instanceof ScopedPatchShapeError ? error.correction : undefined);
+        error instanceof ScopedPatchShapeError ? error.correction
+          : scopedContextCorrection(operation.patch, resolved, errorMessage(error)));
     }
   }
 
@@ -916,17 +917,56 @@ class ScopedPatchShapeError extends Error {
 class ScopedEditRecovery extends Error {
   readonly recovery: string;
 
-  constructor(message: string, resolved: ResolvedLightSymbol, patchCorrection?: ScopedPatchShapeError["correction"]) {
-    super(message);
+  constructor(message: string, resolved: ResolvedLightSymbol,
+    patchCorrection?: ScopedPatchShapeError["correction"] | ScopedContextCorrection) {
+    const contextCorrection = patchCorrection && "affectedLines" in patchCorrection ? patchCorrection : undefined;
+    super(contextCorrection ? "Patch context matches the whole file but exceeds the selected symbol scope." : message);
     const [startLine, endLine] = resolved.symbol.line_range;
     this.recovery = "No operations in this batch were applied. Every operation uses the original source, not earlier operations in the same batch. " +
-      (patchFailureRecovery(message) ? `${patchFailureRecovery(message)} ` : "") +
+      (contextCorrection ? "The exact context matches the file; resending it with this same narrow target cannot fix the scope conflict. Narrow the patch context or explicitly choose a file patch after inspecting the affected lines. Other edit guards still apply. "
+        : patchFailureRecovery(message) ? `${patchFailureRecovery(message)} ` : "") +
       JSON.stringify({ target: resolved.alias, path: resolved.path,
         ...(patchCorrection ? { patchCorrection } : {}),
         declarationLines: [startLine, endLine],
-        nextRead: { target: resolved.path, view: "range",
+        nextRead: contextCorrection?.nextRead ?? { target: resolved.path, view: "range",
           range: { startLine: Math.max(1, startLine - 3), endLine: Math.min(endLine + 2, startLine + 24) } },
         routes: "Read the current text before retrying. For changes inside the declaration, read the symbol then use a symbol action or a focused alias patch. For JSDoc, export wrappers or context outside it, read those lines and use a file patch. For dependent edits, commit separately and read again. These locations are hints, not observed edit coverage; refresh after source changes." });
+  }
+}
+
+type ScopedContextCorrection = {
+  reason: "context_outside_symbol";
+  expectedPath: string;
+  affectedLines: [number, number][];
+  affectedRangeCount: number;
+  changesOutsideSymbol: boolean;
+  nextRead: { target: string; view: "range"; range: { startLine: number; endLine: number } };
+};
+
+/** Diagnostic only: use the existing exact planner, without applying its result. */
+function scopedContextCorrection(patch: string, resolved: ResolvedLightSymbol, message: string): ScopedContextCorrection | undefined {
+  if (!/context does not match/iu.test(message) || resolved.content.byteLength > 512 * 1024 || Buffer.byteLength(patch) > 32 * 1024)
+    return undefined;
+  try {
+    const replacements = planScopedLightPatch(resolved.content.toString("utf8"), patch, resolved.path);
+    if (!replacements.length) return undefined;
+    const [start, end] = resolved.symbol.range_utf8_bytes;
+    const outside = replacements.filter((replacement) => replacement.start < start || replacement.end > end);
+    const lines = (replacement: { start: number; end: number }): [number, number] => [
+      resolved.content.subarray(0, replacement.start).toString("utf8").split("\n").length,
+      resolved.content.subarray(0, Math.max(replacement.start, replacement.end - 1)).toString("utf8").split("\n").length,
+    ];
+    const firstLine = lines((outside[0] ?? replacements[0])!)[0];
+    const totalLines = resolved.content.toString("utf8").split("\n").length;
+    const startLine = Math.max(1, firstLine - 3);
+    return { reason: "context_outside_symbol", expectedPath: resolved.path,
+      affectedLines: replacements.slice(0, 8).map(lines), affectedRangeCount: replacements.length,
+      changesOutsideSymbol: outside.length > 0,
+      nextRead: { target: resolved.path, view: "range", range: { startLine, endLine: Math.min(totalLines, startLine + 24) } } };
+  } catch {
+    // Missing, ambiguous and malformed whole-file context is not evidence of a
+    // scope conflict. Keep the original refusal rather than guess a location.
+    return undefined;
   }
 }
 
