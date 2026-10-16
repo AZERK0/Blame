@@ -27,3 +27,5 @@ node tools/terminal_bench/iterative-study/compiler-mechanism.mjs
 ```
 
 Use your absolute checkout path for `--study` when reproducing elsewhere. Public verification checks recorded evidence and arithmetic, not independent human acceptance or invoices. Reproduction requires the pinned fixture packages; full upstream development/browser dependencies are deliberately outside the selected suite.
+
+Recorded source/registration commit IDs predate a concurrent identical-tree history rewrite; see the parent phase’s `history-equivalence.json` for current equivalents. Protocol bytes are preserved.
