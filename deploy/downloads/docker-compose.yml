@@ -6,7 +6,7 @@ services:
     environment:
       BLAME_DOWNLOAD_LANDING_URL: ${BLAME_DOWNLOAD_LANDING_URL:-https://blame.so/download}
       BLAME_LEGACY_DOWNLOAD_BASE_URL: ${BLAME_LEGACY_DOWNLOAD_BASE_URL:-https://blame-prod-downloads-gra.s3.gra.io.cloud.ovh.net}
-      BLAME_RELEASES_URL: ${BLAME_RELEASES_URL:-https://github.com/AZERK0/Blame/releases}
+      BLAME_RELEASES_URL: ${BLAME_RELEASES_URL:-https://github.com/rchrp/Blame/releases}
     restart: unless-stopped
     expose:
       - "80"

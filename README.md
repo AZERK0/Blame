@@ -6,7 +6,7 @@ Blame connects tasks, coding agents, isolated Git worktrees, previews, and code 
 
 [Download](https://blame.so/download) · [Website](https://blame.so) · [Features](#features) · [Development](#development) · [Documentation](#documentation) · [Contributing](#contributing)
 
-[![CI](https://github.com/AZERK0/Blame/actions/workflows/ci.yml/badge.svg)](https://github.com/AZERK0/Blame/actions/workflows/ci.yml)
+[![CI](https://github.com/rchrp/Blame/actions/workflows/ci.yml/badge.svg)](https://github.com/rchrp/Blame/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
 [![Watch the Blame demo on YouTube](packages/vitrine/public/demo.gif)](https://youtu.be/cD6jASpIKQw)
@@ -65,7 +65,7 @@ Blame is a TypeScript monorepo using [pnpm](https://pnpm.io) and [Turborepo](htt
 ### Install dependencies
 
 ```bash
-git clone https://github.com/AZERK0/Blame.git
+git clone https://github.com/rchrp/Blame.git
 cd Blame
 corepack enable
 pnpm install --frozen-lockfile
@@ -192,7 +192,7 @@ Each `.tex` document can be compiled independently. Benchmark results describe t
 
 ## Contributing
 
-Bug reports, documentation improvements, and focused pull requests are welcome. For substantial features or architectural changes, open an [issue](https://github.com/AZERK0/Blame/issues) to discuss the approach first.
+Bug reports, documentation improvements, and focused pull requests are welcome. For substantial features or architectural changes, open an [issue](https://github.com/rchrp/Blame/issues) to discuss the approach first.
 
 - Include reproduction steps, platform information, and relevant logs in bug reports.
 - Keep pull requests scoped; explain the problem, the change, and how you verified it.
@@ -200,7 +200,7 @@ Bug reports, documentation improvements, and focused pull requests are welcome. 
 - Read any `AGENTS.md` instructions that apply to the files you change.
 - Use [Conventional Commits](https://www.conventionalcommits.org), for example `fix(preview): recover an interrupted session` or `docs: clarify local setup`.
 
-For questions, use [GitHub issues](https://github.com/AZERK0/Blame/issues). For security-sensitive reports, contact [support@blame.so](mailto:support@blame.so).
+For questions, use [GitHub issues](https://github.com/rchrp/Blame/issues). For security-sensitive reports, contact [support@blame.so](mailto:support@blame.so).
 
 ## License
 
