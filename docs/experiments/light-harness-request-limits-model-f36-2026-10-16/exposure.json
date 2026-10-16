@@ -80,5 +80,10 @@
         "output": "Implemented parsed `anchorRange?: [number, number]` for anchored scalar, sequence, map, and empty nodes. Ranges use zero-based UTF-16 `[start, end)` offsets covering the complete `&anchor` token, independent of `keepSourceTokens`; aliases and programmatically anchored nodes remain without an own `anchorRange` property. `clone()` now copies the tuple separately for base nodes and collections. Only the permitted files were modified: `src/compose/compose-node.ts`, `src/nodes/Node.ts`, and `src/nodes/Collection.ts`.\n\nVerification run after the final edit, in the requested order:\n1. `npm run build:node` — passed, exit 0.\n2. `node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs` — passed; 12 executed, 12 passed, 0 failed, 0 skipped.\n3. `npm run test:types` — exited 0 and completed both TypeScript checks; the runner reported counts as unknown.\n4. `npm test -- --runInBand` — passed; 3,483 passed, 0 failed, 11 skipped (3,494 total), across 25 suites.\n\nLimitation: the type-check command produced no runner-level test counters, so those counts remain unknown; its process exit status was 0."
       }
     ]
+  },
+  {
+    "name": "2-yaml-anchor-ranges-cline",
+    "projectCalls": [],
+    "finishCalls": []
   }
 ]

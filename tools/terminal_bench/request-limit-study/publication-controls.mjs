@@ -18,6 +18,7 @@ try {
     ['backend-feasibility.json', 'fabricated SDK cost', v => { v.sdkUsage.cost = 0; }],
     ['full-sdk-after.json', 'configured cap silently missing', v => { v.rows[0].output.captures[0].maximumOutputTokens = null; }],
     ['probe-protocol.json', 'changed preregistered cap after dispatch', v => { v.injectedOutputCap = 2048; }],
+    ['local-validation.json', 'fabricated baseline cap-test score', v => { v.unitCapControls.beforePassed = 8; }],
   ];
   for (const [name, label, mutate] of cases) {
     const value = JSON.parse(await readFile(join(study, name))); mutate(value);

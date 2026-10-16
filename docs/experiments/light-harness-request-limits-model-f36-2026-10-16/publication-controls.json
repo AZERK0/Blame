@@ -32,6 +32,14 @@
     {
       "fault": "fabricated effective-cap exposure",
       "rejected": true
+    },
+    {
+      "fault": "rehash cannot hide missing treatment cap",
+      "rejected": true
+    },
+    {
+      "fault": "rehash cannot hide wrong model effort",
+      "rejected": true
     }
   ],
   "limitation": "Rejects inconsistent accounting/regrading, not a cryptographic signature or independent source adjudication."

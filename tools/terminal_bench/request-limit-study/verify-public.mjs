@@ -11,6 +11,14 @@ const root = resolve(process.argv[2] ?? 'docs/experiments/light-harness-request-
 const json = async name => JSON.parse(await readFile(join(root, name)));
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const p = await json('probe-protocol.json'), f = await json('backend-feasibility.json');
+const old = JSON.parse(gunzipSync(await readFile(join(root, 'baseline-modules.json.gz'))));
+const oldHashes = await json('baseline-module-hashes.json');
+for (const [name, source] of Object.entries(old)) {
+  assert.equal(sha(source), oldHashes[name]);
+  assert.equal(sha(source), p.inputSha256['packages/agent-runtime/dist/' + name]);
+}
+const guard = await json('sdk-guard-evidence.json');
+assert.equal(guard.llmsModuleSha256, p.inputSha256['packages/agent-runtime/node_modules/@cline/llms/dist/index.js']);
 const inventory = await json('backend-probe-inventory.json');
 assert.equal(inventory.artifact, 'backend-probe.json.gz');
 const bytes = await readFile(join(root, inventory.artifact));
@@ -62,6 +70,24 @@ for (const [name, count] of [['full-sdk-before.json', 2], ['full-sdk-after.json'
 }
 const local = await json('local-validation.json');
 const tap = await readFile(join(root, 'registered-suite.tap'), 'utf8');
+const before = await readFile(join(root, 'unit-before.tap'), 'utf8');
+const targeted = await readFile(join(root, 'targeted-after.tap'), 'utf8');
+for (const [label, count] of [['tests', 8], ['pass', 3], ['fail', 5]])
+  assert.ok(new RegExp('(?:# |ℹ )' + label + ' ' + count + '\\b', 'u').test(before), 'Before counter mismatch: ' + label);
+for (const [label, count] of [['tests', 108], ['pass', 108], ['fail', 0]])
+  assert.ok(new RegExp('(?:# |ℹ )' + label + ' ' + count + '\\b', 'u').test(targeted), 'Targeted counter mismatch: ' + label);
+assert.deepEqual(local.unitCapControls, { beforePassed: 3, afterPassed: 8, total: 8 });
+assert.deepEqual(local.targetedRuntimeProviderAndProduction, { passed: 108, failed: 0 });
+for (const name of [
+  'an explicitly configured cap reaches a Codex request whose gateway omitted it',
+  'a stricter existing cap is preserved and a larger cap is reduced',
+  'unconfigured output behavior and other origins/endpoints remain unchanged',
+  'Request bodies retain credentials and signal while rewritten content length is recomputed',
+  'invalid configured limits fail before any transport invocation',
+  'malformed or uninspectable capped model requests cannot bypass the budget',
+  'abort is preserved and an explicit null signal retains fetch override semantics',
+  'non-inference GET requests do not acquire a model body',
+]) assert.ok(targeted.includes('✔ ' + name + ' ('), 'Missing passing cap case: ' + name);
 for (const [label, count] of [['tests', 877], ['pass', 875], ['fail', 0], ['skipped', 2]])
   assert.ok(new RegExp('(?:# |ℹ )' + label + ' ' + count + '\\b', 'u').test(tap), 'Registered suite counter mismatch: ' + label);
 assert.deepEqual(local.registeredPackageSuite, { files: 65, cases: 877, passed: 875, skipped: 2, failed: 0 });

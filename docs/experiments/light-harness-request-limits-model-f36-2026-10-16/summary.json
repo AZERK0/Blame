@@ -2,7 +2,7 @@
   "phase": "F36",
   "knownDiagnostic": true,
   "planned": 12,
-  "completed": 5,
+  "completed": 6,
   "complete": false,
   "arms": {
     "baseline": {
@@ -49,20 +49,20 @@
     },
     "cline": {
       "assigned": 3,
-      "completed": 1,
+      "completed": 2,
       "official": 1,
-      "endpoint": 1,
+      "endpoint": 2,
       "audited": 1,
       "unreviewed": 0,
-      "tokensObserved": 474157,
-      "costUsdObserved": 0.026301920000000003,
+      "tokensObserved": 545944,
+      "costUsdObserved": 0.0398096,
       "partialTokensObserved": 0,
       "partialCostUsdObserved": 0,
-      "workerSeconds": 79.84,
+      "workerSeconds": 680.715,
       "missingConsumption": 0,
       "missingWorkerTime": 0,
-      "missingFullCacheAccounting": 1,
-      "cacheReadAggregateObserved": 414336,
+      "missingFullCacheAccounting": 2,
+      "cacheReadAggregateObserved": 439040,
       "cacheWriteAggregateObserved": 0,
       "missingCacheReadAggregates": 0,
       "missingCacheWriteAggregates": 0,
@@ -271,6 +271,23 @@
       "outputReports": 18,
       "maximumObservedOutput": 1187,
       "outputsAtCap": 0
+    },
+    {
+      "name": "2-yaml-anchor-ranges-cline",
+      "arm": "cline",
+      "expectedCap": null,
+      "forwarded": 4,
+      "exposure": "observed",
+      "mismatchedRequestCount": 0,
+      "exceededOutputReports": 0,
+      "unknownOutputReports": 0,
+      "unreportedAttempts": 1,
+      "allForwardedOutputsObserved": false,
+      "missingCapture": false,
+      "passed": true,
+      "outputReports": 3,
+      "maximumObservedOutput": 2120,
+      "outputsAtCap": 0
     }
   ],
   "accounting": {
@@ -330,18 +347,29 @@
         "unreportedRequestReserveUsd": 0,
         "accountedUsd": 0.02457372,
         "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-yaml-anchor-ranges-cline",
+        "observedUsd": 0.013507680000000001,
+        "forwardedAttempts": 4,
+        "usageReports": 3,
+        "wireUsageCountGap": 1,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0.23,
+        "accountedUsd": 0.24350768,
+        "basis": "wire/report counts; billing unknown"
       }
     ],
-    "observedUsd": 0.1149722,
-    "reservedUsd": 0,
-    "accountedUsd": 0.1149722,
-    "aggregateOnlyObservedUsd": 0.1149722,
+    "observedUsd": 0.12847988,
+    "reservedUsd": 0.23,
+    "accountedUsd": 0.35847988,
+    "aggregateOnlyObservedUsd": 0.12847988,
     "partialUsageObservations": [],
     "partialObservedUsd": 0,
     "reservationNote": "Retain the entire scheduler missing-aggregate allowance in addition to known partial observations. Conservative overlap is explicit; reserves are not spending."
   },
   "priorObservedUsd": 4.432079600000001,
   "priorReservedUsd": 1.48,
-  "totalAccountedUsd": 6.027051800000001,
+  "totalAccountedUsd": 6.27055948,
   "method": "Separate known-task diagnostic. Original bytes archived; strict review never replaced by independent grading. Unknown per-request cache/reasoning retained; costs are SDK estimates, host/researcher/setup/oracle unpriced. No outcome-based extra trials."
 }

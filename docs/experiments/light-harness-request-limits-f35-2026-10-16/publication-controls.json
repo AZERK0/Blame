@@ -24,6 +24,10 @@
     {
       "fault": "changed preregistered cap after dispatch",
       "rejected": true
+    },
+    {
+      "fault": "fabricated baseline cap-test score",
+      "rejected": true
     }
   ],
   "limitation": "Consistency controls, not signed provenance or independent backend adjudication."

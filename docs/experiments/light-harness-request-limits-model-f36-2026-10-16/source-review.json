@@ -68,6 +68,22 @@
       "eventsSha256": "04a997dc799b5ef045fb66ca92dbe9577888a074bfeefb19c4d74f86f5e8daff",
       "diffSha256": "e2e57370c5bd553f805ee521738b511e4d2093bf13da619957a571e563db7e41",
       "scoreSha256": "f62a8f0d3cb9827aa2f2562b8d14bdcc68972bde8643071c9e56119db2a112d7"
+    },
+    {
+      "name": "2-yaml-anchor-ranges-cline",
+      "sourceBehaviorPassed": true,
+      "exactFinalSourceChecksPassed": false,
+      "fullRequestPassed": false,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [
+        "required_final_source_validation_not_executed",
+        "no_final_factual_delivery_before_timeout"
+      ],
+      "notes": "Complete diff and all seven effective tool inputs reviewed. The only implementation patch changes three allowed files,sets exact anchor token offsets via a shared local ParsedNode setter,declares a precise optional tuple and clones both scalar/base and collection tuples independently. The frozen grader confirms behavior,types and original suites on unchanged final source,but the agent runs none of the mandatory final-source validation commands and produces no final delivery. It times out at600.875s; model process exits124,outer watchdog false. Three received usage reports remain in the official aggregate; the fourth recorded forwarding attempt has no usage report and receives the registered reserve. SDK stderr warnings about skipped non-OpenAI reasoning parts are retained; no causal explanation of the stalled response is established. No external solution retrieval,protected-input mutation or researcher recovery occurred. Independent green endpoint does not repair missing agent verification or delivery.",
+      "reviewedAtUTC": "2026-10-16T12:14:26.718Z",
+      "eventsSha256": "49c91f434e22e579d3bd4c9b7bf553403a5d2b9accc9275028a02f9635ad36d7",
+      "diffSha256": "c1c2a32a7941d3d8ed6a62c922b6ab183ad633921b778ccffbc59c67ed3bc552",
+      "scoreSha256": "c17353c31845872966428ec867a1a1a1a5984a18d36ec43b7ed6d6610c4abfed"
     }
   ]
 }

@@ -524,23 +524,23 @@ Full public SDK offline capture reproduces the omission at the Codex host while
 the same configuration reaches an ordinary endpoint. The installed provider module
 explicitly suppresses output limits for \code{chatgpt.com}. Before production
 changes, commit \code{b3618c2a} registers one live output-stress request capped
-at1,024. HTTP200 and \code{response.incomplete}/\code{max_output_tokens} report
-exactly1,024 output tokens, including398 reasoning tokens. The SDK fails the
+at 1,024. HTTP 200 and \code{response.incomplete}/\code{max_output_tokens} report
+exactly 1,024 output tokens, including 398 reasoning tokens. The SDK fails the
 incomplete turn as expected; this is enforcement evidence, not user-task success.
 
 Commit \code{fb9b1b36} adds the opt-in HTTP correction described above. Cap-specific
-controls improve3/8 to8/8, and full SDK configured/unconfigured/other-origin
-controls2/3 to3/3. Compilation, changed-source lint and108 targeted cases pass.
-The registered runtime suite yields875 passes,two skips,zero failures across877
+controls improve 3/8 to 8/8, and full SDK configured/unconfigured/other-origin
+controls 2/3 to 3/3. Compilation, changed-source lint and 108 targeted cases pass.
+The registered runtime suite yields 875 passes, two skips, zero failures across 877
 cases. Corrected offline-fixture/setup errors remain disclosed. Retain contract
 correctness on the tested endpoint/model; useful-output truncation remains a
 quality risk, and backend support is not established for every provider/revision.
 
-F36 preregisters12 assignments on the known YAML task,three dependent repeats and
+F36 preregisters 12 assignments on the known YAML task, three dependent repeats and
 four rotated arms: uncapped/capped Light and uncapped/capped integrated Cline.
 Only the HTTP helper differs between frozen runtimes; factory wiring is common.
 Actual request caps are checked after each trial. This is neither a literal old
-release checkout nor fresh-task confirmation. Original outcomes,uncertainty and
+release checkout nor fresh-task confirmation. Original outcomes, uncertainty and
 financial receipts remain separate; no model efficacy conclusion is available yet.
 
 \section{Accounting, decisions and reproduction}
@@ -577,8 +577,8 @@ addition to observed partial usage; conservative overlap is explicit. The origin
 scheduler ledger is retained separately. Cumulative observed estimates are
 USD4.4301874 plus USD1.48 reserves, accounted USD5.9101874. Missing aggregate/time,
 the wire/report gap, incomplete cache/reasoning and unpriced work remain explicit.
-F35 adds estimated USD0.0018922 with no new reserve: cumulative observed
-USD4.4320796 plus USD1.48 reserves,accounted USD5.9120796. Backend reasoning is
+F35 adds estimated USD 0.0018922 with no new reserve: cumulative observed
+USD 4.4320796 plus USD 1.48 reserves, accounted USD 5.9120796. Backend reasoning is
 observed in that probe but remains unknown in its SDK-normalized usage.
 
 Retain conservative correctness/uncertainty contracts and the locally validated
@@ -611,8 +611,8 @@ or model access. Its reporting-only sensitivity never replaces the primary gate.
 \section{Next hypotheses: proposals, not measurements}
 \begin{enumerate}
 \item Complete F36's fixed cap comparison at unchanged model/effort and criteria.
-Measure complete tool arguments and audited success before output,cost and latency.
-F35 establishes the tested transport contract,not an efficiency gain. Unsupported
+Measure complete tool arguments and audited success before output, cost and latency.
+F35 establishes the tested transport contract, not an efficiency gain. Unsupported
 future parameters and truncated useful reasoning/patches remain regression risks;
 a legacy serializer test is insufficient.
 \item Test bounded read-only dependency declaration access through configured
