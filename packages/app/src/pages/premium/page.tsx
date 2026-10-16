@@ -11,13 +11,13 @@ import { useCloudAuth } from "@/context/cloud-auth"
 import { navigate } from "@/components/navigation/navigation"
 
 const billingOptions = {
-  monthly: { label: "Monthly", price: "$20", suffix: "/month" },
-  yearly: { label: "Yearly", price: "See checkout", suffix: "" },
+  monthly: { label: "Monthly", price: "20", suffix: "USD /month" },
+  yearly: { label: "Yearly", price: "200", suffix: "USD /year" },
 } as const
 
 const licenseFacts = [
-  "Cloud voice transcription",
   "Managed cloud previews",
+  "Cloud voice transcription",
   "Hosted file uploads",
   "Existing usage limits apply",
   "Cancel anytime",
@@ -162,13 +162,7 @@ function PriceSummary({ billingCycle }: { billingCycle: BillingCycle }) {
   return (
     <div>
       <div className="mt-7 flex items-end gap-2">
-        <span
-          className={
-            billingCycle === "monthly"
-              ? "text-6xl leading-none font-semibold tracking-[-0.08em]"
-              : "text-3xl leading-none font-semibold tracking-tight"
-          }
-        >
+        <span className="text-6xl leading-none font-semibold tracking-[-0.04em]">
           {selectedBilling.price}
         </span>
         <span className="pb-2 text-lg text-[#111]/54">
@@ -178,7 +172,7 @@ function PriceSummary({ billingCycle }: { billingCycle: BillingCycle }) {
       <p
         className={`mt-2 min-h-5 text-sm font-medium text-[#111]/54 ${billingCycle === "yearly" ? "visible" : "invisible"}`}
       >
-        The annual price is confirmed in checkout.
+        Billed once a year.
       </p>
     </div>
   )

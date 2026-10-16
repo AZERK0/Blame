@@ -47,7 +47,7 @@ Sign in, open a project, and connect a supported AI provider. Complete the runti
 | Local worktrees and local previews     | Managed Vercel previews                                       |
 | Your own AI provider credentials       | New hosted file uploads, including deployment source archives |
 
-Blame Premium is **$20/month**, with the existing transcription and cloud preview quotas. AI provider usage is subject to your provider's own pricing and limits. Authentication and data ownership checks apply to both plans.
+Blame Premium is **20 USD/month** or **200 USD/year**, billed once a year for the annual plan, with the existing transcription and cloud preview quotas. AI provider usage is subject to your provider's own pricing and limits. Authentication and data ownership checks apply to both plans.
 
 Existing files remain accessible after a subscription expires. Cloud cleanup and source recovery also remain available. See [pricing](https://blame.so/pricing) for the hosted offer.
 

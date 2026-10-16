@@ -75,6 +75,16 @@ const softwareApplicationStructuredData = {
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
     },
+    {
+      "@type": "Offer",
+      name: "Yearly Blame Premium",
+      description:
+        "Managed cloud previews, voice transcription, and hosted file uploads billed once a year.",
+      url: pricingUrl,
+      price: 200,
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+    },
   ],
 };
 

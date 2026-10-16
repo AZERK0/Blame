@@ -8,7 +8,7 @@ import { createIndexablePageMetadata } from "@/lib/seo";
 export const metadata = createIndexablePageMetadata({
   title: "Pricing · Blame",
   description:
-    "Free local development with optional Blame Premium cloud services at 20 USD per month.",
+    "Free local development with optional Blame Premium cloud services at 20 USD per month or 200 USD per year.",
   canonicalPath: "/pricing",
 });
 

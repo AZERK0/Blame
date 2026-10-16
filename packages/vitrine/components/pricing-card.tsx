@@ -17,16 +17,16 @@ const billingOptions = {
   },
   yearly: {
     label: "Yearly",
-    price: "See checkout",
-    suffix: "",
+    price: "200",
+    suffix: "USD /year",
   },
 } as const;
 
 type BillingCycle = keyof typeof billingOptions;
 
 const premiumBenefits = [
-  "Cloud voice transcription",
   "Managed cloud previews",
+  "Cloud voice transcription",
   "Hosted file uploads",
   "Existing usage limits apply",
   "Cancel anytime",
@@ -84,23 +84,18 @@ export function PricingCard() {
         </div>
 
         <div className="mt-7 flex items-end gap-2">
-          <span
-            className={cn(
-              "font-semibold leading-none tracking-[-0.08em] text-[#111]",
-              billingCycle === "monthly" ? "text-6xl" : "text-3xl",
-            )}
-          >
+          <span className="text-6xl font-semibold leading-none tracking-[-0.04em] text-[#111]">
             {selectedBilling.price}
           </span>
           <span className="pb-2 text-lg text-[#111]/54">
             {selectedBilling.suffix}
           </span>
         </div>
-        {billingCycle === "yearly" ? (
-          <p className="mt-2 text-sm font-medium text-[#111]/54">
-            The annual price is confirmed in checkout.
-          </p>
-        ) : null}
+        <p
+          className={`mt-2 min-h-5 text-sm font-medium text-[#111]/54 ${billingCycle === "yearly" ? "visible" : "invisible"}`}
+        >
+          Billed once a year.
+        </p>
         <Link
           href="/download"
           className={buttonVariants({
