@@ -69,11 +69,21 @@ export type BenchmarkMetrics = {
 };
 
 export type BenchmarkContextMetrics = {
-  averageInputTokens: number;
+  averageInputTokens: number | null;
   composition: BenchmarkContextCompositionMetrics;
   compactions: number;
-  maximumInputTokens: number;
-  modelRequests: number;
+  maximumInputTokens: number | null;
+  /** Transport requests are unobserved by this agent-event collector. */
+  modelRequests: number | null;
+  requestObservations: {
+    schemaVersion: "request-observations-v1";
+    coverage: "agent_events_only";
+    iterationStartEvents: number;
+    usageReportEvents: number;
+    inputTokenReportEvents: number;
+    transportAttempts: number | null;
+    completedResponses: number | null;
+  };
   projectMemory: BenchmarkProjectMemoryMetrics;
   toolPayloadBytes: number;
   toolPayloadReplayExposureBytes: number;

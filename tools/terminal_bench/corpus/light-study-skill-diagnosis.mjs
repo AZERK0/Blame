@@ -21,6 +21,8 @@ for (const arm of ["modified", "cline"]) {
     const row = results.rows.find((other) => other.arm === arm && other.id === pair.id &&
       other.repetition === pair.repetition && other.condition === pair.condition);
     const execution = JSON.parse(gunzipSync(await readFile(join(source, "traces", `${row.name}.result.json.gz`))));
+    if (execution.metrics.context.requestObservations)
+      throw Error("Legacy skill diagnosis expects historical input-usage counters. New request-observations metrics require a transport-aware report; do not coerce unknown requests to zero.");
     summary.input += row.usage.input;
     summary.output += row.usage.output;
     summary.modelRequests += execution.metrics.context.modelRequests;

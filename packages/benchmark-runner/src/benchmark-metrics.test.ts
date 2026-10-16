@@ -11,7 +11,9 @@ test("attributes model context and tool payload exposure", () => {
   collector.record(usageEvent(2_000), 4_000);
   collector.record(usageEvent(3_000), 5_000);
   const metrics = collector.summary(new Date(0), new Date(40_000));
-  assert.equal(metrics.context.modelRequests, 3);
+  assert.equal(metrics.context.modelRequests, null);
+  assert.equal(metrics.context.requestObservations.inputTokenReportEvents, 3);
+  assert.equal(metrics.context.requestObservations.usageReportEvents, 3);
   assert.equal(metrics.context.averageInputTokens, 2_000);
   assert.equal(metrics.context.maximumInputTokens, 3_000);
   assert.equal(metrics.tools.calls, 1);

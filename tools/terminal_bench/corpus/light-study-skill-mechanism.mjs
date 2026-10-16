@@ -8,6 +8,8 @@ const results=JSON.parse(raw), ledger=JSON.parse(await readFile(join(directory,'
 const rows=[];
 for (const row of results.rows) {
   const execution=JSON.parse(gunzipSync(await readFile(join(directory,'traces',`${row.name}.result.json.gz`))));
+  if(execution.metrics?.context?.requestObservations)
+    throw Error('Legacy skill mechanism report expects historical input-usage counters. New request-observations metrics require a transport-aware report; do not coerce unknown requests to zero.');
   const tools=ledger.find(x=>x.name===row.name).tools;
   const skills=tools.filter(x=>x.tool==='skills').map(x=>x.input);
   const unused=tools.filter(x=>x.tool==='run_commands').map(x=>Object.fromEntries(Object.entries(x.input).filter(([key])=>key!=='commands'))).filter(x=>Object.keys(x).length);

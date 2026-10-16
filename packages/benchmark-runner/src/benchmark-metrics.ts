@@ -24,6 +24,8 @@ const clineEditTools = new Set(["apply_patch", "editor"]);
 export class BenchmarkMetricsCollector {
   private readonly activeTools = new Map<string, ActiveTool>();
   private readonly inputTokens: number[] = [];
+  private iterationStartEvents = 0;
+  private usageReportEvents = 0;
   private readonly spans: ToolSpan[] = [];
   private readonly toolsByName = new Map<string, BenchmarkNamedToolMetrics>();
   private readonly compositionCategories = new Map<string, number>();
@@ -86,15 +88,17 @@ export class BenchmarkMetricsCollector {
   }
 
   private recordUsage(event: AgentEvent) {
+    this.usageReportEvents += 1;
     const usage = recordValue(recordValue(event.payload).usage);
     const inputTokens = numberValue(usage.inputTokens);
-    if (inputTokens !== undefined) this.inputTokens.push(inputTokens);
+    if (inputTokens !== undefined && inputTokens >= 0) this.inputTokens.push(inputTokens);
   }
 
   private recordNotice(event: AgentEvent) {
     const payload = recordValue(event.payload);
     const kind = stringValue(payload.kind) ?? stringValue(payload.reason) ?? "";
     const message = stringValue(payload.message) ?? "";
+    if (message === "Agent iteration started.") this.iterationStartEvents += 1;
     if (kind === "context_composed") this.recordComposition(payload.metrics);
     if (kind === "project_memory_selected")
       this.recordProjectMemory(payload.metrics);
@@ -277,11 +281,22 @@ export class BenchmarkMetricsCollector {
   private contextMetrics(tools: BenchmarkNamedToolMetrics) {
     const totalInput = this.inputTokens.reduce((sum, value) => sum + value, 0);
     return {
-      averageInputTokens: roundedAverage(totalInput, this.inputTokens.length),
+      averageInputTokens: this.inputTokens.length ? roundedAverage(totalInput, this.inputTokens.length) : null,
       composition: this.compositionMetrics(),
       compactions: this.compactions,
-      maximumInputTokens: Math.max(0, ...this.inputTokens),
-      modelRequests: this.inputTokens.length,
+      maximumInputTokens: this.inputTokens.length ? Math.max(...this.inputTokens) : null,
+      modelRequests: null,
+      requestObservations: {
+        schemaVersion: "request-observations-v1" as const,
+        coverage: "agent_events_only" as const,
+        iterationStartEvents: this.iterationStartEvents,
+        usageReportEvents: this.usageReportEvents,
+        inputTokenReportEvents: this.inputTokens.length,
+        // Iterations, composition and usage events do not observe forwarding,
+        // completed HTTP responses, hidden retries or provider billing.
+        transportAttempts: null,
+        completedResponses: null,
+      },
       projectMemory: this.projectMemoryMetrics(),
       toolPayloadBytes: tools.inputBytes + tools.outputBytes,
       toolPayloadReplayExposureBytes: this.replayExposureBytes(),
