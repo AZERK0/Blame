@@ -6,7 +6,7 @@ Blame connects tasks, coding agents, isolated Git worktrees, previews, and code 
 
 [Download](https://blame.so/download) · [Website](https://blame.so) · [Features](#features) · [Development](#development) · [Documentation](#documentation) · [Contributing](#contributing)
 
-[![Quality](https://github.com/AZERK0/Blame/actions/workflows/quality.yml/badge.svg)](https://github.com/AZERK0/Blame/actions/workflows/quality.yml)
+[![CI](https://github.com/AZERK0/Blame/actions/workflows/ci.yml/badge.svg)](https://github.com/AZERK0/Blame/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
 [![Watch the Blame demo on YouTube](packages/vitrine/public/demo.gif)](https://youtu.be/cD6jASpIKQw)
@@ -157,7 +157,7 @@ API tests use `packages/api/.env.test`. Configure a dedicated test database befo
 pnpm --filter @blame/api test
 ```
 
-`pnpm build` and `pnpm test` run the monorepo-wide pipelines. Individual packages also expose focused suites. See the [quality workflow](.github/workflows/quality.yml) for the checks run in CI and the [desktop documentation](packages/desktop/README.md) for packaging and runtime images.
+`pnpm build` and `pnpm test` run the monorepo-wide pipelines. Individual packages also expose focused suites. See the [CI workflow](.github/workflows/ci.yml) for the checks run in CI and the [desktop documentation](packages/desktop/README.md) for packaging and runtime images.
 
 ### Self-hosting status
 
@@ -186,6 +186,7 @@ Engineering summaries are maintained as standalone English LaTeX sources:
 - [Semantic harness study](docs/semantic-harness-study.tex) — measured results, implementation guarantees, limitations, and research directions.
 - [Refactoring summary](docs/refactoring-summary.tex) — changes to module responsibilities and validation.
 - [Open-source readiness](docs/open-source-readiness.tex) — licensing, self-hosting, and release preparation.
+- [Releasing](RELEASING.md) — how the desktop app and its runtimes are built and published.
 
 Each `.tex` document can be compiled independently. Benchmark results describe the versions and conditions under which they were measured; source code and tests define current behavior.
 

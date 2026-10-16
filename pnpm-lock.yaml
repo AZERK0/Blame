@@ -25,9 +25,6 @@ importers:
 
   .:
     devDependencies:
-      '@aws-sdk/client-s3':
-        specifier: ^3.1095.0
-        version: 3.1095.0
       prettier:
         specifier: ^3.7.4
         version: 3.8.3
@@ -386,7 +383,7 @@ importers:
         version: 7.5.0
       ghostty-web:
         specifier: github:anomalyco/ghostty-web#main
-        version: https://codeload.github.com/anomalyco/ghostty-web/tar.gz/83c0a07b8628b748aed073b232cb4b52a6ca11c1
+        version: https://codeload.github.com/anomalyco/ghostty-web/tar.gz/6e24d040458ddd7aae81572fe2901deec32f9fe7
       lucide-react:
         specifier: 1.14.0
         version: 1.14.0(react@19.2.6)
@@ -7285,8 +7282,8 @@ packages:
   getopts@2.3.0:
     resolution: {integrity: sha512-5eDf9fuSXwxBL6q5HX+dhDj+dslFGWzU5thZ9kNKUkcPtaPdatmUFKwHFrLb/uf/WpA4BHET+AX3Scl56cAjpA==}
 
-  ghostty-web@https://codeload.github.com/anomalyco/ghostty-web/tar.gz/83c0a07b8628b748aed073b232cb4b52a6ca11c1:
-    resolution: {tarball: https://codeload.github.com/anomalyco/ghostty-web/tar.gz/83c0a07b8628b748aed073b232cb4b52a6ca11c1}
+  ghostty-web@https://codeload.github.com/anomalyco/ghostty-web/tar.gz/6e24d040458ddd7aae81572fe2901deec32f9fe7:
+    resolution: {tarball: https://codeload.github.com/anomalyco/ghostty-web/tar.gz/6e24d040458ddd7aae81572fe2901deec32f9fe7}
     version: 0.3.0
 
   glob-parent@5.1.2:
@@ -17817,7 +17814,7 @@ snapshots:
 
   getopts@2.3.0: {}
 
-  ghostty-web@https://codeload.github.com/anomalyco/ghostty-web/tar.gz/83c0a07b8628b748aed073b232cb4b52a6ca11c1: {}
+  ghostty-web@https://codeload.github.com/anomalyco/ghostty-web/tar.gz/6e24d040458ddd7aae81572fe2901deec32f9fe7: {}
 
   glob-parent@5.1.2:
     dependencies:

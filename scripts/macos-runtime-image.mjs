@@ -3,7 +3,6 @@ import {
   access,
   mkdir,
   readFile,
-  readdir,
   rename,
   rm,
   writeFile,
@@ -11,19 +10,10 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { createDownloadObjectStorage } from "./download-object-storage.mjs";
-import {
-  loadEnvFiles,
-  requiredEnv,
-  text,
-  upsertEnvValues,
-} from "./env-files.mjs";
+import { loadEnvFiles, requiredEnv, text } from "./env-files.mjs";
 import { resolveLimaBundle } from "./lima-runtime-bundle.mjs";
 import { sha256File } from "./file-sha256.mjs";
-import {
-  macosImagePublicBaseUrl,
-  runtimeLimaImageFileName,
-} from "./runtime-manifest.mjs";
+import { runtimeLimaImageFileName } from "./runtime-manifest.mjs";
 import { runtimeClineSdkVersion } from "./runtime-sdk-version.mjs";
 import { prepareSemanticHarnessPayload } from "./semantic-harness-payload.mjs";
 
@@ -35,7 +25,6 @@ const provisionerPath = join(runtimeRoot, "scripts/provision-blame-runtime.sh");
 const outputDir = join(desktopDir, "dist/runtime/macos");
 const buildRoot = join(tmpdir(), "blame-runtime-macos");
 const semanticHarnessPayload = join(buildRoot, "blame-semantic-harness.tgz");
-const envFile = join(rootDir, ".env.local");
 const architectures = ["x86_64", "aarch64"];
 const instanceStartTimeout = "30m";
 const command = process.argv[2] ?? "help";
@@ -46,11 +35,7 @@ await loadEnvFiles(rootDir);
 
 if (command === "build") await buildImages();
 else if (command === "verify") await verifyImages();
-else if (command === "deploy") await deployImages();
-else if (command === "release") {
-  await buildImages();
-  await deployImages();
-} else {
+else {
   printHelp();
   process.exit(command === "help" ? 0 : 1);
 }
@@ -376,51 +361,6 @@ async function waitForDiskUnlock(image) {
   throw new Error(`QEMU did not release the image lock for ${image}.`);
 }
 
-async function deployImages() {
-  const files = await runtimeFiles();
-  if (!files.length)
-    throw new Error(`No Lima runtime images found in ${outputDir}`);
-
-  const runtimeVersion = requiredRuntimeVersion();
-  const relativeTarget = `runtime/v${runtimeVersion}/macos`;
-  await createDownloadObjectStorage().uploadVersioned(files, relativeTarget);
-  await writeRuntimeEnv(files, runtimeVersion);
-}
-
-async function runtimeFiles() {
-  const runtimeVersion = requiredRuntimeVersion();
-  const expected = new Set(
-    architectures.map((architecture) =>
-      runtimeLimaImageFileName(architecture, runtimeVersion),
-    ),
-  );
-  const entries = await readdir(outputDir);
-  return entries
-    .filter((entry) => expected.has(entry))
-    .map((entry) => join(outputDir, entry));
-}
-
-async function writeRuntimeEnv(files, runtimeVersion) {
-  const baseUrl = macosImagePublicBaseUrl(runtimeVersion);
-  if (!baseUrl)
-    throw new Error(
-      "BLAME_RUNTIME_BASE_URL or BLAME_DOWNLOAD_BASE_URL is required",
-    );
-
-  const values = [["BLAME_RUNTIME_VERSION", runtimeVersion]];
-  for (const file of files) {
-    const architecture = architectureFromFile(file);
-    if (!architecture) continue;
-    const name = architecture.toUpperCase();
-    values.push([
-      `BLAME_RUNTIME_LIMA_${name}_URL`,
-      `${baseUrl}/${runtimeLimaImageFileName(architecture, runtimeVersion)}`,
-    ]);
-    values.push([`BLAME_RUNTIME_LIMA_${name}_SHA256`, await sha256File(file)]);
-  }
-  await upsertEnvValues(envFile, values);
-}
-
 function builderTemplate(manifest, architecture) {
   const image = manifest.baseImages[architecture];
   if (!image?.url || !image?.sha256)
@@ -506,10 +446,6 @@ function requiredNerdctlVersion() {
 
 function requiredNodeVersion() {
   return text(process.env.BLAME_NODE_VERSION) ?? "22.23.1";
-}
-
-function architectureFromFile(file) {
-  return file.match(/blame-runtime-lima-(x86_64|aarch64)-v/)?.[1];
 }
 
 function valueArg(name) {
@@ -618,6 +554,6 @@ function delay(milliseconds) {
 
 function printHelp() {
   console.log(
-    "Usage: node scripts/macos-runtime-image.mjs <build|verify|deploy|release> [--arch x86_64,aarch64] [--all-architectures]",
+    "Usage: node scripts/macos-runtime-image.mjs <build|verify> [--arch x86_64,aarch64] [--all-architectures]",
   );
 }

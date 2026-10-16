@@ -2,7 +2,6 @@ import { spawn } from "node:child_process";
 import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createDownloadObjectStorage } from "./download-object-storage.mjs";
 import { loadEnvFiles, requiredEnv } from "./env-files.mjs";
 import { sha256File } from "./file-sha256.mjs";
 import {
@@ -19,11 +18,9 @@ const platform = valueArg("--platform") ?? "all";
 
 await loadEnvFiles(rootDir);
 
-if (["build", "deploy", "release"].includes(command)) {
-  await runPlatforms(command);
-  if (command === "deploy" || command === "release")
-    await publishRuntimeManifest();
-} else {
+if (command === "build") await runPlatforms("build");
+else if (command === "manifest") await writeRuntimeManifest();
+else {
   printHelp();
   process.exit(command === "help" ? 0 : 1);
 }
@@ -58,7 +55,7 @@ function platformArgs(target) {
   return forwarded;
 }
 
-async function publishRuntimeManifest() {
+async function writeRuntimeManifest() {
   const runtimeVersion = requiredEnv("BLAME_RUNTIME_VERSION");
   const manifest = {
     runtimeVersion,
@@ -85,8 +82,7 @@ async function publishRuntimeManifest() {
     `${JSON.stringify(manifest, null, 2)}\n`,
     "utf8",
   );
-  await uploadManifest(manifestPath, runtimeVersion);
-  console.log(`Published runtime manifest for v${runtimeVersion}`);
+  console.log(`Wrote ${manifestPath}`);
 }
 
 async function platformArtifacts(platformName, baseUrl, runtimeVersion) {
@@ -135,13 +131,6 @@ function assertCompleteManifest(manifest) {
   }
 }
 
-async function uploadManifest(manifestPath, runtimeVersion) {
-  await createDownloadObjectStorage().uploadVersioned(
-    [manifestPath],
-    `runtime/v${runtimeVersion}`,
-  );
-}
-
 function valueArg(name) {
   const index = args.indexOf(name);
   return index < 0 ? undefined : args[index + 1];
@@ -170,6 +159,10 @@ function run(commandName, commandArgs) {
 
 function printHelp() {
   console.log(
-    "Usage: node scripts/runtime-release.mjs <build|deploy|release> [--platform all|windows|macos] [--all-architectures] [--windows-arch amd64,arm64] [--macos-arch x86_64,aarch64]",
+    [
+      "Usage:",
+      "  node scripts/runtime-release.mjs build [--platform all|windows|macos] [--arch <arch>] [--all-architectures] [--windows-arch amd64,arm64] [--macos-arch x86_64,aarch64]",
+      "  node scripts/runtime-release.mjs manifest   Write dist/runtime/v<BLAME_RUNTIME_VERSION>/manifest.json from the four built images",
+    ].join("\n"),
   );
 }

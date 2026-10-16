@@ -1,0 +1,149 @@
+# Push a `v<version>` tag to build every installer and attach them to a draft
+# GitHub Release. Test the draft, then publish it: download.blame.so and the
+# in-app updater follow the latest published release.
+name: Release desktop
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-desktop-${{ github.ref }}
+
+env:
+  BLAME_DOWNLOAD_BASE_URL: https://download.blame.so/latest
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      runtime_version: ${{ steps.runtime.outputs.runtime_version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      - id: version
+        name: Resolve version from tag
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME is not v<semver>"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - run: node --test scripts/macos-signing.test.mjs
+      - run: pnpm --filter @blame/desktop test:package
+
+      - id: runtime
+        name: Verify published runtime
+        run: node scripts/release-preflight.mjs
+
+  build:
+    name: Build ${{ matrix.name }}
+    needs: preflight
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macos-x64
+            runner: macos-15-intel
+            args: --mac --x64
+          - name: macos-arm64
+            runner: macos-latest
+            args: --mac --arm64
+          - name: windows-x64
+            runner: windows-latest
+            args: --win --x64
+          - name: linux-x64
+            runner: ubuntu-latest
+            args: --linux --x64
+    env:
+      BLAME_VERSION: ${{ needs.preflight.outputs.version }}
+      BLAME_RUNTIME_VERSION: ${{ needs.preflight.outputs.runtime_version }}
+      BLAME_REQUIRE_PREBUILT_RUNTIME: true
+      BLAME_HOMEPAGE: ${{ vars.BLAME_HOMEPAGE }}
+      BLAME_MAINTAINER_EMAIL: ${{ vars.BLAME_MAINTAINER_EMAIL }}
+      BLAME_MAINTAINER_NAME: ${{ vars.BLAME_MAINTAINER_NAME }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Linux packaging dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends rpm
+
+      - uses: ./.github/actions/setup
+
+      - name: Test package integrity on target OS
+        run: pnpm --filter @blame/desktop test:package
+
+      - name: Build signed macOS installers
+        if: runner.os == 'macOS'
+        run: node scripts/desktop-release.mjs build ${{ matrix.args }}
+        env:
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_KEY_P8_B64: ${{ secrets.APPLE_API_KEY_P8_B64 }}
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+
+      - name: Build installers
+        if: runner.os != 'macOS'
+        run: node scripts/desktop-release.mjs build ${{ matrix.args }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: desktop-${{ matrix.name }}
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 3
+          path: |
+            packages/desktop/dist/*.AppImage
+            packages/desktop/dist/*.blockmap
+            packages/desktop/dist/*.deb
+            packages/desktop/dist/*.dmg
+            packages/desktop/dist/*.exe
+            packages/desktop/dist/*.rpm
+            packages/desktop/dist/*.zip
+            packages/desktop/dist/latest*.yml
+
+  draft:
+    name: Draft GitHub Release
+    needs: [preflight, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.preflight.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          pattern: desktop-*
+
+      - name: Collect release files
+        run: node scripts/desktop-release.mjs collect artifacts release
+
+      - name: Create or update the draft release
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release/* --clobber
+          else
+            flags=(--draft --generate-notes --title "Blame $VERSION" --verify-tag)
+            if [[ "$VERSION" == *-* ]]; then
+              flags+=(--prerelease)
+            fi
+            gh release create "$GITHUB_REF_NAME" release/* "${flags[@]}"
+          fi

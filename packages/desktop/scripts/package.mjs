@@ -169,7 +169,7 @@ function assertSingleMacosArchitecture(builderArgs) {
     builderArgs.includes("--arm64")
   ) {
     throw new Error(
-      "macOS x64 and arm64 packages must be staged separately so each app embeds the matching Lima bundle. Use `pnpm build:macos` or `pnpm release:macos`.",
+      "macOS x64 and arm64 packages must be staged separately so each app embeds the matching Lima bundle. Use `pnpm build:desktop --mac --x64 --arm64`.",
     );
   }
 }
