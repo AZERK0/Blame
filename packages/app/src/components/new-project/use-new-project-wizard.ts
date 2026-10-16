@@ -6,7 +6,7 @@ import type {
 } from "@blame/agent-runtime"
 import { toast } from "sonner"
 
-import { useModelSelection } from "@/components/model/model-selector"
+import { useModelSelection } from "@/components/model/model-selection"
 import { newProjectHostDependencyScript } from "@/components/new-project/new-project-host-dependencies"
 import {
   defaultNewProjectConfiguration,

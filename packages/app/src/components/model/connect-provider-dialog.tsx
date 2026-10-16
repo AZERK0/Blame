@@ -10,11 +10,8 @@ import type {
   ProviderCredentialSummary,
 } from "@blame/agent-runtime"
 
-import {
-  ProviderMark,
-  type ModelSelection,
-  popularProviders,
-} from "@/components/model/model-selector"
+import { ProviderMark } from "@/components/model/model-selector"
+import { type ModelSelection, popularProviders } from "@/components/model/model-selection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {

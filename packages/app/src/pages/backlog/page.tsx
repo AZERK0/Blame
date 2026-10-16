@@ -70,7 +70,7 @@ import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
-import { useModelSelection } from "@/components/model/model-selector"
+import { useModelSelection } from "@/components/model/model-selection"
 import {
   projectInitializing,
   useProjectInitialization,

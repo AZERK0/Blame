@@ -1,19 +1,14 @@
 import * as React from "react"
 import { toast } from "sonner"
-import { taskComplexityBucket } from "@blame/agent-runtime/telemetry-cohorts"
 import type { AgentEvent } from "@blame/agent-runtime"
 
 import type {
   UserStory,
-  UserStoryAgentActivity,
   UserStoryAgentRun,
   UserStoryAgentRunUpdate,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
-import {
-  userStoryDisplayId,
-  userStoryReadyForAgent,
-} from "@/components/backlog/data/backlog-data"
+import { userStoryDisplayId } from "@/components/backlog/data/backlog-data"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
   agentEventText,
@@ -52,7 +47,7 @@ import {
 } from "@/components/backlog/data/agent-run-recovery"
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
-import { useModelSelection } from "@/components/model/model-selector"
+import { useModelSelection } from "@/components/model/model-selection"
 import { useCloudAuth } from "@/context/cloud-auth"
 import type { HostDependencyReport } from "@/context/platform"
 import { usePlatform } from "@/context/platform"
@@ -60,19 +55,52 @@ import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import { effectiveProjectCodePractices } from "@/lib/project-code-practice-preferences"
 import { useRuntimePreference } from "@/lib/runtime-preference"
-import { showSystemNotification } from "@/lib/system-notifications"
 import {
   measurePerformanceOperation,
   recordPerformanceCount,
   recordPerformanceEvent,
   recordPerformanceMetric,
 } from "@/lib/performance-diagnostics"
+import {
+  activeAgentRun,
+  activePreviewStory,
+  activeStory,
+  activityUpdates,
+  agentAuthenticationErrorKey,
+  agentMetadataUpdate,
+  agentRunEventUpdate,
+  agentRunMetadataUpdate,
+  clearPendingAgentUpdates,
+  clineLogPath,
+  clineLogRelativePath,
+  definedUpdate,
+  errorMessage,
+  expiredAuthenticationToken,
+  type HostDependenciesDialogState,
+  nextAgentRun,
+  notifyCommentResponseCompleted,
+  pausedAgentUpdate,
+  pendingAgentUpdate,
+  type PendingAgentUpdate,
+  previewRecoveryStateKey,
+  projectInitializing,
+  type QueuedAgentUpdate,
+  queuedStories,
+  recoverableAgentRun,
+  recoveredMessageCount,
+  reportAgentPersistenceError,
+  rotationBlocker,
+  runFlowState,
+  runningAgentRunsForStory,
+  runningStories,
+  staleAgentRunAge,
+  storyTelemetryCohorts,
+} from "./backlog-rotation-helpers"
 
 const maxConcurrentDevelopmentStories = 3
 const blockerRetryDelay = 30_000
 const previewRecoveryIntervalMs = 30_000
 const agentCompletionRecoveryIntervalMs = 60_000
-const agentCompletionRecoveryGraceMs = 60_000
 const agentEventPersistDelayMs = 1_500
 const interruptedAgentMessage =
   "Agent interrupted while Blame was offline. Resume when ready."
@@ -1066,336 +1094,4 @@ export function useBacklogRotation(
       storyTitle: hostDependenciesDialog?.storyTitle,
     },
   }
-}
-
-function activeStory(story: UserStory, stories: UserStory[]) {
-  return stories.find((currentStory) => currentStory.id === story.id) ?? story
-}
-
-function activeAgentRun(story: UserStory, run: UserStoryAgentRun) {
-  return story.agentRuns?.find((currentRun) => currentRun.id === run.id)
-}
-
-function reportAgentPersistenceError(error: unknown) {
-  console.error("Failed to persist agent update.", error)
-}
-
-type QueuedAgentUpdate = {
-  activities: UserStoryAgentActivity[]
-  input: UserStoryUpdate
-  run?: UserStoryAgentRun
-  runInput: UserStoryAgentRunUpdate
-}
-
-type PendingAgentUpdate = QueuedAgentUpdate & {
-  timer: number
-}
-
-type HostDependenciesDialogState = {
-  checking: boolean
-  report: HostDependencyReport
-  runtimeProfile: ReturnType<typeof useRuntimePreference>["profile"]
-  storyId: string
-  storyTitle: string
-}
-
-function clearPendingAgentUpdates(updates: Map<string, PendingAgentUpdate>) {
-  updates.forEach((update) => window.clearTimeout(update.timer))
-  updates.clear()
-}
-
-function definedUpdate(input: object) {
-  return Object.fromEntries(
-    Object.entries(input).filter(([, value]) => value !== undefined)
-  )
-}
-
-function pendingAgentUpdate(
-  pending: QueuedAgentUpdate | undefined,
-  input: UserStoryUpdate,
-  run: UserStoryAgentRun | undefined,
-  runInput: UserStoryAgentRunUpdate
-): QueuedAgentUpdate {
-  return {
-    activities: nextAgentActivities(
-      pending?.activities ?? [],
-      activityUpdates(input)
-    ),
-    input: { ...pending?.input, ...input },
-    run: pending?.run ?? run,
-    runInput: { ...pending?.runInput, ...runInput },
-  }
-}
-
-function nextAgentActivities(
-  activities: UserStoryAgentActivity[],
-  updates: UserStoryAgentActivity[]
-) {
-  return updates.reduce(upsertAgentActivity, activities)
-}
-
-function activityUpdates(input: UserStoryUpdate) {
-  return input.agentActivityUpdates ?? activityUpdateList(input.agentActivity)
-}
-
-function activityUpdateList(
-  activity: UserStoryAgentActivity | null | undefined
-) {
-  return activity ? [activity] : []
-}
-
-function upsertAgentActivity(
-  activities: UserStoryAgentActivity[],
-  activity: UserStoryAgentActivity
-) {
-  const exists = activities.some((item) => item.id === activity.id)
-  if (!exists) return [...activities, activity]
-  return activities.map((item) => (item.id === activity.id ? activity : item))
-}
-
-function agentMetadataUpdate(input: UserStoryUpdate): UserStoryUpdate {
-  const { agentActivities, agentActivity, agentActivityUpdates, ...metadata } =
-    input
-  void agentActivities
-  void agentActivity
-  void agentActivityUpdates
-  return metadata
-}
-
-function pausedAgentUpdate(input: UserStoryUpdate) {
-  return input.status === "in-progress" && input.agentStatus === "Paused"
-}
-
-function agentRunMetadataUpdate(
-  input: UserStoryAgentRunUpdate
-): UserStoryAgentRunUpdate {
-  const { activities, agentActivity, agentActivityUpdates, ...metadata } = input
-  void activities
-  void agentActivity
-  void agentActivityUpdates
-  return metadata
-}
-
-function agentRunEventUpdate(
-  update: UserStoryUpdate,
-  event: AgentEvent,
-  text: string
-): UserStoryAgentRunUpdate {
-  const input: UserStoryAgentRunUpdate = {}
-  if (update.agentActivity) input.agentActivity = update.agentActivity
-  if (update.agentActivityUpdates)
-    input.agentActivityUpdates = update.agentActivityUpdates
-  if (update.agentUsage) input.usage = update.agentUsage
-  if (update.agentFinalResponse !== undefined)
-    input.finalResponse = update.agentFinalResponse
-  if (update.agentSessionSummary !== undefined)
-    input.sessionSummary = update.agentSessionSummary
-  if (completedAgentRun(event)) {
-    input.status = "completed"
-    input.completedAt = new Date().toISOString()
-  }
-  if (cancelledAgentRun(event)) {
-    input.status = "cancelled"
-    input.finalResponse = update.agentFinalResponse ?? text
-    input.completedAt = new Date().toISOString()
-  }
-  if (failedAgentRun(event) && !cancelledAgentRun(event)) {
-    input.status = "failed"
-    input.finalResponse = update.agentFinalResponse ?? text
-    input.completedAt = new Date().toISOString()
-  }
-  return input
-}
-
-function notifyCommentResponseCompleted(
-  story: UserStory,
-  run: UserStoryAgentRun | undefined,
-  platform: ReturnType<typeof usePlatform>
-) {
-  if (!run?.commentId) return
-  void showSystemNotification(platform, {
-    body: `${userStoryDisplayId(story)} · ${story.title}`,
-    title: "Agent replied to a comment",
-  })
-}
-
-function runningStories(stories: UserStory[]) {
-  return stories.filter(
-    (story) => story.status === "in-progress" && story.agentStatus !== "Paused"
-  ).length
-}
-
-function queuedStories(
-  stories: UserStory[],
-  startingStoryIds: Set<string>,
-  blockedStories: Map<string, number>
-) {
-  const now = Date.now()
-  return stories
-    .filter(
-      (story) =>
-        userStoryReadyForAgent(story) &&
-        !startingStoryIds.has(story.id) &&
-        !blocked(story.id, blockedStories, now)
-    )
-    .sort(
-      (left, right) =>
-        new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime()
-    )
-}
-
-function blocked(
-  storyId: string,
-  blockedStories: Map<string, number>,
-  now: number
-) {
-  const retryAt = blockedStories.get(storyId)
-  if (!retryAt) return false
-  if (retryAt > now) return true
-  blockedStories.delete(storyId)
-  return false
-}
-
-function projectInitializing(status: string | undefined) {
-  return !status || status === "pending" || status === "running"
-}
-
-function rotationBlocker(
-  authStatus: ReturnType<typeof useCloudAuth>["status"],
-  platform: ReturnType<typeof usePlatform>,
-  model: ReturnType<typeof useModelSelection>["currentModel"]
-) {
-  if (authStatus !== "authenticated") return "Authentication is required."
-  if (!platform.agent) return "Desktop agent runtime is not available."
-  if (!platform.workspace?.createWorktree)
-    return "Desktop worktree runtime is not available."
-  if (!platform.workspace.checkHostDependencies)
-    return "Desktop host dependency checks are not available."
-  if (!platform.workspace.prepareProjectPreview)
-    return "Desktop preview preparation is not available."
-  if (!model) return "Choose a model before starting queued user stories."
-  return undefined
-}
-
-function recoverableAgentRun(story: UserStory) {
-  return runningAgentRunsForStory(story).findLast(
-    (run) =>
-      !run.finalResponse &&
-      staleAgentRun(run) &&
-      Boolean(run.clineSessionId ?? story.clineSessionId)
-  )
-}
-
-function runningAgentRunsForStory(story: UserStory) {
-  const runs = new Map(
-    (story.runningAgentRuns ?? []).map((run) => [run.id, run])
-  )
-  story.agentRuns?.forEach((run) => runs.set(run.id, run))
-  return [...runs.values()].filter((run) => run.status === "running")
-}
-
-function nextAgentRun(story: UserStory, run: UserStoryAgentRun) {
-  return story.agentRuns?.find(
-    (candidate) =>
-      candidate.id !== run.id &&
-      Date.parse(candidate.createdAt) > Date.parse(run.createdAt)
-  )
-}
-
-function runFlowState(run: UserStoryAgentRun) {
-  return {
-    agentActivities: run.activities,
-    agentFinalResponse: run.finalResponse,
-    agentSessionSummary: run.sessionSummary,
-    agentUsage: run.usage,
-  }
-}
-
-function staleAgentRun(run: UserStoryAgentRun) {
-  return staleAgentRunAge(run) >= agentCompletionRecoveryGraceMs
-}
-
-function staleAgentRunAge(run: UserStoryAgentRun) {
-  const updatedAt = run.updatedAt ?? run.createdAt
-  return Math.max(0, Date.now() - new Date(updatedAt).getTime())
-}
-
-function recoveredMessageCount(value: unknown) {
-  if (Array.isArray(value)) return value.length
-  if (!value || typeof value !== "object") return 0
-  const messages = (value as Record<string, unknown>).messages
-  return Array.isArray(messages) ? messages.length : 0
-}
-
-function storyTaskComplexity(story: UserStory) {
-  const promptLength = story.title.length + story.summary.length
-  const attachmentCount =
-    (story.codeSelectionAttachments?.length ?? 0) +
-    (story.fileAttachments?.length ?? 0)
-  return taskComplexityBucket(promptLength, attachmentCount)
-}
-
-function storyTelemetryCohorts(
-  story: UserStory,
-  modelId: string | null | undefined,
-  providerId: string | null | undefined
-) {
-  if (!modelId || !providerId) return undefined
-  return {
-    agentStrategy: "multi_agent" as const,
-    modelId,
-    providerId,
-    taskComplexityBucket: storyTaskComplexity(story),
-  }
-}
-
-function clineLogPath(worktree: string, sessionId: string) {
-  return `${worktree}/.blame/logs/cline-${sessionId}.log`
-}
-
-function clineLogRelativePath(sessionId: string) {
-  return `.blame/logs/cline-${sessionId}.log`
-}
-
-function activePreviewStory(story: UserStory) {
-  return (
-    (story.status === "in-progress" || story.status === "in-review") &&
-    Boolean(story.worktree) &&
-    Boolean(story.previewUrl || story.runConfigurationId)
-  )
-}
-
-function previewRecoveryStateKey(stories: UserStory[]) {
-  return stories
-    .filter(activePreviewStory)
-    .map((story) =>
-      [
-        story.id,
-        story.status,
-        story.worktree,
-        story.workspaceMode,
-        story.previewUrl,
-        story.runConfigurationId,
-      ].join("\0")
-    )
-    .sort()
-    .join("\n")
-}
-
-function errorMessage(error: unknown) {
-  return error instanceof Error
-    ? error.message
-    : "Unable to start queued user story."
-}
-
-function expiredAuthenticationToken(message: string) {
-  const normalized = message.toLowerCase()
-  return (
-    normalized.includes("authentication token") &&
-    normalized.includes("invalidated")
-  )
-}
-
-function agentAuthenticationErrorKey(story: UserStory) {
-  return `${story.id}:expired-authentication-token`
 }

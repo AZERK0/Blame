@@ -6,10 +6,8 @@ import {
   ProviderMark,
   modelDisplayName,
   modelReactKey,
-  type ModelGroup,
-  type ModelSelection,
-  type SelectableModel,
 } from "@/components/model/model-selector"
+import { type ModelGroup, type ModelSelection, type SelectableModel } from "@/components/model/model-selection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {

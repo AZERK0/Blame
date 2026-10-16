@@ -4,7 +4,7 @@ import type { AgentUsageSummary, AgentUsageTotals } from "@blame/agent-runtime"
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { DiffStats } from "@/components/backlog/development/development-diff-stats"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
-import { useModelSelection } from "@/components/model/model-selector"
+import { useModelSelection } from "@/components/model/model-selection"
 import { Separator } from "@/components/ui/separator"
 import { usePlatform } from "@/context/platform"
 

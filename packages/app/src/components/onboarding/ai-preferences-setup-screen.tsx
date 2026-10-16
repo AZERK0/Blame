@@ -20,11 +20,13 @@ import {
   ProviderMark,
   modelDisplayName,
   modelReactKey,
+} from "@/components/model/model-selector"
+import {
   type ModelPreferenceRole,
   type ModelSelection,
   type SelectableModel,
   useModelSelection,
-} from "@/components/model/model-selector"
+} from "@/components/model/model-selection"
 import { Button } from "@/components/ui/button"
 import {
   Command,

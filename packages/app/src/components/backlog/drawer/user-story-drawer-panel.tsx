@@ -22,7 +22,6 @@ import type {
   StopAgentChoice,
 } from "@/components/backlog/actions/story-action-dialogs"
 import { ColumnStatusBadge } from "@/components/backlog/shared/backlog-status-badge"
-import { UserStoryTitleCloud } from "@/components/backlog/shared/user-story-title-cloud"
 import type {
   DrawerAction,
   OpenDrawer,
@@ -47,7 +46,6 @@ import {
   hasDevelopmentTab,
   normalizeDevelopmentTab,
 } from "@/components/backlog/drawer/user-story-drawer-helpers"
-import { DrawerSidebar } from "@/components/backlog/drawer/user-story-drawer-sidebar"
 import {
   UserStoryContent,
   UserStoryFixedSection,
@@ -62,7 +60,6 @@ import {
   composerDraftStorageKey,
   readComposerDraft,
   removeComposerDraft,
-  type ComposerDraft,
   writeComposerDraft,
 } from "@/components/backlog/drawer/composer-draft-storage"
 import {
@@ -78,21 +75,26 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer"
-import { Input } from "@/components/ui/input"
-import {
-  MessageScroller,
-  MessageScrollerButton,
-  MessageScrollerContent,
-  MessageScrollerProvider,
-  MessageScrollerViewport,
-} from "@/components/ui/message-scroller"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 import { createUserStoryCommentSubmission } from "./user-story-comment-submission"
-
-const drawerSidebarStorageKey = "blame.app.user-story-drawer-sidebar-open.v1"
+import {
+  actionInput,
+  createdAtLabel,
+  createInput,
+  DrawerBody,
+  drawerComposerDraft,
+  DrawerHeaderTitle,
+  DrawerSidebarIsland,
+  drawerSidebarStorageKey,
+  initialDrawerTab,
+  isSendToDevAgentShortcut,
+  mergeAttachments,
+  type PendingComposerDraft,
+  readSidebarOpen,
+  updatePendingDraftMarkdown,
+} from "./user-story-drawer-parts"
 const composerDraftPersistDelayMs = 500
 const drawerHeaderSoftBlurMask = {
   maskImage:
@@ -104,11 +106,6 @@ const drawerHeaderStrongBlurMask = {
   maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
   WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
 } satisfies React.CSSProperties
-
-type PendingComposerDraft = {
-  draft: ComposerDraft
-  key: string
-}
 
 export function UserStoryDrawerPanel({
   diffStats,
@@ -870,254 +867,4 @@ export function UserStoryDrawerPanel({
         ?.focus()
     })
   }
-}
-
-function initialDrawerTab(
-  hasDevelopment: boolean,
-  hasPreview: boolean,
-  focusComment: boolean | undefined,
-  initialTab: UserStoryDrawerTab
-) {
-  if (focusComment || !hasDevelopment) return "user-story"
-  if (initialTab === "preview" && !hasPreview) return "user-story"
-  return initialTab
-}
-
-function DrawerHeaderTitle({
-  mode,
-  onTitleChange,
-  title,
-  titleGenerating,
-  userStory,
-}: {
-  mode: UserStoryDrawerMode
-  onTitleChange: (title: string) => void
-  title: string
-  titleGenerating?: boolean
-  userStory?: UserStory
-}) {
-  return (
-    <UserStoryTitleCloud active={titleGenerating} className="block w-full">
-      <Input
-        value={title}
-        onChange={(event) => onTitleChange(event.currentTarget.value)}
-        placeholder="User story title"
-        readOnly={
-          mode !== "create" &&
-          userStory?.status !== "backlog" &&
-          userStory?.status !== "discarded"
-        }
-        className="-mx-2 !h-auto rounded-md !border-transparent !bg-transparent px-2 py-1 font-heading !text-3xl leading-tight font-semibold shadow-none hover:!border-transparent focus:!border-transparent focus-visible:!border-transparent focus-visible:!ring-0 active:!border-transparent md:!text-3xl dark:!bg-transparent"
-      />
-    </UserStoryTitleCloud>
-  )
-}
-
-function DrawerBody({
-  children,
-  fixedSection,
-  headerTabsVisible,
-  resetKey,
-  sidebarOpen,
-}: {
-  children: React.ReactNode
-  fixedSection?: React.ReactNode
-  headerTabsVisible: boolean
-  resetKey: string
-  sidebarOpen: boolean
-}) {
-  const fixedSectionRef = React.useRef<HTMLDivElement>(null)
-  const [fixedSectionHeight, setFixedSectionHeight] = React.useState(0)
-  const fixedSectionVisible = Boolean(fixedSection)
-  const topPaddingClassName = headerTabsVisible ? "pt-36" : "pt-28"
-  const contentClassName = sidebarOpen
-    ? cn(
-        "mx-auto flex max-w-5xl flex-col gap-6 px-6 lg:mx-0 lg:mr-[26rem]",
-        topPaddingClassName
-      )
-    : cn("flex w-full flex-col gap-6 px-6", topPaddingClassName)
-  const fixedSectionClassName = sidebarOpen
-    ? "pointer-events-none absolute right-0 bottom-0 left-0 z-20 lg:right-[26rem]"
-    : "pointer-events-none absolute right-0 bottom-0 left-0 z-20"
-  const fixedSectionContentClassName = "w-full px-6"
-  const bottomInset = Math.max(fixedSectionHeight, 24)
-
-  React.useLayoutEffect(() => {
-    const section = fixedSectionRef.current
-    if (!section || !fixedSectionVisible) return
-
-    const updateHeight = () => {
-      const nextHeight = Math.ceil(section.getBoundingClientRect().height)
-      setFixedSectionHeight((currentHeight) =>
-        currentHeight === nextHeight ? currentHeight : nextHeight
-      )
-    }
-    updateHeight()
-    const observer = new ResizeObserver(updateHeight)
-    observer.observe(section)
-    return () => observer.disconnect()
-  }, [fixedSectionVisible])
-
-  return (
-    <div className="relative h-full min-h-0 overflow-hidden">
-      <MessageScrollerProvider key={resetKey}>
-        <MessageScroller className="h-full">
-          <MessageScrollerViewport aria-label="User story details">
-            <MessageScrollerContent
-              className={contentClassName}
-              role="group"
-              style={{ paddingBottom: bottomInset }}
-            >
-              {children}
-            </MessageScrollerContent>
-          </MessageScrollerViewport>
-          <MessageScrollerButton
-            className="right-6 z-30"
-            style={{ bottom: bottomInset + 16 }}
-          />
-        </MessageScroller>
-      </MessageScrollerProvider>
-      {fixedSection ? (
-        <div ref={fixedSectionRef} className={fixedSectionClassName}>
-          <div className={fixedSectionContentClassName}>{fixedSection}</div>
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-function DrawerSidebarIsland({
-  diffStats,
-  open,
-  userStory,
-}: {
-  diffStats?: UserStoryDiffStats
-  open: boolean
-  userStory?: UserStory
-}) {
-  if (!open) return null
-
-  return (
-    <div className="absolute top-4 right-4 bottom-16 z-20 h-fit w-[min(24rem,calc(100%-2rem))] overflow-hidden rounded-xl bg-input/40 shadow-xl ring-1 shadow-black/10 ring-foreground/20 backdrop-blur-xl dark:bg-muted">
-      <ScrollArea className="h-full min-h-0">
-        <DrawerSidebar diffStats={diffStats} userStory={userStory} />
-      </ScrollArea>
-    </div>
-  )
-}
-
-function drawerComposerDraft(input: {
-  comment: string
-  commentCodeSelectionAttachments: ComposerDraft["codeSelectionAttachments"]
-  commentFileAttachments: ComposerDraft["fileAttachments"]
-  mode: UserStoryDrawerMode
-  summary: string
-  summaryCodeSelectionAttachments: ComposerDraft["codeSelectionAttachments"]
-  summaryFileAttachments: ComposerDraft["fileAttachments"]
-}): ComposerDraft {
-  const createMode = input.mode === "create"
-  return {
-    markdown: createMode ? input.summary : input.comment,
-    codeSelectionAttachments: createMode
-      ? input.summaryCodeSelectionAttachments
-      : input.commentCodeSelectionAttachments,
-    fileAttachments: createMode
-      ? input.summaryFileAttachments
-      : input.commentFileAttachments,
-  }
-}
-
-function updatePendingDraftMarkdown(
-  pendingDraftRef: React.RefObject<PendingComposerDraft | undefined>,
-  enabled: boolean,
-  markdown: string
-) {
-  const pendingDraft = pendingDraftRef.current
-  if (!enabled || !pendingDraft) return
-  pendingDraft.draft = { ...pendingDraft.draft, markdown }
-}
-
-function createInput(
-  action: DrawerAction,
-  title: string,
-  summary: string,
-  codeSelectionAttachments: PendingCodeSelectionAttachment[],
-  fileAttachments: UserStoryFileAttachment[] = []
-): Omit<UserStoryDraft, "projectId"> {
-  return {
-    codeSelectionAttachments,
-    fileAttachments,
-    status: action === "Send to Dev Agent" ? "ready" : "backlog",
-    summary,
-    title: title.trim() || "Untitled user story",
-  }
-}
-
-function actionInput(
-  action: DrawerAction,
-  title: string,
-  summary: string,
-  codeSelectionAttachments: PendingCodeSelectionAttachment[],
-  fileAttachments: UserStoryFileAttachment[]
-): UserStoryUpdate {
-  const base = {
-    codeSelectionAttachments,
-    fileAttachments,
-    summary,
-    title: title.trim() || "Untitled user story",
-  }
-  if (action === "Send to Dev Agent") return { ...base, status: "ready" }
-  if (action === "Dequeue") return { status: "backlog" }
-  if (action === "Stop Agent")
-    return {
-      agentStatus: null,
-      discardedReason: "Stopped by user",
-      status: "discarded",
-    }
-  if (action === "Request Changes")
-    return { agentStatus: "Running", status: "in-progress" }
-  if (action === "Reject")
-    return { discardedReason: "Rejected during review", status: "discarded" }
-  if (action === "Rework as Draft")
-    return { discardedReason: null, status: "backlog" }
-  return base
-}
-
-function createdAtLabel(userStory?: UserStory) {
-  if (!userStory?.createdAt) return "New draft"
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-  }).format(new Date(userStory.createdAt))
-}
-
-function readSidebarOpen() {
-  try {
-    return (
-      JSON.parse(localStorage.getItem(drawerSidebarStorageKey) ?? "false") ===
-      true
-    )
-  } catch {
-    return false
-  }
-}
-
-function isSendToDevAgentShortcut(event: KeyboardEvent) {
-  return (
-    event.key === "Enter" &&
-    !event.repeat &&
-    !event.altKey &&
-    !event.shiftKey &&
-    (event.ctrlKey || event.metaKey)
-  )
-}
-
-function mergeAttachments<T extends { id: string }>(current: T[], loaded: T[]) {
-  const loadedIds = new Set(loaded.map((attachment) => attachment.id))
-  const missing = loaded.filter(
-    (attachment) => !current.some((item) => item.id === attachment.id)
-  )
-  if (!missing.length && current.every((item) => loadedIds.has(item.id))) {
-    return current
-  }
-  return [...missing, ...current]
 }

@@ -30,10 +30,8 @@ import {
   agentTurnMetricsTarget,
   useAgentTurnMetrics,
 } from "@/components/chat/agent-turn-metrics"
-import {
-  ModelSelector,
-  useModelSelection,
-} from "@/components/model/model-selector"
+import { ModelSelector } from "@/components/model/model-selector"
+import { useModelSelection } from "@/components/model/model-selection"
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useLatestCallback } from "@/lib/use-latest-callback"

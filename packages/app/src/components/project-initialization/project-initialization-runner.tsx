@@ -2,10 +2,7 @@ import * as React from "react"
 import { ChevronRightIcon, DatabaseIcon, ServerIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import {
-  type ModelSelection,
-  useModelSelection,
-} from "@/components/model/model-selector"
+import { type ModelSelection, useModelSelection } from "@/components/model/model-selection"
 import type { ProjectInitializationDatabaseMode } from "@blame/agent-runtime"
 import { Button } from "@/components/ui/button"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"

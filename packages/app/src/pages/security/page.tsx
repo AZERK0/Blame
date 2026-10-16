@@ -12,7 +12,7 @@ import {
 import { toast } from "sonner"
 
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
-import { useModelSelection } from "@/components/model/model-selector"
+import { useModelSelection } from "@/components/model/model-selection"
 import { SecurityAuditDashboard } from "@/components/security/security-audit-dashboard"
 import { SecurityAuditProgress } from "@/components/security/security-audit-progress"
 import { SecurityFindingDrawer } from "@/components/security/security-finding-drawer"

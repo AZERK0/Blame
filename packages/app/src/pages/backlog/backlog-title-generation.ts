@@ -5,7 +5,7 @@ import type {
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 
-import type { useModelSelection } from "@/components/model/model-selector"
+import type { useModelSelection } from "@/components/model/model-selection"
 
 import type { useCloudAuth } from "@/context/cloud-auth"
 

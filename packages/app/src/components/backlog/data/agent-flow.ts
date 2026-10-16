@@ -7,10 +7,21 @@ import type {
   UserStoryAgentUsage,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
+import {
+  compactString,
+  compactValue,
+  eventPayload,
+  numberValue,
+  parseDetailRecord,
+  recordValue,
+  stringValue,
+  truncate,
+  truncateMiddle,
+} from "./agent-flow-values.ts"
+import { eventUsage, fileMentions, toolNames } from "./agent-flow-usage.ts"
 
 const maxActivities = 512
 const maxActivityDetailLength = 4096
-const maxActivityValueLength = 1400
 const maxServerActivityDetailLength = 262144
 type ActivityInput = Omit<UserStoryAgentActivity, "createdAt" | "updatedAt"> & {
   serverDetail?: string
@@ -990,15 +1001,6 @@ function toolDetail(
   )
 }
 
-function parseDetailRecord(value: string | undefined) {
-  if (!value) return {}
-  try {
-    return recordValue(JSON.parse(value))
-  } catch {
-    return {}
-  }
-}
-
 function toolEventText(payload: object) {
   if ("toolName" in payload && typeof payload.toolName === "string") {
     return toolLabel(payload.toolName)
@@ -1069,27 +1071,6 @@ function normalizedDoneReason(reason: string) {
   return reason.trim().toLowerCase()
 }
 
-function eventPayload(event: AgentEvent) {
-  if (event.payload && typeof event.payload === "object") {
-    return event.payload as Record<string, unknown>
-  }
-  return {}
-}
-
-function recordValue(value: unknown) {
-  if (value && typeof value === "object")
-    return value as Record<string, unknown>
-  return {}
-}
-
-function stringValue(value: unknown) {
-  return typeof value === "string" ? value : undefined
-}
-
-function numberValue(value: unknown) {
-  return typeof value === "number" ? value : undefined
-}
-
 function stringifyDetail(value: unknown, length = maxActivityDetailLength) {
   const serialized = JSON.stringify(value, undefined, 2)
   if (serialized.length <= length) return serialized
@@ -1137,159 +1118,8 @@ function normalizedActivity(
   }
 }
 
-function truncate(value: string, length: number) {
-  return value.length > length ? value.slice(0, length) : value
-}
-
 function limitActivities(activities: UserStoryAgentActivity[]) {
   return activities.slice(Math.max(0, activities.length - maxActivities))
-}
-
-function compactValue(value: unknown): unknown {
-  if (value === undefined || value === null) return value
-  if (typeof value === "string") return compactString(value)
-  if (Array.isArray(value)) return compactArray(value)
-  if (typeof value === "object") return compactRecord(value)
-  return value
-}
-
-function eventUsage(
-  story: AgentFlowState,
-  event: AgentEvent
-): UserStoryAgentUsage | undefined {
-  const current = usageWithDefaults(story.agentUsage)
-  if (event.type === "usage" || event.type === "done") {
-    const next = usageFromUsageEvent(current, event)
-    return usageChanged(current, next) ? next : undefined
-  }
-}
-
-function usageFromUsageEvent(
-  current: UserStoryAgentUsage,
-  event: AgentEvent
-): UserStoryAgentUsage {
-  const payload = eventPayload(event)
-  const payloadUsage = recordValue(payload.usage)
-  const usage = Object.keys(payloadUsage).length ? payloadUsage : payload
-  const doneAggregate = event.type === "done" && !usageHasTotals(usage)
-  const next = {
-    ...current,
-    ...usageTurnFields(current, usage, doneAggregate),
-    ...usageTotalFields(current, usage, doneAggregate),
-  }
-  return {
-    ...next,
-    inputTokens: next.inputTokens ?? 0,
-    outputTokens: next.outputTokens ?? 0,
-    totalInputTokens: next.totalInputTokens ?? 0,
-    totalOutputTokens: next.totalOutputTokens ?? 0,
-  }
-}
-
-function usageTurnFields(
-  current: UserStoryAgentUsage,
-  usage: Record<string, unknown>,
-  doneAggregate: boolean
-) {
-  return {
-    cacheReadTokens: usageTurnValue(
-      current.cacheReadTokens,
-      usage.cacheReadTokens,
-      doneAggregate
-    ),
-    cacheWriteTokens: usageTurnValue(
-      current.cacheWriteTokens,
-      usage.cacheWriteTokens,
-      doneAggregate
-    ),
-    cost: usageTurnValue(current.cost, usage.cost, doneAggregate),
-    inputTokens: usageTurnValue(
-      current.inputTokens,
-      usage.inputTokens,
-      doneAggregate
-    ),
-    outputTokens: usageTurnValue(
-      current.outputTokens,
-      usage.outputTokens,
-      doneAggregate
-    ),
-  }
-}
-
-function usageTotalFields(
-  current: UserStoryAgentUsage,
-  usage: Record<string, unknown>,
-  doneAggregate: boolean
-) {
-  return {
-    totalCacheReadTokens: usageTotalValue(
-      current.totalCacheReadTokens,
-      usage.totalCacheReadTokens,
-      usage.cacheReadTokens,
-      doneAggregate
-    ),
-    totalCacheWriteTokens: usageTotalValue(
-      current.totalCacheWriteTokens,
-      usage.totalCacheWriteTokens,
-      usage.cacheWriteTokens,
-      doneAggregate
-    ),
-    totalCost: numberValue(usage.totalCost) ?? current.totalCost,
-    totalInputTokens: usageTotalValue(
-      current.totalInputTokens,
-      usage.totalInputTokens,
-      usage.inputTokens,
-      doneAggregate
-    ),
-    totalOutputTokens: usageTotalValue(
-      current.totalOutputTokens,
-      usage.totalOutputTokens,
-      usage.outputTokens,
-      doneAggregate
-    ),
-  }
-}
-
-function usageTurnValue(
-  current: number | undefined,
-  next: unknown,
-  doneAggregate: boolean
-) {
-  if (doneAggregate) return current
-  return numberValue(next) ?? current
-}
-
-function usageTotalValue(
-  current: number | undefined,
-  next: unknown,
-  aggregate: unknown,
-  doneAggregate: boolean
-) {
-  return numberValue(next) ?? (doneAggregate ? numberValue(aggregate) : current)
-}
-
-function usageHasTotals(usage: Record<string, unknown>) {
-  return (
-    usage.totalInputTokens !== undefined ||
-    usage.totalOutputTokens !== undefined ||
-    usage.totalCacheReadTokens !== undefined ||
-    usage.totalCacheWriteTokens !== undefined
-  )
-}
-
-function usageChanged(current: UserStoryAgentUsage, next: UserStoryAgentUsage) {
-  return (
-    current.cacheReadTokens !== next.cacheReadTokens ||
-    current.cacheWriteTokens !== next.cacheWriteTokens ||
-    current.cost !== next.cost ||
-    current.inputTokens !== next.inputTokens ||
-    current.outputTokens !== next.outputTokens ||
-    current.totalCacheReadTokens !== next.totalCacheReadTokens ||
-    current.totalCacheWriteTokens !== next.totalCacheWriteTokens ||
-    current.totalCost !== next.totalCost ||
-    current.totalInputTokens !== next.totalInputTokens ||
-    current.totalOutputTokens !== next.totalOutputTokens
-  )
 }
 
 function eventSessionSummary(story: AgentFlowState, event: AgentEvent) {
@@ -1307,144 +1137,4 @@ function eventSessionSummary(story: AgentFlowState, event: AgentEvent) {
   ]
     .filter(Boolean)
     .join("\n")
-}
-
-function emptyUsage(): UserStoryAgentUsage {
-  return {
-    inputTokens: 0,
-    outputTokens: 0,
-    totalInputTokens: 0,
-    totalOutputTokens: 0,
-  }
-}
-
-function usageWithDefaults(
-  usage: UserStoryAgentUsage | null | undefined
-): UserStoryAgentUsage {
-  return { ...emptyUsage(), ...usage }
-}
-
-function fileMentions(activities: UserStoryAgentActivity[]) {
-  const values = new Set<string>()
-  activities
-    .filter((activity) => activity.kind === "tool")
-    .forEach((activity) => collectActivityPaths(activity, values))
-  return Array.from(values).slice(0, 12)
-}
-
-function toolNames(activities: UserStoryAgentActivity[]) {
-  return Array.from(
-    new Set(
-      activities
-        .filter((activity) => activity.kind === "tool")
-        .map((activity) => activity.title)
-    )
-  ).slice(0, 8)
-}
-
-function collectActivityPaths(
-  activity: UserStoryAgentActivity,
-  values: Set<string>
-) {
-  const detail = parseDetailRecord(activity.detail)
-  collectPathFields(detail.input, inputPathKeys, values)
-  collectPathFields(detail.output, outputPathKeys, values)
-}
-
-function collectPathFields(
-  value: unknown,
-  keys: Set<string>,
-  paths: Set<string>,
-  depth = 0
-) {
-  if (depth > 5 || !value || typeof value !== "object") return
-  if (Array.isArray(value)) {
-    value.forEach((item) => collectPathFields(item, keys, paths, depth + 1))
-    return
-  }
-  Object.entries(value).forEach(([key, item]) => {
-    if (keys.has(key)) collectPathValues(item, paths)
-    if (item && typeof item === "object") {
-      collectPathFields(item, keys, paths, depth + 1)
-    }
-  })
-}
-
-function collectPathValues(value: unknown, paths: Set<string>) {
-  const candidates = Array.isArray(value) ? value : [value]
-  candidates.forEach((candidate) => {
-    const path = canonicalWorkspacePath(candidate)
-    if (path) paths.add(path)
-  })
-}
-
-function canonicalWorkspacePath(value: unknown) {
-  if (typeof value !== "string") return undefined
-  const path = value.trim().replaceAll("\\", "/").replace(/^\.\//u, "")
-  if (!path || path.startsWith("/") || /^[A-Za-z]:\//u.test(path)) {
-    return undefined
-  }
-  if (path.split("/").includes("..") || !workspaceFileName(path)) {
-    return undefined
-  }
-  return /^[\w@+.,/-]+$/u.test(path) ? path : undefined
-}
-
-function workspaceFileName(path: string) {
-  const name = path.split("/").at(-1) ?? ""
-  return (
-    /\.[a-z][a-z0-9_-]{0,15}$/iu.test(name) ||
-    /^(?:Dockerfile|Makefile|Procfile|CMakeLists\.txt)$/u.test(name)
-  )
-}
-
-const inputPathKeys = new Set([
-  "file_path",
-  "from_path",
-  "package_path",
-  "path",
-  "source_path",
-  "target_path",
-  "to_path",
-])
-
-const outputPathKeys = new Set([
-  "applied_files",
-  "changed_files",
-  "created_files",
-  "deleted_files",
-  "file_path",
-  "files",
-  "modified_files",
-  "path",
-])
-
-function compactArray(value: unknown[]) {
-  const items = value.slice(0, 12).map(compactValue)
-  if (value.length <= items.length) return items
-  return [
-    ...items,
-    compactString(`${value.length - items.length} more entries`),
-  ]
-}
-
-function compactRecord(value: object) {
-  return Object.fromEntries(
-    Object.entries(value).map(([key, entry]) => [key, compactValue(entry)])
-  )
-}
-
-function compactString(value: string) {
-  if (value.length <= maxActivityValueLength) return value
-  return {
-    excerpt: truncateMiddle(value, maxActivityValueLength),
-    originalLength: value.length,
-    truncated: true,
-  }
-}
-
-function truncateMiddle(value: string, length: number) {
-  if (value.length <= length) return value
-  const edgeLength = Math.floor((length - 20) / 2)
-  return `${value.slice(0, edgeLength)}\n...\n${value.slice(-edgeLength)}`
 }
