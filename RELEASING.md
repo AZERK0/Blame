@@ -27,7 +27,7 @@ Users never download from GitHub URLs directly. [`download.blame.so`](deploy/dow
    ```
 
 3. The workflow checks that the runtime referenced by `packages/desktop/resources/runtime/*/manifest.json` is published, builds macOS (x64 and arm64, signed and notarized), Windows, and Linux, and then creates a draft release.
-4. **Pre-production test.** Only maintainers can see a draft. Download the installers from the draft on the [releases page](https://github.com/AZERK0/Blame/releases) and test them.
+4. **Pre-production test.** Only maintainers can see a draft. Download the installers from the draft on the [releases page](https://github.com/rchrp/Blame/releases) and test them.
 5. Edit the generated notes and click **Publish release**. From then on, `download.blame.so/latest`, the download page, and the in-app updater serve this version.
 
 A tag with a suffix such as `v1.2.0-beta.1` creates a prerelease. GitHub never treats a prerelease as the latest release, so it never reaches users through the updater or the download page.

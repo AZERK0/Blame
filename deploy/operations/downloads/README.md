@@ -1,6 +1,6 @@
 # Production downloads
 
-Desktop installers and runtime images are published as [GitHub Releases](https://github.com/AZERK0/Blame/releases) (see [RELEASING.md](../../../RELEASING.md)). The `download.blame.so` Dokploy application runs the redirector in [`deploy/downloads`](../../downloads). It stores no files and has no volume.
+Desktop installers and runtime images are published as [GitHub Releases](https://github.com/rchrp/Blame/releases) (see [RELEASING.md](../../../RELEASING.md)). The `download.blame.so` Dokploy application runs the redirector in [`deploy/downloads`](../../downloads). It stores no files and has no volume.
 
 | Request                                  | Redirect                                                   |
 | ---------------------------------------- | ---------------------------------------------------------- |
@@ -12,7 +12,7 @@ Desktop installers and runtime images are published as [GitHub Releases](https:/
 Configure the application with:
 
 ```txt
-BLAME_RELEASES_URL=https://github.com/AZERK0/Blame/releases
+BLAME_RELEASES_URL=https://github.com/rchrp/Blame/releases
 BLAME_LEGACY_DOWNLOAD_BASE_URL=https://blame-prod-downloads-gra.s3.gra.io.cloud.ovh.net
 BLAME_DOWNLOAD_LANDING_URL=https://blame.so/download
 ```
