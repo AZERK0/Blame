@@ -16,7 +16,9 @@ export const lightSearchCodeInputSchema = z
 export const lightReadCodeInputSchema = z
   .object({
     target: z.string().trim().min(1).max(4_096),
-    view: z.enum(["auto", "raw", "outline", "symbol", "signature", "range"]).optional(),
+    view: z.enum(["auto", "raw", "outline", "symbol", "signature", "range", "declaration"]).optional(),
+    offset: z.number().int().nonnegative().max(256_000).optional()
+      .describe("Only for declaration continuation; use the offset returned by nextRead."),
     range: z
       .object({
         startLine: z.number().int().positive(),

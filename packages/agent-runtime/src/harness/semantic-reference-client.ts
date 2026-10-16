@@ -1,4 +1,4 @@
-import { readFile, stat } from "node:fs/promises";
+import { readFile, realpath, stat } from "node:fs/promises";
 import { Worker } from "node:worker_threads";
 import { sha256 } from "./light-identity.js";
 import {
@@ -6,6 +6,8 @@ import {
   type ReferenceFootprint,
   type SemanticReferenceReply,
   type SemanticReferenceRequest,
+  type DependencyDeclarationRequest,
+  type DependencyDeclarationReply,
 } from "./semantic-reference-types.js";
 
 export async function querySemanticReferences(
@@ -13,6 +15,22 @@ export async function querySemanticReferences(
   signal?: AbortSignal,
   timeoutMs: number = semanticReferenceLimits.timeoutMs,
 ): Promise<SemanticReferenceReply> {
+  return queryCompiler<SemanticReferenceReply>(request, signal, timeoutMs);
+}
+
+export async function queryDependencyDeclaration(
+  request: DependencyDeclarationRequest,
+  signal?: AbortSignal,
+  timeoutMs: number = semanticReferenceLimits.timeoutMs,
+): Promise<DependencyDeclarationReply> {
+  return queryCompiler<DependencyDeclarationReply>(request, signal, timeoutMs);
+}
+
+async function queryCompiler<T extends { status: string }>(
+  request: SemanticReferenceRequest | DependencyDeclarationRequest,
+  signal: AbortSignal | undefined,
+  timeoutMs: number,
+): Promise<T> {
   signal?.throwIfAborted();
   const worker = new Worker(
     new URL("./semantic-reference-worker.js", import.meta.url),
@@ -28,19 +46,20 @@ export async function querySemanticReferences(
   let timer: ReturnType<typeof setTimeout> | undefined;
   let onAbort: (() => void) | undefined;
   try {
-    return await new Promise<SemanticReferenceReply>((resolve, reject) => {
+    return await new Promise<T>((resolve, reject) => {
+      const unavailable = (reason: string) => resolve({ status: "unavailable", reason } as unknown as T);
       onAbort = () =>
         reject(signal?.reason ?? new Error("Reference query cancelled"));
       signal?.addEventListener("abort", onAbort, { once: true });
       worker.once("message", resolve);
       worker.once("error", () =>
-        resolve({ status: "unavailable", reason: "worker_failed" }),
+        unavailable("worker_failed"),
       );
       worker.once("exit", () =>
-        resolve({ status: "unavailable", reason: "worker_exited" }),
+        unavailable("worker_exited"),
       );
       timer = setTimeout(
-        () => resolve({ status: "unavailable", reason: "query_timeout" }),
+        () => unavailable("query_timeout"),
         timeoutMs,
       );
       if (signal?.aborted) onAbort();
@@ -58,6 +77,9 @@ export async function referenceFootprintIsCurrent(
 ) {
   // Bounded batches keep file-descriptor pressure independent of project size.
   const checks = [
+    ...(footprint.realpaths ?? []).map(({ path, resolved }) => async () => {
+      try { return await realpath(path) === resolved; } catch { return false; }
+    }),
     ...footprint.reads.map(({ path, hash }) => async () => {
       try {
         return sha256(await readFile(path)) === hash;

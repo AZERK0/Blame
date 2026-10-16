@@ -22,7 +22,42 @@ export type SemanticReferenceLocation = {
 export type ReferenceFootprint = {
   reads: Array<{ path: string; hash: string }>;
   existence: Array<{ path: string; exists: boolean }>;
+  realpaths?: Array<{ path: string; resolved: string }>;
 };
+
+export type DependencyDeclarationRequest = {
+  root: string;
+  declaration: true;
+  target: { path: string; name: string; hash: string };
+  offset?: number;
+};
+
+export type CompilerProject = Extract<SemanticReferenceReply, { status: "ok" }>["project"];
+
+export type DependencyDeclarationReply =
+  | { status: "unavailable"; reason: string }
+  | {
+      status: "ok";
+      footprint: ReferenceFootprint;
+      project: CompilerProject;
+      declaration: {
+        readOnly: true;
+        content: string;
+        offset: number;
+        nextOffset?: number;
+        totalBytes: number;
+        exports?: string[];
+        exportsTruncated?: boolean;
+        sources: Array<{
+          package: string;
+          version: string;
+          path: string;
+          hash: string;
+          packageHash: string;
+          lines: [number, number];
+        }>;
+      };
+    };
 
 export type SemanticReferenceReply =
   | { status: "unavailable"; reason: string }

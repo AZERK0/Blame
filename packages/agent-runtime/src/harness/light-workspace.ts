@@ -63,6 +63,7 @@ import {
 } from "./light-navigation.js";
 import { LightTaskRunner } from "./light-task-runner.js";
 import { LightReferenceSearch } from "./light-reference-search.js";
+import { readDependencyDeclaration } from "./light-dependency-read.js";
 import {
   searchWithRipgrep,
   type LexicalSearchMatch,
@@ -306,6 +307,10 @@ export class LightWorkspace {
     context: ReadContext,
   ) {
     context.signal?.throwIfAborted();
+    if (input.view === "declaration")
+      return readDependencyDeclaration(this.files, input, context.signal);
+    if (input.offset !== undefined)
+      throw new Error("offset is only supported for declaration continuation.");
     const externalImage = await readIsolatedEnvironmentImage(
       this.files, input.target, context, this.options.taskContract?.environment?.isolated,
     );

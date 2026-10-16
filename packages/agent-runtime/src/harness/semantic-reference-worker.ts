@@ -1,20 +1,24 @@
 // Read-only compiler service in a bounded worker. No plugins, emit or processes.
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { parentPort, workerData } from "node:worker_threads";
 import ts from "typescript";
 import { compilerRenamePlan } from "./semantic-rename-plan.js";
+import { dependencyDeclaration } from "./dependency-declaration.js";
 import {
   semanticReferenceLimits as limits,
   type SemanticReferenceReply,
   type SemanticReferenceRequest,
+  type DependencyDeclarationRequest,
+  type DependencyDeclarationReply,
 } from "./semantic-reference-types.js";
 
-const request = workerData as SemanticReferenceRequest;
+const request = workerData as SemanticReferenceRequest | DependencyDeclarationRequest;
 const root = resolve(request.root);
 const reads = new Map<string, { text: string; hash: string }>();
 const existence = new Map<string, boolean>();
+const realpaths = new Map<string, string>();
 let observedBytes = 0;
 const local = (path: string) => {
   const value = relative(root, path);
@@ -62,6 +66,19 @@ const host: ts.ParseConfigFileHost = {
   },
 };
 
+// Declaration queries also bind resolution through symlinks. A retargeted
+// installation must not validate merely because the previous canonical file exists.
+if ("declaration" in request) host.realpath = (path) => {
+  const key = resolve(path);
+  const cached = realpaths.get(key);
+  if (cached) return cached;
+  if (realpaths.size >= limits.observedExistence)
+    throw new Error("project_realpath_budget_exceeded");
+  const resolved = realpathSync(key);
+  realpaths.set(key, resolved);
+  return resolved;
+};
+
 function configPath(target: string) {
   let directory = dirname(target);
   while (local(directory)) {
@@ -75,7 +92,7 @@ function configPath(target: string) {
   return undefined;
 }
 
-function query(): SemanticReferenceReply {
+function query(): SemanticReferenceReply | DependencyDeclarationReply {
   const targetPath = resolve(root, request.target.path);
   if (!local(targetPath))
     return { status: "unavailable", reason: "target_outside_workspace" };
@@ -117,6 +134,30 @@ function query(): SemanticReferenceReply {
     const source = program?.getSourceFile(targetPath);
     if (!source)
       return { status: "unavailable", reason: "target_not_in_project" };
+    if ("declaration" in request) {
+      const declaration = dependencyDeclaration(program!, source, request, host);
+      return {
+        status: "ok", declaration,
+        footprint: {
+          reads: [...reads].map(([path, value]) => ({ path, hash: value.hash })),
+          existence: [...existence].map(([path, exists]) => ({ path, exists })),
+          realpaths: [...realpaths].map(([path, resolved]) => ({ path, resolved })),
+        },
+        project: {
+          config: relative(root, config).split("\\").join("/"),
+          rootFiles: parsed.fileNames.length,
+          loadedFiles: program!.getSourceFiles().length,
+          compilerVersion: ts.version,
+          scope: "configured_project",
+          warnings: [
+            ...(parsed.projectReferences?.length ? ["project_references_not_fully_expanded"] : []),
+            ...(program!.getOptionsDiagnostics().length || program!.getGlobalDiagnostics().length
+              ? ["compiler_project_diagnostics"] : []),
+            "declarations_describe_types_not_runtime_behavior",
+          ],
+        },
+      };
+    }
     const start = Buffer.from(text)
       .subarray(0, request.target.start)
       .toString("utf8").length;
