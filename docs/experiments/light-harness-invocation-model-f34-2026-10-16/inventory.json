@@ -1,0 +1,92 @@
+[
+  {
+    "name": "1-yaml-anchor-ranges-baseline",
+    "artifact": "traces/1-yaml-anchor-ranges-baseline.json.gz",
+    "sha256": "6cf61a5995c96c8ba297f5f00e180235aaae2ced8c8cbab325b292f1be0580ca",
+    "files": {
+      "events.jsonl": {
+        "sha256": "da39a387eaa2320ca4abaf461e7c394f334abadd550fb3350c504356eeff6e5f",
+        "bytes": 176759
+      },
+      "workspace.diff": {
+        "sha256": "29cdd7a407bd9e6edf6adc4065cc6dcc210a9d02237d5f2d162678c48603d212",
+        "bytes": 2622
+      },
+      "score.json": {
+        "sha256": "a31281c05c1d7650fb19fc571416ab6a761612d182598554d2ec0f10ba069a31",
+        "bytes": 8298
+      },
+      "result.json": {
+        "sha256": "9362209b3122a7fa917569c76c16c79711c33da6f0a7ed415ee2a32ee1105297",
+        "bytes": 4673
+      },
+      "instruction.txt": {
+        "sha256": "4848b79fab9c012ff7a17afde5e88590bc8554e6231ca21cfd9bc59e1e117102",
+        "bytes": 1473
+      },
+      "required-checks.json": {
+        "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+        "bytes": 3
+      },
+      "wire-contracts.jsonl": {
+        "sha256": "1a854a48cf423e83b40c022a6abb8055f85e4ef64fbe94bf5193cd69e14eca76",
+        "bytes": 8674
+      },
+      "model-exit.json": {
+        "sha256": "8c44e8cf02ee0ce267e6c3fb7db5797005771620d1d1eb0aeb82252f0f658436",
+        "bytes": 4804
+      },
+      "model-start.json": {
+        "sha256": "a63bb0192a034bf0deafbc854c7ba648376ce87506d3eb2dbbb7ad46aa1fa1a8",
+        "bytes": 199
+      },
+      "prompt-date-loads.jsonl": {
+        "sha256": "825d54a43b8c4244bf69501703d2ba5fabbccf0a043c4436c22bb26b07fee7ce",
+        "bytes": 194
+      }
+    }
+  },
+  {
+    "name": "1-yaml-anchor-ranges-candidate",
+    "artifact": "traces/1-yaml-anchor-ranges-candidate.json.gz",
+    "sha256": "76249caabd014d8ad0ae32e5ac127b5e4ec7aa78f99f4d747f0765fdd5afe94e",
+    "files": {
+      "events.jsonl": {
+        "sha256": "6bbd36aed0470ff9f6eaf600ad1f38360d91e6bc787a0137fe00d4790acf6165",
+        "bytes": 137421
+      },
+      "workspace.diff": {
+        "sha256": "361164230ad2d64909ff593ea11d69ae4ad749a1d4288c5fcf70f420898032c0",
+        "bytes": 2563
+      },
+      "score.json": {
+        "sha256": "83490c9b196da03b3d4bc963fac938c91daea5ab15fb898e88d6150d11da76d3",
+        "bytes": 8291
+      },
+      "instruction.txt": {
+        "sha256": "4848b79fab9c012ff7a17afde5e88590bc8554e6231ca21cfd9bc59e1e117102",
+        "bytes": 1473
+      },
+      "required-checks.json": {
+        "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+        "bytes": 3
+      },
+      "wire-contracts.jsonl": {
+        "sha256": "e350972c1acec544541cf5474d1c0cbe406e6e351d94ef963c66e7400c9a2217",
+        "bytes": 5575
+      },
+      "model-start.json": {
+        "sha256": "44bf49d3e5789d9edfb1012cfcdbe16269cbf8ae911817ad0e550a5c6f619348",
+        "bytes": 200
+      },
+      "prompt-date-loads.jsonl": {
+        "sha256": "825d54a43b8c4244bf69501703d2ba5fabbccf0a043c4436c22bb26b07fee7ce",
+        "bytes": 194
+      },
+      "orchestration-interruption.json": {
+        "sha256": "2838c3aea3617dd6f16a18747e0376e09d26a3e115a72e59404550e6184878f0",
+        "bytes": 1101
+      }
+    }
+  }
+]

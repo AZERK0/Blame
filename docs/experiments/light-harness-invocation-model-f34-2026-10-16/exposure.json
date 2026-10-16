@@ -1,0 +1,45 @@
+[
+  {
+    "name": "1-yaml-anchor-ranges-baseline",
+    "projectCalls": [
+      {
+        "input": {
+          "kind": "project",
+          "task": "build:node"
+        },
+        "status": "ok",
+        "returnedCommand": "rollup -c config/rollup.node-config.mjs"
+      }
+    ],
+    "finishCalls": [
+      {
+        "input": {
+          "summary": "Implemented parsed `anchorRange?: [number, number]` on the public node base type. Anchored scalar, sequence, map, and empty-value nodes now record zero-based UTF-16 `[start, end)` offsets covering the complete anchor token, independently of `keepSourceTokens`; aliases, unanchored nodes, and programmatically anchored nodes remain without an own property. `clone()` now copies the tuple separately, including collection clones. Changes are restricted to `src/compose/compose-node.ts`, `src/nodes/Node.ts`, and `src/nodes/Collection.ts`.\n\nVerification run in the requested order after the final edit:\n- `npm run build:node` — passed (Rollup built node distributions; no test counts).\n- `node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs` — passed; 12 executed, 12 passed, 0 failed, 0 skipped.\n- `npm run test:types` — exited 0; TypeScript checks completed, with no test-count report (counts unknown).\n- `npm test -- --runInBand` — passed; 3,483 passed, 0 failed, 11 skipped, 3,494 total across 25 suites.\n\nLimitation: the type-check command and build do not report test-style counts; those categories remain unknown rather than inferred."
+        },
+        "output": "Implemented parsed `anchorRange?: [number, number]` on the public node base type. Anchored scalar, sequence, map, and empty-value nodes now record zero-based UTF-16 `[start, end)` offsets covering the complete anchor token, independently of `keepSourceTokens`; aliases, unanchored nodes, and programmatically anchored nodes remain without an own property. `clone()` now copies the tuple separately, including collection clones. Changes are restricted to `src/compose/compose-node.ts`, `src/nodes/Node.ts`, and `src/nodes/Collection.ts`.\n\nVerification run in the requested order after the final edit:\n- `npm run build:node` — passed (Rollup built node distributions; no test counts).\n- `node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs` — passed; 12 executed, 12 passed, 0 failed, 0 skipped.\n- `npm run test:types` — exited 0; TypeScript checks completed, with no test-count report (counts unknown).\n- `npm test -- --runInBand` — passed; 3,483 passed, 0 failed, 11 skipped, 3,494 total across 25 suites.\n\nLimitation: the type-check command and build do not report test-style counts; those categories remain unknown rather than inferred."
+      }
+    ]
+  },
+  {
+    "name": "1-yaml-anchor-ranges-candidate",
+    "projectCalls": [
+      {
+        "input": {
+          "kind": "project",
+          "task": "build:node"
+        },
+        "status": "ok",
+        "returnedCommand": "npm run build:node"
+      },
+      {
+        "input": {
+          "kind": "project",
+          "task": "test:types"
+        },
+        "status": "ok",
+        "returnedCommand": "npm run test:types"
+      }
+    ],
+    "finishCalls": []
+  }
+]

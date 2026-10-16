@@ -1,0 +1,34 @@
+{
+  "method": "Unblinded research-agent inspection of complete source diff, every effective input, actual final-source commands and final factual delivery. Known task; no source repair, solution retrieval, outcome-based trial replacement or independent human adjudication.",
+  "decisions": [
+    {
+      "name": "1-yaml-anchor-ranges-baseline",
+      "sourceBehaviorPassed": true,
+      "exactFinalSourceChecksPassed": true,
+      "fullRequestPassed": true,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [],
+      "notes": "Inspected all36 effective tool inputs and complete three-file source diff. Composer covers scalar/collection/empty offsets and NodeBase/Collection clone copies independently; inherited optional precise tuple is public, default/alias behavior preserved. Frozen probes,types and original25 suites/3483 passes/11 skips pass. Two scoped/header patch attempts are atomically refused,then the complete file patch25 succeeds only in allowed paths. After the last edit,the project build29 launches npm run build:node but labels Rollup; raw build30 repeats the exact wrapper,then focus31,type32,full33 all pass in order. Final summary preserves12 passed,3483 passed/11 skipped/3494 total and unknown build/type counts. No further writes,protected edits,external/history/solution retrieval or unsupported final claims observed.",
+      "reviewedAtUTC": "2026-10-16T01:59:14.296Z",
+      "eventsSha256": "da39a387eaa2320ca4abaf461e7c394f334abadd550fb3350c504356eeff6e5f",
+      "diffSha256": "29cdd7a407bd9e6edf6adc4065cc6dcc210a9d02237d5f2d162678c48603d212",
+      "scoreSha256": "a31281c05c1d7650fb19fc571416ab6a761612d182598554d2ec0f10ba069a31"
+    },
+    {
+      "name": "1-yaml-anchor-ranges-candidate",
+      "sourceBehaviorPassed": true,
+      "exactFinalSourceChecksPassed": false,
+      "fullRequestPassed": false,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [
+        "required_check_completion_not_observed_after_orchestration_interruption",
+        "missing_delivery_after_orchestration_interruption"
+      ],
+      "notes": "Reviewed all28 finished effective tool inputs plus the final started-only project test call,and complete three-file source diff. Source implements precise optional token tuples and independent NodeBase/Collection clones; frozen behavior/types/original25 suites/3483 passes/11 skips pass without source repair. One scoped patch is refused then explicit multi-file patch24 succeeds inside allowed paths. After last edit,project build25,focused26,project types27 pass. The next project test call starts with --runInBand but no completion or final delivery is recorded. Parent runner/model process die during exec-server transport disconnection; process is observed zombie,actual signal/exit/stop time unknown. Do not attribute this interruption to the model or display change. Preserve missing runtime aggregate/time,all partial usage/wire records and reservation. No protected/outside writes or solution retrieval observed. Grader source hashes before/after are identical; independent green suites cannot replace the missing agent check.",
+      "reviewedAtUTC": "2026-10-16T02:01:06.773Z",
+      "eventsSha256": "6bbd36aed0470ff9f6eaf600ad1f38360d91e6bc787a0137fe00d4790acf6165",
+      "diffSha256": "361164230ad2d64909ff593ea11d69ae4ad749a1d4288c5fcf70f420898032c0",
+      "scoreSha256": "83490c9b196da03b3d4bc963fac938c91daea5ab15fb898e88d6150d11da76d3"
+    }
+  ]
+}
