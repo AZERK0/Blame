@@ -77,10 +77,13 @@ class CommandExecution {
   private resolve!: (result: WorkspaceCommandResult) => void;
   private readonly cancel = () => this.interrupt("cancelled");
 
-  constructor(
-    private readonly child: ChildProcess,
-    private readonly options: CommandOptions,
-  ) {}
+  private readonly child: ChildProcess;
+  private readonly options: CommandOptions;
+
+  constructor(child: ChildProcess, options: CommandOptions) {
+    this.child = child;
+    this.options = options;
+  }
 
   run() {
     const completion = new Promise<WorkspaceCommandResult>((resolve) => {

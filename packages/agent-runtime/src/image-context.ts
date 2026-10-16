@@ -77,11 +77,11 @@ function mapMessageImages(message: Message, replace: (image: NativeImage) => Ima
   return { ...message, content };
 }
 
-function mapOutputImages(value: unknown, replace: (image: NativeImage) => ImageReplacement): unknown {
-  if (nativeImage(value)) return replace(value);
-  if (Array.isArray(value)) return value.map((item) => mapOutputImages(item, replace));
+function mapOutputImages<T>(value: T, replace: (image: NativeImage) => ImageReplacement): T {
+  if (nativeImage(value)) return replace(value) as T;
+  if (Array.isArray(value)) return value.map((item) => mapOutputImages(item, replace)) as T;
   if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, mapOutputImages(item, replace)]));
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, mapOutputImages(item, replace)])) as T;
 }
 
 function duplicateImage(): ImageText {

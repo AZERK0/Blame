@@ -19,10 +19,13 @@ import type { WorkspaceFiles } from "./workspace-files.js";
 type Fallback = { fallback: string; lexicalQuery: string };
 
 export class LightReferenceSearch {
-  constructor(
-    private readonly files: WorkspaceFiles,
-    private readonly aliases: LightAliasRegistry,
-  ) {}
+  private readonly files: WorkspaceFiles;
+  private readonly aliases: LightAliasRegistry;
+
+  constructor(files: WorkspaceFiles, aliases: LightAliasRegistry) {
+    this.files = files;
+    this.aliases = aliases;
+  }
 
   recovery(input: LightSearchCodeInput, data: Record<string, unknown>, reason: string) {
     const guidance = "Lexical candidates only. For configured JS/TS semantic references, query a symbol sN alias or path#qualifiedName with mode references. Read before editing.";
