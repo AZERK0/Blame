@@ -1,0 +1,18 @@
+# F38–F40: prospective iterative continuation
+
+Registered before model outcomes. Three cycles: (1) model confirmation of F37 dependency declarations, (2) a bounded patch-scope recovery correction grounded in F36/recent traces, (3) truthful separation of runner usage receipts and request attempts. Finish and analyse each mechanism separately; never turn local controls into model-success claims. Keep adverse results and all assigned outcomes. These cycles cannot establish an exhausted improvement margin.
+
+## F38 task selection
+
+Choose Axios v1.12.2, a previously unused public project, before inspecting model results. Selection criteria: substantial JS source and public TypeScript surface, Node-executable source without building native tooling, at least one external typed dependency contract and one internal API control. Archive the tagged source and installed dependencies. A common research jsconfig may be added if needed; disclose it rather than implying upstream configured it.
+
+Two new, researcher-authored feature tasks; no historical issue-success claim and no target-file allowlist or symbol-location hints in model instructions:
+
+1. Interceptor `clear()` returns the number of live handlers removed. Ejected holes do not count; clearing twice returns0. Preserve use/eject/iteration and existing request/response ordering. Update public types and demonstrate runtime/type behavior.
+2. Add opt-in request config `requireFormDataLength?: boolean` for legacy form-data bodies. When true, determine finite nonnegative length through the dependency's asynchronous length API before sending. Reject a callback error or invalid length through Axios's normal rejected-promise path; do not invoke transport on failure. On success preserve caller Content-Length when supplied, otherwise set the discovered length. Default/false behavior and native/spec FormData remain unchanged. Preserve cancellation and max-body-length behavior. Update public types and demonstrate runtime/type behavior.
+
+The external-contract task is purposive mechanism coverage, not a random sample of coding work. The internal task is an exposure control. If the model never uses declaration view, report zero exposure and do not attribute outcome differences to successful lookup use. Independent behavioral positive/negative controls must pass before launching; model receives requirements and executable validation, not a recovered solution.
+
+Compare reference Light before F37, declaration Light and integrated Cline SDK, all with the current enforced8192 output ceiling. Two dependent repeats per task, rotated three-arm order:12 assignments. Freeze exact prompts, schemas/runtime snapshots, model/effort, environment/dependencies, oracles and scheduling before model launch. Primary audited acceptance must not regress; secondary paired-success resources require equal audited success and reductions in tokens/cost without a material duration regression. Report all-attempt and paired-success denominators separately; small-n results remain descriptive.
+
+Configured technical limits: per-trial SDK soft stop USD0.10, USD0.23 last-request/missing-receipt reserve,32 iterations,600s plus25s outer watchdog,290000 serialized-request bytes; F38 panel accounting ceiling USD4.00, shared ceiling USD10.951612. Prior observed estimates USD4.68580432 + unreleased reserves USD1.94 = USD6.62580432. These are SDK estimates/reserves, not invoices. Preserve unreported attempts and original failures/timeouts. Do not reset accounting between cycles or retry a failed trial to improve its result. User authorization requires no new budget question.
