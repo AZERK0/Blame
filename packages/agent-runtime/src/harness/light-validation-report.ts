@@ -21,6 +21,7 @@ export function checkReporting(check: CheckObservation, includeGuidance = true) 
 
 export function currentValidationReport(state: JournalCompletionSnapshot) {
   const checks = state.validations.slice(-16).map((validation) => ({
+    ...(validation.scope ? { scope: validation.scope } : {}),
     id: validation.id, task: validation.taskId ?? null, command: validation.command ?? null,
     args: validation.args ?? [], cwd: validation.cwd ?? ".",
     sourceRevisionId: validation.sourceRevisionId ?? null,

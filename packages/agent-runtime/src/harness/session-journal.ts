@@ -28,6 +28,7 @@ export type JournalCompletionSnapshot = {
 };
 
 export type JournalValidation = {
+  scope?: "invocation_only";
   args?: string[];
   check?: import("./check-observation.js").CheckObservation;
   category?: "code" | "command" | "environment";
@@ -335,6 +336,7 @@ function publicChange(change: JournalChange) {
 
 function publicValidation(validation: JournalValidation) {
   return {
+    ...(validation.scope ? { scope: validation.scope } : {}),
     ...(validation.args?.length ? { args: [...validation.args] } : {}),
     check: validation.check,
     category: validation.category,

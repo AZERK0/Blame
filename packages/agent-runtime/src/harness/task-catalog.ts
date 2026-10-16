@@ -21,6 +21,8 @@ export type TaskCatalogItem = {
   requiresNetwork: boolean;
   script?: string;
   supportsFileSelection: boolean;
+  /** Invocation success is known; compiler project coverage has not been resolved. */
+  validationScope?: "invocation_only";
   task_id: string;
 };
 
@@ -221,13 +223,16 @@ function taskCandidate(
   script: string,
   command: string,
 ): CatalogCandidate {
-  const kind = taskKind(script, command);
+  const inferredKind = taskKind(script, command);
+  const compilerOnly = inferredKind !== "service" && plainCompilerCheck(command);
+  const kind = compilerOnly ? "typecheck" : inferredKind;
   return {
     task_id: cwd === "." ? script : `${label}:${script}`,
     candidateId: cwd === "." ? script : `${label}:${script}`,
     pathId: cwd === "." ? script : `${cwd}:${script}`,
     script,
     kind,
+    ...(compilerOnly && inferredKind !== "typecheck" ? { validationScope: "invocation_only" as const } : {}),
     command,
     cwd,
     package_manager: packageManager.name,
@@ -336,4 +341,9 @@ function taskKind(name: string, command: string): TaskCatalogItem["kind"] {
     return "typecheck";
   if (/build/i.test(name)) return "build";
   return "custom";
+}
+
+function plainCompilerCheck(command: string) {
+  // This establishes the compiler invocation, not which source files it checks.
+  return /^(?:tsc|node[ \t]+(?:\.\/)?node_modules\/typescript\/bin\/tsc)[ \t]+--noEmit(?:[ \t]+(?:-p|--project)[ \t]+[A-Za-z0-9_./-]+)?$/u.test(command.trim());
 }

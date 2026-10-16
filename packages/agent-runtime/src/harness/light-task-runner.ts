@@ -61,6 +61,7 @@ type ManagedRun = {
 };
 
 type ValidationMetadata = {
+  validationScope?: TaskCatalogItem["validationScope"];
   taskCommand?: string;
   args?: string[];
   check?: CheckObservation;
@@ -177,6 +178,7 @@ export class LightTaskRunner {
         cwd: task.cwd,
         taskId: task.task_id,
         taskKind: task.kind,
+        ...(task.validationScope ? { validationScope: task.validationScope } : {}),
         taskCommand: task.command,
         ...(args.length ? { args } : {}),
         ...(report ? { report } : {}),
@@ -441,7 +443,8 @@ export class LightTaskRunner {
           command === `${item.package_manager} run ${item.script}` ||
           command === `${item.package_manager} ${item.script}`),
     );
-    const identity = task ? { taskId: task.task_id, taskKind: task.kind }
+    const identity = task ? { taskId: task.task_id, taskKind: task.kind,
+      ...(task.validationScope ? { validationScope: task.validationScope } : {}) }
       : projectTestCommand(command, cwd, tasks);
     if (!identity) return {};
     const matches = tasks.filter((item) => item.task_id === identity.taskId && item.cwd === cwd);
@@ -456,7 +459,7 @@ export class LightTaskRunner {
     changedPaths: string[],
   ): Promise<LightToolResult<unknown>> {
     const output = redactedOutput(result.all);
-    if (metadata.taskKind === "test" || isTestInvocation(command)) {
+    if (metadata.taskKind === "test" || (metadata.taskKind !== "typecheck" && isTestInvocation(command))) {
       // Counts come from this process's output, interpreted using the exact
       // catalog script when a known npm wrapper obscures the runner name.
       // Keep the original command/argv in the journal and execute it unchanged.
@@ -541,12 +544,13 @@ export class LightTaskRunner {
     metadata: ValidationMetadata,
     failure?: FailureAssessment,
   ) {
-    const paths = validationScopePaths(
+    const paths = metadata.validationScope === "invocation_only" ? [] : validationScopePaths(
       await this.journal.currentChangedPaths(),
       snapshot.files,
       metadata.cwd ?? ".",
     );
     await this.journal.recordValidation({
+      ...(metadata.validationScope ? { scope: metadata.validationScope } : {}),
       command,
       cwd: metadata.cwd,
       paths,
@@ -855,6 +859,7 @@ function validationProof(
     status: "passed" as const,
     taskId: metadata.taskId,
     taskKind: metadata.taskKind,
+    ...(metadata.validationScope ? { scope: metadata.validationScope } : {}),
   };
 }
 
