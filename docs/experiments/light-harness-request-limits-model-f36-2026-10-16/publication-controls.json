@@ -1,0 +1,38 @@
+{
+  "paidRequests": 0,
+  "negativeControls": [
+    {
+      "fault": "changed observed usage",
+      "rejected": true
+    },
+    {
+      "fault": "fabricated consumption reserve",
+      "rejected": true
+    },
+    {
+      "fault": "changed partial consumption",
+      "rejected": true
+    },
+    {
+      "fault": "changed observed or missing duration",
+      "rejected": true
+    },
+    {
+      "fault": "fabricated audited acceptance",
+      "rejected": true
+    },
+    {
+      "fault": "fabricated paired resource saving",
+      "rejected": true
+    },
+    {
+      "fault": "registration rebound after dispatch",
+      "rejected": true
+    },
+    {
+      "fault": "fabricated effective-cap exposure",
+      "rejected": true
+    }
+  ],
+  "limitation": "Rejects inconsistent accounting/regrading, not a cryptographic signature or independent source adjudication."
+}

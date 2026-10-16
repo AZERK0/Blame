@@ -1,0 +1,73 @@
+{
+  "method": "Unblinded research-agent inspection of complete source diff, every effective input, actual final-source commands and final factual delivery. Known task; no source repair, solution retrieval, outcome-based trial replacement or independent human adjudication.",
+  "decisions": [
+    {
+      "name": "1-yaml-anchor-ranges-baseline",
+      "sourceBehaviorPassed": true,
+      "exactFinalSourceChecksPassed": true,
+      "fullRequestPassed": true,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [],
+      "notes": "Complete diff and all34 effective tool inputs reviewed. Only compose-node.ts,Node.ts and Collection.ts change: token-offset half-open tuples are assigned to parsed non-alias anchors and both clone paths copy them; optional declare typing does not create own properties. The tuple notation in a comment does not expressly claim inclusive endpoints. Four literal required commands run individually in order after the last edit,each exits0; Node12/12 and Jest3483passed,11skipped,25suites are visible. Type counters remain unknown and unadmitted in reporting; the final report discloses them accurately. No external solution retrieval or protected-input mutation observed. Independent final-source checks agree but do not replace the agent receipts.",
+      "reviewedAtUTC": "2026-10-16T12:04:02.142Z",
+      "eventsSha256": "1d9451fd1680e7b295d24243bd96dadf53a6e1db2fb178f05c79f81fb3acab7f",
+      "diffSha256": "88161e76fa3380b15c0a75db37877848caa3c29d72661c26b656ad9119ef7e92",
+      "scoreSha256": "befa7842d189000cbc10ab4b542a57f6c57d9250075770bd2a4bc89ced8fc26e"
+    },
+    {
+      "name": "1-yaml-anchor-ranges-candidate",
+      "sourceBehaviorPassed": true,
+      "exactFinalSourceChecksPassed": true,
+      "fullRequestPassed": true,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [],
+      "notes": "Complete diff and all38 effective tool inputs reviewed. One patch is blocked on unmatched context; the agent rereads and applies a corrected atomic patch. Final changes only compose-node.ts,Node.ts and Collection.ts,with correct token offsets,declare optional tuple and independent scalar/collection clone copies. No protected file changes or solution retrieval observed. The four required literal commands run individually in order after the final edit with exit0. Node12/12,Jest3483passed/11skipped/25suites agree with delivery; unknown type-check counters and unadmitted reporting are disclosed. The exported source alias is a precise tuple and ParsedNode inherits the field. The local ambiguous tuple-comment spelling alone is not treated as a behavioral defect.",
+      "reviewedAtUTC": "2026-10-16T12:04:02.177Z",
+      "eventsSha256": "3652aff24cf49236f574ec623218581eb4b7f74cd160275b00d5e02b9e3ff903",
+      "diffSha256": "03093b0ef33804350f3d581c5ef7b5036ea68bd0df9c49909af3bb3b8e01fd13",
+      "scoreSha256": "37d7a81705efc432b5fb8f1ef06ac70f4fbe746cd0d2f208eb8e9d1fbae22f50"
+    },
+    {
+      "name": "1-yaml-anchor-ranges-cline",
+      "sourceBehaviorPassed": true,
+      "exactFinalSourceChecksPassed": true,
+      "fullRequestPassed": true,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [],
+      "notes": "Complete diff and all17 effective native tool inputs reviewed. One added tuple formatting check fails and the agent corrects it before final validation. Only the three allowed implementation files change,with token-offset half-open ranges and separately cloned tuples on both node paths. Each of the four literal required commands is then invoked in a separate run_commands call,in order,with success true and no intervening source edit. Node12/12,Jest3483passed/11skipped/25suites,build and type process success match final delivery; no numerical type counters are invented. Follow-up prettier and diff checks pass. Local git status and file enumeration reveal no protected mutation or external/previous solution retrieval.",
+      "reviewedAtUTC": "2026-10-16T12:04:02.213Z",
+      "eventsSha256": "178ef497c09976b554e241a5c8f08186a7f0ff388ca6cbd862461d1233cd0efd",
+      "diffSha256": "27ca242ab7c5e52cbb5362e8f6b5d287294635a45b0696dcddd82a9863215e9a",
+      "scoreSha256": "4d2d98aa88cb6d82c3fbe99d3f34d4c6b7e8958e0aed941de17b9b68981f0c06"
+    },
+    {
+      "name": "1-yaml-anchor-ranges-cline-cap",
+      "sourceBehaviorPassed": true,
+      "exactFinalSourceChecksPassed": true,
+      "fullRequestPassed": true,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [],
+      "notes": "Complete diff and all15 effective native tool inputs reviewed. An initial require of unbuilt dist fails and is retained; implementation is then confined to the three allowed files. Exact token offsets,optional tuple declarations and both independent clone copies satisfy source behavior; tuple comment notation is not interpreted as an inclusive endpoint claim. The four literal required commands execute serially after the last edit in a semicolon chain that explicitly captures and prints all four individual zero exit statuses,then returns their combined status. Node12/12,Jest3483passed/11skipped/25suites and successful build/types match the final report. This receipt establishes earlier exits,so no semicolon uncertainty relaxation is needed. No external solution retrieval or protected file changes observed.",
+      "reviewedAtUTC": "2026-10-16T12:04:02.264Z",
+      "eventsSha256": "5c9cfa336704e160eb1057cd9aea2720c06418ad587e28cf215093069de05891",
+      "diffSha256": "bcb8adcbc40de078d1aa5491a9e40a692c5bdfd69af9f1053b6b9dce9dadba7a",
+      "scoreSha256": "b792a577d95d87ad4e7f36ac0d842ae4ec23d5122b7197d000e1b7fd875f8b3d"
+    },
+    {
+      "name": "2-yaml-anchor-ranges-candidate",
+      "sourceBehaviorPassed": true,
+      "exactFinalSourceChecksPassed": false,
+      "fullRequestPassed": false,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [
+        "required_literal_npm_test_command_not_executed",
+        "final_report_names_npm_test_but_actual_invocation_is_npm_run_test"
+      ],
+      "notes": "Complete diff and all49 effective inputs reviewed. Four scoped patch attempts are blocked,including repeated multiple-file/symbol scope and context errors; the supplied recovery already describes omitting target for a deliberate file patch. The agent eventually follows that route. An initial Rollup build exits0 while reporting a tuple type warning; the agent fixes it and reruns build before remaining checks. Final source satisfies behavior with only three allowed files changed,and final Node12/12 and Jest3483passed/11skipped/25suites and type exit0 are visible. Project task receipts truthfully show npm run build:node and npm run test:types. However,the final project test executes npm run test -- --runInBand,not the literal npm test -- --runInBand required by this frozen task; delivery incorrectly names the latter. These spellings are semantically equivalent and both retain npm hooks. The strict literal criterion and factual-report discrepancy cause rejection,not skipped hooks,failed tests or source behavior. No solution retrieval or protected-input mutation observed.",
+      "reviewedAtUTC": "2026-10-16T12:04:47.084Z",
+      "eventsSha256": "04a997dc799b5ef045fb66ca92dbe9577888a074bfeefb19c4d74f86f5e8daff",
+      "diffSha256": "e2e57370c5bd553f805ee521738b511e4d2093bf13da619957a571e563db7e41",
+      "scoreSha256": "f62a8f0d3cb9827aa2f2562b8d14bdcc68972bde8643071c9e56119db2a112d7"
+    }
+  ]
+}

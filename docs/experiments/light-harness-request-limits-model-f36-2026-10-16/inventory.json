@@ -1,0 +1,305 @@
+[
+  {
+    "name": "1-yaml-anchor-ranges-baseline",
+    "artifact": "traces/1-yaml-anchor-ranges-baseline.json.gz",
+    "sha256": "3f96a3142294d8ad13692db55fb5c067a9761224f00518fafb1ab4e8ed6f47d4",
+    "files": {
+      "events.jsonl": {
+        "sha256": "1d9451fd1680e7b295d24243bd96dadf53a6e1db2fb178f05c79f81fb3acab7f",
+        "bytes": 158481
+      },
+      "workspace.diff": {
+        "sha256": "88161e76fa3380b15c0a75db37877848caa3c29d72661c26b656ad9119ef7e92",
+        "bytes": 2621
+      },
+      "score.json": {
+        "sha256": "befa7842d189000cbc10ab4b542a57f6c57d9250075770bd2a4bc89ced8fc26e",
+        "bytes": 8345
+      },
+      "result.json": {
+        "sha256": "2736b035d20dc8d235b250040326babdebe7c8fdad1c429f40344870db1a5c94",
+        "bytes": 4648
+      },
+      "instruction.txt": {
+        "sha256": "4848b79fab9c012ff7a17afde5e88590bc8554e6231ca21cfd9bc59e1e117102",
+        "bytes": 1473
+      },
+      "required-checks.json": {
+        "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+        "bytes": 3
+      },
+      "wire-contracts.jsonl": {
+        "sha256": "5927c0727dd0f3fd4ea0cb7fb1359b1a8127fdb26fe58824ca81d2fd943c388f",
+        "bytes": 6196
+      },
+      "model-exit.json": {
+        "sha256": "41e85a970a3c7c7eba046ea3c23cefabf0e6196bc3d74e6df63532c27b6c5f42",
+        "bytes": 4824
+      },
+      "model-start.json": {
+        "sha256": "f334e39ed06a7f0b98e54120261387a0e35504a990ade513c8047d7b282f8a4f",
+        "bytes": 199
+      },
+      "prompt-date-loads.jsonl": {
+        "sha256": "825d54a43b8c4244bf69501703d2ba5fabbccf0a043c4436c22bb26b07fee7ce",
+        "bytes": 194
+      },
+      "cap-contract.json": {
+        "sha256": "c89d937d97d5333b3670f65818a009294a0a2ff8ca11191aa228671df367f3e8",
+        "bytes": 293
+      },
+      "prompt-d36b70333d5253bf211da1eb39703c36052941d6f2433a71147c7741d1da94dd.json": {
+        "sha256": "f2849b667bdb25be2eb740de102c380c31e173684f6fe94f7dd2bf6f67762617",
+        "bytes": 5492
+      },
+      "schema-dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494.json": {
+        "sha256": "b6412fc07a0b096e764499296330b3e837f517f5570f38a9b5a47846b8e1e952",
+        "bytes": 9957
+      }
+    }
+  },
+  {
+    "name": "1-yaml-anchor-ranges-candidate",
+    "artifact": "traces/1-yaml-anchor-ranges-candidate.json.gz",
+    "sha256": "90ab3c8112671f4bb9b381782bb82a1630be20157f4ce21a2d1333216933f941",
+    "files": {
+      "events.jsonl": {
+        "sha256": "3652aff24cf49236f574ec623218581eb4b7f74cd160275b00d5e02b9e3ff903",
+        "bytes": 181717
+      },
+      "workspace.diff": {
+        "sha256": "03093b0ef33804350f3d581c5ef7b5036ea68bd0df9c49909af3bb3b8e01fd13",
+        "bytes": 2883
+      },
+      "score.json": {
+        "sha256": "37d7a81705efc432b5fb8f1ef06ac70f4fbe746cd0d2f208eb8e9d1fbae22f50",
+        "bytes": 8346
+      },
+      "result.json": {
+        "sha256": "3ac3352ee7f1c21a4549e94251a8c0188a86ade82a3d38cb58e07d1e22d776fe",
+        "bytes": 4673
+      },
+      "instruction.txt": {
+        "sha256": "4848b79fab9c012ff7a17afde5e88590bc8554e6231ca21cfd9bc59e1e117102",
+        "bytes": 1473
+      },
+      "required-checks.json": {
+        "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+        "bytes": 3
+      },
+      "wire-contracts.jsonl": {
+        "sha256": "a0e461e0e75408bfff65839b152e3d32c1ccdb2532f482361613d35c8b795881",
+        "bytes": 7437
+      },
+      "model-exit.json": {
+        "sha256": "3dc77bd523831d68284ae7be21c2f57352e7932634620678e3716bf57088a357",
+        "bytes": 4545
+      },
+      "model-start.json": {
+        "sha256": "c4f1eff99a35d22c4db33580fb149847acac85b74b011540dbd4ae99bc9c8d0d",
+        "bytes": 200
+      },
+      "prompt-date-loads.jsonl": {
+        "sha256": "825d54a43b8c4244bf69501703d2ba5fabbccf0a043c4436c22bb26b07fee7ce",
+        "bytes": 194
+      },
+      "cap-contract.json": {
+        "sha256": "dd65e1bcb6ee6ce7961f6a35ed5ae4c57268ed3d495c9e03374712f0c3510589",
+        "bytes": 294
+      },
+      "prompt-6134eac4d6db6f5df674d5080f9c2939867006ba3f9537cce3f0a6e66fa8b3dd.json": {
+        "sha256": "a2b56b96eda9c6233f115eb09c088bd36609479298e5c6f30f6b25f71c68280f",
+        "bytes": 5495
+      },
+      "schema-dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494.json": {
+        "sha256": "b6412fc07a0b096e764499296330b3e837f517f5570f38a9b5a47846b8e1e952",
+        "bytes": 9957
+      }
+    }
+  },
+  {
+    "name": "1-yaml-anchor-ranges-cline",
+    "artifact": "traces/1-yaml-anchor-ranges-cline.json.gz",
+    "sha256": "62f683a349e00d0f1fd960823a083a0364d9247a537264b73f378e202e969cb3",
+    "files": {
+      "events.jsonl": {
+        "sha256": "178ef497c09976b554e241a5c8f08186a7f0ff388ca6cbd862461d1233cd0efd",
+        "bytes": 537419
+      },
+      "workspace.diff": {
+        "sha256": "27ca242ab7c5e52cbb5362e8f6b5d287294635a45b0696dcddd82a9863215e9a",
+        "bytes": 2661
+      },
+      "score.json": {
+        "sha256": "4d2d98aa88cb6d82c3fbe99d3f34d4c6b7e8958e0aed941de17b9b68981f0c06",
+        "bytes": 8326
+      },
+      "result.json": {
+        "sha256": "1678dea4b19e1e58c6560497dc83e1b0e73f0d220c1a0bab02cc840fd731b5ed",
+        "bytes": 3726
+      },
+      "instruction.txt": {
+        "sha256": "4848b79fab9c012ff7a17afde5e88590bc8554e6231ca21cfd9bc59e1e117102",
+        "bytes": 1473
+      },
+      "required-checks.json": {
+        "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+        "bytes": 3
+      },
+      "wire-contracts.jsonl": {
+        "sha256": "4e8a0306cd8664bc4fa75c8f66c5e5a1bee33814b2ffa8dab2c45aee94adda0e",
+        "bytes": 6819
+      },
+      "model-exit.json": {
+        "sha256": "4a588d32631c22a6d8e022470d7208db00fa0d88a985b80f3d1c7444ea361e72",
+        "bytes": 4896
+      },
+      "model-start.json": {
+        "sha256": "f743657e1215d9ce700331b42c15ae8087bb9ac02b7a11dc863edf9c0e8f9c7e",
+        "bytes": 196
+      },
+      "prompt-date-loads.jsonl": {
+        "sha256": "825d54a43b8c4244bf69501703d2ba5fabbccf0a043c4436c22bb26b07fee7ce",
+        "bytes": 194
+      },
+      "native-search-loads.jsonl": {
+        "sha256": "5ab5181179b067ca7ebafaa4d5035b668a2fab7b3232200eb8e3e5e744899691",
+        "bytes": 210
+      },
+      "cap-contract.json": {
+        "sha256": "b8236f09cd0c976b463b7bfcf135be8c1033191d87ffe503b5fece7ce9625d4f",
+        "bytes": 290
+      },
+      "prompt-e7e7d8166bad92fac429d69464dcc0ceb238c9b403746c01c947471c73efc75d.json": {
+        "sha256": "bb69dbd1fbd89f01a3967eea25f070b1a8653d8d7629bcdb74b0e5eede9cb456",
+        "bytes": 4380
+      },
+      "schema-4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad.json": {
+        "sha256": "4aa8c340cd05321a988fd4d65ed2e3c8bde699af2ab2aa624a9f14ee7531ca74",
+        "bytes": 7117
+      }
+    }
+  },
+  {
+    "name": "1-yaml-anchor-ranges-cline-cap",
+    "artifact": "traces/1-yaml-anchor-ranges-cline-cap.json.gz",
+    "sha256": "e7166a38143450d702c477ab44d63c3b81ee3387a5357b91ee479fc8b215687d",
+    "files": {
+      "events.jsonl": {
+        "sha256": "5c9cfa336704e160eb1057cd9aea2720c06418ad587e28cf215093069de05891",
+        "bytes": 616196
+      },
+      "workspace.diff": {
+        "sha256": "bcb8adcbc40de078d1aa5491a9e40a692c5bdfd69af9f1053b6b9dce9dadba7a",
+        "bytes": 3059
+      },
+      "score.json": {
+        "sha256": "b792a577d95d87ad4e7f36ac0d842ae4ec23d5122b7197d000e1b7fd875f8b3d",
+        "bytes": 8347
+      },
+      "result.json": {
+        "sha256": "73e04db46a715701ed4666057b46d7919902f0b416afbf2232185ba2d5f0b948",
+        "bytes": 3725
+      },
+      "instruction.txt": {
+        "sha256": "4848b79fab9c012ff7a17afde5e88590bc8554e6231ca21cfd9bc59e1e117102",
+        "bytes": 1473
+      },
+      "required-checks.json": {
+        "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+        "bytes": 3
+      },
+      "wire-contracts.jsonl": {
+        "sha256": "4d3dc459806b694b0f5c0d2e04c7be61a69868d9017fbe2e98cb3eaf9974d32c",
+        "bytes": 5577
+      },
+      "model-exit.json": {
+        "sha256": "616736b690ff34b2fb6e5cbe50148e6ac5617397e82d2138bd662cac0c49e788",
+        "bytes": 4884
+      },
+      "model-start.json": {
+        "sha256": "704a7e1771223c6288bc61f9e5bae6fddac80c8d391f9838778d2331929c8151",
+        "bytes": 200
+      },
+      "prompt-date-loads.jsonl": {
+        "sha256": "825d54a43b8c4244bf69501703d2ba5fabbccf0a043c4436c22bb26b07fee7ce",
+        "bytes": 194
+      },
+      "native-search-loads.jsonl": {
+        "sha256": "5ab5181179b067ca7ebafaa4d5035b668a2fab7b3232200eb8e3e5e744899691",
+        "bytes": 210
+      },
+      "cap-contract.json": {
+        "sha256": "2c7cdb0b8d33e55551af927a702c8058b24f7837a67a6b8070022c7af0588de7",
+        "bytes": 293
+      },
+      "prompt-22ce7f059373d7b969843cbe02629c10e43c721254e279d1bb7f5c5c47d5e288.json": {
+        "sha256": "aad352842fa6e5bb519d51042adabe9ad11c0437235bc5e10ae5a7ba2a5d7c32",
+        "bytes": 4384
+      },
+      "schema-4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad.json": {
+        "sha256": "4aa8c340cd05321a988fd4d65ed2e3c8bde699af2ab2aa624a9f14ee7531ca74",
+        "bytes": 7117
+      }
+    }
+  },
+  {
+    "name": "2-yaml-anchor-ranges-candidate",
+    "artifact": "traces/2-yaml-anchor-ranges-candidate.json.gz",
+    "sha256": "3d2eb0d45116ecec2f6ea3986cb75b9c5d57f48d1961a5d05290a7f6d7901b55",
+    "files": {
+      "events.jsonl": {
+        "sha256": "04a997dc799b5ef045fb66ca92dbe9577888a074bfeefb19c4d74f86f5e8daff",
+        "bytes": 229401
+      },
+      "workspace.diff": {
+        "sha256": "e2e57370c5bd553f805ee521738b511e4d2093bf13da619957a571e563db7e41",
+        "bytes": 2597
+      },
+      "score.json": {
+        "sha256": "f62a8f0d3cb9827aa2f2562b8d14bdcc68972bde8643071c9e56119db2a112d7",
+        "bytes": 8352
+      },
+      "result.json": {
+        "sha256": "2482d91810e3e635cd9b5589760cf0133439f035eb7da82dc7d970e3437b47d9",
+        "bytes": 4665
+      },
+      "instruction.txt": {
+        "sha256": "4848b79fab9c012ff7a17afde5e88590bc8554e6231ca21cfd9bc59e1e117102",
+        "bytes": 1473
+      },
+      "required-checks.json": {
+        "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+        "bytes": 3
+      },
+      "wire-contracts.jsonl": {
+        "sha256": "6ef376f5db3ab8b814e9c63b6f6ec784b54503d9020dd2a2833e63f25d690367",
+        "bytes": 11157
+      },
+      "model-exit.json": {
+        "sha256": "16e17b79c7d1e6c3e001b2b39ba003723a64867f6fdf9f136be6c60a697b2ece",
+        "bytes": 5014
+      },
+      "model-start.json": {
+        "sha256": "e1c4d84e1643c3e9da42b3f7eaac94ccb7daca42aa50dfc3a04321b1813c3515",
+        "bytes": 200
+      },
+      "prompt-date-loads.jsonl": {
+        "sha256": "825d54a43b8c4244bf69501703d2ba5fabbccf0a043c4436c22bb26b07fee7ce",
+        "bytes": 194
+      },
+      "cap-contract.json": {
+        "sha256": "02432163ff78fc3ffba94144e999c086c7f06bddd3d8a73a46bb6fa3e36a3147",
+        "bytes": 294
+      },
+      "prompt-f07b2cb3fe5da850946835631c8ea43cd38b63687ebf61c94a7f0248bc415f39.json": {
+        "sha256": "f81539de350f8d1bbfbd1c46b41cafbfb2e59e69e7102ed06b1d2cf06cf2289b",
+        "bytes": 5495
+      },
+      "schema-dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494.json": {
+        "sha256": "b6412fc07a0b096e764499296330b3e837f517f5570f38a9b5a47846b8e1e952",
+        "bytes": 9957
+      }
+    }
+  }
+]

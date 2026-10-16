@@ -1,0 +1,347 @@
+{
+  "phase": "F36",
+  "knownDiagnostic": true,
+  "planned": 12,
+  "completed": 5,
+  "complete": false,
+  "arms": {
+    "baseline": {
+      "assigned": 3,
+      "completed": 1,
+      "official": 1,
+      "endpoint": 1,
+      "audited": 1,
+      "unreviewed": 0,
+      "tokensObserved": 195912,
+      "costUsdObserved": 0.01820436,
+      "partialTokensObserved": 0,
+      "partialCostUsdObserved": 0,
+      "workerSeconds": 66.665,
+      "missingConsumption": 0,
+      "missingWorkerTime": 0,
+      "missingFullCacheAccounting": 1,
+      "cacheReadAggregateObserved": 140928,
+      "cacheWriteAggregateObserved": 0,
+      "missingCacheReadAggregates": 0,
+      "missingCacheWriteAggregates": 0,
+      "projectCalls": 0
+    },
+    "candidate": {
+      "assigned": 3,
+      "completed": 2,
+      "official": 2,
+      "endpoint": 2,
+      "audited": 1,
+      "unreviewed": 0,
+      "tokensObserved": 790364,
+      "costUsdObserved": 0.0429654,
+      "partialTokensObserved": 0,
+      "partialCostUsdObserved": 0,
+      "workerSeconds": 190.061,
+      "missingConsumption": 0,
+      "missingWorkerTime": 0,
+      "missingFullCacheAccounting": 2,
+      "cacheReadAggregateObserved": 705280,
+      "cacheWriteAggregateObserved": 0,
+      "missingCacheReadAggregates": 0,
+      "missingCacheWriteAggregates": 0,
+      "projectCalls": 4
+    },
+    "cline": {
+      "assigned": 3,
+      "completed": 1,
+      "official": 1,
+      "endpoint": 1,
+      "audited": 1,
+      "unreviewed": 0,
+      "tokensObserved": 474157,
+      "costUsdObserved": 0.026301920000000003,
+      "partialTokensObserved": 0,
+      "partialCostUsdObserved": 0,
+      "workerSeconds": 79.84,
+      "missingConsumption": 0,
+      "missingWorkerTime": 0,
+      "missingFullCacheAccounting": 1,
+      "cacheReadAggregateObserved": 414336,
+      "cacheWriteAggregateObserved": 0,
+      "missingCacheReadAggregates": 0,
+      "missingCacheWriteAggregates": 0,
+      "projectCalls": 0
+    },
+    "cline-cap": {
+      "assigned": 3,
+      "completed": 1,
+      "official": 1,
+      "endpoint": 1,
+      "audited": 1,
+      "unreviewed": 0,
+      "tokensObserved": 359520,
+      "costUsdObserved": 0.027500520000000004,
+      "partialTokensObserved": 0,
+      "partialCostUsdObserved": 0,
+      "workerSeconds": 88.211,
+      "missingConsumption": 0,
+      "missingWorkerTime": 0,
+      "missingFullCacheAccounting": 1,
+      "cacheReadAggregateObserved": 292736,
+      "cacheWriteAggregateObserved": 0,
+      "missingCacheReadAggregates": 0,
+      "missingCacheWriteAggregates": 0,
+      "projectCalls": 0
+    }
+  },
+  "comparisons": [
+    {
+      "left": "candidate",
+      "right": "baseline",
+      "pairs": 1,
+      "names": [
+        [
+          "1-yaml-anchor-ranges-candidate",
+          "1-yaml-anchor-ranges-baseline"
+        ]
+      ],
+      "resources": {
+        "tokens": {
+          "left": 284265,
+          "right": 195912,
+          "relativeChange": 0.4509830944505697
+        },
+        "cost": {
+          "left": 0.018391680000000004,
+          "right": 0.01820436,
+          "relativeChange": 0.010289842653078862
+        },
+        "seconds": {
+          "left": 81.329,
+          "right": 66.665,
+          "relativeChange": 0.2199654991374782
+        }
+      }
+    },
+    {
+      "left": "cline-cap",
+      "right": "cline",
+      "pairs": 1,
+      "names": [
+        [
+          "1-yaml-anchor-ranges-cline-cap",
+          "1-yaml-anchor-ranges-cline"
+        ]
+      ],
+      "resources": {
+        "tokens": {
+          "left": 359520,
+          "right": 474157,
+          "relativeChange": -0.24177013099036815
+        },
+        "cost": {
+          "left": 0.027500520000000004,
+          "right": 0.026301920000000003,
+          "relativeChange": 0.045570817643731054
+        },
+        "seconds": {
+          "left": 88.211,
+          "right": 79.84,
+          "relativeChange": 0.10484719438877743
+        }
+      }
+    },
+    {
+      "left": "candidate",
+      "right": "cline-cap",
+      "pairs": 1,
+      "names": [
+        [
+          "1-yaml-anchor-ranges-candidate",
+          "1-yaml-anchor-ranges-cline-cap"
+        ]
+      ],
+      "resources": {
+        "tokens": {
+          "left": 284265,
+          "right": 359520,
+          "relativeChange": -0.20932076101468622
+        },
+        "cost": {
+          "left": 0.018391680000000004,
+          "right": 0.027500520000000004,
+          "relativeChange": -0.33122428230448
+        },
+        "seconds": {
+          "left": 81.329,
+          "right": 88.211,
+          "relativeChange": -0.0780174808130506
+        }
+      }
+    }
+  ],
+  "qualityGate": null,
+  "resourceGate": null,
+  "qualityGates": {
+    "light": null,
+    "native": null
+  },
+  "resourceGates": {
+    "light": null,
+    "native": null
+  },
+  "requestCapContracts": [
+    {
+      "name": "1-yaml-anchor-ranges-baseline",
+      "arm": "baseline",
+      "expectedCap": null,
+      "forwarded": 10,
+      "exposure": "observed",
+      "mismatchedRequestCount": 0,
+      "exceededOutputReports": 0,
+      "unknownOutputReports": 0,
+      "unreportedAttempts": 0,
+      "allForwardedOutputsObserved": true,
+      "missingCapture": false,
+      "passed": true,
+      "outputReports": 10,
+      "maximumObservedOutput": 1883,
+      "outputsAtCap": 0
+    },
+    {
+      "name": "1-yaml-anchor-ranges-candidate",
+      "arm": "candidate",
+      "expectedCap": 8192,
+      "forwarded": 12,
+      "exposure": "observed",
+      "mismatchedRequestCount": 0,
+      "exceededOutputReports": 0,
+      "unknownOutputReports": 0,
+      "unreportedAttempts": 0,
+      "allForwardedOutputsObserved": true,
+      "missingCapture": false,
+      "passed": true,
+      "outputReports": 12,
+      "maximumObservedOutput": 1312,
+      "outputsAtCap": 0
+    },
+    {
+      "name": "1-yaml-anchor-ranges-cline",
+      "arm": "cline",
+      "expectedCap": null,
+      "forwarded": 11,
+      "exposure": "observed",
+      "mismatchedRequestCount": 0,
+      "exceededOutputReports": 0,
+      "unknownOutputReports": 0,
+      "unreportedAttempts": 0,
+      "allForwardedOutputsObserved": true,
+      "missingCapture": false,
+      "passed": true,
+      "outputReports": 11,
+      "maximumObservedOutput": 1770,
+      "outputsAtCap": 0
+    },
+    {
+      "name": "1-yaml-anchor-ranges-cline-cap",
+      "arm": "cline-cap",
+      "expectedCap": 8192,
+      "forwarded": 9,
+      "exposure": "observed",
+      "mismatchedRequestCount": 0,
+      "exceededOutputReports": 0,
+      "unknownOutputReports": 0,
+      "unreportedAttempts": 0,
+      "allForwardedOutputsObserved": true,
+      "missingCapture": false,
+      "passed": true,
+      "outputReports": 9,
+      "maximumObservedOutput": 1692,
+      "outputsAtCap": 0
+    },
+    {
+      "name": "2-yaml-anchor-ranges-candidate",
+      "arm": "candidate",
+      "expectedCap": 8192,
+      "forwarded": 18,
+      "exposure": "observed",
+      "mismatchedRequestCount": 0,
+      "exceededOutputReports": 0,
+      "unknownOutputReports": 0,
+      "unreportedAttempts": 0,
+      "allForwardedOutputsObserved": true,
+      "missingCapture": false,
+      "passed": true,
+      "outputReports": 18,
+      "maximumObservedOutput": 1187,
+      "outputsAtCap": 0
+    }
+  ],
+  "accounting": {
+    "method": "Known SDK estimates plus explicit missing-aggregate/unreported-request reserves, not imputed consumption. Wire/report counts do not establish billing or hidden retries.",
+    "trials": [
+      {
+        "name": "1-yaml-anchor-ranges-baseline",
+        "observedUsd": 0.01820436,
+        "forwardedAttempts": 10,
+        "usageReports": 10,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01820436,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-yaml-anchor-ranges-candidate",
+        "observedUsd": 0.018391680000000004,
+        "forwardedAttempts": 12,
+        "usageReports": 12,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.018391680000000004,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-yaml-anchor-ranges-cline",
+        "observedUsd": 0.026301920000000003,
+        "forwardedAttempts": 11,
+        "usageReports": 11,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.026301920000000003,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-yaml-anchor-ranges-cline-cap",
+        "observedUsd": 0.027500520000000004,
+        "forwardedAttempts": 9,
+        "usageReports": 9,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.027500520000000004,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-yaml-anchor-ranges-candidate",
+        "observedUsd": 0.02457372,
+        "forwardedAttempts": 18,
+        "usageReports": 18,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.02457372,
+        "basis": "wire/report counts; billing unknown"
+      }
+    ],
+    "observedUsd": 0.1149722,
+    "reservedUsd": 0,
+    "accountedUsd": 0.1149722,
+    "aggregateOnlyObservedUsd": 0.1149722,
+    "partialUsageObservations": [],
+    "partialObservedUsd": 0,
+    "reservationNote": "Retain the entire scheduler missing-aggregate allowance in addition to known partial observations. Conservative overlap is explicit; reserves are not spending."
+  },
+  "priorObservedUsd": 4.432079600000001,
+  "priorReservedUsd": 1.48,
+  "totalAccountedUsd": 6.027051800000001,
+  "method": "Separate known-task diagnostic. Original bytes archived; strict review never replaced by independent grading. Unknown per-request cache/reasoning retained; costs are SDK estimates, host/researcher/setup/oracle unpriced. No outcome-based extra trials."
+}
