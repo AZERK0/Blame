@@ -23,7 +23,8 @@ async function bindings() {
     files[`tools/terminal_bench/iterative-study/${name}.mjs`] = sha(await readFile(join(import.meta.dirname, `${name}.mjs`)));
   for (const root of [join(work, 'frozen'), join(work, 'dependencies/node_modules')])
     files[relative(repo, root)] = await fileTree(root);
-  for (const path of ['protocol.json', 'prior-budget.json', 'prompt-date-binding.json', 'native-search-bindings.json', 'oracle-controls.json'])
+  for (const path of ['protocol.json', 'prior-budget.json', 'prompt-date-binding.json', 'native-search-bindings.json', 'oracle-controls.json',
+    'asset-smoke.json', 'administrative-stop-initial.json', 'initial-accounting.json', 'budget-preflight.json'])
     files[path] = sha(await readFile(join(study, path)));
   for (const path of ['tools/terminal_bench/navigation-evidence/wire-audit.mjs', 'tools/terminal_bench/navigation-evidence/native-search-repair.mjs',
     'tools/terminal_bench/request-limit-model-study/prompt-date.mjs', 'tools/terminal_bench/navigation-evidence/budget-accounting.mjs',
@@ -51,7 +52,7 @@ function check(script, root) {
   return { argv: ['npm', 'run', `test:study:${script}`], exitCode: result.status, signal: result.signal,
     error: result.error?.code ?? null, durationMs: performance.now() - started, stdout: result.stdout, stderr: result.stderr };
 }
-async function score(directory, task) {
+export async function score(directory, task) {
   const workspace = join(directory, 'workspace');
   const paths = git(['status', '--porcelain', '--untracked-files=all'], workspace).trimEnd().split('\n').filter(Boolean).map(line => line.slice(3));
   const protectedPaths = paths.filter(path => path.startsWith('.study/') || path === 'lib/jsconfig.json' || path === 'tsconfig.json' ||
@@ -103,7 +104,7 @@ async function execute(directory, slot, task) {
 async function lines(path) {
   return readFile(path, 'utf8').then(text => text.trim().split('\n').filter(Boolean).map(JSON.parse), error => { if (error.code === 'ENOENT') return []; throw error; });
 }
-async function analyse(slot, directory, exit, grade) {
+export async function analyse(slot, directory, exit, grade) {
   const events = (await lines(join(directory, 'events.jsonl'))).map(row => row.event);
   const result = await json(join(directory, 'result.json')).catch(() => ({}));
   const wire = await lines(join(directory, 'wire-contracts.jsonl'));
@@ -134,6 +135,9 @@ async function run() {
   await save(join(campaign, 'provenance.json'), { protocolSha256: sha(await readFile(join(study, 'protocol.json'))), startedAtUTC: new Date().toISOString(), order: protocol.order });
   const prior = await json(join(study, 'prior-budget.json')); let accounting = reserveTrialCosts(rows, wireByTrial, protocol.budgets);
   for (const slot of protocol.order) {
+    if (await readFile(join(work, 'pause-before-next-trial')).then(() => true, error => { if (error.code === 'ENOENT') return false; throw error; })) {
+      await save(join(campaign, 'administrative-pause.json'), { nextSlot: slot, modelRetried: false }); break;
+    }
     const reserve = protocol.budgets.perTrialSdkCostLimitUsd + protocol.budgets.requestOvershootReserveUsd;
     if (accounting.accountedUsd + reserve > protocol.budgets.panelObservedCostStopUsd || prior.accountedUsd + accounting.accountedUsd + reserve > protocol.budgets.sharedStudyObservedCostStopUsd) {
       await save(join(campaign, 'budget-stop.json'), { slot, accounting, prior, reserve }); break;

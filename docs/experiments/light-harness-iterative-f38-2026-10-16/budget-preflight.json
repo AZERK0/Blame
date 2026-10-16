@@ -1,7 +1,7 @@
 {
   "paidRequests": 0,
-  "priorAccountedUsd": 6.62580432,
-  "maximumScheduledReservationsUsd": 3.96,
-  "maximumCombinedReservationsUsd": 10.585804320000001,
-  "admitted": true
+  "priorAccountedUsd": 7.62865264,
+  "nextReservationUsd": 0.33,
+  "admitted": true,
+  "scheduling": "Re-evaluate the fixed panel/shared ceilings before each assignment; retain any unstarted tail if reserved accounting reaches the ceiling."
 }

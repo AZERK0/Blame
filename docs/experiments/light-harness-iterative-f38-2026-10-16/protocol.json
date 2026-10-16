@@ -1,6 +1,6 @@
 {
-  "phase": "F38",
-  "registeredAtUTC": "2026-10-16T14:22:27.353Z",
+  "phase": "F38b",
+  "registeredAtUTC": "2026-10-16T14:28:31.034Z",
   "readyForModel": true,
   "project": {
     "name": "axios",
@@ -145,5 +145,20 @@
     "qualityGate": "Declaration Light audited count >= reference Light, all assigned outcomes retained.",
     "resourceGate": "At equal audited counts with at least two paired successes: paired total tokens and SDK cost decrease, paired duration <=110% of reference.",
     "inference": "Descriptive two purposively selected feature tasks, with dependent repeats; no population claim."
+  },
+  "administrativeCorrection": {
+    "initial": "initial-protocol.json",
+    "record": "administrative-stop-initial.json",
+    "unchanged": [
+      "tasks",
+      "instructions",
+      "oracles",
+      "order",
+      "model",
+      "effort",
+      "budgets"
+    ],
+    "changed": "Common prompt/plugin non-JS assets restored; scheduler can pause before starting another trial.",
+    "interpretation": "Corrected separate campaign on the same prospectively selected tasks. One native clear-count attempt was observed in the initial campaign; not wholly fresh confirmation. Do not pool original failures with corrected outcomes or erase them."
   }
 }
