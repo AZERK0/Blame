@@ -53,6 +53,44 @@
       "reason": "Correct false inference from returned command label; exact npm-wrapper criterion is unchanged."
     },
     {
+      "name": "1-fast-glob-dynamic-filter-candidate",
+      "originalDecision": {
+        "name": "1-fast-glob-dynamic-filter-candidate",
+        "agentRequiredChecksPassed": true,
+        "fullRequestCriteriaPassed": false,
+        "manualBehaviorPassed": true,
+        "noSolutionRetrieval": true,
+        "scopeOnlySensitivity": true,
+        "criteriaFailures": [
+          "intermediate_source_write_outside_allowlist"
+        ],
+        "notes": "Inspected complete final diff and every effective input. Frozen behavior/type/default/E2E checks pass and final source is confined to six allowed files. Error-object callbacks,static/dynamic pruning and inherited guards are implemented; source review is bounded,not exhaustive. However successful edit40 changes forbidden src/readers/sync.ts (13 additions/1 deletion); edit41 reverts it. The explicit implementation-write restriction applies to actions,so full strict acceptance fails even though the final diff is compliant. Preserve a post-selected final-scope-only sensitivity separately. All four exact commands rerun60-63 after last edit59;12/246/1350 and9pending reports retain unknown Mocha counters. Runtime verification remains unverified without erasing actual successful checks. Dependency internals are read via the installed node_modules route after navigation refuses them; no solution retrieval or protected test writes.",
+        "review": "reviewed",
+        "eventsSha256": "2f891ea48428d6dd8de36d9ace9becf47914fc38d6770953e803bb67f46e2a35",
+        "diffSha256": "b98ff796cea216694253db895b2fa4faf569bd0582f13a5117d608040ebaf471",
+        "scoreSha256": "d92dfa225bd6315c6ef49ac0bd8fff2b6f226e6f33a48486d926363ee8ae9936"
+      },
+      "correctedDecision": {
+        "name": "1-fast-glob-dynamic-filter-candidate",
+        "agentRequiredChecksPassed": false,
+        "fullRequestCriteriaPassed": false,
+        "manualBehaviorPassed": true,
+        "noSolutionRetrieval": true,
+        "scopeOnlySensitivity": true,
+        "criteriaFailures": [
+          "intermediate_source_write_outside_allowlist",
+          "required_exact_npm_test_shortcut_not_invoked"
+        ],
+        "notes": "F33 correction: the frozen executor uses npm run plus the catalog script name. The original returned command is a misleading script label, not the spawned executable. The unit task uses npm run test, preserving hooks, but the frozen instruction explicitly requires literal npm test. Keep the exact-command failure; this is not evidence of skipped lifecycle execution. Other original failures remain: intermediate_source_write_outside_allowlist, required_exact_npm_test_shortcut_not_invoked. Original notes and all prior correction decisions remain in the F31 publication.",
+        "review": "reviewed",
+        "eventsSha256": "2f891ea48428d6dd8de36d9ace9becf47914fc38d6770953e803bb67f46e2a35",
+        "diffSha256": "b98ff796cea216694253db895b2fa4faf569bd0582f13a5117d608040ebaf471",
+        "scoreSha256": "d92dfa225bd6315c6ef49ac0bd8fff2b6f226e6f33a48486d926363ee8ae9936",
+        "resolvedProjectSensitivity": false
+      },
+      "reason": "Correct false inference from returned command label; exact npm-wrapper criterion is unchanged."
+    },
+    {
       "name": "2-yaml-anchor-ranges-candidate",
       "originalDecision": {
         "name": "2-yaml-anchor-ranges-candidate",
@@ -180,14 +218,15 @@
       },
       "correctedDecision": {
         "name": "3-fast-glob-dynamic-filter-candidate",
-        "agentRequiredChecksPassed": true,
+        "agentRequiredChecksPassed": false,
         "fullRequestCriteriaPassed": false,
         "manualBehaviorPassed": true,
         "noSolutionRetrieval": true,
         "criteriaFailures": [
-          "missing_delivery_at_iteration_limit"
+          "missing_delivery_at_iteration_limit",
+          "required_exact_npm_test_shortcut_not_invoked"
         ],
-        "notes": "F33 correction: the frozen executor uses npm run plus the catalog script name. The original returned command is a misleading script label, not the spawned executable. Required wrappers execute in the recorded order after the last edit. Missing final delivery at maxIterations32 still prevents full acceptance. Original notes and all prior correction decisions remain in the F31 publication.",
+        "notes": "F33 correction: the frozen executor uses npm run plus the catalog script name. The original returned command is a misleading script label, not the spawned executable. The unit task uses npm run test, preserving hooks, but the frozen instruction explicitly requires literal npm test. Keep the exact-command failure; this is not evidence of skipped lifecycle execution. Other original failures remain: missing_delivery_at_iteration_limit, required_exact_npm_test_shortcut_not_invoked. Original notes and all prior correction decisions remain in the F31 publication.",
         "review": "reviewed",
         "eventsSha256": "528654c1d7730273dc2f296b58881a8c49a3f7c99c6a721327d2eda76bffd183",
         "diffSha256": "0e4a9d7d2b38dd4aa79b82479f586ad4a611477a3ae1460bbc8f8367fb73c64c",
@@ -201,7 +240,7 @@
     {
       "name": "3-fast-glob-dynamic-filter-baseline",
       "originalNotes": "Reviewed all effective inputs, final seven allowed source files and original endpoint checks. Independent feature/type/original unit/E2E outcomes pass after the agent repairs no-filter mock compatibility via body-only replacement64. This exercises body-only editing, not the changed whole-symbol first-line path. Calls66-70 run underlying project compile/unit, another compile, the literal focused Node command, then underlying E2E; the final unit invocation precedes the focused command, and the npm wrappers required by the fixed instruction are not all invoked after the last edit. All requested underlying validation categories succeed but exact invocation/order criteria do not. Runtime stops at maxIterations32 with no delivery. Dependency navigation is repeatedly blocked, recovered through installed-package shell reads; a guessed missing stream.js also fails before discovery. Kind=replace_body61 is rejected by schema, then a stale/unobserved body edit62 is refused until read63. All implementation writes remain within the seven allowed paths; no solution retrieval or source repair by the researcher.",
-      "correctedNotes": "F33 note correction: project compile/unit/E2E tasks use actual npm wrappers. After the last edit the successful unit check precedes the required focused check, and there is no final delivery at maxIterations32. Order/full acceptance still fail. Other source/scope/no-solution judgments are unchanged."
+      "correctedNotes": "F33 note correction: project compile/unit/E2E tasks use actual npm wrappers. After the last edit the successful unit check precedes the required focused check; npm run test differs from the required literal npm test, and there is no final delivery at maxIterations32. Exact-order/full acceptance still fail. Other source/scope/no-solution judgments are unchanged."
     }
   ],
   "reconstructedProjectInvocations": [
@@ -1703,11 +1742,12 @@
           }
         }
       },
-      "agentRequiredChecksPassed": true,
+      "agentRequiredChecksPassed": false,
       "fullRequestCriteriaPassed": false,
       "noSolutionRetrieval": true,
       "criteriaFailures": [
-        "intermediate_source_write_outside_allowlist"
+        "intermediate_source_write_outside_allowlist",
+        "required_exact_npm_test_shortcut_not_invoked"
       ],
       "auditedSuccess": false
     },
@@ -5191,11 +5231,12 @@
           }
         }
       },
-      "agentRequiredChecksPassed": true,
+      "agentRequiredChecksPassed": false,
       "fullRequestCriteriaPassed": false,
       "noSolutionRetrieval": true,
       "criteriaFailures": [
-        "missing_delivery_at_iteration_limit"
+        "missing_delivery_at_iteration_limit",
+        "required_exact_npm_test_shortcut_not_invoked"
       ],
       "auditedSuccess": false
     },
@@ -5500,7 +5541,7 @@
       "official": 4,
       "endpoint": 5,
       "behavior": 5,
-      "exactChecks": 5,
+      "exactChecks": 3,
       "fullAudit": 3,
       "tokens": 3704199,
       "costUsd": 0.22118095999999998,

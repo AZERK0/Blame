@@ -28,33 +28,38 @@ def build():
     decisions = copy.deepcopy(reviews['decisions'])
     corrections = []
     false_reason = 'required_exact_npm_wrappers_not_invoked'
-    # Four full-delivery decisions, plus a fifth check-only decision. The other
-    # thirteen are also retained; failed source/order/scope/reporting still fail.
+    # Restore four YAML decisions. Literal `npm test` is still distinct from
+    # `npm run test` under the frozen exact-command rule, despite shared hooks.
     names = {
         '1-yaml-anchor-ranges-baseline',
         '2-yaml-anchor-ranges-baseline',
         '2-yaml-anchor-ranges-candidate',
         '3-yaml-anchor-ranges-candidate',
-        '3-fast-glob-dynamic-filter-candidate',
     }
-    assert {d['name'] for d in decisions if false_reason in d.get('criteriaFailures', [])} == names
+    assert {d['name'] for d in decisions if false_reason in d.get('criteriaFailures', [])} == names | {'3-fast-glob-dynamic-filter-candidate'}
     for decision in decisions:
-        if decision['name'] not in names:
+        if decision['name'] not in names | {'1-fast-glob-dynamic-filter-candidate', '3-fast-glob-dynamic-filter-candidate'}:
             continue
         old = copy.deepcopy(decision)
-        decision['criteriaFailures'].remove(false_reason)
-        decision['agentRequiredChecksPassed'] = True
-        decision['fullRequestCriteriaPassed'] = not decision['criteriaFailures']
+        if decision['name'] in names:
+            decision['criteriaFailures'].remove(false_reason)
+            decision['agentRequiredChecksPassed'] = True
+            decision['fullRequestCriteriaPassed'] = not decision['criteriaFailures']
+        else:
+            decision['criteriaFailures'] = [x for x in decision['criteriaFailures'] if x != false_reason]
+            decision['criteriaFailures'].append('required_exact_npm_test_shortcut_not_invoked')
+            decision['agentRequiredChecksPassed'] = False
         # These were sensitivities under an incorrect execution premise; they
         # are no longer a relaxation of the registered exact-wrapper criterion.
         decision['resolvedProjectSensitivity'] = False
         decision['notes'] = (
             'F33 correction: the frozen executor uses npm run plus the catalog script name. '
             'The original returned command is a misleading script label, not the spawned executable. '
-            'Required wrappers execute in the recorded order after the last edit. '
+            + ('Required wrappers execute in the recorded order after the last edit. ' if decision['name'] in names else
+               'The unit task uses npm run test, preserving hooks, but the frozen instruction explicitly requires literal npm test. Keep the exact-command failure; this is not evidence of skipped lifecycle execution. ')
             + ('All other previously reviewed delivery/source/reporting criteria remain satisfied.'
                if decision['fullRequestCriteriaPassed'] else
-               'Missing final delivery at maxIterations32 still prevents full acceptance.')
+               'Other original failures remain: ' + ', '.join(decision['criteriaFailures']) + '.')
             + ' Original notes and all prior correction decisions remain in the F31 publication.'
         )
         corrections.append({'name': decision['name'], 'originalDecision': old,
@@ -66,7 +71,8 @@ def build():
     old_note = note['notes']
     note['notes'] = ('F33 note correction: project compile/unit/E2E tasks use actual npm wrappers. '
                      'After the last edit the successful unit check precedes the required focused '
-                     'check, and there is no final delivery at maxIterations32. Order/full acceptance '
+                     'check; npm run test differs from the required literal npm test, and there is no '
+                     'final delivery at maxIterations32. Exact-order/full acceptance '
                      'still fail. Other source/scope/no-solution judgments are unchanged.')
     by_name = {d['name']: d for d in decisions}
     rows = []
