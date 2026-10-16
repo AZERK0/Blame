@@ -31,6 +31,15 @@ export type TaskInvocation = {
   packageManagerVersion?: string;
 };
 
+/** Diagnostic POSIX-style argv rendering; execution always uses structured argv. */
+export function taskInvocationDisplay(invocation: Pick<TaskInvocation, "executable" | "args">): string {
+  return [invocation.executable, ...invocation.args].map((word) =>
+    /^[a-zA-Z0-9_@%+=:,./-]+$/u.test(word)
+      ? word
+      : `'${word.replaceAll("'", "'\\''")}'`,
+  ).join(" ");
+}
+
 type PackageManagerSelection = {
   name: NonNullable<TaskCatalogItem["package_manager"]>;
   version?: string;

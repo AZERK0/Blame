@@ -3,7 +3,7 @@ import { basename, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sha256 } from "./light-identity.js";
 import type { NodeEventBinding } from "./node-event-evidence.js";
-import type { TaskCatalogItem, TaskInvocation } from "./task-catalog.js";
+import { taskInvocationDisplay, type TaskCatalogItem, type TaskInvocation } from "./task-catalog.js";
 import { executeWorkspaceCommand } from "./workspace-command-process.js";
 
 export type ManagedTestReport = {
@@ -43,7 +43,7 @@ export async function managedTestReport(
   const args = adapter.args(invocation.args, directory, reportPath);
   return {
     invocation: { ...invocation, args },
-    command: [invocation.executable, ...args].join(" "),
+    command: taskInvocationDisplay({ ...invocation, args }),
     read: () => adapter.read(directory, reportPath),
     ...(adapter.name === "node" ? { nodeEvents: { invocationId: basename(directory),
       reporterSha256: sha256(await readFile(fileURLToPath(new URL("./node-event-reporter.js", import.meta.url)))) } } : {}),

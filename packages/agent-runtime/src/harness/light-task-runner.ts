@@ -22,6 +22,7 @@ import type { SessionJournal } from "./session-journal.js";
 import {
   readTaskCatalog,
   taskInvocation,
+  taskInvocationDisplay,
   type TaskCatalogItem,
 } from "./task-catalog.js";
 import {
@@ -170,7 +171,7 @@ export class LightTaskRunner {
       invocation.executable,
       invocation.args,
       cwd,
-      report?.command ?? [task.command, ...args.map((arg) => `'${arg.replaceAll("'", "'\\''")}'`)].join(" "),
+      taskInvocationDisplay(invocation),
       context,
       {
         cwd: task.cwd,
