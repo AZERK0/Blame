@@ -1,0 +1,13 @@
+# F37: dependency declaration navigation, local mechanism study
+
+Registered before implementation. Reference: `8ceb9139`, with a private copy of its compiled runtime retained for before/after replays. This phase tests one read-only navigation feature; it does not alter editing, validation, prompts, output caps or accounting.
+
+Observation: F31 fast-glob trials refuse dependency declaration reads and fall back to shell discovery. Current ordinary `readPath` uses `assertMutableWorkspacePath`, excluding node_modules. A declaration can establish a type contract, not dependency runtime behavior.
+
+Treatment: explicit `read_code` declaration view, selecting a local JS/TS import binding or namespace member with `path#binding.member`. Resolve identity through the existing bounded configured-project compiler worker. Return bounded declaration text, installed package/version, project scope, hashes and an explicit read-only label. Do not grant aliases, edit coverage, rename authority or verification admission. Ordinary dependency reads/edits stay excluded.
+
+Local panel selected now: named/default/namespace imports and local re-exports with lexical decoys; merged overloads; conditional package exports and typesVersions; Unicode and bounded continuation; absent config/declarations or unresolved/ambiguous imports; changed consumer/config/package/declaration and retargeted symlinks; package ownership/escape/protected paths; worker timeout/cancellation/read limits; unchanged reference/rename/edit guards. Keep failed controls and repairs in the findings. Compare successful identity recovery, emitted UTF-8 bytes and elapsed time on the same inputs. Compilation/CPU overhead and larger output are adverse results. Local lookup success is not coding-task success or token savings.
+
+Gate: all selected correctness/boundary controls and existing relevant suites must pass before any model use. Replay historical F31 imports only as known diagnostics, retaining unsupported JavaScript runtime investigations. Model confirmation is a separate, prospectively frozen larger-project panel: new unhinted cross-file tasks, independent behavioral controls, rotated reference-Light / declaration-Light / integrated-Cline assignments, fixed actual model/effort/caps/environment/budgets, original failures and missing usage. No new model run is registered by this local protocol.
+
+Prior cumulative accounting: observed SDK estimates USD 4.68580432 + retained missing-usage reserves USD 1.94 = USD 6.62580432. Local tests use no model. Do not release reserves or infer billed zero from absent receipts. Existing technical envelope USD 10.951612 remains available; user authorization does not require another budget question.
