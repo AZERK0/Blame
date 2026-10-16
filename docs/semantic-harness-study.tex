@@ -658,10 +658,58 @@ suite outcomes, including the unchanged-source failure. This reproduces outcomes
 not agent actions or twelve successful tasks. All 12 publication corruption controls
 pass, including rehashed request-setting changes; F35 has seven separate controls.
 
+\section{F37: read-only dependency declarations, local mechanism}
+Following the F36 audit, the iterative cycle resumed with one navigation change.
+Its protocol was committed as \code{9977de17} before implementation; production
+reference \code{8ceb9139} is retained as a SHA-bound compiled archive. F31's known
+fast-glob traces (zero-based baseline tool indices 22--24, candidate 24--25) refuse
+dependency declarations, then use shell discovery. This exclusion persisted in
+\code{readPath}; configured compiler references/rename were already implemented.
+
+\paragraph{Implemented.}
+\code{read\_code} now accepts explicit \code{view: declaration}, anchored in
+\code{localFile\#importBinding.member}. The existing bounded compiler worker
+resolves aliases/re-exports and returns installed package/version identity,
+source/package hashes, project scope/warnings, overloads or bounded namespace
+exports. Content pages contain at most 12,000 UTF-8 bytes, with byte-offset
+continuation; at most 16 declarations/256,000 projected bytes are admitted.
+Canonical package ownership, protected subpaths and realpath/content freshness
+cover pnpm/shared installations and symlink replacement. Ordinary dependency
+reads/edits remain refused. This grants no writable alias, edit coverage, rename
+authority or validation admission. Missing configuration/types, ambiguous imports
+and local augmentations fail explicitly. Type declarations do not establish
+dependency runtime behavior.
+
+\paragraph{New local measurements.}
+Six known fast-glob lookups, repeated three times with rotating arm order and
+fresh sources/sessions, recover correct identity in 18/18 candidate reads versus
+0/18 reference refusals. Independent installed-file/package hashes agree.
+The configured project contains 79 roots/221 loaded files. Response bytes rise
+from 4,023 to 22,434; total lookup time rises from 1.049s to 16.867s. Short refusals
+deliver less information, so these are not resources at comparable quality.
+They are dependent diagnostic lookups, not eighteen tasks, billed-token savings
+or model-success evidence. SDK JSON tool definitions add 516 bytes entirely in
+\code{read\_code}, including when unused; other workspace definitions are
+byte-identical. This is not billed tokens or a wire/cache measurement.
+No model requests or additional cost occurred.
+The first test panel passes 12/15; three fixture mistakes are corrected (ESM
+identity, JS/TS source shadowing and an existing refusal status). Expanded targeted
+suites pass 52/52 including sixteen new controls. Build/lint and registered-suite
+outcomes, original logs and replay scripts are published in
+\filepath{docs/experiments/light-harness-dependency-declarations-f37-2026-10-16}.
+
+\paragraph{Decision and remaining experiment.}
+Retain the explicit read-only capability with verified identity/boundaries;
+global utility remains unproven and compiler startup/context overhead is adverse.
+New unhinted cross-file tasks on a larger project must compare reference Light,
+declaration Light and integrated Cline under identical actual model/effort/caps
+and frozen budgets. This local phase has not registered or executed that model
+panel. Do not combine startup caching or other mechanisms with that ablation.
+
 \section{Next hypotheses: proposals, not measurements}
 \begin{enumerate}
-\item Test bounded read-only dependency declaration access through configured
-compiler resolution. Compare existing shell fallback with otherwise identical
+\item Test the implemented F37 declaration route against existing shell fallback
+with otherwise identical
 navigation on new cross-file/dependency tasks in larger unhinted projects. Measure correct identity, repair
 calls, audited acceptance and resources; preserve protected edit boundaries.
 Risks are extra context, version confusion and unintended scope expansion.
