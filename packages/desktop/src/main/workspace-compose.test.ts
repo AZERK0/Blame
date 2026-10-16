@@ -9,10 +9,12 @@ import {
   dockerComposeForPreview,
   dockerComposeWithCiForPackageInstalls,
   dockerComposeWithCorepackPnpm,
-  dockerComposeWithDependencyVolumes,
   dockerComposeWithHostFileMounts,
-  dependencyVolumeHashFromInputs,
 } from "./workspace-compose.ts";
+import {
+  dockerComposeWithDependencyVolumes,
+  dependencyVolumeHashFromInputs,
+} from "./workspace-compose-volumes.ts";
 
 test("refreshes existing preview caches after package edits without rotating database volumes", () => {
   const oldKey = "f97e587feee3";

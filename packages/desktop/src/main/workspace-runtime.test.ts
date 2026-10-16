@@ -13,12 +13,14 @@ import {
   worktreePath,
   worktreeRoot,
   writeFileAtomic,
-  hasMissingWorkspaceNodeModules,
-  sanitizeWorkspaceConfigFiles,
   ensureRuntimeGitUserIdentity,
   resetRuntimeGitIdentityConfiguredForTesting,
   findProjectFilesByName,
 } from "./workspace-runtime.ts";
+import {
+  hasMissingWorkspaceNodeModules,
+  sanitizeWorkspaceConfigFiles,
+} from "./workspace-config-sanitizer.ts";
 
 test("replaces runtime state files atomically", async () => {
   const directory = await mkdtemp(join(tmpdir(), "blame-runtime-state-"));

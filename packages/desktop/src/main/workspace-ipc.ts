@@ -135,11 +135,11 @@ import {
   composeWithNonMutatingNpmInstalls,
   composeWithoutNumericSuUser,
   composeWithRuntimePortPlaceholders,
-  dependencyVolumeHashFromInputs,
   dockerComposeForPreview,
   dockerComposeWithHostFileMounts,
   dockerComposeWithPortableWindowsPaths,
 } from "./workspace-compose";
+import { dependencyVolumeHashFromInputs } from "./workspace-compose-volumes";
 import {
   cleanupAbandonedBlamePreviews,
   removeBlamePreviewProjectResources,
@@ -177,7 +177,6 @@ import {
   chmod as chmodRuntime,
   dirnameWorkspacePath,
   findProjectFilesByName,
-  hasMissingWorkspaceNodeModules,
   joinWorkspacePath,
   mkdir as mkdirRuntime,
   readExistingFiles as readExistingRuntimeFiles,
@@ -189,13 +188,16 @@ import {
   run as runRuntime,
   runtimeManagedPath,
   pathExists as runtimePathExists,
-  sanitizeWorkspaceConfigFiles,
   spawnRuntime,
   storyBranch,
   worktreePath,
   writeFile as writeRuntimeFile,
   writeFileAtomic as writeRuntimeFileAtomic,
 } from "./workspace-runtime";
+import {
+  hasMissingWorkspaceNodeModules,
+  sanitizeWorkspaceConfigFiles,
+} from "./workspace-config-sanitizer";
 import {
   branchExists,
   ensureRuntimeGitSafeDirectory,
