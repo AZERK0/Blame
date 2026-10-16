@@ -2,29 +2,31 @@
   "phase": "F36",
   "knownDiagnostic": true,
   "planned": 12,
-  "completed": 6,
+  "completed": 10,
   "complete": false,
   "arms": {
     "baseline": {
       "assigned": 3,
-      "completed": 1,
-      "official": 1,
-      "endpoint": 1,
-      "audited": 1,
+      "completed": 2,
+      "official": 2,
+      "endpoint": 2,
+      "audited": 2,
       "unreviewed": 0,
-      "tokensObserved": 195912,
-      "costUsdObserved": 0.01820436,
+      "tokensObserved": 421286,
+      "costUsdObserved": 0.035627479999999996,
       "partialTokensObserved": 0,
       "partialCostUsdObserved": 0,
-      "workerSeconds": 66.665,
+      "workerSeconds": 143.564,
       "missingConsumption": 0,
+      "incompleteTokenCostAccounting": 0,
+      "unreportedForwardingAttempts": 0,
       "missingWorkerTime": 0,
-      "missingFullCacheAccounting": 1,
-      "cacheReadAggregateObserved": 140928,
+      "missingFullCacheAccounting": 2,
+      "cacheReadAggregateObserved": 328704,
       "cacheWriteAggregateObserved": 0,
       "missingCacheReadAggregates": 0,
       "missingCacheWriteAggregates": 0,
-      "projectCalls": 0
+      "projectCalls": 2
     },
     "candidate": {
       "assigned": 3,
@@ -39,6 +41,8 @@
       "partialCostUsdObserved": 0,
       "workerSeconds": 190.061,
       "missingConsumption": 0,
+      "incompleteTokenCostAccounting": 0,
+      "unreportedForwardingAttempts": 0,
       "missingWorkerTime": 0,
       "missingFullCacheAccounting": 2,
       "cacheReadAggregateObserved": 705280,
@@ -49,7 +53,7 @@
     },
     "cline": {
       "assigned": 3,
-      "completed": 2,
+      "completed": 3,
       "official": 1,
       "endpoint": 2,
       "audited": 1,
@@ -58,10 +62,12 @@
       "costUsdObserved": 0.0398096,
       "partialTokensObserved": 0,
       "partialCostUsdObserved": 0,
-      "workerSeconds": 680.715,
+      "workerSeconds": 1281.801,
       "missingConsumption": 0,
+      "incompleteTokenCostAccounting": 2,
+      "unreportedForwardingAttempts": 2,
       "missingWorkerTime": 0,
-      "missingFullCacheAccounting": 2,
+      "missingFullCacheAccounting": 3,
       "cacheReadAggregateObserved": 439040,
       "cacheWriteAggregateObserved": 0,
       "missingCacheReadAggregates": 0,
@@ -70,20 +76,22 @@
     },
     "cline-cap": {
       "assigned": 3,
-      "completed": 1,
-      "official": 1,
-      "endpoint": 1,
-      "audited": 1,
+      "completed": 3,
+      "official": 3,
+      "endpoint": 3,
+      "audited": 2,
       "unreviewed": 0,
-      "tokensObserved": 359520,
-      "costUsdObserved": 0.027500520000000004,
+      "tokensObserved": 1245323,
+      "costUsdObserved": 0.08909556000000002,
       "partialTokensObserved": 0,
       "partialCostUsdObserved": 0,
-      "workerSeconds": 88.211,
+      "workerSeconds": 293.151,
       "missingConsumption": 0,
+      "incompleteTokenCostAccounting": 0,
+      "unreportedForwardingAttempts": 0,
       "missingWorkerTime": 0,
-      "missingFullCacheAccounting": 1,
-      "cacheReadAggregateObserved": 292736,
+      "missingFullCacheAccounting": 3,
+      "cacheReadAggregateObserved": 1024128,
       "cacheWriteAggregateObserved": 0,
       "missingCacheReadAggregates": 0,
       "missingCacheWriteAggregates": 0,
@@ -288,8 +296,160 @@
       "outputReports": 3,
       "maximumObservedOutput": 2120,
       "outputsAtCap": 0
+    },
+    {
+      "name": "2-yaml-anchor-ranges-cline-cap",
+      "arm": "cline-cap",
+      "expectedCap": 8192,
+      "forwarded": 11,
+      "exposure": "observed",
+      "mismatchedRequestCount": 0,
+      "exceededOutputReports": 0,
+      "unknownOutputReports": 0,
+      "unreportedAttempts": 0,
+      "allForwardedOutputsObserved": true,
+      "missingCapture": false,
+      "passed": true,
+      "outputReports": 11,
+      "maximumObservedOutput": 2044,
+      "outputsAtCap": 0
+    },
+    {
+      "name": "2-yaml-anchor-ranges-baseline",
+      "arm": "baseline",
+      "expectedCap": null,
+      "forwarded": 11,
+      "exposure": "observed",
+      "mismatchedRequestCount": 0,
+      "exceededOutputReports": 0,
+      "unknownOutputReports": 0,
+      "unreportedAttempts": 0,
+      "allForwardedOutputsObserved": true,
+      "missingCapture": false,
+      "passed": true,
+      "outputReports": 11,
+      "maximumObservedOutput": 2309,
+      "outputsAtCap": 0
+    },
+    {
+      "name": "3-yaml-anchor-ranges-cline",
+      "arm": "cline",
+      "expectedCap": null,
+      "forwarded": 1,
+      "exposure": "observed",
+      "mismatchedRequestCount": 0,
+      "exceededOutputReports": 0,
+      "unknownOutputReports": 0,
+      "unreportedAttempts": 1,
+      "allForwardedOutputsObserved": false,
+      "missingCapture": false,
+      "passed": true,
+      "outputReports": 0,
+      "maximumObservedOutput": null,
+      "outputsAtCap": 0
+    },
+    {
+      "name": "3-yaml-anchor-ranges-cline-cap",
+      "arm": "cline-cap",
+      "expectedCap": 8192,
+      "forwarded": 7,
+      "exposure": "observed",
+      "mismatchedRequestCount": 0,
+      "exceededOutputReports": 0,
+      "unknownOutputReports": 0,
+      "unreportedAttempts": 0,
+      "allForwardedOutputsObserved": true,
+      "missingCapture": false,
+      "passed": true,
+      "outputReports": 7,
+      "maximumObservedOutput": 1663,
+      "outputsAtCap": 0
     }
   ],
+  "initialContracts": [
+    {
+      "name": "1-yaml-anchor-ranges-baseline",
+      "arm": "baseline",
+      "normalizedContractSha256": "9c56664b4b10df4823a346ead479d4edf5e153d9e375f57a76ff8b7ffc5899f4",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "d36b70333d5253bf211da1eb39703c36052941d6f2433a71147c7741d1da94dd"
+    },
+    {
+      "name": "1-yaml-anchor-ranges-candidate",
+      "arm": "candidate",
+      "normalizedContractSha256": "9c56664b4b10df4823a346ead479d4edf5e153d9e375f57a76ff8b7ffc5899f4",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "6134eac4d6db6f5df674d5080f9c2939867006ba3f9537cce3f0a6e66fa8b3dd"
+    },
+    {
+      "name": "1-yaml-anchor-ranges-cline",
+      "arm": "cline",
+      "normalizedContractSha256": "3d79a2eb3e40f0103840c19d496e5e94e5c0610169ab217b2df5422249d9f644",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "e7e7d8166bad92fac429d69464dcc0ceb238c9b403746c01c947471c73efc75d"
+    },
+    {
+      "name": "1-yaml-anchor-ranges-cline-cap",
+      "arm": "cline-cap",
+      "normalizedContractSha256": "3d79a2eb3e40f0103840c19d496e5e94e5c0610169ab217b2df5422249d9f644",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "22ce7f059373d7b969843cbe02629c10e43c721254e279d1bb7f5c5c47d5e288"
+    },
+    {
+      "name": "2-yaml-anchor-ranges-candidate",
+      "arm": "candidate",
+      "normalizedContractSha256": "9c56664b4b10df4823a346ead479d4edf5e153d9e375f57a76ff8b7ffc5899f4",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "f07b2cb3fe5da850946835631c8ea43cd38b63687ebf61c94a7f0248bc415f39"
+    },
+    {
+      "name": "2-yaml-anchor-ranges-cline",
+      "arm": "cline",
+      "normalizedContractSha256": "3d79a2eb3e40f0103840c19d496e5e94e5c0610169ab217b2df5422249d9f644",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "7fea3ecc972fbb0eec5b9cd248de7ca6efcc2dd236421489f2f010766dac7f23"
+    },
+    {
+      "name": "2-yaml-anchor-ranges-cline-cap",
+      "arm": "cline-cap",
+      "normalizedContractSha256": "3d79a2eb3e40f0103840c19d496e5e94e5c0610169ab217b2df5422249d9f644",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "7a64767138ddafcd62ab7f392d50fa195262cba6681bfa19c1636e8261f9a171"
+    },
+    {
+      "name": "2-yaml-anchor-ranges-baseline",
+      "arm": "baseline",
+      "normalizedContractSha256": "9c56664b4b10df4823a346ead479d4edf5e153d9e375f57a76ff8b7ffc5899f4",
+      "toolsSha256": "dda40f124c551e982ea309c5c7b63e5b7f31ac67c4f1b4edde2c4c26fcfc1494",
+      "promptSha256": "00c030407d7bf4d644faf1c6aaa6596c53652a9671df45285f2fcb0158b4de48"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-cline",
+      "arm": "cline",
+      "normalizedContractSha256": "3d79a2eb3e40f0103840c19d496e5e94e5c0610169ab217b2df5422249d9f644",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "54923cc3ab010caeef1336aca1c7cabfff2b27cae1b5b23076b587abab286114"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-cline-cap",
+      "arm": "cline-cap",
+      "normalizedContractSha256": "3d79a2eb3e40f0103840c19d496e5e94e5c0610169ab217b2df5422249d9f644",
+      "toolsSha256": "4d1d0b2edc4f7578ef9605f0619e0b7104896d7ea11431aa01c70cb938bd45ad",
+      "promptSha256": "69508df234372a6226405676cd0ab411f0644ef94a90f8d79634e85d215e861a"
+    }
+  ],
+  "initialContractAgreement": {
+    "light": {
+      "observed": 4,
+      "missing": 0,
+      "distinctNormalizedContracts": 1
+    },
+    "native": {
+      "observed": 6,
+      "missing": 0,
+      "distinctNormalizedContracts": 1
+    }
+  },
   "accounting": {
     "method": "Known SDK estimates plus explicit missing-aggregate/unreported-request reserves, not imputed consumption. Wire/report counts do not establish billing or hidden retries.",
     "trials": [
@@ -358,18 +518,62 @@
         "unreportedRequestReserveUsd": 0.23,
         "accountedUsd": 0.24350768,
         "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-yaml-anchor-ranges-cline-cap",
+        "observedUsd": 0.03401892,
+        "forwardedAttempts": 11,
+        "usageReports": 11,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.03401892,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-yaml-anchor-ranges-baseline",
+        "observedUsd": 0.017423119999999997,
+        "forwardedAttempts": 11,
+        "usageReports": 11,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.017423119999999997,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-yaml-anchor-ranges-cline",
+        "observedUsd": 0,
+        "forwardedAttempts": 1,
+        "usageReports": 0,
+        "wireUsageCountGap": 1,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0.23,
+        "accountedUsd": 0.23,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "3-yaml-anchor-ranges-cline-cap",
+        "observedUsd": 0.027576120000000003,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.027576120000000003,
+        "basis": "wire/report counts; billing unknown"
       }
     ],
-    "observedUsd": 0.12847988,
-    "reservedUsd": 0.23,
-    "accountedUsd": 0.35847988,
-    "aggregateOnlyObservedUsd": 0.12847988,
+    "observedUsd": 0.20749804,
+    "reservedUsd": 0.46,
+    "accountedUsd": 0.66749804,
+    "aggregateOnlyObservedUsd": 0.20749804,
     "partialUsageObservations": [],
     "partialObservedUsd": 0,
     "reservationNote": "Retain the entire scheduler missing-aggregate allowance in addition to known partial observations. Conservative overlap is explicit; reserves are not spending."
   },
   "priorObservedUsd": 4.432079600000001,
   "priorReservedUsd": 1.48,
-  "totalAccountedUsd": 6.27055948,
+  "totalAccountedUsd": 6.57957764,
   "method": "Separate known-task diagnostic. Original bytes archived; strict review never replaced by independent grading. Unknown per-request cache/reasoning retained; costs are SDK estimates, host/researcher/setup/oracle unpriced. No outcome-based extra trials."
 }

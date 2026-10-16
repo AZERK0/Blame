@@ -48,6 +48,9 @@ for (const row of results.rows) {
   assert.equal(row.status, result.status ?? 'missing');
   assert.equal(row.officialRuntimeSuccess, result.status === 'succeeded');
   assert.equal(row.durationMs, result.durationMs ?? null);
+  assert.deepEqual(row.metrics, result.metrics ?? null);
+  assert.deepEqual(row.completion, result.completion ?? null);
+  assert.equal(row.error, result.error ?? null);
   assert.equal(row.independentFunctionalSuccess, JSON.parse(files['score.json']).independentFunctionalSuccess);
   const usage = reconcileUsage(result.usage, events.filter(e => e.type === 'usage').map(e => e.payload?.usage), events.filter(e => e.type === 'notice' && e.payload?.message === 'Agent iteration started.').length);
   assert.deepEqual(row.usage, usage);
@@ -89,6 +92,9 @@ for (const row of results.rows) {
   }
 }
 assert.deepEqual(await json('exposure.json'), exposures);
+const initialContracts=results.rows.map(r=>{const q=wire[r.name].find(q=>!q.budgetRejected);return{name:r.name,arm:r.arm,normalizedContractSha256:q?.normalizedContractSha256??null,toolsSha256:q?.toolsSha256??null,promptSha256:q?.promptSha256??null};});
+assert.deepEqual(summary.initialContracts,initialContracts);
+assert.deepEqual(summary.initialContractAgreement,Object.fromEntries([['light',r=>p.lightArms.includes(r.arm)],['native',r=>r.arm.startsWith('cline')]].map(([family,select])=>{const initial=initialContracts.filter(select);return[family,{observed:initial.filter(r=>r.normalizedContractSha256!==null).length,missing:initial.filter(r=>r.normalizedContractSha256===null).length,distinctNormalizedContracts:[...new Set(initial.map(r=>r.normalizedContractSha256).filter(Boolean))].length}];})));
 assert.deepEqual(summary.requestCapContracts, results.rows.map(r => ({ name: r.name,
   ...evaluateCapContract(r.arm, wire[r.name], r.usage.perRequest, p.budgets.requestMaxOutputTokens),
   outputReports: r.usage.perRequest.length,
@@ -113,6 +119,11 @@ for (const arm of p.arms) {
   assert.equal(a.projectCalls, exposures.filter(e => e.name.endsWith('-' + arm)).reduce((n, e) => n + e.projectCalls.length, 0));
 }
 const scheduled = reserveTrialCosts(results.rows, wire, p.budgets);
+for (const arm of p.arms) {
+  const rows = results.rows.filter(r => r.arm === arm), a = summary.arms[arm];
+  assert.equal(a.incompleteTokenCostAccounting, rows.filter(r => !r.usage.tokensCostReconciled || scheduled.trials.find(t=>t.name===r.name).wireUsageCountGap > 0).length);
+  assert.equal(a.unreportedForwardingAttempts, scheduled.trials.filter(t=>rows.some(r=>r.name===t.name)).reduce((n,t)=>n+t.wireUsageCountGap,0));
+}
 assert.equal(summary.accounting.aggregateOnlyObservedUsd, scheduled.observedUsd);
 assert.equal(summary.accounting.reservedUsd, scheduled.reservedUsd);
 assert.deepEqual(summary.accounting.trials, scheduled.trials);

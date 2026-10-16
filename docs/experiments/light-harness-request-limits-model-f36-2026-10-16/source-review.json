@@ -84,6 +84,65 @@
       "eventsSha256": "49c91f434e22e579d3bd4c9b7bf553403a5d2b9accc9275028a02f9635ad36d7",
       "diffSha256": "c1c2a32a7941d3d8ed6a62c922b6ab183ad633921b778ccffbc59c67ed3bc552",
       "scoreSha256": "c17353c31845872966428ec867a1a1a1a5984a18d36ec43b7ed6d6610c4abfed"
+    },
+    {
+      "name": "2-yaml-anchor-ranges-cline-cap",
+      "sourceBehaviorPassed": true,
+      "exactFinalSourceChecksPassed": true,
+      "fullRequestPassed": true,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [],
+      "notes": "Complete diff and all24 effective native inputs reviewed. An initial concurrent build/focused baseline call races and produces MODULE_NOT_FOUND; a patch initially breaks a JSDoc boundary and type checking fails. Both are retained and the agent corrects its source,then reruns validation. Final changes affect only three allowed files with exact token offsets,optional precise tuple and separately copied clone ranges; shared range-comment placement is untidy but runtime/public tuple behavior remains correct. Temporary diagnostic logs are outside the submitted checkout; no submitted file is added and frozen tests/configuration are unchanged. After the final edit the four literal required commands execute serially with all four individual statuses explicitly printed as0; Node12/12 and Jest3483passed/11skipped/25suites agree with final delivery. The report acknowledges the initial concurrency race. Additional focused/clone probes do not replace mandatory validation. No external solution retrieval or source recovery observed.",
+      "reviewedAtUTC": "2026-10-16T12:16:39.186Z",
+      "eventsSha256": "8e38c9a1583f5db5f2de2a5ed22b58ca4d2f85d2621ad8f80641d275095ae880",
+      "diffSha256": "0c2378687e9688058a0451be0dfa195614d4f39b923d20fcdfee0804a535121c",
+      "scoreSha256": "5dcd55d8a5cda77f6a1cfb470e8af6c042832493d05a5bd4ae1c9202d8a58d3d"
+    },
+    {
+      "name": "2-yaml-anchor-ranges-baseline",
+      "sourceBehaviorPassed": true,
+      "exactFinalSourceChecksPassed": true,
+      "fullRequestPassed": true,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [],
+      "notes": "Complete diff and all32 effective Light inputs reviewed. One multi-file patch incorrectly carries a symbol target and is refused; the next call explicitly removes target and succeeds. Final changes are only compose-node.ts,Node.ts and Collection.ts,with precise optional tuple typing,exact anchor-token offsets and independent clone copies. The four required literal commands run after the final edit in order; project-task receipts establish npm run build:node and npm run test:types,while the focused Node command and final npm test are literal raw invocations. Each exits0. Node12/12 and Jest3483passed/11skipped/25suites match delivery; type counters remain unknown and no formal admission is inferred from raw test output. No external solution retrieval or protected-input changes observed. The independent endpoint agrees and does not substitute for these agent receipts.",
+      "reviewedAtUTC": "2026-10-16T12:18:34.011Z",
+      "eventsSha256": "53da2901e849b2a541859319053b718b6816963598aef977f7818731e313048d",
+      "diffSha256": "c7f2745e139c54a20172bc12c534910a6ac93eedd156da837eefc202736c4b3a",
+      "scoreSha256": "e63d46a0fe223f41255ed5c48e645b41f8557b4753d82c14efa1b603c641173a"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-cline",
+      "sourceBehaviorPassed": false,
+      "exactFinalSourceChecksPassed": false,
+      "fullRequestPassed": false,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [
+        "requested_anchor_range_feature_not_implemented",
+        "required_final_source_validation_not_executed",
+        "no_final_factual_delivery_before_timeout"
+      ],
+      "notes": "Complete recorded trajectory and empty final diff reviewed: zero effective tool inputs and no source changes. The first recorded forwarding attempt has no usage receipt before the601.086s configured timeout; process exit124,outer watchdog false. Original source still builds and its original Jest suite passes,but the requested feature probes,supplied Node checks and new public type checks fail. The agent runs none of the required final-source commands and provides no final delivery. The SDK zero usage accumulator and context.modelRequests0 do not prove no HTTP attempt or zero cost: one request is captured,and the current collector increments that context counter only on input-usage reports. The missing-consumption reserve is retained; cause of the incomplete response remains unestablished. No external solution retrieval,protected-input mutation,replacement trial or researcher source recovery observed.",
+      "reviewedAtUTC": "2026-10-16T12:29:41.126Z",
+      "eventsSha256": "8a7d0a8d45cd55dc55226bfeded17535f123b268785d20094e01e45f305a3d1d",
+      "diffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "scoreSha256": "59643821f8f117894067a09e40359d9ba16f2eae740332670a582686b4a7d093"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-cline-cap",
+      "sourceBehaviorPassed": true,
+      "exactFinalSourceChecksPassed": false,
+      "fullRequestPassed": false,
+      "noSolutionRetrieval": true,
+      "semicolonEvidenceSensitivity": true,
+      "criteriaFailures": [
+        "earlier_check_exit_statuses_not_established_by_semicolon_chain"
+      ],
+      "notes": "Complete diff and all14 effective native inputs reviewed. An early require of unbuilt dist fails and is disclosed. The single implementation patch changes only three allowed files with exact token offsets,optional tuple declaration and independent clone copies. The four literal required commands run serially after the final edit in a semicolon chain. Visible Node12/12 and Jest3483passed/11skipped/25suites agree with delivery; Rollup emits created-dist messages and type output shows no error. However,the tool only records the final shell success and no individual earlier build/type exits. Strict review withholds full acceptance on that evidence uncertainty; it does not assert failed tests or a user ban on semicolons. F36 did not separately bind an exact-or-&& rule. A separate apparent-validation sensitivity may admit this single uncertainty without changing original outcomes or primary grades. Independent endpoint passes. Tuple-comment notation alone is not an inclusive endpoint claim. No external solution retrieval or protected-input change observed.",
+      "reviewedAtUTC": "2026-10-16T12:30:16.127Z",
+      "eventsSha256": "58af84f2139f5517d73421e615c82b4ebff0234bd858bad2775e73a998ca13dc",
+      "diffSha256": "2ad76205ef39c3e57814789eb6d2b60db7a9f8b5564c823cb07472c762028ac7",
+      "scoreSha256": "22988b405bf67af6f747def518e2f25ef19a2c72bb494aa10b14ccd17795cbee"
     }
   ]
 }

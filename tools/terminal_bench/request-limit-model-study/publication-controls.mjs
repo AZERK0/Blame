@@ -16,6 +16,7 @@ try {
   for (const name of await readdir(study)) await symlink(join(study, name), join(root, name));
   const cases = [
     ['results.json', 'changed observed usage', v => { v.rows[0].usage.cost += .01; }],
+    ['results.json', 'fabricated SDK model-request counter', v => { v.rows.find(r=>r.arm==='cline').metrics.context.modelRequests += 1; }],
     ['summary.json', 'fabricated consumption reserve', v => { v.accounting.reservedUsd += .23; }],
     ['summary.json', 'changed partial consumption', v => { v.accounting.partialObservedUsd += .01; }],
     ['results.json', 'changed observed or missing duration', v => { const r=v.rows.find(r=>r.durationMs===null) ?? v.rows[0];r.durationMs=r.durationMs===null?0:r.durationMs+1; }],
@@ -23,6 +24,7 @@ try {
     ['summary.json', 'fabricated paired resource saving', v => { v.comparisons[0].resources.cost.relativeChange = -.99; }],
     ['launch-registration.json', 'registration rebound after dispatch', v => { v.protocolSha256 = '0'.repeat(64); }],
     ['summary.json', 'fabricated effective-cap exposure', v => { v.requestCapContracts.find(r=>r.arm==='candidate').forwarded += 1; }],
+    ['summary.json', 'fabricated initial-contract agreement', v => { v.initialContractAgreement.light.distinctNormalizedContracts += 1; }],
   ];
   for (const [name, label, mutate] of cases) {
     const value = JSON.parse(await readFile(join(study, name))); mutate(value);

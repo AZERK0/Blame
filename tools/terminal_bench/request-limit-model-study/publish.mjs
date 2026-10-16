@@ -77,6 +77,8 @@ const arms = Object.fromEntries(p.arms.map(arm => {
     partialCostUsdObserved: partialUsageObservations.filter(r => r.name.endsWith('-' + arm)).reduce((n, r) => n + r.costUsd, 0),
     workerSeconds: subset.reduce((n, r) => n + (r.durationMs ?? 0), 0) / 1000,
     missingConsumption: subset.filter(r => r.usage.input === null || r.usage.output === null || r.usage.cost === null).length,
+    incompleteTokenCostAccounting: subset.filter(r => !r.usage.tokensCostReconciled || accounting.trials.find(t => t.name === r.name).wireUsageCountGap > 0).length,
+    unreportedForwardingAttempts: accounting.trials.filter(t => subset.some(r => r.name === t.name)).reduce((n, t) => n + t.wireUsageCountGap, 0),
     missingWorkerTime: subset.filter(r => r.durationMs === null).length,
     missingFullCacheAccounting: subset.filter(r => !r.usage.complete).length,
     cacheReadAggregateObserved: subset.reduce((n, r) => n + (r.usage.cacheRead ?? 0), 0),
@@ -110,8 +112,13 @@ const requestCapContracts = rows.map(r => ({ name: r.name,
   outputReports: r.usage.perRequest.length,
   maximumObservedOutput: r.usage.perRequest.some(u => typeof u.output === 'number') ? Math.max(...r.usage.perRequest.filter(u => typeof u.output === 'number').map(u => u.output)) : null,
   outputsAtCap: r.usage.perRequest.filter(u => u.output === p.budgets.requestMaxOutputTokens).length }));
+const initialContracts = rows.map(r => { const q=wire[r.name].find(q=>!q.budgetRejected);return { name:r.name,arm:r.arm,
+  normalizedContractSha256:q?.normalizedContractSha256??null,toolsSha256:q?.toolsSha256??null,promptSha256:q?.promptSha256??null }; });
+const initialContractAgreement = Object.fromEntries([['light',r=>p.lightArms.includes(r.arm)],['native',r=>r.arm.startsWith('cline')]].map(([family,select])=>{
+  const initial=initialContracts.filter(select);return [family,{observed:initial.filter(r=>r.normalizedContractSha256!==null).length,
+    missing:initial.filter(r=>r.normalizedContractSha256===null).length,distinctNormalizedContracts:[...new Set(initial.map(r=>r.normalizedContractSha256).filter(Boolean))].length}];}));
 const summary = { phase: 'F36', knownDiagnostic: true, planned: p.order.length, completed: rows.length, complete,
-  arms, comparisons, qualityGate, resourceGate, qualityGates, resourceGates, requestCapContracts, accounting, priorObservedUsd: prior.observedUsd,
+  arms, comparisons, qualityGate, resourceGate, qualityGates, resourceGates, requestCapContracts, initialContracts, initialContractAgreement, accounting, priorObservedUsd: prior.observedUsd,
   priorReservedUsd: prior.reservedUsd, totalAccountedUsd: prior.accountedUsd + accounting.accountedUsd,
   method: 'Separate known-task diagnostic. Original bytes archived; strict review never replaced by independent grading. Unknown per-request cache/reasoning retained; costs are SDK estimates, host/researcher/setup/oracle unpriced. No outcome-based extra trials.' };
 for (const [name, value] of Object.entries({ 'results.json': { ...analysis, rows }, 'inventory.json': inventory, 'exposure.json': exposures, 'summary.json': summary }))

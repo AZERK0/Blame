@@ -85,5 +85,49 @@
     "name": "2-yaml-anchor-ranges-cline",
     "projectCalls": [],
     "finishCalls": []
+  },
+  {
+    "name": "2-yaml-anchor-ranges-cline-cap",
+    "projectCalls": [],
+    "finishCalls": []
+  },
+  {
+    "name": "2-yaml-anchor-ranges-baseline",
+    "projectCalls": [
+      {
+        "input": {
+          "kind": "project",
+          "task": "build:node"
+        },
+        "status": "ok",
+        "returnedCommand": "npm run build:node"
+      },
+      {
+        "input": {
+          "kind": "project",
+          "task": "test:types"
+        },
+        "status": "ok",
+        "returnedCommand": "npm run test:types"
+      }
+    ],
+    "finishCalls": [
+      {
+        "input": {
+          "summary": "Implemented parsed `anchorRange?: [number, number]` on the shared public node base, populated from anchor CST tokens for scalar, collection, and empty parsed nodes, and preserved it through scalar and collection cloning with a separately copied tuple. Unanchored nodes, aliases, and programmatically anchored nodes remain without an own `anchorRange` property. Changes are limited to `src/compose/compose-node.ts`, `src/nodes/Node.ts`, and `src/nodes/Collection.ts`; no unrelated files were modified.\n\nVerification, run in the requested order:\n- `npm run build:node` — passed.\n- `node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs` — passed; 12 executed, 12 passed, 0 failed, 0 skipped.\n- `npm run test:types` — exited 0; the runner reported no test counters (unknown), with no compiler diagnostics.\n- `npm test -- --runInBand` — passed; 3,483 passed, 0 failed, 11 skipped (3,494 total across 25 suites).\n\nThe existing Jest run emitted only the repository's stale Browserslist data warning. No known limitations beyond the type-check runner not reporting counters."
+        },
+        "output": "Implemented parsed `anchorRange?: [number, number]` on the shared public node base, populated from anchor CST tokens for scalar, collection, and empty parsed nodes, and preserved it through scalar and collection cloning with a separately copied tuple. Unanchored nodes, aliases, and programmatically anchored nodes remain without an own `anchorRange` property. Changes are limited to `src/compose/compose-node.ts`, `src/nodes/Node.ts`, and `src/nodes/Collection.ts`; no unrelated files were modified.\n\nVerification, run in the requested order:\n- `npm run build:node` — passed.\n- `node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs` — passed; 12 executed, 12 passed, 0 failed, 0 skipped.\n- `npm run test:types` — exited 0; the runner reported no test counters (unknown), with no compiler diagnostics.\n- `npm test -- --runInBand` — passed; 3,483 passed, 0 failed, 11 skipped (3,494 total across 25 suites).\n\nThe existing Jest run emitted only the repository's stale Browserslist data warning. No known limitations beyond the type-check runner not reporting counters."
+      }
+    ]
+  },
+  {
+    "name": "3-yaml-anchor-ranges-cline",
+    "projectCalls": [],
+    "finishCalls": []
+  },
+  {
+    "name": "3-yaml-anchor-ranges-cline-cap",
+    "projectCalls": [],
+    "finishCalls": []
   }
 ]

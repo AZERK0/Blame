@@ -21,6 +21,8 @@ The output contract is checked after every trial, independently of coding outcom
 
 Costs are SDK estimates. The cumulative starting ledger is USD 4.4320796 observed plus USD 1.48 retained reserves, accounted USD 5.9120796. The phase voluntarily retains USD 4.5 and the shared USD 10.951612 technical stops; prior consumption is not reset. Cache is a subset of input and reasoning a subset of output. Missing per-request cache/reasoning, hidden retries and unpriced researcher/host/setup work remain explicit.
 
+`missingConsumption` counts absent aggregate fields. `incompleteTokenCostAccounting` and `unreportedForwardingAttempts` also retain request/report gaps. In particular, an SDK zero accumulator with no usage receipt does not establish zero spending. The original SDK `context.modelRequests` counter is the number of input-usage reports (`BenchmarkMetricsCollector`), not a transport-attempt count; use the captured request/report ledger for that distinction.
+
 Public no-model checks, from the repository root:
 
 ```sh
