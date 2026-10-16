@@ -12,9 +12,9 @@ import {
   isRuntimeEvidencePath,
   isSourceCodePath,
   preferNonGeneratedProjectPaths,
-  readBoundedProjectFiles,
   selectBalancedProjectPaths,
 } from "./project-discovery.js";
+import { readBoundedProjectFiles } from "./project-evidence-reader.js";
 import type { MapSecurityAuditResult, SecuritySurfaceMap } from "./types.js";
 import { runSecurityScanners } from "./security-audit-scanners.js";
 

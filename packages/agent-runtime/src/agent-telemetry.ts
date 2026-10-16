@@ -17,10 +17,7 @@ import {
   ATTR_BLAME_OPERATION_NAME,
   ATTR_BLAME_OPERATION_STATUS,
   ATTR_BLAME_PROVIDER_AUTH_TYPE,
-  ATTR_BLAME_REPOSITORY_LANGUAGE,
-  ATTR_BLAME_REPOSITORY_SIZE_BUCKET,
   ATTR_BLAME_STORY_ID,
-  ATTR_BLAME_TASK_COMPLEXITY_BUCKET,
   ATTR_BLAME_TOOL_CATEGORY,
   ATTR_BLAME_TOOL_NAME,
   ATTR_BLAME_TEST_STATUS,
@@ -32,10 +29,6 @@ import {
   ATTR_GEN_AI_RESPONSE_MODEL,
   ATTR_GEN_AI_TOOL_CALL_ID,
   ATTR_GEN_AI_TOOL_NAME,
-  ATTR_GEN_AI_USAGE_CACHE_CREATION_INPUT_TOKENS,
-  ATTR_GEN_AI_USAGE_CACHE_READ_INPUT_TOKENS,
-  ATTR_GEN_AI_USAGE_INPUT_TOKENS,
-  ATTR_GEN_AI_USAGE_OUTPUT_TOKENS,
   GEN_AI_OPERATION_CHAT,
   GEN_AI_OPERATION_EXECUTE_TOOL,
   GEN_AI_OPERATION_INVOKE_AGENT,
@@ -44,7 +37,6 @@ import {
   METRIC_GEN_AI_TOKEN_USAGE,
   SpanKind,
   boundedMetricDimensionName,
-  getBlameTelemetry,
   getExecutionRegistry,
   semanticGenAiProviderName,
   type BlameSpan,
@@ -52,75 +44,37 @@ import {
   type ExecutionComponent,
   type ExecutionDescriptor,
 } from "@blame/telemetry";
-import type {
-  AgentEvent,
-  AgentUsageSummary,
-  StartSessionInput,
-} from "./types.js";
-
-type AgentTelemetryInput = Pick<StartSessionInput, "modelId" | "providerId"> &
-  Partial<
-    Pick<StartSessionInput, "autoSendPrompt" | "executionId" | "storyId">
-  > & {
-    enableAgentTeams?: boolean;
-    enableSpawnAgent?: boolean;
-    repositoryLanguage?: string;
-    repositorySizeBucket?: string;
-    taskComplexityBucket?: string;
-  };
-
-type UsageSnapshot = {
-  cacheCreated: number;
-  cacheRead: number;
-  cost: number;
-  input: number;
-  output: number;
-};
-
-type ToolSpanState = {
-  agentKey: string;
-  category: string;
-  iteration: number;
-  name: string;
-  role: string;
-  span: BlameSpan;
-};
-
-type AgentInvocationSpanState = {
-  parentAgentKey: string;
-  parentTool?: BlameSpan;
-  span: BlameSpan;
-};
-
-type ModelSpanState = {
-  firstChunkRecorded: boolean;
-  iteration: number;
-  role: string;
-  span: BlameSpan;
-  usage: UsageSnapshot;
-};
-
-type AgentSessionTelemetry = {
-  agentIterations: Map<string, number>;
-  agentSpans: Map<string, AgentInvocationSpanState>;
-  aggregateUsageCursor: UsageSnapshot;
-  authType?: string;
-  component?: ExecutionComponent;
-  descriptor: ExecutionDescriptor;
-  firstActionRecorded: boolean;
-  firstEditRecorded: boolean;
-  input: AgentTelemetryInput;
-  iteration: number;
-  iterations: Set<string>;
-  modelSpans: Map<string, ModelSpanState>;
-  multiAgentUsed: boolean;
-  retryCount: number;
-  toolCallCount: number;
-  toolSpans: Map<string, ToolSpanState>;
-  turnStartedAt: number;
-  usage: UsageSnapshot;
-  usageByAgent: Map<string, UsageSnapshot>;
-};
+import type { AgentEvent, AgentUsageSummary } from "./types.js";
+import {
+  type AgentSessionTelemetry,
+  type AgentTelemetryInput,
+  asRecord,
+  cohortAttributes,
+  configuredAgentStrategy,
+  metricDimensions,
+  modelAttributes,
+  type ModelSpanState,
+  multiAgentEnabled,
+  numericValue,
+  stringValue,
+  telemetry,
+  toolMetricAttributes,
+  type ToolSpanState,
+  turnDuration,
+  type UsageSnapshot,
+} from "./agent-telemetry-state.js";
+import { recordHarnessToolMetrics } from "./agent-telemetry-harness.js";
+import {
+  addUsage,
+  emptyUsage,
+  missingUsage,
+  recordCost,
+  recordModelUsage,
+  recordTokenUsage,
+  usageAttributes,
+  usageDelta,
+  usageSnapshot,
+} from "./agent-telemetry-usage.js";
 
 type CoreEventDetails = {
   agentKey: string;
@@ -130,8 +84,6 @@ type CoreEventDetails = {
   parentAgentKey: string;
   role: string;
 };
-
-const telemetry = getBlameTelemetry();
 const executions = getExecutionRegistry();
 const businessExecutionScope = new AsyncLocalStorage<BusinessExecutionScope>();
 const toolCallFinishPayload = { finishReason: "tool-calls" };
@@ -1206,24 +1158,6 @@ function traceAttributes(state: AgentSessionTelemetry) {
   };
 }
 
-function modelAttributes(
-  state: AgentSessionTelemetry,
-  role: string,
-  iteration = state.iteration,
-) {
-  return {
-    ...cohortAttributes(state.input),
-    [ATTR_BLAME_AGENT_ITERATION]: iteration,
-    [ATTR_BLAME_AGENT_ROLE]: role,
-    [ATTR_BLAME_AGENT_STRATEGY]: sessionAgentStrategy(state),
-    [ATTR_BLAME_MULTI_AGENT_ENABLED]: multiAgentEnabled(state.input),
-    [ATTR_BLAME_PROVIDER_AUTH_TYPE]: state.authType,
-    [ATTR_GEN_AI_OPERATION_NAME]: GEN_AI_OPERATION_CHAT,
-    [ATTR_GEN_AI_PROVIDER_NAME]: state.input.providerId,
-    [ATTR_GEN_AI_REQUEST_MODEL]: state.input.modelId,
-  };
-}
-
 function modelMetricAttributes(
   state: AgentSessionTelemetry,
   role: string,
@@ -1277,14 +1211,6 @@ function recordModelMetrics(
     attributes,
     current.span.context,
   );
-}
-
-function cohortAttributes(input: AgentTelemetryInput) {
-  return {
-    [ATTR_BLAME_REPOSITORY_LANGUAGE]: input.repositoryLanguage,
-    [ATTR_BLAME_REPOSITORY_SIZE_BUCKET]: input.repositorySizeBucket,
-    [ATTR_BLAME_TASK_COMPLEXITY_BUCKET]: input.taskComplexityBucket,
-  };
 }
 
 function executionMetricAttributes(input: AgentTelemetryInput) {
@@ -1484,13 +1410,6 @@ function updateModelIteration(
   current.span.setAttributes({ [ATTR_BLAME_AGENT_ITERATION]: iteration });
 }
 
-function metricDimensions(state: AgentSessionTelemetry) {
-  return {
-    ...modelAttributes(state, "lead"),
-    [ATTR_BLAME_PROVIDER_AUTH_TYPE]: state.authType,
-  };
-}
-
 function recordAgentOutcomeDistributions(
   state: AgentSessionTelemetry,
   attributes: Record<string, unknown>,
@@ -1560,18 +1479,6 @@ function trackToolSpan(
   return span;
 }
 
-function toolMetricAttributes(
-  state: AgentSessionTelemetry,
-  tool: Omit<ToolSpanState, "span">,
-) {
-  return {
-    ...modelAttributes(state, tool.role, tool.iteration),
-    [ATTR_BLAME_TOOL_CATEGORY]: tool.category,
-    [ATTR_BLAME_TOOL_NAME]: tool.name,
-    [ATTR_GEN_AI_TOOL_NAME]: tool.name,
-  };
-}
-
 function completeToolSpan(
   state: AgentSessionTelemetry,
   current: ToolSpanState,
@@ -1585,227 +1492,6 @@ function completeToolSpan(
   recordTestOutcome(current, outcome, attributes);
   if (outcome === "failed") recordToolFailure(current, attributes);
   current.span.end(outcome);
-}
-
-function recordHarnessToolMetrics(
-  state: AgentSessionTelemetry,
-  current: ToolSpanState,
-  event: Record<string, unknown>,
-  payload: Record<string, unknown>,
-) {
-  const attributes = toolMetricAttributes(state, current);
-  const output = asRecord(event.output ?? payload.output);
-  const body = asRecord(output.data ?? output.output ?? output);
-  const data: Record<string, unknown> = {
-    ...body,
-    ...(body.status === undefined ? { status: output.status } : {}),
-    ...(body.category === undefined ? { category: output.category } : {}),
-  };
-  const metricContext = { attributes, current, data, state };
-  if (output.status === "blocked" && output.category === "environment")
-    recordHarnessCount(metricContext, "blame.harness.unavailable_capabilities");
-  current.span.setAttributes(harnessTraceAttributes(data));
-  if (navigationReadTool(current.name)) recordReadMetrics(metricContext);
-  if (semanticEditTool(current.name)) recordEditMetrics(metricContext);
-  if (externalReadTool(current.name)) recordExternalReadMetrics(metricContext);
-  if (current.name === "consult_specialist")
-    recordHarnessValue(
-      metricContext,
-      "blame.harness.specialist_duration",
-      current.span.durationSeconds(),
-    );
-  if (
-    current.name === "consult_specialist" &&
-    stringValue(data.reason) === "SPECIALIST_TIMEOUT"
-  ) {
-    recordHarnessCount(metricContext, "blame.harness.specialist_timeouts");
-    current.span.addEvent("blame.harness.alert", {
-      alert: "SPECIALIST_TIMEOUT",
-    });
-  }
-  if (current.name === "run_task") recordRunMetrics(metricContext);
-}
-
-function recordExternalReadMetrics(context: HarnessMetricContext) {
-  recordHarnessCount(context, "blame.harness.external_reads");
-  const governor = asRecord(context.data.governor);
-  const status = stringValue(context.data.status);
-  if (status === "already_available")
-    recordHarnessCount(context, "blame.harness.external_read_cache_hits");
-  if (status === "already_available" || status === "retry_suppressed")
-    recordHarnessCount(context, "blame.harness.external_read_suppressed");
-  const returned = numericValue(governor.external_read_returned_bytes);
-  if (returned !== undefined)
-    recordHarnessValue(
-      context,
-      "blame.harness.external_read_returned_bytes",
-      returned,
-    );
-}
-
-type HarnessMetricContext = {
-  attributes: Record<string, unknown>;
-  current: ToolSpanState;
-  data: Record<string, unknown>;
-  state: AgentSessionTelemetry;
-};
-
-function recordReadMetrics(context: HarnessMetricContext) {
-  recordHarnessCount(context, "blame.harness.reads");
-  const readBytes = readContentBytes(context.data);
-  recordHarnessValue(context, "blame.harness.read_requested_bytes", readBytes);
-  if (readBytes > 0)
-    recordHarnessValue(context, "blame.harness.read_bytes", readBytes);
-  recordHarnessValue(context, "blame.harness.new_read_bytes", readBytes);
-  const returnedBytes =
-    stringValue(context.data.status) === "already_in_context" ? 0 : readBytes;
-  recordHarnessValue(
-    context,
-    "blame.harness.read_returned_bytes",
-    returnedBytes,
-  );
-  if (readBytes > 0)
-    recordHarnessValue(
-      context,
-      "blame.harness.read_return_ratio",
-      returnedBytes / readBytes,
-    );
-  recordHarnessValue(
-    context,
-    "blame.harness.read_suppressed_bytes",
-    Math.max(0, readBytes - returnedBytes),
-  );
-  if (stringValue(context.data.status) === "already_in_context")
-    recordHarnessCount(context, "blame.harness.deduplicated_reads");
-  if (stringValue(context.data.status) === "already_in_context")
-    recordHarnessCount(context, "blame.harness.duplicate_read_count");
-  recordHarnessValue(
-    context,
-    "blame.harness.symbol_target_ratio",
-    stringValue(context.data.view) === "symbol" ? 1 : 0,
-  );
-}
-
-function readContentBytes(data: Record<string, unknown>) {
-  return [data.content, data.body, data.signature, data.imports]
-    .filter((value): value is string => typeof value === "string")
-    .reduce((total, value) => total + Buffer.byteLength(value), 0);
-}
-
-function recordEditMetrics(context: HarnessMetricContext) {
-  const status = stringValue(context.data.status);
-  if (context.data.changed === true) {
-    recordFirstEdit(context);
-    recordHarnessCount(context, "blame.harness.direct_edits");
-  }
-  if (status === "blocked" && context.data.category === "input")
-    recordHarnessCount(context, "blame.harness.edit_conflict_count");
-}
-
-function harnessTraceAttributes(data: Record<string, unknown>) {
-  return compactAttributes({
-    harness_category: stringValue(data.category),
-    harness_status: stringValue(data.status),
-    harness_view: stringValue(data.view),
-  });
-}
-
-function semanticEditTool(name: string) {
-  return name === "edit_code";
-}
-
-function navigationReadTool(name: string) {
-  return name === "read_code" || name === "search_code";
-}
-
-function externalReadTool(name: string) {
-  return [
-    "consult_specialist",
-    "fetch_web_content",
-    "get_preview_container_logs",
-    "get_preview_devtools",
-  ].includes(name);
-}
-
-function compactAttributes(value: Record<string, unknown>) {
-  return Object.fromEntries(
-    Object.entries(value).filter(([, entry]) => entry !== undefined),
-  );
-}
-
-function recordFirstEdit(context: HarnessMetricContext) {
-  const state = context.state;
-  if (state.firstEditRecorded || !state.component) return;
-  state.firstEditRecorded = true;
-  telemetry.record(
-    "blame.harness.time_to_first_edit",
-    turnDuration(state),
-    metricDimensions(state),
-    state.component.span.context,
-  );
-  recordHarnessValue(
-    context,
-    "blame.harness.first_edit_iteration",
-    context.current.iteration,
-  );
-  recordHarnessValue(
-    context,
-    "blame.harness.tokens_before_first_edit",
-    state.usage.input + state.usage.output,
-  );
-  if (state.usage.input + state.usage.output > 250_000)
-    context.current.span.addEvent("blame.harness.alert", {
-      alert: "TOKENS_BEFORE_FIRST_MUTATION_EXCEEDED",
-      tokens: state.usage.input + state.usage.output,
-    });
-}
-
-function recordRunMetrics(context: HarnessMetricContext) {
-  recordHarnessValue(
-    context,
-    "blame.harness.run_task_duration",
-    context.current.span.durationSeconds(),
-  );
-  recordHarnessValue(
-    context,
-    "blame.harness.time_to_verifiable_result",
-    turnDuration(context.state),
-  );
-  if (!context.data.run_ref || !context.data.complete_log)
-    recordHarnessCount(context, "blame.harness.missing_run_artifacts");
-  const execution = asRecord(context.data.execution);
-  const resolution = asRecord(execution.package_manager_resolution);
-  if (stringValue(resolution.strategy) === "compatible_same_major")
-    recordHarnessCount(
-      context,
-      "blame.harness.package_manager_compatible_resolutions",
-    );
-}
-
-function recordHarnessCount(
-  context: HarnessMetricContext,
-  name: string,
-  value = 1,
-) {
-  telemetry.count(
-    name as Parameters<typeof telemetry.count>[0],
-    value,
-    context.attributes,
-    context.current.span.context,
-  );
-}
-
-function recordHarnessValue(
-  context: HarnessMetricContext,
-  name: string,
-  value: number,
-) {
-  telemetry.record(
-    name as Parameters<typeof telemetry.record>[0],
-    value,
-    context.attributes,
-    context.current.span.context,
-  );
 }
 
 function recordToolDuration(
@@ -2076,171 +1762,6 @@ const retryReasons = new Set([
   "tool_execution_failed",
 ]);
 
-export function usageSnapshot(value: unknown): UsageSnapshot {
-  const envelope = asRecord(value);
-  const usage = usageRecord(envelope);
-  return {
-    cacheCreated: usageNumber(
-      usage,
-      "totalCacheWriteTokens",
-      "cacheWriteTokens",
-    ),
-    cacheRead: usageNumber(usage, "totalCacheReadTokens", "cacheReadTokens"),
-    cost: usageNumber(usage, "totalCost", "cost"),
-    input: usageNumber(usage, "totalInputTokens", "inputTokens"),
-    output: usageNumber(usage, "totalOutputTokens", "outputTokens"),
-  };
-}
-
-export function usageDelta(previous: UsageSnapshot, next: UsageSnapshot) {
-  return {
-    cacheCreated: monotonicDelta(previous.cacheCreated, next.cacheCreated),
-    cacheRead: monotonicDelta(previous.cacheRead, next.cacheRead),
-    cost: monotonicDelta(previous.cost, next.cost),
-    input: monotonicDelta(previous.input, next.input),
-    output: monotonicDelta(previous.output, next.output),
-  };
-}
-
-function usageRecord(envelope: Record<string, unknown>) {
-  const aggregate = asRecord(envelope.aggregateUsage);
-  if (Object.keys(aggregate).length) return aggregate;
-  const usage = asRecord(envelope.usage);
-  if (Object.keys(usage).length) return usage;
-  const result = asRecord(envelope.result);
-  const resultUsage = asRecord(result.usage);
-  return Object.keys(resultUsage).length ? resultUsage : envelope;
-}
-
-function usageNumber(
-  usage: Record<string, unknown>,
-  totalKey: string,
-  fallbackKey: string,
-) {
-  return numericValue(usage[totalKey]) ?? numericValue(usage[fallbackKey]) ?? 0;
-}
-
-function monotonicDelta(previous: number, next: number) {
-  return next >= previous ? next - previous : next;
-}
-
-function recordTokenUsage(
-  state: AgentSessionTelemetry,
-  delta: UsageSnapshot,
-  activeContext: Context,
-) {
-  recordToken(state, "input", delta.input, activeContext);
-  recordToken(state, "output", delta.output, activeContext);
-  recordCacheUsage(state, delta, activeContext);
-}
-
-function recordCacheUsage(
-  state: AgentSessionTelemetry,
-  usage: UsageSnapshot,
-  activeContext: Context,
-) {
-  recordCacheMetric(
-    "blame.gen_ai.cache_read_token.usage",
-    usage.cacheRead,
-    state,
-    activeContext,
-  );
-  recordCacheMetric(
-    "blame.gen_ai.cache_creation_token.usage",
-    usage.cacheCreated,
-    state,
-    activeContext,
-  );
-}
-
-function recordCacheMetric(
-  name: string,
-  value: number,
-  state: AgentSessionTelemetry,
-  activeContext: Context,
-) {
-  if (value <= 0) return;
-  telemetry.record(name, value, metricDimensions(state), activeContext);
-}
-
-function recordCost(
-  state: AgentSessionTelemetry,
-  cost: number,
-  activeContext: Context,
-) {
-  if (cost <= 0) return;
-  telemetry.count(
-    "blame.gen_ai.estimated_cost",
-    cost,
-    metricDimensions(state),
-    activeContext,
-  );
-}
-
-function recordToken(
-  state: AgentSessionTelemetry,
-  type: string,
-  value: number,
-  activeContext: Context,
-) {
-  if (value <= 0) return;
-  telemetry.record(
-    METRIC_GEN_AI_TOKEN_USAGE,
-    value,
-    { ...metricDimensions(state), "gen_ai.token.type": type },
-    activeContext,
-  );
-}
-
-function usageAttributes(usage: UsageSnapshot) {
-  return {
-    [ATTR_GEN_AI_USAGE_CACHE_CREATION_INPUT_TOKENS]: usage.cacheCreated,
-    [ATTR_GEN_AI_USAGE_CACHE_READ_INPUT_TOKENS]: usage.cacheRead,
-    [ATTR_GEN_AI_USAGE_INPUT_TOKENS]: usage.input,
-    [ATTR_GEN_AI_USAGE_OUTPUT_TOKENS]: usage.output,
-  };
-}
-
-function turnDuration(state: AgentSessionTelemetry) {
-  return Math.max(0, performance.now() - state.turnStartedAt) / 1_000;
-}
-
-function emptyUsage(): UsageSnapshot {
-  return { cacheCreated: 0, cacheRead: 0, cost: 0, input: 0, output: 0 };
-}
-
-function recordModelUsage(
-  state: AgentSessionTelemetry,
-  agentKey: string | undefined,
-  delta: UsageSnapshot,
-) {
-  if (!agentKey) return;
-  const current = state.modelSpans.get(agentKey);
-  if (!current) return;
-  current.usage = addUsage(current.usage, delta);
-  current.span.setAttributes(usageAttributes(current.usage));
-}
-
-function addUsage(current: UsageSnapshot, delta: UsageSnapshot) {
-  return {
-    cacheCreated: current.cacheCreated + delta.cacheCreated,
-    cacheRead: current.cacheRead + delta.cacheRead,
-    cost: current.cost + delta.cost,
-    input: current.input + delta.input,
-    output: current.output + delta.output,
-  };
-}
-
-function missingUsage(current: UsageSnapshot, candidate: UsageSnapshot) {
-  return {
-    cacheCreated: Math.max(0, candidate.cacheCreated - current.cacheCreated),
-    cacheRead: Math.max(0, candidate.cacheRead - current.cacheRead),
-    cost: Math.max(0, candidate.cost - current.cost),
-    input: Math.max(0, candidate.input - current.input),
-    output: Math.max(0, candidate.output - current.output),
-  };
-}
-
 function countProviderError(
   attributes: Record<string, unknown>,
   activeContext: Context | undefined,
@@ -2317,22 +1838,6 @@ function sessionIdForState(
   return "";
 }
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function stringValue(value: unknown) {
-  return typeof value === "string" && value ? value : undefined;
-}
-
-function numericValue(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : undefined;
-}
-
 function leadDetails(): CoreEventDetails {
   return {
     agentKey: "lead",
@@ -2341,18 +1846,6 @@ function leadDetails(): CoreEventDetails {
     parentAgentKey: "lead",
     role: "lead",
   };
-}
-
-function sessionAgentStrategy(state: AgentSessionTelemetry) {
-  return configuredAgentStrategy(state.input);
-}
-
-function configuredAgentStrategy(input: AgentTelemetryInput) {
-  return multiAgentEnabled(input) ? "multi_agent" : "single_agent";
-}
-
-function multiAgentEnabled(input: AgentTelemetryInput) {
-  return Boolean(input.enableAgentTeams || input.enableSpawnAgent);
 }
 
 function detachedOperationAttributes(

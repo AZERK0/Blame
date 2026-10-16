@@ -1,6 +1,5 @@
-import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { access, readFile, rm } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import {
   basename,
   dirname,
@@ -10,7 +9,6 @@ import {
   resolve,
   sep,
 } from "node:path";
-import { promisify } from "node:util";
 import { imageAwareCompaction } from "./image-compaction.js";
 
 import type { ExecutionTerminalReason } from "@blame/harness-core";
@@ -40,15 +38,10 @@ import type {
   OAuthServerListeningInfo,
 } from "@cline/sdk";
 
-import { withoutTelemetryEnvironment, type Context } from "@blame/telemetry";
+import { type Context } from "@blame/telemetry";
 
 import { AgentTelemetry } from "./agent-telemetry.js";
-import {
-  assertTargetChangesRestorable,
-  restoreTargetChanges as restoreStashedTargetChanges,
-  stashTargetChanges,
-  type TargetChangesStash,
-} from "./approve-merge-git.js";
+import { assertTargetChangesRestorable, stashTargetChanges, type TargetChangesStash } from "./approve-merge-git.js";
 import {
   codePracticesConfig,
   codePracticesPrompt,
@@ -284,6 +277,25 @@ import {
   createTextWebFetchExecutor,
   describeTextWebFetch,
 } from "./web-fetch.js";
+import {
+  advanceTargetBranch,
+  assertGitRepository,
+  cleanGitStatus,
+  currentGitBranch,
+  setGitRunner,
+  git,
+  type GitUpstream,
+  hasMergeConflicts,
+  hasPendingMerge,
+  integrationWorktree,
+  mergeConflictFiles,
+  optionalGitUpstream,
+  pullIntegrationWorktree,
+  pushIntegrationWorktree,
+  removeIntegrationWorktree,
+  restoreTargetChanges,
+  validateMergeBranches,
+} from "./runtime-git.js";
 
 export {
   backendKey,
@@ -307,8 +319,6 @@ export {
   shouldDisplayClineSessionEvent,
   terminalToolEvent,
 } from "./cline-runtime-events.js";
-
-const execFileAsync = promisify(execFile);
 const defaultSessionMaxIterations = 32;
 const developmentSessionMaxIterations = 64;
 const maxInitializationAttempts = 3;
@@ -399,10 +409,6 @@ const maximumTransportRecoveryAttempts = 1;
 const transportRecoveryPrompt =
   "<runtime_recovery>The provider stream closed before the response completed. Continue from the persisted session state without repeating completed reads or mutations, then resume the interrupted next action.</runtime_recovery>";
 
-let customGitRunner:
-  | ((cwd: string, args: string[]) => Promise<string>)
-  | undefined;
-
 export class BlameAgentRuntime {
   private clines = new Map<string, Promise<ClineCore>>();
   private activeSecurityAuditSessions = new Map<
@@ -470,7 +476,7 @@ export class BlameAgentRuntime {
     this.events = events;
     this.options = options;
     if (options.git) {
-      customGitRunner = options.git;
+      setGitRunner(options.git);
     }
     applyProductionEnvironment(this.productionConfig);
     void import("@cline/sdk").catch(() => undefined);
@@ -4161,179 +4167,6 @@ function createBlameSessionId() {
   return `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`;
 }
 
-async function assertGitRepository(cwd: string) {
-  await git(cwd, ["rev-parse", "--show-toplevel"]);
-}
-
-async function currentGitBranch(cwd: string) {
-  return git(cwd, ["branch", "--show-current"]);
-}
-
-async function validateMergeBranches(
-  input: ApproveAndMergeInput,
-  targetBranch: string,
-) {
-  if (!targetBranch)
-    throw new Error("Unable to detect the active project branch.");
-  const storyBranch = await currentGitBranch(input.worktree);
-  if (storyBranch !== input.storyBranch) {
-    throw new Error(
-      `Story worktree is on ${storyBranch}, expected ${input.storyBranch}.`,
-    );
-  }
-  if (targetBranch === input.storyBranch) {
-    throw new Error("Story branch and target branch must be different.");
-  }
-}
-
-async function optionalGitUpstream(cwd: string) {
-  try {
-    const upstream = await git(cwd, [
-      "rev-parse",
-      "--abbrev-ref",
-      "--symbolic-full-name",
-      "@{u}",
-    ]);
-    return parseUpstream(upstream);
-  } catch {
-    return undefined;
-  }
-}
-
-async function cleanGitStatus(cwd: string) {
-  const status = await git(cwd, ["status", "--porcelain"]);
-  return !status.trim();
-}
-
-async function integrationWorktree(cwd: string, targetBranch: string) {
-  const directory = integrationWorktreePath(cwd, targetBranch);
-  await removeIntegrationWorktree(cwd, directory);
-  await git(cwd, ["worktree", "add", "--detach", directory, targetBranch]);
-  return directory;
-}
-
-async function advanceTargetBranch(
-  cwd: string,
-  targetBranch: string,
-  storyBranch: string,
-) {
-  const activeBranch = await currentGitBranch(cwd);
-  if (activeBranch !== targetBranch) {
-    throw new Error(
-      `Active project branch changed to ${activeBranch}, expected ${targetBranch}.`,
-    );
-  }
-  await git(cwd, ["merge", "--ff-only", storyBranch]);
-}
-
-async function restoreTargetChanges(
-  cwd: string,
-  stash: TargetChangesStash | undefined,
-  logFile: string,
-) {
-  if (!stash) return;
-  const result = await restoreStashedTargetChanges(cwd, stash, git);
-  if (result.cleanupError) {
-    await appendLog(logFile, "local target changes stash cleanup failed", {
-      commit: stash.commit,
-      errorType: errorType(result.cleanupError),
-    });
-  }
-  await appendLog(logFile, "local target changes restored", {
-    commit: stash.commit,
-  });
-}
-
-async function pullIntegrationWorktree(cwd: string, upstream?: GitUpstream) {
-  if (!upstream) return;
-  await git(cwd, ["fetch", upstream.remote, upstream.branch]);
-  await git(cwd, [
-    "merge",
-    "--ff-only",
-    `${upstream.remote}/${upstream.branch}`,
-  ]);
-}
-
-async function pushIntegrationWorktree(
-  cwd: string,
-  upstream: GitUpstream | undefined,
-  logFile: string,
-) {
-  if (!upstream) {
-    await appendLog(logFile, "approve merge push skipped", {
-      reason: "missing_upstream",
-    });
-    return;
-  }
-  await git(cwd, ["push", upstream.remote, `HEAD:${upstream.branch}`]);
-}
-
-async function removeIntegrationWorktree(
-  repositoryRoot: string,
-  worktree: string,
-) {
-  try {
-    await git(repositoryRoot, ["worktree", "remove", "--force", worktree]);
-  } catch (error) {
-    if (!errorMessage(error).includes("is not a working tree")) throw error;
-  }
-  // Only remove this operation's temporary checkout. A global prune from the
-  // host would also delete registrations for worktrees stored inside the VM.
-  await rm(worktree, { force: true, recursive: true });
-}
-
-type GitUpstream = {
-  branch: string;
-  remote: string;
-};
-
-function parseUpstream(value: string): GitUpstream {
-  const [remote, ...branchParts] = value.split("/");
-  const branch = branchParts.join("/");
-  if (!remote || !branch)
-    throw new Error("Active project branch upstream is invalid.");
-  return { branch, remote };
-}
-
-function integrationWorktreePath(repositoryRoot: string, targetBranch: string) {
-  return join(
-    dirname(repositoryRoot),
-    ".blame-worktrees",
-    basename(repositoryRoot),
-    ".merge",
-    branchPathSlug(targetBranch),
-  );
-}
-
-function branchPathSlug(branch: string) {
-  return (
-    branch
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 64) || "target"
-  );
-}
-
-async function hasMergeConflicts(cwd: string) {
-  return Boolean((await mergeConflictFiles(cwd)).length);
-}
-
-async function hasPendingMerge(cwd: string) {
-  try {
-    return Boolean(
-      await git(cwd, ["rev-parse", "--verify", "--quiet", "MERGE_HEAD"]),
-    );
-  } catch {
-    return false;
-  }
-}
-
-async function mergeConflictFiles(cwd: string) {
-  const files = await git(cwd, ["diff", "--name-only", "--diff-filter=U"]);
-  return files.split("\n").filter(Boolean);
-}
-
 async function commitMessagePrompt(input: CommitMessageRuntimeInput) {
   const paths = commitMessagePaths(input);
   const [status, changedFiles, diffStat, log] = await Promise.all([
@@ -4657,36 +4490,6 @@ function workspaceStatus(cwd: string) {
 
 function unresolvedMergeConflictMessage(conflicts: string[]) {
   return `Merge conflict agent finished with unresolved conflicts: ${conflicts.join(", ")}`;
-}
-
-async function git(cwd: string, args: string[]) {
-  try {
-    if (customGitRunner) {
-      return (await customGitRunner(cwd, args)).trim();
-    }
-    const { stdout } = await execFileAsync("git", args, {
-      cwd,
-      env: {
-        ...withoutTelemetryEnvironment(process.env),
-        GIT_TERMINAL_PROMPT: "0",
-        GIT_SSH_COMMAND:
-          process.platform === "win32"
-            ? "ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=no"
-            : "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
-      },
-      maxBuffer: 20 * 1024 * 1024,
-    });
-    return stdout.trim();
-  } catch (error) {
-    throw new Error(gitErrorMessage(args, error));
-  }
-}
-
-function gitErrorMessage(args: string[], error: unknown) {
-  const record = asRecord(error);
-  const output = stringValue(record.stderr) || stringValue(record.stdout);
-  const message = output?.trim() || errorMessage(error);
-  return `git ${args.join(" ")} failed: ${message}`;
 }
 
 function firstTextLine(value: unknown) {

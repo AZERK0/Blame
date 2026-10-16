@@ -36,9 +36,8 @@ import {
   repositorySizeBucket,
   responseAttributes,
   toolFailed,
-  usageDelta,
-  usageSnapshot,
 } from "./agent-telemetry.js";
+import { usageDelta, usageSnapshot } from "./agent-telemetry-usage.js";
 import { qualityFromStatus, qualityFromStatusDelta } from "./cline-runtime.js";
 import { taskComplexityBucket } from "./telemetry-cohorts.js";
 

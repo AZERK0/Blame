@@ -1,7 +1,6 @@
 import { basename } from "node:path";
 
 import {
-  balancedGitMessages,
   discoverProjectFiles,
   fileCountsByExtension,
   isArchitectureCodePath,
@@ -13,13 +12,16 @@ import {
   isTestCodePath,
   preferNonGeneratedProjectPaths,
   projectDirectories,
-  readBoundedProjectFiles,
-  recentProjectGitLogs,
   selectBalancedProjectPaths,
   type ProjectFileDiscovery,
-  type ProjectGitLog,
   type ProjectRootEvidence,
 } from "./project-discovery.js";
+import {
+  balancedGitMessages,
+  readBoundedProjectFiles,
+  recentProjectGitLogs,
+  type ProjectGitLog,
+} from "./project-evidence-reader.js";
 
 const maxManifestBytes = 30_000;
 const maxConfigurationBytes = 26_000;

@@ -1,7 +1,6 @@
 import { basename } from "node:path";
 
 import {
-  balancedGitMessages,
   discoverProjectFiles,
   isDatabaseEvidencePath,
   isMigrationEvidencePath,
@@ -13,13 +12,16 @@ import {
   isSourceCodePath,
   isTestCodePath,
   preferNonGeneratedProjectPaths,
-  readBoundedProjectFiles,
-  recentProjectGitLogs,
   selectBalancedProjectPaths,
   topLevelProjectEntries,
   type ProjectFileDiscovery,
   type ProjectRootEvidence,
 } from "./project-discovery.js";
+import {
+  balancedGitMessages,
+  readBoundedProjectFiles,
+  recentProjectGitLogs,
+} from "./project-evidence-reader.js";
 
 type InitializationCandidates = {
   manifestPaths: string[];

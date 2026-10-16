@@ -9,7 +9,8 @@ import type {
   LightToolResult,
 } from "./light-contracts.js";
 import { executeLocalFinishTask } from "./light-finish-service.js";
-import { contextGeneration, LightWorkspace } from "./light-workspace.js";
+import { LightWorkspace } from "./light-workspace.js";
+import { contextGeneration } from "./light-read-results.js";
 import { SessionJournal } from "./session-journal.js";
 import { storeWorkspaceAttachment } from "../development-attachments.js";
 
