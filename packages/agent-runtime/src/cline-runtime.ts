@@ -604,7 +604,9 @@ export class BlameAgentRuntime {
         requestToolApproval: (request: ToolApprovalRequest) =>
           this.requestApproval(request),
       },
-      fetch: createProviderCompatibleFetch(),
+      fetch: createProviderCompatibleFetch(globalThis.fetch, {
+        requestMaxOutputTokens: this.productionConfig.requestMaxOutputTokens,
+      }),
       logger: productionLogger,
     });
   }
