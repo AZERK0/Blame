@@ -18,6 +18,9 @@ platform. Catalog script definitions still identify the runner.
 
 Compilation and lint pass. **578 current-source harness cases** yield **576 passes,
 two skips, zero failures**. Stale compiled tests absent from source are excluded.
+Replaying all 32 recorded successful F31 project-task labels reduces that field
+from 797 to 495 UTF-8 bytes (21 shorter, 11 longer). This is command-label bytes,
+not total output, billed tokens, model latency or a comparable-quality efficiency gain.
 The initial research verifier failed to normalize identical reporters at different
 runtime locations. Its repair is limited to report destinations and paths with equal
 reporter hashes. This setup issue is separate from runtime regression results.
@@ -63,6 +66,7 @@ node packages/agent-runtime/node_modules/typescript/bin/tsc -p packages/agent-ru
 node tools/terminal_bench/invocation-study/local-replay.mjs
 python3 tools/terminal_bench/invocation-study/verify.py
 python3 tools/terminal_bench/invocation-study/publication-controls.py
+node tools/terminal_bench/invocation-study/label-replay.mjs --verify
 ```
 
 The replay reconstructs old modules from the public archive, preserving production

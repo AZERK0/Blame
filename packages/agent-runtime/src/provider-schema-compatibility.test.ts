@@ -402,12 +402,12 @@ function offlineCodexHandler(request: typeof fetch, maxOutputTokens?: number) {
   });
 }
 
-test("the real Codex request builder sends the configured output cap before a paid request", async () => {
+test("the legacy Codex handler serializes an explicit output cap", async () => {
   const { bodies, request } = sdkFetchCapture();
   const config = appendProductionConfig({ providerId: "openai-codex", modelId: "gpt-5.6-luna", maxTokensPerTurn: 128_000 },
     { requestMaxOutputTokens: 8192 });
-  // CoreModelConfig documents maxTokensPerTurn and the installed SDK maps it
-  // to the handler's maxOutputTokens. Exercise that actual provider serializer.
+  // Invoke this handler explicitly. This tests its serializer, not the complete
+  // SDK start/model-selection path or the limit in the final transmitted request.
   const handler = offlineCodexHandler(request, config.maxTokensPerTurn);
   try { for await (const part of handler.createMessage("Inspect.", [{ role: "user", content: "Read a symbol." }]))
     assert.ok(part.type === "error" || part.type === "done");

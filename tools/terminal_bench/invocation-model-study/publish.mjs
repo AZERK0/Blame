@@ -1,6 +1,6 @@
 // Publish complete and failed assigned trials without repairing sources or runs.
 import assert from 'node:assert/strict';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
@@ -17,7 +17,8 @@ await mkdir(join(study, 'traces'), { recursive: true });
 for (const original of analysis.rows) {
   const directory = join(campaign, original.name);
   const files = {};
-  for (const name of ['events.jsonl', 'workspace.diff', 'score.json', 'result.json', 'instruction.txt', 'required-checks.json', 'wire-contracts.jsonl', 'model-exit.json', 'model-start.json', 'prompt-date-loads.jsonl', 'native-search-loads.jsonl', 'orchestration-interruption.json']) {
+  const contracts = (await readdir(directory)).filter(name => /^(?:prompt|schema)-[a-f0-9]{64}\.json$/u.test(name));
+  for (const name of ['events.jsonl', 'workspace.diff', 'score.json', 'result.json', 'instruction.txt', 'required-checks.json', 'wire-contracts.jsonl', 'model-exit.json', 'model-start.json', 'prompt-date-loads.jsonl', 'native-search-loads.jsonl', 'orchestration-interruption.json', ...contracts]) {
     const bytes = await readFile(join(directory, name)).catch(e => { if (e.code === 'ENOENT') return null; throw e; });
     if (!bytes) continue;
     // Refuse accidental publication of configured credential bytes; retain the
@@ -71,10 +72,16 @@ const arms = Object.fromEntries(p.arms.map(arm => {
     audited: subset.filter(r => r.fullAuditedSuccess).length, unreviewed: subset.filter(r => r.fullAuditedSuccess === null).length,
     tokensObserved: subset.reduce((n, r) => n + (r.usage.input ?? 0) + (r.usage.output ?? 0), 0),
     costUsdObserved: subset.reduce((n, r) => n + (r.usage.cost ?? 0), 0),
+    partialTokensObserved: partialUsageObservations.filter(r => r.name.endsWith('-' + arm)).reduce((n, r) => n + r.input + r.output, 0),
+    partialCostUsdObserved: partialUsageObservations.filter(r => r.name.endsWith('-' + arm)).reduce((n, r) => n + r.costUsd, 0),
     workerSeconds: subset.reduce((n, r) => n + (r.durationMs ?? 0), 0) / 1000,
     missingConsumption: subset.filter(r => r.usage.input === null || r.usage.output === null || r.usage.cost === null).length,
     missingWorkerTime: subset.filter(r => r.durationMs === null).length,
     missingFullCacheAccounting: subset.filter(r => !r.usage.complete).length,
+    cacheReadAggregateObserved: subset.reduce((n, r) => n + (r.usage.cacheRead ?? 0), 0),
+    cacheWriteAggregateObserved: subset.reduce((n, r) => n + (r.usage.cacheWrite ?? 0), 0),
+    missingCacheReadAggregates: subset.filter(r => r.usage.cacheRead === null).length,
+    missingCacheWriteAggregates: subset.filter(r => r.usage.cacheWrite === null).length,
     projectCalls: exposures.filter(e => e.name.endsWith('-' + arm)).reduce((n, e) => n + e.projectCalls.length, 0) }];
 }));
 const comparisons = [];

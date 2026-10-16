@@ -17,7 +17,16 @@ assert.equal(p.order.length, 9); assert.equal(p.repetitions, 3);
 assert.deepEqual(p.arms, ['baseline', 'candidate', 'cline']);
 assert.equal(p.studyKind, 'actual-invocation-display-known-diagnostic');
 const results = await json('results.json'), summary = await json('summary.json');
+assert.equal(results.provenance.protocolSha256, launch.protocolSha256);
+assert.deepEqual(results.provenance.order, p.order);
+assert.deepEqual(results.provenance.frozen, await json('execution-bindings.json'));
 const review = await json('source-review.json'), inventory = await json('inventory.json');
+const noteCorrections = await json('review-note-corrections.json');
+for (const [index, correction] of noteCorrections.corrections.entries()) {
+  const next = noteCorrections.corrections.slice(index + 1).find(c => c.name === correction.name);
+  assert.equal(next?.originalNotes ?? review.decisions.find(d => d.name === correction.name)?.notes, correction.correctedNotes);
+  assert.notEqual(correction.originalNotes, correction.correctedNotes);
+}
 const wire = {}, exposures = [];
 assert.equal(inventory.length, results.rows.length);
 for (const row of results.rows) {
@@ -42,7 +51,17 @@ for (const row of results.rows) {
   const usage = reconcileUsage(result.usage, events.filter(e => e.type === 'usage').map(e => e.payload?.usage), events.filter(e => e.type === 'notice' && e.payload?.message === 'Agent iteration started.').length);
   assert.deepEqual(row.usage, usage);
   wire[row.name] = files['wire-contracts.jsonl'].toString().trim().split('\n').filter(Boolean).map(JSON.parse);
-  for (const request of wire[row.name]) { assert.equal(request.model, p.model); assert.equal(request.reasoning?.effort, p.effort); assert.equal(request.byteLimit, p.budgets.maximumSerializedRequestBytes); }
+  for (const request of wire[row.name]) {
+    assert.equal(request.model, p.model); assert.equal(request.reasoning?.effort, p.effort); assert.equal(request.byteLimit, p.budgets.maximumSerializedRequestBytes);
+    const toolText = files['schema-' + request.toolsSha256 + '.json']?.toString();
+    const promptText = files['prompt-' + request.promptSha256 + '.json']?.toString();
+    assert.ok(toolText?.endsWith('\n') && promptText?.endsWith('\n'));
+    assert.equal(sha(toolText.slice(0, -1)), request.toolsSha256);
+    assert.equal(sha(promptText.slice(0, -1)), request.promptSha256);
+    const workspace = JSON.parse(files['score.json']).build.cwd;
+    const normalized = JSON.stringify({ tools: JSON.parse(toolText), prompt: JSON.parse(promptText) }, (_key, value) => typeof value === 'string' ? value.replaceAll(workspace, '<WORKSPACE>') : value);
+    assert.equal(sha(normalized), request.normalizedContractSha256);
+  }
   const tools = events.filter(e => e.type === 'tool').map(e => ({ ...e.payload, tool: e.payload.toolCall?.name ?? e.payload.tool, input: e.payload.toolCall?.input ?? e.payload.input })).filter(t => t.phase === 'finished');
   exposures.push({ name: row.name, projectCalls: tools.filter(t => t.tool === 'run_task' && t.input?.kind === 'project').map(t => ({ input: t.input, status: t.output?.status, returnedCommand: t.output?.data?.command ?? null })), finishCalls: tools.filter(t => t.tool === 'finish_task').map(t => ({ input: t.input, output: t.output })) });
   const decision = review.decisions.find(d => d.name === row.name);
@@ -53,10 +72,15 @@ for (const row of results.rows) {
   }
   assert.equal(row.fullAuditedSuccess, decision ? row.officialRuntimeSuccess && row.independentFunctionalSuccess && decision.sourceBehaviorPassed && decision.exactFinalSourceChecksPassed && decision.fullRequestPassed && decision.noSolutionRetrieval : null);
   if (!files['result.json']) {
-    assert.ok(row.exit.orchestrationInterrupted && files['orchestration-interruption.json']);
-    const receipt = JSON.parse(files['orchestration-interruption.json']);
-    assert.equal(receipt.modelRetried, false); assert.equal(receipt.actualExitStatus, null);
-    assert.deepEqual(receipt.sourceBeforeAndAfterGrading, JSON.parse(files['score.json']).sourceSha256);
+    if (row.exit.orchestrationInterrupted) {
+      assert.ok(files['orchestration-interruption.json']);
+      const receipt = JSON.parse(files['orchestration-interruption.json']);
+      assert.equal(receipt.modelRetried, false); assert.equal(receipt.actualExitStatus, null);
+      assert.deepEqual(receipt.sourceBeforeAndAfterGrading, JSON.parse(files['score.json']).sourceSha256);
+    } else {
+      assert.ok(files['model-exit.json'] && (row.exit.watchdog || row.exit.code !== 0));
+      assert.deepEqual(JSON.parse(files['model-exit.json']).exit, row.exit);
+    }
   }
 }
 assert.deepEqual(await json('exposure.json'), exposures);
@@ -67,9 +91,15 @@ for (const arm of p.arms) {
   assert.equal(a.unreviewed, rows.filter(r => r.fullAuditedSuccess === null).length);
   assert.equal(a.tokensObserved, rows.reduce((n, r) => n + (r.usage.input ?? 0) + (r.usage.output ?? 0), 0));
   assert.equal(a.costUsdObserved, rows.reduce((n, r) => n + (r.usage.cost ?? 0), 0));
+  const partial = rows.filter(r => r.usage.cost === null);
+  assert.equal(a.partialTokensObserved, partial.reduce((n, r) => n + r.usage.perRequest.reduce((n, u) => n + (u.input ?? 0) + (u.output ?? 0), 0), 0));
+  assert.equal(a.partialCostUsdObserved, partial.reduce((n, r) => n + r.usage.perRequest.reduce((n, u) => n + (u.cost ?? 0), 0), 0));
   assert.equal(a.workerSeconds, rows.reduce((n, r) => n + (r.durationMs ?? 0), 0) / 1000);
   assert.equal(a.missingConsumption, rows.filter(r => r.usage.input === null || r.usage.output === null || r.usage.cost === null).length);
   assert.equal(a.missingWorkerTime, rows.filter(r => r.durationMs === null).length);
+  for (const [field, prefix] of [['cacheRead', 'cacheRead'], ['cacheWrite', 'cacheWrite']]) assert.equal(a[prefix + 'AggregateObserved'], rows.reduce((n, r) => n + (r.usage[field] ?? 0), 0));
+  assert.equal(a.missingCacheReadAggregates, rows.filter(r => r.usage.cacheRead === null).length);
+  assert.equal(a.missingCacheWriteAggregates, rows.filter(r => r.usage.cacheWrite === null).length);
   assert.equal(a.projectCalls, exposures.filter(e => e.name.endsWith('-' + arm)).reduce((n, e) => n + e.projectCalls.length, 0));
 }
 const scheduled = reserveTrialCosts(results.rows, wire, p.budgets);
@@ -84,6 +114,9 @@ assert.equal(summary.accounting.accountedUsd, scheduled.accountedUsd + partialCo
 const prior = await json('prior-budget.json');
 assert.equal(prior.observedUsd + prior.reservedUsd, prior.accountedUsd);
 assert.equal(summary.totalAccountedUsd, prior.accountedUsd + summary.accounting.accountedUsd);
+const originalExit = await json('original-driver-exit.json');
+assert.equal(originalExit.accountedNewUsd, scheduled.accountedUsd);
+assert.equal(originalExit.completed, results.rows.length);
 const witnessBytes = await readFile(join(study, prior.witness.artifact));
 assert.equal(sha(witnessBytes), prior.witness.sha256);
 const witness = JSON.parse(gunzipSync(witnessBytes));
@@ -105,6 +138,20 @@ if (summary.complete) {
   assert.equal(summary.qualityGate, summary.arms.candidate.audited >= summary.arms.baseline.audited && results.rows.filter(r => r.arm === 'candidate' && r.review.sourceBehaviorPassed).length >= results.rows.filter(r => r.arm === 'baseline' && r.review.sourceBehaviorPassed).length);
   const c = summary.comparisons[0], r = c.resources;
   assert.equal(summary.resourceGate, c.pairs > 0 && (r.tokens.relativeChange <= -.1 || r.cost.relativeChange <= -.1) && r.cost.relativeChange <= .05 && r.seconds.relativeChange <= .1);
+}
+const sensitivity = await json('apparent-validation-sensitivity.json');
+const relaxed = results.rows.filter(r => !r.fullAuditedSuccess && r.officialRuntimeSuccess && r.independentFunctionalSuccess && r.review?.sourceBehaviorPassed && r.review?.noSolutionRetrieval && r.review?.semicolonEvidenceSensitivity === true && r.review.criteriaFailures.length === 1 && r.review.criteriaFailures[0] === 'earlier_check_exit_statuses_not_established_by_semicolon_chain').map(r => r.name);
+assert.deepEqual(sensitivity.relaxedTrials, relaxed);
+assert.deepEqual(sensitivity.acceptedCounts, Object.fromEntries(p.arms.map(arm => [arm, results.rows.filter(r => r.arm === arm && (r.fullAuditedSuccess || relaxed.includes(r.name))).length])));
+const cap = await json('cap-path-diagnostic.json');
+assert.equal(cap.nominalCap, p.budgets.requestMaxOutputTokens);
+assert.equal(cap.applicationConfigMaxTokensPerTurn, cap.nominalCap);
+assert.equal(cap.coreSplitConfigMaxTokensPerTurn, cap.nominalCap);
+for (const row of cap.trials) {
+  assert.equal(row.forwardedRequests, wire[row.name].filter(q => !q.budgetRejected).length);
+  assert.equal(row.requestsWithNominalCap, wire[row.name].filter(q => !q.budgetRejected && q.maximumOutputTokens === cap.nominalCap).length);
+  assert.equal(row.requestsWithAbsentCap, wire[row.name].filter(q => !q.budgetRejected && q.maximumOutputTokens == null).length);
+  assert.equal(row.originalWireSha256, inventory.find(i => i.name === row.name).files['wire-contracts.jsonl'].sha256);
 }
 console.log(JSON.stringify({ paidRequests: 0, completed: results.rows.length, reviewed: review.decisions.length,
   phaseObservedUsd: summary.accounting.observedUsd, phaseReservedUsd: summary.accounting.reservedUsd,
