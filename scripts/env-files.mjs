@@ -1,5 +1,5 @@
 import { createReadStream } from "node:fs"
-import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { mkdir } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { createInterface } from "node:readline"
 
@@ -38,29 +38,6 @@ export function text(value) {
   return trimmed ? trimmed : undefined
 }
 
-export async function upsertEnvValues(file, values) {
-  const existing = await readEnvFile(file)
-  const names = new Set(values.map(([name]) => name))
-  const lines = existing
-    .split(/\r?\n/)
-    .filter((line) => !names.has(envName(line)))
-    .filter((line, index, items) => line || index < items.length - 1)
-
-  if (lines.length && lines.at(-1)) lines.push("")
-  for (const [name, value] of values) lines.push(`${name}=${quoteEnvValue(value)}`)
-  await mkdir(dirname(file), { recursive: true })
-  await writeFile(file, `${lines.join("\n")}\n`, "utf8")
-}
-
-async function readEnvFile(file) {
-  try {
-    return await readFile(file, "utf8")
-  } catch (error) {
-    if (error?.code === "ENOENT") return ""
-    throw error
-  }
-}
-
 function envEntry(line) {
   const name = envName(line)
   if (!name) return undefined
@@ -81,9 +58,4 @@ function unquote(value) {
   if (value.startsWith('"') && value.endsWith('"')) return value.slice(1, -1)
   if (value.startsWith("'") && value.endsWith("'")) return value.slice(1, -1)
   return value
-}
-
-function quoteEnvValue(value) {
-  if (/^[A-Za-z0-9_./:@-]+$/.test(value)) return value
-  return JSON.stringify(value)
 }

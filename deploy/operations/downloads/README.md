@@ -1,47 +1,29 @@
-# Production download storage
+# Production downloads
 
-Use the public-object `blame-prod-downloads-gra` bucket in Gravelines. Keep it separate from private attachments and backups because desktop installers and runtime images are intentionally public and have independent retention rules.
+Desktop installers and runtime images are published as [GitHub Releases](https://github.com/AZERK0/Blame/releases) (see [RELEASING.md](../../../RELEASING.md)). The `download.blame.so` Dokploy application runs the redirector in [`deploy/downloads`](../../downloads). It stores no files and has no volume.
 
-Configure release publishers with:
+| Request                                  | Redirect                                                   |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| `/`, `/latest`                           | `BLAME_DOWNLOAD_LANDING_URL` (`https://blame.so/download`) |
+| `/latest/<file>`                         | `BLAME_RELEASES_URL/latest/download/<file>`                |
+| `/runtime/v1/` … `/runtime/v9/`          | `BLAME_LEGACY_DOWNLOAD_BASE_URL` followed by the same path |
+| `/runtime/v<N>/[windows/\|macos/]<file>` | `BLAME_RELEASES_URL/download/runtime-v<N>/<file>`          |
 
-```txt
-BLAME_DOWNLOAD_STORAGE_DRIVER=s3
-BLAME_DOWNLOAD_S3_ENDPOINT=https://s3.gra.io.cloud.ovh.net
-BLAME_DOWNLOAD_S3_REGION=gra
-BLAME_DOWNLOAD_S3_BUCKET=blame-prod-downloads-gra
-BLAME_DOWNLOAD_S3_ACCESS_KEY_ID=
-BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY=
-BLAME_DOWNLOAD_S3_FORCE_PATH_STYLE=false
-BLAME_DOWNLOAD_S3_PUBLIC_BASE_URL=https://blame-prod-downloads-gra.s3.gra.io.cloud.ovh.net
-```
-
-The credentials require bucket listing plus object read, write, ACL, and delete permissions only inside this bucket. Each published object receives the `public-read` ACL. Bucket listing can remain private.
-
-Create the bucket:
-
-```sh
-aws --endpoint-url "$BLAME_DOWNLOAD_S3_ENDPOINT" s3api create-bucket \
-  --bucket "$BLAME_DOWNLOAD_S3_BUCKET" \
-  --region "$BLAME_DOWNLOAD_S3_REGION" \
-  --acl private \
-  --create-bucket-configuration "LocationConstraint=$BLAME_DOWNLOAD_S3_REGION"
-```
-
-Runtime images use immutable one-year browser caching. Desktop installers only exist below `latest/`, use short caching, and update metadata is published after its referenced artifacts.
-
-The `download.blame.so` Dokploy application contains no release volume. It redirects every request to:
+Configure the application with:
 
 ```txt
-https://blame-prod-downloads-gra.s3.gra.io.cloud.ovh.net
+BLAME_RELEASES_URL=https://github.com/AZERK0/Blame/releases
+BLAME_LEGACY_DOWNLOAD_BASE_URL=https://blame-prod-downloads-gra.s3.gra.io.cloud.ovh.net
+BLAME_DOWNLOAD_LANDING_URL=https://blame.so/download
 ```
 
-The root URL and the bare `/latest` paths redirect to `https://blame.so/download` because the private bucket does not expose directory listings.
-
-Verify both the redirect and anonymous object access after each infrastructure change:
+Verify the redirects after each infrastructure change:
 
 ```sh
-curl -fsSI https://download.blame.so/latest/latest.yml
-curl -fsSI https://blame-prod-downloads-gra.s3.gra.io.cloud.ovh.net/latest/latest.yml
+curl -fsSIL https://download.blame.so/latest/latest.yml
+curl -fsSIL https://download.blame.so/runtime/v9/manifest.json
 ```
 
-Do not apply the private attachment bucket rules to this bucket. In particular, public downloads must not use expiring signed URLs. Keep every runtime version referenced by a supported desktop release.
+## Legacy bucket
+
+Runtimes v1 to v9 were published to the public-object `blame-prod-downloads-gra` OVH bucket before releases moved to GitHub. Nothing writes to it anymore. Keep it read-only while a supported desktop version still references one of those runtimes. The `latest/` prefix in it is no longer served.

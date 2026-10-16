@@ -26,66 +26,9 @@ pnpm --filter @blame/desktop package:linux
 
 The installers are written to `packages/desktop/dist`.
 
-## Release Hosting
+## Releases
 
-The desktop release workflow builds macOS, Windows, and Linux installers, then uploads them directly to OVH Object Storage through its S3-compatible API. The VPS never stores release files.
-Each platform stages its files under a run-specific `_staging/` prefix. Once every build succeeds, S3 promotes the complete set to `latest/`, publishes update metadata last, and removes the staging objects. GitHub Actions artifact storage is not used.
-
-Required GitHub secrets:
-
-```txt
-APPLE_API_ISSUER
-APPLE_API_KEY_ID
-APPLE_API_KEY_P8_B64
-BLAME_DOWNLOAD_BASE_URL
-BLAME_DOWNLOAD_S3_ACCESS_KEY_ID
-BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY
-MAC_CSC_KEY_PASSWORD
-MAC_CSC_LINK
-```
-
-The macOS signing certificate and App Store Connect API key are stored as
-single-line base64 values in `MAC_CSC_LINK` and `APPLE_API_KEY_P8_B64`.
-The packaging script maps the macOS-specific certificate variables to
-electron-builder and materializes the API key only inside its temporary build
-directory. The same variable names can be set in the ignored root `.env.local`
-for signed local macOS builds.
-
-Required GitHub variables:
-
-```txt
-BLAME_DOWNLOAD_S3_BUCKET
-BLAME_DOWNLOAD_S3_ENDPOINT
-BLAME_DOWNLOAD_S3_FORCE_PATH_STYLE
-BLAME_DOWNLOAD_S3_REGION
-```
-
-Optional GitHub variables:
-
-```txt
-BLAME_HOMEPAGE
-BLAME_MAINTAINER_EMAIL
-BLAME_MAINTAINER_NAME
-BLAME_RUNTIME_VERSION
-```
-
-The production bucket uses this object layout:
-
-```txt
-latest/
-runtime/v<BLAME_RUNTIME_VERSION>/
-```
-
-Desktop releases only keep the current installers under `latest/`. Artifacts are uploaded first, update metadata is uploaded last, and stale objects are removed only after the new metadata is available. Runtime images remain versioned and immutable because installed desktop versions may need to download their matching runtime again.
-
-Keep `BLAME_DOWNLOAD_BASE_URL=https://download.blame.so/latest`. The Dokploy-ready image in `deploy/downloads` only redirects requests to the public S3 object URL and has no volume mount. Configure it with:
-
-```txt
-BLAME_DOWNLOAD_LANDING_URL=https://blame.so/download
-BLAME_DOWNLOAD_REDIRECT_BASE_URL=https://blame-prod-downloads-gra.s3.gra.io.cloud.ovh.net
-```
-
-See `deploy/operations/downloads/README.md` for bucket creation, migration, and verification.
+Releases are built and published by GitHub Actions from git tags. See [RELEASING.md](../../RELEASING.md).
 
 ## Prebuilt Desktop Runtimes
 
@@ -112,10 +55,4 @@ The macOS builder also reboots the finished image and checks the runtime. Run `p
 
 Artifacts are written below `packages/desktop/dist/runtime/windows` and `packages/desktop/dist/runtime/macos`. Add `-- --arch amd64`, `-- --arch arm64`, `-- --arch x86_64`, or `-- --arch aarch64` to a platform command. `pnpm build:runtime:all` builds all four artifacts; foreign architectures require Docker binfmt and the matching QEMU system emulator and firmware.
 
-Once all four artifacts exist, publish them and their immutable manifest with:
-
-```bash
-pnpm deploy:runtime
-```
-
-`pnpm release:runtime` combines the all-architecture build and deployment. Files are published under `runtime/v<BLAME_RUNTIME_VERSION>`, and desktop release packaging refuses an unverified or missing target runtime. The manual `Runtime release` GitHub Actions workflow is the native x86-64/ARM64 fallback when local cross-emulation is not available.
+Local runtime builds are only for testing. Published runtimes are built by the `Release runtime` workflow on native x86-64 and ARM64 runners; see [RELEASING.md](../../RELEASING.md).

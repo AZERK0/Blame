@@ -36,17 +36,6 @@ test("release preflight distinguishes unavailable manifests, wrong versions and 
   }
 });
 
-test("scheduled cleanup handles Octokit normalized pages including empty pages", async () => {
-  const workflow = await readFile(new URL("../.github/workflows/artifact-cleanup.yml", import.meta.url), "utf8");
-  const script = workflow.split("script: |\n")[1].split("\n").map(line => line.slice(12)).join("\n");
-  const removed = [];
-  const github = { rest: { actions: { listArtifactsForRepo() {}, async deleteArtifact({ artifact_id }) { removed.push(artifact_id); } } },
-    paginate: { async *iterator() { yield { data: [] }; yield { data: [{ id: 1, expired: true }, { id: 2, expired: false }] }; } } };
-  const execute = new (Object.getPrototypeOf(async function () {}).constructor)("github", "context", "core", "process", script);
-  await execute(github, { repo: { owner: "test", repo: "test" } }, { info() {} }, { env: {} });
-  assert.deepEqual(removed, [1]);
-});
-
 test("macOS verification stops after a failed intermediate check", async () => {
   const source = await readFile(new URL("./macos-runtime-image.mjs", import.meta.url), "utf8");
   const expression = source.match(/const checks = (\[[\s\S]*?\]\.join\("\\n"\));/)[1];

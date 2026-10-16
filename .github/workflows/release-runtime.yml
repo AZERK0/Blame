@@ -1,0 +1,141 @@
+# Push a `runtime-v<version>` tag, matching `runtimeVersion` in
+# packages/desktop/resources/runtime/*/manifest.json, to build the four runtime
+# images and publish them with their manifest as a GitHub Release. Desktop
+# releases refuse to build until that runtime is published.
+name: Release runtime
+
+on:
+  push:
+    tags: ["runtime-v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-runtime-${{ github.ref }}
+
+env:
+  BLAME_DOWNLOAD_BASE_URL: https://download.blame.so/latest
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    outputs:
+      runtime_version: ${{ steps.version.outputs.runtime_version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: version
+        name: Match tag with runtime manifests
+        run: |
+          version="${GITHUB_REF_NAME#runtime-v}"
+          for platform in windows macos; do
+            manifest="packages/desktop/resources/runtime/$platform/manifest.json"
+            declared=$(jq -r .runtimeVersion "$manifest")
+            if [ "$declared" != "$version" ]; then
+              echo "::error file=$manifest::runtimeVersion is $declared but the tag is $GITHUB_REF_NAME"
+              exit 1
+            fi
+          done
+          echo "runtime_version=$version" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.platform }} ${{ matrix.arch }}
+    needs: preflight
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            arch: amd64
+            runner: ubuntu-latest
+          - platform: windows
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - platform: macos
+            arch: x86_64
+            runner: ubuntu-latest
+            qemu_packages: qemu-system-x86 ovmf
+          - platform: macos
+            arch: aarch64
+            runner: ubuntu-24.04-arm
+            qemu_packages: qemu-system-arm qemu-efi-aarch64
+    env:
+      BLAME_RUNTIME_VERSION: ${{ needs.preflight.outputs.runtime_version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      - run: pnpm --filter @blame/agent-runtime build
+      - run: pnpm test:semantic-harness-payload
+      - run: node --test scripts/semantic-harness-install.test.mjs
+
+      - name: Install QEMU
+        if: matrix.platform == 'macos'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ${{ matrix.qemu_packages }} ipxe-qemu qemu-utils
+          if [ -e /dev/kvm ]; then
+            sudo chmod 0666 /dev/kvm
+          fi
+          if [ "${{ matrix.arch }}" = "aarch64" ]; then
+            echo "QEMU_SYSTEM_AARCH64=qemu-system-aarch64 -machine virt -cpu max" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build runtime image
+        run: node scripts/runtime-release.mjs build --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: runtime-${{ matrix.platform }}-${{ matrix.arch }}
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 3
+          path: packages/desktop/dist/runtime/${{ matrix.platform }}/blame-runtime-*-v${{ needs.preflight.outputs.runtime_version }}.*
+
+  publish:
+    name: Publish GitHub Release
+    needs: [preflight, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      BLAME_RUNTIME_VERSION: ${{ needs.preflight.outputs.runtime_version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      - uses: actions/download-artifact@v8
+        with:
+          merge-multiple: true
+          path: packages/desktop/dist/runtime/windows
+          pattern: runtime-windows-*
+
+      - uses: actions/download-artifact@v8
+        with:
+          merge-multiple: true
+          path: packages/desktop/dist/runtime/macos
+          pattern: runtime-macos-*
+
+      - name: Write runtime manifest
+        run: node scripts/runtime-release.mjs manifest
+
+      - name: Publish release
+        run: |
+          files=(
+            packages/desktop/dist/runtime/windows/blame-runtime-wsl-*-v"$BLAME_RUNTIME_VERSION".tar.gz
+            packages/desktop/dist/runtime/macos/blame-runtime-lima-*-v"$BLAME_RUNTIME_VERSION".qcow2
+            packages/desktop/dist/runtime/v"$BLAME_RUNTIME_VERSION"/manifest.json
+          )
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "${files[@]}" \
+              --latest=false \
+              --notes "Desktop runtime images v$BLAME_RUNTIME_VERSION, served through https://download.blame.so/runtime/v$BLAME_RUNTIME_VERSION/manifest.json." \
+              --title "Runtime v$BLAME_RUNTIME_VERSION" \
+              --verify-tag
+          fi

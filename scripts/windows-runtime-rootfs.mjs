@@ -1,22 +1,12 @@
 import { spawn } from "node:child_process";
 import { createReadStream, createWriteStream } from "node:fs";
-import { access, mkdir, readdir, rename, rm } from "node:fs/promises";
+import { access, mkdir, rename, rm } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { createGzip } from "node:zlib";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createDownloadObjectStorage } from "./download-object-storage.mjs";
-import {
-  loadEnvFiles,
-  requiredEnv,
-  text,
-  upsertEnvValues,
-} from "./env-files.mjs";
-import { sha256File } from "./file-sha256.mjs";
-import {
-  rootfsPublicBaseUrl,
-  runtimeRootfsFileName,
-} from "./windows-runtime-manifest.mjs";
+import { loadEnvFiles, requiredEnv, text } from "./env-files.mjs";
+import { runtimeRootfsFileName } from "./windows-runtime-manifest.mjs";
 import { runtimeClineSdkVersion } from "./runtime-sdk-version.mjs";
 import { prepareSemanticHarnessPayload } from "./semantic-harness-payload.mjs";
 
@@ -28,7 +18,6 @@ const semanticHarnessPayload = join(
   "deploy/runtime-builder/blame-semantic-harness.tgz",
 );
 const outputDir = join(desktopDir, "dist/runtime/windows");
-const envFile = join(rootDir, ".env.local");
 const architectures = ["amd64", "arm64"];
 const command = process.argv[2] ?? "help";
 const rawArgs = process.argv.slice(3);
@@ -37,11 +26,7 @@ const args = rawArgs[0] === "--" ? rawArgs.slice(1) : rawArgs;
 await loadEnvFiles(rootDir);
 
 if (command === "build") await buildRootfs();
-else if (command === "deploy") await deployRootfs();
-else if (command === "release") {
-  await buildRootfs();
-  await deployRootfs();
-} else {
+else {
   printHelp();
   process.exit(command === "help" ? 0 : 1);
 }
@@ -164,54 +149,6 @@ async function compressRootfs(tarPath, outputPath) {
   );
 }
 
-async function deployRootfs() {
-  const files = await runtimeFiles();
-  if (!files.length)
-    throw new Error(`No runtime rootfs files found in ${outputDir}`);
-
-  const runtimeVersion = requiredRuntimeVersion();
-  const relativeTarget = `runtime/v${runtimeVersion}/windows`;
-  await createDownloadObjectStorage().uploadVersioned(files, relativeTarget);
-  await writeRuntimeEnv(files, runtimeVersion);
-}
-
-async function runtimeFiles() {
-  const runtimeVersion = requiredRuntimeVersion();
-  const expectedFiles = new Set(
-    architectures.map((architecture) =>
-      runtimeRootfsFileName(architecture, runtimeVersion),
-    ),
-  );
-  const entries = await readdir(outputDir);
-  return entries
-    .filter((entry) => expectedFiles.has(entry))
-    .map((entry) => join(outputDir, entry));
-}
-
-async function writeRuntimeEnv(files, runtimeVersion) {
-  const baseUrl = rootfsPublicBaseUrl(runtimeVersion);
-  if (!baseUrl)
-    throw new Error(
-      "BLAME_RUNTIME_BASE_URL or BLAME_DOWNLOAD_BASE_URL is required",
-    );
-
-  const values = [["BLAME_RUNTIME_VERSION", runtimeVersion]];
-  for (const file of files) {
-    const architecture = architectureFromFile(file);
-    if (!architecture) continue;
-    const name = architecture.toUpperCase();
-    values.push([
-      `BLAME_RUNTIME_ROOTFS_${name}_URL`,
-      `${baseUrl}/${runtimeRootfsFileName(architecture, runtimeVersion)}`,
-    ]);
-    values.push([
-      `BLAME_RUNTIME_ROOTFS_${name}_SHA256`,
-      await sha256File(file),
-    ]);
-  }
-  await upsertEnvValues(envFile, values);
-}
-
 function selectedArchitectures() {
   if (args.includes("--all-architectures")) return architectures;
   const explicit = valueArg("--arch");
@@ -247,10 +184,6 @@ function requiredNodeVersion() {
 function valueArg(name) {
   const index = args.indexOf(name);
   return index < 0 ? undefined : args[index + 1];
-}
-
-function architectureFromFile(file) {
-  return file.match(/blame-runtime-wsl-(amd64|arm64)-v/)?.[1];
 }
 
 async function assertExecutableExists(executable, message) {
@@ -330,6 +263,6 @@ function output(commandName, commandArgs) {
 
 function printHelp() {
   console.log(
-    "Usage: node scripts/windows-runtime-rootfs.mjs <build|deploy|release> [--arch amd64,arm64] [--all-architectures]",
+    "Usage: node scripts/windows-runtime-rootfs.mjs <build> [--arch amd64,arm64] [--all-architectures]",
   );
 }
