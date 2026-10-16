@@ -129,5 +129,85 @@
     "name": "3-yaml-anchor-ranges-cline-cap",
     "projectCalls": [],
     "finishCalls": []
+  },
+  {
+    "name": "3-yaml-anchor-ranges-baseline",
+    "projectCalls": [
+      {
+        "input": {
+          "kind": "project",
+          "task": "build:node"
+        },
+        "status": "ok",
+        "returnedCommand": "npm run build:node"
+      },
+      {
+        "input": {
+          "kind": "project",
+          "task": "test:types"
+        },
+        "status": "ok",
+        "returnedCommand": "npm run test:types"
+      },
+      {
+        "input": {
+          "kind": "project",
+          "task": "test",
+          "args": [
+            "--runInBand"
+          ]
+        },
+        "status": "ok",
+        "returnedCommand": "npm run test -- --runInBand"
+      }
+    ],
+    "finishCalls": [
+      {
+        "input": {
+          "summary": "Implemented parsed `anchorRange?: [number, number]` on the shared public node base, populated from the complete anchor token using zero-based source offsets independently of `keepSourceTokens`. Anchors remain strings; aliases, unanchored nodes, and programmatic anchors remain without an own `anchorRange` property. `clone()` now copies the tuple separately for scalar and collection nodes. Changes are limited to `src/compose/compose-node.ts`, `src/nodes/Node.ts`, and `src/nodes/Collection.ts`.\n\nChecks run in the requested order:\n- `npm run build:node` — passed.\n- `node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs` — passed, 12/12 tests, 0 failed, 0 skipped.\n- `npm run test:types` — exited 0; the command produced no test counters, so counts are unknown.\n- `npm test -- --runInBand` — passed, 25 suites; 3,483 passed, 0 failed, 11 skipped.\n\nLimitation: only the requested node build and test commands were run; no additional browser build or lint verification was performed."
+        },
+        "output": "Implemented parsed `anchorRange?: [number, number]` on the shared public node base, populated from the complete anchor token using zero-based source offsets independently of `keepSourceTokens`. Anchors remain strings; aliases, unanchored nodes, and programmatic anchors remain without an own `anchorRange` property. `clone()` now copies the tuple separately for scalar and collection nodes. Changes are limited to `src/compose/compose-node.ts`, `src/nodes/Node.ts`, and `src/nodes/Collection.ts`.\n\nChecks run in the requested order:\n- `npm run build:node` — passed.\n- `node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs` — passed, 12/12 tests, 0 failed, 0 skipped.\n- `npm run test:types` — exited 0; the command produced no test counters, so counts are unknown.\n- `npm test -- --runInBand` — passed, 25 suites; 3,483 passed, 0 failed, 11 skipped.\n\nLimitation: only the requested node build and test commands were run; no additional browser build or lint verification was performed."
+      }
+    ]
+  },
+  {
+    "name": "3-yaml-anchor-ranges-candidate",
+    "projectCalls": [
+      {
+        "input": {
+          "kind": "project",
+          "task": "build:node"
+        },
+        "status": "ok",
+        "returnedCommand": "npm run build:node"
+      },
+      {
+        "input": {
+          "kind": "project",
+          "task": "test:types"
+        },
+        "status": "ok",
+        "returnedCommand": "npm run test:types"
+      },
+      {
+        "input": {
+          "kind": "project",
+          "task": "test",
+          "args": [
+            "--runInBand"
+          ]
+        },
+        "status": "ok",
+        "returnedCommand": "npm run test -- --runInBand"
+      }
+    ],
+    "finishCalls": [
+      {
+        "input": {
+          "summary": "Implemented parsed anchor ranges in the permitted source files. Anchored scalar, sequence, map, tagged, and empty nodes now expose `anchorRange` as the UTF-16 `[start, end)` span of the complete `&anchor` token; aliases, unanchored nodes, and programmatically anchored nodes remain without an own property. Added the public optional tuple declaration and ensured `clone()` copies tuples independently. Existing anchor/tag/comment, alias, range, and serialization behavior is preserved.\n\nValidation, in the requested order after the final edit:\n- `npm run build:node` — passed.\n- `node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs` — passed; 12 passed, 0 failed, 0 skipped.\n- `npm run test:types` — exited 0; type-check reporting did not provide test counters.\n- `npm test -- --runInBand` — passed; 3,483 passed, 0 failed, 11 skipped across 25 suites.\n\nA subsequent repeat of the final Jest command also passed with the same counts. No limitations observed."
+        },
+        "output": "Implemented parsed anchor ranges in the permitted source files. Anchored scalar, sequence, map, tagged, and empty nodes now expose `anchorRange` as the UTF-16 `[start, end)` span of the complete `&anchor` token; aliases, unanchored nodes, and programmatically anchored nodes remain without an own property. Added the public optional tuple declaration and ensured `clone()` copies tuples independently. Existing anchor/tag/comment, alias, range, and serialization behavior is preserved.\n\nValidation, in the requested order after the final edit:\n- `npm run build:node` — passed.\n- `node --test --test-timeout=5000 tests/agent-anchor-ranges.cjs` — passed; 12 passed, 0 failed, 0 skipped.\n- `npm run test:types` — exited 0; type-check reporting did not provide test counters.\n- `npm test -- --runInBand` — passed; 3,483 passed, 0 failed, 11 skipped across 25 suites.\n\nA subsequent repeat of the final Jest command also passed with the same counts. No limitations observed."
+      }
+    ]
   }
 ]

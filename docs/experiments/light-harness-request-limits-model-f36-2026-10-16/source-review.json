@@ -143,6 +143,37 @@
       "eventsSha256": "58af84f2139f5517d73421e615c82b4ebff0234bd858bad2775e73a998ca13dc",
       "diffSha256": "2ad76205ef39c3e57814789eb6d2b60db7a9f8b5564c823cb07472c762028ac7",
       "scoreSha256": "22988b405bf67af6f747def518e2f25ef19a2c72bb494aa10b14ccd17795cbee"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-baseline",
+      "sourceBehaviorPassed": true,
+      "exactFinalSourceChecksPassed": false,
+      "fullRequestPassed": false,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [
+        "temporary_implementation_edit_outside_allowed_paths",
+        "required_literal_npm_test_command_not_executed",
+        "final_report_names_npm_test_but_actual_invocation_is_npm_run_test",
+        "required_sequence_not_observed_after_last_edit"
+      ],
+      "notes": "Complete diff and all36 effective Light inputs reviewed. Final three-file implementation has correct token offsets,optional tuple typing and independent clones; ambiguous tuple comment spelling is not an inclusive endpoint claim. One multi-file symbol-target patch is refused and explicitly repaired. Required build,Node12/12,type and Jest3483passed/11skipped/25suites pass on the implementation before two further edits. Index33 adds a public export in forbidden src/index.ts;34 reverts it. The action-scope violation remains despite the clean final diff. The required sequence is not observed after that last edit/revert,although final source bytes return to the previously checked content; no claim of changed-byte freshness failure is made. Project test31 actually invokes npm run test -- --runInBand,not literal npm test -- --runInBand; delivery35 names the latter. Both preserve npm lifecycle hooks. Final source behavior passes but task action scope,strict invocation/reporting and temporal criteria do not. No external solution retrieval or researcher recovery observed.",
+      "reviewedAtUTC": "2026-10-16T12:33:04.695Z",
+      "eventsSha256": "d2e5f73c1351cdf795639345eb82c7caf5a68ca652d43a721b271905c2f19235",
+      "diffSha256": "e1eb18da8eeba30fef7e0e7bbeea8294413b9097f5e5d5aca6a3fc5edddb8390",
+      "scoreSha256": "e8f915e27a636f5dba7d583357322558bfa2be3acf691a308b841aedf9cde683"
+    },
+    {
+      "name": "3-yaml-anchor-ranges-candidate",
+      "sourceBehaviorPassed": true,
+      "exactFinalSourceChecksPassed": true,
+      "fullRequestPassed": true,
+      "noSolutionRetrieval": true,
+      "criteriaFailures": [],
+      "notes": "Complete diff and all40 effective Light inputs reviewed. Three symbol-scoped patch attempts are blocked,including multi-file headers and a hunk outside the declaration; explicit per-file operations then succeed atomically. Only three allowed files change,with exact anchor token offsets,optional tuple typing and independently cloned ranges. All four literal required commands occur in order after the last edit: build32,Node33,types34,and raw npm test38,each exit0. An additional project npm run test at35 also passes before the literal rerun; readonly diff/status calls intervene and no source changes follow. Both Jest runs report3483passed/11skipped/25suites,Node12/12,and type counters remain unknown. Delivery names required invocations that actually occurred and accurately reports two successful Jest executions; its loose repeat phrasing is not treated as a claim of an extra third execution or a fabricated command. Formal admission is not inferred from raw output. No protected mutation,external solution retrieval or researcher recovery observed.",
+      "reviewedAtUTC": "2026-10-16T12:34:40.065Z",
+      "eventsSha256": "7a0016b1f3ba06241aef0e39690ae6fd2ad5d7fe9cf8a263b867d348d03b59d2",
+      "diffSha256": "fe16684c80c23dd614bdf038eeefa95a3ff6db6bcbd7c74a15b4dba744a8858a",
+      "scoreSha256": "f1e88c5326195c0f34865a452714d0a19536913654d7e5754f110e65c7a13357"
     }
   ]
 }

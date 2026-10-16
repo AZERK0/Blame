@@ -6,6 +6,10 @@
       "rejected": true
     },
     {
+      "fault": "fabricated SDK model-request counter",
+      "rejected": true
+    },
+    {
       "fault": "fabricated consumption reserve",
       "rejected": true
     },
@@ -31,6 +35,10 @@
     },
     {
       "fault": "fabricated effective-cap exposure",
+      "rejected": true
+    },
+    {
+      "fault": "fabricated initial-contract agreement",
       "rejected": true
     },
     {
