@@ -12,6 +12,7 @@ import {
   buildWorkspaceArtifact,
   buildWorkspaceDeltaArtifact,
   buildWorkspaceIncrementalDeltaArtifact,
+  prepareWorkspaceSource,
 } from "./workspace-artifact.ts";
 import { workspaceSourceMode } from "./baseline-transfer.ts";
 import { snapshotWorkspace } from "./workspace-snapshot.ts";
@@ -192,6 +193,54 @@ test("builds an incremental delta against the last synchronized workspace", asyn
     await rm(root, { recursive: true, force: true });
   }
 });
+
+for (const [kind, build, prefix] of [
+  ["full", buildWorkspaceArtifact, "workspace"],
+  ["delta", buildWorkspaceDeltaArtifact, "files"],
+] as const) {
+  for (const latest of ["console.log('a longer final source')\n", "x\n"]) {
+    test(`${kind} artifacts retry a changed prepared file (${latest.length} bytes)`, async () => {
+      const root = await mkdtemp(join(tmpdir(), "blame-artifact-stale-"));
+      try {
+        await exec("git", ["init", "--quiet", root]);
+        await writeFile(join(root, "index.js"), "base\n");
+        await exec("git", ["-C", root, "add", "."]);
+        await exec("git", [
+          "-C",
+          root,
+          "-c",
+          "user.name=Blame Test",
+          "-c",
+          "user.email=test@blame.so",
+          "commit",
+          "--quiet",
+          "-m",
+          "base",
+        ]);
+        await writeFile(join(root, "index.js"), "prepared source\n");
+        const prepared = await prepareWorkspaceSource(root);
+        await writeFile(join(root, "index.js"), latest);
+        const expected = await snapshotWorkspace(root);
+
+        const artifact = await build(root, prepared);
+
+        assert.equal(artifact.workspaceHash, expected.hash);
+        assert.equal(
+          artifact.snapshot.files["index.js"]!.sha256,
+          expected.files["index.js"]!.sha256,
+        );
+        assert.equal(
+          (await archiveEntries(artifact.content))
+            .get(`${prefix}/index.js`)
+            ?.toString("utf8"),
+          latest,
+        );
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    });
+  }
+}
 
 function archiveEntries(content: Buffer) {
   return new Promise<Map<string, Buffer>>((resolve, reject) => {

@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
+import { gzipSync } from "node:zlib";
 import {
   prepareMacosRuntimeManifest,
   prepareWindowsRuntimeManifest,
@@ -204,6 +205,42 @@ test("reports Lima setup progress while creating the runtime", async () => {
   }
 });
 
+test("rejects Lima setup when the packaged semantic harness payload is missing", async () => {
+  const testRoot = await mkdtemp(path.join(tmpdir(), "blame-lima-no-payload-"));
+  try {
+    await assert.rejects(
+      runFakeMacosRuntimeSetup(
+        testRoot,
+        path.join(testRoot, "tools"),
+        path.join(testRoot, "state"),
+        "a".repeat(64),
+        { includePayload: false },
+      ),
+      (error: unknown) => {
+        const failure = error as {
+          code?: number;
+          stderr?: string;
+          stdout?: string;
+        };
+        assert.equal(failure.code, 1);
+        assert.match(
+          failure.stderr ?? "",
+          /semantic harness runtime payload is missing/,
+        );
+        assert.ok(
+          !runtimeProgressFromOutput(failure.stdout ?? "").some(
+            (event) =>
+              event.phase === "configuring" || event.phase === "checking",
+          ),
+        );
+        return true;
+      },
+    );
+  } finally {
+    await rm(testRoot, { force: true, recursive: true });
+  }
+});
+
 test("uses published immutable artifacts for release packaging", async () => {
   const testRoot = await mkdtemp(path.join(tmpdir(), "blame-runtime-test-"));
   const runtimeRoot = path.join(testRoot, "runtime");
@@ -292,10 +329,31 @@ async function runFakeMacosRuntimeSetup(
   toolsRoot: string,
   stateRoot: string,
   cacheKey: string,
+  options: { includePayload?: boolean } = {},
 ) {
   await createFakeMacosRuntimeTools(toolsRoot);
+  const runtimeRoot = path.join(testRoot, "runtime");
+  for (const file of [
+    "manifest.json",
+    "lima/blame-runtime.yaml",
+    "scripts/blame-lima-runtime.sh",
+    "scripts/provision-blame-runtime.sh",
+  ]) {
+    const destination = path.join(runtimeRoot, file);
+    await mkdir(path.dirname(destination), { recursive: true });
+    await cp(path.resolve("resources/runtime/macos", file), destination);
+  }
+  if (options.includePayload !== false) {
+    const payloads = path.join(runtimeRoot, "payloads");
+    await mkdir(payloads, { recursive: true });
+    // An empty tar.gz suffices: guest provisioning is mocked by fake limactl.
+    await writeFile(
+      path.join(payloads, "blame-semantic-harness.tgz"),
+      gzipSync(Buffer.alloc(1024)),
+    );
+  }
   const { stdout } = await execFileAsync(
-    path.resolve("resources/runtime/macos/scripts/blame-lima-runtime.sh"),
+    path.join(runtimeRoot, "scripts/blame-lima-runtime.sh"),
     ["ensure"],
     {
       env: {
@@ -337,7 +395,7 @@ case "$1" in
   start) touch "$state/running" ;;
   shell)
     cat >/dev/null
-    for name in host-home agent agent-version runtime-version containerd nerdctl nerdctl-compose git cline-sdk; do
+    for name in host-home agent agent-version runtime-version containerd nerdctl nerdctl-compose git cline-sdk semantic-harness package-managers; do
       printf '%s\\tavailable\\n' "$name"
     done
     ;;

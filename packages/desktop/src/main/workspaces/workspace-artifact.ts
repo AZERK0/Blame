@@ -140,6 +140,8 @@ export async function buildWorkspaceArtifact(
     const gzip = createGzip({ level: 6 });
     gzip.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
     const writing = pipeline(archive, gzip);
+    // File streaming may reject first; the later await still drives retries.
+    void writing.catch(() => undefined);
     try {
       archive.entry(
         {
@@ -297,6 +299,8 @@ async function buildWorkspaceDeltaFromSnapshot(
     const gzip = createGzip({ level: 6 });
     gzip.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
     const writing = pipeline(archive, gzip);
+    // File streaming may reject first; the later await still drives retries.
+    void writing.catch(() => undefined);
     try {
       archive.entry(
         {
