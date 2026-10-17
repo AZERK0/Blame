@@ -471,6 +471,77 @@
         "Summarize option defaults, empty strings, path suppression and existing wildcard public exports are correct; original issue order and values are preserved.",
         "New three-case regression file passes independent runtime/types; agent directly ran it after the four required final-source checks. Missing Prettier is disclosed, with no dependency installation or protected-file edits."
       ]
+    },
+    {
+      "name": "3-valibot-summary-format-scope",
+      "hashes": {
+        "events.jsonl": "af1c3fd724fc6020c5ecd25b9de8ab2c70049ea86921dca65a0aeaadfbe60bed",
+        "workspace.diff": "b99d24f8dceced9939265720a6356f53776b3c1ea065c7e0e797a112f747c4fb",
+        "score.json": "73ea0e9492f90d8c930ce17a7dd5224521e8f287cd142c63073b68d58dbcfd56",
+        "tool-ledger.json": "b047ab40f7c6c909b5dc937f6033120e36be049ae3f1641e21839e870de9debd"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "scopeFollowups": [
+        {
+          "reportIndex": 27,
+          "validationIndex": 30,
+          "kind": "runtime",
+          "path": "library/src/methods/summarize/summarize.options.test.ts"
+        }
+      ],
+      "notes": [
+        "Options, defaults, empty strings and public exports are correct; new four-case test and independent types pass with original tests/configuration unchanged.",
+        "Report27 precedes successful direct Vitest30 in a later iteration. After a subsequent source edit, all four selected checks and the new test run again. Final delivery explicitly disclaims type coverage of the added test and the unavailable formatter."
+      ]
+    },
+    {
+      "name": "3-valibot-summary-format-cline",
+      "hashes": {
+        "events.jsonl": "117bbbd9173c728955148428edc5d01301cc09c435c97854e24f7f394d636e82",
+        "workspace.diff": "81db1c272da6f2037563c23ae9d1bfa0f6785a2f4aa4d6601a2cfa33ee8ccf35",
+        "score.json": "a3cf21c360f9447aab32a391beb8cf05d7ac36a0725b75b8907791b27496ba4d",
+        "tool-ledger.json": "85b5683687d5fd4523fc9ff5f83b2861e31e7a0ef42183c599b541d024c6e136"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "notes": [
+        "Correct default/undefined/empty-string formatting and path suppression; existing wildcard exports expose SummarizeOptions. New regression file passes independent runtime and strict types.",
+        "Four required checks follow the final source edit. The additional library typecheck passes; direct test attempts fail on missing jsdom or the protected study include filter. Delivery does not claim the added runtime test passed and describes the coverage limit. Dependencies and protected files remain unchanged."
+      ]
+    },
+    {
+      "name": "3-remeda-take-counts-scope",
+      "hashes": {
+        "events.jsonl": "dfe9f5d760a1a35e8dd85b3860821c8d56954e8ceb9f70ad045397980e55616b",
+        "workspace.diff": "8b957639ad0cf8aecec209ce80a830d678b9de16487c081c8ed8e2eb40934bb9",
+        "score.json": "920eb38104b2fbf52fdf8a8a3d79df84d86cd6b79a9ce511421910cd78e69782",
+        "tool-ledger.json": "0c188a856b39ced253500336ae53de04d1bde85ec0175d84897790aec15c60ef"
+      },
+      "sourceBehaviorPassed": false,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "scopeFollowups": [
+        {
+          "reportIndex": 31,
+          "validationIndex": 58,
+          "kind": "runtime",
+          "path": "packages/remeda/src/take-counts.test.ts"
+        }
+      ],
+      "notes": [
+        "Selected checks and independent delivered runtime/types pass, but the empty-sequence continue in pipe.ts bypasses the isSingle conversion. Same scalar-result regression as other Remeda endpoints; confirm with the uniform post-hoc witness after workers.",
+        "The direct Vitest follow-up succeeds after earlier failed feature and runtime attempts, without dependency installation. All four required checks are fresh after final formatting edit66.",
+        "Delivery overstates the added test type coverage: Vitest3.2.4 defaults typecheck.include to **/*.{test,spec}-d.?(c|m)[jt]s?(x), while the new file is *.test.ts. The focused runtime run reports Type Errors no errors but does not establish that this file was typechecked. It also precedes final edit66, despite the final answer grouping it under checks after the final edit. Neither issue is repaired for scoring."
+      ]
     }
   ]
 }

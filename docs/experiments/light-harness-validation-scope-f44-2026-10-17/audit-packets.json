@@ -9522,6 +9522,1531 @@
           }
         ]
       }
+    },
+    {
+      "name": "3-valibot-summary-format-scope",
+      "hashes": {
+        "events.jsonl": "af1c3fd724fc6020c5ecd25b9de8ab2c70049ea86921dca65a0aeaadfbe60bed",
+        "workspace.diff": "b99d24f8dceced9939265720a6356f53776b3c1ea065c7e0e797a112f747c4fb",
+        "score.json": "73ea0e9492f90d8c930ce17a7dd5224521e8f287cd142c63073b68d58dbcfd56",
+        "tool-ledger.json": "b047ab40f7c6c909b5dc937f6033120e36be049ae3f1641e21839e870de9debd"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 37,
+      "required": {
+        "regression": [
+          {
+            "index": 38,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 39,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 40,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ],
+        "upstream": [
+          {
+            "index": 41,
+            "input": {
+              "kind": "project",
+              "task": "test:study:upstream"
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 5,
+                "passed": 5,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 25,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 26,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 27,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 28,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 5,
+              "passed": 5,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 29,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 30,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts",
+            "cwd": "."
+          },
+          "command": "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 31,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+            "cwd": "."
+          },
+          "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "1",
+          "output": "Command exited with code 1.\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-scope/workspace/node_modules/prettier/bin/prettier.cjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0"
+        },
+        {
+          "index": 32,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short",
+            "cwd": "."
+          },
+          "command": "git diff --check && git status --short",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 38,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 39,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 40,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 41,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 5,
+              "passed": 5,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 42,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts",
+            "cwd": "."
+          },
+          "command": "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 43,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short",
+            "cwd": "."
+          },
+          "command": "git diff --check && git status --short",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented optional `summarize` formatting options and exported `SummarizeOptions` through the existing methods/public export chain. Defaults preserve the multiplication-sign bullet, two-space indentation, and included paths; explicit empty strings and `includePath: false` are honored without mutating issue objects. Added `library/src/methods/summarize/summarize.options.test.ts` with regression coverage.\n\nChecks:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types` — passed; the configured typecheck includes the implementation and `.study/types.ts`. The added Vitest regression file is excluded by the study tsconfig, so its type coverage is not established by this check.\n- `npm run test:study:upstream` — passed, 5/5 upstream tests.\n- Direct new regression test run — passed, 4/4 tests.\n- `git diff --check` — passed.\n\nPrettier validation was not run because the installed workspace does not contain `node_modules/prettier/bin/prettier.cjs`; no dependencies were installed or changed.",
+      "blocked": [
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+            "cwd": "."
+          },
+          "output": {
+            "status": "blocked",
+            "category": "environment",
+            "message": "Command exited with code 1.\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-scope/workspace/node_modules/prettier/bin/prettier.cjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0",
+            "recovery": "Use the dependency operation once if the declared installation is incomplete; do not edit manifests or copy files through the shell."
+          }
+        },
+        {
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "s90",
+                "patch": "*** Begin Patch\n*** Update File: library/src/methods/summarize/summarize.ts\n@@\n-/**\n- * Summarize the error messages of issues in a pretty-printable multi-line string.\n- *\n- * @param issues The list of issues.\n- *\n- * @returns A summary of the issues.\n- *\n- * @beta\n- */\n-// @__NO_SIDE_EFFECTS__\n+/** Options for formatting a summary of issues. */\n export interface SummarizeOptions {\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context matches the whole file but exceeds the selected symbol scope.",
+            "recovery": "No operations in this batch were applied. Every operation uses the original source, not earlier operations in the same batch. The exact context matches the file; resending it with this same narrow target cannot fix the scope conflict. Narrow the patch context or explicitly choose a file patch after inspecting the affected lines. Other edit guards still apply. {\"target\":\"s90\",\"path\":\"library/src/methods/summarize/summarize.ts\",\"patchCorrection\":{\"reason\":\"context_outside_symbol\",\"expectedPath\":\"library/src/methods/summarize/summarize.ts\",\"affectedLines\":[[4,13]],\"affectedRangeCount\":1,\"changesOutsideSymbol\":true,\"nextRead\":{\"target\":\"library/src/methods/summarize/summarize.ts\",\"view\":\"range\",\"range\":{\"startLine\":1,\"endLine\":25}}},\"declarationLines\":[14,21],\"nextRead\":{\"target\":\"library/src/methods/summarize/summarize.ts\",\"view\":\"range\",\"range\":{\"startLine\":1,\"endLine\":25}},\"routes\":\"Read the current text before retrying. For changes inside the declaration, read the symbol then use a symbol action or a focused alias patch. For JSDoc, export wrappers or context outside it, read those lines and use a file patch. For dependent edits, commit separately and read again. These locations are hints, not observed edit coverage; refresh after source changes.\"}",
+            "diagnosticId": "edit-mvcj3gfu"
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_e2fee5e28195396dda9a2954c3b4da7f",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types",
+          "check:upstream"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "3-valibot-summary-format-cline",
+      "hashes": {
+        "events.jsonl": "117bbbd9173c728955148428edc5d01301cc09c435c97854e24f7f394d636e82",
+        "workspace.diff": "81db1c272da6f2037563c23ae9d1bfa0f6785a2f4aa4d6601a2cfa33ee8ccf35",
+        "score.json": "a3cf21c360f9447aab32a391beb8cf05d7ac36a0725b75b8907791b27496ba4d",
+        "tool-ledger.json": "85b5683687d5fd4523fc9ff5f83b2861e31e7a0ef42183c599b541d024c6e136"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 9,
+      "required": {
+        "regression": [
+          {
+            "index": 10,
+            "input": {
+              "commands": [
+                "npm run test:study:regression"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (1.267494ms)\n✔ safe parser factories retain failure result shape (0.542088ms)\n✔ root issues retain the original default summary (0.205722ms)\n✔ unrelated transformations and object output remain intact (0.926243ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1843.066938\n"
+          }
+        ],
+        "feature": [
+          {
+            "index": 11,
+            "input": {
+              "commands": [
+                "npm run test:study:feature"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ defaults and explicit undefined preserve the original summary (1.451445ms)\n✔ custom marker and indentation retain order and dot paths (0.165153ms)\n✔ empty strings and hidden paths are deliberate overrides (0.243388ms)\n✔ formatting never changes the input issues and handles absent paths (0.180656ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1003.526565\n"
+          }
+        ],
+        "types": [
+          {
+            "index": 12,
+            "input": {
+              "commands": [
+                "npm run test:study:types"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:types",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+          }
+        ],
+        "upstream": [
+          {
+            "index": 13,
+            "input": {
+              "commands": [
+                "npm run test:study:upstream"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace\n\n ✓ library/src/methods/summarize/summarize.test.ts (5 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  15:06:52\n   Duration  336ms (transform 128ms, setup 0ms, collect 168ms, tests 3ms, environment 0ms, prepare 54ms)\n\n"
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p'",
+              "printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\""
+            ]
+          },
+          "command": "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace\n\nTop-level files:\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.github/FUNDING.yml\n./.gitignore\n./.grit/.gitignore\n./.grit/grit.yaml\n./.prettierignore\n./.study/delivered.mjs\n./.study/feature.mjs\n./.study/regression.mjs\n./.study/task.json\n./.study/tsconfig.json\n./.study/types.ts\n./.study/vitest.config.mjs\n./CODE_OF_CONDUCT.md\n./CONTRIBUTING.md\n./LICENSE.md\n./SECURITY.md\n./brand/valibot-icon.png\n./brand/valibot-icon.svg\n./brand/valibot-logo-dark.png\n./brand/valibot-logo-dark.svg\n./brand/valibot-logo-light.png\n./brand/valibot-logo-light.svg\n./codemod/README.md\n./library/CHANGELOG.md\n./library/LICENSE.md\n./library/README.md\n./library/eslint.config.js\n./library/jsr.json\n./library/mod.ts\n./library/package.json\n./library/playground.ts\n./library/tsconfig.json\n./library/tsup.config.ts\n./library/vitest.config.ts\n./node_modules/.package-lock.json\n./package.json\n./pnpm-lock.yaml\n./pnpm-workspace.yaml\n./prettier.config.cjs\n./valibot.jpg\n./website/.env\n./website/.eslintignore\n./website/.eslintrc.cjs\n./website/.gitignore\n./website/.node-version\n./website/.prettierignore\n./website/README.md\n./website/package.json\n./website/postcss.config.cjs\n./website/tailwind.config.cjs\n./website/tsconfig.json\n./website/vercel.json\n./website/vite.config.ts\n"
+        },
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p'",
+              "printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\""
+            ]
+          },
+          "command": "printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\"",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\nPackage scripts:\n{\n  \"test:study:feature\": \"node --import tsx --test --test-timeout=10000 .study/feature.mjs\",\n  \"test:study:regression\": \"node --import tsx --test --test-timeout=10000 .study/regression.mjs\",\n  \"test:study:types\": \"node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\",\n  \"test:study:upstream\": \"node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\",\n  \"test:study:delivered\": \"node .study/delivered.mjs runtime\",\n  \"typecheck:delivered\": \"node .study/delivered.mjs types\"\n}\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "git status --short --branch && git diff --stat && git diff -- package.json"
+            ]
+          },
+          "command": "git status --short --branch && git diff --stat && git diff -- package.json",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "## master\n"
+        },
+        {
+          "index": 8,
+          "input": {
+            "commands": [
+              "find /tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src -name '*.test.ts' | sort | tail -20 && printf '\\nGit tracked summarize files:\\n' && git ls-files '*summarize*'"
+            ]
+          },
+          "command": "find /tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src -name '*.test.ts' | sort | tail -20 && printf '\\nGit tracked summarize files:\\n' && git ls-files '*su ... [command truncated: 9 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/storages/globalMessage/globalMessage.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/storages/schemaMessage/schemaMessage.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/storages/specificMessage/specificMessage.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/ValiError/ValiError.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/_addIssue/_addIssue.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/_getByteCount/_getByteCount.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/_getGraphemeCount/_getGraphemeCount.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/_getLastMetadata/_getLastMetadata.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/_getStandardProps/_getStandardProps.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/_getWordCount/_getWordCount.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/_isLuhnAlgo/_isLuhnAlgo.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/_isValidObjectKey/_isValidObjectKey.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/_joinExpects/_joinExpects.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/_stringify/_stringify.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/entriesFromList/entriesFromList.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/entriesFromObjects/entriesFromObjects.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/getDotPath/getDotPath.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/isOfKind/isOfKind.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/isOfType/isOfType.test.ts\n/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/utils/isValiError/isValiError.test.ts\n\nGit tracked summarize files:\nlibrary/src/methods/summarize/index.ts\nlibrary/src/methods/summarize/summarize.test.ts\nlibrary/src/methods/summarize/summarize.ts\nwebsite/src/routes/api/(methods)/summarize/index.mdx\nwebsite/src/routes/api/(methods)/summarize/properties.ts\n"
+        },
+        {
+          "index": 10,
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (1.267494ms)\n✔ safe parser factories retain failure result shape (0.542088ms)\n✔ root issues retain the original default summary (0.205722ms)\n✔ unrelated transformations and object output remain intact (0.926243ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1843.066938\n"
+        },
+        {
+          "index": 11,
+          "input": {
+            "commands": [
+              "npm run test:study:feature"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ defaults and explicit undefined preserve the original summary (1.451445ms)\n✔ custom marker and indentation retain order and dot paths (0.165153ms)\n✔ empty strings and hidden paths are deliberate overrides (0.243388ms)\n✔ formatting never changes the input issues and handles absent paths (0.180656ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1003.526565\n"
+        },
+        {
+          "index": 12,
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 13,
+          "input": {
+            "commands": [
+              "npm run test:study:upstream"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace\n\n ✓ library/src/methods/summarize/summarize.test.ts (5 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  15:06:52\n   Duration  336ms (transform 128ms, setup 0ms, collect 168ms, tests 3ms, environment 0ms, prepare 54ms)\n\n"
+        },
+        {
+          "index": 14,
+          "input": {
+            "commands": [
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts library/src/methods/summarize/summarize.options.test.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace\n\n\n Test Files   (1)\n      Tests  no tests\n     Errors  1 error\n   Start at  15:06:58\n   Duration  222ms (transform 12ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 0ms)\n\n\n[stderr]\n MISSING DEPENDENCY  Cannot find dependency 'jsdom'\n\n⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯\n\nVitest caught 1 unhandled error during the test run.\nThis might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.\n\n⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯\nError: Cannot find package 'jsdom' imported from /tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/node_modules/vitest/dist/chunks/index.CmSc2RE5.js\n ❯ Object.getPackageJSONURL node:internal/modules/package_json_reader:301:9\n ❯ packageResolve node:internal/modules/esm/resolve:768:81\n ❯ moduleResolve node:internal/modules/esm/resolve:859:18\n ❯ defaultResolve node:internal/modules/esm/resolve:992:11\n ❯ ModuleLoader.#cachedDefaultResolve node:internal/modules/esm/loader:701:20\n ❯ ModuleLoader.#resolveAndMaybeBlockOnLoaderThread node:internal/modules/esm/loader:721:38\n ❯ ModuleLoader.resolveSync node:internal/modules/esm/loader:759:56\n ❯ ModuleLoader.#resolve node:internal/modules/esm/loader:683:17\n ❯ ModuleLoader.getOrCreateModuleJob node:internal/modules/esm/loader:603:35\n ❯ node:internal/modules/esm/loader:632:32\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\nSerialized Error: { code: 'ERR_MODULE_NOT_FOUND' }\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
+        },
+        {
+          "index": 15,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": ""
+        },
+        {
+          "index": 16,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short --branch && git diff --stat && git diff -- library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short --branch && git diff --stat && git diff -- library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "## master\n M library/src/methods/summarize/summarize.ts\n?? library/src/methods/summarize/summarize.options.test.ts\n library/src/methods/summarize/summarize.ts | 32 ++++++++++++++++++++++++++----\n 1 file changed, 28 insertions(+), 4 deletions(-)\ndiff --git a/library/src/methods/summarize/summarize.ts b/library/src/methods/summarize/summarize.ts\nindex 2f0c3a3..dfbc97a 100644\n--- a/library/src/methods/summarize/summarize.ts\n+++ b/library/src/methods/summarize/summarize.ts\n@@ -1,10 +1,29 @@\n import type { BaseIssue } from '../../types/index.ts';\n import { getDotPath } from '../../utils/index.ts';\n \n+/**\n+ * Summarize options interface.\n+ */\n+export interface SummarizeOptions {\n+  /**\n+   * The bullet to use before each issue message.\n+   */\n+  readonly bullet?: string | undefined;\n+  /**\n+   * The indentation to use before each issue path.\n+   */\n+  readonly indent?: string | undefined;\n+  /**\n+   * Whether to include issue paths.\n+   */\n+  readonly includePath?: boolean | undefined;\n+}\n+\n /**\n  * Summarize the error messages of issues in a pretty-printable multi-line string.\n  *\n  * @param issues The list of issues.\n+ * @param options The summarize options.\n  *\n  * @returns A summary of the issues.\n  *\n@@ -12,8 +31,13 @@ import { getDotPath } from '../../utils/index.ts';\n  */\n // @__NO_SIDE_EFFECTS__\n export function summarize(\n-  issues: [BaseIssue<unknown>, ...BaseIssue<unknown>[]]\n+  issues: [BaseIssue<unknown>, ...BaseIssue<unknown>[]],\n+  options?: SummarizeOptions\n ): string {\n+  const bullet = options?.bullet ?? '×';\n+  const indent = options?.indent ?? '  ';\n+  const includePath = options?.includePath !== false;\n+\n   // Create variable to store summary\n   let summary = '';\n \n@@ -25,14 +49,14 @@ export function summarize(\n     }\n \n     // Add message to summary\n-    summary += `× ${issue.message}`;\n+    summary += `${bullet} ${issue.message}`;\n \n     // Get dot path from issue\n     const dotPath = getDotPath(issue);\n \n     // If dot path is available, add it to summary\n-    if (dotPath) {\n-      summary += `\\n  → at ${dotPath}`;\n+    if (includePath && dotPath) {\n+      summary += `\\n${indent}→ at ${dotPath}`;\n     }\n   }\n \n"
+        },
+        {
+          "index": 17,
+          "input": {
+            "commands": [
+              "node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs library/src/methods/summarize/summarize.options.test.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace\n\n\n[stderr]\nNo test files found, exiting with code 1\n\nfilter: library/src/methods/summarize/summarize.options.test.ts\ninclude: library/src/methods/summarize/summarize.test.ts\nexclude:  **/node_modules/**, **/dist/**, **/cypress/**, **/.{idea,git,cache,output,temp}/**, **/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*\n\n"
+        },
+        {
+          "index": 19,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short --branch && printf '\\nChanged paths:\\n' && git status --short | awk '{$1=\"\"; sub(/^ /,\"\"); print}' | while IFS= read -r f; do [ -n \"$f\" ] && printf '%s\\n' \"$f\"; done"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short --branch && printf '\\nChanged paths:\\n' && git status --short | awk '{$1=\"\"; sub(/^ /,\"\"); print}' | while IFS= read -r f; do [ -n \"$f\" ] && printf '%s\\n' \"$f\";  ... [command truncated: 4 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "## master\n M library/src/methods/summarize/summarize.ts\n?? library/src/methods/summarize/summarize.options.test.ts\n\nChanged paths:\nlibrary/src/methods/summarize/summarize.ts\nlibrary/src/methods/summarize/summarize.options.test.ts\n"
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented the configurable `summarize` formatting.\n\n### Changes\n- Added public `SummarizeOptions` type with:\n  - `bullet?: string | undefined`\n  - `indent?: string | undefined`\n  - `includePath?: boolean | undefined`\n- Added optional second argument to `summarize`.\n- Preserved defaults:\n  - Bullet: `×`\n  - Indent: two spaces\n  - Paths included\n- Preserved explicit empty strings for `bullet` and `indent`.\n- Added path suppression with `includePath: false`.\n- Preserved issue messages, order, and objects.\n- Added regression coverage in:\n  - `/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-cline/workspace/library/src/methods/summarize/summarize.options.test.ts`\n\n### Validation\n- `npm run test:study:regression` — passed, 4/4\n- `npm run test:study:feature` — passed, 4/4\n- `npm run test:study:types` — passed\n- `npm run test:study:upstream` — passed, 5/5\n- `tsc --noEmit -p library/tsconfig.json` — passed\n- `git diff --check` — passed\n\nThe upstream study configuration only includes the supplied original summarize test file, so it does not execute the newly added regression file. A direct Vitest run was unavailable because the repository’s library Vitest configuration requires the uninstalled `jsdom` dependency; no dependencies or configuration files were changed.",
+      "blocked": [],
+      "scopeCommands": [],
+      "completion": null
+    },
+    {
+      "name": "3-remeda-take-counts-scope",
+      "hashes": {
+        "events.jsonl": "dfe9f5d760a1a35e8dd85b3860821c8d56954e8ceb9f70ad045397980e55616b",
+        "workspace.diff": "8b957639ad0cf8aecec209ce80a830d678b9de16487c081c8ed8e2eb40934bb9",
+        "score.json": "920eb38104b2fbf52fdf8a8a3d79df84d86cd6b79a9ce511421910cd78e69782",
+        "tool-ledger.json": "0c188a856b39ced253500336ae53de04d1bde85ec0175d84897790aec15c60ef"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 66,
+      "required": {
+        "regression": [
+          {
+            "index": 67,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          },
+          {
+            "index": 72,
+            "input": {
+              "kind": "command",
+              "command": "npm run test:study:regression",
+              "cwd": "."
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 68,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 11,
+                "passed": 11,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          },
+          {
+            "index": 73,
+            "input": {
+              "kind": "command",
+              "command": "npm run test:study:feature",
+              "cwd": "."
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 11,
+                "passed": 11,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 69,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          },
+          {
+            "index": 74,
+            "input": {
+              "kind": "command",
+              "command": "npm run test:study:types",
+              "cwd": "."
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ],
+        "upstream": [
+          {
+            "index": 70,
+            "input": {
+              "kind": "project",
+              "task": "test:study:upstream"
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 10,
+                "passed": 10,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          },
+          {
+            "index": 75,
+            "input": {
+              "kind": "command",
+              "command": "npm run test:study:upstream",
+              "cwd": "."
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 10,
+                "passed": 10,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 29,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 30,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 1,
+          "processSuccess": false,
+          "check": {
+            "process": "exited",
+            "exitCode": 1,
+            "execution": "observed",
+            "outcome": "failed",
+            "counts": {
+              "executed": 11,
+              "passed": 5,
+              "failed": 6,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 31,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 32,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 10,
+              "passed": 10,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 52,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 1,
+          "processSuccess": false,
+          "check": {
+            "process": "exited",
+            "exitCode": 1,
+            "execution": "observed",
+            "outcome": "failed",
+            "counts": {
+              "executed": 11,
+              "passed": 5,
+              "failed": 6,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 53,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 54,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 55,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 10,
+              "passed": 10,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 56,
+          "input": {
+            "kind": "command",
+            "command": "npx vitest run packages/remeda/src/take-counts.test.ts --typecheck.enabled --typecheck.ignoreSourceErrors",
+            "cwd": "."
+          },
+          "command": "npx vitest run packages/remeda/src/take-counts.test.ts --typecheck.enabled --typecheck.ignoreSourceErrors",
+          "exitCode": 1,
+          "processSuccess": false,
+          "check": {
+            "process": "exited",
+            "exitCode": 1,
+            "execution": "observed",
+            "outcome": "failed",
+            "counts": {
+              "executed": 18,
+              "passed": 13,
+              "failed": 5,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 58,
+          "input": {
+            "kind": "command",
+            "command": "npx vitest run packages/remeda/src/take-counts.test.ts --typecheck.enabled --typecheck.ignoreSourceErrors",
+            "cwd": "."
+          },
+          "command": "npx vitest run packages/remeda/src/take-counts.test.ts --typecheck.enabled --typecheck.ignoreSourceErrors",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 18,
+              "passed": 18,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 59,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 11,
+              "passed": 11,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 60,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 61,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 62,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 10,
+              "passed": 10,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 63,
+          "input": {
+            "kind": "command",
+            "command": "node_modules/.bin/prettier --write packages/remeda/src/take.ts packages/remeda/src/take-counts.test.ts packages/remeda/src/pipe.ts packages/remeda/src/internal/types/LazyDefinition.ts",
+            "cwd": "."
+          },
+          "command": "node_modules/.bin/prettier --write packages/remeda/src/take.ts packages/remeda/src/take-counts.test.ts packages/remeda/src/pipe.ts packages/remeda/src/internal/types/LazyDefinition.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": null,
+          "output": "This request combines or ambiguously scopes Prettier. Submit `pnpm exec prettier --write <explicit existing files>` alone; for npm projects use `npx --no-install prettier --write <explicit existing files>` or `npm exec --no -- prettier --write <explicit existing files>`. It will be applied as one atomic journaled edit."
+        },
+        {
+          "index": 64,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short",
+            "cwd": "."
+          },
+          "command": "git diff --check && git status --short",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 65,
+          "input": {
+            "kind": "command",
+            "command": "npx --no-install prettier --write packages/remeda/src/take.ts packages/remeda/src/take-counts.test.ts packages/remeda/src/pipe.ts packages/remeda/src/internal/types/LazyDefinition.ts",
+            "cwd": "."
+          },
+          "command": "npx --no-install prettier --write packages/remeda/src/take.ts packages/remeda/src/take-counts.test.ts packages/remeda/src/pipe.ts packages/remeda/src/internal/types/LazyDefinition.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": null,
+          "output": "npm error code ENOTCACHED\nnpm error request to https://registry.npmjs.org/prettier failed: cache mode is 'only-if-cached' but no cached response is available.\nnpm error A complete log of this run can be found in: /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-scope/npm-cache/_logs/2026-10-17T15_09_45_900Z-debug-0.log"
+        },
+        {
+          "index": 67,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 68,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 11,
+              "passed": 11,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 69,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 70,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 10,
+              "passed": 10,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 71,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git diff --stat && git status --short",
+            "cwd": "."
+          },
+          "command": "git diff --check && git diff --stat && git status --short",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 72,
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:regression",
+            "cwd": "."
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 73,
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:feature",
+            "cwd": "."
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 11,
+              "passed": 11,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 74,
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:types",
+            "cwd": "."
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 75,
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:upstream",
+            "cwd": "."
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 10,
+              "passed": 10,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "shellWriteCandidates": [
+        {
+          "index": 63,
+          "input": {
+            "kind": "command",
+            "command": "node_modules/.bin/prettier --write packages/remeda/src/take.ts packages/remeda/src/take-counts.test.ts packages/remeda/src/pipe.ts packages/remeda/src/internal/types/LazyDefinition.ts",
+            "cwd": "."
+          },
+          "command": "node_modules/.bin/prettier --write packages/remeda/src/take.ts packages/remeda/src/take-counts.test.ts packages/remeda/src/pipe.ts packages/remeda/src/internal/types/LazyDefinition.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": null,
+          "output": "This request combines or ambiguously scopes Prettier. Submit `pnpm exec prettier --write <explicit existing files>` alone; for npm projects use `npx --no-install prettier --write <explicit existing files>` or `npm exec --no -- prettier --write <explicit existing files>`. It will be applied as one atomic journaled edit."
+        },
+        {
+          "index": 65,
+          "input": {
+            "kind": "command",
+            "command": "npx --no-install prettier --write packages/remeda/src/take.ts packages/remeda/src/take-counts.test.ts packages/remeda/src/pipe.ts packages/remeda/src/internal/types/LazyDefinition.ts",
+            "cwd": "."
+          },
+          "command": "npx --no-install prettier --write packages/remeda/src/take.ts packages/remeda/src/take-counts.test.ts packages/remeda/src/pipe.ts packages/remeda/src/internal/types/LazyDefinition.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": null,
+          "output": "npm error code ENOTCACHED\nnpm error request to https://registry.npmjs.org/prettier failed: cache mode is 'only-if-cached' but no cached response is available.\nnpm error A complete log of this run can be found in: /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-scope/npm-cache/_logs/2026-10-17T15_09_45_900Z-debug-0.log"
+        }
+      ],
+      "delivery": "Implemented consistent `take` count normalization across eager, curried, and lazy pipelines: positive counts are floored, non-positive/NaN counts take nothing, and positive infinity takes all. Added lazy-pipeline metadata so empty normalized takes bypass upstream lazy operations without invoking mappers. Added `packages/remeda/src/take-counts.test.ts` covering normalization, readonly/non-mutating behavior, shallow copying, and lazy invocation counts. Existing tests were not modified; manifests, locks, configuration, and metadata were preserved.\n\nChecks run after the final edit:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 11/11 tests.\n- `npm run test:study:types` — passed, TypeScript reported no errors. The study typecheck does not include the added `take-counts.test.ts`; that file was separately covered by the focused Vitest typecheck below.\n- `npm run test:study:upstream` — passed, 10/10 upstream tests.\n- Focused `npx vitest run packages/remeda/src/take-counts.test.ts --typecheck.enabled --typecheck.ignoreSourceErrors` — passed, 18/18 tests with no type errors.\n- `git diff --check` — passed.\n\nCoverage limit: the required upstream check is configured to run the existing `take.test.ts` only; it does not execute the new regression file. The focused check covers the new regression file.",
+      "blocked": [
+        {
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/internal/types/LazyDefinition.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/internal/types/LazyDefinition.ts\n@@\n type LazyMeta = {\n+  readonly isEmpty?: boolean;\n   readonly single?: boolean;\n };\n*** Update File: packages/remeda/src/pipe.ts\n@@\n type PreparedLazyOperation = LazyEvaluator & {\n+  readonly isEmpty: boolean;\n   readonly isSingle: boolean;\n@@\n     lazySequence.push(lazyOp);\n@@\n       }\n     }\n+\n+    if (lazySequence.some((lazyOp) => lazyOp.isEmpty)) {\n+      output = [];\n+      operationIndex += lazySequence.length;\n+      continue;\n+    }\n \n     const accumulator: Array<unknown> = [];\n@@\n   return Object.assign(fn, {\n+    isEmpty: lazy.isEmpty ?? false,\n     isSingle: lazy.single ?? false,\n*** Update File: packages/remeda/src/take.ts\n@@\n const normalizeCount = (n: number): number => (n > 0 ? Math.floor(n) : 0);\n+\n+const emptyLazyEvaluator = Object.assign(\n+  function emptyLazyEvaluator<T>() {\n+    return lazyEmptyEvaluator<T>();\n+  },\n+  { isEmpty: true as const },\n+);\n@@\n   let remaining = normalizeCount(n);\n   if (remaining === 0) {\n-    return lazyEmptyEvaluator;\n+    return emptyLazyEvaluator;\n   }\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in packages/remeda/src/pipe.ts.\nClosest current lines 238-242:\n      }\n\n      lazySequence.push(lazyOp);\n      if (lazyOp.isSingle) {\n        break;",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvcj817p"
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node_modules/.bin/prettier --write packages/remeda/src/take.ts packages/remeda/src/take-counts.test.ts packages/remeda/src/pipe.ts packages/remeda/src/internal/types/LazyDefinition.ts",
+            "cwd": "."
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "This request combines or ambiguously scopes Prettier. Submit `pnpm exec prettier --write <explicit existing files>` alone; for npm projects use `npx --no-install prettier --write <explicit existing files>` or `npm exec --no -- prettier --write <explicit existing files>`. It will be applied as one atomic journaled edit."
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npx --no-install prettier --write packages/remeda/src/take.ts packages/remeda/src/take-counts.test.ts packages/remeda/src/pipe.ts packages/remeda/src/internal/types/LazyDefinition.ts",
+            "cwd": "."
+          },
+          "output": {
+            "status": "blocked",
+            "category": "code",
+            "message": "npm error code ENOTCACHED\nnpm error request to https://registry.npmjs.org/prettier failed: cache mode is 'only-if-cached' but no cached response is available.\nnpm error A complete log of this run can be found in: /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-scope/npm-cache/_logs/2026-10-17T15_09_45_900Z-debug-0.log"
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_9bcc44061e96bdcc29e4a3b39a5f5cfc",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types",
+          "check:upstream"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
     }
   ]
 }
