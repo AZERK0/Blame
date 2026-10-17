@@ -3,26 +3,27 @@
   "method": "Observed tool failures/guards. A refusal may be correct; its occurrence does not establish harness fault, model reasoning, or causal token overhead. Native command failures and Light edit/read categories are not equivalent tools.",
   "arms": {
     "reference": {
-      "trials": 1,
+      "trials": 3,
       "categories": {
         "executed_command_failed": 1,
         "invalid_final_syntax": 1,
-        "missing_path": 5
+        "missing_path": 8,
+        "patch_preimage_or_format": 1
       },
       "declarationCalls": 0
     },
     "compiler": {
-      "trials": 2,
+      "trials": 3,
       "categories": {
-        "missing_path": 1,
-        "patch_preimage_or_format": 2
+        "missing_path": 3,
+        "patch_preimage_or_format": 3
       },
       "declarationCalls": 0
     },
     "cline": {
-      "trials": 1,
+      "trials": 3,
       "categories": {
-        "native_command_failed": 3
+        "native_command_failed": 5
       },
       "declarationCalls": 0
     }
@@ -245,6 +246,171 @@
             "message": "Patch context does not match in website/src/routes/guides/(main-concepts)/issues/index.mdx.\nClosest current lines 107-111:\n#### Config\n\n`lang` can be used as part of our <Link href=\"/guides/internationalization/\">i18n feature</Link> to define the required language. `abortEarly` and `abortPipeEarly` gives you an info that the validation was aborted prematurely. You can find more info about this in the <Link href=\"/guides/parse-data/#configuration\">parse data</Link> guide. These are all configurations that you can control yourself.\n\n## Formatting",
             "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
             "diagnosticId": "edit-mvbnlv2i"
+          }
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "1-valibot-hide-input-cline",
+      "task": "valibot-hide-input",
+      "arm": "cline",
+      "categories": {},
+      "observations": [],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "1-valibot-hide-input-reference",
+      "task": "valibot-hide-input",
+      "arm": "reference",
+      "categories": {
+        "missing_path": 3
+      },
+      "observations": [
+        {
+          "index": 10,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/parseAsync/parseAsync.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-hide-input-reference/workspace/library/src/methods/parseAsync/parseAsync.ts'"
+        },
+        {
+          "index": 11,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/safeParseAsync/safeParseAsync.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-hide-input-reference/workspace/library/src/methods/safeParseAsync/safeParseAsync.ts'"
+        },
+        {
+          "index": 30,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/types/config.test-d.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-hide-input-reference/workspace/library/src/types/config.test-d.ts'"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "1-valibot-fallback-when-cline",
+      "task": "valibot-fallback-when",
+      "arm": "cline",
+      "categories": {
+        "native_command_failed": 2
+      },
+      "observations": [
+        {
+          "index": 13,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json"
+        },
+        {
+          "index": 14,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "node_modules/.bin/vitest run library/src/methods/fallback/fallback.test.ts library/src/methods/fallback/fallbackAsync.test.ts --config library/vitest.config.ts"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "1-valibot-fallback-when-reference",
+      "task": "valibot-fallback-when",
+      "arm": "reference",
+      "categories": {
+        "patch_preimage_or_format": 1
+      },
+      "observations": [
+        {
+          "index": 67,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "library/src/methods/fallback/fallback.ts",
+                "patch": "*** Begin Patch\n*** Update File: library/src/methods/fallback/fallback.ts\n@@\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate to determine whether the fallback should be used.\n@@\n*** Update File: library/src/methods/fallback/fallbackAsync.ts\n@@\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate to determine whether the fallback should be used.\n@@\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Update hunks require exact context.",
+            "diagnosticId": "edit-mvbo2xjq"
+          }
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "1-valibot-fallback-when-compiler",
+      "task": "valibot-fallback-when",
+      "arm": "compiler",
+      "categories": {
+        "missing_path": 2,
+        "patch_preimage_or_format": 1
+      },
+      "observations": [
+        {
+          "index": 38,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/default/default.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-fallback-when-compiler/workspace/library/src/methods/default/default.ts'"
+        },
+        {
+          "index": 39,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/default/defaultAsync.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-fallback-when-compiler/workspace/library/src/methods/default/defaultAsync.ts'"
+        },
+        {
+          "index": 61,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "library/src/methods/fallback/fallback.ts",
+                "patch": "*** Begin Patch\n*** Update File: library/src/methods/fallback/fallback.ts\n@@\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate that determines whether to use the fallback.\n@@\n export function fallback<\n   const TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n   const TFallback extends Fallback<TSchema>,\n >(\n   schema: TSchema,\n-  fallback: TFallback\n+  fallback: TFallback,\n+  predicate?: (\n+    dataset?: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n+    config?: Config<InferIssue<TSchema>>\n+  ) => boolean\n ): SchemaWithFallback<TSchema, TFallback> {\n@@\n     },\n     '~run'(dataset, config) {\n       const outputDataset = schema['~run'](dataset, config);\n-      return outputDataset.issues\n-        ? { typed: true, value: getFallback(this, outputDataset, config) }\n-        : outputDataset;\n+      if (!outputDataset.issues) {\n+        return outputDataset;\n+      }\n+      return predicate && !predicate(outputDataset, config)\n+        ? outputDataset\n+        : { typed: true, value: getFallback(this, outputDataset, config) };\n     },\n   };\n }\n*** Update File: library/src/methods/fallback/fallbackAsync.ts\n@@\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate that determines whether to use the fallback.\n@@\n export function fallbackAsync<\n@@\n >(\n   schema: TSchema,\n-  fallback: TFallback\n+  fallback: TFallback,\n+  predicate?: (\n+    dataset?: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n+    config?: Config<InferIssue<TSchema>>\n+  ) => MaybePromise<boolean>\n ): SchemaWithFallbackAsync<TSchema, TFallback> {\n@@\n     },\n     async '~run'(dataset, config) {\n       const outputDataset = await schema['~run'](dataset, config);\n-      return outputDataset.issues\n-        ? {\n-            typed: true,\n-            value: await getFallback(this, outputDataset, config),\n-          }\n-        : outputDataset;\n+      if (!outputDataset.issues) {\n+        return outputDataset;\n+      }\n+      return predicate && !(await predicate(outputDataset, config))\n+        ? outputDataset\n+        : {\n+            typed: true,\n+            value: await getFallback(this, outputDataset, config),\n+          };\n     },\n   };\n }\n*** Update File: website/src/routes/api/(methods)/fallback/properties.ts\n@@\n   fallback: {\n     type: {\n       type: 'custom',\n       name: 'TFallback',\n     },\n   },\n+  predicate: {\n+    type: {\n+      type: 'function',\n+      params: [\n+        {\n+          name: 'dataset',\n+          optional: true,\n+          type: {\n+            type: 'custom',\n+            name: 'OutputDataset',\n+            href: '../OutputDataset/',\n+            generics: [\n+              {\n+                type: 'custom',\n+                name: 'InferOutput',\n+                href: '../InferOutput/',\n+                generics: [{ type: 'custom', name: 'TSchema' }],\n+              },\n+              {\n+                type: 'custom',\n+                name: 'InferIssue',\n+                href: '../InferIssue/',\n+                generics: [\n+                  { type: 'custom', name: 'TSchema' },\n+                ],\n+              },\n+            ],\n+          },\n+        },\n+        {\n+          name: 'config',\n+          optional: true,\n+          type: {\n+            type: 'custom',\n+            name: 'Config',\n+            href: '../Config/',\n+            generics: [\n+              {\n+                type: 'custom',\n+                name: 'InferIssue',\n+                href: '../InferIssue/',\n+                generics: [{ type: 'custom', name: 'TSchema' }],\n+              },\n+            ],\n+          },\n+        },\n+      ],\n+      return: { type: 'boolean' },\n+    },\n+  },\n   Schema: {\n*** Update File: website/src/routes/api/(methods)/fallbackAsync/properties.ts\n@@\n   fallback: {\n     type: {\n       type: 'custom',\n       name: 'TFallback',\n     },\n   },\n+  predicate: {\n+    type: {\n+      type: 'function',\n+      params: [\n+        {\n+          name: 'dataset',\n+          optional: true,\n+          type: {\n+            type: 'custom',\n+            name: 'OutputDataset',\n+            href: '../OutputDataset/',\n+            generics: [\n+              {\n+                type: 'custom',\n+                name: 'InferOutput',\n+                href: '../InferOutput/',\n+                generics: [{ type: 'custom', name: 'TSchema' }],\n+              },\n+              {\n+                type: 'custom',\n+                name: 'InferIssue',\n+                href: '../InferIssue/',\n+                generics: [\n+                  { type: 'custom', name: 'TSchema' },\n+                ],\n+              },\n+            ],\n+          },\n+        },\n+        {\n+          name: 'config',\n+          optional: true,\n+          type: {\n+            type: 'custom',\n+            name: 'Config',\n+            href: '../Config/',\n+            generics: [\n+              {\n+                type: 'custom',\n+                name: 'InferIssue',\n+                href: '../InferIssue/',\n+                generics: [{ type: 'custom', name: 'TSchema' }],\n+              },\n+            ],\n+          },\n+        },\n+      ],\n+      return: {\n+        type: 'custom',\n+        name: 'MaybePromise',\n+        href: '../MaybePromise/',\n+        generics: [{ type: 'boolean' }],\n+      },\n+    },\n+  },\n   Schema: {\n*** Update File: website/src/routes/api/(methods)/fallback/index.mdx\n@@\n - `schema` <Property {...properties.schema} />\n - `fallback` <Property {...properties.fallback} />\n+- `predicate` <Property {...properties.predicate} />\n@@\n `fallback` allows you to define a fallback value for the output that will be used if the validation of the input fails. This means that no issues will be returned when using `fallback` and the schema will always return an output.\n+\n+The optional `predicate` is called with the failed output dataset and parse configuration when validation fails. The fallback is used only if it returns `true`.\n*** Update File: website/src/routes/api/(async)/fallbackAsync/index.mdx\n@@\n - `schema` <Property {...properties.schema} />\n - `fallback` <Property {...properties.fallback} />\n+- `predicate` <Property {...properties.predicate} />\n@@\n `fallbackAsync` allows you to define a fallback value for the output that will be used if the validation of the input fails. This means that no issues will be returned when using `fallbackAsync` and the schema will always return an output.\n+\n+The optional `predicate` is called with the failed output dataset and parse configuration when validation fails. The fallback is used only if it resolves to `true`.\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch update target does not exist.",
+            "diagnosticId": "edit-mvbo4pab"
           }
         }
       ],

@@ -56,6 +56,77 @@
       "noSolutionRetrieval": true,
       "fullRequestPassed": false,
       "note": "Runtime/config/public-type behavior and final selected checks pass. Strict instruction compliance fails because an existing upstream test fixture is edited. Extra issue documentation also lists hideInput as a BaseIssue field although implementation only adds it to Config; retained as a documentation defect outside selected runtime checks. No source repair, protected study write or retrieved solution."
+    },
+    {
+      "name": "1-valibot-hide-input-cline",
+      "hashes": {
+        "events.jsonl": "3f64ebb41feb08f756d29e8cb0b76973177c74ccea0aea73a557953fd894aa10",
+        "workspace.diff": "17c0ee0d572fb1c2f752622a976ccd06c352526677b6b37eab380afb99961a15",
+        "score.json": "12aec3b5623457f95723c1113d5fc5c9d5393b76474caf9c32470e21a28dfb50",
+        "tool-ledger.json": "a41598ef3da831fdaa5404767a662a6f58a4062ec9744d61375c300b0a6bf8eb"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "environmentDeviation": true,
+      "note": "Correct three-module behavior and all required final-source checks. Existing tests remain untouched. However, npx vitest installed unpinned Vitest5.0.5 during the measured worker and generated shared caches; no frozen dependency package bytes changed. Conservative audit rejects full preservation/environment compliance, while retaining functional success and the 14 actually passed extra tests. This is an agent-chosen tool installation, not a source or compiler failure."
+    },
+    {
+      "name": "1-valibot-hide-input-reference",
+      "hashes": {
+        "events.jsonl": "5a79da8b3b0ae063e6688c03d8b2313a818459efadec606618178c8ab950257c",
+        "workspace.diff": "d7bed28e2d1eebde2a100ea77aa14ae08e3d3936b754fced112f697f9fd2cb62",
+        "score.json": "788dd78daf9825962f5aa6e3876cb2ebc73b8ec59f02c8e676b8065655782f75",
+        "tool-ledger.json": "e410d6af2a1b3df8ba0e8bc0d8525b64599b3f15b4333b06bd7aa480d45180bf"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "note": "Correct config/issue changes, truthful selected-check outcomes and limitations, no retrieved solution. Strict request compliance fails because it edits existing globalConfig.test.ts; same judgment as compiler-arm fixture edits. Unknown compiler test counts are accurately reported, while required admission remains missing."
+    },
+    {
+      "name": "1-valibot-fallback-when-cline",
+      "hashes": {
+        "events.jsonl": "b2e410aceaf4aa5300f52f51e48f4f60dd683aa7d1052afd8aa355c8bb9066d5",
+        "workspace.diff": "35a90d72cbb2a07d8529b464693c27fa5c7bca54095c652a7b3a43d836c85630",
+        "score.json": "ff0d57698b993fcac7760a255367efed3ba59e08f41f5e9fee5283adb7c8b7c7",
+        "tool-ledger.json": "5e409fa2af94028f39c5266f6ae955a778387b27500ea20f6e7628f3808711f9"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "note": "Both fallback implementations preserve success and two-argument behavior, gate only failed datasets, await async predicates and propagate errors. Required checks pass after final source edits. Additional upstream compiler/Vitest attempts fail for missing Vitest and are explicitly disclosed; no installation, protected edits or recovery."
+    },
+    {
+      "name": "1-valibot-fallback-when-reference",
+      "hashes": {
+        "events.jsonl": "31abf65489ec93a07d4481d5f114e31ca9196b6cf72ed71fe0eba45e16bb40ab",
+        "workspace.diff": "e3ee40d9b140f58bd94979212c56918e5690dffc4aaf642e26ee5254e58fb6be",
+        "score.json": "9d8dac2f30a99ed82a5c5d2be5494523cbd0a401986ec272bec0ef2559324339",
+        "tool-ledger.json": "d1749ceffc2fc4edaad325984ec82c217d019f3d59b9bdcc938a791c82eb2dca"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "note": "Both fallback implementations correctly gate failed datasets with original configuration and proper synchronous/asynchronous types. Only implementation files change; final supplied checks pass. Three compiler invocations are observed across the trace; delivery conservatively distinguishes the successful command from the runner\u2019s unknown test/admission evidence."
+    },
+    {
+      "name": "1-valibot-fallback-when-compiler",
+      "hashes": {
+        "events.jsonl": "0f657cbf37d8ed508d1da12873a7b1debec776c7c24e97ef6e382c794a2decae",
+        "workspace.diff": "7fc4c756b645faf4bbe6adfe7895a33b86002989632f9d3b168e675b0599dc1b",
+        "score.json": "2ec8e2dc1afdc77cd3f6c1b035765996be3dfe0867fe2b3bfad1e3b2d7f77b2f",
+        "tool-ledger.json": "c3931d4b8c90ac4182ea6beadeddb2be0ac361cbc9d2cfc2b8abe645115de3e5"
+      },
+      "sourceBehaviorPassed": false,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "note": "Fallback implementations pass the selected runtime/type checks after the final edits. Additional website property metadata introduces two TS2322 errors outside the selected compiler scope: {type: boolean} lacks the required value field. Exact upstream metadata passes the isolated original PropertyProps witness; agent metadata fails. The renderer also dereferences that missing value. This post-hoc source-audit witness is archived separately; no full website build was run or claimed, and no source was repaired."
     }
   ]
 }

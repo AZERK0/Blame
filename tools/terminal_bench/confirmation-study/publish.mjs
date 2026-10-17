@@ -20,7 +20,7 @@ for (const row of analysis.rows) {
   const decision = review.decisions.find(decision => decision.name === row.name);
   assert.ok(decision); assert.deepEqual(decision.hashes, row.hashes);
   for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (!entry.isFile() || entry.name === 'workspace.tar.gz') continue;
+    if (!entry.isFile() || ['workspace.tar.gz', 'generated-caches.tar.gz'].includes(entry.name)) continue;
     const bytes = await readFile(join(directory, entry.name));
     for (const [key, value] of Object.entries(process.env)) if (/(?:TOKEN|SECRET|PASSWORD|API_KEY)$/.test(key) && value.length >= 16) assert.ok(!bytes.includes(Buffer.from(value)), 'Configured credential found; retain private evidence and do not publish');
     files[entry.name] = { bytes: bytes.length, sha256: sha(bytes), base64: bytes.toString('base64') };
@@ -51,10 +51,11 @@ const arms = Object.fromEntries(protocol.arms.map(arm => {
 }));
 const treatment = protocol.arms.find(arm => !['reference', 'cline'].includes(arm));
 const delta = (a, b) => b === 0 || a === null || b === null ? null : a / b - 1;
+function compare(predicate) {
 const comparisons = {};
 for (const reference of ['reference', 'cline']) {
-  const paired = rows.filter(row => row.arm === treatment && row.auditedCompletion &&
-    rows.some(other => other.arm === reference && other.repeat === row.repeat && other.task === row.task && other.auditedCompletion));
+  const paired = rows.filter(row => row.arm === treatment && predicate(row) &&
+    rows.some(other => other.arm === reference && other.repeat === row.repeat && other.task === row.task && predicate(other)));
   const totals = arm => {
     const selected = paired.map(row => rows.find(other => other.arm === arm && other.repeat === row.repeat && other.task === row.task));
     const known = selected.every(row => row.contract.unreported === 0 && row.usage.tokensCostReconciled);
@@ -97,12 +98,17 @@ for (const reference of ['reference', 'cline']) {
  comparison.pairedTokenWins=comparison.pairDetails.filter(p=>p.tokenDelta!==null&&p.tokenDelta<0).length;
  comparison.pairedTokenLosses=comparison.pairDetails.filter(p=>p.tokenDelta!==null&&p.tokenDelta>0).length;
 }
+return comparisons;
+}
+const comparisons = compare(row => row.auditedCompletion);
+const functionalComparisons = compare(row => row.independentFunctionalSuccess);
 const qualityGate = arms[treatment].audited >= arms.reference.audited;
 const comparison = comparisons[`${treatment}/reference`];
 const resourceGate = qualityGate && comparison.pairs >= 12 &&
   comparison.tokenDelta !== null && comparison.tokenDelta < 0 && comparison.costDelta < 0 && comparison.durationDelta <= 0.1;
 const accounting = await json(join(study, 'accounting.json')), prior = await json(join(study, 'prior-budget.json'));
-await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true, arms, comparisons, qualityGate, resourceGate,
+await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true, arms, comparisons, functionalComparisons,
+  functionalComparisonCaveat: 'Secondary descriptive comparison on selected-check success only. It can include incorrect extra changes or instruction violations; it cannot establish full-task quality parity.', qualityGate, resourceGate,
   accounting, priorObservedUsd: prior.observedUsd, priorReservedUsd: prior.reservedUsd,
   cumulativeObservedSdkUsd: prior.observedUsd + accounting.observedUsd, cumulativeReservedUsd: prior.reservedUsd + accounting.reservedUsd,
   cumulativeAccountedUsd: prior.accountedUsd + accounting.accountedUsd,

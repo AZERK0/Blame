@@ -10,7 +10,7 @@ for(const row of results.rows){
  const read=name=>{const f=archive.files[name];assert.ok(f,name);const b=Buffer.from(f.base64,'base64');assert.equal(b.length,f.bytes);assert.equal(sha(b),f.sha256);return b;};
  for(const name of Object.keys(archive.files))read(name);
  for(const [name,hash]of Object.entries(row.hashes))assert.equal(sha(read(name)),hash);
- const grade=JSON.parse(read('score.json')),raw=JSON.parse(read('result.json'));
+ const grade=JSON.parse(read('score.json')),raw=archive.files['result.json']?JSON.parse(read('result.json')):{};
  assert.equal(row.officialRuntimeSuccess,raw.status==='succeeded');
  assert.equal(row.independentFunctionalSuccess,grade.protectedPaths.length===0&&grade.checks.every(c=>c.exitCode===0));
  const events=read('events.jsonl').toString().trim().split('\n').filter(Boolean).map(JSON.parse).map(r=>r.event);

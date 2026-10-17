@@ -1098,6 +1098,1389 @@
           }
         ]
       }
+    },
+    {
+      "name": "1-valibot-hide-input-cline",
+      "hashes": {
+        "events.jsonl": "3f64ebb41feb08f756d29e8cb0b76973177c74ccea0aea73a557953fd894aa10",
+        "workspace.diff": "17c0ee0d572fb1c2f752622a976ccd06c352526677b6b37eab380afb99961a15",
+        "score.json": "12aec3b5623457f95723c1113d5fc5c9d5393b76474caf9c32470e21a28dfb50",
+        "tool-ledger.json": "a41598ef3da831fdaa5404767a662a6f58a4062ec9744d61375c300b0a6bf8eb"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 24,
+      "required": {
+        "regression": [
+          {
+            "index": 25,
+            "input": {
+              "commands": [
+                "npm run test:study:regression"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (1.75684ms)\n✔ custom errors and abort counts (0.356577ms)\n✔ sync and async fallback old interface (0.375656ms)\n✔ config reset, unions and nested issue path (0.39148ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 945.043224\n"
+          }
+        ],
+        "feature": [
+          {
+            "index": 26,
+            "input": {
+              "commands": [
+                "npm run test:study:feature"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ global redaction and per-call false override (1.096673ms)\n✔ callbacks see original input and descriptions survive (0.200938ms)\n✔ nested and union issues redact all own inputs (0.4257ms)\n✔ async redaction, success and reset (1.181058ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 905.976122\n"
+          }
+        ],
+        "types": [
+          {
+            "index": 27,
+            "input": {
+              "commands": [
+                "npm run test:study:types"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:types",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p' && printf '\\nGit status:\\n' && git status --short --branch --untracked-files=all"
+            ],
+            "timeout": 120000
+          },
+          "command": "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p' && printf '\\nGit status:\\n' && git status --short --branch --untracked-files=all",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-hide-input-cline/workspace\n\nTop-level files:\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.github/FUNDING.yml\n./.gitignore\n./.grit/.gitignore\n./.grit/grit.yaml\n./.prettierignore\n./.study/feature.mjs\n./.study/regression.mjs\n./.study/task.json\n./.study/tsconfig.json\n./.study/types.ts\n./CODE_OF_CONDUCT.md\n./CONTRIBUTING.md\n./LICENSE.md\n./SECURITY.md\n./brand/valibot-icon.png\n./brand/valibot-icon.svg\n./brand/valibot-logo-dark.png\n./brand/valibot-logo-dark.svg\n./brand/valibot-logo-light.png\n./brand/valibot-logo-light.svg\n./codemod/README.md\n./library/CHANGELOG.md\n./library/LICENSE.md\n./library/README.md\n./library/eslint.config.js\n./library/jsr.json\n./library/mod.ts\n./library/package.json\n./library/playground.ts\n./library/tsconfig.json\n./library/tsup.config.ts\n./library/vitest.config.ts\n./package.json\n./pnpm-lock.yaml\n./pnpm-workspace.yaml\n./prettier.config.cjs\n./valibot.jpg\n./website/.env\n./website/.eslintignore\n./website/.eslintrc.cjs\n./website/.gitignore\n./website/.node-version\n./website/.prettierignore\n./website/README.md\n./website/package.json\n./website/postcss.config.cjs\n./website/tailwind.config.cjs\n./website/tsconfig.json\n./website/vercel.json\n./website/vite.config.ts\n\nGit status:\n## master\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "cat package.json"
+            ],
+            "timeout": 120000
+          },
+          "command": "cat package.json",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "{\n  \"name\": \"valibot\",\n  \"description\": \"The modular and type safe schema library for validating structural data\",\n  \"version\": \"0.0.0\",\n  \"license\": \"MIT\",\n  \"author\": \"Fabian Hiller\",\n  \"homepage\": \"https://valibot.dev\",\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"https://github.com/fabian-hiller/valibot\"\n  },\n  \"private\": true,\n  \"devDependencies\": {\n    \"@trivago/prettier-plugin-sort-imports\": \"^5.2.2\",\n    \"prettier\": \"^3.5.2\",\n    \"prettier-plugin-tailwindcss\": \"^0.6.11\",\n    \"typescript\": \"^5.7.3\"\n  },\n  \"packageManager\": \"npm@11.6.4\",\n  \"scripts\": {\n    \"test:study:feature\": \"node --import tsx --test --test-timeout=10000 .study/feature.mjs\",\n    \"test:study:regression\": \"node --import tsx --test --test-timeout=10000 .study/regression.mjs\",\n    \"test:study:types\": \"node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\"\n  }\n}\n"
+        },
+        {
+          "index": 16,
+          "input": {
+            "commands": [
+              "test -d node_modules && echo 'node_modules present' || echo 'node_modules absent'; find library/src/methods -maxdepth 2 -type f -name '*.ts' | sort | sed -n '1,120p'"
+            ],
+            "timeout": 120000
+          },
+          "command": "test -d node_modules && echo 'node_modules present' || echo 'node_modules absent'; find library/src/methods -maxdepth 2 -type f -name '*.ts' | sort | sed -n '1,120p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "node_modules present\nlibrary/src/methods/assert/assert.test-d.ts\nlibrary/src/methods/assert/assert.test.ts\nlibrary/src/methods/assert/assert.ts\nlibrary/src/methods/assert/index.ts\nlibrary/src/methods/config/config.test-d.ts\nlibrary/src/methods/config/config.test.ts\nlibrary/src/methods/config/config.ts\nlibrary/src/methods/config/index.ts\nlibrary/src/methods/fallback/fallback.test-d.ts\nlibrary/src/methods/fallback/fallback.test.ts\nlibrary/src/methods/fallback/fallback.ts\nlibrary/src/methods/fallback/fallbackAsync.test-d.ts\nlibrary/src/methods/fallback/fallbackAsync.test.ts\nlibrary/src/methods/fallback/fallbackAsync.ts\nlibrary/src/methods/fallback/index.ts\nlibrary/src/methods/flatten/flatten.test-d.ts\nlibrary/src/methods/flatten/flatten.test.ts\nlibrary/src/methods/flatten/flatten.ts\nlibrary/src/methods/flatten/index.ts\nlibrary/src/methods/forward/forward.test-d.ts\nlibrary/src/methods/forward/forward.test.ts\nlibrary/src/methods/forward/forward.ts\nlibrary/src/methods/forward/forwardAsync.test-d.ts\nlibrary/src/methods/forward/forwardAsync.test.ts\nlibrary/src/methods/forward/forwardAsync.ts\nlibrary/src/methods/forward/index.ts\nlibrary/src/methods/forward/types.ts\nlibrary/src/methods/getDefault/getDefault.test-d.ts\nlibrary/src/methods/getDefault/getDefault.test.ts\nlibrary/src/methods/getDefault/getDefault.ts\nlibrary/src/methods/getDefault/index.ts\nlibrary/src/methods/getDefaults/getDefaults.test-d.ts\nlibrary/src/methods/getDefaults/getDefaults.test.ts\nlibrary/src/methods/getDefaults/getDefaults.ts\nlibrary/src/methods/getDefaults/getDefaultsAsync.test-d.ts\nlibrary/src/methods/getDefaults/getDefaultsAsync.test.ts\nlibrary/src/methods/getDefaults/getDefaultsAsync.ts\nlibrary/src/methods/getDefaults/index.ts\nlibrary/src/methods/getDefaults/types.ts\nlibrary/src/methods/getDescription/getDescription.test.ts\nlibrary/src/methods/getDescription/getDescription.ts\nlibrary/src/methods/getDescription/index.ts\nlibrary/src/methods/getFallback/getFallback.test-d.ts\nlibrary/src/methods/getFallback/getFallback.test.ts\nlibrary/src/methods/getFallback/getFallback.ts\nlibrary/src/methods/getFallback/index.ts\nlibrary/src/methods/getFallbacks/getFallbacks.test-d.ts\nlibrary/src/methods/getFallbacks/getFallbacks.test.ts\nlibrary/src/methods/getFallbacks/getFallbacks.ts\nlibrary/src/methods/getFallbacks/getFallbacksAsync.test-d.ts\nlibrary/src/methods/getFallbacks/getFallbacksAsync.test.ts\nlibrary/src/methods/getFallbacks/getFallbacksAsync.ts\nlibrary/src/methods/getFallbacks/index.ts\nlibrary/src/methods/getFallbacks/types.ts\nlibrary/src/methods/getMetadata/getMetadata.test-d.ts\nlibrary/src/methods/getMetadata/getMetadata.test.ts\nlibrary/src/methods/getMetadata/getMetadata.ts\nlibrary/src/methods/getMetadata/index.ts\nlibrary/src/methods/getTitle/getTitle.test.ts\nlibrary/src/methods/getTitle/getTitle.ts\nlibrary/src/methods/getTitle/index.ts\nlibrary/src/methods/index.ts\nlibrary/src/methods/is/index.ts\nlibrary/src/methods/is/is.test-d.ts\nlibrary/src/methods/is/is.test.ts\nlibrary/src/methods/is/is.ts\nlibrary/src/methods/keyof/index.ts\nlibrary/src/methods/keyof/keyof.test-d.ts\nlibrary/src/methods/keyof/keyof.test.ts\nlibrary/src/methods/keyof/keyof.ts\nlibrary/src/methods/message/index.ts\nlibrary/src/methods/message/message.test-d.ts\nlibrary/src/methods/message/message.test.ts\nlibrary/src/methods/message/message.ts\nlibrary/src/methods/omit/index.ts\nlibrary/src/methods/omit/omit.test-d.ts\nlibrary/src/methods/omit/omit.test.ts\nlibrary/src/methods/omit/omit.ts\nlibrary/src/methods/parse/index.ts\nlibrary/src/methods/parse/parse.test-d.ts\nlibrary/src/methods/parse/parse.test.ts\nlibrary/src/methods/parse/parse.ts\nlibrary/src/methods/parse/parseAsync.test-d.ts\nlibrary/src/methods/parse/parseAsync.test.ts\nlibrary/src/methods/parse/parseAsync.ts\nlibrary/src/methods/parser/index.ts\nlibrary/src/methods/parser/parser.test-d.ts\nlibrary/src/methods/parser/parser.test.ts\nlibrary/src/methods/parser/parser.ts\nlibrary/src/methods/parser/parserAsync.test-d.ts\nlibrary/src/methods/parser/parserAsync.test.ts\nlibrary/src/methods/parser/parserAsync.ts\nlibrary/src/methods/partial/index.ts\nlibrary/src/methods/partial/partial.test-d.ts\nlibrary/src/methods/partial/partial.test.ts\nlibrary/src/methods/partial/partial.ts\nlibrary/src/methods/partial/partialAsync.test-d.ts\nlibrary/src/methods/partial/partialAsync.test.ts\nlibrary/src/methods/partial/partialAsync.ts\nlibrary/src/methods/pick/index.ts\nlibrary/src/methods/pick/pick.test-d.ts\nlibrary/src/methods/pick/pick.test.ts\nlibrary/src/methods/pick/pick.ts\nlibrary/src/methods/pipe/index.ts\nlibrary/src/methods/pipe/pipe.test-d.ts\nlibrary/src/methods/pipe/pipe.test.ts\nlibrary/src/methods/pipe/pipe.ts\nlibrary/src/methods/pipe/pipeAsync.test-d.ts\nlibrary/src/methods/pipe/pipeAsync.test.ts\nlibrary/src/methods/pipe/pipeAsync.ts\nlibrary/src/methods/required/index.ts\nlibrary/src/methods/required/required.test-d.ts\nlibrary/src/methods/required/required.test.ts\nlibrary/src/methods/required/required.ts\nlibrary/src/methods/required/requiredAsync.test-d.ts\nlibrary/src/methods/required/requiredAsync.test.ts\nlibrary/src/methods/required/requiredAsync.ts\nlibrary/src/methods/safeParse/index.ts\nlibrary/src/methods/safeParse/safeParse.test-d.ts\nlibrary/src/methods/safeParse/safeParse.test.ts\n"
+        },
+        {
+          "index": 19,
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (1.630072ms)\n✔ custom errors and abort counts (0.323398ms)\n✔ sync and async fallback old interface (0.285562ms)\n✔ config reset, unions and nested issue path (0.446481ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1538.160182\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "npm run test:study:feature"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ global redaction and per-call false override (1.146978ms)\n✔ callbacks see original input and descriptions survive (0.171023ms)\n✔ nested and union issues redact all own inputs (0.461524ms)\n✔ async redaction, success and reset (1.50019ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 905.425552\n"
+        },
+        {
+          "index": 21,
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 23,
+          "input": {
+            "commands": [
+              "git diff --check && git diff -- library/src/types/config.ts library/src/storages/globalConfig/globalConfig.ts library/src/utils/_addIssue/_addIssue.ts && git status --short"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git diff -- library/src/types/config.ts library/src/storages/globalConfig/globalConfig.ts library/src/utils/_addIssue/_addIssue.ts && git status --short",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "diff --git a/library/src/storages/globalConfig/globalConfig.ts b/library/src/storages/globalConfig/globalConfig.ts\nindex 5bb03db..846e07e 100644\n--- a/library/src/storages/globalConfig/globalConfig.ts\n+++ b/library/src/storages/globalConfig/globalConfig.ts\n@@ -35,6 +35,7 @@ export function getGlobalConfig<const TIssue extends BaseIssue<unknown>>(\n     message: config?.message,\n     abortEarly: config?.abortEarly ?? store?.abortEarly,\n     abortPipeEarly: config?.abortPipeEarly ?? store?.abortPipeEarly,\n+    hideInput: config?.hideInput ?? store?.hideInput,\n   };\n }\n \ndiff --git a/library/src/types/config.ts b/library/src/types/config.ts\nindex d525e27..5d37473 100644\n--- a/library/src/types/config.ts\n+++ b/library/src/types/config.ts\n@@ -21,4 +21,8 @@ export interface Config<TIssue extends BaseIssue<unknown>> {\n    * Whether a pipe should be aborted early.\n    */\n   readonly abortPipeEarly?: boolean | undefined;\n+  /**\n+   * Whether the input should be hidden in issues.\n+   */\n+  readonly hideInput?: boolean | undefined;\n }\ndiff --git a/library/src/utils/_addIssue/_addIssue.ts b/library/src/utils/_addIssue/_addIssue.ts\nindex 97e9759..c85371c 100644\n--- a/library/src/utils/_addIssue/_addIssue.ts\n+++ b/library/src/utils/_addIssue/_addIssue.ts\n@@ -121,6 +121,13 @@ export function _addIssue<const TContext extends Context>(\n         : message;\n   }\n \n+  // If configured, hide the input after evaluating the message callback so it\n+  // receives the original input.\n+  if (config.hideInput) {\n+    // @ts-expect-error\n+    issue.input = undefined;\n+  }\n+\n   // If context is a schema, set typed to `false`\n   if (isSchema) {\n     dataset.typed = false;\n M library/src/storages/globalConfig/globalConfig.ts\n M library/src/types/config.ts\n M library/src/utils/_addIssue/_addIssue.ts\n"
+        },
+        {
+          "index": 25,
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (1.75684ms)\n✔ custom errors and abort counts (0.356577ms)\n✔ sync and async fallback old interface (0.375656ms)\n✔ config reset, unions and nested issue path (0.39148ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 945.043224\n"
+        },
+        {
+          "index": 26,
+          "input": {
+            "commands": [
+              "npm run test:study:feature"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ global redaction and per-call false override (1.096673ms)\n✔ callbacks see original input and descriptions survive (0.200938ms)\n✔ nested and union issues redact all own inputs (0.4257ms)\n✔ async redaction, success and reset (1.181058ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 905.976122\n"
+        },
+        {
+          "index": 27,
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 28,
+          "input": {
+            "commands": [
+              "npx vitest run library/src/storages/globalConfig/globalConfig.test.ts library/src/methods/parse/parse.test.ts library/src/methods/parse/parseAsync.test.ts library/src/methods/safeParse/safeParse.test.ts library/src/methods/safeParse/safeParseAsync.test.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "npx vitest run library/src/storages/globalConfig/globalConfig.test.ts library/src/methods/parse/parse.test.ts library/src/methods/parse/parseAsync.test.ts library/src/methods/safeParse/safeParse.test. ... [command truncated: 55 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n RUN  v5.0.5 /workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-hide-input-cline/workspace\n\n\n Test Files  5 passed (5)\n      Tests  14 passed (14)\n   Start at  00:29:26\n   Duration  1.81s (transform 84%, import 15%, tests 1%)\n\n\n[stderr]\nnpm warn exec The following package was not found and will be installed: vitest@5.0.5\n"
+        },
+        {
+          "index": 29,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short --branch --untracked-files=all && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short --branch --untracked-files=all && git diff --stat",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "## master\n M library/src/storages/globalConfig/globalConfig.ts\n M library/src/types/config.ts\n M library/src/utils/_addIssue/_addIssue.ts\n library/src/storages/globalConfig/globalConfig.ts | 10 +++++++++-\n library/src/types/config.ts                       |  4 ++++\n library/src/utils/_addIssue/_addIssue.ts          |  7 +++++++\n 3 files changed, 20 insertions(+), 1 deletion(-)\n"
+        },
+        {
+          "index": 31,
+          "input": {
+            "commands": [
+              "node --import tsx --input-type=module -e \"import * as v from './library/src/index.ts'; v.deleteGlobalConfig(); v.setGlobalConfig({hideInput:true}); try { v.parse(v.string(), 123); } catch (error) { if (error.issues[0].input !== undefined) throw new Error('sync parse input was not hidden'); } try { await v.parseAsync(v.string(), 456); } catch (error) { if (error.issues[0].input !== undefined) throw new Error('async parse input was not hidden'); } if (v.safeParse(v.string(), 789, {hideInput:false}).issues[0].input !== 789) throw new Error('false override failed'); v.deleteGlobalConfig(); console.log('direct parse redaction checks passed');\""
+            ],
+            "timeout": 120000
+          },
+          "command": "node --import tsx --input-type=module -e \"import * as v from './library/src/index.ts'; v.deleteGlobalConfig(); v.setGlobalConfig({hideInput:true}); try { v.parse(v.string(), 123); } catch (error) { if ... [command truncated: 446 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "direct parse redaction checks passed\n"
+        },
+        {
+          "index": 32,
+          "input": {
+            "commands": [
+              "git diff --check && git diff --name-only && git status --short --branch --untracked-files=all"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git diff --name-only && git status --short --branch --untracked-files=all",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "library/src/storages/globalConfig/globalConfig.ts\nlibrary/src/types/config.ts\nlibrary/src/utils/_addIssue/_addIssue.ts\n## master\n M library/src/storages/globalConfig/globalConfig.ts\n M library/src/types/config.ts\n M library/src/utils/_addIssue/_addIssue.ts\n"
+        }
+      ],
+      "delivery": "Implemented optional `hideInput?: boolean` parsing configuration.\n\n### Changes\n- Added `hideInput` to the public `Config` type.\n- Added global/local configuration merging with local values taking precedence, including explicit `false`.\n- Redacted only each issue’s own `input` after message callbacks execute.\n- Covers:\n  - Global configuration\n  - Per-parse overrides\n  - Nested and union issues\n  - Sync and async parsing\n  - Thrown `parse`/`parseAsync` errors\n- Preserved parsed values, `expected`, `received`, paths, issue structure, and abort behavior.\n- Preserved the existing internal configuration object shape when `hideInput` is omitted.\n\n### Validation\n\nRequired supplied checks:\n\n- `npm run test:study:regression` — passed, 4/4 tests\n- `npm run test:study:feature` — passed, 4/4 tests\n- `npm run test:study:types` — passed\n\nAdditional checks:\n\n- Focused Vitest suite — passed, 5 files and 14 tests\n- Direct sync/async parse redaction and `false` override checks — passed\n- `git diff --check` — passed\n\nModified files:\n\n- `/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-hide-input-cline/workspace/library/src/types/config.ts`\n- `/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-hide-input-cline/workspace/library/src/storages/globalConfig/globalConfig.ts`\n- `/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-hide-input-cline/workspace/library/src/utils/_addIssue/_addIssue.ts`\n\nThe supplied checks cover selected behavior and source types; the complete upstream suite was not run, so any unrun test counts remain unknown.",
+      "blocked": [],
+      "scopeCommands": [],
+      "completion": null
+    },
+    {
+      "name": "1-valibot-hide-input-reference",
+      "hashes": {
+        "events.jsonl": "5a79da8b3b0ae063e6688c03d8b2313a818459efadec606618178c8ab950257c",
+        "workspace.diff": "d7bed28e2d1eebde2a100ea77aa14ae08e3d3936b754fced112f697f9fd2cb62",
+        "score.json": "788dd78daf9825962f5aa6e3876cb2ebc73b8ec59f02c8e676b8065655782f75",
+        "tool-ledger.json": "e410d6af2a1b3df8ba0e8bc0d8525b64599b3f15b4333b06bd7aa480d45180bf"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 64,
+      "required": {
+        "regression": [
+          {
+            "index": 65,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 66,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 67,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "not_observed",
+              "outcome": "unknown",
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "none"
+            }
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 65,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 66,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 67,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          }
+        },
+        {
+          "index": 68,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git diff -- library/src/types/config.ts library/src/storages/globalConfig/globalConfig.ts library/src/utils/_addIssue/_addIssue.ts library/src/storages/globalConfig/globalConfig.test.ts"
+          },
+          "command": "git diff --check && git diff -- library/src/types/config.ts library/src/storages/globalConfig/globalConfig.ts library/src/utils/_addIssue/_addIssue.ts library/src/storages/globalConfig/globalConfig.test.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 69,
+          "input": {
+            "kind": "command",
+            "command": "rg -n \"issues\\s*[:=]|issues\\.push|new ValiError|_addIssue\" library/src --glob '*.ts' --glob '!**/*.test.ts'",
+            "cwd": "."
+          },
+          "command": "rg -n \"issues\\s*[:=]|issues\\.push|new ValiError|_addIssue\" library/src --glob '*.ts' --glob '!**/*.test.ts'",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        }
+      ],
+      "delivery": "Implemented optional `hideInput` parsing configuration.\n\n- Added `hideInput?: boolean` to the public `Config` type.\n- Added global configuration merging and per-parse false override support.\n- Redacts each generated issue’s own `input` after message callbacks run, preserving original callback input and existing received/expected values, paths, nested/union issue structure, abort behavior, and successful outputs.\n- Updated the global configuration test fixture for the new field.\n\nChecks run:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types` — exited successfully; the runner reported test counts as unknown.\n- `git diff --check` — passed.\n\nThe supplied study checks cover selected behavior and source types, not the complete upstream suite.",
+      "blocked": [
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/parseAsync/parseAsync.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-hide-input-reference/workspace/library/src/methods/parseAsync/parseAsync.ts'",
+            "diagnosticId": "read-mvbnx4be"
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/safeParseAsync/safeParseAsync.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-hide-input-reference/workspace/library/src/methods/safeParseAsync/safeParseAsync.ts'",
+            "diagnosticId": "read-mvbnx4d3"
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/types/config.test-d.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-hide-input-reference/workspace/library/src/types/config.test-d.ts'",
+            "diagnosticId": "read-mvbnxeu8"
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_0ffd002f98d004c2e2ae98cc29277ce6",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature"
+        ],
+        "missing_obligations": [
+          "check:types"
+        ],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "REQUIRED_CHECK_UNCONFIRMED",
+            "message": "A required final-source invocation has no observed passing execution. User acceptance criteria remain a separate assessment.",
+            "obligation_ids": [
+              "check:types"
+            ]
+          },
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "1-valibot-fallback-when-cline",
+      "hashes": {
+        "events.jsonl": "b2e410aceaf4aa5300f52f51e48f4f60dd683aa7d1052afd8aa355c8bb9066d5",
+        "workspace.diff": "35a90d72cbb2a07d8529b464693c27fa5c7bca54095c652a7b3a43d836c85630",
+        "score.json": "ff0d57698b993fcac7760a255367efed3ba59e08f41f5e9fee5283adb7c8b7c7",
+        "tool-ledger.json": "5e409fa2af94028f39c5266f6ae955a778387b27500ea20f6e7628f3808711f9"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 8,
+      "required": {
+        "regression": [
+          {
+            "index": 9,
+            "input": {
+              "commands": [
+                "npm run test:study:regression"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (1.760387ms)\n✔ custom errors and abort counts (0.314726ms)\n✔ sync and async fallback old interface (0.322988ms)\n✔ config reset, unions and nested issue path (0.330369ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1559.541007\n"
+          }
+        ],
+        "feature": [
+          {
+            "index": 10,
+            "input": {
+              "commands": [
+                "npm run test:study:feature"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ false keeps original issue and does not evaluate fallback (1.08741ms)\n✔ true and success preserve output and exact invocation counts (0.240166ms)\n✔ async predicate is awaited both ways (0.295157ms)\n✔ predicate throw and reject propagate untouched (0.558056ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 867.806008\n"
+          }
+        ],
+        "types": [
+          {
+            "index": 11,
+            "input": {
+              "commands": [
+                "npm run test:study:types"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:types",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && find . -maxdepth 2 -type f | sort | sed -n '1,240p'",
+              "cat package.json 2>/dev/null || true",
+              "find . -maxdepth 3 -iname '*fallback*' -o -iname '*package*.json' | sort | sed -n '1,200p'"
+            ]
+          },
+          "command": "pwd && find . -maxdepth 2 -type f | sort | sed -n '1,240p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-fallback-when-cline/workspace\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.github/FUNDING.yml\n./.gitignore\n./.grit/.gitignore\n./.grit/grit.yaml\n./.prettierignore\n./.study/feature.mjs\n./.study/regression.mjs\n./.study/task.json\n./.study/tsconfig.json\n./.study/types.ts\n./CODE_OF_CONDUCT.md\n./CONTRIBUTING.md\n./LICENSE.md\n./SECURITY.md\n./brand/valibot-icon.png\n./brand/valibot-icon.svg\n./brand/valibot-logo-dark.png\n./brand/valibot-logo-dark.svg\n./brand/valibot-logo-light.png\n./brand/valibot-logo-light.svg\n./codemod/README.md\n./library/CHANGELOG.md\n./library/LICENSE.md\n./library/README.md\n./library/eslint.config.js\n./library/jsr.json\n./library/mod.ts\n./library/package.json\n./library/playground.ts\n./library/tsconfig.json\n./library/tsup.config.ts\n./library/vitest.config.ts\n./package.json\n./pnpm-lock.yaml\n./pnpm-workspace.yaml\n./prettier.config.cjs\n./valibot.jpg\n./website/.env\n./website/.eslintignore\n./website/.eslintrc.cjs\n./website/.gitignore\n./website/.node-version\n./website/.prettierignore\n./website/README.md\n./website/package.json\n./website/postcss.config.cjs\n./website/tailwind.config.cjs\n./website/tsconfig.json\n./website/vercel.json\n./website/vite.config.ts\n"
+        },
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && find . -maxdepth 2 -type f | sort | sed -n '1,240p'",
+              "cat package.json 2>/dev/null || true",
+              "find . -maxdepth 3 -iname '*fallback*' -o -iname '*package*.json' | sort | sed -n '1,200p'"
+            ]
+          },
+          "command": "cat package.json 2>/dev/null || true",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "{\n  \"name\": \"valibot\",\n  \"description\": \"The modular and type safe schema library for validating structural data\",\n  \"version\": \"0.0.0\",\n  \"license\": \"MIT\",\n  \"author\": \"Fabian Hiller\",\n  \"homepage\": \"https://valibot.dev\",\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"https://github.com/fabian-hiller/valibot\"\n  },\n  \"private\": true,\n  \"devDependencies\": {\n    \"@trivago/prettier-plugin-sort-imports\": \"^5.2.2\",\n    \"prettier\": \"^3.5.2\",\n    \"prettier-plugin-tailwindcss\": \"^0.6.11\",\n    \"typescript\": \"^5.7.3\"\n  },\n  \"packageManager\": \"npm@11.6.4\",\n  \"scripts\": {\n    \"test:study:feature\": \"node --import tsx --test --test-timeout=10000 .study/feature.mjs\",\n    \"test:study:regression\": \"node --import tsx --test --test-timeout=10000 .study/regression.mjs\",\n    \"test:study:types\": \"node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\"\n  }\n}\n"
+        },
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && find . -maxdepth 2 -type f | sort | sed -n '1,240p'",
+              "cat package.json 2>/dev/null || true",
+              "find . -maxdepth 3 -iname '*fallback*' -o -iname '*package*.json' | sort | sed -n '1,200p'"
+            ]
+          },
+          "command": "find . -maxdepth 3 -iname '*fallback*' -o -iname '*package*.json' | sort | sed -n '1,200p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "./codemod/migrate-to-v0.31.0/package.json\n./library/package.json\n./package.json\n./packages/i18n/package.json\n./packages/to-json-schema/package.json\n./website/package.json\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "find . -maxdepth 3 -type f \\( -name 'tsconfig*.json' -o -name 'vitest.config.*' -o -name 'jest.config.*' -o -name '*.config.*' \\) -print | sort",
+              "git status --short --branch",
+              "git diff --stat"
+            ]
+          },
+          "command": "find . -maxdepth 3 -type f \\( -name 'tsconfig*.json' -o -name 'vitest.config.*' -o -name 'jest.config.*' -o -name '*.config.*' \\) -print | sort",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "./.study/tsconfig.json\n./codemod/migrate-to-v0.31.0/tsconfig.json\n./library/eslint.config.js\n./library/tsconfig.json\n./library/tsup.config.ts\n./library/vitest.config.ts\n./packages/i18n/tsconfig.json\n./packages/to-json-schema/eslint.config.js\n./packages/to-json-schema/tsconfig.json\n./packages/to-json-schema/tsup.config.ts\n./packages/to-json-schema/vitest.config.ts\n./prettier.config.cjs\n./website/postcss.config.cjs\n./website/tailwind.config.cjs\n./website/tsconfig.json\n./website/vite.config.ts\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "find . -maxdepth 3 -type f \\( -name 'tsconfig*.json' -o -name 'vitest.config.*' -o -name 'jest.config.*' -o -name '*.config.*' \\) -print | sort",
+              "git status --short --branch",
+              "git diff --stat"
+            ]
+          },
+          "command": "git status --short --branch",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "## master\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "find . -maxdepth 3 -type f \\( -name 'tsconfig*.json' -o -name 'vitest.config.*' -o -name 'jest.config.*' -o -name '*.config.*' \\) -print | sort",
+              "git status --short --branch",
+              "git diff --stat"
+            ]
+          },
+          "command": "git diff --stat",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": ""
+        },
+        {
+          "index": 9,
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (1.760387ms)\n✔ custom errors and abort counts (0.314726ms)\n✔ sync and async fallback old interface (0.322988ms)\n✔ config reset, unions and nested issue path (0.330369ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1559.541007\n"
+        },
+        {
+          "index": 10,
+          "input": {
+            "commands": [
+              "npm run test:study:feature"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ false keeps original issue and does not evaluate fallback (1.08741ms)\n✔ true and success preserve output and exact invocation counts (0.240166ms)\n✔ async predicate is awaited both ways (0.295157ms)\n✔ predicate throw and reject propagate untouched (0.558056ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 867.806008\n"
+        },
+        {
+          "index": 11,
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 12,
+          "input": {
+            "commands": [
+              "git diff --check && git diff -- library/src/methods/fallback/fallback.ts library/src/methods/fallback/fallbackAsync.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git diff -- library/src/methods/fallback/fallback.ts library/src/methods/fallback/fallbackAsync.ts",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "diff --git a/library/src/methods/fallback/fallback.ts b/library/src/methods/fallback/fallback.ts\nindex a57689f..58c212e 100644\n--- a/library/src/methods/fallback/fallback.ts\n+++ b/library/src/methods/fallback/fallback.ts\n@@ -22,6 +22,16 @@ export type Fallback<\n       config?: Config<InferIssue<TSchema>>\n     ) => MaybeReadonly<InferOutput<TSchema>>);\n \n+/**\n+ * Fallback predicate type.\n+ */\n+export type FallbackPredicate<\n+  TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n+> = (\n+  dataset: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n+  config: Config<InferIssue<TSchema>>\n+) => boolean;\n+\n /**\n  * Schema with fallback type.\n  */\n@@ -40,6 +50,7 @@ export type SchemaWithFallback<\n  *\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate A predicate that determines whether the fallback is used.\n  *\n  * @returns The passed schema.\n  */\n@@ -49,7 +60,8 @@ export function fallback<\n   const TFallback extends Fallback<TSchema>,\n >(\n   schema: TSchema,\n-  fallback: TFallback\n+  fallback: TFallback,\n+  predicate?: FallbackPredicate<TSchema>\n ): SchemaWithFallback<TSchema, TFallback> {\n   return {\n     ...schema,\n@@ -59,7 +71,8 @@ export function fallback<\n     },\n     '~run'(dataset, config) {\n       const outputDataset = schema['~run'](dataset, config);\n-      return outputDataset.issues\n+      return outputDataset.issues &&\n+        (!predicate || predicate(outputDataset, config))\n         ? { typed: true, value: getFallback(this, outputDataset, config) }\n         : outputDataset;\n     },\ndiff --git a/library/src/methods/fallback/fallbackAsync.ts b/library/src/methods/fallback/fallbackAsync.ts\nindex b8f4cc6..87ea10d 100644\n--- a/library/src/methods/fallback/fallbackAsync.ts\n+++ b/library/src/methods/fallback/fallbackAsync.ts\n@@ -29,6 +29,18 @@ export type FallbackAsync<\n       config?: Config<InferIssue<TSchema>>\n     ) => MaybePromise<MaybeReadonly<InferOutput<TSchema>>>);\n \n+/**\n+ * Fallback async predicate type.\n+ */\n+export type FallbackAsyncPredicate<\n+  TSchema extends\n+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>\n+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,\n+> = (\n+  dataset: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n+  config: Config<InferIssue<TSchema>>\n+) => MaybePromise<boolean>;\n+\n /**\n  * Schema with fallback async type.\n  */\n@@ -76,6 +88,8 @@ export type SchemaWithFallbackAsync<\n  *\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate An asynchronous predicate that determines whether the\n+ * fallback is used.\n  *\n  * @returns The passed schema.\n  */\n@@ -87,7 +101,8 @@ export function fallbackAsync<\n   const TFallback extends FallbackAsync<TSchema>,\n >(\n   schema: TSchema,\n-  fallback: TFallback\n+  fallback: TFallback,\n+  predicate?: FallbackAsyncPredicate<TSchema>\n ): SchemaWithFallbackAsync<TSchema, TFallback> {\n   return {\n     ...schema,\n@@ -98,7 +113,8 @@ export function fallbackAsync<\n     },\n     async '~run'(dataset, config) {\n       const outputDataset = await schema['~run'](dataset, config);\n-      return outputDataset.issues\n+      return outputDataset.issues &&\n+        (!predicate || (await predicate(outputDataset, config)))\n         ? {\n             typed: true,\n             value: await getFallback(this, outputDataset, config),\n"
+        },
+        {
+          "index": 13,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 2]\nlibrary/src/actions/args/args.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/args/args.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/args/argsAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/args/argsAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/await/awaitAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/await/awaitAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/base64/base64.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/base64/base64.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/bic/bic.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/bic/bic.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/brand/brand.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/brand/brand.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/bytes/bytes.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/bytes/bytes.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/check/check.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/check/check.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/check/checkAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/check/checkAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/checkItems/checkItems.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/checkItems/checkItems.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/checkItems/checkItemsAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/checkItems/checkItemsAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/creditCard/creditCard.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/creditCard/creditCard.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/cuid2/cuid2.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/cuid2/cuid2.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/decimal/decimal.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/decimal/decimal.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/description/description.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/description/description.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/digits/digits.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/digits/digits.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/email/email.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/email/email.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/emoji/emoji.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/emoji/emoji.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/empty/empty.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/empty/empty.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/endsWith/endsWith.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/endsWith/endsWith.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/entries/entries.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/entries/entries.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/everyItem/everyItem.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/everyItem/everyItem.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/excludes/excludes.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/excludes/excludes.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/filterItems/filterItems.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/filterItems/filterItems.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/findItem/findItem.test-d.ts(2,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/findItem/findItem.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/finite/finite.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/finite/finite.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/flavor/flavor.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/flavor/flavor.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/graphemes/graphemes.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/graphemes/graphemes.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/gtValue/gtValue.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/gtValue/gtValues.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/hash/hash.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/hash/hash.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/hexColor/hexColor.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/hexColor/hexColor.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/hexadecimal/hexadecimal.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/hexadecimal/hexadecimal.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/imei/imei.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/imei/imei.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/includes/includes.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/includes/includes.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/integer/integer.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/integer/integer.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/ip/ip.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/ip/ip.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/ipv4/ipv4.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/ipv4/ipv4.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/ipv6/ipv6.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/ipv6/ipv6.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/isoDate/isoDate.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/isoDate/isoDate.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/isoDateTime/isoDateTime.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/isoDateTime/isoDateTime.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/isoTime/isoTime.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/isoTime/isoTime.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/isoTimeSecond/isoTimeSecond.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/isoTimeSecond/isoTimeSecond.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/isoTimestamp/isoTimestamp.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/isoTimestamp/isoTimestamp.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/isoWeek/isoWeek.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/isoWeek/isoWeek.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/length/length.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/length/length.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/ltValue/ltValue.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/ltValue/ltValue.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/mac/mac.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/mac/mac.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/mac48/mac48.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/mac48/mac48.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/mac64/mac64.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/mac64/mac64.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/mapItems/mapItems.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/mapItems/mapItems.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxBytes/maxBytes.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxBytes/maxBytes.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxEntries/maxEntries.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxEntries/maxEntries.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxGraphemes/maxGraphemes.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxGraphemes/maxGraphemes.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxLength/maxLength.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxLength/maxLength.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxSize/maxSize.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxSize/maxSize.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxValue/maxValue.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxValue/maxValue.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxWords/maxWords.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/maxWords/maxWords.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/metadata/metadata.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/metadata/metadata.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/mimeType/mimeType.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/mimeType/mimeType.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minBytes/minBytes.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minBytes/minBytes.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minEntries/minEntries.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minEntries/minEntries.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minGraphemes/minGraphemes.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minGraphemes/minGraphemes.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minLength/minLength.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minLength/minLength.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minSize/minSize.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minSize/minSize.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minValue/minValue.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minValue/minValue.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minWords/minWords.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/minWords/minWords.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/multipleOf/multipleOf.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/multipleOf/multipleOf.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/nanoid/nanoid.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/nanoid/nanoid.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/nonEmpty/nonEmpty.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/nonEmpty/nonEmpty.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/normalize/normalize.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/normalize/normalize.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notBytes/notBytes.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notBytes/notBytes.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notEntries/notEntries.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notEntries/notEntries.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notGraphemes/notGraphemes.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notGraphemes/notGraphemes.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notLength/notLength.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notLength/notLength.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notSize/notSize.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notSize/notSize.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notValue/notValue.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notValue/notValue.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notValues/notValues.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notValues/notValues.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notWords/notWords.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/notWords/notWords.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/octal/octal.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/octal/octal.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/parseJson/parseJson.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/parseJson/parseJson.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/partialCheck/partialCheck.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/partialCheck/partialCheck.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/partialCheck/partialCheckAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/partialCheck/partialCheckAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/partialCheck/utils/_isPartiallyTyped/_isPartiallyTyped.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/rawCheck/rawCheck.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/rawCheck/rawCheck.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/rawCheck/rawCheckAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/rawCheck/rawCheckAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/rawTransform/rawTransform.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/rawTransform/rawTransform.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/rawTransform/rawTransformAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/rawTransform/rawTransformAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/readonly/readonly.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/readonly/readonly.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/reduceItems/reduceItems.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/actions/reduceItems/reduceItems.test.ts(1,40): err\n[... output truncated: 65624 chars total. Refine the command (grep, head, tail) to view the elided middle ...]\nt-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/array/arrayAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/bigint/bigint.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/bigint/bigint.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/blob/blob.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/blob/blob.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/boolean/boolean.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/boolean/boolean.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/custom/custom.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/custom/custom.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/custom/customAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/custom/customAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/date/date.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/date/date.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/enum/enum.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/enum/enum.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/exactOptional/exactOptional.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/exactOptional/exactOptional.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/exactOptional/exactOptionalAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/exactOptional/exactOptionalAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/file/file.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/file/file.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/function/function.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/function/function.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/instance/instance.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/instance/instance.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/intersect/intersect.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/intersect/intersect.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/intersect/intersectAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/intersect/intersectAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/intersect/utils/_merge/_merge.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/lazy/lazy.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/lazy/lazy.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/lazy/lazyAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/lazy/lazyAsync.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/literal/literal.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/literal/literal.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/looseObject/looseObject.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/looseObject/looseObject.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/looseObject/looseObjectAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/looseObject/looseObjectAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/looseTuple/looseTuple.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/looseTuple/looseTuple.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/looseTuple/looseTupleAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/looseTuple/looseTupleAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/map/map.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/map/map.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/map/mapAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/map/mapAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nan/nan.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nan/nan.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/never/never.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/never/never.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nonNullable/nonNullable.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nonNullable/nonNullable.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nonNullable/nonNullableAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nonNullable/nonNullableAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nonNullish/nonNullish.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nonNullish/nonNullish.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nonNullish/nonNullishAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nonNullish/nonNullishAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nonOptional/nonOptional.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nonOptional/nonOptional.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nonOptional/nonOptionalAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nonOptional/nonOptionalAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/null/null.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/null/null.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nullable/nullable.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nullable/nullable.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nullable/nullableAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nullable/nullableAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nullish/nullish.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nullish/nullish.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nullish/nullishAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/nullish/nullishAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/number/number.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/number/number.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/object/object.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/object/object.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/object/objectAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/object/objectAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/objectWithRest/objectWithRest.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/objectWithRest/objectWithRest.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/objectWithRest/objectWithRestAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/objectWithRest/objectWithRestAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/optional/optional.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/optional/optional.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/optional/optionalAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/optional/optionalAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/picklist/picklist.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/picklist/picklist.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/promise/promise.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/promise/promise.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/record/record.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/record/record.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/record/recordAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/record/recordAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/set/set.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/set/set.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/set/setAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/set/setAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/strictObject/strictObject.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/strictObject/strictObject.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/strictObject/strictObjectAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/strictObject/strictObjectAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/strictTuple/strictTuple.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/strictTuple/strictTuple.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/strictTuple/strictTupleAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/strictTuple/strictTupleAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/string/string.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/string/string.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/symbol/symbol.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/symbol/symbol.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/tuple/tuple.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/tuple/tuple.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/tuple/tupleAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/tuple/tupleAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/tupleWithRest/tupleWithRest.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/tupleWithRest/tupleWithRest.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/tupleWithRest/tupleWithRestAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/tupleWithRest/tupleWithRestAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/undefined/undefined.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/undefined/undefined.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/undefinedable/undefinedable.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/undefinedable/undefinedable.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/undefinedable/undefinedableAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/undefinedable/undefinedableAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/union/union.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/union/union.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/union/unionAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/union/unionAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/union/utils/_subIssues/_subIssues.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/unknown/unknown.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/unknown/unknown.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/variant/variant.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/variant/variant.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/variant/variantAsync.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/variant/variantAsync.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/void/void.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/schemas/void/void.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/storages/globalConfig/globalConfig.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/storages/globalMessage/globalMessage.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/storages/schemaMessage/schemaMessage.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/storages/specificMessage/specificMessage.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/ValiError/ValiError.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/ValiError/ValiError.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/_addIssue/_addIssue.test.ts(1,51): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/_getByteCount/_getByteCount.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/_getGraphemeCount/_getGraphemeCount.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/_getLastMetadata/_getLastMetadata.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/_getStandardProps/_getStandardProps.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/_getStandardProps/_getStandardProps.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/_getWordCount/_getWordCount.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/_isLuhnAlgo/_isLuhnAlgo.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/_isValidObjectKey/_isValidObjectKey.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/_joinExpects/_joinExpects.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/_stringify/_stringify.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/entriesFromList/entriesFromList.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/entriesFromList/entriesFromList.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/entriesFromObjects/entriesFromObjects.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/entriesFromObjects/entriesFromObjects.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/getDotPath/getDotPath.test-d.ts(1,46): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/getDotPath/getDotPath.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/isOfKind/isOfKind.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/isOfType/isOfType.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/utils/isValiError/isValiError.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/vitest/expectActionIssue.ts(1,24): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/vitest/expectActionIssueAsync.ts(1,24): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/vitest/expectNoActionIssue.ts(1,24): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/vitest/expectNoActionIssueAsync.ts(1,24): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/vitest/expectNoSchemaIssue.ts(1,24): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/vitest/expectNoSchemaIssueAsync.ts(1,24): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/vitest/expectSchemaIssue.ts(1,24): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nlibrary/src/vitest/expectSchemaIssueAsync.ts(1,24): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\n"
+        },
+        {
+          "index": 14,
+          "input": {
+            "commands": [
+              "node_modules/.bin/vitest run library/src/methods/fallback/fallback.test.ts library/src/methods/fallback/fallbackAsync.test.ts --config library/vitest.config.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "node_modules/.bin/vitest run library/src/methods/fallback/fallback.test.ts library/src/methods/fallback/fallbackAsync.test.ts --config library/vitest.config.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 127]\n\n[stderr]\n/bin/bash: line 1: node_modules/.bin/vitest: No such file or directory\n"
+        },
+        {
+          "index": 15,
+          "input": {
+            "commands": [
+              "git status --short && git diff --check && sed -n '1,150p' library/src/methods/fallback/fallback.ts && sed -n '1,175p' library/src/methods/fallback/fallbackAsync.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "git status --short && git diff --check && sed -n '1,150p' library/src/methods/fallback/fallback.ts && sed -n '1,175p' library/src/methods/fallback/fallbackAsync.ts",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M library/src/methods/fallback/fallback.ts\n M library/src/methods/fallback/fallbackAsync.ts\nimport type {\n  BaseIssue,\n  BaseSchema,\n  Config,\n  InferIssue,\n  InferOutput,\n  MaybeReadonly,\n  OutputDataset,\n} from '../../types/index.ts';\nimport { _getStandardProps } from '../../utils/index.ts';\nimport { getFallback } from '../getFallback/index.ts';\n\n/**\n * Fallback type.\n */\nexport type Fallback<\n  TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n> =\n  | MaybeReadonly<InferOutput<TSchema>>\n  | ((\n      dataset?: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n      config?: Config<InferIssue<TSchema>>\n    ) => MaybeReadonly<InferOutput<TSchema>>);\n\n/**\n * Fallback predicate type.\n */\nexport type FallbackPredicate<\n  TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n> = (\n  dataset: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n  config: Config<InferIssue<TSchema>>\n) => boolean;\n\n/**\n * Schema with fallback type.\n */\nexport type SchemaWithFallback<\n  TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n  TFallback extends Fallback<TSchema>,\n> = TSchema & {\n  /**\n   * The fallback value.\n   */\n  readonly fallback: TFallback;\n};\n\n/**\n * Returns a fallback value as output if the input does not match the schema.\n *\n * @param schema The schema to catch.\n * @param fallback The fallback value.\n * @param predicate A predicate that determines whether the fallback is used.\n *\n * @returns The passed schema.\n */\n// @__NO_SIDE_EFFECTS__\nexport function fallback<\n  const TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n  const TFallback extends Fallback<TSchema>,\n>(\n  schema: TSchema,\n  fallback: TFallback,\n  predicate?: FallbackPredicate<TSchema>\n): SchemaWithFallback<TSchema, TFallback> {\n  return {\n    ...schema,\n    fallback,\n    get '~standard'() {\n      return _getStandardProps(this);\n    },\n    '~run'(dataset, config) {\n      const outputDataset = schema['~run'](dataset, config);\n      return outputDataset.issues &&\n        (!predicate || predicate(outputDataset, config))\n        ? { typed: true, value: getFallback(this, outputDataset, config) }\n        : outputDataset;\n    },\n  };\n}\nimport type {\n  BaseIssue,\n  BaseSchema,\n  BaseSchemaAsync,\n  Config,\n  InferInput,\n  InferIssue,\n  InferOutput,\n  MaybePromise,\n  MaybeReadonly,\n  OutputDataset,\n  StandardProps,\n  UnknownDataset,\n} from '../../types/index.ts';\nimport { _getStandardProps } from '../../utils/index.ts';\nimport { getFallback } from '../getFallback/index.ts';\n\n/**\n * Fallback async type.\n */\nexport type FallbackAsync<\n  TSchema extends\n    | BaseSchema<unknown, unknown, BaseIssue<unknown>>\n    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,\n> =\n  | MaybeReadonly<InferOutput<TSchema>>\n  | ((\n      dataset?: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n      config?: Config<InferIssue<TSchema>>\n    ) => MaybePromise<MaybeReadonly<InferOutput<TSchema>>>);\n\n/**\n * Fallback async predicate type.\n */\nexport type FallbackAsyncPredicate<\n  TSchema extends\n    | BaseSchema<unknown, unknown, BaseIssue<unknown>>\n    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,\n> = (\n  dataset: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n  config: Config<InferIssue<TSchema>>\n) => MaybePromise<boolean>;\n\n/**\n * Schema with fallback async type.\n */\nexport type SchemaWithFallbackAsync<\n  TSchema extends\n    | BaseSchema<unknown, unknown, BaseIssue<unknown>>\n    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,\n  TFallback extends FallbackAsync<TSchema>,\n> = Omit<TSchema, 'async' | '~standard' | '~run'> & {\n  /**\n   * The fallback value.\n   */\n  readonly fallback: TFallback;\n  /**\n   * Whether it's async.\n   */\n  readonly async: true;\n  /**\n   * The Standard Schema properties.\n   *\n   * @internal\n   */\n  readonly '~standard': StandardProps<\n    InferInput<TSchema>,\n    InferOutput<TSchema>\n  >;\n  /**\n   * Parses unknown input values.\n   *\n   * @param dataset The input dataset.\n   * @param config The configuration.\n   *\n   * @returns The output dataset.\n   *\n   * @internal\n   */\n  readonly '~run': (\n    dataset: UnknownDataset,\n    config: Config<BaseIssue<unknown>>\n  ) => Promise<OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>>;\n};\n\n/**\n * Returns a fallback value as output if the input does not match the schema.\n *\n * @param schema The schema to catch.\n * @param fallback The fallback value.\n * @param predicate An asynchronous predicate that determines whether the\n * fallback is used.\n *\n * @returns The passed schema.\n */\n// @__NO_SIDE_EFFECTS__\nexport function fallbackAsync<\n  const TSchema extends\n    | BaseSchema<unknown, unknown, BaseIssue<unknown>>\n    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,\n  const TFallback extends FallbackAsync<TSchema>,\n>(\n  schema: TSchema,\n  fallback: TFallback,\n  predicate?: FallbackAsyncPredicate<TSchema>\n): SchemaWithFallbackAsync<TSchema, TFallback> {\n  return {\n    ...schema,\n    fallback,\n    async: true,\n    get '~standard'() {\n      return _getStandardProps(this);\n    },\n    async '~run'(dataset, config) {\n      const outputDataset = await schema['~run'](dataset, config);\n      return outputDataset.issues &&\n        (!predicate || (await predicate(outputDataset, config)))\n        ? {\n            typed: true,\n            value: await getFallback(this, outputDataset, config),\n          }\n        : outputDataset;\n    },\n  };\n}\n"
+        }
+      ],
+      "delivery": "Implemented optional predicate support for `fallback` and `fallbackAsync`.\n\n### Changes\n- Added a third optional predicate argument to both APIs.\n- Sync `fallback` predicates accept only `boolean`.\n- Async `fallbackAsync` predicates accept `boolean | Promise<boolean>`.\n- Predicates receive:\n  - The failed output dataset\n  - The actual merged parse configuration\n- Predicates run exactly once, only when the wrapped schema reports issues.\n- `false` preserves the original failure and does not evaluate the fallback.\n- `true` preserves existing fallback behavior.\n- Predicate errors and rejected promises propagate unchanged.\n- Successful parses and existing two-argument calls remain unchanged.\n- Existing schema input/output inference and public exports remain preserved.\n\n### Validation\n\nPassed:\n\n```text\nnpm run test:study:regression\n```\n\n- 4 passed, 0 failed\n\n```text\nnpm run test:study:feature\n```\n\n- 4 passed, 0 failed\n\n```text\nnpm run test:study:types\n```\n\n- Passed\n\nAlso verified:\n\n```text\ngit diff --check\n```\n\n- Passed\n\nAdditional validation was limited by the checkout’s installed dependencies:\n\n```text\nnode node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json\n```\n\n- Could not complete because the local `vitest` type declarations are not installed.\n\n```text\nnode_modules/.bin/vitest run library/src/methods/fallback/fallback.test.ts library/src/methods/fallback/fallbackAsync.test.ts --config library/vitest.config.ts\n```\n\n- Could not run because the local Vitest binary is not installed.\n\nOnly these implementation files were modified:\n\n- `/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-fallback-when-cline/workspace/library/src/methods/fallback/fallback.ts`\n- `/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-fallback-when-cline/workspace/library/src/methods/fallback/fallbackAsync.ts`\n\nNo upstream suite was run; its test counts remain unknown.",
+      "blocked": [],
+      "scopeCommands": [],
+      "completion": null
+    },
+    {
+      "name": "1-valibot-fallback-when-reference",
+      "hashes": {
+        "events.jsonl": "31abf65489ec93a07d4481d5f114e31ca9196b6cf72ed71fe0eba45e16bb40ab",
+        "workspace.diff": "e3ee40d9b140f58bd94979212c56918e5690dffc4aaf642e26ee5254e58fb6be",
+        "score.json": "9d8dac2f30a99ed82a5c5d2be5494523cbd0a401986ec272bec0ef2559324339",
+        "tool-ledger.json": "d1749ceffc2fc4edaad325984ec82c217d019f3d59b9bdcc938a791c82eb2dca"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 68,
+      "required": {
+        "regression": [
+          {
+            "index": 69,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression",
+              "args": []
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 70,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature",
+              "args": []
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 71,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types",
+              "args": []
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "not_observed",
+              "outcome": "unknown",
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "none"
+            }
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 58,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 59,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 60,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          }
+        },
+        {
+          "index": 63,
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:types",
+            "cwd": "."
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          }
+        },
+        {
+          "index": 64,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff -- library/src/methods/fallback/fallback.ts library/src/methods/fallback/fallbackAsync.ts",
+            "cwd": "."
+          },
+          "command": "git diff --check && git status --short && git diff -- library/src/methods/fallback/fallback.ts library/src/methods/fallback/fallbackAsync.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 69,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression",
+            "args": []
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 70,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature",
+            "args": []
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 71,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types",
+            "args": []
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          }
+        }
+      ],
+      "delivery": "Implemented optional third-argument predicates for `fallback` and `fallbackAsync` in `library/src/methods/fallback/`. Predicates receive the failed output dataset and actual parse configuration, run only on failed parses, and gate fallback evaluation; false preserves the original failure. The synchronous API requires a boolean result, while the async API awaits boolean or Promise<boolean>. Thrown/rejected predicate errors propagate naturally, and existing two-argument/success behavior and inference remain unchanged. Public exports are unchanged.\n\nChecks run:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types` — command completed with no compiler output; runner reported outcome/counts as unknown, so type verification is disclosed as unverified.\n- `git diff --check` — passed.\n\nOnly the two fallback implementation files were modified. The supplied checks cover selected behavior and source types, not the complete upstream suite.",
+      "blocked": [
+        {
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "library/src/methods/fallback/fallback.ts",
+                "patch": "*** Begin Patch\n*** Update File: library/src/methods/fallback/fallback.ts\n@@\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate to determine whether the fallback should be used.\n@@\n*** Update File: library/src/methods/fallback/fallbackAsync.ts\n@@\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate to determine whether the fallback should be used.\n@@\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Update hunks require exact context.",
+            "diagnosticId": "edit-mvbo2xjq"
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_9d0ac028f226a41f71fa49c741eef5e2",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature"
+        ],
+        "missing_obligations": [
+          "check:types"
+        ],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "REQUIRED_CHECK_UNCONFIRMED",
+            "message": "A required final-source invocation has no observed passing execution. User acceptance criteria remain a separate assessment.",
+            "obligation_ids": [
+              "check:types"
+            ]
+          },
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "1-valibot-fallback-when-compiler",
+      "hashes": {
+        "events.jsonl": "0f657cbf37d8ed508d1da12873a7b1debec776c7c24e97ef6e382c794a2decae",
+        "workspace.diff": "7fc4c756b645faf4bbe6adfe7895a33b86002989632f9d3b168e675b0599dc1b",
+        "score.json": "2ec8e2dc1afdc77cd3f6c1b035765996be3dfe0867fe2b3bfad1e3b2d7f77b2f",
+        "tool-ledger.json": "c3931d4b8c90ac4182ea6beadeddb2be0ac361cbc9d2cfc2b8abe645115de3e5"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 68,
+      "required": {
+        "regression": [
+          {
+            "index": 82,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 83,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 84,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 55,
+          "input": {
+            "kind": "command",
+            "command": "node -e \"const fs=require('fs');const s=fs.readFileSync('.study/feature.mjs','utf8');const i=s.indexOf(\\\"if(id==='valibot-fallback-when')\\\"); const j=s.indexOf(\\\"if(id==='remeda-stable-sum')\\\"); console.log(s.slice(i,j))\""
+          },
+          "command": "node -e \"const fs=require('fs');const s=fs.readFileSync('.study/feature.mjs','utf8');const i=s.indexOf(\\\"if(id==='valibot-fallback-when')\\\"); const j=s.indexOf(\\\"if(id==='remeda-stable-sum')\\\"); console.log(s.slice(i,j))\"",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 63,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 64,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 65,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 71,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git diff --stat"
+          },
+          "command": "git diff --check && git diff --stat",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 82,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 83,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 84,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 85,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check"
+          },
+          "command": "git diff --check",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        }
+      ],
+      "delivery": "Implemented optional third-argument predicates for `fallback` and `fallbackAsync`.\n\n- Predicates run exactly once only after the wrapped schema produces issues, receiving the failed output dataset and parse config.\n- Synchronous predicates accept `boolean`; async predicates accept `boolean | Promise<boolean>` and are awaited.\n- `false` preserves the original failure without evaluating the fallback; `true` retains fallback behavior; thrown/rejected errors propagate.\n- Existing two-argument calls, successful parses, inference, and exports remain compatible.\n- Updated public API documentation metadata and method docs for the new parameter.\n\nChecks run after the final edit:\n- `npm run test:study:regression` — passed, 4 executed / 4 passed / 0 failed / 0 skipped.\n- `npm run test:study:feature` — passed, 4 executed / 4 passed / 0 failed / 0 skipped.\n- `npm run test:study:types` — passed; compiler completed successfully. Test counts are not reported (unknown).\n- `git diff --check` — passed.\n\nLimitations: supplied checks cover selected feature, regression, and source-type behavior; the complete upstream suite and website build were not run.",
+      "blocked": [
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/default/default.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-fallback-when-compiler/workspace/library/src/methods/default/default.ts'",
+            "diagnosticId": "read-mvbo3vyw"
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/default/defaultAsync.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-fallback-when-compiler/workspace/library/src/methods/default/defaultAsync.ts'",
+            "diagnosticId": "read-mvbo3w0c"
+          }
+        },
+        {
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "library/src/methods/fallback/fallback.ts",
+                "patch": "*** Begin Patch\n*** Update File: library/src/methods/fallback/fallback.ts\n@@\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate that determines whether to use the fallback.\n@@\n export function fallback<\n   const TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n   const TFallback extends Fallback<TSchema>,\n >(\n   schema: TSchema,\n-  fallback: TFallback\n+  fallback: TFallback,\n+  predicate?: (\n+    dataset?: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n+    config?: Config<InferIssue<TSchema>>\n+  ) => boolean\n ): SchemaWithFallback<TSchema, TFallback> {\n@@\n     },\n     '~run'(dataset, config) {\n       const outputDataset = schema['~run'](dataset, config);\n-      return outputDataset.issues\n-        ? { typed: true, value: getFallback(this, outputDataset, config) }\n-        : outputDataset;\n+      if (!outputDataset.issues) {\n+        return outputDataset;\n+      }\n+      return predicate && !predicate(outputDataset, config)\n+        ? outputDataset\n+        : { typed: true, value: getFallback(this, outputDataset, config) };\n     },\n   };\n }\n*** Update File: library/src/methods/fallback/fallbackAsync.ts\n@@\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate that determines whether to use the fallback.\n@@\n export function fallbackAsync<\n@@\n >(\n   schema: TSchema,\n-  fallback: TFallback\n+  fallback: TFallback,\n+  predicate?: (\n+    dataset?: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n+    config?: Config<InferIssue<TSchema>>\n+  ) => MaybePromise<boolean>\n ): SchemaWithFallbackAsync<TSchema, TFallback> {\n@@\n     },\n     async '~run'(dataset, config) {\n       const outputDataset = await schema['~run'](dataset, config);\n-      return outputDataset.issues\n-        ? {\n-            typed: true,\n-            value: await getFallback(this, outputDataset, config),\n-          }\n-        : outputDataset;\n+      if (!outputDataset.issues) {\n+        return outputDataset;\n+      }\n+      return predicate && !(await predicate(outputDataset, config))\n+        ? outputDataset\n+        : {\n+            typed: true,\n+            value: await getFallback(this, outputDataset, config),\n+          };\n     },\n   };\n }\n*** Update File: website/src/routes/api/(methods)/fallback/properties.ts\n@@\n   fallback: {\n     type: {\n       type: 'custom',\n       name: 'TFallback',\n     },\n   },\n+  predicate: {\n+    type: {\n+      type: 'function',\n+      params: [\n+        {\n+          name: 'dataset',\n+          optional: true,\n+          type: {\n+            type: 'custom',\n+            name: 'OutputDataset',\n+            href: '../OutputDataset/',\n+            generics: [\n+              {\n+                type: 'custom',\n+                name: 'InferOutput',\n+                href: '../InferOutput/',\n+                generics: [{ type: 'custom', name: 'TSchema' }],\n+              },\n+              {\n+                type: 'custom',\n+                name: 'InferIssue',\n+                href: '../InferIssue/',\n+                generics: [\n+                  { type: 'custom', name: 'TSchema' },\n+                ],\n+              },\n+            ],\n+          },\n+        },\n+        {\n+          name: 'config',\n+          optional: true,\n+          type: {\n+            type: 'custom',\n+            name: 'Config',\n+            href: '../Config/',\n+            generics: [\n+              {\n+                type: 'custom',\n+                name: 'InferIssue',\n+                href: '../InferIssue/',\n+                generics: [{ type: 'custom', name: 'TSchema' }],\n+              },\n+            ],\n+          },\n+        },\n+      ],\n+      return: { type: 'boolean' },\n+    },\n+  },\n   Schema: {\n*** Update File: website/src/routes/api/(methods)/fallbackAsync/properties.ts\n@@\n   fallback: {\n     type: {\n       type: 'custom',\n       name: 'TFallback',\n     },\n   },\n+  predicate: {\n+    type: {\n+      type: 'function',\n+      params: [\n+        {\n+          name: 'dataset',\n+          optional: true,\n+          type: {\n+            type: 'custom',\n+            name: 'OutputDataset',\n+            href: '../OutputDataset/',\n+            generics: [\n+              {\n+                type: 'custom',\n+                name: 'InferOutput',\n+                href: '../InferOutput/',\n+                generics: [{ type: 'custom', name: 'TSchema' }],\n+              },\n+              {\n+                type: 'custom',\n+                name: 'InferIssue',\n+                href: '../InferIssue/',\n+                generics: [\n+                  { type: 'custom', name: 'TSchema' },\n+                ],\n+              },\n+            ],\n+          },\n+        },\n+        {\n+          name: 'config',\n+          optional: true,\n+          type: {\n+            type: 'custom',\n+            name: 'Config',\n+            href: '../Config/',\n+            generics: [\n+              {\n+                type: 'custom',\n+                name: 'InferIssue',\n+                href: '../InferIssue/',\n+                generics: [{ type: 'custom', name: 'TSchema' }],\n+              },\n+            ],\n+          },\n+        },\n+      ],\n+      return: {\n+        type: 'custom',\n+        name: 'MaybePromise',\n+        href: '../MaybePromise/',\n+        generics: [{ type: 'boolean' }],\n+      },\n+    },\n+  },\n   Schema: {\n*** Update File: website/src/routes/api/(methods)/fallback/index.mdx\n@@\n - `schema` <Property {...properties.schema} />\n - `fallback` <Property {...properties.fallback} />\n+- `predicate` <Property {...properties.predicate} />\n@@\n `fallback` allows you to define a fallback value for the output that will be used if the validation of the input fails. This means that no issues will be returned when using `fallback` and the schema will always return an output.\n+\n+The optional `predicate` is called with the failed output dataset and parse configuration when validation fails. The fallback is used only if it returns `true`.\n*** Update File: website/src/routes/api/(async)/fallbackAsync/index.mdx\n@@\n - `schema` <Property {...properties.schema} />\n - `fallback` <Property {...properties.fallback} />\n+- `predicate` <Property {...properties.predicate} />\n@@\n `fallbackAsync` allows you to define a fallback value for the output that will be used if the validation of the input fails. This means that no issues will be returned when using `fallbackAsync` and the schema will always return an output.\n+\n+The optional `predicate` is called with the failed output dataset and parse configuration when validation fails. The fallback is used only if it resolves to `true`.\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch update target does not exist.",
+            "diagnosticId": "edit-mvbo4pab"
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_084e5e1b1b4d8d68b0fb19631c949568",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
     }
   ]
 }

@@ -1,0 +1,14 @@
+✔ trial package edits and generated caches cannot modify the baseline or another trial (97.082243ms)
+✔ new packages and removed pinned files are deviations while caches remain explicit (6.967298ms)
+✔ external symlinks are rejected instead of retaining shared package bytes (4.283334ms)
+✔ existing dependencies are preserved and cannot be silently replaced (2.671451ms)
+✔ warm caches cannot leak tool installs into the next trial (2.223108ms)
+✔ offline trial environment refuses an undeclared tool without contacting a registry (256.331335ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 428.906358
