@@ -16,6 +16,7 @@ assert.equal(review.decisions.length, analysis.rows.length);
 const rows = [];
 const overlap = await json(join(study, 'host-validation-overlap.json'));
 const overlapStart = Date.parse(overlap.fullRuntimeLogCreatedUTC), overlapEnd = Date.parse(overlap.lastLogWriteUTC);
+const development = await json(join(study, 'host-development-overlap.json'));
 await mkdir(join(study, 'traces'), { recursive: true });
 for (const row of analysis.rows) {
   const directory = join(campaign, row.name), files = {};
@@ -31,7 +32,8 @@ for (const row of analysis.rows) {
   await writeFile(join(study, 'traces', row.name + '.json.gz'), archive);
   const started = Date.parse((await json(join(directory, 'model-start.json'))).startedAtUTC);
   const hostValidationOverlap = started < overlapEnd && started + row.exit.durationMs > overlapStart;
-  rows.push({ ...row, hostValidationOverlap, auditedCompletion: row.independentFunctionalSuccess &&
+  const hostDevelopmentOverlap = development.activities.some(activity => started < Date.parse(activity.endUTC) && started + row.exit.durationMs > Date.parse(activity.startUTC));
+  rows.push({ ...row, hostValidationOverlap, hostDevelopmentOverlap, auditedCompletion: row.independentFunctionalSuccess &&
     decision.sourceBehaviorPassed && decision.finalSourceChecksPassed && decision.noSolutionRetrieval && decision.fullRequestPassed,
     traceSha256: sha(archive) });
 }
@@ -107,12 +109,13 @@ return comparisons;
 const comparisons = compare(row => row.auditedCompletion);
 const functionalComparisons = compare(row => row.independentFunctionalSuccess);
 const durationSensitivityWithoutRuntimeSuiteOverlap = compare(row => row.auditedCompletion && !row.hostValidationOverlap);
+const durationSensitivityWithoutKnownValidationLoad = compare(row => row.auditedCompletion && !row.hostValidationOverlap && !row.hostDevelopmentOverlap);
 const qualityGate = arms[treatment].audited >= arms.reference.audited;
 const comparison = comparisons[`${treatment}/reference`];
 const resourceGate = qualityGate && comparison.pairs >= 12 &&
   comparison.tokenDelta !== null && comparison.tokenDelta < 0 && comparison.costDelta < 0 && comparison.durationDelta <= 0.1;
 const accounting = await json(join(study, 'accounting.json')), prior = await json(join(study, 'prior-budget.json'));
-await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true, arms, comparisons, functionalComparisons, durationSensitivityWithoutRuntimeSuiteOverlap,
+await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true, arms, comparisons, functionalComparisons, durationSensitivityWithoutRuntimeSuiteOverlap, durationSensitivityWithoutKnownValidationLoad,
   functionalComparisonCaveat: 'Secondary descriptive comparison on selected-check success only. It can include incorrect extra changes or instruction violations; it cannot establish full-task quality parity.', qualityGate, resourceGate,
   accounting, priorObservedUsd: prior.observedUsd, priorReservedUsd: prior.reservedUsd,
   cumulativeObservedSdkUsd: prior.observedUsd + accounting.observedUsd, cumulativeReservedUsd: prior.reservedUsd + accounting.reservedUsd,

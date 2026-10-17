@@ -3,32 +3,34 @@
   "method": "Observed tool failures/guards. A refusal may be correct; its occurrence does not establish harness fault, model reasoning, or causal token overhead. Native command failures and Light edit/read categories are not equivalent tools.",
   "arms": {
     "reference": {
-      "trials": 4,
+      "trials": 6,
       "categories": {
-        "executed_command_failed": 3,
+        "executed_command_failed": 5,
         "invalid_final_syntax": 1,
         "missing_path": 9,
-        "patch_preimage_or_format": 1,
+        "patch_preimage_or_format": 4,
         "edit_observation_guard": 1,
-        "read_guard": 1
+        "read_guard": 1,
+        "command_failure_reported_in_message": 1
       },
       "declarationCalls": 0
     },
     "compiler": {
-      "trials": 4,
+      "trials": 5,
       "categories": {
         "command_failure_reported_in_message": 5,
-        "missing_path": 3,
-        "patch_preimage_or_format": 3,
-        "edit_observation_guard": 1,
-        "executed_command_failed": 1
+        "missing_path": 4,
+        "patch_preimage_or_format": 4,
+        "edit_observation_guard": 2,
+        "executed_command_failed": 1,
+        "read_guard": 1
       },
       "declarationCalls": 0
     },
     "cline": {
-      "trials": 3,
+      "trials": 6,
       "categories": {
-        "native_command_failed": 5
+        "native_command_failed": 18
       },
       "declarationCalls": 0
     }
@@ -599,6 +601,339 @@
       ],
       "declarationCalls": 0,
       "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "1-remeda-stable-sum-cline",
+      "task": "remeda-stable-sum",
+      "arm": "cline",
+      "categories": {
+        "native_command_failed": 3
+      },
+      "observations": [
+        {
+          "index": 11,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npx prettier --check packages/remeda/src/internal/numberAccumulator.ts packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/meanBy.ts && npm run check --workspace packages/remed ... [command truncated: 1 more chars; full command is in the tool call input]"
+        },
+        {
+          "index": 12,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm run test:runtime --workspace packages/remeda -- --run packages/remeda/src/sum.test.ts packages/remeda/src/sumBy.test.ts packages/remeda/src/mean.test.ts packages/remeda/src/meanBy.test.ts"
+        },
+        {
+          "index": 14,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npx tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --skipLibCheck packages/remeda/src/index.ts"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "1-remeda-null-keys-compiler",
+      "task": "remeda-null-keys",
+      "arm": "compiler",
+      "categories": {
+        "edit_observation_guard": 1,
+        "missing_path": 1,
+        "patch_preimage_or_format": 1,
+        "read_guard": 1
+      },
+      "observations": [
+        {
+          "index": 19,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/remeda/src/keyBy.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-remeda-null-keys-compiler/workspace/packages/remeda/src/keyBy.ts'"
+        },
+        {
+          "index": 29,
+          "category": "read_guard",
+          "tool": "read_code",
+          "input": {
+            "to": "packages/remeda/src/groupBy.ts",
+            "view": "range",
+            "range": {
+              "startLine": 1,
+              "endLine": 140
+            }
+          },
+          "message": "target: Invalid input: expected string, received undefined; input: Unrecognized key: \"to\""
+        },
+        {
+          "index": 35,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/groupBy.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/groupBy.ts\n@@\n- * returned by a provided callback function. The returned object has separate\n- * properties for each group, containing arrays with the elements in the group.\n- * Unlike the built in `Object.groupBy` this function also allows the callback to\n- * return `undefined` in order to exclude the item from being added to any group.\n+ * returned by a provided callback function. The returned object has separate\n+ * properties for each group, containing arrays with the elements in the group.\n+ * Unlike the built in `Object.groupBy` this function also allows the callback to\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * It should return a value indicating the group of the current element, or\n- * `undefined` when the item should be excluded from any group.\n+ * It should return a value indicating the group of the current element, or\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n- * returned by a provided callback function. The returned object has separate\n- * properties for each group, containing arrays with the elements in the group.\n- * Unlike the built in `Object.groupBy` this function also allows the callback to\n- * return `undefined` in order to exclude the item from being added to any group.\n+ * returned by a provided callback function. The returned object has separate\n+ * properties for each group, containing arrays with the elements in the group.\n+ * Unlike the built in `Object.groupBy` this function also allows the callback to\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * It should return a value indicating the group of the current element, or\n- * `undefined` when the item should be excluded from any group.\n+ * It should return a value indicating the group of the current element, or\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-    if (key !== undefined) {\n+    if (key !== undefined && key !== null) {\n*** Update File: packages/remeda/src/countBy.ts\n@@\n- * Categorize and count elements in an array using a defined callback function.\n+ * Categorize and count elements in an array using a callback function.\n  * The callback function is applied to each element in the array to determine\n- * its category and then counts how many elements fall into each category.\n+ * its category and then counts how many elements fall into each category. Items\n+ * whose callback result is `null` or `undefined` are excluded.\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n- * Categorize and count elements in an array using a defined callback function.\n+ * Categorize and count elements in an array using a callback function.\n  * The callback function is applied to each element in the array to determine\n- * its category and then counts how many elements fall into each category.\n+ * its category and then counts how many elements fall into each category. Items\n+ * whose callback result is `null` or `undefined` are excluded.\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n-    PropertyKey | undefined,\n+    PropertyKey | null | undefined,\n@@\n-    if (category !== undefined) {\n+    if (category !== undefined && category !== null) {\n*** Update File: packages/remeda/src/indexBy.ts\n@@\n  * @param data - The array.\n- * @param mapper - The indexing function.\n+ * @param mapper - The indexing function. Items whose key is `null` or\n+ * `undefined` are excluded.\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n  * @param mapper - The indexing function.\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n function indexByImplementation<T, K extends PropertyKey>(\n   data: ReadonlyArray<T>,\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n ): BoundedPartial<Record<K, T>> {\n-  const out: Partial<Record<K, T>> = {};\n+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Using Object.create(null) prevents special keys such as `__proto__` from changing the output prototype while it is being built.\n+  const out: Partial<Record<K, T>> = Object.create(null);\n \n   for (const [index, item] of data.entries()) {\n     const key = mapper(item, index, data);\n-    out[key] = item;\n+    if (key !== undefined && key !== null) {\n+      out[key] = item;\n+    }\n   }\n \n+  Object.setPrototypeOf(out, Object.prototype);\n+\n   return out as BoundedPartial<Record<K, T>>;\n }\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in packages/remeda/src/groupBy.ts.\nClosest current lines 7-11:\n * returned by a provided callback function. The returned object has separate\n * properties for each group, containing arrays with the elements in the group.\n * Unlike the built in `Object.groupBy` this function also allows the callback to\n * return `undefined` in order to exclude the item from being added to any\n * group.",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbp301m"
+          }
+        },
+        {
+          "index": 36,
+          "category": "edit_observation_guard",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/groupBy.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/groupBy.ts\n@@\n- * return `undefined` in order to exclude the item from being added to any\n- * group.\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * `undefined` when the item should be excluded from any group.\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n- * return `undefined` in order to exclude the item from being added to any\n- * group.\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * `undefined` when the item should be excluded from any group.\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-    if (key !== undefined) {\n+    if (key !== undefined && key !== null) {\n*** End Patch"
+              },
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/countBy.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/countBy.ts\n@@\n- * its category and then counts how many elements fall into each category.\n+ * its category and then counts how many elements fall into each category. Items\n+ * whose callback result is `null` or `undefined` are excluded.\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n- * its category and then counts how many elements fall into each category.\n+ * its category and then counts how many elements fall into each category. Items\n+ * whose callback result is `null` or `undefined` are excluded.\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n-    PropertyKey | undefined,\n+    PropertyKey | null | undefined,\n@@\n-    if (category !== undefined) {\n+    if (category !== undefined && category !== null) {\n*** End Patch"
+              },
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/indexBy.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/indexBy.ts\n@@\n- * @param mapper - The indexing function.\n+ * @param mapper - The indexing function. Items whose key is `null` or\n+ * `undefined` are excluded.\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n ): BoundedPartial<Record<K, T>> {\n-  const out: Partial<Record<K, T>> = {};\n+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Using Object.create(null) prevents special keys such as `__proto__` from changing the output prototype while it is being built.\n+  const out: Partial<Record<K, T>> = Object.create(null);\n@@\n-    out[key] = item;\n+    if (key !== undefined && key !== null) {\n+      out[key] = item;\n+    }\n   }\n \n+  Object.setPrototypeOf(out, Object.prototype);\n+\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in packages/remeda/src/countBy.ts.\nClosest current lines 62-66:\n    index: number,\n    data: ReadonlyArray<T>,\n  ) => PropertyKey | undefined,\n): BoundedPartial<Record<PropertyKey, number>> => {\n  const out = new Map<PropertyKey, number>();",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbp34nv"
+          }
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "1-remeda-null-keys-cline",
+      "task": "remeda-null-keys",
+      "arm": "cline",
+      "categories": {
+        "native_command_failed": 4
+      },
+      "observations": [
+        {
+          "index": 20,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm exec prettier -- --check packages/remeda/src/groupBy.ts packages/remeda/src/countBy.ts packages/remeda/src/indexBy.ts packages/remeda/src/groupBy.test.ts packages/remeda/src/countBy.test.ts packag ... [command truncated: 143 more chars; full command is in the tool call input]"
+        },
+        {
+          "index": 21,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm --workspace remeda run check && npm --workspace remeda exec -- tsc --project tsconfig.tests.json --noEmit"
+        },
+        {
+          "index": 22,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm --workspace remeda exec -- vitest run src/groupBy.test.ts src/countBy.test.ts src/indexBy.test.ts"
+        },
+        {
+          "index": 33,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module Preserve --moduleResolution Bundler --lib ES2022 --skipLibCheck packages/remeda/src/groupBy.ts packages/remeda/src/count ... [command truncated: 36 more chars; full command is in the tool call input]"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "1-remeda-null-keys-reference",
+      "task": "remeda-null-keys",
+      "arm": "reference",
+      "categories": {
+        "patch_preimage_or_format": 1
+      },
+      "observations": [
+        {
+          "index": 22,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/groupBy.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/groupBy.ts\n@@\n- * returned by a provided callback function. The returned object has separate\n- * properties for each group, containing arrays with the elements in the group.\n+ * returned by a provided callback function. The returned object has separate\n+ * properties for each group, containing arrays with the elements in the group.\n@@\n- * callback to return `undefined` in order to exclude the item from being added to any group.\n+ * callback to return `null` or `undefined` in order to exclude the item from\n+ * being added to any group.\n@@\n- * It should return a value indicating the group of the current element, or\n- * `undefined` when the item should be excluded from any group.\n+ * It should return a value indicating the group of the current element, or\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n- * callback to return `undefined` in order to exclude the item from being added to any group.\n+ * callback to return `null` or `undefined` in order to exclude the item from\n+ * being added to any group.\n@@\n- * It should return a value indicating the group of the current element, or\n- * `undefined` when the item should be excluded from any group.\n+ * It should return a value indicating the group of the current element, or\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-    if (key !== undefined) {\n+    if (key != null) {\n*** Update File: packages/remeda/src/countBy.ts\n@@\n- * its category and then counts how many elements fall into each category.\n+ * its category and then counts how many elements fall into each category. A\n+ * `null` or `undefined` category excludes the element from the result.\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n-  ) => PropertyKey | undefined,\n+  ) => PropertyKey | null | undefined,\n@@\n-    if (category !== undefined) {\n+    if (category != null) {\n*** Update File: packages/remeda/src/indexBy.ts\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K | null | undefined,\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K | null | undefined,\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K | null | undefined,\n@@\n-    out[key] = item;\n+    if (key != null) {\n+      Object.defineProperty(out, key, {\n+        configurable: true,\n+        enumerable: true,\n+        value: item,\n+        writable: true,\n+      });\n+    }\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in packages/remeda/src/groupBy.ts.\nClosest current lines 8-12:\n * properties for each group, containing arrays with the elements in the group.\n * Unlike the built in `Object.groupBy` this function also allows the callback to\n * return `undefined` in order to exclude the item from being added to any\n * group.\n *",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbp76xi"
+          }
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "1-remeda-empty-zip-cline",
+      "task": "remeda-empty-zip",
+      "arm": "cline",
+      "categories": {
+        "native_command_failed": 6
+      },
+      "observations": [
+        {
+          "index": 13,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm run test:study:feature"
+        },
+        {
+          "index": 17,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm exec --workspace packages/remeda vitest run src/zip.test.ts src/zipWith.test.ts"
+        },
+        {
+          "index": 18,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm run --workspace packages/remeda check"
+        },
+        {
+          "index": 19,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm run test:study:regression"
+        },
+        {
+          "index": 20,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm run test:study:feature"
+        },
+        {
+          "index": 21,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm run test:study:types"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "1-remeda-empty-zip-reference",
+      "task": "remeda-empty-zip",
+      "arm": "reference",
+      "categories": {
+        "command_failure_reported_in_message": 1,
+        "executed_command_failed": 2,
+        "patch_preimage_or_format": 2
+      },
+      "observations": [
+        {
+          "index": 32,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/zip.test.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/zip.test.ts\n@@\n   test(\"should truncate to shorter first\", () => {\n     expect(zip([1, 2], [\"a\", \"b\", \"c\"])).toStrictEqual([\n       [1, \"a\"],\n       [2, \"b\"],\n     ]);\n   });\n+\n+  test(\"should return no pairs when either input is empty\", () => {\n+    expect(zip([], [\"a\"])).toStrictEqual([]);\n+    expect(zip([1], [])).toStrictEqual([]);\n+  });\n });\n@@\n   test(\"evaluates lazily\", () => {\n     const mockFn = vi.fn<(x: number) => number>();\n     pipe([1, 2, 3], map(mockFn), zip([4, 5, 6]), first());\n \n     expect(mockFn).toHaveBeenCalledTimes(1);\n   });\n+\n+  test(\"returns no pairs when the second input is empty in a lazy pipeline\", () => {\n+    expect(pipe([1, 2], map((value) => value), zip([]), first())).toBeUndefined();\n+  });\n });\n*** Update File: packages/remeda/src/zipWith.test.ts\n@@\n import { describe, expect, test } from \"vitest\";\n+import { filter } from \"./filter\";\n+import { map } from \"./map\";\n import { pipe } from \"./pipe\";\n+import { take } from \"./take\";\n import { zipWith } from \"./zipWith\";\n@@\n   test(\"should truncate to shorter first\", () => {\n     expect(\n       zipWith([\"1\", \"2\"], [\"a\", \"b\", \"c\"], (a, b) => `${a}${b}`),\n     ).toStrictEqual([\"1a\", \"2b\"]);\n   });\n+\n+  test(\"should return no values when either input is empty\", () => {\n+    const zipper = (a: string, b: string) => `${a}${b}`;\n+\n+    expect(zipWith([], [\"a\"], zipper)).toStrictEqual([]);\n+    expect(zipWith([\"1\"], [], zipper)).toStrictEqual([]);\n+  });\n@@\n   test(\"should truncate to shorter first\", () => {\n     expect(\n       zipWith(\n         [\"1\", \"2\"],\n@@\n     ).toStrictEqual([\"1a\", \"2b\"]);\n   });\n+\n+  test(\"should return no values when either input is empty\", () => {\n+    const zipper = (a: string, b: string) => `${a}${b}`;\n+\n+    expect(zipWith(zipper)([], [\"a\"])).toStrictEqual([]);\n+    expect(zipWith(zipper)([\"1\"], [])).toStrictEqual([]);\n+  });\n });\n@@\n   test(\"should truncate to shorter first\", () => {\n     expect(\n       pipe(\n         [\"1\", \"2\"],\n@@\n     ).toStrictEqual([\"1a\", \"2b\"]);\n   });\n+\n+  test(\"does not invoke the zipper for an empty second input in a lazy pipeline\", () => {\n+    let calls = 0;\n+\n+    expect(\n+      pipe(\n+        [\"1\", \"2\"],\n+        map((value) => value),\n+        filter(() => true),\n+        zipWith([], () => {\n+          calls += 1;\n+          return \"unexpected\";\n+        }),\n+        take(2),\n+      ),\n+    ).toStrictEqual([]);\n+    expect(calls).toBe(0);\n+  });\n+\n+  test(\"passes original arrays eagerly and accumulated input lazily\", () => {\n+    const first = [1, 2, 3];\n+    const second = [4, 5];\n+    const eagerContexts: ReadonlyArray<readonly [typeof first, typeof second]> = [];\n+    const lazyContexts: Array<ReadonlyArray<ReadonlyArray<number>>> = [];\n+\n+    zipWith(first, second, (a, b, index, data) => {\n+      (eagerContexts as Array<typeof eagerContexts[number]>).push(data);\n+      return a + b + index;\n+    });\n+    pipe(\n+      first,\n+      zipWith(second, (a, b, index, data) => {\n+        lazyContexts.push(data);\n+        return a + b + index;\n+      }),\n+    );\n+\n+    expect(eagerContexts).toStrictEqual([\n+      [first, second],\n+      [first, second],\n+    ]);\n+    expect(lazyContexts).toStrictEqual([\n+      [[1], second],\n+      [[1, 2], second],\n+    ]);\n+  });\n });\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in packages/remeda/src/zipWith.test.ts.\nClosest current lines 16-20:\n  });\n\n  test(\"should truncate to shorter first\", () => {\n    expect(\n      zipWith([\"1\", \"2\"], [\"a\", \"b\", \"c\"], (a, b) => `${a}${b}`),",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbpb2ua"
+          }
+        },
+        {
+          "index": 33,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/zip.test.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/zip.test.ts\n@@\n   test(\"should truncate to shorter first\", () => {\n     expect(zip([1, 2], [\"a\", \"b\", \"c\"])).toStrictEqual([\n       [1, \"a\"],\n       [2, \"b\"],\n     ]);\n   });\n+\n+  test(\"should return no pairs when either input is empty\", () => {\n+    expect(zip([], [\"a\"])).toStrictEqual([]);\n+    expect(zip([1], [])).toStrictEqual([]);\n+  });\n@@\n   test(\"evaluates lazily\", () => {\n     const mockFn = vi.fn<(x: number) => number>();\n     pipe([1, 2, 3], map(mockFn), zip([4, 5, 6]), first());\n \n     expect(mockFn).toHaveBeenCalledTimes(1);\n   });\n+\n+  test(\"returns no pairs when the second input is empty in a lazy pipeline\", () => {\n+    expect(pipe([1, 2], map((value) => value), zip([]), first())).toBeUndefined();\n+  });\n \n });\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in packages/remeda/src/zip.test.ts.\nClosest current lines 54-58:\n  test(\"evaluates lazily\", () => {\n    const mockFn = vi.fn<(x: number) => number>();\n    pipe([1, 2, 3], map(mockFn), zip([4, 5, 6]), first());\n\n    expect(mockFn).toHaveBeenCalledTimes(1);",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbpb69k"
+          }
+        },
+        {
+          "index": 42,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "remeda:test"
+          },
+          "command": "npm run test",
+          "exitCode": 2
+        },
+        {
+          "index": 43,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npx prettier --check packages/remeda/src/zip.ts packages/remeda/src/zipWith.ts packages/remeda/src/zip.test.ts packages/remeda/src/zipWith.test.ts"
+          },
+          "reportedExitCode": 1
+        },
+        {
+          "index": 52,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "remeda:test",
+            "args": []
+          },
+          "command": "npm run test",
+          "exitCode": 2
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
       "sourceVerification": "unverified"
     }
   ]

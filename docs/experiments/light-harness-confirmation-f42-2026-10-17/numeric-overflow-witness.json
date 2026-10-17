@@ -1,0 +1,196 @@
+{
+  "startedAtUTC": "2026-10-17T01:06:34.339Z",
+  "endedAtUTC": "2026-10-17T01:06:36.993Z",
+  "classification": "Post-hoc source-audit witness prompted by trial 12; not a selected official benchmark check. Applied to all completed stable-sum endpoints without repair. Later repeats remain separate from the motivating known diagnosis.",
+  "method": "Extract unchanged production source from original upstream / exact private endpoint archives; execute the same four public APIs with pinned tsx. The explicit task requires preserving IEEE NaN/infinity behavior. Compare intermediate finite-input overflow and subsequent opposite infinity with the original API.",
+  "source": "import * as r from './packages/remeda/src/index.ts';\nconst m=Number.MAX_VALUE;\nconst cases={positiveOverflow:[m,m],negativeOverflow:[-m,-m],overflowThenOppositeInfinity:[m,m,-Infinity],negativeOverflowThenOppositeInfinity:[-m,-m,Infinity]};\nconst value=x=>Number.isNaN(x)?'NaN':x===Infinity?'+Infinity':x===-Infinity?'-Infinity':Object.is(x,-0)?'-0':x;\nconsole.log(JSON.stringify(Object.fromEntries(Object.entries(cases).map(([name,xs])=>[name,{sum:value(r.sum(xs)),sumBy:value(r.sumBy(xs,x=>x)),mean:value(r.mean(xs)),meanBy:value(r.meanBy(xs,x=>x))}]))));\n",
+  "sourceSha256": "803017ff4449434af418b99d7a51bda38b4c759445c61a64ca0efcb176673ffd",
+  "completedStableSumTrials": 3,
+  "records": [
+    {
+      "name": "original",
+      "hashes": null,
+      "exitCode": 0,
+      "stdout": "{\"positiveOverflow\":{\"sum\":\"+Infinity\",\"sumBy\":\"+Infinity\",\"mean\":\"+Infinity\",\"meanBy\":\"+Infinity\"},\"negativeOverflow\":{\"sum\":\"-Infinity\",\"sumBy\":\"-Infinity\",\"mean\":\"-Infinity\",\"meanBy\":\"-Infinity\"},\"overflowThenOppositeInfinity\":{\"sum\":\"NaN\",\"sumBy\":\"NaN\",\"mean\":\"NaN\",\"meanBy\":\"NaN\"},\"negativeOverflowThenOppositeInfinity\":{\"sum\":\"NaN\",\"sumBy\":\"NaN\",\"mean\":\"NaN\",\"meanBy\":\"NaN\"}}\n",
+      "stderr": "",
+      "observations": {
+        "positiveOverflow": {
+          "sum": "+Infinity",
+          "sumBy": "+Infinity",
+          "mean": "+Infinity",
+          "meanBy": "+Infinity"
+        },
+        "negativeOverflow": {
+          "sum": "-Infinity",
+          "sumBy": "-Infinity",
+          "mean": "-Infinity",
+          "meanBy": "-Infinity"
+        },
+        "overflowThenOppositeInfinity": {
+          "sum": "NaN",
+          "sumBy": "NaN",
+          "mean": "NaN",
+          "meanBy": "NaN"
+        },
+        "negativeOverflowThenOppositeInfinity": {
+          "sum": "NaN",
+          "sumBy": "NaN",
+          "mean": "NaN",
+          "meanBy": "NaN"
+        }
+      },
+      "matchesOriginal": true
+    },
+    {
+      "name": "positive-control",
+      "hashes": null,
+      "exitCode": 0,
+      "stdout": "{\"positiveOverflow\":{\"sum\":\"+Infinity\",\"sumBy\":\"+Infinity\",\"mean\":\"+Infinity\",\"meanBy\":\"+Infinity\"},\"negativeOverflow\":{\"sum\":\"-Infinity\",\"sumBy\":\"-Infinity\",\"mean\":\"-Infinity\",\"meanBy\":\"-Infinity\"},\"overflowThenOppositeInfinity\":{\"sum\":\"NaN\",\"sumBy\":\"NaN\",\"mean\":\"NaN\",\"meanBy\":\"NaN\"},\"negativeOverflowThenOppositeInfinity\":{\"sum\":\"NaN\",\"sumBy\":\"NaN\",\"mean\":\"NaN\",\"meanBy\":\"NaN\"}}\n",
+      "stderr": "",
+      "observations": {
+        "positiveOverflow": {
+          "sum": "+Infinity",
+          "sumBy": "+Infinity",
+          "mean": "+Infinity",
+          "meanBy": "+Infinity"
+        },
+        "negativeOverflow": {
+          "sum": "-Infinity",
+          "sumBy": "-Infinity",
+          "mean": "-Infinity",
+          "meanBy": "-Infinity"
+        },
+        "overflowThenOppositeInfinity": {
+          "sum": "NaN",
+          "sumBy": "NaN",
+          "mean": "NaN",
+          "meanBy": "NaN"
+        },
+        "negativeOverflowThenOppositeInfinity": {
+          "sum": "NaN",
+          "sumBy": "NaN",
+          "mean": "NaN",
+          "meanBy": "NaN"
+        }
+      },
+      "matchesOriginal": true
+    },
+    {
+      "name": "1-remeda-stable-sum-reference",
+      "hashes": {
+        "events.jsonl": "1d2e6e97ea9387b1d551a4ac94d809c3157a4ab3051d64740c62f458b531a46e",
+        "workspace.diff": "e214f3d6a225defc25673eb64029a24f0dcf6c4bc5eb075e996c3c283cab049a",
+        "score.json": "6e06c59ee5051336de0387cbe2b440309de19f84cdde444c4fcd0e374b18cec5",
+        "tool-ledger.json": "42ddcc32a60b1d04e1a259b6c9f423088bddc335cc9bb6a42f3550df9f22d68c"
+      },
+      "exitCode": 0,
+      "stdout": "{\"positiveOverflow\":{\"sum\":\"+Infinity\",\"sumBy\":\"+Infinity\",\"mean\":\"+Infinity\",\"meanBy\":\"+Infinity\"},\"negativeOverflow\":{\"sum\":\"-Infinity\",\"sumBy\":\"-Infinity\",\"mean\":\"-Infinity\",\"meanBy\":\"-Infinity\"},\"overflowThenOppositeInfinity\":{\"sum\":\"NaN\",\"sumBy\":\"NaN\",\"mean\":\"NaN\",\"meanBy\":\"NaN\"},\"negativeOverflowThenOppositeInfinity\":{\"sum\":\"NaN\",\"sumBy\":\"NaN\",\"mean\":\"NaN\",\"meanBy\":\"NaN\"}}\n",
+      "stderr": "",
+      "observations": {
+        "positiveOverflow": {
+          "sum": "+Infinity",
+          "sumBy": "+Infinity",
+          "mean": "+Infinity",
+          "meanBy": "+Infinity"
+        },
+        "negativeOverflow": {
+          "sum": "-Infinity",
+          "sumBy": "-Infinity",
+          "mean": "-Infinity",
+          "meanBy": "-Infinity"
+        },
+        "overflowThenOppositeInfinity": {
+          "sum": "NaN",
+          "sumBy": "NaN",
+          "mean": "NaN",
+          "meanBy": "NaN"
+        },
+        "negativeOverflowThenOppositeInfinity": {
+          "sum": "NaN",
+          "sumBy": "NaN",
+          "mean": "NaN",
+          "meanBy": "NaN"
+        }
+      },
+      "matchesOriginal": true
+    },
+    {
+      "name": "1-remeda-stable-sum-compiler",
+      "hashes": {
+        "events.jsonl": "e594233df023bb2c19331cd9003714b587d96d6d3ab23d1d42dcf2473a92b547",
+        "workspace.diff": "9245c9c05c003b4d87dcb64a13854165da9d60d7e15364b23f64e8e695d9ff71",
+        "score.json": "1c2b2ff5796b03cb133978a3953b6f11473db9c7739f54e9bcc6e0a6af8721c0",
+        "tool-ledger.json": "0b40859408b2c7cbe029ea4b8df43154a9daa36b914115bfc7d816ab4a18f8d7"
+      },
+      "exitCode": 0,
+      "stdout": "{\"positiveOverflow\":{\"sum\":\"+Infinity\",\"sumBy\":\"+Infinity\",\"mean\":\"+Infinity\",\"meanBy\":\"+Infinity\"},\"negativeOverflow\":{\"sum\":\"-Infinity\",\"sumBy\":\"-Infinity\",\"mean\":\"-Infinity\",\"meanBy\":\"-Infinity\"},\"overflowThenOppositeInfinity\":{\"sum\":\"NaN\",\"sumBy\":\"NaN\",\"mean\":\"NaN\",\"meanBy\":\"NaN\"},\"negativeOverflowThenOppositeInfinity\":{\"sum\":\"NaN\",\"sumBy\":\"NaN\",\"mean\":\"NaN\",\"meanBy\":\"NaN\"}}\n",
+      "stderr": "",
+      "observations": {
+        "positiveOverflow": {
+          "sum": "+Infinity",
+          "sumBy": "+Infinity",
+          "mean": "+Infinity",
+          "meanBy": "+Infinity"
+        },
+        "negativeOverflow": {
+          "sum": "-Infinity",
+          "sumBy": "-Infinity",
+          "mean": "-Infinity",
+          "meanBy": "-Infinity"
+        },
+        "overflowThenOppositeInfinity": {
+          "sum": "NaN",
+          "sumBy": "NaN",
+          "mean": "NaN",
+          "meanBy": "NaN"
+        },
+        "negativeOverflowThenOppositeInfinity": {
+          "sum": "NaN",
+          "sumBy": "NaN",
+          "mean": "NaN",
+          "meanBy": "NaN"
+        }
+      },
+      "matchesOriginal": true
+    },
+    {
+      "name": "1-remeda-stable-sum-cline",
+      "hashes": {
+        "events.jsonl": "9e71a996673239648ae256f26f8d531be5cb8ad47acfc21dcc8cc3a5a0b65996",
+        "workspace.diff": "b00c9c9f33e460880a150b50093de7e216350e750e9e3f4187133b50c6cd4b31",
+        "score.json": "1ba9bf547f9574b2072926b8ff11b0ea8c6bc7e9482f747843e0c70d75ccceed",
+        "tool-ledger.json": "44c27a7314a239985965441c50d5b19bf40629cbce2540b268e836a259f49b0d"
+      },
+      "exitCode": 0,
+      "stdout": "{\"positiveOverflow\":{\"sum\":\"NaN\",\"sumBy\":\"NaN\",\"mean\":\"NaN\",\"meanBy\":\"NaN\"},\"negativeOverflow\":{\"sum\":\"NaN\",\"sumBy\":\"NaN\",\"mean\":\"NaN\",\"meanBy\":\"NaN\"},\"overflowThenOppositeInfinity\":{\"sum\":\"-Infinity\",\"sumBy\":\"-Infinity\",\"mean\":\"-Infinity\",\"meanBy\":\"-Infinity\"},\"negativeOverflowThenOppositeInfinity\":{\"sum\":\"+Infinity\",\"sumBy\":\"+Infinity\",\"mean\":\"+Infinity\",\"meanBy\":\"+Infinity\"}}\n",
+      "stderr": "",
+      "observations": {
+        "positiveOverflow": {
+          "sum": "NaN",
+          "sumBy": "NaN",
+          "mean": "NaN",
+          "meanBy": "NaN"
+        },
+        "negativeOverflow": {
+          "sum": "NaN",
+          "sumBy": "NaN",
+          "mean": "NaN",
+          "meanBy": "NaN"
+        },
+        "overflowThenOppositeInfinity": {
+          "sum": "-Infinity",
+          "sumBy": "-Infinity",
+          "mean": "-Infinity",
+          "meanBy": "-Infinity"
+        },
+        "negativeOverflowThenOppositeInfinity": {
+          "sum": "+Infinity",
+          "sumBy": "+Infinity",
+          "mean": "+Infinity",
+          "meanBy": "+Infinity"
+        }
+      },
+      "matchesOriginal": false
+    }
+  ]
+}

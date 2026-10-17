@@ -23,6 +23,24 @@
       "startUTC": "2026-10-17T00:56:40Z",
       "endUTC": "2026-10-17T00:58:12Z",
       "method": "Conservative enclosing interval from observed tool calls; includes idle time between builds."
+    },
+    {
+      "activity": "path-candidate-refined-tests.log",
+      "startUTC": "2026-10-17T01:07:44.436Z",
+      "endUTC": "2026-10-17T01:07:50.342Z",
+      "method": "Node duration and final log write with one-second padding."
+    },
+    {
+      "activity": "Numeric source audit witness",
+      "startUTC": "2026-10-17T01:06:34.339Z",
+      "endUTC": "2026-10-17T01:06:36.993Z",
+      "method": "Direct script timestamps."
+    },
+    {
+      "activity": "Known missing read replay",
+      "startUTC": "2026-10-17T01:11:23.765Z",
+      "endUTC": "2026-10-17T01:11:29.069Z",
+      "method": "Direct script timestamps."
     }
   ],
   "caveat": "Additional small research inspections and report generation use the same nonexclusive host. These intervals identify known validation load, not all possible host contention."

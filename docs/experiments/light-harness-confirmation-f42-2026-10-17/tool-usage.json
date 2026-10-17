@@ -3,87 +3,88 @@
   "method": "Finished tools only. Output bytes and exact repeated input/output pairs are observations, not token or cache savings. Basename candidates come from the original upstream inventory, not a reconstructed workspace at each invocation; they identify opportunities to investigate, not guaranteed safe recovery. Native and Light categories differ.",
   "arms": {
     "reference": {
-      "trials": 4,
+      "trials": 6,
       "counts": {
-        "search_code": 66,
-        "read_code": 139,
-        "edit_code": 12,
-        "run_task": 28,
-        "finish_task": 4
+        "search_code": 86,
+        "read_code": 180,
+        "edit_code": 20,
+        "run_task": 45,
+        "finish_task": 6
       },
       "readViews": {
-        "raw": 133,
+        "raw": 170,
         "outline": 4,
-        "omitted": 2
+        "omitted": 6
       },
       "renderedViews": {
-        "raw": 124,
+        "raw": 161,
         "blocked": 10,
         "directory": 3,
-        "range": 1,
+        "range": 5,
         "outline": 1
       },
       "searchModes": {
-        "text": 40,
+        "text": 60,
         "references": 5,
         "omitted": 21
       },
       "editKinds": {
-        "symbol": 11,
-        "patch": 13
+        "symbol": 13,
+        "patch": 20
       },
-      "outputBytes": 494901,
+      "outputBytes": 683453,
       "missingReads": 9,
       "missingReadsWithBaselineCandidate": 8
     },
     "compiler": {
-      "trials": 4,
+      "trials": 5,
       "counts": {
-        "search_code": 92,
-        "read_code": 131,
-        "edit_code": 15,
-        "run_task": 32,
-        "finish_task": 4
+        "search_code": 102,
+        "read_code": 162,
+        "edit_code": 20,
+        "run_task": 36,
+        "finish_task": 5
       },
       "readViews": {
-        "raw": 114,
-        "omitted": 11,
+        "raw": 135,
+        "omitted": 20,
         "outline": 2,
-        "symbol": 4
+        "symbol": 4,
+        "range": 1
       },
       "renderedViews": {
-        "raw": 111,
-        "blocked": 3,
-        "range": 11,
+        "raw": 131,
+        "blocked": 5,
+        "range": 20,
         "directory": 2,
         "symbol": 4
       },
       "searchModes": {
-        "text": 76,
+        "text": 86,
         "omitted": 15,
         "references": 1
       },
       "editKinds": {
-        "patch": 12,
+        "patch": 19,
         "symbol": 5
       },
-      "outputBytes": 537573,
-      "missingReads": 3,
+      "outputBytes": 657161,
+      "missingReads": 4,
       "missingReadsWithBaselineCandidate": 1
     },
     "cline": {
-      "trials": 3,
+      "trials": 6,
       "counts": {
-        "run_commands": 37,
-        "search_codebase": 14,
-        "read_files": 22,
-        "apply_patch": 5
+        "run_commands": 87,
+        "search_codebase": 23,
+        "read_files": 43,
+        "apply_patch": 16
       },
       "readViews": {},
       "renderedViews": {},
       "searchModes": {},
       "editKinds": {},
-      "outputBytes": 1038919,
+      "outputBytes": 1760307,
       "missingReads": 0,
       "missingReadsWithBaselineCandidate": 0
     }
@@ -678,6 +679,147 @@
         "symbol": 2
       },
       "outputBytes": 79606,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "1-remeda-stable-sum-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 12,
+        "search_codebase": 2,
+        "read_files": 6,
+        "apply_patch": 1
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "editKinds": {},
+      "outputBytes": 192150,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "1-remeda-null-keys-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 10,
+        "read_code": 31,
+        "edit_code": 5,
+        "run_task": 4,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 21,
+        "omitted": 9,
+        "range": 1
+      },
+      "renderedViews": {
+        "raw": 20,
+        "blocked": 2,
+        "range": 9
+      },
+      "searchModes": {
+        "text": 10
+      },
+      "editKinds": {
+        "patch": 7
+      },
+      "outputBytes": 119588,
+      "repeatedReadOutputs": 0,
+      "missingPaths": [
+        {
+          "target": "packages/remeda/src/keyBy.ts",
+          "baselineExactBasenameCandidates": []
+        }
+      ]
+    },
+    {
+      "name": "1-remeda-null-keys-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 17,
+        "search_codebase": 4,
+        "read_files": 7,
+        "apply_patch": 8
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "editKinds": {},
+      "outputBytes": 263351,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "1-remeda-null-keys-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 8,
+        "read_code": 17,
+        "edit_code": 2,
+        "run_task": 6,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 17
+      },
+      "renderedViews": {
+        "raw": 17
+      },
+      "searchModes": {
+        "text": 8
+      },
+      "editKinds": {
+        "patch": 2
+      },
+      "outputBytes": 76309,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "1-remeda-empty-zip-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 21,
+        "read_files": 8,
+        "search_codebase": 3,
+        "apply_patch": 2
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "editKinds": {},
+      "outputBytes": 265887,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "1-remeda-empty-zip-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 12,
+        "read_code": 24,
+        "edit_code": 6,
+        "run_task": 11,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 20,
+        "omitted": 4
+      },
+      "renderedViews": {
+        "raw": 20,
+        "range": 4
+      },
+      "searchModes": {
+        "text": 12
+      },
+      "editKinds": {
+        "symbol": 2,
+        "patch": 5
+      },
+      "outputBytes": 112243,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     }

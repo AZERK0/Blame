@@ -156,6 +156,83 @@
       "fullRequestPassed": true,
       "unfrozenToolAttempt": true,
       "note": "Shared compensated summation covers all four APIs, preserving bigint, mapper order/context and selected non-finite behavior. Only five implementation files change. Required final-source checks pass; an additional upstream production compiler check passes. Failed intermediate compiler checks were fixed; full upstream tests, lint and Prettier failures are disclosed. Unversioned npx prettier uses an environment tool outside the pinned study dependency set; no new installation warning or pinned dependency changes were observed. This environment comparability limitation is retained, distinct from the observed Vitest installation in trial 5. A subsequent read-only resolution witness found reachable host-repository Prettier3.8.3 through ancestor lookup; its exact use by the original npx process is not directly instrumented."
+    },
+    {
+      "name": "1-remeda-stable-sum-cline",
+      "hashes": {
+        "events.jsonl": "9e71a996673239648ae256f26f8d531be5cb8ad47acfc21dcc8cc3a5a0b65996",
+        "workspace.diff": "b00c9c9f33e460880a150b50093de7e216350e750e9e3f4187133b50c6cd4b31",
+        "score.json": "1ba9bf547f9574b2072926b8ff11b0ea8c6bc7e9482f747843e0c70d75ccceed",
+        "tool-ledger.json": "44c27a7314a239985965441c50d5b19bf40629cbce2540b268e836a259f49b0d"
+      },
+      "sourceBehaviorPassed": false,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "unfrozenToolAttempt": true,
+      "note": "Required final selected checks pass and additional missing-tool/compiler limitations are disclosed. However, the new accumulator corrupts IEEE overflow behavior: two MAX_VALUE values yield NaN rather than +Infinity; adding -Infinity after that overflow yields -Infinity rather than NaN. All four public APIs reproduce these defects. The archived post-hoc witness uniformly checks all completed stable-sum endpoints and the original/positive control, without source repair. Unversioned npx Prettier is also attempted with unavailable plugin; no installation warning or pinned dependency mutation is observed."
+    },
+    {
+      "name": "1-remeda-null-keys-compiler",
+      "hashes": {
+        "events.jsonl": "6e66622ed4a757fa1735cda7b8f287d86b05c01ea89f757f7b0b71e4068e6d63",
+        "workspace.diff": "bd9afad743b7712228d728361e4e401589c87616339535560a8135310fe60011",
+        "score.json": "002c1bb858ed9b80ae449fa170cc2d7f820fdcd9cfa1c34a139b3b90bc2d7d7b",
+        "tool-ledger.json": "9bc01cc4683efbe02305422a52065430c0d630c8b8aee03d6f094469d89ba102"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "note": "Three implementation modules widen callback return types only, skip null/undefined, preserve Map-based counts and existing safe grouping, and protect indexBy special keys using a null prototype during construction followed by restoration. All required final-source checks pass, with selected-suite limits disclosed. No protected/existing-test edits or outside solution access."
+    },
+    {
+      "name": "1-remeda-null-keys-cline",
+      "hashes": {
+        "events.jsonl": "906f650faea9ac45c681b4817034f09d7737d951bf8fc348f94b20af37c3b943",
+        "workspace.diff": "8c39bbb3aa383fdbde2bc21adad37669f627fadf40c3eb04bca76b2eb93c5de8",
+        "score.json": "4123f0cb472d79cb1df364076dc8cd3b545d65939ae8974a4934eb60d229720b",
+        "tool-ledger.json": "4aaa02499ce548e297c5177ac1ddfc0153c2c81ecd9b0addb98cd8fffe093f8d"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "unfrozenToolAttempt": true,
+      "note": "Production changes correctly widen callback results, skip nullish keys and preserve ordinary safe result objects. Required final-source checks pass. Strict preservation compliance fails because six existing upstream runtime/type test files are edited (additions, not weakened assertions); the added upstream tests were not validated because Vitest is unavailable. Extra npm/Vitest/Prettier and differently configured compiler failures are disclosed; selected-check success is not taken as full-suite validation.",
+      "appendOnlyExistingTests": true,
+      "complianceInterpretationSensitive": true
+    },
+    {
+      "name": "1-remeda-null-keys-reference",
+      "hashes": {
+        "events.jsonl": "760c501cbab163182bf22eacec2b92351c7d56a10d7e8def8df823bc155a34b2",
+        "workspace.diff": "750143d763e279b05964cee9a3be3a2e55b01543c7f57bf0da3b3b06dd79b5c2",
+        "score.json": "15d95d915c887ff94229d9b7b350cc593641ba63f0daf5db2d986aab29f9126c",
+        "tool-ledger.json": "07a167f17aa58d398354b4190e77e56a3331355cd64b198e86fc6a29723f9456"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "note": "Only the three implementation files change. Nullish callback types/results are handled consistently; explicit own enumerable/writable/configurable indexBy properties preserve safe special keys and last-write behavior. All required final-source checks and a special-key smoke check pass; delivery retains unknown compiler counters and selected-suite limitations."
+    },
+    {
+      "name": "1-remeda-empty-zip-cline",
+      "hashes": {
+        "events.jsonl": "652816a01eed9a4ace719423344fbb116e390c57cac3e78953fe296df96b6fab",
+        "workspace.diff": "0ad9494392aefd17949a285b0c66a27bb5283af33e87250b6470b48da01cc9e0",
+        "score.json": "4f299e010672155429fc6afd9b03e64bf9cf8169c01606ed5357e0980be5844e",
+        "tool-ledger.json": "28fcbd81d9540c111523b739c336ac8d7754452bc2c3191bd809b59f6fd1587e"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "appendOnlyExistingTests": true,
+      "complianceInterpretationSensitive": true,
+      "unfrozenToolAttempt": true,
+      "note": "Both lazy evaluators guard absent pairs before emitting/calling the zipper; public signatures and nonempty truncation/context remain. Required final selected checks and upstream source compilation pass after corrected intermediate failures. Strict test-file preservation rejects new cases added to two existing upstream test files, although their original assertions are retained. Vitest setup failure is disclosed. The SKIP_ITEM branch does not terminate an empty-right pipeline early; this is an efficiency concern outside the selected absent-pair assertions, not evidence of a wrong emitted result."
     }
   ]
 }
