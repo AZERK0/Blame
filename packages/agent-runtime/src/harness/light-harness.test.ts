@@ -1066,6 +1066,7 @@ for (const variant of ["markdown", "typescript"]) {
       workspace.edits.replaceFiles = async (...args) => {
         const result = await replaceFiles(...args);
         assert.equal(result.status, "ok");
+        assert.equal(data(result).changed, true, "The fixture must format a real source change.");
         committedRevision = record(data(result)).sourceRevisionId;
         await writeFile(join(root, path), external);
         return result;
@@ -2847,7 +2848,8 @@ async function withFormatterWorkspace(
     'process.stdin.on("end", () => {',
     '  if (source.includes("INVALID")) process.exit(2);',
     '  const output = source.replace(/const (\\w+)=\\{value:(\\d+)\\}/gu, "const $1 = { value: $2 };");',
-    "  process.stdout.write(output);",
+    '  const markdown = process.argv.at(-1)?.endsWith(".md");',
+    '  process.stdout.write(markdown && !output.endsWith("\\n") ? output + "\\n" : output);',
     "});",
   ].join("\n");
   await withWorkspace(
