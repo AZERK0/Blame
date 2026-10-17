@@ -39,7 +39,7 @@ for (const row of analysis.rows) {
   const optionalConfigShapeSensitivity = row.independentFunctionalSuccess &&
     (decision.sourceBehaviorPassed || decision.absentOptionShapeOnlyFailure === true) &&
     decision.addedTestsPassed !== false && decision.finalSourceChecksPassed && decision.noSolutionRetrieval;
-  rows.push({ ...row, hostValidationOverlap, hostDevelopmentOverlap, sourceAuditedCompletion: sourceAudited,
+  rows.push({ ...row, scopeFollowups: decision.scopeFollowups ?? [], hostValidationOverlap, hostDevelopmentOverlap, sourceAuditedCompletion: sourceAudited,
     optionalConfigShapeSensitivityCompletion: optionalConfigShapeSensitivity,
     appendOnlySensitivityCompletion: sourceAudited && (decision.fullRequestPassed || decision.complianceInterpretationSensitive === true),
     auditedCompletion: sourceAudited && decision.fullRequestPassed,
@@ -132,7 +132,7 @@ const durationSensitivityWithoutRuntimeSuiteOverlap = compare(row => row.audited
 const durationSensitivityWithoutKnownValidationLoad = compare(row => row.auditedCompletion && !row.hostValidationOverlap && !row.hostDevelopmentOverlap);
 const qualityGate = arms[treatment].audited >= arms.reference.audited;
 const comparison = comparisons[`${treatment}/reference`];
-const mechanismGate = rows.some(row => row.arm === treatment && row.scopeFeedbackFollowed > 0);
+const mechanismGate = rows.some(row => row.arm === treatment && row.scopeFollowups.length > 0);
 const resourceGate = qualityGate && mechanismGate && comparison.pairs >= (protocol.criteria.minimumPairedSuccesses ?? 12) &&
   comparison.tokenDelta !== null && comparison.tokenDelta < 0 && comparison.costDelta !== null && comparison.costDelta < 0 && comparison.durationDelta !== null && comparison.durationDelta <= 0.1;
 const accounting = await json(join(study, 'accounting.json')), prior = await json(join(study, 'prior-budget.json'));

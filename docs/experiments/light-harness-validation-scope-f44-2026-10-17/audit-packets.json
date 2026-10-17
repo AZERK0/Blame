@@ -1,0 +1,2449 @@
+{
+  "complete": false,
+  "method": "lastEdit identifies successful explicit editing tools, excluding unchanged edits. Shell-write candidates are a conservative review aid, not a complete parser or proof of no mutation. Manual finalSourceChecksPassed review must also inspect commands and delivery; independent endpoint checks run on the archived final source.",
+  "packets": [
+    {
+      "name": "1-valibot-parser-overrides-reference",
+      "hashes": {
+        "events.jsonl": "38be00a0f9eedd9f1dfe2e8a17943cbbb42d9a99f9f97baaeaaef14eb37d6048",
+        "workspace.diff": "6656f9790bd5c81a1a10b6d7179e2ac11dc496a1f4824d55b56cddddd768b186",
+        "score.json": "431617763e1dafd6fd775ea588fb0903e6a69c581e85dfeb9a23b55012d95ab8",
+        "tool-ledger.json": "867239d11501a70f0da2d4bc993a4920e212339385caa15f8cb4cff882c5cf5b"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 45,
+      "required": {
+        "regression": [
+          {
+            "index": 46,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression",
+              "args": []
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 47,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature",
+              "args": []
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 48,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ],
+        "upstream": [
+          {
+            "index": 49,
+            "input": {
+              "kind": "project",
+              "task": "test:study:upstream",
+              "args": []
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 18,
+                "passed": 18,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 31,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 32,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 33,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 34,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 18,
+              "passed": 18,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 35,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run library/src/methods/parser/parserOverrides.test.ts --config library/vitest.config.ts",
+            "cwd": "."
+          },
+          "command": "node node_modules/vitest/vitest.mjs run library/src/methods/parser/parserOverrides.test.ts --config library/vitest.config.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "1",
+          "output": "Command exited with code 1.\nMISSING DEPENDENCY  Cannot find dependency 'jsdom'\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-reference/workspace\n\n⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯\n\nVitest caught 1 unhandled error during the test run.\nThis might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.\n\n⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯\nError: Cannot find package 'jsdom' imported from /tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-reference/workspace/node_modules/vitest/dist/chunks/index.CmSc2RE5.js\n ❯ Object.getPackageJSONURL node:internal/modules/package_json_reader:301:9\n ❯ packageResolve node:internal/modules/esm/resolve:768:81\n ❯ moduleResolve node:internal/modules/esm/resolve:859:18\n ❯ defaultResolve node:internal/modules/esm/resolve:992:11\n ❯ ModuleLoader.#cachedDefaultResolve node:internal/modules/esm/loader:701:20\n ❯ ModuleLoader.#resolveAndMaybeBlockOnLoaderThread node:internal/modules/esm/loader:721:38\n ❯ ModuleLoader.resolveSync node:internal/modules/esm/loader:759:56\n ❯ ModuleLoader.#resolve node:internal/modules/esm/loader:683:17\n ❯ ModuleLoader.getOrCreateModuleJob node:internal/modules/esm/loader:603:35\n ❯ node:internal/modules/esm/loader:632:32\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\nSerialized Error: { code: 'ERR_MODULE_NOT_FOUND' }\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n\n Test Files   (1)\n      Tests  no tests\n     Errors  1 error\n   Start at  13:58:21\n   Duration  230ms (transform 13ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 0ms)"
+        },
+        {
+          "index": 36,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts",
+            "cwd": "."
+          },
+          "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "1",
+          "output": "Command exited with code 1.\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-reference/workspace/node_modules/prettier/bin/prettier.cjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0"
+        },
+        {
+          "index": 37,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short",
+            "cwd": "."
+          },
+          "command": "git diff --check && git status --short",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 41,
+          "input": {
+            "kind": "command",
+            "command": "git diff -- library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts",
+            "cwd": "."
+          },
+          "command": "git diff -- library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 46,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression",
+            "args": []
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 47,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature",
+            "args": []
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 48,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 49,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream",
+            "args": []
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 18,
+              "passed": 18,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented optional per-call `Config` overrides for `parser`, `parserAsync`, `safeParser`, and `safeParserAsync`. Overrides merge captured configuration without mutating either object; `undefined` preserves captured config, while own properties—including explicit `false` and `undefined`—override it. Schema/config metadata identity, output/result typing, one-argument behavior, and sync/async behavior are preserved. Added `library/src/methods/parser/parserOverrides.test.ts` without changing existing tests.\n\nChecks run:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types` — passed.\n- `npm run test:study:upstream` — passed, 18/18 tests.\n- `git diff --check` — passed.\n\nCoverage limits: the direct Vitest run for the new regression file and the direct Prettier check were blocked by missing workspace dependencies (`jsdom` and the local Prettier executable). No dependency installation or manifest changes were made.",
+      "blocked": [
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/storages/getGlobalConfig.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-reference/workspace/library/src/storages/getGlobalConfig.ts'",
+            "diagnosticId": "read-mvcgo31q"
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run library/src/methods/parser/parserOverrides.test.ts --config library/vitest.config.ts",
+            "cwd": "."
+          },
+          "output": {
+            "status": "blocked",
+            "category": "environment",
+            "message": "Command exited with code 1.\nMISSING DEPENDENCY  Cannot find dependency 'jsdom'\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-reference/workspace\n\n⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯\n\nVitest caught 1 unhandled error during the test run.\nThis might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.\n\n⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯\nError: Cannot find package 'jsdom' imported from /tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-reference/workspace/node_modules/vitest/dist/chunks/index.CmSc2RE5.js\n ❯ Object.getPackageJSONURL node:internal/modules/package_json_reader:301:9\n ❯ packageResolve node:internal/modules/esm/resolve:768:81\n ❯ moduleResolve node:internal/modules/esm/resolve:859:18\n ❯ defaultResolve node:internal/modules/esm/resolve:992:11\n ❯ ModuleLoader.#cachedDefaultResolve node:internal/modules/esm/loader:701:20\n ❯ ModuleLoader.#resolveAndMaybeBlockOnLoaderThread node:internal/modules/esm/loader:721:38\n ❯ ModuleLoader.resolveSync node:internal/modules/esm/loader:759:56\n ❯ ModuleLoader.#resolve node:internal/modules/esm/loader:683:17\n ❯ ModuleLoader.getOrCreateModuleJob node:internal/modules/esm/loader:603:35\n ❯ node:internal/modules/esm/loader:632:32\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\nSerialized Error: { code: 'ERR_MODULE_NOT_FOUND' }\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n\n Test Files   (1)\n      Tests  no tests\n     Errors  1 error\n   Start at  13:58:21\n   Duration  230ms (transform 13ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 0ms)",
+            "recovery": "Use the dependency operation once if the declared installation is incomplete; do not edit manifests or copy files through the shell."
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts",
+            "cwd": "."
+          },
+          "output": {
+            "status": "blocked",
+            "category": "environment",
+            "message": "Command exited with code 1.\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-reference/workspace/node_modules/prettier/bin/prettier.cjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0",
+            "recovery": "Use the dependency operation once if the declared installation is incomplete; do not edit manifests or copy files through the shell."
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/vite.config.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-reference/workspace/library/vite.config.ts'",
+            "diagnosticId": "read-mvcgp9u6",
+            "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/vite.config.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"website/adapters/vercel-edge/vite.config.ts\",\"nextRead\":{\"target\":\"./website/adapters/vercel-edge/vite.config.ts\"}},{\"path\":\"website/vite.config.ts\",\"nextRead\":{\"target\":\"./website/vite.config.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. This recovery returns paths only and grants no edit coverage.\"}"
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_a81e78a688818cae822784dab8b95e9d",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types",
+          "check:upstream"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "1-valibot-parser-overrides-scope",
+      "hashes": {
+        "events.jsonl": "3f16211e124e0fc65ddc264355912f77e0bf59ed4c28d732447ddf44454675f6",
+        "workspace.diff": "0a72ba64c58f0facf2c2b76ef4009300e8637e4e953b9fa977ccc8fd969b720d",
+        "score.json": "af47866d6a5fb7737ccbdbd063d90baaab3bbccf7c7985652d67a93a35941e50",
+        "tool-ledger.json": "01a8958ed7e27c8b4178a2436fcf13f608d6744e8aeae743fc873d48fbe2e5c8"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 56,
+      "required": {
+        "regression": [
+          {
+            "index": 59,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          },
+          {
+            "index": 71,
+            "input": {
+              "kind": "command",
+              "command": "npm run test:study:feature && npm run test:study:regression && npm run test:study:upstream",
+              "cwd": "."
+            },
+            "command": "npm run test:study:feature && npm run test:study:regression && npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ],
+        "feature": [
+          {
+            "index": 60,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          },
+          {
+            "index": 71,
+            "input": {
+              "kind": "command",
+              "command": "npm run test:study:feature && npm run test:study:regression && npm run test:study:upstream",
+              "cwd": "."
+            },
+            "command": "npm run test:study:feature && npm run test:study:regression && npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ],
+        "types": [
+          {
+            "index": 61,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          },
+          {
+            "index": 63,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          },
+          {
+            "index": 70,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ],
+        "upstream": [
+          {
+            "index": 62,
+            "input": {
+              "kind": "project",
+              "task": "test:study:upstream"
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 18,
+                "passed": 18,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          },
+          {
+            "index": 71,
+            "input": {
+              "kind": "command",
+              "command": "npm run test:study:feature && npm run test:study:regression && npm run test:study:upstream",
+              "cwd": "."
+            },
+            "command": "npm run test:study:feature && npm run test:study:regression && npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 44,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 45,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 49,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 50,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 18,
+              "passed": 18,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 55,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run library/src/methods/parser/parserOverrides.test.ts --runInBand",
+            "cwd": "."
+          },
+          "command": "node node_modules/vitest/vitest.mjs run library/src/methods/parser/parserOverrides.test.ts --runInBand",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "1",
+          "output": "Command exited with code 1.\nfile:///tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/node_modules/vitest/dist/chunks/cac.Cb-PYCCB.js:404\n          throw new CACError(`Unknown option \\`${name.length > 1 ? `--${name}` : `-${name}`}\\``);\n                ^\n\nCACError: Unknown option `--runInBand`\n    at Command.checkUnknownOptions (file:///tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/node_modules/vitest/dist/chunks/cac.Cb-PYCCB.js:404:17)\n    at CAC.runMatchedCommand (file:///tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/node_modules/vitest/dist/chunks/cac.Cb-PYCCB.js:604:13)\n    at CAC.parse (file:///tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/node_modules/vitest/dist/chunks/cac.Cb-PYCCB.js:545:12)\n    at file:///tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/node_modules/vitest/dist/cli.js:27:13\n    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async node:internal/modules/esm/loader:643:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)\n\nNode.js v24.19.0"
+        },
+        {
+          "index": 57,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run library/src/methods/parser/parserOverrides.test.ts",
+            "cwd": "."
+          },
+          "command": "node node_modules/vitest/vitest.mjs run library/src/methods/parser/parserOverrides.test.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 58,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts",
+            "cwd": "."
+          },
+          "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "1",
+          "output": "Command exited with code 1.\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/node_modules/prettier/bin/prettier.cjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0"
+        },
+        {
+          "index": 59,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 60,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 61,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 62,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 18,
+              "passed": 18,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 63,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 64,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short",
+            "cwd": "."
+          },
+          "command": "git diff --check && git status --short",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 69,
+          "input": {
+            "kind": "command",
+            "command": "node_modules/.bin/prettier --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts",
+            "cwd": "."
+          },
+          "command": "node_modules/.bin/prettier --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "127",
+          "output": "Command exited with code 127.\n/bin/bash: line 1: node_modules/.bin/prettier: No such file or directory"
+        },
+        {
+          "index": 70,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 71,
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:feature && npm run test:study:regression && npm run test:study:upstream",
+            "cwd": "."
+          },
+          "command": "npm run test:study:feature && npm run test:study:regression && npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented optional per-call `Config` overrides for `parser`, `parserAsync`, `safeParser`, and `safeParserAsync`. Overrides merge over captured config without mutating either object; omitted/`undefined` second arguments preserve captured config, while own `undefined` properties are retained in the merged override. Returned schema/config metadata and async/sync behavior remain unchanged. Added `library/src/methods/parser/parserOverrides.test.ts` covering all four factories, metadata identity, merge behavior, immutability, omitted/undefined calls, and explicit undefined properties.\n\nChecks:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types` — passed; compiler reported the four implementation files. The added runtime test is excluded by the study TypeScript config, so it is not covered by this typecheck.\n- `npm run test:study:upstream` — passed, 18/18 tests across 4 existing test files.\n- Direct new regression test — passed, 6/6 tests.\n- `git diff --check` — passed.\n\nCoverage limits: the required study checks do not include the new regression file in upstream Vitest configuration, and Prettier could not be run because the installed workspace does not contain the declared Prettier executable. No manifests, locks, existing tests, or unrelated files were modified.",
+      "blocked": [
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/types/config/config.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/library/src/types/config/config.ts'",
+            "diagnosticId": "read-mvcgqn1r",
+            "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/types/config/config.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/methods/config/config.ts\",\"nextRead\":{\"target\":\"./library/src/methods/config/config.ts\"}},{\"path\":\"library/src/types/config.ts\",\"nextRead\":{\"target\":\"./library/src/types/config.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. This recovery returns paths only and grants no edit coverage.\"}"
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/storages/config.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/library/src/storages/config.ts'",
+            "diagnosticId": "read-mvcgqro4",
+            "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/storages/config.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/methods/config/config.ts\",\"nextRead\":{\"target\":\"./library/src/methods/config/config.ts\"}},{\"path\":\"library/src/types/config.ts\",\"nextRead\":{\"target\":\"./library/src/types/config.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. This recovery returns paths only and grants no edit coverage.\"}"
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/utils/ValiError.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/library/src/utils/ValiError.ts'",
+            "diagnosticId": "read-mvcgrrcl",
+            "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/utils/ValiError.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/utils/ValiError/ValiError.ts\",\"nextRead\":{\"target\":\"./library/src/utils/ValiError/ValiError.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. This recovery returns paths only and grants no edit coverage.\"}"
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/utils/valiError.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/library/src/utils/valiError.ts'",
+            "diagnosticId": "read-mvcgrrdy"
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run library/src/methods/parser/parserOverrides.test.ts --runInBand",
+            "cwd": "."
+          },
+          "output": {
+            "status": "blocked",
+            "category": "command",
+            "message": "Command exited with code 1.\nfile:///tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/node_modules/vitest/dist/chunks/cac.Cb-PYCCB.js:404\n          throw new CACError(`Unknown option \\`${name.length > 1 ? `--${name}` : `-${name}`}\\``);\n                ^\n\nCACError: Unknown option `--runInBand`\n    at Command.checkUnknownOptions (file:///tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/node_modules/vitest/dist/chunks/cac.Cb-PYCCB.js:404:17)\n    at CAC.runMatchedCommand (file:///tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/node_modules/vitest/dist/chunks/cac.Cb-PYCCB.js:604:13)\n    at CAC.parse (file:///tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/node_modules/vitest/dist/chunks/cac.Cb-PYCCB.js:545:12)\n    at file:///tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/node_modules/vitest/dist/cli.js:27:13\n    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async node:internal/modules/esm/loader:643:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)\n\nNode.js v24.19.0",
+            "recovery": "Inspect the command output and adjust the command or its prerequisites before retrying."
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts",
+            "cwd": "."
+          },
+          "output": {
+            "status": "blocked",
+            "category": "environment",
+            "message": "Command exited with code 1.\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-scope/workspace/node_modules/prettier/bin/prettier.cjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0",
+            "recovery": "Use the dependency operation once if the declared installation is incomplete; do not edit manifests or copy files through the shell."
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node_modules/.bin/prettier --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts",
+            "cwd": "."
+          },
+          "output": {
+            "status": "blocked",
+            "category": "environment",
+            "message": "Command exited with code 127.\n/bin/bash: line 1: node_modules/.bin/prettier: No such file or directory",
+            "recovery": "Inspect the reported environment problem and recover the required tool, path, or service through the available project operations before retrying."
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_b7f08e045076c4ae82e896202683f5cd",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types",
+          "check:upstream"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "1-valibot-parser-overrides-cline",
+      "hashes": {
+        "events.jsonl": "91270635d8b2e255d17f0d1ddcba42c50a8f7b929b0757d47fd6c9f08009771f",
+        "workspace.diff": "00b5c4b0070332a15f2c0cc7a99f06201396f42e141763fbddedaa1227ae5a10",
+        "score.json": "fd1290d347e26f9c29fe32e22551ab96103c51d964ff02d35fc914fdaddd7cca",
+        "tool-ledger.json": "78f04feeef3dd96f3391cd810bc2f239d353bb696b472017198adce4b5b0e405"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 19,
+      "required": {
+        "regression": [
+          {
+            "index": 20,
+            "input": {
+              "commands": [
+                "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+                "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+                "npm run test:study:regression",
+                "npm run test:study:feature",
+                "npm run test:study:types",
+                "npm run test:study:upstream",
+                "git diff --check && git status --short && git diff --stat"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (14.723148ms)\n✔ safe parser factories retain failure result shape (0.679449ms)\n✔ root issues retain the original default summary (0.306391ms)\n✔ unrelated transformations and object output remain intact (4.35716ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 3632.908704\n"
+          }
+        ],
+        "feature": [
+          {
+            "index": 20,
+            "input": {
+              "commands": [
+                "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+                "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+                "npm run test:study:regression",
+                "npm run test:study:feature",
+                "npm run test:study:types",
+                "npm run test:study:upstream",
+                "git diff --check && git status --short && git diff --stat"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ parser merges per-call config without changing metadata (3.04545ms)\n✔ parserAsync merges per-call config without changing metadata (1.74007ms)\n✔ safeParser merges per-call config without changing metadata (0.423142ms)\n✔ safeParserAsync merges per-call config without changing metadata (1.109622ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 2081.903245\n"
+          }
+        ],
+        "types": [
+          {
+            "index": 20,
+            "input": {
+              "commands": [
+                "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+                "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+                "npm run test:study:regression",
+                "npm run test:study:feature",
+                "npm run test:study:types",
+                "npm run test:study:upstream",
+                "git diff --check && git status --short && git diff --stat"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:types",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+          }
+        ],
+        "upstream": [
+          {
+            "index": 20,
+            "input": {
+              "commands": [
+                "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+                "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+                "npm run test:study:regression",
+                "npm run test:study:feature",
+                "npm run test:study:types",
+                "npm run test:study:upstream",
+                "git diff --check && git status --short && git diff --stat"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/safeParser/safeParserAsync.test.ts (5 tests) 5ms\n ✓ library/src/methods/safeParser/safeParser.test.ts (5 tests) 4ms\n ✓ library/src/methods/parser/parserAsync.test.ts (4 tests) 6ms\n ✓ library/src/methods/parser/parser.test.ts (4 tests) 5ms\n\n Test Files  4 passed (4)\n      Tests  18 passed (18)\n   Start at  14:03:57\n   Duration  6.70s (transform 3.11s, setup 0ms, collect 5.66s, tests 19ms, environment 1ms, prepare 284ms)\n\n"
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p' && printf '\\nGit status:\\n' && git status --short --branch && printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\""
+            ],
+            "timeout": 120000
+          },
+          "command": "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p' && printf '\\nGit status:\\n' && git status --short --branch && printf '\\nPackage scripts:\\n' && node -e \"cons ... [command truncated: 77 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace\n\nTop-level files:\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.github/FUNDING.yml\n./.gitignore\n./.grit/.gitignore\n./.grit/grit.yaml\n./.prettierignore\n./.study/delivered.mjs\n./.study/feature.mjs\n./.study/regression.mjs\n./.study/task.json\n./.study/tsconfig.json\n./.study/types.ts\n./.study/vitest.config.mjs\n./CODE_OF_CONDUCT.md\n./CONTRIBUTING.md\n./LICENSE.md\n./SECURITY.md\n./brand/valibot-icon.png\n./brand/valibot-icon.svg\n./brand/valibot-logo-dark.png\n./brand/valibot-logo-dark.svg\n./brand/valibot-logo-light.png\n./brand/valibot-logo-light.svg\n./codemod/README.md\n./library/CHANGELOG.md\n./library/LICENSE.md\n./library/README.md\n./library/eslint.config.js\n./library/jsr.json\n./library/mod.ts\n./library/package.json\n./library/playground.ts\n./library/tsconfig.json\n./library/tsup.config.ts\n./library/vitest.config.ts\n./node_modules/.package-lock.json\n./package.json\n./pnpm-lock.yaml\n./pnpm-workspace.yaml\n./prettier.config.cjs\n./valibot.jpg\n./website/.env\n./website/.eslintignore\n./website/.eslintrc.cjs\n./website/.gitignore\n./website/.node-version\n./website/.prettierignore\n./website/README.md\n./website/package.json\n./website/postcss.config.cjs\n./website/tailwind.config.cjs\n./website/tsconfig.json\n./website/vercel.json\n./website/vite.config.ts\n\nGit status:\n## master\n\nPackage scripts:\n{\n  \"test:study:feature\": \"node --import tsx --test --test-timeout=10000 .study/feature.mjs\",\n  \"test:study:regression\": \"node --import tsx --test --test-timeout=10000 .study/regression.mjs\",\n  \"test:study:types\": \"node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\",\n  \"test:study:upstream\": \"node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\",\n  \"test:study:delivered\": \"node .study/delivered.mjs runtime\",\n  \"typecheck:delivered\": \"node .study/delivered.mjs types\"\n}\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "find . -maxdepth 4 -type f \\( -name 'package.json' -o -name 'tsconfig*.json' -o -name 'vitest*.ts' -o -name 'vitest*.js' \\) -print | sort"
+            ],
+            "timeout": 120000
+          },
+          "command": "find . -maxdepth 4 -type f \\( -name 'package.json' -o -name 'tsconfig*.json' -o -name 'vitest*.ts' -o -name 'vitest*.js' \\) -print | sort",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "./.study/tsconfig.json\n./codemod/migrate-to-v0.31.0/package.json\n./codemod/migrate-to-v0.31.0/tsconfig.json\n./library/package.json\n./library/tsconfig.json\n./library/vitest.config.ts\n./node_modules/@esbuild/linux-x64/package.json\n./node_modules/@jridgewell/sourcemap-codec/package.json\n./node_modules/@napi-rs/lzma-linux-x64-gnu/package.json\n./node_modules/@rollup/rollup-linux-x64-gnu/package.json\n./node_modules/@rollup/rollup-linux-x64-musl/package.json\n./node_modules/@types/chai/package.json\n./node_modules/@types/deep-eql/package.json\n./node_modules/@types/estree/package.json\n./node_modules/@types/node/package.json\n./node_modules/@vitest/expect/package.json\n./node_modules/@vitest/mocker/package.json\n./node_modules/@vitest/pretty-format/package.json\n./node_modules/@vitest/runner/package.json\n./node_modules/@vitest/snapshot/package.json\n./node_modules/@vitest/spy/package.json\n./node_modules/@vitest/utils/package.json\n./node_modules/assertion-error/package.json\n./node_modules/cac/package.json\n./node_modules/chai/package.json\n./node_modules/check-error/package.json\n./node_modules/debug/package.json\n./node_modules/deep-eql/package.json\n./node_modules/es-module-lexer/package.json\n./node_modules/esbuild/package.json\n./node_modules/estree-walker/package.json\n./node_modules/expect-type/package.json\n./node_modules/fdir/package.json\n./node_modules/get-tsconfig/package.json\n./node_modules/js-tokens/package.json\n./node_modules/loupe/package.json\n./node_modules/magic-string/package.json\n./node_modules/ms/package.json\n./node_modules/nanoid/async/package.json\n./node_modules/nanoid/non-secure/package.json\n./node_modules/nanoid/package.json\n./node_modules/nanoid/url-alphabet/package.json\n./node_modules/npm/package.json\n./node_modules/pathe/package.json\n./node_modules/pathval/package.json\n./node_modules/picocolors/package.json\n./node_modules/picomatch/package.json\n./node_modules/postcss/package.json\n./node_modules/resolve-pkg-maps/package.json\n./node_modules/rollup/package.json\n./node_modules/siginfo/package.json\n./node_modules/source-map-js/package.json\n./node_modules/stackback/package.json\n./node_modules/std-env/package.json\n./node_modules/strip-literal/package.json\n./node_modules/tinybench/package.json\n./node_modules/tinyexec/package.json\n./node_modules/tinyglobby/package.json\n./node_modules/tinypool/package.json\n./node_modules/tinyrainbow/package.json\n./node_modules/tinyspy/package.json\n./node_modules/tsx/package.json\n./node_modules/type-fest/package.json\n./node_modules/typescript/package.json\n./node_modules/undici-types/package.json\n./node_modules/vite-node/package.json\n./node_modules/vite/package.json\n./node_modules/vite/types/package.json\n./node_modules/vitest/package.json\n./node_modules/why-is-node-running/package.json\n./package.json\n./packages/i18n/package.json\n./packages/i18n/tsconfig.json\n./packages/to-json-schema/package.json\n./packages/to-json-schema/tsconfig.json\n./packages/to-json-schema/vitest.config.ts\n./website/package.json\n./website/tsconfig.json\n"
+        },
+        {
+          "index": 6,
+          "input": {
+            "commands": [
+              "find /tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods -maxdepth 2 -type f \\( -name '*parser*' -o -name 'parse*.ts' -o -name 'safeParse*.ts' \\) | sort"
+            ],
+            "timeout": 120000
+          },
+          "command": "find /tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods -maxdepth 2 -type f \\( -name '*parser*' -o -name 'parse*.ts' -o -name 'safeParse*.ts' \\) |  ... [command truncated: 4 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parse/parse.test-d.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parse/parse.test.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parse/parse.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parse/parseAsync.test-d.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parse/parseAsync.test.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parse/parseAsync.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parser.test-d.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parser.test.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parser.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserAsync.test-d.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserAsync.test.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserAsync.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParse/safeParse.test-d.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParse/safeParse.test.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParse/safeParse.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParse/safeParseAsync.test-d.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParse/safeParseAsync.test.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParse/safeParseAsync.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParser/safeParser.test-d.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParser/safeParser.test.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParser/safeParser.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParser/safeParserAsync.test-d.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParser/safeParserAsync.test.ts\n/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParser/safeParserAsync.ts\n"
+        },
+        {
+          "index": 11,
+          "input": {
+            "commands": [
+              "git log -1 --oneline --decorate && git diff -- library/src/methods/parser library/src/methods/safeParser .study || true && find library/src/methods/parser library/src/methods/safeParser -maxdepth 1 -type f -name '*.test.ts' -printf '%p\\n' | sort"
+            ],
+            "timeout": 120000
+          },
+          "command": "git log -1 --oneline --decorate && git diff -- library/src/methods/parser library/src/methods/safeParser .study || true && find library/src/methods/parser library/src/methods/safeParser -maxdepth 1 -t ... [command truncated: 45 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "95cdb23 (HEAD -> master) Frozen scope study input\nlibrary/src/methods/parser/parser.test.ts\nlibrary/src/methods/parser/parserAsync.test.ts\nlibrary/src/methods/safeParser/safeParser.test.ts\nlibrary/src/methods/safeParser/safeParserAsync.test.ts\n"
+        },
+        {
+          "index": 14,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": ""
+        },
+        {
+          "index": 14,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace\n\n\n Test Files   (1)\n      Tests  no tests\n     Errors  1 error\n   Start at  14:03:08\n   Duration  280ms (transform 31ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 0ms)\n\n\n[stderr]\n MISSING DEPENDENCY  Cannot find dependency 'jsdom'\n\n⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯\n\nVitest caught 1 unhandled error during the test run.\nThis might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.\n\n⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯\nError: Cannot find package 'jsdom' imported from /tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/node_modules/vitest/dist/chunks/index.CmSc2RE5.js\n ❯ Object.getPackageJSONURL node:internal/modules/package_json_reader:301:9\n ❯ packageResolve node:internal/modules/esm/resolve:768:81\n ❯ moduleResolve node:internal/modules/esm/resolve:859:18\n ❯ defaultResolve node:internal/modules/esm/resolve:992:11\n ❯ ModuleLoader.#cachedDefaultResolve node:internal/modules/esm/loader:701:20\n ❯ ModuleLoader.#resolveAndMaybeBlockOnLoaderThread node:internal/modules/esm/loader:721:38\n ❯ ModuleLoader.resolveSync node:internal/modules/esm/loader:759:56\n ❯ ModuleLoader.#resolve node:internal/modules/esm/loader:683:17\n ❯ ModuleLoader.getOrCreateModuleJob node:internal/modules/esm/loader:603:35\n ❯ node:internal/modules/esm/loader:632:32\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\nSerialized Error: { code: 'ERR_MODULE_NOT_FOUND' }\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
+        },
+        {
+          "index": 15,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (1.136011ms)\n✔ safe parser factories retain failure result shape (0.433618ms)\n✔ root issues retain the original default summary (0.193285ms)\n✔ unrelated transformations and object output remain intact (1.007302ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 3016.461823\n"
+        },
+        {
+          "index": 15,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ parser merges per-call config without changing metadata (2.124505ms)\n✔ parserAsync merges per-call config without changing metadata (0.513486ms)\n✔ safeParser merges per-call config without changing metadata (0.30649ms)\n✔ safeParserAsync merges per-call config without changing metadata (0.999861ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 3374.083668\n"
+        },
+        {
+          "index": 15,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 15,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/safeParser/safeParserAsync.test.ts (5 tests) 5ms\n ✓ library/src/methods/safeParser/safeParser.test.ts (5 tests) 4ms\n ✓ library/src/methods/parser/parserAsync.test.ts (4 tests) 5ms\n ✓ library/src/methods/parser/parser.test.ts (4 tests) 7ms\n\n Test Files  4 passed (4)\n      Tests  18 passed (18)\n   Start at  14:03:17\n   Duration  4.94s (transform 2.15s, setup 0ms, collect 3.99s, tests 21ms, environment 1ms, prepare 286ms)\n\n"
+        },
+        {
+          "index": 16,
+          "input": {
+            "commands": [
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+              "node node_modules/.bin/prettier --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/parser/parserOverrides.test.ts (8 tests) 6ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  14:03:34\n   Duration  1.06s (transform 567ms, setup 0ms, collect 860ms, tests 6ms, environment 0ms, prepare 54ms)\n\n"
+        },
+        {
+          "index": 16,
+          "input": {
+            "commands": [
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+              "node node_modules/.bin/prettier --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/.bin/prettier --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeP ... [command truncated: 64 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\n\n[stderr]\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/node_modules/.bin/prettier'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "index": 17,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff --stat && git diff -- library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short && git diff --stat && git diff -- library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts lib ... [command truncated: 97 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M library/src/methods/parser/parser.ts\n M library/src/methods/parser/parserAsync.ts\n M library/src/methods/safeParser/safeParser.ts\n M library/src/methods/safeParser/safeParserAsync.ts\n?? library/src/methods/parser/parserOverrides.test.ts\n library/src/methods/parser/parser.ts              |  9 +++++++--\n library/src/methods/parser/parserAsync.ts         | 12 ++++++++++--\n library/src/methods/safeParser/safeParser.ts      | 12 ++++++++++--\n library/src/methods/safeParser/safeParserAsync.ts | 12 ++++++++++--\n 4 files changed, 37 insertions(+), 8 deletions(-)\ndiff --git a/library/src/methods/parser/parser.ts b/library/src/methods/parser/parser.ts\nindex 3844f71..14ab4cd 100644\n--- a/library/src/methods/parser/parser.ts\n+++ b/library/src/methods/parser/parser.ts\n@@ -17,7 +17,7 @@ export interface Parser<\n   /**\n    * Parses an unknown input based on the schema.\n    */\n-  (input: unknown): InferOutput<TSchema>;\n+  (input: unknown, config?: Config<InferIssue<TSchema>>): InferOutput<TSchema>;\n   /**\n    * The schema to be used.\n    */\n@@ -63,7 +63,12 @@ export function parser(\n   const func: Parser<\n     BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n     Config<BaseIssue<unknown>> | undefined\n-  > = (input: unknown) => parse(schema, input, config);\n+  > = (input: unknown, override?: Config<BaseIssue<unknown>>) =>\n+    parse(\n+      schema,\n+      input,\n+      override === undefined ? config : { ...config, ...override }\n+    );\n   // @ts-expect-error\n   func.schema = schema;\n   // @ts-expect-error\ndiff --git a/library/src/methods/parser/parserAsync.ts b/library/src/methods/parser/parserAsync.ts\nindex 9713129..9d71e58 100644\n--- a/library/src/methods/parser/parserAsync.ts\n+++ b/library/src/methods/parser/parserAsync.ts\n@@ -20,7 +20,10 @@ export interface ParserAsync<\n   /**\n    * Parses an unknown input based on the schema.\n    */\n-  (input: unknown): Promise<InferOutput<TSchema>>;\n+  (\n+    input: unknown,\n+    config?: Config<InferIssue<TSchema>>\n+  ): Promise<InferOutput<TSchema>>;\n   /**\n    * The schema to be used.\n    */\n@@ -79,7 +82,12 @@ export function parserAsync(\n     | BaseSchema<unknown, unknown, BaseIssue<unknown>>\n     | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,\n     Config<BaseIssue<unknown>> | undefined\n-  > = (input: unknown) => parseAsync(schema, input, config);\n+  > = (input: unknown, override?: Config<BaseIssue<unknown>>) =>\n+    parseAsync(\n+      schema,\n+      input,\n+      override === undefined ? config : { ...config, ...override }\n+    );\n   // @ts-expect-error\n   func.schema = schema;\n   // @ts-expect-error\ndiff --git a/library/src/methods/safeParser/safeParser.ts b/library/src/methods/safeParser/safeParser.ts\nindex 9d43019..0fc7a68 100644\n--- a/library/src/methods/safeParser/safeParser.ts\n+++ b/library/src/methods/safeParser/safeParser.ts\n@@ -16,7 +16,10 @@ export interface SafeParser<\n   /**\n    * Parses an unknown input based on the schema.\n    */\n-  (input: unknown): SafeParseResult<TSchema>;\n+  (\n+    input: unknown,\n+    config?: Config<InferIssue<TSchema>>\n+  ): SafeParseResult<TSchema>;\n   /**\n    * The schema to be used.\n    */\n@@ -62,7 +65,12 @@ export function safeParser(\n   const func: SafeParser<\n     BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n     Config<BaseIssue<unknown>> | undefined\n-  > = (input: unknown) => safeParse(schema, input, config);\n+  > = (input: unknown, override?: Config<BaseIssue<unknown>>) =>\n+    safeParse(\n+      schema,\n+      input,\n+      override === undefined ? config : { ...config, ...override }\n+    );\n   // @ts-expect-error\n   func.schema = schema;\n   // @ts-expect-error\ndiff --git a/library/src/methods/safeParser/safeParserAsync.ts b/library/src/methods/safeParser/safeParserAsync.ts\nindex edd22c9..1083c75 100644\n--- a/library/src/methods/safeParser/safeParserAsync.ts\n+++ b/library/src/methods/safeParser/safeParserAsync.ts\n@@ -19,7 +19,10 @@ export interface SafeParserAsync<\n   /**\n    * Parses an unknown input based on the schema.\n    */\n-  (input: unknown): Promise<SafeParseResult<TSchema>>;\n+  (\n+    input: unknown,\n+    config?: Config<InferIssue<TSchema>>\n+  ): Promise<SafeParseResult<TSchema>>;\n   /**\n    * The schema to be used.\n    */\n@@ -78,7 +81,12 @@ export function safeParserAsync(\n     | BaseSchema<unknown, unknown, BaseIssue<unknown>>\n     | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,\n     Config<BaseIssue<unknown>> | undefined\n-  > = (input: unknown) => safeParseAsync(schema, input, config);\n+  > = (input: unknown, override?: Config<BaseIssue<unknown>>) =>\n+    safeParseAsync(\n+      schema,\n+      input,\n+      override === undefined ? config : { ...config, ...override }\n+    );\n   // @ts-expect-error\n   func.schema = schema;\n   // @ts-expect-error\n"
+        },
+        {
+          "index": 18,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 2]\nlibrary/src/methods/parser/parserOverrides.test.ts(44,12): error TS2532: Object is possibly 'undefined'.\nlibrary/src/methods/parser/parserOverrides.test.ts(45,12): error TS2532: Object is possibly 'undefined'.\nlibrary/src/methods/parser/parserOverrides.test.ts(46,12): error TS2532: Object is possibly 'undefined'.\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "git diff --check && git status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": ""
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "git diff --check && git status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/parser/parserOverrides.test.ts (8 tests) 7ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  14:03:56\n   Duration  3.71s (transform 2.14s, setup 0ms, collect 3.30s, tests 7ms, environment 0ms, prepare 115ms)\n\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "git diff --check && git status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (14.723148ms)\n✔ safe parser factories retain failure result shape (0.679449ms)\n✔ root issues retain the original default summary (0.306391ms)\n✔ unrelated transformations and object output remain intact (4.35716ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 3632.908704\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "git diff --check && git status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ parser merges per-call config without changing metadata (3.04545ms)\n✔ parserAsync merges per-call config without changing metadata (1.74007ms)\n✔ safeParser merges per-call config without changing metadata (0.423142ms)\n✔ safeParserAsync merges per-call config without changing metadata (1.109622ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 2081.903245\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "git diff --check && git status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "git diff --check && git status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/safeParser/safeParserAsync.test.ts (5 tests) 5ms\n ✓ library/src/methods/safeParser/safeParser.test.ts (5 tests) 4ms\n ✓ library/src/methods/parser/parserAsync.test.ts (4 tests) 6ms\n ✓ library/src/methods/parser/parser.test.ts (4 tests) 5ms\n\n Test Files  4 passed (4)\n      Tests  18 passed (18)\n   Start at  14:03:57\n   Duration  6.70s (transform 3.11s, setup 0ms, collect 5.66s, tests 19ms, environment 1ms, prepare 284ms)\n\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1 --fileParallelism=false",
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "git diff --check && git status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short && git diff --stat",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M library/src/methods/parser/parser.ts\n M library/src/methods/parser/parserAsync.ts\n M library/src/methods/safeParser/safeParser.ts\n M library/src/methods/safeParser/safeParserAsync.ts\n?? library/src/methods/parser/parserOverrides.test.ts\n library/src/methods/parser/parser.ts              |  9 +++++++--\n library/src/methods/parser/parserAsync.ts         | 12 ++++++++++--\n library/src/methods/safeParser/safeParser.ts      | 12 ++++++++++--\n library/src/methods/safeParser/safeParserAsync.ts | 12 ++++++++++--\n 4 files changed, 37 insertions(+), 8 deletions(-)\n"
+        },
+        {
+          "index": 22,
+          "input": {
+            "commands": [
+              "git status --short && git diff --check && git diff --numstat && wc -l library/src/methods/parser/parserOverrides.test.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "git status --short && git diff --check && git diff --numstat && wc -l library/src/methods/parser/parserOverrides.test.ts",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M library/src/methods/parser/parser.ts\n M library/src/methods/parser/parserAsync.ts\n M library/src/methods/safeParser/safeParser.ts\n M library/src/methods/safeParser/safeParserAsync.ts\n?? library/src/methods/parser/parserOverrides.test.ts\n7\t2\tlibrary/src/methods/parser/parser.ts\n10\t2\tlibrary/src/methods/parser/parserAsync.ts\n10\t2\tlibrary/src/methods/safeParser/safeParser.ts\n10\t2\tlibrary/src/methods/safeParser/safeParserAsync.ts\n74 library/src/methods/parser/parserOverrides.test.ts\n"
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented per-call configuration overrides for:\n\n- `/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parser.ts`\n- `/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserAsync.ts`\n- `/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParser/safeParser.ts`\n- `/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/safeParser/safeParserAsync.ts`\n\nAdded regression coverage in:\n\n- `/tmp/blame-validation-scope-f44/campaign/1-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts`\n\nBehavior now:\n\n- Returned functions accept `(input, config?)`.\n- Omitted or `undefined` per-call config uses the captured config unchanged.\n- Defined per-call config is merged after captured config.\n- Explicit `false` and own `undefined` properties override captured values.\n- Neither config object is mutated.\n- `.schema`, `.config`, captured config identity, output inference, safe-result typing, and sync/async behavior remain unchanged.\n\nValidation results after the final edit:\n\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types` — passed.\n- `npm run test:study:upstream` — passed, 18/18 tests.\n- `node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json` — passed.\n- Focused regression test under Node environment — passed, 8/8 tests.\n- `git diff --check` — passed.\n\nThe default library Vitest environment could not be used because `jsdom` is not installed in the checkout; no dependencies were installed or changed. No coverage percentage was generated. Only the four implementation files and the new regression test are modified/added; existing tests, manifests, locks, configuration, and metadata were preserved.",
+      "blocked": [],
+      "scopeCommands": [
+        {
+          "index": 11,
+          "input": {
+            "commands": [
+              "git log -1 --oneline --decorate && git diff -- library/src/methods/parser library/src/methods/safeParser .study || true && find library/src/methods/parser library/src/methods/safeParser -maxdepth 1 -type f -name '*.test.ts' -printf '%p\\n' | sort"
+            ],
+            "timeout": 120000
+          },
+          "command": "git log -1 --oneline --decorate && git diff -- library/src/methods/parser library/src/methods/safeParser .study || true && find library/src/methods/parser library/src/methods/safeParser -maxdepth 1 -t ... [command truncated: 45 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "95cdb23 (HEAD -> master) Frozen scope study input\nlibrary/src/methods/parser/parser.test.ts\nlibrary/src/methods/parser/parserAsync.test.ts\nlibrary/src/methods/safeParser/safeParser.test.ts\nlibrary/src/methods/safeParser/safeParserAsync.test.ts\n"
+        }
+      ],
+      "completion": null
+    },
+    {
+      "name": "1-valibot-summary-format-scope",
+      "hashes": {
+        "events.jsonl": "e49acff48793f10f987edd76581418400d251639a96658d66620c06e48affbc0",
+        "workspace.diff": "6082fb2725d2cea02c056190f0c36a31b3d60d0cfee373e0121d4f07759c40db",
+        "score.json": "17da7be3b2ea9754542a5ce29750bc0321d1b48941aa6e74dcd778df562dc5ce",
+        "tool-ledger.json": "cb4592d6416024944a38ff6e210c0e94fd5a41b5d65ace54af5404dc6aae2a92"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 31,
+      "required": {
+        "regression": [
+          {
+            "index": 32,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 33,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 34,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          },
+          {
+            "index": 39,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ],
+        "upstream": [
+          {
+            "index": 35,
+            "input": {
+              "kind": "project",
+              "task": "test:study:upstream"
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 5,
+                "passed": 5,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 32,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 33,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 34,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 35,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 5,
+              "passed": 5,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 36,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts"
+          },
+          "command": "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 37,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts"
+          },
+          "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "1",
+          "output": "Command exited with code 1.\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-scope/workspace/node_modules/prettier/bin/prettier.cjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0"
+        },
+        {
+          "index": 38,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff -- library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts"
+          },
+          "command": "git diff --check && git status --short && git diff -- library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 39,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented optional `summarize` formatting options and exported `SummarizeOptions` through the existing summarize/methods/public export chain. Defaults preserve the existing `×`, two-space indentation, and included-path output; explicit empty strings and `includePath: false` are honored without mutating issues. Added `library/src/methods/summarize/summarize.options.test.ts` regression coverage.\n\nChecks:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types` — passed; compiler checked the source project and `.study/types.ts`. The newly added Vitest regression file is excluded by the study TypeScript config, so its type coverage is not established by this command.\n- `npm run test:study:upstream` — passed, 5/5 upstream summarize tests.\n- Direct Vitest run for the new regression file — passed, 4/4 tests.\n- `git diff --check` — passed.\n- Prettier check could not run because the workspace does not contain the expected `node_modules/prettier` executable; no dependencies were installed or changed.",
+      "blocked": [
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/utils/getDotPath.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-scope/workspace/library/src/utils/getDotPath.ts'",
+            "diagnosticId": "read-mvcgxj1j",
+            "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/utils/getDotPath.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/utils/getDotPath/getDotPath.ts\",\"nextRead\":{\"target\":\"./library/src/utils/getDotPath/getDotPath.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. This recovery returns paths only and grants no edit coverage.\"}"
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/safeParse/safeParse.ts",
+            "view": "signature"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Signature view requires a symbol alias or path#qualifiedName. Read the file outline to choose a declaration.",
+            "diagnosticId": "read-mvcgxowd"
+          }
+        },
+        {
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "library/src/methods/summarize/summarize.ts",
+                "patch": "*** Begin Patch\n*** Update File: library/src/methods/summarize/summarize.ts\n@@\n import type { BaseIssue } from '../../types/index.ts';\n import { getDotPath } from '../../utils/index.ts';\n \n+/**\n+ * Summarize options.\n+ */\n+export type SummarizeOptions = {\n+  /** The bullet to use before each issue message. */\n+  readonly bullet?: string | undefined;\n+  /** The indentation to use before each issue path. */\n+  readonly indent?: string | undefined;\n+  /** Whether to include issue paths. */\n+  readonly includePath?: boolean | undefined;\n+};\n+\n /**\n  * Summarize the error messages of issues in a pretty-printable multi-line string.\n  *\n  * @param issues The list of issues.\n+ * @param options The summary formatting options.\n@@\n export function summarize(\n-  issues: [BaseIssue<unknown>, ...BaseIssue<unknown>[]]\n+  issues: [BaseIssue<unknown>, ...BaseIssue<unknown>[]],\n+  options?: SummarizeOptions\n ): string {\n*** End Patch"
+              },
+              {
+                "kind": "symbol",
+                "target": "s14",
+                "action": "replace",
+                "content": "export function summarize(\n  issues: [BaseIssue<unknown>, ...BaseIssue<unknown>[]],\n  options?: SummarizeOptions\n): string {\n  const {\n    bullet = '×',\n    indent = '  ',\n    includePath = true,\n  } = options ?? {};\n\n  // Create variable to store summary\n  let summary = '';\n\n  // Add message of each issue to summary\n  for (const [index, issue] of issues.entries()) {\n    // Add newline if this is not the first issue\n    if (index > 0) {\n      summary += '\\n';\n    }\n\n    // Add message to summary\n    summary += `${bullet} ${issue.message}`;\n\n    // Get dot path from issue\n    const dotPath = getDotPath(issue);\n\n    // If dot path is available and paths should be included, add it to summary\n    if (dotPath && includePath !== false) {\n      summary += `\\n${indent}→ at ${dotPath}`;\n    }\n  }\n\n  // Return summary\n  return summary;\n}"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Edit operations overlap in library/src/methods/summarize/summarize.ts: replace s14 conflicts with patch library/src/methods/summarize/summarize.ts. Replace their common parent once, or split the edits and re-read after the first commit.",
+            "diagnosticId": "edit-mvcgy8i4"
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "environment",
+            "message": "Command exited with code 1.\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-scope/workspace/node_modules/prettier/bin/prettier.cjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0",
+            "recovery": "Use the dependency operation once if the declared installation is incomplete; do not edit manifests or copy files through the shell."
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_9b3e6efcbee105e5cca6ef4caa7a9f5d",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types",
+          "check:upstream"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "1-valibot-summary-format-cline",
+      "hashes": {
+        "events.jsonl": "f30f2065e06e53fb47b94d188afa626e51bafe3b22bb00b89dbee1e4f30d77f3",
+        "workspace.diff": "90d1ef1f214a4937d94052d08b99f4e851e62394c7ac642da82d31294a5db434",
+        "score.json": "f2da3104807108595bd3740bcb1d8d7150fb58c8c369ccd74bc9e06cc9e6f8dc",
+        "tool-ledger.json": "da563408e09112912c95321905a1dfba5ebc1bc79d9f9494d4152c10e75789d5"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 15,
+      "required": {
+        "regression": [
+          {
+            "index": 16,
+            "input": {
+              "commands": [
+                "npm run test:study:regression"
+              ],
+              "timeout_ms": 120000
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (1.070788ms)\n✔ safe parser factories retain failure result shape (0.416523ms)\n✔ root issues retain the original default summary (0.194597ms)\n✔ unrelated transformations and object output remain intact (0.758397ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 850.136064\n"
+          }
+        ],
+        "feature": [
+          {
+            "index": 17,
+            "input": {
+              "commands": [
+                "npm run test:study:feature"
+              ],
+              "timeout_ms": 120000
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ defaults and explicit undefined preserve the original summary (0.791767ms)\n✔ custom marker and indentation retain order and dot paths (0.137413ms)\n✔ empty strings and hidden paths are deliberate overrides (0.219062ms)\n✔ formatting never changes the input issues and handles absent paths (0.168538ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 774.796519\n"
+          }
+        ],
+        "types": [
+          {
+            "index": 18,
+            "input": {
+              "commands": [
+                "npm run test:study:types"
+              ],
+              "timeout_ms": 120000
+            },
+            "command": "npm run test:study:types",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+          }
+        ],
+        "upstream": [
+          {
+            "index": 19,
+            "input": {
+              "commands": [
+                "npm run test:study:upstream"
+              ],
+              "timeout_ms": 120000
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-cline/workspace\n\n ✓ library/src/methods/summarize/summarize.test.ts (5 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  14:07:37\n   Duration  342ms (transform 118ms, setup 0ms, collect 160ms, tests 3ms, environment 0ms, prepare 58ms)\n\n"
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,200p'",
+              "printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\""
+            ]
+          },
+          "command": "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,200p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "/tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-cline/workspace\n\nTop-level files:\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.github/FUNDING.yml\n./.gitignore\n./.grit/.gitignore\n./.grit/grit.yaml\n./.prettierignore\n./.study/delivered.mjs\n./.study/feature.mjs\n./.study/regression.mjs\n./.study/task.json\n./.study/tsconfig.json\n./.study/types.ts\n./.study/vitest.config.mjs\n./CODE_OF_CONDUCT.md\n./CONTRIBUTING.md\n./LICENSE.md\n./SECURITY.md\n./brand/valibot-icon.png\n./brand/valibot-icon.svg\n./brand/valibot-logo-dark.png\n./brand/valibot-logo-dark.svg\n./brand/valibot-logo-light.png\n./brand/valibot-logo-light.svg\n./codemod/README.md\n./library/CHANGELOG.md\n./library/LICENSE.md\n./library/README.md\n./library/eslint.config.js\n./library/jsr.json\n./library/mod.ts\n./library/package.json\n./library/playground.ts\n./library/tsconfig.json\n./library/tsup.config.ts\n./library/vitest.config.ts\n./node_modules/.package-lock.json\n./package.json\n./pnpm-lock.yaml\n./pnpm-workspace.yaml\n./prettier.config.cjs\n./valibot.jpg\n./website/.env\n./website/.eslintignore\n./website/.eslintrc.cjs\n./website/.gitignore\n./website/.node-version\n./website/.prettierignore\n./website/README.md\n./website/package.json\n./website/postcss.config.cjs\n./website/tailwind.config.cjs\n./website/tsconfig.json\n./website/vercel.json\n./website/vite.config.ts\n"
+        },
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,200p'",
+              "printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\""
+            ]
+          },
+          "command": "printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\"",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\nPackage scripts:\n{\n  \"test:study:feature\": \"node --import tsx --test --test-timeout=10000 .study/feature.mjs\",\n  \"test:study:regression\": \"node --import tsx --test --test-timeout=10000 .study/regression.mjs\",\n  \"test:study:types\": \"node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\",\n  \"test:study:upstream\": \"node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\",\n  \"test:study:delivered\": \"node .study/delivered.mjs runtime\",\n  \"typecheck:delivered\": \"node .study/delivered.mjs types\"\n}\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "git status --short --branch && git log -1 --oneline --decorate",
+              "find . -maxdepth 4 -type f \\( -name '*.ts' -o -name '*.tsx' -o -name 'package.json' -o -name 'tsconfig*.json' -o -name 'vitest*.ts' \\) | sort | sed -n '1,240p'"
+            ]
+          },
+          "command": "git status --short --branch && git log -1 --oneline --decorate",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "## master\n8158ac6 (HEAD -> master) Frozen scope study input\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "git status --short --branch && git log -1 --oneline --decorate",
+              "find . -maxdepth 4 -type f \\( -name '*.ts' -o -name '*.tsx' -o -name 'package.json' -o -name 'tsconfig*.json' -o -name 'vitest*.ts' \\) | sort | sed -n '1,240p'"
+            ]
+          },
+          "command": "find . -maxdepth 4 -type f \\( -name '*.ts' -o -name '*.tsx' -o -name 'package.json' -o -name 'tsconfig*.json' -o -name 'vitest*.ts' \\) | sort | sed -n '1,240p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "./.study/tsconfig.json\n./.study/types.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture1.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture1.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture10.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture10.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture11.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture11.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture12.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture12.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture13.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture13.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture14.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture14.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture15.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture15.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture16.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture16.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture17.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture17.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture2.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture2.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture3.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture3.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture4.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture4.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture5.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture5.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture6.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture6.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture7.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture7.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture8.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture8.output.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture9.input.ts\n./codemod/migrate-to-v0.31.0/__testfixtures__/fixture9.output.ts\n./codemod/migrate-to-v0.31.0/package.json\n./codemod/migrate-to-v0.31.0/src/index.ts\n./codemod/migrate-to-v0.31.0/tsconfig.json\n./library/mod.ts\n./library/package.json\n./library/playground.ts\n./library/src/actions/index.ts\n./library/src/actions/types.ts\n./library/src/index.ts\n./library/src/methods/index.ts\n./library/src/regex.ts\n./library/src/schemas/index.ts\n./library/src/storages/index.ts\n./library/src/types/config.ts\n./library/src/types/dataset.ts\n./library/src/types/index.ts\n./library/src/types/infer.ts\n./library/src/types/issue.ts\n./library/src/types/metadata.ts\n./library/src/types/object.ts\n./library/src/types/other.ts\n./library/src/types/pipe.ts\n./library/src/types/schema.ts\n./library/src/types/standard.ts\n./library/src/types/transformation.ts\n./library/src/types/tuple.ts\n./library/src/types/utils.ts\n./library/src/types/validation.ts\n./library/src/utils/index.ts\n./library/src/vitest/expectActionIssue.ts\n./library/src/vitest/expectActionIssueAsync.ts\n./library/src/vitest/expectNoActionIssue.ts\n./library/src/vitest/expectNoActionIssueAsync.ts\n./library/src/vitest/expectNoSchemaIssue.ts\n./library/src/vitest/expectNoSchemaIssueAsync.ts\n./library/src/vitest/expectSchemaIssue.ts\n./library/src/vitest/expectSchemaIssueAsync.ts\n./library/src/vitest/index.ts\n./library/tsconfig.json\n./library/tsup.config.ts\n./library/vitest.config.ts\n./node_modules/@esbuild/linux-x64/package.json\n./node_modules/@jridgewell/sourcemap-codec/package.json\n./node_modules/@napi-rs/lzma-linux-x64-gnu/package.json\n./node_modules/@rollup/rollup-linux-x64-gnu/package.json\n./node_modules/@rollup/rollup-linux-x64-musl/package.json\n./node_modules/@types/chai/index.d.ts\n./node_modules/@types/chai/package.json\n./node_modules/@types/chai/register-should.d.ts\n./node_modules/@types/deep-eql/index.d.ts\n./node_modules/@types/deep-eql/package.json\n./node_modules/@types/estree/flow.d.ts\n./node_modules/@types/estree/index.d.ts\n./node_modules/@types/estree/package.json\n./node_modules/@types/node/assert.d.ts\n./node_modules/@types/node/async_hooks.d.ts\n./node_modules/@types/node/buffer.buffer.d.ts\n./node_modules/@types/node/buffer.d.ts\n./node_modules/@types/node/child_process.d.ts\n./node_modules/@types/node/cluster.d.ts\n./node_modules/@types/node/console.d.ts\n./node_modules/@types/node/constants.d.ts\n./node_modules/@types/node/crypto.d.ts\n./node_modules/@types/node/dgram.d.ts\n./node_modules/@types/node/diagnostics_channel.d.ts\n./node_modules/@types/node/dns.d.ts\n./node_modules/@types/node/domain.d.ts\n./node_modules/@types/node/events.d.ts\n./node_modules/@types/node/fs.d.ts\n./node_modules/@types/node/globals.d.ts\n./node_modules/@types/node/globals.typedarray.d.ts\n./node_modules/@types/node/http.d.ts\n./node_modules/@types/node/http2.d.ts\n./node_modules/@types/node/https.d.ts\n./node_modules/@types/node/index.d.ts\n./node_modules/@types/node/inspector.d.ts\n./node_modules/@types/node/inspector.generated.d.ts\n./node_modules/@types/node/module.d.ts\n./node_modules/@types/node/net.d.ts\n./node_modules/@types/node/os.d.ts\n./node_modules/@types/node/package.json\n./node_modules/@types/node/path.d.ts\n./node_modules/@types/node/perf_hooks.d.ts\n./node_modules/@types/node/process.d.ts\n./node_modules/@types/node/punycode.d.ts\n./node_modules/@types/node/querystring.d.ts\n./node_modules/@types/node/readline.d.ts\n./node_modules/@types/node/repl.d.ts\n./node_modules/@types/node/sea.d.ts\n./node_modules/@types/node/sqlite.d.ts\n./node_modules/@types/node/stream.d.ts\n./node_modules/@types/node/string_decoder.d.ts\n./node_modules/@types/node/test.d.ts\n./node_modules/@types/node/timers.d.ts\n./node_modules/@types/node/tls.d.ts\n./node_modules/@types/node/trace_events.d.ts\n./node_modules/@types/node/tty.d.ts\n./node_modules/@types/node/url.d.ts\n./node_modules/@types/node/util.d.ts\n./node_modules/@types/node/v8.d.ts\n./node_modules/@types/node/vm.d.ts\n./node_modules/@types/node/wasi.d.ts\n./node_modules/@types/node/worker_threads.d.ts\n./node_modules/@types/node/zlib.d.ts\n./node_modules/@vitest/expect/package.json\n./node_modules/@vitest/mocker/package.json\n./node_modules/@vitest/pretty-format/package.json\n./node_modules/@vitest/runner/package.json\n./node_modules/@vitest/runner/types.d.ts\n./node_modules/@vitest/runner/utils.d.ts\n./node_modules/@vitest/snapshot/environment.d.ts\n./node_modules/@vitest/snapshot/manager.d.ts\n./node_modules/@vitest/snapshot/package.json\n./node_modules/@vitest/spy/package.json\n./node_modules/@vitest/utils/diff.d.ts\n./node_modules/@vitest/utils/error.d.ts\n./node_modules/@vitest/utils/helpers.d.ts\n./node_modules/@vitest/utils/package.json\n./node_modules/assertion-error/index.d.ts\n./node_modules/assertion-error/package.json\n./node_modules/cac/deno/CAC.ts\n./node_modules/cac/deno/Command.ts\n./node_modules/cac/deno/Option.ts\n./node_modules/cac/deno/deno.ts\n./node_modules/cac/deno/index.ts\n./node_modules/cac/deno/utils.ts\n./node_modules/cac/dist/index.d.ts\n./node_modules/cac/mod.ts\n./node_modules/cac/package.json\n./node_modules/chai/package.json\n./node_modules/check-error/package.json\n./node_modules/debug/package.json\n./node_modules/deep-eql/package.json\n./node_modules/es-module-lexer/package.json\n./node_modules/es-module-lexer/types/lexer.d.ts\n./node_modules/esbuild/lib/main.d.ts\n./node_modules/esbuild/package.json\n./node_modules/estree-walker/package.json\n./node_modules/estree-walker/types/async.d.ts\n./node_modules/estree-walker/types/index.d.ts\n./node_modules/estree-walker/types/sync.d.ts\n./node_modules/estree-walker/types/walker.d.ts\n./node_modules/expect-type/dist/branding.d.ts\n./node_modules/expect-type/dist/index.d.ts\n./node_modules/expect-type/dist/messages.d.ts\n./node_modules/expect-type/dist/overloads.d.ts\n./node_modules/expect-type/dist/utils.d.ts\n./node_modules/expect-type/package.json\n./node_modules/fdir/package.json\n./node_modules/get-tsconfig/package.json\n./node_modules/js-tokens/index.d.ts\n./node_modules/js-tokens/package.json\n./node_modules/loupe/lib/arguments.d.ts\n./node_modules/loupe/lib/array.d.ts\n./node_modules/loupe/lib/bigint.d.ts\n./node_modules/loupe/lib/class.d.ts\n./node_modules/loupe/lib/date.d.ts\n./node_modules/loupe/lib/error.d.ts\n./node_modules/loupe/lib/function.d.ts\n./node_modules/loupe/lib/helpers.d.ts\n./node_modules/loupe/lib/html.d.ts\n./node_modules/loupe/lib/index.d.ts\n./node_modules/loupe/lib/map.d.ts\n./node_modules/loupe/lib/number.d.ts\n./node_modules/loupe/lib/object.d.ts\n./node_modules/loupe/lib/promise.d.ts\n./node_modules/loupe/lib/regexp.d.ts\n./node_modules/loupe/lib/set.d.ts\n./node_modules/loupe/lib/string.d.ts\n./node_modules/loupe/lib/symbol.d.ts\n./node_modules/loupe/lib/typedarray.d.ts\n./node_modules/loupe/lib/types.d.ts\n./node_modules/loupe/package.json\n./node_modules/magic-string/dist/magic-string.cjs.d.ts\n./node_modules/magic-string/package.json\n./node_modules/ms/package.json\n./node_modules/nanoid/async/index.d.ts\n./node_modules/nanoid/async/package.json\n./node_modules/nanoid/index.d.ts\n./node_modules/nanoid/non-secure/index.d.ts\n./node_modules/nanoid/non-secure/package.json\n./node_modules/nanoid/package.json\n./node_modules/nanoid/url-alphabet/package.json\n./node_modules/npm/package.json\n./node_modules/pathe/dist/index.d.ts\n./node_modules/pathe/dist/utils.d.ts\n./node_modules/pathe/package.json\n./node_modules/pathe/utils.d.ts\n./node_modules/pathval/package.json\n./node_modules/picocolors/package.json\n./node_modules/picocolors/picocolors.d.ts\n./node_modules/picocolors/types.d.ts\n./node_modules/picomatch/package.json\n./node_modules/postcss/lib/at-rule.d.ts\n./node_modules/postcss/lib/comment.d.ts\n./node_modules/postcss/lib/container.d.ts\n./node_modules/postcss/lib/css-syntax-error.d.ts\n./node_modules/postcss/lib/declaration.d.ts\n./node_modules/postcss/lib/document.d.ts\n./node_modules/postcss/lib/fromJSON.d.ts\n./node_modules/postcss/lib/input.d.ts\n./node_modules/postcss/lib/lazy-result.d.ts\n./node_modules/postcss/lib/list.d.ts\n./node_modules/postcss/lib/no-work-result.d.ts\n"
+        },
+        {
+          "index": 8,
+          "input": {
+            "commands": [
+              "git diff -- library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.test.ts library/src/index.ts && find library/src/methods -maxdepth 2 -type f -name '*.test.ts' | sort | head -20"
+            ]
+          },
+          "command": "git diff -- library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.test.ts library/src/index.ts && find library/src/methods -maxdepth 2 -type f -name '*.test.ts' | sort | h ... [command truncated: 7 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "library/src/methods/assert/assert.test.ts\nlibrary/src/methods/config/config.test.ts\nlibrary/src/methods/fallback/fallback.test.ts\nlibrary/src/methods/fallback/fallbackAsync.test.ts\nlibrary/src/methods/flatten/flatten.test.ts\nlibrary/src/methods/forward/forward.test.ts\nlibrary/src/methods/forward/forwardAsync.test.ts\nlibrary/src/methods/getDefault/getDefault.test.ts\nlibrary/src/methods/getDefaults/getDefaults.test.ts\nlibrary/src/methods/getDefaults/getDefaultsAsync.test.ts\nlibrary/src/methods/getDescription/getDescription.test.ts\nlibrary/src/methods/getFallback/getFallback.test.ts\nlibrary/src/methods/getFallbacks/getFallbacks.test.ts\nlibrary/src/methods/getFallbacks/getFallbacksAsync.test.ts\nlibrary/src/methods/getMetadata/getMetadata.test.ts\nlibrary/src/methods/getTitle/getTitle.test.ts\nlibrary/src/methods/is/is.test.ts\nlibrary/src/methods/keyof/keyof.test.ts\nlibrary/src/methods/message/message.test.ts\nlibrary/src/methods/omit/omit.test.ts\n"
+        },
+        {
+          "index": 10,
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ],
+            "timeout_ms": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (1.10797ms)\n✔ safe parser factories retain failure result shape (0.336786ms)\n✔ root issues retain the original default summary (0.18371ms)\n✔ unrelated transformations and object output remain intact (0.729744ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1471.57657\n"
+        },
+        {
+          "index": 11,
+          "input": {
+            "commands": [
+              "npm run test:study:feature"
+            ],
+            "timeout_ms": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ defaults and explicit undefined preserve the original summary (0.792276ms)\n✔ custom marker and indentation retain order and dot paths (0.181297ms)\n✔ empty strings and hidden paths are deliberate overrides (0.125354ms)\n✔ formatting never changes the input issues and handles absent paths (0.155989ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 922.459815\n"
+        },
+        {
+          "index": 12,
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ],
+            "timeout_ms": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 13,
+          "input": {
+            "commands": [
+              "npm run test:study:upstream"
+            ],
+            "timeout_ms": 120000
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-cline/workspace\n\n ✓ library/src/methods/summarize/summarize.test.ts (5 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  14:07:15\n   Duration  364ms (transform 131ms, setup 0ms, collect 170ms, tests 3ms, environment 0ms, prepare 57ms)\n\n"
+        },
+        {
+          "index": 14,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff --stat && git diff -- library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts"
+            ],
+            "timeout_ms": 120000
+          },
+          "command": "git diff --check && git status --short && git diff --stat && git diff -- library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M library/src/methods/summarize/summarize.ts\n?? library/src/methods/summarize/summarize.options.test.ts\n library/src/methods/summarize/summarize.ts | 41 +++++++++++++++++++++++++++---\n 1 file changed, 37 insertions(+), 4 deletions(-)\ndiff --git a/library/src/methods/summarize/summarize.ts b/library/src/methods/summarize/summarize.ts\nindex 2f0c3a3..3355858 100644\n--- a/library/src/methods/summarize/summarize.ts\n+++ b/library/src/methods/summarize/summarize.ts\n@@ -1,10 +1,35 @@\n import type { BaseIssue } from '../../types/index.ts';\n import { getDotPath } from '../../utils/index.ts';\n \n+/**\n+ * Summarize options interface.\n+ */\n+export interface SummarizeOptions {\n+  /**\n+   * The bullet to use before each issue message.\n+   *\n+   * @default '×'\n+   */\n+  readonly bullet?: string | undefined;\n+  /**\n+   * The indentation to use before each issue path.\n+   *\n+   * @default '  '\n+   */\n+  readonly indent?: string | undefined;\n+  /**\n+   * Whether to include issue paths.\n+   *\n+   * @default true\n+   */\n+  readonly includePath?: boolean | undefined;\n+}\n+\n /**\n  * Summarize the error messages of issues in a pretty-printable multi-line string.\n  *\n  * @param issues The list of issues.\n+ * @param options The summarize options.\n  *\n  * @returns A summary of the issues.\n  *\n@@ -12,8 +37,16 @@ import { getDotPath } from '../../utils/index.ts';\n  */\n // @__NO_SIDE_EFFECTS__\n export function summarize(\n-  issues: [BaseIssue<unknown>, ...BaseIssue<unknown>[]]\n+  issues: [BaseIssue<unknown>, ...BaseIssue<unknown>[]],\n+  options?: SummarizeOptions\n ): string {\n+  // Get summarize options\n+  const {\n+    bullet = '×',\n+    indent = '  ',\n+    includePath = true,\n+  } = options ?? {};\n+\n   // Create variable to store summary\n   let summary = '';\n \n@@ -25,14 +58,14 @@ export function summarize(\n     }\n \n     // Add message to summary\n-    summary += `× ${issue.message}`;\n+    summary += `${bullet} ${issue.message}`;\n \n     // Get dot path from issue\n     const dotPath = getDotPath(issue);\n \n     // If dot path is available, add it to summary\n-    if (dotPath) {\n-      summary += `\\n  → at ${dotPath}`;\n+    if (dotPath && includePath) {\n+      summary += `\\n${indent}→ at ${dotPath}`;\n     }\n   }\n \n"
+        },
+        {
+          "index": 16,
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ],
+            "timeout_ms": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (1.070788ms)\n✔ safe parser factories retain failure result shape (0.416523ms)\n✔ root issues retain the original default summary (0.194597ms)\n✔ unrelated transformations and object output remain intact (0.758397ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 850.136064\n"
+        },
+        {
+          "index": 17,
+          "input": {
+            "commands": [
+              "npm run test:study:feature"
+            ],
+            "timeout_ms": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ defaults and explicit undefined preserve the original summary (0.791767ms)\n✔ custom marker and indentation retain order and dot paths (0.137413ms)\n✔ empty strings and hidden paths are deliberate overrides (0.219062ms)\n✔ formatting never changes the input issues and handles absent paths (0.168538ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 774.796519\n"
+        },
+        {
+          "index": 18,
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ],
+            "timeout_ms": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 19,
+          "input": {
+            "commands": [
+              "npm run test:study:upstream"
+            ],
+            "timeout_ms": 120000
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-cline/workspace\n\n ✓ library/src/methods/summarize/summarize.test.ts (5 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  14:07:37\n   Duration  342ms (transform 118ms, setup 0ms, collect 160ms, tests 3ms, environment 0ms, prepare 58ms)\n\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts --config library/vitest.config.ts"
+            ],
+            "timeout_ms": 120000
+          },
+          "command": "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts --config library/vitest.config.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-cline/workspace\n\n\n Test Files   (1)\n      Tests  no tests\n     Errors  1 error\n   Start at  14:07:38\n   Duration  225ms (transform 19ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 0ms)\n\n\n[stderr]\n MISSING DEPENDENCY  Cannot find dependency 'jsdom'\n\n⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯\n\nVitest caught 1 unhandled error during the test run.\nThis might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.\n\n⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯\nError: Cannot find package 'jsdom' imported from /tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-cline/workspace/node_modules/vitest/dist/chunks/index.CmSc2RE5.js\n ❯ Object.getPackageJSONURL node:internal/modules/package_json_reader:301:9\n ❯ packageResolve node:internal/modules/esm/resolve:768:81\n ❯ moduleResolve node:internal/modules/esm/resolve:859:18\n ❯ defaultResolve node:internal/modules/esm/resolve:992:11\n ❯ ModuleLoader.#cachedDefaultResolve node:internal/modules/esm/loader:701:20\n ❯ ModuleLoader.#resolveAndMaybeBlockOnLoaderThread node:internal/modules/esm/loader:721:38\n ❯ ModuleLoader.resolveSync node:internal/modules/esm/loader:759:56\n ❯ ModuleLoader.#resolve node:internal/modules/esm/loader:683:17\n ❯ ModuleLoader.getOrCreateModuleJob node:internal/modules/esm/loader:603:35\n ❯ node:internal/modules/esm/loader:632:32\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\nSerialized Error: { code: 'ERR_MODULE_NOT_FOUND' }\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
+        },
+        {
+          "index": 21,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json"
+            ],
+            "timeout_ms": 120000
+          },
+          "command": "node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": ""
+        },
+        {
+          "index": 22,
+          "input": {
+            "commands": [
+              "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts --config library/vitest.config.ts --environment node"
+            ],
+            "timeout_ms": 120000
+          },
+          "command": "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts --config library/vitest.config.ts --environment node",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-cline/workspace\n\n ✓ library/src/methods/summarize/summarize.options.test.ts (4 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  14:07:52\n   Duration  1.83s (transform 1.06s, setup 0ms, collect 1.60s, tests 3ms, environment 0ms, prepare 55ms)\n\n"
+        },
+        {
+          "index": 23,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff --stat"
+            ],
+            "timeout_ms": 120000
+          },
+          "command": "git diff --check && git status --short && git diff --stat",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M library/src/methods/summarize/summarize.ts\n?? library/src/methods/summarize/summarize.options.test.ts\n library/src/methods/summarize/summarize.ts | 41 +++++++++++++++++++++++++++---\n 1 file changed, 37 insertions(+), 4 deletions(-)\n"
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented the `summarize` options API.\n\n### Changes\n\n- Added exported `SummarizeOptions` type in `/tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-cline/workspace/library/src/methods/summarize/summarize.ts`.\n- Added optional options support:\n  - `bullet?: string | undefined`, default `×`\n  - `indent?: string | undefined`, default two spaces\n  - `includePath?: boolean | undefined`, default `true`\n- Explicit empty strings are preserved.\n- Existing issue messages, order, and issue objects remain unchanged.\n- The type is available through the existing public export chain.\n- Added regression coverage in:\n  - `/tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-cline/workspace/library/src/methods/summarize/summarize.options.test.ts`\n\n### Validation\n\nAll required commands passed:\n\n- `npm run test:study:regression` — 4 passed\n- `npm run test:study:feature` — 4 passed\n- `npm run test:study:types` — passed\n- `npm run test:study:upstream` — 5 passed\n\nAdditional checks:\n\n- `node node_modules/typescript/bin/tsc --noEmit -p library/tsconfig.json` — passed\n- New regression file run directly with Vitest using the `node` environment — 4 passed\n- `git diff --check` — passed\n\nThe default upstream Vitest configuration only includes the existing `summarize.test.ts`, so it does not execute the newly added regression file. Running it with the library’s default `jsdom` environment was unavailable because `jsdom` is not installed in this checkout; no dependencies or project configuration were changed.",
+      "blocked": [],
+      "scopeCommands": [
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "git status --short --branch && git log -1 --oneline --decorate",
+              "find . -maxdepth 4 -type f \\( -name '*.ts' -o -name '*.tsx' -o -name 'package.json' -o -name 'tsconfig*.json' -o -name 'vitest*.ts' \\) | sort | sed -n '1,240p'"
+            ]
+          },
+          "command": "git status --short --branch && git log -1 --oneline --decorate",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "## master\n8158ac6 (HEAD -> master) Frozen scope study input\n"
+        }
+      ],
+      "completion": null
+    },
+    {
+      "name": "1-valibot-summary-format-reference",
+      "hashes": {
+        "events.jsonl": "8324097604fb5e905cf77494d82933afcc173542c3a29139009b822af81feae7",
+        "workspace.diff": "d7ceaa39259f4f91f944f0e226499b8efaf85bf4a0d82738f52a1ed0504749ca",
+        "score.json": "d46712edefbf9e2fbfb5e5d9ad4a6165779b927e4d78e3a0f92aba250f3f9ada",
+        "tool-ledger.json": "bf7c07a6b22a137ed24ac8ecf9e43e7905ba66d4bfef7c132664630766a9eeb6"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 26,
+      "required": {
+        "regression": [
+          {
+            "index": 27,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 28,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 29,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ],
+        "upstream": [
+          {
+            "index": 30,
+            "input": {
+              "kind": "project",
+              "task": "test:study:upstream"
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 5,
+                "passed": 5,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 3,
+          "input": {
+            "kind": "command",
+            "command": "git status --short"
+          },
+          "command": "git status --short",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 27,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 28,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 29,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 30,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 5,
+              "passed": 5,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 31,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs library/src/methods/summarize/summarize.options.test.ts"
+          },
+          "command": "node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "1",
+          "output": "Command exited with code 1.\nRUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-reference/workspace\n\nNo test files found, exiting with code 1\n\nfilter: library/src/methods/summarize/summarize.options.test.ts\ninclude: library/src/methods/summarize/summarize.test.ts\nexclude:  **/node_modules/**, **/dist/**, **/cypress/**, **/.{idea,git,cache,output,temp}/**, **/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*"
+        },
+        {
+          "index": 32,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts"
+          },
+          "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "1",
+          "output": "Command exited with code 1.\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-reference/workspace/node_modules/prettier/bin/prettier.cjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0"
+        },
+        {
+          "index": 33,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff -- library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts"
+          },
+          "command": "git diff --check && git status --short && git diff -- library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 34,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts --maxWorkers=1"
+          },
+          "command": "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts --maxWorkers=1",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented optional `SummarizeOptions` for `summarize`, publicly exported through the existing methods/index barrel. Defaults remain `×`, two spaces, and included paths; explicit empty strings and `includePath: false` are honored without mutating issues. Added `summarize.options.test.ts` covering custom formatting, defaults/undefined, empty overrides, hidden paths, issue preservation, and dot paths.\n\nChecks:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types` — passed; TypeScript completed without errors.\n- `npm run test:study:upstream` — passed, 5/5 tests in the configured upstream file.\n- Direct Vitest run for the new regression file — passed, 3/3 tests.\n- `git diff --check` — passed.\n\nCoverage limit: the configured upstream Vitest selection includes only the existing `summarize.test.ts`; the new regression file was validated separately. Prettier could not be run because the referenced local Prettier binary was unavailable, and no dependencies were installed or changed.",
+      "blocked": [
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs library/src/methods/summarize/summarize.options.test.ts"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "command",
+            "message": "Command exited with code 1.\nRUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-reference/workspace\n\nNo test files found, exiting with code 1\n\nfilter: library/src/methods/summarize/summarize.options.test.ts\ninclude: library/src/methods/summarize/summarize.test.ts\nexclude:  **/node_modules/**, **/dist/**, **/cypress/**, **/.{idea,git,cache,output,temp}/**, **/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*",
+            "recovery": "Inspect the command output and adjust the command or its prerequisites before retrying."
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "environment",
+            "message": "Command exited with code 1.\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/1-valibot-summary-format-reference/workspace/node_modules/prettier/bin/prettier.cjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0",
+            "recovery": "Use the dependency operation once if the declared installation is incomplete; do not edit manifests or copy files through the shell."
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_0d4b90f8b892d8c15215eb73c82af146",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types",
+          "check:upstream"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    }
+  ]
+}

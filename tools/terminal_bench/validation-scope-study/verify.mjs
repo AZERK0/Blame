@@ -57,6 +57,14 @@ for(const row of results.rows){
  for(const w of wire){assert.equal(w.model,protocol.model);assert.equal(w.reasoning?.effort,protocol.effort);assert.equal(w.maximumOutputTokens,protocol.budgets.requestMaxOutputTokens);assert.equal(w.byteLimit,protocol.budgets.maximumSerializedRequestBytes);assert.equal(sha(read('schema-'+w.toolsSha256+'.json').toString().trimEnd()),w.toolsSha256);assert.equal(sha(read('prompt-'+w.promptSha256+'.json').toString().trimEnd()),w.promptSha256);}
  const d=review.decisions.find(d=>d.name===row.name);assert.deepEqual(d.hashes,row.hashes);
  assert.equal(d.addedTestsPassed,grade.addedTests.length>0&&grade.deliveredChecks.every(c=>c.exitCode===0));
+ assert.deepEqual(row.scopeFollowups,d.scopeFollowups??[]);
+ for(const f of row.scopeFollowups){
+  const offer=scopes.find(o=>o.index===f.reportIndex),validation=ledger[f.validationIndex];assert.ok(offer&&offer.report.status==='reported');
+  assert.ok(offer.report.changedFilesNotReported.includes(f.path));assert.ok(validation.observedIteration>offer.observedIteration);
+  assert.equal(validation.tool,'run_task');assert.equal(validation.output?.data?.exitCode,0);
+  const command=validation.output.data.command;assert.ok(/vitest|--test|delivered|tsc/u.test(command));
+  assert.ok(command.includes(f.path)||/delivered/u.test(command));
+ }
  const source=row.independentFunctionalSuccess&&d.sourceBehaviorPassed&&d.addedTestsPassed!==false&&d.finalSourceChecksPassed&&d.noSolutionRetrieval;
  assert.equal(row.sourceAuditedCompletion,source);assert.equal(row.appendOnlySensitivityCompletion,source&&(d.fullRequestPassed||d.complianceInterpretationSensitive===true));assert.equal(row.auditedCompletion,source&&d.fullRequestPassed);
  assert.equal(row.optionalConfigShapeSensitivityCompletion,row.independentFunctionalSuccess&&(d.sourceBehaviorPassed||d.absentOptionShapeOnlyFailure===true)&&d.addedTestsPassed!==false&&d.finalSourceChecksPassed&&d.noSolutionRetrieval);

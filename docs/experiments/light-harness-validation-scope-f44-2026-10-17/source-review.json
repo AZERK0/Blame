@@ -1,0 +1,129 @@
+{
+  "method": "Unblinded manual review of unchanged patches, added-test endpoint grades, delivery and command evidence; per-trial hashes bind decisions. No repair or solution retrieval.",
+  "decisions": [
+    {
+      "name": "1-valibot-parser-overrides-reference",
+      "hashes": {
+        "events.jsonl": "38be00a0f9eedd9f1dfe2e8a17943cbbb42d9a99f9f97baaeaaef14eb37d6048",
+        "workspace.diff": "6656f9790bd5c81a1a10b6d7179e2ac11dc496a1f4824d55b56cddddd768b186",
+        "score.json": "431617763e1dafd6fd775ea588fb0903e6a69c581e85dfeb9a23b55012d95ab8",
+        "tool-ledger.json": "867239d11501a70f0da2d4bc993a4920e212339385caa15f8cb4cff882c5cf5b"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "notes": [
+        "Reviewed all four factory signatures/implementations: conditional merge preserves captured config identity and undefined override semantics; no existing tests or configuration changed.",
+        "New four-case regression file passes independent runtime and type checks. Agent reports its direct Vitest/jsdom and missing Prettier failures accurately; selected four checks are fresh. No source repair or solution retrieval."
+      ]
+    },
+    {
+      "name": "1-valibot-parser-overrides-scope",
+      "hashes": {
+        "events.jsonl": "3f16211e124e0fc65ddc264355912f77e0bf59ed4c28d732447ddf44454675f6",
+        "workspace.diff": "0a72ba64c58f0facf2c2b76ef4009300e8637e4e953b9fa977ccc8fd969b720d",
+        "score.json": "af47866d6a5fb7737ccbdbd063d90baaab3bbccf7c7985652d67a93a35941e50",
+        "tool-ledger.json": "01a8958ed7e27c8b4178a2436fcf13f608d6744e8aeae743fc873d48fbe2e5c8"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "scopeFollowups": [
+        {
+          "reportIndex": 44,
+          "validationIndex": 57,
+          "kind": "runtime",
+          "path": "library/src/methods/parser/parserOverrides.test.ts"
+        }
+      ],
+      "notes": [
+        "Four correct conditional configuration merges and public signatures; new six-case test file passes independent runtime/types. Original files and dependencies preserved.",
+        "Direct Vitest succeeds in iteration14 after scope report iteration10; new test typechecking limitation and missing Prettier are stated accurately. Later named-delivered-script counter does not capture this direct Vitest call. No claim of causal mediation."
+      ]
+    },
+    {
+      "name": "1-valibot-parser-overrides-cline",
+      "hashes": {
+        "events.jsonl": "91270635d8b2e255d17f0d1ddcba42c50a8f7b929b0757d47fd6c9f08009771f",
+        "workspace.diff": "00b5c4b0070332a15f2c0cc7a99f06201396f42e141763fbddedaa1227ae5a10",
+        "score.json": "fd1290d347e26f9c29fe32e22551ab96103c51d964ff02d35fc914fdaddd7cca",
+        "tool-ledger.json": "78f04feeef3dd96f3391cd810bc2f239d353bb696b472017198adce4b5b0e405"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "notes": [
+        "Four factory signatures and undefined-aware merges are correct. New eight-case test validates captured identity, explicit undefined and success behavior; endpoint runtime/types pass.",
+        "Agent ran broader library typecheck and focused Node-environment Vitest itself; final four selected checks fresh. Local git log reads only synthetic input commit, not remote history or solutions. Original tests/configuration and dependencies unchanged."
+      ]
+    },
+    {
+      "name": "1-valibot-summary-format-scope",
+      "hashes": {
+        "events.jsonl": "e49acff48793f10f987edd76581418400d251639a96658d66620c06e48affbc0",
+        "workspace.diff": "6082fb2725d2cea02c056190f0c36a31b3d60d0cfee373e0121d4f07759c40db",
+        "score.json": "17da7be3b2ea9754542a5ce29750bc0321d1b48941aa6e74dcd778df562dc5ce",
+        "tool-ledger.json": "cb4592d6416024944a38ff6e210c0e94fd5a41b5d65ace54af5404dc6aae2a92"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "scopeFollowups": [
+        {
+          "reportIndex": 34,
+          "validationIndex": 36,
+          "kind": "runtime",
+          "path": "library/src/methods/summarize/summarize.options.test.ts"
+        }
+      ],
+      "notes": [
+        "Reviewed optional exported type and destructured defaults; empty strings, original ordering, immutable issues and hidden paths are preserved. Added four-case regression passes runtime and types independently. Existing tests/configuration/dependencies unchanged.",
+        "Direct added-test Vitest succeeds after feedback; delivery explicitly limits compiler membership and records missing Prettier. Four selected checks fresh."
+      ]
+    },
+    {
+      "name": "1-valibot-summary-format-cline",
+      "hashes": {
+        "events.jsonl": "f30f2065e06e53fb47b94d188afa626e51bafe3b22bb00b89dbee1e4f30d77f3",
+        "workspace.diff": "90d1ef1f214a4937d94052d08b99f4e851e62394c7ac642da82d31294a5db434",
+        "score.json": "f2da3104807108595bd3740bcb1d8d7150fb58c8c369ccd74bc9e06cc9e6f8dc",
+        "tool-ledger.json": "da563408e09112912c95321905a1dfba5ebc1bc79d9f9494d4152c10e75789d5"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "notes": [
+        "Reviewed exported optional type, defaults and concatenation: valid boolean options preserve required paths, empty strings, message order and immutable issues. New four-case test imports option type through public index and passes runtime/types.",
+        "Broad library typecheck and focused Vitest passed; final selected checks fresh. Existing tests/configuration/dependencies preserved. git log observes synthetic baseline only; no solution retrieval."
+      ]
+    },
+    {
+      "name": "1-valibot-summary-format-reference",
+      "hashes": {
+        "events.jsonl": "8324097604fb5e905cf77494d82933afcc173542c3a29139009b822af81feae7",
+        "workspace.diff": "d7ceaa39259f4f91f944f0e226499b8efaf85bf4a0d82738f52a1ed0504749ca",
+        "score.json": "d46712edefbf9e2fbfb5e5d9ad4a6165779b927e4d78e3a0f92aba250f3f9ada",
+        "tool-ledger.json": "bf7c07a6b22a137ed24ac8ecf9e43e7905ba66d4bfef7c132664630766a9eeb6"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "notes": [
+        "Exported optional type and nullish defaults preserve empty strings, message/path order and issue objects. Added three-case regression passes independent runtime/types; direct Vitest also ran successfully.",
+        "Four selected checks are fresh and delivery accurately limits upstream selection and missing formatter. Original tests/configuration/dependencies unchanged; no solution retrieval."
+      ]
+    }
+  ]
+}

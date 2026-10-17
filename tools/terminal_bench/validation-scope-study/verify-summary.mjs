@@ -25,7 +25,7 @@ export function verifySummary(protocol,rows,summary){
   assert.equal(c.tokenDelta,delta(c.candidate.tokens,c.baseline.tokens));assert.equal(c.costDelta,delta(c.candidate.cost,c.baseline.cost));assert.equal(c.durationDelta,delta(c.candidate.durationMs,c.baseline.durationMs));
  }
  const quality=summary.arms[treatment].audited>=summary.arms.reference.audited;
- const mechanism=rows.some(r=>r.arm===treatment&&r.scopeFeedbackFollowed>0);
+ const mechanism=rows.some(r=>r.arm===treatment&&r.scopeFollowups.length>0);
  const c=summary.comparisons[`${treatment}/reference`];
  const resources=quality&&mechanism&&c.pairs>=(protocol.criteria.minimumPairedSuccesses??12)&&c.tokenDelta!==null&&c.tokenDelta<0&&c.costDelta!==null&&c.costDelta<0&&c.durationDelta!==null&&c.durationDelta<=0.1;
  assert.equal(summary.retainDefaultFeedback,quality&&mechanism&&(summary.arms[treatment].audited>summary.arms.reference.audited||resources));
