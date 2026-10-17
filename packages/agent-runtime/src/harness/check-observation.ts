@@ -23,6 +23,8 @@ export type CheckObservation = {
   selection: "confirmed" | "unknown";
   freshness: "current" | "stale" | "unknown";
   evidenceOrigin: "report" | "runner_output" | "node_events" | "none";
+  /** Runner discovery failed; never a passing test or admitted selection. */
+  selectionFailure?: "no_test_files";
   evidence?: Record<string, unknown>;
   note?: string;
   diagnostics?: TestReport["failures"];
@@ -63,6 +65,8 @@ export function observeCheck(
     : ambiguousNode ? undefined : report?.counts ?? runnerCounts(command, output);
   const reportedCounts = isMochaInvocation(command) ? mochaReportedCounts(output).reportedCounts : undefined;
   const interrupted = Boolean(result.interruption);
+  const noTestFiles = !interrupted && result.exitCode === 1 && !report && !counts && !reportedCounts &&
+    vitestNoTestFiles(command, output);
   const execution = counts
     ? counts.executed > 0
       ? "observed"
@@ -93,11 +97,24 @@ export function observeCheck(
     // A host process can have unobserved external writers; pre/post equality is insufficient.
     freshness: sourceChanged ? "stale" : "unknown",
     evidenceOrigin: structured ? "node_events" : report ? "report" : counts || reportedCounts ? "runner_output" : "none",
+    ...(noTestFiles ? { selectionFailure: "no_test_files" as const } : {}),
     ...(structured ? { evidence: structured.evidence } : {}),
     ...(nodeEvents && !structured ? { note: "Invocation-owned Node events are incomplete or unsupported; executed case count remains unconfirmed." }
       : ambiguousNode && !structured ? { note: "Node text summaries can count empty file workers. Source-path labels leave the executed case count unconfirmed." } : {}),
     ...(report?.failures.length ? { diagnostics: report.failures } : {}),
   };
+}
+
+function vitestNoTestFiles(command: string, output: string) {
+  // A bounded runner diagnostic, not a coverage adapter. Contradictory summaries
+  // or compiler/setup failures must keep their ordinary failure classification.
+  const parts = command.trim().split(/\s+&&\s+/u);
+  if (parts.length > 2 || (parts.length === 2 &&
+    !/^tsc(?:\s+[\w./:=@+-]+)*$/u.test(parts[0]!))) return false;
+  return /^(?:vitest|node\s+(?:[\w./-]+\/)?vitest\.[cm]?js)(?:\s+[\w./:=@+-]+)*$/u.test(parts.at(-1)!) &&
+    [...output.matchAll(/^\s*RUN\s+v[1-3]\.\d+\.\d+[^\r\n]*$/gmu)].length === 1 &&
+    [...output.matchAll(/^No test files found, exiting with code 1\s*$/gmu)].length === 1 &&
+    !/^\s*(?:FAIL\b|Tests\s|Test Files\s|Unhandled\b|(?:Assertion|Syntax|Type)?Error\b|Type Errors\s)|\berror TS\d+:/mu.test(output);
 }
 
 function isMochaInvocation(command: string) {

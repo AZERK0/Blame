@@ -477,7 +477,10 @@ export class LightTaskRunner {
           before: metadata.invocationEnvironment,
           after: await environmentManifestEvidence(this.files, snapshot.files),
         } } : {}) };
-      const failure = check.outcome === "failed" ? await commandFailureAssessment(output, this.files, "test", result.exitCode) : undefined;
+      const failure = check.selectionFailure === "no_test_files"
+        ? { category: "command" as const,
+          recovery: `Vitest reported no selected test files from ${metadata.cwd ?? "."}. Resolve paths and filters from this working directory and inspect include/exclude settings, then rerun the intended selection. This failed invocation verifies no code; a different passing selection does not satisfy an explicitly required invocation.` }
+        : check.outcome === "failed" ? await commandFailureAssessment(output, this.files, "test", result.exitCode) : undefined;
       await this.recordCommandValidation(command,
         check.outcome === "failed" ? "failed" : "unknown", snapshot,
         { ...metadata, taskKind: "test", check },

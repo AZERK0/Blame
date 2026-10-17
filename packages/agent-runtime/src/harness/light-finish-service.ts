@@ -159,6 +159,10 @@ export class LightFinishService {
     for (const { input, paths, cwd } of inputs) {
       const matching = state.validations.filter((item) => sameInvocation(item, input, cwd));
       const requirement = required.find((selection) => sameInvocation({ taskId: input.task, args: input.args, cwd }, selection.input, selection.cwd));
+      // Preserve failed selection evidence and any missing exact obligation;
+      // repeating the same unavailable discovery cannot validate the source.
+      if (matching.some((item) => item.category === "command" &&
+        item.check?.selectionFailure === "no_test_files" && item.terminal === "failed")) continue;
       if (requirement && matching.some((item) => passedExecution(item, requirement.taskKind)))
         continue;
       if (!requirement && hasPassingValidation(matching, paths, [input.task]))
