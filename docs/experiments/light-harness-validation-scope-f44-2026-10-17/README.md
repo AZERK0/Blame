@@ -1,3 +1,17 @@
+F44 — completed comparison; default membership feedback withdrawn
+
+27/27 assignments completed; no retry or optional stopping. Official success: reference 9/9, membership 8/9, integrated Cline 9/9. All selected checks pass 27/27; strict audited completion is 6/9, 6/9, 7/9 respectively. Added-test runtime/types pass 26/27. A uniform post-hoc empty-single-result witness finds six Remeda regressions despite original take/pipe tests passing. All 27 archived patches reproduce all six original endpoint outcomes.
+
+Across six paired strict Light successes, membership increases tokens 12.5% and SDK cost 17.8%, with duration 14.5% lower. Across all assigned trials, including the 48-iteration failure, tokens/cost/duration increase 55.0/33.2/22.8%. Against Cline five strict pairs show 5.9% fewer tokens but 13.0% longer duration; full assigned quality is lower. Three constructed tasks with dependent repeats and unblinded audit do not establish general superiority.
+
+Decision: withdraw default compiler-membership feedback (prototype 6cda01c6 remains reproducible), retain the independent invocation-only typecheck guard 36f814ae. Reports appear in 9/9 candidate trials; successful broader follow-up in 8/9, with one additional failed attempt. The frozen named-script counter misses direct runner calls; measurement-notes.json explains the hash-bound supplementary count. A source-only sensitivity is 7/9 versus 6/9 but forgives an inaccurate delivery claim, so does not replace strict acceptance.
+
+All 452 forwarded attempts have usage receipts; input/output/SDK cost reconcile, cache per request does not. F44 SDK estimate 0.82239108 USD, no new reserve; cumulative observed 7.94894492 USD plus prior 3.64 USD reserves, not invoices. Two added Vitest tsbuildinfo caches are retained as raw dependency-integrity flags but classified as generated cache, not installs or modified original dependencies. Host timing excludes scheduled concurrent model/test/compiler work during workers; unknown contention remains possible.
+
+F45 separately reconstructs the retained selection failure after F44 completes; see ../light-harness-selection-recovery-f45-2026-10-17. It does not change any F44 outcome. Replay and verification commands are in tools/terminal_bench/validation-scope-study/README.md. summary.json, source-review.json, pipeline-audit.json and endpoint-replay.json separate assigned/paired resources, interpretation, supplementary diagnostics and reproducibility.
+
+Original engineering notes and preregistration follow; their future tense describes the state before model execution.
+
 F44 — validation scope, engineering and preregistration
 
 Reference: ebc45315, after completed F42/F43. Known evidence: F43 1-valibot-hide-input-cline passes four selected checks and five new runtime tests but its delivered test fails TS2379 under the original exactOptionalPropertyTypes setting. F42 also has added-test and extra metadata failures. Selected checks, admitted verification and full user acceptance remain distinct.
