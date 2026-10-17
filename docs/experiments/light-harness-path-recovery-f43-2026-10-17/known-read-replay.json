@@ -1,6 +1,6 @@
 {
-  "startedAtUTC": "2026-10-17T01:11:23.765Z",
-  "endedAtUTC": "2026-10-17T01:11:29.069Z",
+  "startedAtUTC": "2026-10-17T03:11:40.946Z",
+  "endedAtUTC": "2026-10-17T03:11:47.358Z",
   "modelRequests": 0,
   "scope": "Distinct failed read inputs observed in the first 10 F42 assignments, executed on pristine study source. This is a known diagnosis, not an agent rerun, exact intermediate-state reconstruction or evidence of token savings. Unit controls separately prove no edit coverage is granted.",
   "bindings": {
@@ -9,8 +9,8 @@
       "recovery": null
     },
     "candidate": {
-      "workspace": "44a730ccb5f2624494593265581872f50cf15df6b7079f008cb5cdfb1536d5c9",
-      "recovery": "dab17a08a82d747d32959e0807b2e524b7c3ac994975965cee6df1ead37f8e02"
+      "workspace": "dd84887154af88f6d3c5f416ec64d90fbf677eb99897cc7a48a8051753635cb8",
+      "recovery": "c6260c603c4e14baef4d10a832f286b89256def198a9d25d5013f2e92744d128"
     }
   },
   "summary": {
@@ -54,7 +54,7 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/parseAsync/parseAsync.ts'",
-        "diagnosticId": "read-mvbpatuw"
+        "diagnosticId": "read-mvbtliv4"
       },
       "reads": []
     },
@@ -81,7 +81,7 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/safeParseAsync/safeParseAsync.ts'",
-        "diagnosticId": "read-mvbpatx2"
+        "diagnosticId": "read-mvbtlixt"
       },
       "reads": []
     },
@@ -103,7 +103,7 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/parseAsync.ts'",
-        "diagnosticId": "read-mvbpatze"
+        "diagnosticId": "read-mvbtlj0v"
       },
       "reads": []
     },
@@ -125,7 +125,7 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/safeParseAsync.ts'",
-        "diagnosticId": "read-mvbpau1l"
+        "diagnosticId": "read-mvbtlj3f"
       },
       "reads": []
     },
@@ -147,7 +147,7 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/parseAsync/index.ts'",
-        "diagnosticId": "read-mvbpau3h"
+        "diagnosticId": "read-mvbtlj6d"
       },
       "reads": []
     },
@@ -169,7 +169,7 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/types/config.test-d.ts'",
-        "diagnosticId": "read-mvbpau55"
+        "diagnosticId": "read-mvbtlj8x"
       },
       "reads": []
     },
@@ -191,7 +191,7 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/default/default.ts'",
-        "diagnosticId": "read-mvbpau6t"
+        "diagnosticId": "read-mvbtljbf"
       },
       "reads": []
     },
@@ -213,7 +213,7 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/default/defaultAsync.ts'",
-        "diagnosticId": "read-mvbpau8f"
+        "diagnosticId": "read-mvbtljdt"
       },
       "reads": []
     },
@@ -235,7 +235,7 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/packages/remeda/src/meanBy.test-d.ts'",
-        "diagnosticId": "read-mvbpauho"
+        "diagnosticId": "read-mvbtljq2"
       },
       "reads": []
     },
@@ -267,8 +267,8 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/parseAsync/parseAsync.ts'",
-        "diagnosticId": "read-mvbpav8z",
-        "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/methods/parseAsync/parseAsync.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/methods/parse/parseAsync.ts\",\"nextRead\":{\"target\":\"./library/src/methods/parse/parseAsync.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. No source was read and no edit coverage was granted.\"}"
+        "diagnosticId": "read-mvbtlke2",
+        "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/methods/parseAsync/parseAsync.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/methods/parse/parseAsync.ts\",\"nextRead\":{\"target\":\"./library/src/methods/parse/parseAsync.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. This recovery returns paths only and grants no edit coverage.\"}"
       },
       "reads": [
         {
@@ -301,8 +301,8 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/safeParseAsync/safeParseAsync.ts'",
-        "diagnosticId": "read-mvbpavcs",
-        "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/methods/safeParseAsync/safeParseAsync.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/methods/safeParse/safeParseAsync.ts\",\"nextRead\":{\"target\":\"./library/src/methods/safeParse/safeParseAsync.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. No source was read and no edit coverage was granted.\"}"
+        "diagnosticId": "read-mvbtlkkc",
+        "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/methods/safeParseAsync/safeParseAsync.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/methods/safeParse/safeParseAsync.ts\",\"nextRead\":{\"target\":\"./library/src/methods/safeParse/safeParseAsync.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. This recovery returns paths only and grants no edit coverage.\"}"
       },
       "reads": [
         {
@@ -330,8 +330,8 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/parseAsync.ts'",
-        "diagnosticId": "read-mvbpavgi",
-        "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/methods/parseAsync.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/methods/parse/parseAsync.ts\",\"nextRead\":{\"target\":\"./library/src/methods/parse/parseAsync.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. No source was read and no edit coverage was granted.\"}"
+        "diagnosticId": "read-mvbtlkpb",
+        "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/methods/parseAsync.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/methods/parse/parseAsync.ts\",\"nextRead\":{\"target\":\"./library/src/methods/parse/parseAsync.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. This recovery returns paths only and grants no edit coverage.\"}"
       },
       "reads": [
         {
@@ -359,8 +359,8 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/safeParseAsync.ts'",
-        "diagnosticId": "read-mvbpavjt",
-        "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/methods/safeParseAsync.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/methods/safeParse/safeParseAsync.ts\",\"nextRead\":{\"target\":\"./library/src/methods/safeParse/safeParseAsync.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. No source was read and no edit coverage was granted.\"}"
+        "diagnosticId": "read-mvbtlkup",
+        "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/methods/safeParseAsync.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/methods/safeParse/safeParseAsync.ts\",\"nextRead\":{\"target\":\"./library/src/methods/safeParse/safeParseAsync.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. This recovery returns paths only and grants no edit coverage.\"}"
       },
       "reads": [
         {
@@ -388,7 +388,7 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/parseAsync/index.ts'",
-        "diagnosticId": "read-mvbpavn4"
+        "diagnosticId": "read-mvbtll10"
       },
       "reads": []
     },
@@ -410,8 +410,8 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/types/config.test-d.ts'",
-        "diagnosticId": "read-mvbpavox",
-        "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/types/config.test-d.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/methods/config/config.test-d.ts\",\"nextRead\":{\"target\":\"./library/src/methods/config/config.test-d.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. No source was read and no edit coverage was granted.\"}"
+        "diagnosticId": "read-mvbtll3v",
+        "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/src/types/config.test-d.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"library/src/methods/config/config.test-d.ts\",\"nextRead\":{\"target\":\"./library/src/methods/config/config.test-d.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. This recovery returns paths only and grants no edit coverage.\"}"
       },
       "reads": [
         {
@@ -439,7 +439,7 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/default/default.ts'",
-        "diagnosticId": "read-mvbpavs6"
+        "diagnosticId": "read-mvbtll97"
       },
       "reads": []
     },
@@ -461,7 +461,7 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/library/src/methods/default/defaultAsync.ts'",
-        "diagnosticId": "read-mvbpavtw"
+        "diagnosticId": "read-mvbtlle4"
       },
       "reads": []
     },
@@ -483,7 +483,7 @@
         "status": "blocked",
         "category": "input",
         "message": "ENOENT: no such file or directory, lstat '<WORKSPACE>/packages/remeda/src/meanBy.test-d.ts'",
-        "diagnosticId": "read-mvbpaw3j"
+        "diagnosticId": "read-mvbtllrp"
       },
       "reads": []
     }

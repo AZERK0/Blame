@@ -271,7 +271,7 @@ export function contextGeneration(context: ReadContext) {
   return summary ? `compaction:${summary.id}` : "initial";
 }
 
-export function inputBlocked(error: unknown): LightToolResult<unknown> {
+export function inputBlocked(error: unknown): Extract<LightToolResult<unknown>, { status: "blocked" }> {
   const diagnosticId = `read-${Date.now().toString(36)}`;
   const message = error instanceof Error ? error.message : String(error);
   const recovery =

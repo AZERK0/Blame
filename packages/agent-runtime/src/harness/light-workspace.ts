@@ -49,6 +49,7 @@ import {
 import { LightTaskRunner } from "./light-task-runner.js";
 import { LightReferenceSearch } from "./light-reference-search.js";
 import { readDependencyDeclaration } from "./light-dependency-read.js";
+import { withMissingPathRecovery } from "./light-path-recovery.js";
 import {
   searchWithRipgrep,
   type LexicalSearchMatch,
@@ -309,18 +310,16 @@ export class LightWorkspace {
     const special = await this.specialReadResult(input.target);
     if (special) return special;
     const snapshot = await this.files.snapshot(context.signal);
-    const directory = await this.directoryReadResult(
-      input,
-      snapshot.files,
-      context,
-    );
-    return (
-      directory ??
-      this.readWorkspaceTarget(
-        input,
-        snapshot.revision.source_revision_id,
-        context,
-      )
+    return withMissingPathRecovery(
+      {
+        files: this.files, input, snapshot,
+        literalPath: !this.aliases.get(input.target) && !qualifiedTarget(input.target),
+        signal: context.signal,
+      },
+      async () => {
+        const directory = await this.directoryReadResult(input, snapshot.files, context);
+        return directory ?? this.readWorkspaceTarget(input, snapshot.revision.source_revision_id, context);
+      },
     );
   }
 
