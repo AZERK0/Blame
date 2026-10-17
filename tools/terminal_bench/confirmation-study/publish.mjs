@@ -33,8 +33,11 @@ for (const row of analysis.rows) {
   const started = Date.parse((await json(join(directory, 'model-start.json'))).startedAtUTC);
   const hostValidationOverlap = started < overlapEnd && started + row.exit.durationMs > overlapStart;
   const hostDevelopmentOverlap = development.activities.some(activity => started < Date.parse(activity.endUTC) && started + row.exit.durationMs > Date.parse(activity.startUTC));
-  rows.push({ ...row, hostValidationOverlap, hostDevelopmentOverlap, auditedCompletion: row.independentFunctionalSuccess &&
-    decision.sourceBehaviorPassed && decision.finalSourceChecksPassed && decision.noSolutionRetrieval && decision.fullRequestPassed,
+  const sourceAudited = row.independentFunctionalSuccess && decision.sourceBehaviorPassed &&
+    decision.addedTestsPassed !== false && decision.finalSourceChecksPassed && decision.noSolutionRetrieval;
+  rows.push({ ...row, hostValidationOverlap, hostDevelopmentOverlap, sourceAuditedCompletion: sourceAudited,
+    appendOnlySensitivityCompletion: sourceAudited && (decision.fullRequestPassed || decision.complianceInterpretationSensitive === true),
+    auditedCompletion: sourceAudited && decision.fullRequestPassed,
     traceSha256: sha(archive) });
 }
 await save(join(study, 'results.json'), { phase: protocol.phase, planned: protocol.order.length, completed: rows.length, rows });
@@ -45,6 +48,8 @@ const arms = Object.fromEntries(protocol.arms.map(arm => {
   const sum = field => selected.every(row => row.usage[field] !== null) ? selected.reduce((sum, row) => sum + row.usage[field], 0) : null;
   return [arm, { trials: selected.length, official: selected.filter(row => row.officialRuntimeSuccess).length,
     independent: selected.filter(row => row.independentFunctionalSuccess).length, audited: selected.filter(row => row.auditedCompletion).length,
+    sourceAudited: selected.filter(row => row.sourceAuditedCompletion).length,
+    appendOnlySensitivity: selected.filter(row => row.appendOnlySensitivityCompletion).length,
     input: sum('input'), output: sum('output'), tokens: sum('input') === null || sum('output') === null ? null : sum('input') + sum('output'),
     receiptedInputOutputCostComplete: selected.every(row => row.contract.unreported === 0 && row.usage.tokensCostReconciled),
     forwardedRequests: selected.reduce((sum, row) => sum + row.contract.forwarded, 0),
@@ -108,6 +113,8 @@ return comparisons;
 }
 const comparisons = compare(row => row.auditedCompletion);
 const functionalComparisons = compare(row => row.independentFunctionalSuccess);
+const sourceAuditedComparisons = compare(row => row.sourceAuditedCompletion);
+const appendOnlySensitivityComparisons = compare(row => row.appendOnlySensitivityCompletion);
 const durationSensitivityWithoutRuntimeSuiteOverlap = compare(row => row.auditedCompletion && !row.hostValidationOverlap);
 const durationSensitivityWithoutKnownValidationLoad = compare(row => row.auditedCompletion && !row.hostValidationOverlap && !row.hostDevelopmentOverlap);
 const qualityGate = arms[treatment].audited >= arms.reference.audited;
@@ -115,7 +122,8 @@ const comparison = comparisons[`${treatment}/reference`];
 const resourceGate = qualityGate && comparison.pairs >= 12 &&
   comparison.tokenDelta !== null && comparison.tokenDelta < 0 && comparison.costDelta < 0 && comparison.durationDelta <= 0.1;
 const accounting = await json(join(study, 'accounting.json')), prior = await json(join(study, 'prior-budget.json'));
-await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true, arms, comparisons, functionalComparisons, durationSensitivityWithoutRuntimeSuiteOverlap, durationSensitivityWithoutKnownValidationLoad,
+await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true, arms, comparisons, functionalComparisons, sourceAuditedComparisons, appendOnlySensitivityComparisons, durationSensitivityWithoutRuntimeSuiteOverlap, durationSensitivityWithoutKnownValidationLoad,
+  auditSensitivityCaveat: 'Primary conservative acceptance preserves existing test files. The instruction allowing own new tests can also mean added cases within existing files: report that append-only sensitivity separately, only when the delivered tests actually pass. Source-audited completion excludes instruction/environment compliance and is not full-request acceptance. All dimensions retain confirmed production and added-test regressions; none replaces the registered primary metric.',
   functionalComparisonCaveat: 'Secondary descriptive comparison on selected-check success only. It can include incorrect extra changes or instruction violations; it cannot establish full-task quality parity.', qualityGate, resourceGate,
   accounting, priorObservedUsd: prior.observedUsd, priorReservedUsd: prior.reservedUsd,
   cumulativeObservedSdkUsd: prior.observedUsd + accounting.observedUsd, cumulativeReservedUsd: prior.reservedUsd + accounting.reservedUsd,

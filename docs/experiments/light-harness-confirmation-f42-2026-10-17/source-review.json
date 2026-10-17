@@ -199,9 +199,10 @@
       "noSolutionRetrieval": true,
       "fullRequestPassed": false,
       "unfrozenToolAttempt": true,
-      "note": "Production changes correctly widen callback results, skip nullish keys and preserve ordinary safe result objects. Required final-source checks pass. Strict preservation compliance fails because six existing upstream runtime/type test files are edited (additions, not weakened assertions); the added upstream tests were not validated because Vitest is unavailable. Extra npm/Vitest/Prettier and differently configured compiler failures are disclosed; selected-check success is not taken as full-suite validation.",
+      "note": "Production changes correctly widen callback results, skip nullish keys and preserve ordinary safe result objects. Required final-source checks pass. Strict preservation compliance fails because six existing upstream runtime/type test files are edited (additions, not weakened assertions); the added upstream tests were not validated because Vitest is unavailable. Extra npm/Vitest/Prettier and differently configured compiler failures are disclosed; selected-check success is not taken as full-suite validation. Post-hoc pinned Vitest/TypeScript witness confirms two incorrect literal-type assertions in the added groupBy/indexBy tests; original selected upstream tests pass. Exact added runtime cases pass 27/27. This also fails the relaxed append-only interpretation.",
       "appendOnlyExistingTests": true,
-      "complianceInterpretationSensitive": true
+      "complianceInterpretationSensitive": true,
+      "addedTestsPassed": false
     },
     {
       "name": "1-remeda-null-keys-reference",
@@ -233,6 +234,139 @@
       "complianceInterpretationSensitive": true,
       "unfrozenToolAttempt": true,
       "note": "Both lazy evaluators guard absent pairs before emitting/calling the zipper; public signatures and nonempty truncation/context remain. Required final selected checks and upstream source compilation pass after corrected intermediate failures. Strict test-file preservation rejects new cases added to two existing upstream test files, although their original assertions are retained. Vitest setup failure is disclosed. The SKIP_ITEM branch does not terminate an empty-right pipeline early; this is an efficiency concern outside the selected absent-pair assertions, not evidence of a wrong emitted result."
+    },
+    {
+      "name": "1-remeda-empty-zip-reference",
+      "hashes": {
+        "events.jsonl": "0f0e54b23ce7baff53acf607cc846dcc84154cb27955486459fe89434cf88c09",
+        "workspace.diff": "203e323d5d1ead356b9c45af5f4d1765bf98d63c051f38796d89ff2ce494f92b",
+        "score.json": "08f5b804db28f89c663ea9fc40cb22ab0adc2377a9a2516e9a1cdbd8c8359079",
+        "tool-ledger.json": "47c2a30893da0d8f6ab790ede78b7b3018b730cf97da48e55cd19f3b6a508fa4"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "appendOnlyExistingTests": true,
+      "complianceInterpretationSensitive": true,
+      "unfrozenToolAttempt": true,
+      "note": "Both lazy evaluators terminate before absent pairs; final selected checks pass. Existing test files gain regression cases and imports without weakening prior assertions. Strict file-preservation acceptance is false and interpretation-sensitive. Extra full-suite/Prettier failures are disclosed; added upstream tests remain unvalidated at this review checkpoint. Post-hoc exact test replay confirms one newly added lazy-context assertion fails because both recorded references observe the final mutable accumulator; original related upstream tests pass. This also fails the relaxed append-only interpretation.",
+      "addedTestsPassed": false
+    },
+    {
+      "name": "1-remeda-empty-zip-compiler",
+      "hashes": {
+        "events.jsonl": "daa234970134f87b7ebe8fc04ab2b4da574dbdf25298f5d4e688501fb010ea87",
+        "workspace.diff": "80e9728f19bf73523bf1e1dff21117f8996b121f2f4b483906c5f020b09b0f89",
+        "score.json": "1b43788ce5b3f0527231bcf767b6941060ba41be5c6c3b4b38e5102dfb3108f7",
+        "tool-ledger.json": "ff65dabf4ce65c23400106fa4b38faa3e07d29ee7abd38b87e3893fdba129314"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "appendOnlyExistingTests": true,
+      "complianceInterpretationSensitive": true,
+      "unfrozenToolAttempt": true,
+      "note": "Both lazy evaluators explicitly terminate for an empty second input before zipper invocation, preserving existing nonempty behavior/types. Selected final checks pass. Two existing upstream test files gain cases/imports, triggering the same conservative preservation rejection as both other arms. Missing Vitest and failed formatter attempts are disclosed; no formatting changes were applied."
+    },
+    {
+      "name": "2-valibot-message-prefix-compiler",
+      "hashes": {
+        "events.jsonl": "f7325b843e3e1c4abc5ee10b7530d4e0545b0a7402eeeb611e03a6e3f10b3fcc",
+        "workspace.diff": "1702b596db86fe8a9be432b7b97c88e2744e108d948f41a7eb7ea98183546eb1",
+        "score.json": "19c245603305cebe21d1211a2cce2e0b5203340b5d2a270fec8f8feb2e81328d",
+        "tool-ledger.json": "3d43cd29d4acf5377e68ffe470c0364a62a04e20aaf31c9f69689df81b37a292"
+      },
+      "sourceBehaviorPassed": false,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "note": "Correct prefix placement but unconditionally adds own undefined messagePrefix to the default config, failing all four original globalConfig assertions in the archived uniform post-hoc smoke. Required checks truly run after final source change: later edit_code changed:false is a no-op and must not invalidate them."
+    },
+    {
+      "name": "2-valibot-message-prefix-cline",
+      "hashes": {
+        "events.jsonl": "dda48d0d1c0b338017bf98534186f52d26b15ade654260f4bf2aa6d79276653c",
+        "workspace.diff": "b840067f19a8ccf346c57827d268eced16e24507246b3ec154e0fd3ea6bf4db2",
+        "score.json": "846e2cab2315998bacc39d8143931583d6c3e1eea81eff77776f11ee18eb0a13",
+        "tool-ledger.json": "62e8b1d50afc247c2dffc5c6fc7e1c2a8fc383e58454a7ceb3806cb5ca341994"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "note": "Three implementation files preserve default config shape, prefix after callback and retain empty-string overrides. Required final checks and extra sync/async smoke pass. An unavailable Prettier plugin is accurately disclosed; no source recovery or protected edits."
+    },
+    {
+      "name": "2-valibot-message-prefix-reference",
+      "hashes": {
+        "events.jsonl": "6d48974848ff97ba847de0a6699db6c9c59f6757255d2ed82f88d4c0b1dcfb39",
+        "workspace.diff": "859e970a74811bf10981f87b7e2281d22d5a075954df392ada8924b02a8e82ac",
+        "score.json": "f683b8000cbb8ad4e3d1413e760f7aedce222cff2f819b99daf8cbb6d3477364",
+        "tool-ledger.json": "fd89e9e9a2adf9ba075e8ae66a4f28dcccd3d0eb76c939dade6a7e04c52354b3"
+      },
+      "sourceBehaviorPassed": false,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "note": "Three implementation files implement prefix but unconditionally add an own undefined messagePrefix property to default config. Same original-getter compatibility issue as the compiler arm; uniform upstream witness pending. Required final checks pass, failed unavailable Vitest command disclosed."
+    },
+    {
+      "name": "2-valibot-hide-input-cline",
+      "hashes": {
+        "events.jsonl": "8b634741ee3bf37b80749ad3ef55e60badea17007333e7560e35ec3f608b0192",
+        "workspace.diff": "71abb80d5524fa0a4e5bced9b8e9b04fd5227733cb2b758b8f29163b8fcb8694",
+        "score.json": "565759fc6efd2e7a76f3e0d0ab57ba1a10c477552a2a3aa0bfad40e3f50d6fe3",
+        "tool-ledger.json": "d0d660ae20342b3861940567d686bca4f0fc4c9fde2189f9886c996cde895374"
+      },
+      "sourceBehaviorPassed": false,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "note": "Correct issue redaction after callback, but default config gains an own undefined hideInput property. Existing fixture is changed to accept it, violating strict preservation; an additional callback case is appended. Required checks and 23 extra Vitest5 tests pass; the unpinned cached Vitest tool lies outside the frozen dependency set. git log -1 only reads the synthetic input commit; it exposes no solution history."
+    },
+    {
+      "name": "2-valibot-hide-input-reference",
+      "hashes": {
+        "events.jsonl": "10f8227ae0f6ebff9de5af27128941daed5656008c6b4dfae0b9d27d0d07518b",
+        "workspace.diff": "34f7f024e9d138a6facd072bb0be704d86c90db9aa89d014499713541604a632",
+        "score.json": "a8f405e07a6015da6a30676747ba45a940ec3c8c8b90bcad497a905e47af119a",
+        "tool-ledger.json": "4cfa8bdfb1e5e143620e6943d0584d643f7bf88446b598c79c8a691f7621fa85"
+      },
+      "sourceBehaviorPassed": false,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "note": "Correct redaction via a new issue object after callback; unconditional own undefined hideInput changes absent-option config shape. Required final checks pass; repeated compiler runs reflect absent admission in the reference arm. No retrieved solution or test edits; uniform upstream witness pending."
+    },
+    {
+      "name": "2-valibot-hide-input-compiler",
+      "hashes": {
+        "events.jsonl": "cfb037f605aa3c5c84c3fa43c61a40492fae56cd3487577fcac21f2b3d755c0a",
+        "workspace.diff": "78989740aa2a7b87d0df301faf6a42b79d0586c1a2340527a0109b4820d73387",
+        "score.json": "d61acedde094976a1f4b18ee0af9c10eb077009f101ebe914b0ceb44877d5163",
+        "tool-ledger.json": "d11c627913692dad9aa7694125d9a609eb95d00d4ce51e82099235b0361fe2c5"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "note": "Three implementation files conditionally preserve default config shape and redact input after callback. Required final checks pass after removing an unused ts-expect-error. Existing selected coverage limitations disclosed; no protected/existing test edits."
+    },
+    {
+      "name": "2-valibot-fallback-when-reference",
+      "hashes": {
+        "events.jsonl": "50298fc7117ee865bd6a2781bc0d5b3fdf532ccdabeb8b075c7a22756dbd8914",
+        "workspace.diff": "63258bd18c2dc44231eeb4fa8ab555f3fefd3fd4cadc37c3694eec7c602f2a23",
+        "score.json": "02d35a3eb0673c870a7f75033f490ed7e508e8e514d08d38a6e7a3336141d66b",
+        "tool-ledger.json": "c6ef587f034f065bc706fd9d60173533490cc57a1bfde995db71a871d32962b3"
+      },
+      "sourceBehaviorPassed": false,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "note": "Predicate gating is correct and selected final checks pass, but adding a required third generic parameter breaks formerly valid fallback<Schema,Value> and fallbackAsync<Schema,Value> calls. Added a uniform explicit-generics compatibility witness for all fallback endpoints and original baseline; no source repair. Final report is accurate for the selected checks."
     }
   ]
 }

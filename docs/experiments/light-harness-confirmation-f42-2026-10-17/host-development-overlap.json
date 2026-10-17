@@ -41,6 +41,12 @@
       "startUTC": "2026-10-17T01:11:23.765Z",
       "endUTC": "2026-10-17T01:11:29.069Z",
       "method": "Direct script timestamps."
+    },
+    {
+      "activity": "Post-hoc upstream-test smoke and baseline controls",
+      "startUTC": "2026-10-17T01:28:17.760Z",
+      "endUTC": "2026-10-17T01:29:02.247Z",
+      "method": "Direct script timestamps; dedicated dependency cache outside model workspaces."
     }
   ],
   "caveat": "Additional small research inspections and report generation use the same nonexclusive host. These intervals identify known validation load, not all possible host contention."

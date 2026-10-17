@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises';import {join} from 'node:path';import 
 const analysis=await json(join(work,'campaign/analysis.json'));const packets=[];
 for(const row of analysis.rows){
  const dir=join(work,'campaign',row.name),tools=await json(join(dir,'tool-ledger.json'));
- const lastEdit=tools.findLastIndex(t=>t.tool==='edit_code'&&t.output?.status==='ok'||t.tool==='apply_patch'&&t.output?.success===true);
+ const lastEdit=tools.findLastIndex(t=>t.tool==='edit_code'&&t.output?.status==='ok'&&t.output?.data?.changed!==false||t.tool==='apply_patch'&&t.output?.success===true);
  const commands=[];
  for(const [index,t]of tools.entries()){
   if(t.tool==='run_task'&&t.output?.data?.command)commands.push({index,input:t.input,command:t.output.data.command,exitCode:t.output.data.exitCode??null,processSuccess:t.output.data.exitCode===0,check:t.output.data.check??null});
