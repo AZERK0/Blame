@@ -1,6 +1,6 @@
 // Known F44 endpoint, reconstructed invocation sequence; no model or source repair.
 import assert from 'node:assert/strict';
-import {readFile,writeFile,mkdir,access,rm} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,mkdtemp,access,rm} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {gunzipSync} from 'node:zlib';
@@ -18,8 +18,9 @@ const archive=await readFile(join(study,'traces',name+'.json.gz'));assert.equal(
 const payload=JSON.parse(gunzipSync(archive)).files;
 const bytes=n=>{const b=Buffer.from(payload[n].base64,'base64');assert.equal(sha(b),payload[n].sha256);return b;};
 const grade=JSON.parse(bytes('score.json')),ledger=JSON.parse(bytes('tool-ledger.json'));
-const parent=join('/tmp/blame-validation-selection-f45',output.split('/').at(-1).replace(/\.json$/,'')),root=join(parent,'workspace');
-await mkdir(parent,{recursive:true});await prepare(root,'remeda-take-counts',true);
+const work='/tmp/blame-validation-selection-f45';await mkdir(work,{recursive:true});
+const parent=await mkdtemp(join(work,'replay-')),root=join(parent,'workspace');
+await prepare(root,'remeda-take-counts',true);
 Object.assign(process.env,(await json(join(parent,'environment.json'))).env);
 const patch=join(parent,'original.patch');await writeFile(patch,bytes('workspace.diff'));execFileSync('git',['apply','--binary',patch],{cwd:root});
 assert.deepEqual(grade.protectedPaths,[]);
