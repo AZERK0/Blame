@@ -170,7 +170,7 @@
       "noSolutionRetrieval": true,
       "fullRequestPassed": false,
       "unfrozenToolAttempt": true,
-      "note": "Required final selected checks pass and additional missing-tool/compiler limitations are disclosed. However, the new accumulator corrupts IEEE overflow behavior: two MAX_VALUE values yield NaN rather than +Infinity; adding -Infinity after that overflow yields -Infinity rather than NaN. All four public APIs reproduce these defects. The archived post-hoc witness uniformly checks all completed stable-sum endpoints and the original/positive control, without source repair. Unversioned npx Prettier is also attempted with unavailable plugin; no installation warning or pinned dependency mutation is observed."
+      "note": "Required final selected checks pass and additional missing-tool/compiler limitations are disclosed. However, two positive finite MAX_VALUE inputs yield NaN rather than +Infinity (and similarly for the negative pair), across all four public APIs. This is an unambiguous overflow regression. The uniform archived witness also describes opposite-input-infinity after intermediate overflow, whose legacy-versus-precise interpretation is not itself an acceptance criterion. Source is not repaired. Unversioned npx Prettier is attempted with unavailable plugin; no installation warning or pinned dependency mutation is observed."
     },
     {
       "name": "1-remeda-null-keys-compiler",
@@ -282,7 +282,8 @@
       "finalSourceChecksPassed": true,
       "noSolutionRetrieval": true,
       "fullRequestPassed": false,
-      "note": "Correct prefix placement but unconditionally adds own undefined messagePrefix to the default config, failing all four original globalConfig assertions in the archived uniform post-hoc smoke. Required checks truly run after final source change: later edit_code changed:false is a no-op and must not invalidate them."
+      "note": "Correct prefix placement but unconditionally adds own undefined messagePrefix to the default config, failing all four original globalConfig assertions in the archived uniform post-hoc smoke. Required checks truly run after final source change: later edit_code changed:false is a no-op and must not invalidate them. The own-undefined-property change is an observable original-test failure, but its API-compatibility interpretation is sensitive; the source-only optional-config sensitivity accepts this change. F42 positive controls make the same shape change and also fail those additional original assertions.",
+      "absentOptionShapeOnlyFailure": true
     },
     {
       "name": "2-valibot-message-prefix-cline",
@@ -310,7 +311,8 @@
       "finalSourceChecksPassed": true,
       "noSolutionRetrieval": true,
       "fullRequestPassed": false,
-      "note": "Three implementation files implement prefix but unconditionally add an own undefined messagePrefix property to default config. Same original-getter compatibility issue as the compiler arm; uniform upstream witness pending. Required final checks pass, failed unavailable Vitest command disclosed."
+      "note": "Three implementation files implement prefix but unconditionally add an own undefined messagePrefix property to default config. Same original-getter compatibility issue as the compiler arm; uniform upstream witness pending. Required final checks pass, failed unavailable Vitest command disclosed. The own-undefined-property change is an observable original-test failure, but its API-compatibility interpretation is sensitive; the source-only optional-config sensitivity accepts this change. F42 positive controls make the same shape change and also fail those additional original assertions.",
+      "absentOptionShapeOnlyFailure": true
     },
     {
       "name": "2-valibot-hide-input-cline",
@@ -324,7 +326,8 @@
       "finalSourceChecksPassed": true,
       "noSolutionRetrieval": true,
       "fullRequestPassed": false,
-      "note": "Correct issue redaction after callback, but default config gains an own undefined hideInput property. Existing fixture is changed to accept it, violating strict preservation; an additional callback case is appended. Required checks and 23 extra Vitest5 tests pass; the unpinned cached Vitest tool lies outside the frozen dependency set. git log -1 only reads the synthetic input commit; it exposes no solution history."
+      "note": "Correct issue redaction after callback, but default config gains an own undefined hideInput property. Existing fixture is changed to accept it, violating strict preservation; an additional callback case is appended. Required checks and 23 extra Vitest5 tests pass; the unpinned cached Vitest tool lies outside the frozen dependency set. git log -1 only reads the synthetic input commit; it exposes no solution history. The own-undefined-property change is an observable original-test failure, but its API-compatibility interpretation is sensitive; the source-only optional-config sensitivity accepts this change. F42 positive controls make the same shape change and also fail those additional original assertions.",
+      "absentOptionShapeOnlyFailure": true
     },
     {
       "name": "2-valibot-hide-input-reference",
@@ -338,7 +341,8 @@
       "finalSourceChecksPassed": true,
       "noSolutionRetrieval": true,
       "fullRequestPassed": false,
-      "note": "Correct redaction via a new issue object after callback; unconditional own undefined hideInput changes absent-option config shape. Required final checks pass; repeated compiler runs reflect absent admission in the reference arm. No retrieved solution or test edits; uniform upstream witness pending."
+      "note": "Correct redaction via a new issue object after callback; unconditional own undefined hideInput changes absent-option config shape. Required final checks pass; repeated compiler runs reflect absent admission in the reference arm. No retrieved solution or test edits; uniform upstream witness pending. The own-undefined-property change is an observable original-test failure, but its API-compatibility interpretation is sensitive; the source-only optional-config sensitivity accepts this change. F42 positive controls make the same shape change and also fail those additional original assertions.",
+      "absentOptionShapeOnlyFailure": true
     },
     {
       "name": "2-valibot-hide-input-compiler",
@@ -367,6 +371,65 @@
       "noSolutionRetrieval": true,
       "fullRequestPassed": false,
       "note": "Predicate gating is correct and selected final checks pass, but adding a required third generic parameter breaks formerly valid fallback<Schema,Value> and fallbackAsync<Schema,Value> calls. Added a uniform explicit-generics compatibility witness for all fallback endpoints and original baseline; no source repair. Final report is accurate for the selected checks."
+    },
+    {
+      "name": "2-valibot-fallback-when-compiler",
+      "hashes": {
+        "events.jsonl": "6e9da65fe97de01b85926f2210f141691b3e9d77bccec268c07f3b39b259b029",
+        "workspace.diff": "378a1e1840500a25d43fae4a19bfab81b2a229b7b0651dfa33e3aaa3597feee1",
+        "score.json": "5e0b46f9705e184f70fd6bfc6b1c0556410272cc4fb07b506fd3869ebd81b2d3",
+        "tool-ledger.json": "232e93f50a86b2fdd9f4e9cce7b2e418bcda0c8d7637ff2b6906f825a87805e0"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "note": "Only the two fallback implementations change. Predicates are called only for issues with unchanged dataset/config, short-circuit fallback evaluation and await only the async variant. Existing two-argument calls and both generic parameters remain. Required final source checks pass; selected coverage and unavailable upstream tools are disclosed. Uniform post-hoc upstream/generic compatibility audit pending."
+    },
+    {
+      "name": "2-valibot-fallback-when-cline",
+      "hashes": {
+        "events.jsonl": "208da7eade5e3b03d17281e25753b15650b9002a9ff14d33e53b965b2cf76a02",
+        "workspace.diff": "5a3e599975b04074365b6bebcb1d4d1cdc43d87be5597862ac133722ff6481dd",
+        "score.json": "b0961530e12faae2c382af60294e768bc90903aa58d5448654fc479a43a29343",
+        "tool-ledger.json": "4adfcad98f01cfc7c2b490c162d8d588a39ae79dab093c0785ffec2d230a3f62"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "note": "Only the two fallback implementations change. Predicates are called only for issues with unchanged dataset/config, short-circuit fallback evaluation and await only the async variant. Existing two-argument calls and both generic parameters remain. Required final source checks pass; selected coverage and unavailable upstream tools are disclosed. Uniform post-hoc upstream/generic compatibility audit pending."
+    },
+    {
+      "name": "2-remeda-stable-sum-compiler",
+      "hashes": {
+        "events.jsonl": "bf22ac778b4e1c7a0c49736fac0f5f3fb6bcf8a893effc75e014cd60a9f88aab",
+        "workspace.diff": "d831709bdbc4b0ecb7db877aec5057d0a743e0858705b1acfb03a4644a66df7b",
+        "score.json": "a8657dadb501a113256fbe2f79e6d2fd3f1cb2addff37bfe0d48d0146150d16b",
+        "tool-ledger.json": "d1a8084e88f3cb1cd93228896629d48746ff76c3f7cf73000e86de1bb75041fb"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "note": "Shared compensated summation covers finite cancellation and mapper evaluation once, with O(n) temporary arrays for mapped values. Required final checks and upstream production compiler pass; invalid JSON attempt is retained. Two equal MAX_VALUE values return the correct signed infinity. Subsequent opposite input infinity differs from legacy sequential intermediate overflow; the broad request does not unambiguously require the old intermediate-overflow artifact, so this alone is not rejected. Uniform numeric witness reports that semantic difference separately. No protected/existing test edits or recovered solution.",
+      "numericSemanticsSensitive": true
+    },
+    {
+      "name": "2-remeda-stable-sum-cline",
+      "hashes": {
+        "events.jsonl": "adddffb2e555c8a398e85ad650f9390fe2a81de06d7dc1a162f22598f2dceb37",
+        "workspace.diff": "6d6299d4d3d4ab482762e62644fc2d87ba4232fa26fdcf44dedb3c9ab3097824",
+        "score.json": "bbe5a597749281d07ec7d99fd32fa757360542032b1398b43fe6e3a6b39e5251",
+        "tool-ledger.json": "7b07f75cdcc5044d2b1723583e67be0d2504cfaf60ad92bb9af74cfe9c26b123"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "environmentDeviation": true,
+      "numericSemanticsSensitive": true,
+      "note": "An exact binary64-units accumulator rounds once, preserving bigint branches, mapper evaluation, public signatures and required selected checks. Agent also runs 9,994 single-value round trips and 100 permutations; these are its probes, not additional benchmark tasks. Intermediate-overflow then input-infinity semantics differ from legacy sequential arithmetic, which the broad request does not unambiguously require; retain as sensitivity rather than a definite defect. Strict environment compliance fails because npm exec installs unpinned ESLint10.13.0. Failed upstream Vitest/ESLint/Prettier attempts are disclosed; later production compiler and final checks pass. 637-second duration is retained."
     }
   ]
 }

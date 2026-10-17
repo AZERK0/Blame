@@ -1,0 +1,9 @@
+{
+  "recordedAtUTC": "2026-10-17T01:47:00Z",
+  "scope": "Unblinded post-hoc audit interpretation; no original task, official check, model output or assigned order changed.",
+  "notes": [
+    "An added own undefined configuration option is observable in strict equality but may be acceptable API evolution. Report strict original-test preservation and a labeled source-only sensitivity. F42 positive controls also make that change.",
+    "Adding tests to existing files may fit own new tests despite a strict file-preservation reading. Report append-only sensitivity, retaining actual failing added tests.",
+    "Preserve IEEE behavior for NaN/infinities does not uniquely choose legacy sequential intermediate overflow versus precise finite accumulation followed by an input infinity. Signed infinity from two equal finite MAX_VALUE values is unambiguous; NaN there is rejected. The subsequent opposite-input-infinity cases remain descriptive semantic sensitivity. An exact finite accumulator is not rejected merely for avoiding intermediate overflow."
+  ]
+}

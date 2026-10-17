@@ -7626,6 +7626,1068 @@
           }
         ]
       }
+    },
+    {
+      "name": "2-valibot-fallback-when-compiler",
+      "hashes": {
+        "events.jsonl": "6e9da65fe97de01b85926f2210f141691b3e9d77bccec268c07f3b39b259b029",
+        "workspace.diff": "378a1e1840500a25d43fae4a19bfab81b2a229b7b0651dfa33e3aaa3597feee1",
+        "score.json": "5e0b46f9705e184f70fd6bfc6b1c0556410272cc4fb07b506fd3869ebd81b2d3",
+        "tool-ledger.json": "232e93f50a86b2fdd9f4e9cce7b2e418bcda0c8d7637ff2b6906f825a87805e0"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 54,
+      "required": {
+        "regression": [
+          {
+            "index": 55,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 56,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 57,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 45,
+          "input": {
+            "kind": "command",
+            "command": "grep -n \"valibot-fallback-when\" -A8 -B1 .study/feature.mjs",
+            "cwd": "/workspace/Blame/.blame/research/confirmation-f42/campaign/2-valibot-fallback-when-compiler/workspace"
+          },
+          "command": "grep -n \"valibot-fallback-when\" -A8 -B1 .study/feature.mjs",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 55,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 56,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 57,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 60,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff -- library/src/methods/fallback/fallback.ts library/src/methods/fallback/fallbackAsync.ts",
+            "cwd": "/workspace/Blame/.blame/research/confirmation-f42/campaign/2-valibot-fallback-when-compiler/workspace"
+          },
+          "command": "git diff --check && git status --short && git diff -- library/src/methods/fallback/fallback.ts library/src/methods/fallback/fallbackAsync.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        }
+      ],
+      "delivery": "Implemented optional third-argument predicates for `fallback` and `fallbackAsync`.\n\n- Predicates receive the failed output dataset and the actual parse configuration.\n- Synchronous predicates accept boolean results; async predicates accept boolean or Promise<boolean> results.\n- Predicates run exactly once only for failed parses; false preserves the original failure and skips fallback evaluation.\n- Predicate errors/rejections propagate, while successful parses and existing two-argument calls remain unchanged.\n- Added exported predicate types while preserving schema input/output inference and existing exports.\n\nChecks run:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types` — passed; TypeScript reported no errors.\n- `git diff --check` — passed.\n\nThe supplied checks cover selected behavior and source types; the complete upstream suite was not run.",
+      "blocked": [
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/default/default.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/2-valibot-fallback-when-compiler/workspace/library/src/methods/default/default.ts'",
+            "diagnosticId": "read-mvbpwu5x"
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/default/defaultAsync.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/2-valibot-fallback-when-compiler/workspace/library/src/methods/default/defaultAsync.ts'",
+            "diagnosticId": "read-mvbpwu85"
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/metadata/metadata.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/2-valibot-fallback-when-compiler/workspace/library/src/methods/metadata/metadata.ts'",
+            "diagnosticId": "read-mvbpwuaq"
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/parseAsync/parseAsync.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/2-valibot-fallback-when-compiler/workspace/library/src/methods/parseAsync/parseAsync.ts'",
+            "diagnosticId": "read-mvbpx999"
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/safeParseAsync/safeParseAsync.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/2-valibot-fallback-when-compiler/workspace/library/src/methods/safeParseAsync/safeParseAsync.ts'",
+            "diagnosticId": "read-mvbpx9dh"
+          }
+        },
+        {
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "library/src/methods/fallback/fallback.ts",
+                "patch": "*** Begin Patch\n*** Update File: library/src/methods/fallback/fallback.ts\n@@\n export type Fallback<\n   TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n > =\n@@\n       config?: Config<InferIssue<TSchema>>\n     ) => MaybeReadonly<InferOutput<TSchema>>);\n+\n+/**\n+ * Fallback predicate type.\n+ */\n+export type FallbackPredicate<\n+  TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n+> = (\n+  dataset: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n+  config: Config<InferIssue<TSchema>>\n+) => boolean;\n@@\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate to determine whether the fallback should be used.\n@@\n export function fallback<\n@@\n   const TFallback extends Fallback<TSchema>,\n >(\n   schema: TSchema,\n-  fallback: TFallback\n+  fallback: TFallback,\n+  predicate?: FallbackPredicate<TSchema>\n ): SchemaWithFallback<TSchema, TFallback> {\n   return {\n     ...schema,\n     fallback,\n@@\n     },\n     '~run'(dataset, config) {\n       const outputDataset = schema['~run'](dataset, config);\n-      return outputDataset.issues\n-        ? { typed: true, value: getFallback(this, outputDataset, config) }\n-        : outputDataset;\n+      if (outputDataset.issues) {\n+        if (predicate && !predicate(outputDataset, config)) {\n+          return outputDataset;\n+        }\n+        return { typed: true, value: getFallback(this, outputDataset, config) };\n+      }\n+      return outputDataset;\n     },\n   };\n }\n*** Update File: library/src/methods/fallback/fallbackAsync.ts\n@@\n export type FallbackAsync<\n@@\n       ) => MaybePromise<MaybeReadonly<InferOutput<TSchema>>>);\n+\n+/**\n+ * Fallback async predicate type.\n+ */\n+export type FallbackAsyncPredicate<\n+  TSchema extends\n+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>\n+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,\n+> = (\n+  dataset: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n+  config: Config<InferIssue<TSchema>>\n+) => MaybePromise<boolean>;\n@@\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate to determine whether the fallback should be used.\n@@\n export function fallbackAsync<\n@@\n   const TFallback extends FallbackAsync<TSchema>,\n >(\n   schema: TSchema,\n-  fallback: TFallback\n+  fallback: TFallback,\n+  predicate?: FallbackAsyncPredicate<TSchema>\n ): SchemaWithFallbackAsync<TSchema, TFallback> {\n@@\n     async '~run'(dataset, config) {\n       const outputDataset = await schema['~run'](dataset, config);\n-      return outputDataset.issues\n-        ? {\n-            typed: true,\n-            value: await getFallback(this, outputDataset, config),\n-          }\n-        : outputDataset;\n+      if (outputDataset.issues) {\n+        if (predicate && !(await predicate(outputDataset, config))) {\n+          return outputDataset;\n+        }\n+        return {\n+          typed: true,\n+          value: await getFallback(this, outputDataset, config),\n+        };\n+      }\n+      return outputDataset;\n     },\n   };\n }\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in library/src/methods/fallback/fallbackAsync.ts.\nClosest current lines 28-32:\n      dataset?: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n      config?: Config<InferIssue<TSchema>>\n    ) => MaybePromise<MaybeReadonly<InferOutput<TSchema>>>);\n\n/**",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbpxiwc"
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_5c607e47fd051e859d5fb4de47e8327f",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "2-valibot-fallback-when-cline",
+      "hashes": {
+        "events.jsonl": "208da7eade5e3b03d17281e25753b15650b9002a9ff14d33e53b965b2cf76a02",
+        "workspace.diff": "5a3e599975b04074365b6bebcb1d4d1cdc43d87be5597862ac133722ff6481dd",
+        "score.json": "b0961530e12faae2c382af60294e768bc90903aa58d5448654fc479a43a29343",
+        "tool-ledger.json": "4adfcad98f01cfc7c2b490c162d8d588a39ae79dab093c0785ffec2d230a3f62"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 19,
+      "required": {
+        "regression": [
+          {
+            "index": 20,
+            "input": {
+              "commands": [
+                "npm run test:study:regression"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (1.574661ms)\n✔ custom errors and abort counts (0.340915ms)\n✔ sync and async fallback old interface (0.343239ms)\n✔ config reset, unions and nested issue path (0.329969ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1127.394404\n"
+          }
+        ],
+        "feature": [
+          {
+            "index": 21,
+            "input": {
+              "commands": [
+                "npm run test:study:feature"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ false keeps original issue and does not evaluate fallback (1.201879ms)\n✔ true and success preserve output and exact invocation counts (0.237021ms)\n✔ async predicate is awaited both ways (0.352021ms)\n✔ predicate throw and reject propagate untouched (0.524086ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1075.732124\n"
+          }
+        ],
+        "types": [
+          {
+            "index": 22,
+            "input": {
+              "commands": [
+                "npm run test:study:types"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:types",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p' && printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\""
+            ],
+            "timeout": 120000
+          },
+          "command": "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p' && printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p ... [command truncated: 18 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "/workspace/Blame/.blame/research/confirmation-f42/campaign/2-valibot-fallback-when-cline/workspace\n\nTop-level files:\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.github/FUNDING.yml\n./.gitignore\n./.grit/.gitignore\n./.grit/grit.yaml\n./.prettierignore\n./.study/feature.mjs\n./.study/regression.mjs\n./.study/task.json\n./.study/tsconfig.json\n./.study/types.ts\n./CODE_OF_CONDUCT.md\n./CONTRIBUTING.md\n./LICENSE.md\n./SECURITY.md\n./brand/valibot-icon.png\n./brand/valibot-icon.svg\n./brand/valibot-logo-dark.png\n./brand/valibot-logo-dark.svg\n./brand/valibot-logo-light.png\n./brand/valibot-logo-light.svg\n./codemod/README.md\n./library/CHANGELOG.md\n./library/LICENSE.md\n./library/README.md\n./library/eslint.config.js\n./library/jsr.json\n./library/mod.ts\n./library/package.json\n./library/playground.ts\n./library/tsconfig.json\n./library/tsup.config.ts\n./library/vitest.config.ts\n./package.json\n./pnpm-lock.yaml\n./pnpm-workspace.yaml\n./prettier.config.cjs\n./valibot.jpg\n./website/.env\n./website/.eslintignore\n./website/.eslintrc.cjs\n./website/.gitignore\n./website/.node-version\n./website/.prettierignore\n./website/README.md\n./website/package.json\n./website/postcss.config.cjs\n./website/tailwind.config.cjs\n./website/tsconfig.json\n./website/vercel.json\n./website/vite.config.ts\n\nPackage scripts:\n{\n  \"test:study:feature\": \"node --import tsx --test --test-timeout=10000 .study/feature.mjs\",\n  \"test:study:regression\": \"node --import tsx --test --test-timeout=10000 .study/regression.mjs\",\n  \"test:study:types\": \"node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\"\n}\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "git status --short && git diff --stat && find . -maxdepth 3 -type f \\( -name '*fallback*' -o -name '*fallbackAsync*' -o -name 'package.json' -o -name 'tsconfig*.json' \\) -print | sort"
+            ],
+            "timeout": 120000
+          },
+          "command": "git status --short && git diff --stat && find . -maxdepth 3 -type f \\( -name '*fallback*' -o -name '*fallbackAsync*' -o -name 'package.json' -o -name 'tsconfig*.json' \\) -print | sort",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "./.study/tsconfig.json\n./codemod/migrate-to-v0.31.0/package.json\n./codemod/migrate-to-v0.31.0/tsconfig.json\n./library/package.json\n./library/tsconfig.json\n./package.json\n./packages/i18n/package.json\n./packages/i18n/tsconfig.json\n./packages/to-json-schema/package.json\n./packages/to-json-schema/tsconfig.json\n./website/package.json\n./website/tsconfig.json\n"
+        },
+        {
+          "index": 10,
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (1.896638ms)\n✔ custom errors and abort counts (0.576955ms)\n✔ sync and async fallback old interface (0.362257ms)\n✔ config reset, unions and nested issue path (0.329097ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1803.51215\n"
+        },
+        {
+          "index": 11,
+          "input": {
+            "commands": [
+              "npm run test:study:feature"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ false keeps original issue and does not evaluate fallback (1.094451ms)\n✔ true and success preserve output and exact invocation counts (0.235899ms)\n✔ async predicate is awaited both ways (0.328145ms)\n✔ predicate throw and reject propagate untouched (0.711333ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1142.950604\n"
+        },
+        {
+          "index": 12,
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 13,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff --stat && git diff -- library/src/methods/fallback/fallback.ts library/src/methods/fallback/fallbackAsync.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short && git diff --stat && git diff -- library/src/methods/fallback/fallback.ts library/src/methods/fallback/fallbackAsync.ts",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M library/src/methods/fallback/fallback.ts\n M library/src/methods/fallback/fallbackAsync.ts\n library/src/methods/fallback/fallback.ts      | 17 +++++++++++++++--\n library/src/methods/fallback/fallbackAsync.ts | 20 ++++++++++++++++++--\n 2 files changed, 33 insertions(+), 4 deletions(-)\ndiff --git a/library/src/methods/fallback/fallback.ts b/library/src/methods/fallback/fallback.ts\nindex a57689f..0862d4e 100644\n--- a/library/src/methods/fallback/fallback.ts\n+++ b/library/src/methods/fallback/fallback.ts\n@@ -22,6 +22,16 @@ export type Fallback<\n       config?: Config<InferIssue<TSchema>>\n     ) => MaybeReadonly<InferOutput<TSchema>>);\n \n+/**\n+ * Fallback predicate type.\n+ */\n+export type FallbackPredicate<\n+  TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n+> = (\n+  dataset: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n+  config: Config<InferIssue<TSchema>>\n+) => boolean;\n+\n /**\n  * Schema with fallback type.\n  */\n@@ -40,6 +50,8 @@ export type SchemaWithFallback<\n  *\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate to determine whether to use the fallback\n+ * value.\n  *\n  * @returns The passed schema.\n  */\n@@ -49,7 +61,8 @@ export function fallback<\n   const TFallback extends Fallback<TSchema>,\n >(\n   schema: TSchema,\n-  fallback: TFallback\n+  fallback: TFallback,\n+  predicate?: FallbackPredicate<TSchema>\n ): SchemaWithFallback<TSchema, TFallback> {\n   return {\n     ...schema,\n@@ -59,7 +72,7 @@ export function fallback<\n     },\n     '~run'(dataset, config) {\n       const outputDataset = schema['~run'](dataset, config);\n-      return outputDataset.issues\n+      return outputDataset.issues && (!predicate || predicate(outputDataset, config))\n         ? { typed: true, value: getFallback(this, outputDataset, config) }\n         : outputDataset;\n     },\ndiff --git a/library/src/methods/fallback/fallbackAsync.ts b/library/src/methods/fallback/fallbackAsync.ts\nindex b8f4cc6..6a004ca 100644\n--- a/library/src/methods/fallback/fallbackAsync.ts\n+++ b/library/src/methods/fallback/fallbackAsync.ts\n@@ -29,6 +29,18 @@ export type FallbackAsync<\n       config?: Config<InferIssue<TSchema>>\n     ) => MaybePromise<MaybeReadonly<InferOutput<TSchema>>>);\n \n+/**\n+ * Fallback async predicate type.\n+ */\n+export type FallbackPredicateAsync<\n+  TSchema extends\n+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>\n+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,\n+> = (\n+  dataset: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n+  config: Config<InferIssue<TSchema>>\n+) => MaybePromise<boolean>;\n+\n /**\n  * Schema with fallback async type.\n  */\n@@ -76,6 +88,8 @@ export type SchemaWithFallbackAsync<\n  *\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate to determine whether to use the fallback\n+ * value.\n  *\n  * @returns The passed schema.\n  */\n@@ -87,7 +101,8 @@ export function fallbackAsync<\n   const TFallback extends FallbackAsync<TSchema>,\n >(\n   schema: TSchema,\n-  fallback: TFallback\n+  fallback: TFallback,\n+  predicate?: FallbackPredicateAsync<TSchema>\n ): SchemaWithFallbackAsync<TSchema, TFallback> {\n   return {\n     ...schema,\n@@ -98,7 +113,8 @@ export function fallbackAsync<\n     },\n     async '~run'(dataset, config) {\n       const outputDataset = await schema['~run'](dataset, config);\n-      return outputDataset.issues\n+      return outputDataset.issues &&\n+        (!predicate || (await predicate(outputDataset, config)))\n         ? {\n             typed: true,\n             value: await getFallback(this, outputDataset, config),\n"
+        },
+        {
+          "index": 14,
+          "input": {
+            "commands": [
+              "npx prettier --check library/src/methods/fallback/fallback.ts library/src/methods/fallback/fallbackAsync.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "npx prettier --check library/src/methods/fallback/fallback.ts library/src/methods/fallback/fallbackAsync.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\nChecking formatting...\n\n[stderr]\n[error] Cannot find package '@trivago/prettier-plugin-sort-imports' imported from /workspace/Blame/.blame/research/confirmation-f42/campaign/2-valibot-fallback-when-cline/workspace/noop.js\n"
+        },
+        {
+          "index": 15,
+          "input": {
+            "commands": [
+              "npx vitest run library/src/methods/fallback/fallback.test.ts library/src/methods/fallback/fallbackAsync.test.ts --config library/vitest.config.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "npx vitest run library/src/methods/fallback/fallback.test.ts library/src/methods/fallback/fallbackAsync.test.ts --config library/vitest.config.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\n\n[stderr]\nlibrary/vitest.config.ts (1:529) \u001b[33m[UNRESOLVED_IMPORT] \u001b[0mCould not resolve 'vitest/config' in library/vitest.config.ts\n - Module not found, treating it as an external dependency in library/vitest.config.ts at 529..544\n\nfailed to load config from /workspace/Blame/.blame/research/confirmation-f42/campaign/2-valibot-fallback-when-cline/workspace/library/vitest.config.ts\n\n⎯⎯⎯⎯⎯⎯⎯ Startup Error ⎯⎯⎯⎯⎯⎯⎯⎯\nError [ERR_MODULE_NOT_FOUND]: Cannot find package 'vitest' imported from /workspace/Blame/.blame/research/confirmation-f42/dependencies/node_modules/.vite-temp/vitest.config.ts.timestamp-1792200638929-fb2f7e97eb66c8.mjs\n    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)\n    at packageResolve (node:internal/modules/esm/resolve:768:81)\n    at moduleResolve (node:internal/modules/esm/resolve:859:18)\n    at defaultResolve (node:internal/modules/esm/resolve:992:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:701:20)\n    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:721:38)\n    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:56)\n    at #resolve (node:internal/modules/esm/loader:683:17)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:603:35)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:163:33) {\n  code: 'ERR_MODULE_NOT_FOUND'\n}\n\n\n\n"
+        },
+        {
+          "index": 18,
+          "input": {
+            "commands": [
+              "find node_modules library/node_modules -maxdepth 2 -type d \\( -name vitest -o -name '@trivago' -o -name prettier \\) -print 2>/dev/null | sort | sed -n '1,80p'"
+            ],
+            "timeout": 120000
+          },
+          "command": "find node_modules library/node_modules -maxdepth 2 -type d \\( -name vitest -o -name '@trivago' -o -name prettier \\) -print 2>/dev/null | sort | sed -n '1,80p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": ""
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (1.574661ms)\n✔ custom errors and abort counts (0.340915ms)\n✔ sync and async fallback old interface (0.343239ms)\n✔ config reset, unions and nested issue path (0.329969ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1127.394404\n"
+        },
+        {
+          "index": 21,
+          "input": {
+            "commands": [
+              "npm run test:study:feature"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ false keeps original issue and does not evaluate fallback (1.201879ms)\n✔ true and success preserve output and exact invocation counts (0.237021ms)\n✔ async predicate is awaited both ways (0.352021ms)\n✔ predicate throw and reject propagate untouched (0.524086ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1075.732124\n"
+        },
+        {
+          "index": 22,
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 23,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short && git diff --stat",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M library/src/methods/fallback/fallback.ts\n M library/src/methods/fallback/fallbackAsync.ts\n library/src/methods/fallback/fallback.ts      | 18 ++++++++++++++++--\n library/src/methods/fallback/fallbackAsync.ts | 20 ++++++++++++++++++--\n 2 files changed, 34 insertions(+), 4 deletions(-)\n"
+        }
+      ],
+      "delivery": "Implemented optional predicate support for `fallback` and `fallbackAsync`.\n\n### Changes\n\n- `/workspace/Blame/.blame/research/confirmation-f42/campaign/2-valibot-fallback-when-cline/workspace/library/src/methods/fallback/fallback.ts`\n  - Added optional synchronous predicate argument.\n  - Added exported `FallbackPredicate` type.\n  - Predicate receives the failed output dataset and actual parse configuration.\n  - Predicate runs exactly once only when issues exist.\n  - `false` preserves the original failure and skips fallback evaluation.\n  - `true` or an omitted predicate preserves existing fallback behavior.\n\n- `/workspace/Blame/.blame/research/confirmation-f42/campaign/2-valibot-fallback-when-cline/workspace/library/src/methods/fallback/fallbackAsync.ts`\n  - Added optional asynchronous predicate argument.\n  - Added exported `FallbackPredicateAsync` type.\n  - Supports `boolean | Promise<boolean>`.\n  - Awaits predicates and propagates thrown/rejected errors.\n\nExisting two-argument calls, successful parses, schema input/output inference, and public wildcard exports remain compatible.\n\n### Required checks\n\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types` — passed.\n\nAdditional verification:\n\n- `git diff --check` — passed.\n- Only the two fallback implementation files were modified.\n\n### Limitations\n\nThe optional focused Vitest and Prettier checks could not run because this checkout does not have `vitest` or the configured Prettier plugins installed. The supplied study checks passed successfully. Counts for any broader upstream suite are unknown; the supplied checks do not cover the complete upstream suite.",
+      "blocked": [],
+      "scopeCommands": [],
+      "completion": null
+    },
+    {
+      "name": "2-remeda-stable-sum-compiler",
+      "hashes": {
+        "events.jsonl": "bf22ac778b4e1c7a0c49736fac0f5f3fb6bcf8a893effc75e014cd60a9f88aab",
+        "workspace.diff": "d831709bdbc4b0ecb7db877aec5057d0a743e0858705b1acfb03a4644a66df7b",
+        "score.json": "a8657dadb501a113256fbe2f79e6d2fd3f1cb2addff37bfe0d48d0146150d16b",
+        "tool-ledger.json": "d1a8084e88f3cb1cd93228896629d48746ff76c3f7cf73000e86de1bb75041fb"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 31,
+      "required": {
+        "regression": [
+          {
+            "index": 32,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 33,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 3,
+                "passed": 3,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 34,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 32,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 33,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3,
+              "passed": 3,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 34,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 35,
+          "input": {
+            "kind": "project",
+            "task": "remeda:check"
+          },
+          "command": "npm run check",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        }
+      ],
+      "delivery": "Implemented compensated, linear-time finite-number accumulation for `sum`, `sumBy`, `mean`, and `meanBy` via a shared internal helper. Bigint accumulation remains native, mapper callbacks still run once per element in original order with the original array and index, and empty/IEEE semantics are preserved. No inputs are mutated and public signatures were unchanged.\n\nChecks run:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 3/3 tests.\n- `npm run test:study:types` — passed.\n- `npm run check` — passed.\n\nThe supplied study checks pass; they are targeted checks and do not represent the complete upstream suite.",
+      "blocked": [],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_c087c68d8f8a72f291b770dec363e672",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "2-remeda-stable-sum-cline",
+      "hashes": {
+        "events.jsonl": "adddffb2e555c8a398e85ad650f9390fe2a81de06d7dc1a162f22598f2dceb37",
+        "workspace.diff": "6d6299d4d3d4ab482762e62644fc2d87ba4232fa26fdcf44dedb3c9ab3097824",
+        "score.json": "bbe5a597749281d07ec7d99fd32fa757360542032b1398b43fe6e3a6b39e5251",
+        "tool-ledger.json": "7b07f75cdcc5044d2b1723583e67be0d2504cfaf60ad92bb9af74cfe9c26b123"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 18,
+      "required": {
+        "regression": [
+          {
+            "index": 22,
+            "input": {
+              "commands": [
+                "npm run test:study:regression"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> remeda@2.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ arithmetic and bigint legacy behavior (1.163442ms)\n✔ grouping counting and indexing normal keys (0.856067ms)\n✔ lazy pipeline preserves transforms and truncation (0.538387ms)\n✔ unique and immutable arrays (0.461393ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 869.180344\n"
+          }
+        ],
+        "feature": [
+          {
+            "index": 23,
+            "input": {
+              "commands": [
+                "npm run test:study:feature"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> remeda@2.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ all four APIs recover cancellation and repeated tiny terms (1.54684ms)\n✔ curried forms, callback identity/order and immutable inputs (0.907193ms)\n✔ bigint, empty and IEEE values preserve semantics (0.409196ms)\nℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 590.30646\n"
+          }
+        ],
+        "types": [
+          {
+            "index": 24,
+            "input": {
+              "commands": [
+                "npm run test:study:types"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:types",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && git status --short --branch && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p'",
+              "cat package.json 2>/dev/null || true",
+              "find . -maxdepth 3 -type f \\( -iname '*sum*' -o -iname '*mean*' \\) | sort | sed -n '1,200p'"
+            ]
+          },
+          "command": "pwd && git status --short --branch && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "/workspace/Blame/.blame/research/confirmation-f42/campaign/2-remeda-stable-sum-cline/workspace\n## master\n\nTop-level files:\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.gitattributes\n./.github/FUNDING.yml\n./.github/dependabot.yml\n./.github/pull_request_template.md\n./.gitignore\n./.husky/pre-commit\n./.nvmrc\n./.study/feature.mjs\n./.study/regression.mjs\n./.study/task.json\n./.study/tsconfig.json\n./.study/types.ts\n./.vscode/settings.json\n./CODE_OF_CONDUCT.md\n./CONTRIBUTING.md\n./LICENSE\n./README.md\n./lint-staged.config.ts\n./netlify.toml\n./package-lock.json\n./package.json\n./packages/README.md\n./prettier.config.js\n./remeda.code-workspace\n"
+        },
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && git status --short --branch && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p'",
+              "cat package.json 2>/dev/null || true",
+              "find . -maxdepth 3 -type f \\( -iname '*sum*' -o -iname '*mean*' \\) | sort | sed -n '1,200p'"
+            ]
+          },
+          "command": "cat package.json 2>/dev/null || true",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "{\n  \"name\": \"remeda\",\n  \"version\": \"2.0.0\",\n  \"type\": \"module\",\n  \"private\": true,\n  \"workspaces\": [\n    \"packages/remeda\",\n    \"packages/docs\",\n    \"packages/stackblitz-template\"\n  ],\n  \"scripts\": {\n    \"docs:build\": \"npm run build --workspaces\",\n    \"prepare\": \"husky\",\n    \"test:study:feature\": \"node --import tsx --test --test-timeout=10000 .study/feature.mjs\",\n    \"test:study:regression\": \"node --import tsx --test --test-timeout=10000 .study/regression.mjs\",\n    \"test:study:types\": \"node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\"\n  },\n  \"dependencies\": {\n    \"husky\": \"^9.1.7\"\n  },\n  \"devDependencies\": {\n    \"lint-staged\": \"^16.1.4\",\n    \"prettier\": \"^3.6.2\",\n    \"prettier-plugin-pkg\": \"^0.21.2\",\n    \"prettier-plugin-sh\": \"^0.18.0\"\n  },\n  \"packageManager\": \"npm@11.6.4\"\n}\n"
+        },
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && git status --short --branch && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,160p'",
+              "cat package.json 2>/dev/null || true",
+              "find . -maxdepth 3 -type f \\( -iname '*sum*' -o -iname '*mean*' \\) | sort | sed -n '1,200p'"
+            ]
+          },
+          "command": "find . -maxdepth 3 -type f \\( -iname '*sum*' -o -iname '*mean*' \\) | sort | sed -n '1,200p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": ""
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "find . -maxdepth 4 -type f \\( -name 'package.json' -o -name 'tsconfig*.json' -o -name 'vitest.config.*' -o -name 'jest.config.*' \\) -print | sort",
+              "find . -maxdepth 4 -type f | grep -E '(test|spec|study|regression|feature|types)' | sort | sed -n '1,240p'"
+            ]
+          },
+          "command": "find . -maxdepth 4 -type f \\( -name 'package.json' -o -name 'tsconfig*.json' -o -name 'vitest.config.*' -o -name 'jest.config.*' \\) -print | sort",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "./.study/tsconfig.json\n./package.json\n./packages/docs/package.json\n./packages/docs/tsconfig.json\n./packages/remeda/package.json\n./packages/remeda/tsconfig.dist.json\n./packages/remeda/tsconfig.json\n./packages/remeda/tsconfig.source.json\n./packages/remeda/tsconfig.tests.json\n./packages/remeda/vitest.config.ts\n./packages/stackblitz-template/package.json\n./packages/stackblitz-template/tsconfig.json\n./packages/stackblitz-template/tsconfig.playground.json\n./packages/stackblitz-template/tsconfig.project.json\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "find . -maxdepth 4 -type f \\( -name 'package.json' -o -name 'tsconfig*.json' -o -name 'vitest.config.*' -o -name 'jest.config.*' \\) -print | sort",
+              "find . -maxdepth 4 -type f | grep -E '(test|spec|study|regression|feature|types)' | sort | sed -n '1,240p'"
+            ]
+          },
+          "command": "find . -maxdepth 4 -type f | grep -E '(test|spec|study|regression|feature|types)' | sort | sed -n '1,240p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "./.study/feature.mjs\n./.study/regression.mjs\n./.study/task.json\n./.study/tsconfig.json\n./.study/types.ts\n./packages/remeda/src/add.test.ts\n./packages/remeda/src/addProp.test-d.ts\n./packages/remeda/src/addProp.test.ts\n./packages/remeda/src/allPass.test.ts\n./packages/remeda/src/anyPass.test.ts\n./packages/remeda/src/capitalize.test-d.ts\n./packages/remeda/src/capitalize.test.ts\n./packages/remeda/src/ceil.test.ts\n./packages/remeda/src/chunk.test-d.ts\n./packages/remeda/src/chunk.test.ts\n./packages/remeda/src/clamp.test.ts\n./packages/remeda/src/clone.test.ts\n./packages/remeda/src/concat.test.ts\n./packages/remeda/src/conditional.test-d.ts\n./packages/remeda/src/conditional.test.ts\n./packages/remeda/src/constant.test-d.ts\n./packages/remeda/src/constant.test.ts\n./packages/remeda/src/countBy.test-d.ts\n./packages/remeda/src/countBy.test.ts\n./packages/remeda/src/debounce.test-d.ts\n./packages/remeda/src/debounce.test.ts\n./packages/remeda/src/defaultTo.test-d.ts\n./packages/remeda/src/defaultTo.test.ts\n./packages/remeda/src/difference.test.ts\n./packages/remeda/src/differenceWith.test.ts\n./packages/remeda/src/divide.test.ts\n./packages/remeda/src/doNothing.test-d.ts\n./packages/remeda/src/doNothing.test.ts\n./packages/remeda/src/drop.test-d.ts\n./packages/remeda/src/drop.test.ts\n./packages/remeda/src/dropFirstBy.test.ts\n./packages/remeda/src/dropLast.test-d.ts\n./packages/remeda/src/dropLast.test.ts\n./packages/remeda/src/dropLastWhile.test-d.ts\n./packages/remeda/src/dropLastWhile.test.ts\n./packages/remeda/src/dropWhile.test-d.ts\n./packages/remeda/src/dropWhile.test.ts\n./packages/remeda/src/endsWith.test-d.ts\n./packages/remeda/src/endsWith.test.ts\n./packages/remeda/src/entries.test-d.ts\n./packages/remeda/src/entries.test.ts\n./packages/remeda/src/evolve.test-d.ts\n./packages/remeda/src/evolve.test.ts\n./packages/remeda/src/filter.test-d.ts\n./packages/remeda/src/filter.test.ts\n./packages/remeda/src/find.test-d.ts\n./packages/remeda/src/find.test.ts\n./packages/remeda/src/findIndex.test.ts\n./packages/remeda/src/findLast.test.ts\n./packages/remeda/src/findLastIndex.test.ts\n./packages/remeda/src/first.test-d.ts\n./packages/remeda/src/first.test.ts\n./packages/remeda/src/firstBy.test-d.ts\n./packages/remeda/src/firstBy.test.ts\n./packages/remeda/src/flat.test-d.ts\n./packages/remeda/src/flat.test.ts\n./packages/remeda/src/flatMap.test.ts\n./packages/remeda/src/floor.test.ts\n./packages/remeda/src/forEach.test-d.ts\n./packages/remeda/src/forEach.test.ts\n./packages/remeda/src/forEachObj.test-d.ts\n./packages/remeda/src/forEachObj.test.ts\n./packages/remeda/src/fromEntries.test-d.ts\n./packages/remeda/src/fromEntries.test.ts\n./packages/remeda/src/fromKeys.test-d.ts\n./packages/remeda/src/fromKeys.test.ts\n./packages/remeda/src/funnel.lodash-debounce-with-cached-value.test.ts\n./packages/remeda/src/funnel.lodash-debounce.test.ts\n./packages/remeda/src/funnel.lodash-throttle-with-cached-value.test.ts\n./packages/remeda/src/funnel.lodash-throttle.test.ts\n./packages/remeda/src/funnel.reference-batch.test.ts\n./packages/remeda/src/funnel.remeda-debounce.test.ts\n./packages/remeda/src/funnel.test-d.ts\n./packages/remeda/src/funnel.test.ts\n./packages/remeda/src/groupBy.test-d.ts\n./packages/remeda/src/groupBy.test.ts\n./packages/remeda/src/groupByProp.test-d.ts\n./packages/remeda/src/groupByProp.test.ts\n./packages/remeda/src/hasAtLeast.test-d.ts\n./packages/remeda/src/hasAtLeast.test.ts\n./packages/remeda/src/hasSubObject.test-d.ts\n./packages/remeda/src/hasSubObject.test.ts\n./packages/remeda/src/identity.test-d.ts\n./packages/remeda/src/identity.test.ts\n./packages/remeda/src/indexBy.test-d.ts\n./packages/remeda/src/indexBy.test.ts\n./packages/remeda/src/intersection.test-d.ts\n./packages/remeda/src/intersection.test.ts\n./packages/remeda/src/intersectionWith.test.ts\n./packages/remeda/src/invert.test-d.ts\n./packages/remeda/src/invert.test.ts\n./packages/remeda/src/isArray.test-d.ts\n./packages/remeda/src/isArray.test.ts\n./packages/remeda/src/isBigInt.test-d.ts\n./packages/remeda/src/isBigInt.test.ts\n./packages/remeda/src/isBoolean.test-d.ts\n./packages/remeda/src/isBoolean.test.ts\n./packages/remeda/src/isDate.test-d.ts\n./packages/remeda/src/isDate.test.ts\n./packages/remeda/src/isDeepEqual.test-d.ts\n./packages/remeda/src/isDeepEqual.test.ts\n./packages/remeda/src/isDefined.test-d.ts\n./packages/remeda/src/isDefined.test.ts\n./packages/remeda/src/isEmpty.test-d.ts\n./packages/remeda/src/isEmpty.test.ts\n./packages/remeda/src/isError.test-d.ts\n./packages/remeda/src/isError.test.ts\n./packages/remeda/src/isFunction.test-d.ts\n./packages/remeda/src/isFunction.test.ts\n./packages/remeda/src/isIncludedIn.test-d.ts\n./packages/remeda/src/isIncludedIn.test.ts\n./packages/remeda/src/isNonNull.test-d.ts\n./packages/remeda/src/isNonNull.test.ts\n./packages/remeda/src/isNonNullish.test-d.ts\n./packages/remeda/src/isNonNullish.test.ts\n./packages/remeda/src/isNot.test-d.ts\n./packages/remeda/src/isNot.test.ts\n./packages/remeda/src/isNullish.test-d.ts\n./packages/remeda/src/isNullish.test.ts\n./packages/remeda/src/isNumber.test-d.ts\n./packages/remeda/src/isNumber.test.ts\n./packages/remeda/src/isObjectType.test-d.ts\n./packages/remeda/src/isObjectType.test.ts\n./packages/remeda/src/isPlainObject.test-d.ts\n./packages/remeda/src/isPlainObject.test.ts\n./packages/remeda/src/isPromise.test-d.ts\n./packages/remeda/src/isPromise.test.ts\n./packages/remeda/src/isShallowEqual.test-d.ts\n./packages/remeda/src/isShallowEqual.test.ts\n./packages/remeda/src/isStrictEqual.test-d.ts\n./packages/remeda/src/isStrictEqual.test.ts\n./packages/remeda/src/isString.test-d.ts\n./packages/remeda/src/isString.test.ts\n./packages/remeda/src/isSymbol.test-d.ts\n./packages/remeda/src/isSymbol.test.ts\n./packages/remeda/src/isTruthy.test-d.ts\n./packages/remeda/src/isTruthy.test.ts\n./packages/remeda/src/join.test-d.ts\n./packages/remeda/src/join.test.ts\n./packages/remeda/src/keys.test-d.ts\n./packages/remeda/src/keys.test.ts\n./packages/remeda/src/last.test-d.ts\n./packages/remeda/src/last.test.ts\n./packages/remeda/src/length.test.ts\n./packages/remeda/src/map.test-d.ts\n./packages/remeda/src/map.test.ts\n./packages/remeda/src/mapKeys.test-d.ts\n./packages/remeda/src/mapKeys.test.ts\n./packages/remeda/src/mapToObj.test.ts\n./packages/remeda/src/mapValues.test-d.ts\n./packages/remeda/src/mapValues.test.ts\n./packages/remeda/src/mapWithFeedback.test-d.ts\n./packages/remeda/src/mapWithFeedback.test.ts\n./packages/remeda/src/mean.test-d.ts\n./packages/remeda/src/mean.test.ts\n./packages/remeda/src/meanBy.test.ts\n./packages/remeda/src/median.test-d.ts\n./packages/remeda/src/median.test.ts\n./packages/remeda/src/merge.test-d.ts\n./packages/remeda/src/merge.test.ts\n./packages/remeda/src/mergeAll.test-d.ts\n./packages/remeda/src/mergeAll.test.ts\n./packages/remeda/src/mergeDeep.test-d.ts\n./packages/remeda/src/mergeDeep.test.ts\n./packages/remeda/src/multiply.test.ts\n./packages/remeda/src/nthBy.test-d.ts\n./packages/remeda/src/nthBy.test.ts\n./packages/remeda/src/objOf.test.ts\n./packages/remeda/src/omit.test-d.ts\n./packages/remeda/src/omit.test.ts\n./packages/remeda/src/omitBy.test-d.ts\n./packages/remeda/src/omitBy.test.ts\n./packages/remeda/src/once.test.ts\n./packages/remeda/src/only.test-d.ts\n./packages/remeda/src/only.test.ts\n./packages/remeda/src/partialBind.test-d.ts\n./packages/remeda/src/partialBind.test.ts\n./packages/remeda/src/partialLastBind.test-d.ts\n./packages/remeda/src/partialLastBind.test.ts\n./packages/remeda/src/partition.test-d.ts\n./packages/remeda/src/partition.test.ts\n./packages/remeda/src/pathOr.test-d.ts\n./packages/remeda/src/pathOr.test.ts\n./packages/remeda/src/pick.test-d.ts\n./packages/remeda/src/pick.test.ts\n./packages/remeda/src/pickBy.test-d.ts\n./packages/remeda/src/pickBy.test.ts\n./packages/remeda/src/pipe.test-d.ts\n./packages/remeda/src/pipe.test.ts\n./packages/remeda/src/piped.test.ts\n./packages/remeda/src/product.test-d.ts\n./packages/remeda/src/product.test.ts\n./packages/remeda/src/prop.test-d.ts\n./packages/remeda/src/prop.test.ts\n./packages/remeda/src/pullObject.test-d.ts\n./packages/remeda/src/pullObject.test.ts\n./packages/remeda/src/purry.test.ts\n./packages/remeda/src/randomBigInt.test-d.ts\n./packages/remeda/src/randomBigInt.test.ts\n./packages/remeda/src/randomInteger.test-d.ts\n./packages/remeda/src/randomInteger.test.ts\n./packages/remeda/src/randomString.test.ts\n./packages/remeda/src/range.test.ts\n./packages/remeda/src/rankBy.test.ts\n./packages/remeda/src/reduce.test.ts\n./packages/remeda/src/reverse.test-d.ts\n./packages/remeda/src/reverse.test.ts\n./packages/remeda/src/round.test.ts\n./packages/remeda/src/sample.test-d.ts\n./packages/remeda/src/sample.test.ts\n./packages/remeda/src/set.test-d.ts\n./packages/remeda/src/set.test.ts\n./packages/remeda/src/setPath.test-d.ts\n./packages/remeda/src/setPath.test.ts\n./packages/remeda/src/shuffle.test-d.ts\n./packages/remeda/src/shuffle.test.ts\n./packages/remeda/src/sliceString.test.ts\n./packages/remeda/src/sort.test-d.ts\n./packages/remeda/src/sort.test.ts\n./packages/remeda/src/sortBy.test-d.ts\n./packages/remeda/src/sortBy.test.ts\n./packages/remeda/src/sortedIndex.test.ts\n./packages/remeda/src/sortedIndexBy.test.ts\n./packages/remeda/src/sortedIndexWith.test.ts\n./packages/remeda/src/sortedLastIndex.test.ts\n./packages/remeda/src/sortedLastIndexBy.test.ts\n./packages/remeda/src/splice.test-d.ts\n./packages/remeda/src/splice.test.ts\n./packages/remeda/src/split.test-d.ts\n./packages/remeda/src/split.test.ts\n./packages/remeda/src/splitAt.test.ts\n./packages/remeda/src/splitWhen.test.ts\n./packages/remeda/src/startsWith.test-d.ts\n./packages/remeda/src/startsWith.test.ts\n./packages/remeda/src/stringToPath.test-d.ts\n"
+        },
+        {
+          "index": 9,
+          "input": {
+            "commands": [
+              "test -d node_modules && echo 'root node_modules present' || echo 'root node_modules absent'; test -x node_modules/.bin/vitest && echo 'vitest present' || true; test -x node_modules/.bin/tsx && echo 'tsx present' || true; test -x node_modules/.bin/tsc && echo 'tsc present' || true; git log -1 --oneline --decorate"
+            ]
+          },
+          "command": "test -d node_modules && echo 'root node_modules present' || echo 'root node_modules absent'; test -x node_modules/.bin/vitest && echo 'vitest present' || true; test -x node_modules/.bin/tsx && echo 't ... [command truncated: 113 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "root node_modules present\ntsx present\ntsc present\n934bd43 (HEAD -> master) Frozen confirmation input\n"
+        },
+        {
+          "index": 12,
+          "input": {
+            "commands": [
+              "git diff --check && git diff -- packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/meanBy.ts packages/remeda/src/internal/numberAccumulator.ts",
+              "npm --workspace packages/remeda run check"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git diff -- packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/meanBy.ts packages/remeda/src/internal/numberAccumulator.ts",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "diff --git a/packages/remeda/src/meanBy.ts b/packages/remeda/src/meanBy.ts\nindex 569b445..03b2921 100644\n--- a/packages/remeda/src/meanBy.ts\n+++ b/packages/remeda/src/meanBy.ts\n@@ -1,3 +1,8 @@\n+import {\n+  addToNumberAccumulator,\n+  createNumberAccumulator,\n+  finishNumberAccumulator,\n+} from \"./internal/numberAccumulator\";\n import { purry } from \"./purry\";\n \n /**\n@@ -52,11 +57,11 @@ const meanByImplementation = <T>(\n     return Number.NaN;\n   }\n \n-  let sum = 0;\n+  const accumulator = createNumberAccumulator();\n \n   for (const [index, item] of array.entries()) {\n-    sum += fn(item, index, array);\n+    addToNumberAccumulator(accumulator, fn(item, index, array));\n   }\n \n-  return sum / array.length;\n+  return finishNumberAccumulator(accumulator) / array.length;\n };\ndiff --git a/packages/remeda/src/sum.ts b/packages/remeda/src/sum.ts\nindex 3a6436a..a96aee9 100644\n--- a/packages/remeda/src/sum.ts\n+++ b/packages/remeda/src/sum.ts\n@@ -1,4 +1,9 @@\n import type { IterableContainer } from \"./internal/types/IterableContainer\";\n+import {\n+  addToNumberAccumulator,\n+  createNumberAccumulator,\n+  finishNumberAccumulator,\n+} from \"./internal/numberAccumulator\";\n import { purry } from \"./purry\";\n \n type Sum<T extends IterableContainer<bigint> | IterableContainer<number>> =\n@@ -73,11 +78,18 @@ function sumImplementation<\n   T extends IterableContainer<bigint> | IterableContainer<number>,\n >(data: T): T[number] {\n   // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- The rule differentiates 0 and 0n :(\n-  let out = typeof data[0] === \"bigint\" ? 0n : 0;\n+  if (typeof data[0] === \"bigint\") {\n+    let out = 0n;\n+    for (const value of data) {\n+      // @ts-expect-error [ts2365] -- Typescript can't infer that all elements will be a bigint.\n+      out += value;\n+    }\n+    return out;\n+  }\n+\n+  const accumulator = createNumberAccumulator();\n   for (const value of data) {\n-    // @ts-expect-error [ts2365] -- Typescript can't infer that all elements will be a number of the same type.\n-    // eslint-disable-next-line @typescript-eslint/restrict-plus-operands\n-    out += value;\n+    addToNumberAccumulator(accumulator, value);\n   }\n-  return out;\n+  return finishNumberAccumulator(accumulator);\n }\ndiff --git a/packages/remeda/src/sumBy.ts b/packages/remeda/src/sumBy.ts\nindex 6eead02..2d2a5db 100644\n--- a/packages/remeda/src/sumBy.ts\n+++ b/packages/remeda/src/sumBy.ts\n@@ -1,5 +1,10 @@\n-import { purry } from \"./purry\";\n+import {\n+  addToNumberAccumulator,\n+  createNumberAccumulator,\n+  finishNumberAccumulator,\n+} from \"./internal/numberAccumulator\";\n import type { IterableContainer } from \"./internal/types/IterableContainer\";\n+import { purry } from \"./purry\";\n \n type SumBy<\n   T extends IterableContainer,\n@@ -102,13 +107,24 @@ const sumByImplementation = <T>(\n   const {\n     value: [, firstValue],\n   } = firstEntry;\n-  let sum = callbackfn(firstValue, 0, array);\n+  const firstSummand = callbackfn(firstValue, 0, array);\n+\n+  if (typeof firstSummand === \"bigint\") {\n+    let sum = firstSummand;\n+    for (const [index, item] of iter) {\n+      const summand = callbackfn(item, index, array);\n+\n+      // @ts-expect-error [ts2365] -- Typescript can't infer that all elements will be a bigint.\n+      sum += summand;\n+    }\n+    return sum;\n+  }\n+\n+  const accumulator = createNumberAccumulator();\n+  addToNumberAccumulator(accumulator, firstSummand);\n   for (const [index, item] of iter) {\n     const summand = callbackfn(item, index, array);\n-\n-    // @ts-expect-error [ts2365] -- Typescript can't infer that all elements will be a number of the same type.\n-    // eslint-disable-next-line @typescript-eslint/restrict-plus-operands\n-    sum += summand;\n+    addToNumberAccumulator(accumulator, summand);\n   }\n-  return sum;\n+  return finishNumberAccumulator(accumulator);\n };\n"
+        },
+        {
+          "index": 12,
+          "input": {
+            "commands": [
+              "git diff --check && git diff -- packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/meanBy.ts packages/remeda/src/internal/numberAccumulator.ts",
+              "npm --workspace packages/remeda run check"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm --workspace packages/remeda run check",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 2]\n\n> remeda@2.0.0 check\n> tsc --project tsconfig.source.json\n\nsrc/internal/numberAccumulator.ts(16,7): error TS6133: 'FRACTION_MASK' is declared but its value is never read.\nsrc/internal/numberAccumulator.ts(19,7): error TS6133: 'SUBNORMAL_EXPONENT' is declared but its value is never read.\nsrc/internal/numberAccumulator.ts(20,7): error TS6133: 'MAX_EXPONENT' is declared but its value is never read.\nsrc/sum.ts(92,41): error TS2345: Argument of type 'number | bigint' is not assignable to parameter of type 'number'.\n  Type 'bigint' is not assignable to type 'number'.\nsrc/sumBy.ts(127,41): error TS2345: Argument of type 'number | bigint' is not assignable to parameter of type 'number'.\n  Type 'bigint' is not assignable to type 'number'.\n\n[stderr]\nnpm error Lifecycle script `check` failed with error:\nnpm error code 2\nnpm error path /workspace/Blame/.blame/research/confirmation-f42/campaign/2-remeda-stable-sum-cline/workspace/packages/remeda\nnpm error workspace remeda@2.0.0\nnpm error location /workspace/Blame/.blame/research/confirmation-f42/campaign/2-remeda-stable-sum-cline/workspace/packages/remeda\nnpm error command failed\nnpm error command sh -c tsc --project tsconfig.source.json\n"
+        },
+        {
+          "index": 13,
+          "input": {
+            "commands": [
+              "node --import tsx --input-type=module - <<'EOF'\nimport { mean, meanBy, pipe, sum, sumBy } from './packages/remeda/src/index.ts';\nconst cases = [[1e16, 1, -1e16], [1, -1e16, 1e16], [-1e16, 1e16, 1], [1e16, ...Array(100).fill(1), -1e16]];\nfor (const values of cases) {\n  const expected = values.length === 103 ? 100 : 1;\n  console.log(values.length, sum(values), sumBy(values, x => x), mean(values), meanBy(values, x => x), expected);\n}\nconst frozen = Object.freeze([1e16, 1, -1e16]);\nconst seen = [];\nconsole.log(sum([1n, 2n]), sumBy([1n, 2n], x => x), sum([]), mean([]), Number.isNaN(meanBy([], () => 1)));\nconsole.log(sum([Infinity, 1]), sum([Infinity, -Infinity]), sum([NaN, 1]), mean([Infinity, 1]), meanBy([NaN, 1], x => x));\nconsole.log(sumBy((x, i, data) => { seen.push([x, i, data]); return x; })(frozen), meanBy((x, i, data) => { seen.push([x, i, data]); return x; })(frozen), seen.map(([x, i]) => [x, i]), pipe(frozen, sum()), pipe(frozen, mean()));\nEOF"
+            ],
+            "timeout": 120000
+          },
+          "command": "node --import tsx --input-type=module - <<'EOF'\nimport { mean, meanBy, pipe, sum, sumBy } from './packages/remeda/src/index.ts';\nconst cases = [[1e16, 1, -1e16], [1, -1e16, 1e16], [-1e16, 1e16, 1], [1 ... [command truncated: 762 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "3 -2.2807007049698814e-305 -2.2807007049698814e-305 -7.602335683232938e-306 -7.602335683232938e-306 1\n3 -2.2807007049698814e-305 -2.2807007049698814e-305 -7.602335683232938e-306 -7.602335683232938e-306 1\n3 -2.2807007049698814e-305 -2.2807007049698814e-305 -7.602335683232938e-306 -7.602335683232938e-306 1\n102 2.2306810446306395e-303 2.2306810446306395e-303 2.186942200618274e-305 2.186942200618274e-305 1\n3n 3n 0 undefined true\nInfinity NaN NaN Infinity NaN\n-2.2807007049698814e-305 -7.602335683232938e-306 [\n  [ 10000000000000000, 0 ],\n  [ 1, 1 ],\n  [ -10000000000000000, 2 ],\n  [ 10000000000000000, 0 ],\n  [ 1, 1 ],\n  [ -10000000000000000, 2 ]\n] -2.2807007049698814e-305 -7.602335683232938e-306\n"
+        },
+        {
+          "index": 15,
+          "input": {
+            "commands": [
+              "npm --workspace packages/remeda run check"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm --workspace packages/remeda run check",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 2]\n\n> remeda@2.0.0 check\n> tsc --project tsconfig.source.json\n\nsrc/internal/numberAccumulator.ts(15,7): error TS6133: 'EXPONENT_BITS' is declared but its value is never read.\n\n[stderr]\nnpm error Lifecycle script `check` failed with error:\nnpm error code 2\nnpm error path /workspace/Blame/.blame/research/confirmation-f42/campaign/2-remeda-stable-sum-cline/workspace/packages/remeda\nnpm error workspace remeda@2.0.0\nnpm error location /workspace/Blame/.blame/research/confirmation-f42/campaign/2-remeda-stable-sum-cline/workspace/packages/remeda\nnpm error command failed\nnpm error command sh -c tsc --project tsconfig.source.json\n"
+        },
+        {
+          "index": 16,
+          "input": {
+            "commands": [
+              "node --import tsx --input-type=module - <<'EOF'\nimport { mean, meanBy, pipe, sum, sumBy } from './packages/remeda/src/index.ts';\nconst cases = [[1e16, 1, -1e16], [1, -1e16, 1e16], [-1e16, 1e16, 1], [1e16, ...Array(100).fill(1), -1e16]];\nfor (const values of cases) {\n  const expected = values.length === 102 ? 100 : 1;\n  console.log(values.length, sum(values), sumBy(values, x => x), mean(values), meanBy(values, x => x), expected);\n}\nconst frozen = Object.freeze([1e16, 1, -1e16]);\nconst seen = [];\nconsole.log(sum([1n, 2n]), sumBy([1n, 2n], x => x), sum([]), mean([]), Number.isNaN(meanBy([], () => 1)));\nconsole.log(sum([Infinity, 1]), sum([Infinity, -Infinity]), sum([NaN, 1]), mean([Infinity, 1]), meanBy([NaN, 1], x => x));\nconsole.log(sumBy((x, i, data) => { seen.push([x, i, data]); return x; })(frozen), meanBy((x, i, data) => { seen.push([x, i, data]); return x; })(frozen), seen.map(([x, i]) => [x, i]), pipe(frozen, sum()), pipe(frozen, mean()));\nEOF"
+            ],
+            "timeout": 120000
+          },
+          "command": "node --import tsx --input-type=module - <<'EOF'\nimport { mean, meanBy, pipe, sum, sumBy } from './packages/remeda/src/index.ts';\nconst cases = [[1e16, 1, -1e16], [1, -1e16, 1e16], [-1e16, 1e16, 1], [1 ... [command truncated: 762 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "3 1 1 0.3333333333333333 0.3333333333333333 1\n3 1 1 0.3333333333333333 0.3333333333333333 1\n3 1 1 0.3333333333333333 0.3333333333333333 1\n102 100 100 0.9803921568627451 0.9803921568627451 100\n3n 3n 0 undefined true\nInfinity NaN NaN Infinity NaN\n1 0.3333333333333333 [\n  [ 10000000000000000, 0 ],\n  [ 1, 1 ],\n  [ -10000000000000000, 2 ],\n  [ 10000000000000000, 0 ],\n  [ 1, 1 ],\n  [ -10000000000000000, 2 ]\n] 1 0.3333333333333333\n"
+        },
+        {
+          "index": 17,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M packages/remeda/src/meanBy.ts\n M packages/remeda/src/sum.ts\n M packages/remeda/src/sumBy.ts\n?? packages/remeda/src/internal/numberAccumulator.ts\n"
+        },
+        {
+          "index": 19,
+          "input": {
+            "commands": [
+              "npm --workspace packages/remeda run check"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm --workspace packages/remeda run check",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 check\n> tsc --project tsconfig.source.json\n\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "npx prettier --check packages/remeda/src/internal/numberAccumulator.ts packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/meanBy.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "npx prettier --check packages/remeda/src/internal/numberAccumulator.ts packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/meanBy.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\nChecking formatting...\n\n[stderr]\n[error] Cannot find package 'prettier-plugin-pkg' imported from /workspace/Blame/.blame/research/confirmation-f42/campaign/2-remeda-stable-sum-cline/workspace/noop.js\n"
+        },
+        {
+          "index": 22,
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ arithmetic and bigint legacy behavior (1.163442ms)\n✔ grouping counting and indexing normal keys (0.856067ms)\n✔ lazy pipeline preserves transforms and truncation (0.538387ms)\n✔ unique and immutable arrays (0.461393ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 869.180344\n"
+        },
+        {
+          "index": 23,
+          "input": {
+            "commands": [
+              "npm run test:study:feature"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ all four APIs recover cancellation and repeated tiny terms (1.54684ms)\n✔ curried forms, callback identity/order and immutable inputs (0.907193ms)\n✔ bigint, empty and IEEE values preserve semantics (0.409196ms)\nℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 590.30646\n"
+        },
+        {
+          "index": 24,
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 25,
+          "input": {
+            "commands": [
+              "npm --workspace packages/remeda run test:runtime -- src/sum.test.ts src/sumBy.test.ts src/mean.test.ts src/meanBy.test.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm --workspace packages/remeda run test:runtime -- src/sum.test.ts src/sumBy.test.ts src/mean.test.ts src/meanBy.test.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 2]\n\n> remeda@2.0.0 test:runtime\n> tsc --project tsconfig.tests.json && vitest src/sum.test.ts src/sumBy.test.ts src/mean.test.ts src/meanBy.test.ts\n\nsrc/add.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/addProp.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/allPass.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/anyPass.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/capitalize.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/ceil.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/ceil.test.ts(27,6): error TS7006: Parameter 'val' implicitly has an 'any' type.\nsrc/ceil.test.ts(45,6): error TS7006: Parameter 'val' implicitly has an 'any' type.\nsrc/ceil.test.ts(71,6): error TS7006: Parameter 'val' implicitly has an 'any' type.\nsrc/ceil.test.ts(89,6): error TS7006: Parameter 'val' implicitly has an 'any' type.\nsrc/chunk.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/clamp.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/clone.test.ts(3,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/clone.test.ts(154,35): error TS7006: Parameter 'pattern' implicitly has an 'any' type.\nsrc/concat.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/conditional.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/constant.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/countBy.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/debounce.test.ts(3,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/defaultTo.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/difference.test.ts(1,34): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/difference.test.ts(73,5): error TS2345: Argument of type '(data: number[]) => unknown[]' is not assignable to parameter of type '(input: number[]) => readonly number[]'.\n  Type 'unknown[]' is not assignable to type 'readonly number[]'.\n    Type 'unknown' is not assignable to type 'number'.\nsrc/differenceWith.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/divide.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/doNothing.test.ts(3,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/drop.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/dropFirstBy.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/dropLast.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/dropLastWhile.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/dropWhile.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/endsWith.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/entries.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/evolve.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/filter.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/find.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/find.test.ts(51,7): error TS2345: Argument of type '(data: readonly [{ readonly a: 1; readonly b: 1; }, { readonly a: 1; readonly b: 2; }, { readonly a: 2; readonly b: 1; }, { readonly a: 1; readonly b: 3; }]) => [unknown, unknown, unknown, unknown]' is not assignable to parameter of type '(input: readonly [{ readonly a: 1; readonly b: 1; }, { readonly a: 1; readonly b: 2; }, { readonly a: 2; readonly b: 1; }, { readonly a: 1; readonly b: 3; }]) => readonly { b: any; }[]'.\n  Type '[unknown, unknown, unknown, unknown]' is not assignable to type 'readonly { b: any; }[]'.\n    Type 'unknown' is not assignable to type '{ b: any; }'.\nsrc/find.test.ts(72,7): error TS2345: Argument of type '(data: readonly [{ readonly a: 1; readonly b: 1; }, { readonly a: 1; readonly b: 2; }, { readonly a: 2; readonly b: 1; }, { readonly a: 1; readonly b: 3; }]) => [unknown, unknown, unknown, unknown]' is not assignable to parameter of type '(input: readonly [{ readonly a: 1; readonly b: 1; }, { readonly a: 1; readonly b: 2; }, { readonly a: 2; readonly b: 1; }, { readonly a: 1; readonly b: 3; }]) => readonly { b: any; }[]'.\n  Type '[unknown, unknown, unknown, unknown]' is not assignable to type 'readonly { b: any; }[]'.\n    Type 'unknown' is not assignable to type '{ b: any; }'.\nsrc/findIndex.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/findLast.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/findLastIndex.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/first.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/firstBy.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/flat.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/flat.test.ts(100,19): error TS18046: 'x' is of type 'unknown'.\nsrc/flat.test.ts(117,19): error TS18046: 'x' is of type 'unknown'.\nsrc/flatMap.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/floor.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/floor.test.ts(27,6): error TS7006: Parameter 'val' implicitly has an 'any' type.\nsrc/floor.test.ts(47,6): error TS7006: Parameter 'val' implicitly has an 'any' type.\nsrc/floor.test.ts(73,6): error TS7006: Parameter 'val' implicitly has an 'any' type.\nsrc/floor.test.ts(93,6): error TS7006: Parameter 'val' implicitly has an 'any' type.\nsrc/forEach.test.ts(1,34): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/forEachObj.test.ts(1,34): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/fromEntries.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/fromKeys.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/funnel.lodash-debounce-with-cached-value.test.ts(5,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/funnel.lodash-debounce.test.ts(5,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/funnel.lodash-throttle-with-cached-value.test.ts(5,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/funnel.lodash-throttle.test.ts(5,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/funnel.reference-batch.test.ts(5,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/funnel.reference-batch.test.ts(110,14): error TS7006: Parameter 'words' implicitly has an 'any' type.\nsrc/funnel.reference-batch.test.ts(149,14): error TS7006: Parameter 'words' implicitly has an 'any' type.\nsrc/funnel.reference-batch.test.ts(149,35): error TS7006: Parameter 'word' implicitly has an 'any' type.\nsrc/funnel.remeda-debounce.test.ts(5,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/funnel.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/funnel.test.ts(66,7): error TS2322: Type '(total: undefined, item: number) => number' is not assignable to type '(accumulator: number | undefined, item: number) => number'.\n  Types of parameters 'total' and 'accumulator' are incompatible.\n    Type 'number | undefined' is not assignable to type 'undefined'.\n      Type 'number' is not assignable to type 'undefined'.\nsrc/funnel.test.ts(70,14): error TS2554: Expected 0 arguments, but got 1.\nsrc/funnel.test.ts(71,14): error TS2554: Expected 0 arguments, but got 1.\nsrc/funnel.test.ts(72,14): error TS2554: Expected 0 arguments, but got 1.\nsrc/funnel.test.ts(74,14): error TS2554: Expected 0 arguments, but got 1.\nsrc/funnel.test.ts(75,14): error TS2554: Expected 0 arguments, but got 1.\nsrc/funnel.test.ts(76,14): error TS2554: Expected 0 arguments, but got 1.\nsrc/funnel.test.ts(121,14): error TS2554: Expected 0 arguments, but got 1.\nsrc/funnel.test.ts(126,14): error TS2554: Expected 0 arguments, but got 1.\nsrc/funnel.test.ts(127,14): error TS2554: Expected 0 arguments, but got 1.\nsrc/groupBy.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/groupByProp.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/hasAtLeast.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/hasSubObject.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/identity.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/indexBy.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/internal/binarySearchCutoffIndex.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/internal/heap.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/internal/purryFromLazy.test.ts(6,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/internal/withPrecision.test.ts(1,34): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/internal/words.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/internal/words.test.ts(69,33): error TS7031: Binding element 'input' implicitly has an 'any' type.\nsrc/internal/words.test.ts(69,40): error TS7031: Binding element 'output' implicitly has an 'any' type.\nsrc/internal/words.test.ts(95,33): error TS7031: Binding element 'input' implicitly has an 'any' type.\nsrc/internal/words.test.ts(95,40): error TS7031: Binding element 'output' implicitly has an 'any' type.\nsrc/internal/words.test.ts(112,27): error TS7031: Binding element 'input' implicitly has an 'any' type.\nsrc/internal/words.test.ts(112,34): error TS7031: Binding element 'output' implicitly has an 'any' type.\nsrc/intersection.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/intersectionWith.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/invert.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isArray.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isBigInt.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isBoolean.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isDate.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isDeepEqual.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isDefined.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isEmpty.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isError.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isFunction.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isIncludedIn.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isNonNull.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isNonNullish.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isNot.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isNullish.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isNumber.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isObjectType.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isPlainObject.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isPromise.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isShallowEqual.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isStrictEqual.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isString.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isSymbol.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/isTruthy.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/join.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/keys.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/last.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/length.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/map.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/map.test.ts(48,8): error TS7006: Parameter '_' implicitly has an 'any' type.\nsrc/map.test.ts(48,11): error TS7006: Parameter 'index' implicitly has an 'any' type.\nsrc/mapKeys.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/mapToObj.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/mapValues.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/mapWithFeedback.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/mapWithFeedback.test.ts(45,8): error TS7006: Parameter 'acc' implicitly has an 'any' type.\nsrc/mapWithFeedback.test.ts(45,13): error TS7006: Parameter 'x' implicitly has an 'any' type.\nsrc/mapWithFeedback.test.ts(73,41): error TS18046: 'x' is of type 'unknown'.\nsrc/mean.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/meanBy.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/median.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/merge.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/mergeAll.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/mergeDeep.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/multiply.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/nthBy.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/objOf.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/omit.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/omitBy.test.ts(1,34): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/once.test.ts(1,34): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/only.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/partialBind.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/partialLastBind.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/partition.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/pathOr.test.ts(5,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/pick.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/pickBy.test.ts(1,34): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/pipe.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/piped.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/product.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/prop.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/pullObject.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/purry.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/randomBigInt.test.ts(6,65): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/randomInteger.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/randomString.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/range.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/rankBy.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/reduce.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/reverse.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/round.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/round.test.ts(27,6): error TS7006: Parameter 'val' implicitly has an 'any' type.\nsrc/round.test.ts(47,6): error TS7006: Parameter 'val' implicitly has an 'any' type.\nsrc/round.test.ts(73,6): error TS7006: Parameter 'val' implicitly has an 'any' type.\nsrc/round.test.ts(93,6): error TS7006: Parameter 'val' implicitly has an 'any' type.\nsrc/sample.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/sample.test.ts(7,58): error TS7006: Parameter 'array' implicitly has an 'any' type.\nsrc/sample.test.ts(10,6): error TS7006: Parameter 'sampleSize' implicitly has an 'any' type.\nsrc/sample.test.ts(19,6): error TS7006: Parameter 'sampleSize' implicitly has an 'any' type.\nsrc/sample.test.ts(44,63): error TS7006: Parameter 'sampleSize' implicitly has an 'any' type.\nsrc/sample.test.ts(50,58): error TS7006: Parameter 'sampleSize' implicitly has an 'any' type.\nsrc/set.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/setPath.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/shuffle.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/sliceString.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/sort.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/sortBy.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/sortedIndex.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/sortedIndexBy.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/sortedIndexWith.test.ts(6,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/sortedLastIndex.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/sortedLastIndexBy.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/splice.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/split.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/splitAt.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/splitWhen.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/startsWith.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/stringToPath.test.ts(5,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/stringToPath.test.ts(251,27): error TS7006: Parameter 'input' implicitly has an 'any' type.\nsrc/subtract.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/sum.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/sumBy.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/swapIndices.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/swapProps.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/take.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/takeFirstBy.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/takeLast.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/takeLastWhile.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/takeWhile.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/tap.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/times.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/toCamelCase.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/toCamelCase.test.ts(95,8): error TS7031: Binding element 'input' implicitly has an 'any' type.\nsrc/toCamelCase.test.ts(95,15): error TS7031: Binding element 'whenTrue' implicitly has an 'any' type.\nsrc/toCamelCase.test.ts(95,25): error TS7031: Binding element 'whenFalse' implicitly has an 'any' type.\nsrc/toKebabCase.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/toKebabCase.test.ts(68,6): error TS7006: Parameter 'str' implicitly has an 'any' type.\nsrc/toKebabCase.test.ts(87,24): error TS7006: Parameter 'str' implicitly has an 'any' type.\nsrc/toLowerCase.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/toSnakeCase.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/toSnakeCase.test.ts(68,6): error TS7006: Parameter 'str' implicitly has an 'any' type.\nsrc/toSnakeCase.test.ts(87,24): error TS7006: Parameter 'str' implicitly has an 'any' type.\nsrc/toUpperCase.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/truncate.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/uncapitalize.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/unique.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/uniqueBy.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/uniqueWith.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/values.test.ts(1,30): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/when.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/zip.test.ts(1,44): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\nsrc/zipWith.test.ts(1,40): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\ntest/lazyInvocationCounter.ts(1,20): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.\n\n[stderr]\nnpm error Lifecycle script `test:runtime` failed with error:\nnpm error code 2\nnpm error path /workspace/Blame/.blame/research/confirmation-f42/campaign/2-remeda-stable-sum-cline/workspace/packages/remeda\nnpm error workspace remeda@2.0.0\nnpm error location /workspace/Blame/.blame/research/confirmation-f42/campaign/2-remeda-stable-sum-cline/workspace/packages/remeda\nnpm error command failed\nnpm error command sh -c tsc --project tsconfig.tests.json && vitest src/sum.test.ts src/sumBy.test.ts src/mean.test.ts src/meanBy.test.ts\n"
+        },
+        {
+          "index": 26,
+          "input": {
+            "commands": [
+              "npm --workspace packages/remeda exec eslint -- src/internal/numberAccumulator.ts src/sum.ts src/sumBy.ts src/meanBy.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm --workspace packages/remeda exec eslint -- src/internal/numberAccumulator.ts src/sum.ts src/sumBy.ts src/meanBy.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 2]\n\n[stderr]\nnpm warn exec The following package was not found and will be installed: eslint@10.13.0\n\nOops! Something went wrong! :(\n\nESLint: 10.13.0\n\nError: The 'jiti' library is required for loading TypeScript configuration files. Make sure to install it.\n    at /home/agent/.npm/_npx/515228b7c8d004a2/node_modules/eslint/lib/config/config-loader.js:145:10\n    at async loadTypeScriptConfigFileWithJiti (/home/agent/.npm/_npx/515228b7c8d004a2/node_modules/eslint/lib/config/config-loader.js:144:3)\n    at async loadConfigFile (/home/agent/.npm/_npx/515228b7c8d004a2/node_modules/eslint/lib/config/config-loader.js:265:11)\n    at async ConfigLoader.calculateConfigArray (/home/agent/.npm/_npx/515228b7c8d004a2/node_modules/eslint/lib/config/config-loader.js:594:23)\n"
+        },
+        {
+          "index": 27,
+          "input": {
+            "commands": [
+              "node --import tsx --input-type=module - <<'EOF'\nimport { sum } from './packages/remeda/src/sum.ts';\nconst values = [Number.MAX_VALUE, Number.MIN_VALUE, -Number.MAX_VALUE, -Number.MIN_VALUE, 1, -1];\nfor (const value of values) {\n  if (!Object.is(sum([value]), value) && !(Number.isNaN(value) && Number.isNaN(sum([value])))) {\n    throw new Error(`single-value mismatch for ${value}: ${sum([value])}`);\n  }\n}\nconst permutations = [\n  [1e16, 1, -1e16],\n  [1, -1e16, 1e16],\n  [-1e16, 1e16, 1],\n  [Number.MAX_VALUE, -Number.MAX_VALUE, 1],\n  [1, Number.MAX_VALUE, -Number.MAX_VALUE],\n];\nfor (const values of permutations) console.log(values, sum(values));\nconsole.log('boundary single values passed');\nEOF"
+            ],
+            "timeout": 120000
+          },
+          "command": "node --import tsx --input-type=module - <<'EOF'\nimport { sum } from './packages/remeda/src/sum.ts';\nconst values = [Number.MAX_VALUE, Number.MIN_VALUE, -Number.MAX_VALUE, -Number.MIN_VALUE, 1, -1];\nfo ... [command truncated: 499 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "[ 10000000000000000, 1, -10000000000000000 ] 1\n[ 1, -10000000000000000, 10000000000000000 ] 1\n[ -10000000000000000, 10000000000000000, 1 ] 1\n[ 1.7976931348623157e+308, -1.7976931348623157e+308, 1 ] 1\n[ 1, 1.7976931348623157e+308, -1.7976931348623157e+308 ] 1\nboundary single values passed\n"
+        },
+        {
+          "index": 28,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && printf '\\nChanged paths:\\n' && git diff --name-only && git ls-files --others --exclude-standard"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short && printf '\\nChanged paths:\\n' && git diff --name-only && git ls-files --others --exclude-standard",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M packages/remeda/src/meanBy.ts\n M packages/remeda/src/sum.ts\n M packages/remeda/src/sumBy.ts\n?? packages/remeda/src/internal/numberAccumulator.ts\n\nChanged paths:\npackages/remeda/src/meanBy.ts\npackages/remeda/src/sum.ts\npackages/remeda/src/sumBy.ts\npackages/remeda/src/internal/numberAccumulator.ts\n"
+        },
+        {
+          "index": 29,
+          "input": {
+            "commands": [
+              "node --import tsx --input-type=module - <<'EOF'\nimport { sum } from './packages/remeda/src/sum.ts';\nconst buffer = new ArrayBuffer(8);\nconst view = new DataView(buffer);\nlet checked = 0;\nfor (let i = 0; i < 10000; i++) {\n  view.setUint32(0, Math.floor(Math.random() * 2 ** 32));\n  view.setUint32(4, Math.floor(Math.random() * 2 ** 32));\n  const value = view.getFloat64(0);\n  if (Number.isFinite(value)) {\n    const result = sum([value]);\n    if (!Object.is(result, value)) throw new Error(`round-trip mismatch: ${value} -> ${result}`);\n    checked++;\n  }\n}\nconst values = [1e16, 1, -1e16, 0.1, Number.MIN_VALUE, -0.1];\nconst expected = sum(values);\nfor (let i = 0; i < 100; i++) {\n  const shuffled = [...values].sort(() => Math.random() - 0.5);\n  if (!Object.is(sum(shuffled), expected)) throw new Error(`order mismatch: ${sum(shuffled)} != ${expected}`);\n}\nconsole.log(`checked ${checked} finite binary64 round-trips and 100 order permutations`);\nEOF"
+            ],
+            "timeout": 120000
+          },
+          "command": "node --import tsx --input-type=module - <<'EOF'\nimport { sum } from './packages/remeda/src/sum.ts';\nconst buffer = new ArrayBuffer(8);\nconst view = new DataView(buffer);\nlet checked = 0;\nfor (let i =  ... [command truncated: 751 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "checked 9994 finite binary64 round-trips and 100 order permutations\n"
+        },
+        {
+          "index": 30,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff --stat && printf '\\nTracked metadata/config changes:\\n' && git diff --name-only -- package.json package-lock.json .study .github .vscode packages/remeda/package.json packages/remeda/tsconfig.json packages/remeda/vitest.config.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short && git diff --stat && printf '\\nTracked metadata/config changes:\\n' && git diff --name-only -- package.json package-lock.json .study .github .vscode packages/rem ... [command truncated: 79 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M packages/remeda/src/meanBy.ts\n M packages/remeda/src/sum.ts\n M packages/remeda/src/sumBy.ts\n?? packages/remeda/src/internal/numberAccumulator.ts\n packages/remeda/src/meanBy.ts | 11 ++++++++---\n packages/remeda/src/sum.ts    | 22 +++++++++++++++++-----\n packages/remeda/src/sumBy.ts  | 30 +++++++++++++++++++++++-------\n 3 files changed, 48 insertions(+), 15 deletions(-)\n\nTracked metadata/config changes:\n"
+        }
+      ],
+      "delivery": "Implemented stable finite-number accumulation for `sum`, `sumBy`, `mean`, and `meanBy`.\n\n### Changes\n- Added `/workspace/Blame/.blame/research/confirmation-f42/campaign/2-remeda-stable-sum-cline/workspace/packages/remeda/src/internal/numberAccumulator.ts`.\n- Finite numbers are accumulated exactly as binary64 units using a linear pass and rounded once at the end.\n- Preserved:\n  - bigint support\n  - empty results\n  - direct and curried forms\n  - pipe interoperability\n  - mapper order, index, input-array identity, and exactly-once evaluation\n  - NaN and infinity behavior\n  - input immutability\n  - existing public types\n\nNo manifests, lockfiles, configuration, supplied checks, or metadata were changed.\n\n### Required checks\n\n- `npm run test:study:regression` — passed, 4/4 tests\n- `npm run test:study:feature` — passed, 3/3 tests\n- `npm run test:study:types` — passed with no diagnostics\n- `npm --workspace packages/remeda run check` — passed\n- `git diff --check` — passed\n- Additional probe — passed 9,994 finite binary64 single-value round trips and 100 order permutations\n\n### Limitations\n\n- The affected upstream Vitest tests could not run because this checkout lacks the installed `vitest` dependency/types. The command attempted was:\n  - `npm --workspace packages/remeda run test:runtime -- src/sum.test.ts src/sumBy.test.ts src/mean.test.ts src/meanBy.test.ts`\n- ESLint could not run because the configured ESLint dependencies, including `jiti`, are unavailable.\n- Prettier could not run because `prettier-plugin-pkg` is unavailable.\n- Full upstream-suite coverage remains unknown.",
+      "blocked": [],
+      "scopeCommands": [],
+      "completion": null
     }
   ]
 }

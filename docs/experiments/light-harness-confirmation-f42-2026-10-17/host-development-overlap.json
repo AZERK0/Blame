@@ -47,6 +47,24 @@
       "startUTC": "2026-10-17T01:28:17.760Z",
       "endUTC": "2026-10-17T01:29:02.247Z",
       "method": "Direct script timestamps; dedicated dependency cache outside model workspaces."
+    },
+    {
+      "activity": "F43 isolated-environment local preflight (including rejected initial controls)",
+      "startUTC": "2026-10-17T01:35:00Z",
+      "endUTC": "2026-10-17T01:38:16.671Z",
+      "method": "Conservative start from tool-call time and recorded final-control end; includes preparation/idle time."
+    },
+    {
+      "activity": "F43 actual shell/npm environment smoke",
+      "startUTC": "2026-10-17T01:42:11.761Z",
+      "endUTC": "2026-10-17T01:42:16.014Z",
+      "method": "Direct script timestamps; no model request."
+    },
+    {
+      "activity": "F43 integrated SDK plus Light shell-version smoke",
+      "startUTC": "2026-10-17T01:43:46.833Z",
+      "endUTC": "2026-10-17T01:43:52.328Z",
+      "method": "Direct script timestamps; no model request."
     }
   ],
   "caveat": "Additional small research inspections and report generation use the same nonexclusive host. These intervals identify known validation load, not all possible host contention."

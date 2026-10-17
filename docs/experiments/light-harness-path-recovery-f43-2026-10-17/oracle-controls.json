@@ -1,0 +1,197 @@
+{
+  "startedAtUTC": "2026-10-17T01:37:18.654Z",
+  "endedAtUTC": "2026-10-17T01:38:16.671Z",
+  "modelRequests": 0,
+  "complete": true,
+  "rows": [
+    {
+      "id": "valibot-message-prefix",
+      "before": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (2.013669ms)\n✔ custom errors and abort counts (0.314416ms)\n✔ sync and async fallback old interface (0.289498ms)\n✔ config reset, unions and nested issue path (0.356377ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1154.387565\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "exitCode": 1,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✖ global and local prefix precedence including empty override (4.227405ms)\n✖ callbacks see unprefixed issue and nested messages prefix once (0.711372ms)\n✖ async and union issues retain prefix independently (1.582652ms)\n✔ abort behavior and config reset retained (0.262879ms)\nℹ tests 4\nℹ suites 0\nℹ pass 1\nℹ fail 3\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1215.541181\n\n✖ failing tests:\n\ntest at .study/feature.mjs:7:2\n✖ global and local prefix precedence including empty override (4.227405ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  'bad' !== 'G:bad'\n  \n      at TestContext.<anonymous> (/tmp/blame-path-recovery-f43/controls/valibot-message-prefix/workspace/.study/feature.mjs:7:160)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.start (node:internal/test_runner/test:1242:17)\n      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 'bad',\n    expected: 'G:bad',\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at .study/feature.mjs:8:2\n✖ callbacks see unprefixed issue and nested messages prefix once (0.711372ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  + actual - expected\n  \n  + 'custom'\n  - 'X:custom'\n  \n      at TestContext.<anonymous> (/tmp/blame-path-recovery-f43/controls/valibot-message-prefix/workspace/.study/feature.mjs:8:233)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)\n      at Test.postRun (node:internal/test_runner/test:1522:19)\n      at Test.run (node:internal/test_runner/test:1447:12)\n      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 'custom',\n    expected: 'X:custom',\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at .study/feature.mjs:9:2\n✖ async and union issues retain prefix independently (1.582652ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n  + actual - expected\n  \n    [\n  +   'a',\n  +   'b'\n  -   'P:a',\n  -   'P:b'\n    ]\n  \n      at TestContext.<anonymous> (/tmp/blame-path-recovery-f43/controls/valibot-message-prefix/workspace/.study/feature.mjs:9:203)\n      at async Test.run (node:internal/test_runner/test:1389:7)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: [ 'a', 'b' ],\n    expected: [ 'P:a', 'P:b' ],\n    operator: 'deepStrictEqual',\n    diff: 'simple'\n  }\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "exitCode": 2,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n.study/types.ts(2,20): error TS2353: Object literal may only specify known properties, and 'messagePrefix' does not exist in type 'GlobalConfig'.\n.study/types.ts(3,28): error TS2353: Object literal may only specify known properties, and 'messagePrefix' does not exist in type 'Config<StringIssue>'.\n.study/types.ts(4,33): error TS2353: Object literal may only specify known properties, and 'messagePrefix' does not exist in type 'Config<StringIssue>'.\n",
+          "stderr": ""
+        },
+        {
+          "name": "upstream",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-path-recovery-f43/controls/valibot-message-prefix/workspace\n\n ✓ library/src/utils/_addIssue/_addIssue.test.ts (18 tests) 7ms\n ✓ library/src/storages/globalConfig/globalConfig.test.ts (4 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  22 passed (22)\n   Start at  01:37:27\n   Duration  1.74s (transform 946ms, setup 0ms, collect 1.43s, tests 10ms, environment 0ms, prepare 94ms)\n\n",
+          "stderr": ""
+        }
+      ],
+      "after": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (1.83131ms)\n✔ custom errors and abort counts (0.402636ms)\n✔ sync and async fallback old interface (0.322266ms)\n✔ config reset, unions and nested issue path (0.377428ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1151.910704\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ global and local prefix precedence including empty override (1.329897ms)\n✔ callbacks see unprefixed issue and nested messages prefix once (0.404098ms)\n✔ async and union issues retain prefix independently (1.110783ms)\n✔ abort behavior and config reset retained (0.222449ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1225.08963\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "upstream",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-path-recovery-f43/controls/valibot-message-prefix/workspace\n\n ✓ library/src/utils/_addIssue/_addIssue.test.ts (18 tests) 7ms\n ✓ library/src/storages/globalConfig/globalConfig.test.ts (4 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  22 passed (22)\n   Start at  01:37:35\n   Duration  1.80s (transform 959ms, setup 0ms, collect 1.47s, tests 10ms, environment 0ms, prepare 106ms)\n\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "id": "valibot-hide-input",
+      "before": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (1.642059ms)\n✔ custom errors and abort counts (0.308206ms)\n✔ sync and async fallback old interface (0.314596ms)\n✔ config reset, unions and nested issue path (0.32424ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1781.917589\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "exitCode": 1,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✖ global redaction and per-call false override (3.557143ms)\n✖ callbacks see original input and descriptions survive (0.326824ms)\n✖ nested and union issues redact all own inputs (0.632846ms)\n✖ async redaction, success and reset (0.546448ms)\nℹ tests 4\nℹ suites 0\nℹ pass 0\nℹ fail 4\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1096.287547\n\n✖ failing tests:\n\ntest at .study/feature.mjs:13:2\n✖ global redaction and per-call false override (3.557143ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  123 !== undefined\n  \n      at TestContext.<anonymous> (/tmp/blame-path-recovery-f43/controls/valibot-hide-input/workspace/.study/feature.mjs:13:141)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.start (node:internal/test_runner/test:1242:17)\n      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 123,\n    expected: undefined,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at .study/feature.mjs:14:2\n✖ callbacks see original input and descriptions survive (0.326824ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  123 !== undefined\n  \n      at TestContext.<anonymous> (/tmp/blame-path-recovery-f43/controls/valibot-hide-input/workspace/.study/feature.mjs:14:206)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)\n      at Test.postRun (node:internal/test_runner/test:1522:19)\n      at Test.run (node:internal/test_runner/test:1447:12)\n      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 123,\n    expected: undefined,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at .study/feature.mjs:15:2\n✖ nested and union issues redact all own inputs (0.632846ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  + actual - expected\n  \n  + true\n  - undefined\n  \n      at visit (/tmp/blame-path-recovery-f43/controls/valibot-hide-input/workspace/.study/feature.mjs:15:189)\n      at Array.forEach (<anonymous>)\n      at TestContext.<anonymous> (/tmp/blame-path-recovery-f43/controls/valibot-hide-input/workspace/.study/feature.mjs:15:270)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)\n      at Test.postRun (node:internal/test_runner/test:1522:19)\n      at Test.run (node:internal/test_runner/test:1447:12)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: true,\n    expected: undefined,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at .study/feature.mjs:16:2\n✖ async redaction, success and reset (0.546448ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  1 !== undefined\n  \n      at <anonymous> (/tmp/blame-path-recovery-f43/controls/valibot-hide-input/workspace/.study/feature.mjs:16:229)\n      at Array.forEach (<anonymous>)\n      at TestContext.<anonymous> (/tmp/blame-path-recovery-f43/controls/valibot-hide-input/workspace/.study/feature.mjs:16:211)\n      at async Test.run (node:internal/test_runner/test:1389:7)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 1,\n    expected: undefined,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "exitCode": 2,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n.study/types.ts(2,20): error TS2353: Object literal may only specify known properties, and 'hideInput' does not exist in type 'GlobalConfig'.\n.study/types.ts(3,28): error TS2353: Object literal may only specify known properties, and 'hideInput' does not exist in type 'Config<StringIssue>'.\n.study/types.ts(4,33): error TS2353: Object literal may only specify known properties, and 'hideInput' does not exist in type 'Config<StringIssue>'.\n",
+          "stderr": ""
+        },
+        {
+          "name": "upstream",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-path-recovery-f43/controls/valibot-hide-input/workspace\n\n ✓ library/src/utils/_addIssue/_addIssue.test.ts (18 tests) 7ms\n ✓ library/src/storages/globalConfig/globalConfig.test.ts (4 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  22 passed (22)\n   Start at  01:37:47\n   Duration  1.77s (transform 934ms, setup 0ms, collect 1.43s, tests 10ms, environment 0ms, prepare 104ms)\n\n",
+          "stderr": ""
+        }
+      ],
+      "after": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (1.666246ms)\n✔ custom errors and abort counts (0.310269ms)\n✔ sync and async fallback old interface (0.326213ms)\n✔ config reset, unions and nested issue path (0.407733ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1199.680716\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ global redaction and per-call false override (1.116342ms)\n✔ callbacks see original input and descriptions survive (0.213366ms)\n✔ nested and union issues redact all own inputs (0.470136ms)\n✔ async redaction, success and reset (1.011217ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1157.485524\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "upstream",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-path-recovery-f43/controls/valibot-hide-input/workspace\n\n ✓ library/src/utils/_addIssue/_addIssue.test.ts (18 tests) 7ms\n ✓ library/src/storages/globalConfig/globalConfig.test.ts (4 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  22 passed (22)\n   Start at  01:37:55\n   Duration  1.68s (transform 912ms, setup 0ms, collect 1.36s, tests 9ms, environment 0ms, prepare 94ms)\n\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "id": "valibot-fallback-when",
+      "before": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (1.659295ms)\n✔ custom errors and abort counts (0.310309ms)\n✔ sync and async fallback old interface (0.313344ms)\n✔ config reset, unions and nested issue path (0.357259ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1675.885391\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "exitCode": 1,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✖ false keeps original issue and does not evaluate fallback (3.679835ms)\n✖ true and success preserve output and exact invocation counts (0.37896ms)\n✖ async predicate is awaited both ways (0.437798ms)\n✖ predicate throw and reject propagate untouched (0.373432ms)\nℹ tests 4\nℹ suites 0\nℹ pass 0\nℹ fail 4\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1123.735224\n\n✖ failing tests:\n\ntest at .study/feature.mjs:19:2\n✖ false keeps original issue and does not evaluate fallback (3.679835ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  true !== false\n  \n      at TestContext.<anonymous> (/tmp/blame-path-recovery-f43/controls/valibot-fallback-when/workspace/.study/feature.mjs:19:345)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.start (node:internal/test_runner/test:1242:17)\n      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: true,\n    expected: false,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at .study/feature.mjs:20:2\n✖ true and success preserve output and exact invocation counts (0.37896ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  0 !== 1\n  \n      at TestContext.<anonymous> (/tmp/blame-path-recovery-f43/controls/valibot-fallback-when/workspace/.study/feature.mjs:20:248)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)\n      at Test.postRun (node:internal/test_runner/test:1522:19)\n      at Test.run (node:internal/test_runner/test:1447:12)\n      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 0,\n    expected: 1,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at .study/feature.mjs:21:2\n✖ async predicate is awaited both ways (0.437798ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  true !== false\n  \n      at TestContext.<anonymous> (/tmp/blame-path-recovery-f43/controls/valibot-fallback-when/workspace/.study/feature.mjs:21:282)\n      at async Test.run (node:internal/test_runner/test:1389:7)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: true,\n    expected: false,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at .study/feature.mjs:22:2\n✖ predicate throw and reject propagate untouched (0.373432ms)\n  AssertionError [ERR_ASSERTION]: Missing expected exception.\n      at TestContext.<anonymous> (/tmp/blame-path-recovery-f43/controls/valibot-fallback-when/workspace/.study/feature.mjs:22:116)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)\n      at Test.postRun (node:internal/test_runner/test:1522:19)\n      at Test.run (node:internal/test_runner/test:1447:12)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: false,\n    code: 'ERR_ASSERTION',\n    actual: undefined,\n    operator: 'throws',\n    diff: 'simple'\n  }\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "exitCode": 2,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n.study/types.ts(2,49): error TS2554: Expected 2 arguments, but got 3.\n.study/types.ts(2,50): error TS7006: Parameter 'dataset' implicitly has an 'any' type.\n.study/types.ts(2,58): error TS7006: Parameter 'config' implicitly has an 'any' type.\n.study/types.ts(3,57): error TS2554: Expected 2 arguments, but got 3.\n.study/types.ts(3,64): error TS7006: Parameter 'dataset' implicitly has an 'any' type.\n.study/types.ts(3,72): error TS7006: Parameter 'config' implicitly has an 'any' type.\n",
+          "stderr": ""
+        },
+        {
+          "name": "upstream",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-path-recovery-f43/controls/valibot-fallback-when/workspace\n\n ✓ library/src/methods/fallback/fallbackAsync.test.ts (5 tests) 4ms\n ✓ library/src/methods/fallback/fallback.test.ts (4 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  9 passed (9)\n   Start at  01:38:06\n   Duration  1.91s (transform 891ms, setup 0ms, collect 1.59s, tests 8ms, environment 0ms, prepare 98ms)\n\n",
+          "stderr": ""
+        }
+      ],
+      "after": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ successful object transforms and defaults (1.619356ms)\n✔ custom errors and abort counts (0.349668ms)\n✔ sync and async fallback old interface (0.289789ms)\n✔ config reset, unions and nested issue path (0.34454ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1122.702714\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ false keeps original issue and does not evaluate fallback (1.235468ms)\n✔ true and success preserve output and exact invocation counts (0.239114ms)\n✔ async predicate is awaited both ways (0.289699ms)\n✔ predicate throw and reject propagate untouched (0.551927ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1102.577115\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "upstream",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-path-recovery-f43/controls/valibot-fallback-when/workspace\n\n ✓ library/src/methods/fallback/fallbackAsync.test.ts (5 tests) 4ms\n ✓ library/src/methods/fallback/fallback.test.ts (4 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  9 passed (9)\n   Start at  01:38:14\n   Duration  1.94s (transform 931ms, setup 0ms, collect 1.62s, tests 7ms, environment 0ms, prepare 100ms)\n\n",
+          "stderr": ""
+        }
+      ]
+    }
+  ]
+}

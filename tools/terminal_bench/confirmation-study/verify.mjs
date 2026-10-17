@@ -19,7 +19,10 @@ for(const row of results.rows){
  const usage=reconcileUsage(raw.usage,events.filter(e=>e.type==='usage').map(e=>e.payload?.usage),iterations);assert.deepEqual(row.usage,usage);
  const wire=read('wire-contracts.jsonl').toString().trim().split('\n').filter(Boolean).map(JSON.parse);wireByTrial[row.name]=wire;firstContracts[row.name]=wire.find(w=>!w.budgetRejected);
  for(const w of wire){assert.equal(w.model,protocol.model);assert.equal(w.reasoning?.effort,protocol.effort);assert.equal(w.maximumOutputTokens,protocol.budgets.requestMaxOutputTokens);assert.equal(w.byteLimit,protocol.budgets.maximumSerializedRequestBytes);assert.equal(sha(read('schema-'+w.toolsSha256+'.json').toString().trimEnd()),w.toolsSha256);assert.equal(sha(read('prompt-'+w.promptSha256+'.json').toString().trimEnd()),w.promptSha256);}
- const d=review.decisions.find(d=>d.name===row.name);assert.deepEqual(d.hashes,row.hashes);assert.equal(row.auditedCompletion,row.independentFunctionalSuccess&&d.sourceBehaviorPassed&&d.finalSourceChecksPassed&&d.noSolutionRetrieval&&d.fullRequestPassed);
+ const d=review.decisions.find(d=>d.name===row.name);assert.deepEqual(d.hashes,row.hashes);
+ const source=row.independentFunctionalSuccess&&d.sourceBehaviorPassed&&d.addedTestsPassed!==false&&d.finalSourceChecksPassed&&d.noSolutionRetrieval;
+ assert.equal(row.sourceAuditedCompletion,source);assert.equal(row.appendOnlySensitivityCompletion,source&&(d.fullRequestPassed||d.complianceInterpretationSensitive===true));assert.equal(row.auditedCompletion,source&&d.fullRequestPassed);
+ assert.equal(row.optionalConfigShapeSensitivityCompletion,row.independentFunctionalSuccess&&(d.sourceBehaviorPassed||d.absentOptionShapeOnlyFailure===true)&&d.addedTestsPassed!==false&&d.finalSourceChecksPassed&&d.noSolutionRetrieval);
  if(row.arm!=='cline'){assert.equal(row.metrics.context.modelRequests,null);if(row.completion?.verification==='verified')assert.fail('Unexpected source verification requires explicit investigation, not automatic acceptance');}
 }
 for(const slot of protocol.order.filter(s=>s.arm==='compiler')){

@@ -3,88 +3,91 @@
   "method": "Finished tools only. Output bytes and exact repeated input/output pairs are observations, not token or cache savings. Basename candidates come from the original upstream inventory, not a reconstructed workspace at each invocation; they identify opportunities to investigate, not guaranteed safe recovery. Native and Light categories differ.",
   "arms": {
     "reference": {
-      "trials": 6,
+      "trials": 9,
       "counts": {
-        "search_code": 86,
-        "read_code": 180,
-        "edit_code": 20,
-        "run_task": 45,
-        "finish_task": 6
+        "search_code": 157,
+        "read_code": 277,
+        "edit_code": 29,
+        "run_task": 70,
+        "finish_task": 9
       },
       "readViews": {
-        "raw": 170,
-        "outline": 4,
-        "omitted": 6
+        "raw": 258,
+        "outline": 5,
+        "omitted": 12,
+        "range": 2
       },
       "renderedViews": {
-        "raw": 161,
-        "blocked": 10,
+        "raw": 247,
+        "blocked": 12,
         "directory": 3,
-        "range": 5,
-        "outline": 1
+        "range": 13,
+        "outline": 2
       },
       "searchModes": {
-        "text": 60,
+        "text": 111,
         "references": 5,
-        "omitted": 21
+        "omitted": 41
       },
       "editKinds": {
-        "symbol": 13,
-        "patch": 20
+        "symbol": 18,
+        "patch": 30
       },
-      "outputBytes": 683453,
-      "missingReads": 9,
-      "missingReadsWithBaselineCandidate": 8
+      "outputBytes": 1071772,
+      "missingReads": 11,
+      "missingReadsWithBaselineCandidate": 9
     },
     "compiler": {
-      "trials": 5,
+      "trials": 9,
       "counts": {
-        "search_code": 102,
-        "read_code": 162,
-        "edit_code": 20,
-        "run_task": 36,
-        "finish_task": 5
+        "search_code": 172,
+        "read_code": 280,
+        "edit_code": 34,
+        "run_task": 62,
+        "finish_task": 9
       },
       "readViews": {
-        "raw": 135,
-        "omitted": 20,
-        "outline": 2,
+        "raw": 220,
+        "omitted": 52,
+        "outline": 3,
         "symbol": 4,
         "range": 1
       },
       "renderedViews": {
-        "raw": 131,
-        "blocked": 5,
-        "range": 20,
+        "raw": 230,
+        "blocked": 13,
+        "range": 26,
         "directory": 2,
-        "symbol": 4
+        "symbol": 6,
+        "outline": 3
       },
       "searchModes": {
-        "text": 86,
-        "omitted": 15,
-        "references": 1
+        "text": 133,
+        "omitted": 37,
+        "references": 2
       },
       "editKinds": {
-        "patch": 19,
-        "symbol": 5
+        "patch": 34,
+        "symbol": 9
       },
-      "outputBytes": 657161,
-      "missingReads": 4,
-      "missingReadsWithBaselineCandidate": 1
+      "outputBytes": 1092108,
+      "missingReads": 12,
+      "missingReadsWithBaselineCandidate": 7
     },
     "cline": {
-      "trials": 6,
+      "trials": 9,
       "counts": {
-        "run_commands": 87,
-        "search_codebase": 23,
-        "read_files": 43,
-        "apply_patch": 16
+        "run_commands": 129,
+        "search_codebase": 38,
+        "read_files": 62,
+        "apply_patch": 22,
+        "parallel": 1
       },
       "readViews": {},
       "renderedViews": {},
       "searchModes": {},
       "editKinds": {},
-      "outputBytes": 1760307,
+      "outputBytes": 2699479,
       "missingReads": 0,
       "missingReadsWithBaselineCandidate": 0
     }
@@ -820,6 +823,330 @@
         "patch": 5
       },
       "outputBytes": 112243,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "1-remeda-empty-zip-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 11,
+        "read_code": 23,
+        "edit_code": 5,
+        "run_task": 7,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 22,
+        "outline": 1
+      },
+      "renderedViews": {
+        "raw": 22,
+        "outline": 1
+      },
+      "searchModes": {
+        "text": 11
+      },
+      "editKinds": {
+        "symbol": 2,
+        "patch": 5
+      },
+      "outputBytes": 117667,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "2-valibot-message-prefix-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 19,
+        "read_code": 29,
+        "run_task": 8,
+        "edit_code": 3,
+        "finish_task": 1
+      },
+      "readViews": {
+        "omitted": 28,
+        "raw": 1
+      },
+      "renderedViews": {
+        "raw": 23,
+        "blocked": 2,
+        "outline": 2,
+        "range": 2
+      },
+      "searchModes": {
+        "text": 19
+      },
+      "editKinds": {
+        "patch": 3
+      },
+      "outputBytes": 94681,
+      "repeatedReadOutputs": 0,
+      "missingPaths": [
+        {
+          "target": "library/src/methods/parseAsync/parseAsync.ts",
+          "baselineExactBasenameCandidates": [
+            "library/src/methods/parse/parseAsync.ts"
+          ]
+        },
+        {
+          "target": "library/src/methods/parseAsync/parseAsync.ts",
+          "baselineExactBasenameCandidates": [
+            "library/src/methods/parse/parseAsync.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2-valibot-message-prefix-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 15,
+        "search_codebase": 5,
+        "read_files": 6,
+        "parallel": 1,
+        "apply_patch": 2
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "editKinds": {},
+      "outputBytes": 323779,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "2-valibot-message-prefix-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 15,
+        "read_code": 29,
+        "edit_code": 3,
+        "run_task": 9,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 28,
+        "omitted": 1
+      },
+      "renderedViews": {
+        "raw": 27,
+        "blocked": 1,
+        "range": 1
+      },
+      "searchModes": {
+        "text": 15
+      },
+      "editKinds": {
+        "symbol": 5,
+        "patch": 2
+      },
+      "outputBytes": 120393,
+      "repeatedReadOutputs": 0,
+      "missingPaths": [
+        {
+          "target": "library/src/utils/_getGlobalConfig/_getGlobalConfig.ts",
+          "baselineExactBasenameCandidates": []
+        }
+      ]
+    },
+    {
+      "name": "2-valibot-hide-input-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 14,
+        "search_codebase": 7,
+        "read_files": 7,
+        "apply_patch": 2
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "editKinds": {},
+      "outputBytes": 428435,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "2-valibot-hide-input-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 36,
+        "read_code": 34,
+        "edit_code": 2,
+        "run_task": 6,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 29,
+        "omitted": 5
+      },
+      "renderedViews": {
+        "raw": 28,
+        "blocked": 1,
+        "range": 5
+      },
+      "searchModes": {
+        "text": 36
+      },
+      "editKinds": {
+        "patch": 2
+      },
+      "outputBytes": 147076,
+      "repeatedReadOutputs": 0,
+      "missingPaths": [
+        {
+          "target": "library/src/methods/parseAsync/parseAsync.ts",
+          "baselineExactBasenameCandidates": [
+            "library/src/methods/parse/parseAsync.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2-valibot-hide-input-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 27,
+        "read_code": 26,
+        "edit_code": 3,
+        "run_task": 6,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 23,
+        "omitted": 3
+      },
+      "renderedViews": {
+        "raw": 20,
+        "blocked": 1,
+        "range": 3,
+        "symbol": 2
+      },
+      "searchModes": {
+        "omitted": 16,
+        "text": 10,
+        "references": 1
+      },
+      "editKinds": {
+        "symbol": 2,
+        "patch": 4
+      },
+      "outputBytes": 104462,
+      "repeatedReadOutputs": 0,
+      "missingPaths": [
+        {
+          "target": "library/src/types/config/config.ts",
+          "baselineExactBasenameCandidates": [
+            "library/src/methods/config/config.ts",
+            "library/src/types/config.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2-valibot-fallback-when-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 20,
+        "read_code": 34,
+        "edit_code": 4,
+        "run_task": 10,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 31,
+        "outline": 1,
+        "range": 2
+      },
+      "renderedViews": {
+        "raw": 31,
+        "outline": 1,
+        "range": 2
+      },
+      "searchModes": {
+        "omitted": 20
+      },
+      "editKinds": {
+        "patch": 6
+      },
+      "outputBytes": 120850,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "2-valibot-fallback-when-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 13,
+        "read_code": 40,
+        "run_task": 5,
+        "edit_code": 3,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 39,
+        "omitted": 1
+      },
+      "renderedViews": {
+        "raw": 34,
+        "blocked": 5,
+        "range": 1
+      },
+      "searchModes": {
+        "omitted": 6,
+        "text": 7
+      },
+      "editKinds": {
+        "patch": 3
+      },
+      "outputBytes": 118137,
+      "repeatedReadOutputs": 0,
+      "missingPaths": [
+        {
+          "target": "library/src/methods/default/default.ts",
+          "baselineExactBasenameCandidates": []
+        },
+        {
+          "target": "library/src/methods/default/defaultAsync.ts",
+          "baselineExactBasenameCandidates": []
+        },
+        {
+          "target": "library/src/methods/metadata/metadata.ts",
+          "baselineExactBasenameCandidates": [
+            "library/src/actions/metadata/metadata.ts",
+            "library/src/types/metadata.ts"
+          ]
+        },
+        {
+          "target": "library/src/methods/parseAsync/parseAsync.ts",
+          "baselineExactBasenameCandidates": [
+            "library/src/methods/parse/parseAsync.ts"
+          ]
+        },
+        {
+          "target": "library/src/methods/safeParseAsync/safeParseAsync.ts",
+          "baselineExactBasenameCandidates": [
+            "library/src/methods/safeParse/safeParseAsync.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2-valibot-fallback-when-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 13,
+        "search_codebase": 3,
+        "read_files": 6,
+        "apply_patch": 2
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "editKinds": {},
+      "outputBytes": 186958,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     }

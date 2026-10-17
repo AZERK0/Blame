@@ -1,0 +1,17 @@
+F43 exploratory engineering candidate — no model trials yet
+
+Development began while the frozen F42 panel was running, after 10/54 assignments were available. F42 executable snapshots, tasks, ordering and settings are unchanged. This is preparation of a candidate, not the registered final choice of follow-up mechanism; that choice and its model protocol will be recorded after F42 completes. No general efficiency or task-success gain is claimed.
+
+Observation: F42 tools expose literal missing-path ENOENT errors without location guidance. At this checkpoint 8/12 missing-path reads across Light arms had unique exact-basename alternatives in the original upstream inventory. One further index.ts request matched hundreds of unrelated files. Those inventory matches identify opportunities, not a reconstruction of the workspace at each call.
+
+Candidate: on a confirmed missing literal workspace path only, return at most five exact-basename indexed candidates and explicit next reads. Examine at most 32 candidate metadata entries. Preserve small ambiguous sets; suppress suggestions if more than five valid files or more than 32 indexed matches exist, instead of returning an arbitrary shortlist; never read source, select a target, grant edit coverage, follow symlink targets or bypass protected paths. A suggested ./ prefix prevents alias collisions. Successful reads and other failures retain their behavior. No prompt or tool-schema change.
+
+Risk: extra response bytes, irrelevant same-name alternatives and metadata work may outweigh avoided navigation. The existing frozen runtime fails five positive recovery controls and passes the two integration negative controls. Candidate passes all ten new controls plus 30 nearby navigation/search controls (40/40). Three helper-level controls cover unrelated ENOENT, bounded stale-index lookup and mid-inspection cancellation. A local compile initially rejected an overly broad return annotation; narrowing inputBlocked's return type fixes it without changing its executable behavior.
+
+Adoption remains provisional pending the full F42 diagnosis and a separately registered comparison. Compiler diagnostics outside selected validation scope remain a distinct quality hypothesis; this path candidate does not solve them.
+
+Before any follow-up model registration, an exploratory refinement suppresses generic-basename shortlists after the observed index.ts ambiguity. All 40 candidate/nearby controls still pass; the initial logs are retained separately. This changes the candidate under development, not any F42 worker.
+
+Preparation failures are retained: the initial control assertion incorrectly expected a pristine compiler to accept types for APIs that do not yet exist; its correct failure code is 2. The stronger related-upstream checks also reject F42 positive controls that add an own undefined config option. F43 controls conditionally preserve the original absent-option shape; no model output is repaired, no F42 check or result changes. This post-hoc shape interpretation must be distinguished from unambiguous numerical, type and added-test errors.
+
+The future shell environment is now checked through the actual Light command executor: direct npm, bash login-shell npm and run_task all resolve npm11.6.4. A retained control without BASH_ENV resolves host npm11.9.0 because /etc/profile resets PATH. A per-trial shell prelude restores only the pinned tool PATH and isolated npm settings; its bytes are archived and hashed for all arms.

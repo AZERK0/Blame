@@ -35,7 +35,11 @@ for (const row of analysis.rows) {
   const hostDevelopmentOverlap = development.activities.some(activity => started < Date.parse(activity.endUTC) && started + row.exit.durationMs > Date.parse(activity.startUTC));
   const sourceAudited = row.independentFunctionalSuccess && decision.sourceBehaviorPassed &&
     decision.addedTestsPassed !== false && decision.finalSourceChecksPassed && decision.noSolutionRetrieval;
+  const optionalConfigShapeSensitivity = row.independentFunctionalSuccess &&
+    (decision.sourceBehaviorPassed || decision.absentOptionShapeOnlyFailure === true) &&
+    decision.addedTestsPassed !== false && decision.finalSourceChecksPassed && decision.noSolutionRetrieval;
   rows.push({ ...row, hostValidationOverlap, hostDevelopmentOverlap, sourceAuditedCompletion: sourceAudited,
+    optionalConfigShapeSensitivityCompletion: optionalConfigShapeSensitivity,
     appendOnlySensitivityCompletion: sourceAudited && (decision.fullRequestPassed || decision.complianceInterpretationSensitive === true),
     auditedCompletion: sourceAudited && decision.fullRequestPassed,
     traceSha256: sha(archive) });
@@ -49,6 +53,7 @@ const arms = Object.fromEntries(protocol.arms.map(arm => {
   return [arm, { trials: selected.length, official: selected.filter(row => row.officialRuntimeSuccess).length,
     independent: selected.filter(row => row.independentFunctionalSuccess).length, audited: selected.filter(row => row.auditedCompletion).length,
     sourceAudited: selected.filter(row => row.sourceAuditedCompletion).length,
+    optionalConfigShapeSensitivity: selected.filter(row => row.optionalConfigShapeSensitivityCompletion).length,
     appendOnlySensitivity: selected.filter(row => row.appendOnlySensitivityCompletion).length,
     input: sum('input'), output: sum('output'), tokens: sum('input') === null || sum('output') === null ? null : sum('input') + sum('output'),
     receiptedInputOutputCostComplete: selected.every(row => row.contract.unreported === 0 && row.usage.tokensCostReconciled),
@@ -56,6 +61,7 @@ const arms = Object.fromEntries(protocol.arms.map(arm => {
     missingUsageReceipts: selected.reduce((sum, row) => sum + row.contract.unreported, 0),
     cachePerRequestReconciled: selected.every(row => row.usage.reconciliation.cacheRead.matches && row.usage.reconciliation.cacheWrite.matches),
     sdkEstimatedUsd: sum('cost'), cacheRead: sum('cacheRead'), cacheWrite: sum('cacheWrite'), durationMs: selected.reduce((sum, row) => sum + row.durationMs, 0),
+    pathRecoveryOffered: selected.reduce((n,r)=>n+(r.pathRecoveryOffered??0),0), pathRecoveryFollowed: selected.reduce((n,r)=>n+(r.pathRecoveryFollowed??0),0),
     declarationCalls: selected.reduce((sum, row) => sum + row.declarationCalls, 0),
     sourceVerificationAdmitted: arm === 'cline' ? null : selected.filter(row => row.completion?.verification === 'verified').length,
     compilerObligationSatisfied: arm === 'cline' ? null : selected.filter(row => row.completion?.satisfied_obligations?.includes('check:types')).length }];
@@ -114,19 +120,22 @@ return comparisons;
 const comparisons = compare(row => row.auditedCompletion);
 const functionalComparisons = compare(row => row.independentFunctionalSuccess);
 const sourceAuditedComparisons = compare(row => row.sourceAuditedCompletion);
+const optionalConfigShapeSensitivityComparisons = compare(row => row.optionalConfigShapeSensitivityCompletion);
 const appendOnlySensitivityComparisons = compare(row => row.appendOnlySensitivityCompletion);
 const durationSensitivityWithoutRuntimeSuiteOverlap = compare(row => row.auditedCompletion && !row.hostValidationOverlap);
 const durationSensitivityWithoutKnownValidationLoad = compare(row => row.auditedCompletion && !row.hostValidationOverlap && !row.hostDevelopmentOverlap);
 const qualityGate = arms[treatment].audited >= arms.reference.audited;
 const comparison = comparisons[`${treatment}/reference`];
-const resourceGate = qualityGate && comparison.pairs >= 12 &&
+const mechanismGate = protocol.phase !== 'F43' || rows.some(row => row.arm === treatment && row.pathRecoveryFollowed > 0);
+const resourceGate = qualityGate && mechanismGate && comparison.pairs >= (protocol.criteria.minimumPairedSuccesses ?? 12) &&
   comparison.tokenDelta !== null && comparison.tokenDelta < 0 && comparison.costDelta < 0 && comparison.durationDelta <= 0.1;
 const accounting = await json(join(study, 'accounting.json')), prior = await json(join(study, 'prior-budget.json'));
-await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true, arms, comparisons, functionalComparisons, sourceAuditedComparisons, appendOnlySensitivityComparisons, durationSensitivityWithoutRuntimeSuiteOverlap, durationSensitivityWithoutKnownValidationLoad,
+await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true, arms, comparisons, functionalComparisons, sourceAuditedComparisons, optionalConfigShapeSensitivityComparisons, appendOnlySensitivityComparisons, durationSensitivityWithoutRuntimeSuiteOverlap, durationSensitivityWithoutKnownValidationLoad,
   auditSensitivityCaveat: 'Primary conservative acceptance preserves existing test files. The instruction allowing own new tests can also mean added cases within existing files: report that append-only sensitivity separately, only when the delivered tests actually pass. Source-audited completion excludes instruction/environment compliance and is not full-request acceptance. All dimensions retain confirmed production and added-test regressions; none replaces the registered primary metric.',
-  functionalComparisonCaveat: 'Secondary descriptive comparison on selected-check success only. It can include incorrect extra changes or instruction violations; it cannot establish full-task quality parity.', qualityGate, resourceGate,
+  optionalConfigShapeSensitivityCaveat: 'Source-only sensitivity accepts an additional own undefined property for the newly introduced optional configuration field. Original upstream exact-object assertions reject that shape, including in the F42 positive controls; interpreting it as a user-visible compatibility defect is stricter than some API-evolution conventions. This sensitivity still rejects independent numerical/type/added-test errors and does not establish instruction/environment compliance.',
+  functionalComparisonCaveat: 'Secondary descriptive comparison on selected-check success only. It can include incorrect extra changes or instruction violations; it cannot establish full-task quality parity.', qualityGate, mechanismGate, resourceGate,
   accounting, priorObservedUsd: prior.observedUsd, priorReservedUsd: prior.reservedUsd,
   cumulativeObservedSdkUsd: prior.observedUsd + accounting.observedUsd, cumulativeReservedUsd: prior.reservedUsd + accounting.reservedUsd,
   cumulativeAccountedUsd: prior.accountedUsd + accounting.accountedUsd,
-  limitations: 'Six constructed fresh tasks in two previously unmeasured projects; dependent repeats, unblinded source review by the research agent, unknown provider revision/seeds/invoices, nonexclusive host. SDK estimates/cache receipts are observations, not complete provider billing. Do not pool campaigns or attribute resource differences to unused mechanisms. Whole private workspace archives are retained by SHA-256; public traces include original diffs, events, grades, contracts and deliveries. The full runtime suite overlapped the first model block on this nonexclusive host; duration is observational and sensitivity must be reported.' });
+  limitations: `${protocol.tasks.length} constructed tasks in ${protocol.projects.length} project(s), ${protocol.repetitions} dependent repeats. ${protocol.selection} Unblinded source review by the research agent, unknown provider revision/seeds/invoices, nonexclusive host. SDK estimates/cache receipts are observations, not complete provider billing. Do not pool campaigns or attribute resource differences to unused mechanisms. Whole private workspace archives are retained by SHA-256; public traces include original diffs, events, grades, contracts and deliveries. Recorded host workload overlaps and duration sensitivities are reported separately; unknown contention is not excluded.` });
 console.log(JSON.stringify({ phase: protocol.phase, arms, qualityGate, resourceGate }));

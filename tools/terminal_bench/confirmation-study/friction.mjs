@@ -4,6 +4,9 @@ const {rows}=await json(join(work,'campaign/analysis.json'));const records=[];
 for(const row of rows){const tools=await json(join(work,'campaign',row.name,'tool-ledger.json'));const observations=[];
  for(const [index,t]of tools.entries()){
   const out=t.output,message=out?.message??'';
+  if(typeof out?.error==='string'&&/invalid JSON arguments|could not be parsed as JSON/.test(out.error)){
+   observations.push({index,category:'invalid_tool_json',tool:t.tool,input:t.input,error:out.error});continue;
+  }
   if(t.tool==='read_code'&&out?.status==='blocked')observations.push({index,category:/ENOENT/.test(message)?'missing_path':'read_guard',tool:t.tool,input:t.input,message});
   if(t.tool==='edit_code'&&out?.status!=='ok')observations.push({index,category:out?.patchCorrection?.reason==='context_outside_symbol'||/outside.*symbol|symbol.*outside/i.test(message)?'patch_scope':/parse failed|syntax/i.test(message)?'invalid_final_syntax':/observ|read|coverage/i.test(message)?'edit_observation_guard':/context|match|header|patch/i.test(message)?'patch_preimage_or_format':'other_edit_refusal',tool:t.tool,input:t.input,output:out});
   if(t.tool==='run_task'&&Number.isInteger(out?.data?.exitCode)&&out.data.exitCode!==0)observations.push({index,category:'executed_command_failed',tool:t.tool,input:t.input,command:out.data.command,exitCode:out.data.exitCode});
