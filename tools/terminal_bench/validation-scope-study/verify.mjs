@@ -79,6 +79,14 @@ for(const slot of protocol.order.filter(s=>s.arm==='scope')){
  if(a&&b){assert.equal(a.toolsSha256,b.toolsSha256);assert.equal(a.normalizedContractSha256,b.normalizedContractSha256,'Initial normalized Light contract changed beyond registered executable ablation');}
 }
 const frozen=await json(join(study,'execution-bindings.json'));
+const pipelineBytes=await readFile(join(study,'pipeline-audit.json')),pipeline=JSON.parse(pipelineBytes);
+assert.equal(pipeline.complete,true);assert.equal(pipeline.records.length,10);assert.equal(pipeline.modelRequests,0);
+assert.equal(pipeline.records.find(r=>r.name==='original').passed,true);
+for(const r of pipeline.records.filter(r=>r.name!=='original')){
+ const d=review.decisions.find(d=>d.name===r.name);assert.deepEqual(r.hashes,d.hashes);
+ assert.equal(d.pipelineAudit.sha256,sha(pipelineBytes));assert.equal(d.sourceBehaviorPassed,r.passed);
+ assert.equal(r.passed,r.checks.every(c=>c.exitCode===0)&&r.emptySingleWitness.exitCode===0);
+}
 const trees=Object.entries(frozen.files).filter(([key])=>key.endsWith('/frozen'))[0]?.[1];
 assert.ok(trees);const changed=[];for(const path of Object.keys(trees).filter(p=>p.startsWith('scope/'))){const other='reference/'+path.slice('scope/'.length);if(trees[path]!==trees[other])changed.push(path.slice('scope/'.length));}
 assert.deepEqual(changed,['agent-runtime/dist/harness/light-task-runner.js']);

@@ -28,7 +28,6 @@ export type JournalCompletionSnapshot = {
 };
 
 export type JournalValidation = {
-  compilerScope?: import("./compiler-scope-report.js").CompilerScopeReport;
   scope?: "invocation_only";
   args?: string[];
   check?: import("./check-observation.js").CheckObservation;
@@ -337,7 +336,6 @@ function publicChange(change: JournalChange) {
 
 function publicValidation(validation: JournalValidation) {
   return {
-    ...(validation.compilerScope ? { compilerScope: structuredClone(validation.compilerScope) } : {}),
     ...(validation.scope ? { scope: validation.scope } : {}),
     ...(validation.args?.length ? { args: [...validation.args] } : {}),
     check: validation.check,

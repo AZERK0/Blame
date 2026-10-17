@@ -1,5 +1,5 @@
 {
-  "complete": false,
+  "complete": true,
   "method": "lastEdit identifies successful explicit editing tools, excluding unchanged edits. Shell-write candidates are a conservative review aid, not a complete parser or proof of no mutation. Manual finalSourceChecksPassed review must also inspect commands and delivery; independent endpoint checks run on the archived final source.",
   "packets": [
     {
@@ -11029,6 +11029,1211 @@
       "scopeCommands": [],
       "completion": {
         "source_revision_id": "src_9bcc44061e96bdcc29e4a3b39a5f5cfc",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types",
+          "check:upstream"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "3-remeda-take-counts-cline",
+      "hashes": {
+        "events.jsonl": "70481b3f3295a1322aa49df6298842b1f59ae9eae9b98f407b6478cc5fb07b52",
+        "workspace.diff": "e750204a36d7b87b489d07546956fa03a077c32b1be962a4d45952afd8ef8ace",
+        "score.json": "d4b4503a81b6c1828f13ed9be76e1b8b5eddd3c289c09e11f5c88dff794745e9",
+        "tool-ledger.json": "49a6ce87359f5c43f41c5b62d34c45917aeed2d2c76f40753072d7fc2e44823e"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 31,
+      "required": {
+        "regression": [
+          {
+            "index": 32,
+            "input": {
+              "commands": [
+                "npm run test:study:regression"
+              ]
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> remeda@2.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ integer take works directly and in a pipeline (2.919896ms)\n✔ empty and negative take results remain empty (0.177662ms)\n✔ integer take stops the upstream mapper early (0.196409ms)\n✔ unrelated array APIs retain behavior (0.225752ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 563.594915\n"
+          }
+        ],
+        "feature": [
+          {
+            "index": 33,
+            "input": {
+              "commands": [
+                "npm run test:study:feature"
+              ]
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> remeda@2.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ take agrees in eager/curried/lazy forms for 0.2 (1.690577ms)\n✔ take agrees in eager/curried/lazy forms for 0.9 (0.182498ms)\n✔ take agrees in eager/curried/lazy forms for 1.2 (0.872544ms)\n✔ take agrees in eager/curried/lazy forms for 1.9 (0.151263ms)\n✔ take agrees in eager/curried/lazy forms for 2.8 (0.164151ms)\n✔ take agrees in eager/curried/lazy forms for NaN (0.135649ms)\n✔ take agrees in eager/curried/lazy forms for 0 (0.33282ms)\n✔ take agrees in eager/curried/lazy forms for -0.5 (0.106858ms)\n✔ take agrees in eager/curried/lazy forms for -Infinity (0.133817ms)\n✔ take agrees in eager/curried/lazy forms for Infinity (0.350857ms)\n✔ taking everything still returns a shallow copy (0.150341ms)\nℹ tests 11\nℹ suites 0\nℹ pass 11\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 569.049398\n"
+          }
+        ],
+        "types": [
+          {
+            "index": 34,
+            "input": {
+              "commands": [
+                "npm run test:study:types"
+              ]
+            },
+            "command": "npm run test:study:types",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+          }
+        ],
+        "upstream": [
+          {
+            "index": 35,
+            "input": {
+              "commands": [
+                "npm run test:study:upstream"
+              ]
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> remeda@2.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace\n\n ✓ packages/remeda/src/take.test.ts (10 tests) 6ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  15:13:13\n   Duration  252ms (transform 61ms, setup 0ms, collect 73ms, tests 6ms, environment 0ms, prepare 54ms)\n\n"
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && printf '\\n-- top-level --\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,240p'",
+              "printf '\\n-- package scripts --\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify({scripts:p.scripts,dependencies:p.dependencies,devDependencies:p.devDependencies},null,2))\""
+            ]
+          },
+          "command": "pwd && printf '\\n-- top-level --\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,240p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "/tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace\n\n-- top-level --\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.gitattributes\n./.github/FUNDING.yml\n./.github/dependabot.yml\n./.github/pull_request_template.md\n./.gitignore\n./.husky/pre-commit\n./.nvmrc\n./.study/delivered.mjs\n./.study/feature.mjs\n./.study/regression.mjs\n./.study/task.json\n./.study/tsconfig.json\n./.study/types.ts\n./.study/vitest.config.mjs\n./.vscode/settings.json\n./CODE_OF_CONDUCT.md\n./CONTRIBUTING.md\n./LICENSE\n./README.md\n./lint-staged.config.ts\n./netlify.toml\n./node_modules/.package-lock.json\n./package-lock.json\n./package.json\n./packages/README.md\n./prettier.config.js\n./remeda.code-workspace\n"
+        },
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && printf '\\n-- top-level --\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,240p'",
+              "printf '\\n-- package scripts --\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify({scripts:p.scripts,dependencies:p.dependencies,devDependencies:p.devDependencies},null,2))\""
+            ]
+          },
+          "command": "printf '\\n-- package scripts --\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify({scripts:p.scripts,dependencies:p.dependencies,devDependencies:p.devDependencies},null,2))\"",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n-- package scripts --\n{\n  \"scripts\": {\n    \"docs:build\": \"npm run build --workspaces\",\n    \"prepare\": \"husky\",\n    \"test:study:feature\": \"node --import tsx --test --test-timeout=10000 .study/feature.mjs\",\n    \"test:study:regression\": \"node --import tsx --test --test-timeout=10000 .study/regression.mjs\",\n    \"test:study:types\": \"node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\",\n    \"test:study:upstream\": \"node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\",\n    \"test:study:delivered\": \"node .study/delivered.mjs runtime\",\n    \"typecheck:delivered\": \"node .study/delivered.mjs types\"\n  },\n  \"dependencies\": {\n    \"husky\": \"^9.1.7\"\n  },\n  \"devDependencies\": {\n    \"lint-staged\": \"^16.1.4\",\n    \"prettier\": \"^3.6.2\",\n    \"prettier-plugin-pkg\": \"^0.21.2\",\n    \"prettier-plugin-sh\": \"^0.18.0\"\n  }\n}\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "git status --short --branch && git log -1 --oneline --no-decorate",
+              "find . -path './node_modules' -prune -o -type f \\( -name '*take*' -o -name '*.test.ts' \\) -print | sort | sed -n '1,240p'"
+            ]
+          },
+          "command": "git status --short --branch && git log -1 --oneline --no-decorate",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "## master\n22263e0 Frozen scope study input\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "git status --short --branch && git log -1 --oneline --no-decorate",
+              "find . -path './node_modules' -prune -o -type f \\( -name '*take*' -o -name '*.test.ts' \\) -print | sort | sed -n '1,240p'"
+            ]
+          },
+          "command": "find . -path './node_modules' -prune -o -type f \\( -name '*take*' -o -name '*.test.ts' \\) -print | sort | sed -n '1,240p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "./packages/docs/src/content/mapping/lodash/take.md\n./packages/docs/src/content/mapping/lodash/takeRight.md\n./packages/docs/src/content/mapping/lodash/takeRightWhile.md\n./packages/docs/src/content/mapping/lodash/takeWhile.md\n./packages/docs/src/content/mapping/ramda/take.md\n./packages/docs/src/content/mapping/ramda/takeLast.md\n./packages/docs/src/content/mapping/ramda/takeLastWhile.md\n./packages/docs/src/content/mapping/ramda/takeWhile.md\n./packages/docs/src/content/v1-migration/takeLastWhile.md\n./packages/docs/src/content/v1-migration/takeWhile.md\n./packages/remeda/src/add.test.ts\n./packages/remeda/src/addProp.test.ts\n./packages/remeda/src/allPass.test.ts\n./packages/remeda/src/anyPass.test.ts\n./packages/remeda/src/capitalize.test.ts\n./packages/remeda/src/ceil.test.ts\n./packages/remeda/src/chunk.test.ts\n./packages/remeda/src/clamp.test.ts\n./packages/remeda/src/clone.test.ts\n./packages/remeda/src/concat.test.ts\n./packages/remeda/src/conditional.test.ts\n./packages/remeda/src/constant.test.ts\n./packages/remeda/src/countBy.test.ts\n./packages/remeda/src/debounce.test.ts\n./packages/remeda/src/defaultTo.test.ts\n./packages/remeda/src/difference.test.ts\n./packages/remeda/src/differenceWith.test.ts\n./packages/remeda/src/divide.test.ts\n./packages/remeda/src/doNothing.test.ts\n./packages/remeda/src/drop.test.ts\n./packages/remeda/src/dropFirstBy.test.ts\n./packages/remeda/src/dropLast.test.ts\n./packages/remeda/src/dropLastWhile.test.ts\n./packages/remeda/src/dropWhile.test.ts\n./packages/remeda/src/endsWith.test.ts\n./packages/remeda/src/entries.test.ts\n./packages/remeda/src/evolve.test.ts\n./packages/remeda/src/filter.test.ts\n./packages/remeda/src/find.test.ts\n./packages/remeda/src/findIndex.test.ts\n./packages/remeda/src/findLast.test.ts\n./packages/remeda/src/findLastIndex.test.ts\n./packages/remeda/src/first.test.ts\n./packages/remeda/src/firstBy.test.ts\n./packages/remeda/src/flat.test.ts\n./packages/remeda/src/flatMap.test.ts\n./packages/remeda/src/floor.test.ts\n./packages/remeda/src/forEach.test.ts\n./packages/remeda/src/forEachObj.test.ts\n./packages/remeda/src/fromEntries.test.ts\n./packages/remeda/src/fromKeys.test.ts\n./packages/remeda/src/funnel.lodash-debounce-with-cached-value.test.ts\n./packages/remeda/src/funnel.lodash-debounce.test.ts\n./packages/remeda/src/funnel.lodash-throttle-with-cached-value.test.ts\n./packages/remeda/src/funnel.lodash-throttle.test.ts\n./packages/remeda/src/funnel.reference-batch.test.ts\n./packages/remeda/src/funnel.remeda-debounce.test.ts\n./packages/remeda/src/funnel.test.ts\n./packages/remeda/src/groupBy.test.ts\n./packages/remeda/src/groupByProp.test.ts\n./packages/remeda/src/hasAtLeast.test.ts\n./packages/remeda/src/hasSubObject.test.ts\n./packages/remeda/src/identity.test.ts\n./packages/remeda/src/indexBy.test.ts\n./packages/remeda/src/internal/binarySearchCutoffIndex.test.ts\n./packages/remeda/src/internal/heap.test.ts\n./packages/remeda/src/internal/purryFromLazy.test.ts\n./packages/remeda/src/internal/withPrecision.test.ts\n./packages/remeda/src/internal/words.test.ts\n./packages/remeda/src/intersection.test.ts\n./packages/remeda/src/intersectionWith.test.ts\n./packages/remeda/src/invert.test.ts\n./packages/remeda/src/isArray.test.ts\n./packages/remeda/src/isBigInt.test.ts\n./packages/remeda/src/isBoolean.test.ts\n./packages/remeda/src/isDate.test.ts\n./packages/remeda/src/isDeepEqual.test.ts\n./packages/remeda/src/isDefined.test.ts\n./packages/remeda/src/isEmpty.test.ts\n./packages/remeda/src/isError.test.ts\n./packages/remeda/src/isFunction.test.ts\n./packages/remeda/src/isIncludedIn.test.ts\n./packages/remeda/src/isNonNull.test.ts\n./packages/remeda/src/isNonNullish.test.ts\n./packages/remeda/src/isNot.test.ts\n./packages/remeda/src/isNullish.test.ts\n./packages/remeda/src/isNumber.test.ts\n./packages/remeda/src/isObjectType.test.ts\n./packages/remeda/src/isPlainObject.test.ts\n./packages/remeda/src/isPromise.test.ts\n./packages/remeda/src/isShallowEqual.test.ts\n./packages/remeda/src/isStrictEqual.test.ts\n./packages/remeda/src/isString.test.ts\n./packages/remeda/src/isSymbol.test.ts\n./packages/remeda/src/isTruthy.test.ts\n./packages/remeda/src/join.test.ts\n./packages/remeda/src/keys.test.ts\n./packages/remeda/src/last.test.ts\n./packages/remeda/src/length.test.ts\n./packages/remeda/src/map.test.ts\n./packages/remeda/src/mapKeys.test.ts\n./packages/remeda/src/mapToObj.test.ts\n./packages/remeda/src/mapValues.test.ts\n./packages/remeda/src/mapWithFeedback.test.ts\n./packages/remeda/src/mean.test.ts\n./packages/remeda/src/meanBy.test.ts\n./packages/remeda/src/median.test.ts\n./packages/remeda/src/merge.test.ts\n./packages/remeda/src/mergeAll.test.ts\n./packages/remeda/src/mergeDeep.test.ts\n./packages/remeda/src/multiply.test.ts\n./packages/remeda/src/nthBy.test.ts\n./packages/remeda/src/objOf.test.ts\n./packages/remeda/src/omit.test.ts\n./packages/remeda/src/omitBy.test.ts\n./packages/remeda/src/once.test.ts\n./packages/remeda/src/only.test.ts\n./packages/remeda/src/partialBind.test.ts\n./packages/remeda/src/partialLastBind.test.ts\n./packages/remeda/src/partition.test.ts\n./packages/remeda/src/pathOr.test.ts\n./packages/remeda/src/pick.test.ts\n./packages/remeda/src/pickBy.test.ts\n./packages/remeda/src/pipe.test.ts\n./packages/remeda/src/piped.test.ts\n./packages/remeda/src/product.test.ts\n./packages/remeda/src/prop.test.ts\n./packages/remeda/src/pullObject.test.ts\n./packages/remeda/src/purry.test.ts\n./packages/remeda/src/randomBigInt.test.ts\n./packages/remeda/src/randomInteger.test.ts\n./packages/remeda/src/randomString.test.ts\n./packages/remeda/src/range.test.ts\n./packages/remeda/src/rankBy.test.ts\n./packages/remeda/src/reduce.test.ts\n./packages/remeda/src/reverse.test.ts\n./packages/remeda/src/round.test.ts\n./packages/remeda/src/sample.test.ts\n./packages/remeda/src/set.test.ts\n./packages/remeda/src/setPath.test.ts\n./packages/remeda/src/shuffle.test.ts\n./packages/remeda/src/sliceString.test.ts\n./packages/remeda/src/sort.test.ts\n./packages/remeda/src/sortBy.test.ts\n./packages/remeda/src/sortedIndex.test.ts\n./packages/remeda/src/sortedIndexBy.test.ts\n./packages/remeda/src/sortedIndexWith.test.ts\n./packages/remeda/src/sortedLastIndex.test.ts\n./packages/remeda/src/sortedLastIndexBy.test.ts\n./packages/remeda/src/splice.test.ts\n./packages/remeda/src/split.test.ts\n./packages/remeda/src/splitAt.test.ts\n./packages/remeda/src/splitWhen.test.ts\n./packages/remeda/src/startsWith.test.ts\n./packages/remeda/src/stringToPath.test.ts\n./packages/remeda/src/subtract.test.ts\n./packages/remeda/src/sum.test.ts\n./packages/remeda/src/sumBy.test.ts\n./packages/remeda/src/swapIndices.test.ts\n./packages/remeda/src/swapProps.test.ts\n./packages/remeda/src/take.test-d.ts\n./packages/remeda/src/take.test.ts\n./packages/remeda/src/take.ts\n./packages/remeda/src/takeFirstBy.test.ts\n./packages/remeda/src/takeFirstBy.ts\n./packages/remeda/src/takeLast.test-d.ts\n./packages/remeda/src/takeLast.test.ts\n./packages/remeda/src/takeLast.ts\n./packages/remeda/src/takeLastWhile.test-d.ts\n./packages/remeda/src/takeLastWhile.test.ts\n./packages/remeda/src/takeLastWhile.ts\n./packages/remeda/src/takeWhile.test-d.ts\n./packages/remeda/src/takeWhile.test.ts\n./packages/remeda/src/takeWhile.ts\n./packages/remeda/src/tap.test.ts\n./packages/remeda/src/times.test.ts\n./packages/remeda/src/toCamelCase.test.ts\n./packages/remeda/src/toKebabCase.test.ts\n./packages/remeda/src/toLowerCase.test.ts\n./packages/remeda/src/toSnakeCase.test.ts\n./packages/remeda/src/toUpperCase.test.ts\n./packages/remeda/src/truncate.test.ts\n./packages/remeda/src/uncapitalize.test.ts\n./packages/remeda/src/unique.test.ts\n./packages/remeda/src/uniqueBy.test.ts\n./packages/remeda/src/uniqueWith.test.ts\n./packages/remeda/src/values.test.ts\n./packages/remeda/src/when.test.ts\n./packages/remeda/src/zip.test.ts\n./packages/remeda/src/zipWith.test.ts\n./packages/stackblitz-template/src/runtime.test.ts\n"
+        },
+        {
+          "index": 8,
+          "input": {
+            "commands": [
+              "find packages/remeda -maxdepth 2 -type f \\( -name '*config*' -o -name 'tsconfig*.json' \\) -print | sort && printf '\\n-- formatter config --\\n' && cat prettier.config.js",
+              "git diff -- packages/remeda/src/take.ts packages/remeda/src/take.test.ts packages/remeda/src/take.test-d.ts"
+            ]
+          },
+          "command": "find packages/remeda -maxdepth 2 -type f \\( -name '*config*' -o -name 'tsconfig*.json' \\) -print | sort && printf '\\n-- formatter config --\\n' && cat prettier.config.js",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "packages/remeda/eslint.config.ts\npackages/remeda/lint-staged.config.ts\npackages/remeda/prettier.config.js\npackages/remeda/release.config.js\npackages/remeda/tsconfig.dist.json\npackages/remeda/tsconfig.json\npackages/remeda/tsconfig.source.json\npackages/remeda/tsconfig.tests.json\npackages/remeda/tsdown.config.ts\npackages/remeda/vitest.config.ts\n\n-- formatter config --\n/** @type {import('prettier').Config} */\nexport default {\n  plugins: [\"prettier-plugin-pkg\", \"prettier-plugin-sh\"],\n};\n"
+        },
+        {
+          "index": 8,
+          "input": {
+            "commands": [
+              "find packages/remeda -maxdepth 2 -type f \\( -name '*config*' -o -name 'tsconfig*.json' \\) -print | sort && printf '\\n-- formatter config --\\n' && cat prettier.config.js",
+              "git diff -- packages/remeda/src/take.ts packages/remeda/src/take.test.ts packages/remeda/src/take.test-d.ts"
+            ]
+          },
+          "command": "git diff -- packages/remeda/src/take.ts packages/remeda/src/take.test.ts packages/remeda/src/take.test-d.ts",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": ""
+        },
+        {
+          "index": 10,
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ],
+            "string": " "
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ integer take works directly and in a pipeline (1.722223ms)\n✔ empty and negative take results remain empty (0.257069ms)\n✔ integer take stops the upstream mapper early (0.178172ms)\n✔ unrelated array APIs retain behavior (0.178422ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 809.872059\n"
+        },
+        {
+          "index": 11,
+          "input": {
+            "commands": [
+              "npm run test:study:feature"
+            ],
+            "string": " "
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\n\n> remeda@2.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✖ take agrees in eager/curried/lazy forms for 0.2 (4.385181ms)\n✖ take agrees in eager/curried/lazy forms for 0.9 (0.378837ms)\n✔ take agrees in eager/curried/lazy forms for 1.2 (0.635404ms)\n✔ take agrees in eager/curried/lazy forms for 1.9 (0.235647ms)\n✔ take agrees in eager/curried/lazy forms for 2.8 (0.114027ms)\n✖ take agrees in eager/curried/lazy forms for NaN (0.323706ms)\n✖ take agrees in eager/curried/lazy forms for 0 (0.296276ms)\n✖ take agrees in eager/curried/lazy forms for -0.5 (0.330376ms)\n✖ take agrees in eager/curried/lazy forms for -Infinity (0.240955ms)\n✔ take agrees in eager/curried/lazy forms for Infinity (0.360481ms)\n✔ taking everything still returns a shallow copy (0.23788ms)\nℹ tests 11\nℹ suites 0\nℹ pass 5\nℹ fail 6\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 518.441171\n\n✖ failing tests:\n\ntest at .study/feature.mjs:28:73\n✖ take agrees in eager/curried/lazy forms for 0.2 (4.385181ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  4 !== 0\n  \n      at TestContext.<anonymous> (/tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace/.study/feature.mjs:32:42)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.start (node:internal/test_runner/test:1242:17)\n      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 4,\n    expected: 0,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at .study/feature.mjs:28:73\n✖ take agrees in eager/curried/lazy forms for 0.9 (0.378837ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  4 !== 0\n  \n      at TestContext.<anonymous> (/tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace/.study/feature.mjs:32:42)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)\n      at Test.postRun (node:internal/test_runner/test:1522:19)\n      at Test.run (node:internal/test_runner/test:1447:12)\n      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 4,\n    expected: 0,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at .study/feature.mjs:28:73\n✖ take agrees in eager/curried/lazy forms for NaN (0.323706ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  4 !== 0\n  \n      at TestContext.<anonymous> (/tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace/.study/feature.mjs:32:42)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)\n      at Test.postRun (node:internal/test_runner/test:1522:19)\n      at Test.run (node:internal/test_runner/test:1447:12)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 4,\n    expected: 0,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at .study/feature.mjs:28:73\n✖ take agrees in eager/curried/lazy forms for 0 (0.296276ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  4 !== 0\n  \n      at TestContext.<anonymous> (/tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace/.study/feature.mjs:32:42)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)\n      at Test.postRun (node:internal/test_runner/test:1522:19)\n      at Test.run (node:internal/test_runner/test:1447:12)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 4,\n    expected: 0,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at .study/feature.mjs:28:73\n✖ take agrees in eager/curried/lazy forms for -0.5 (0.330376ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  4 !== 0\n  \n      at TestContext.<anonymous> (/tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace/.study/feature.mjs:32:42)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)\n      at Test.postRun (node:internal/test_runner/test:1522:19)\n      at Test.run (node:internal/test_runner/test:1447:12)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 4,\n    expected: 0,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at .study/feature.mjs:28:73\n✖ take agrees in eager/curried/lazy forms for -Infinity (0.240955ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  4 !== 0\n  \n      at TestContext.<anonymous> (/tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace/.study/feature.mjs:32:42)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)\n      at Test.postRun (node:internal/test_runner/test:1522:19)\n      at Test.run (node:internal/test_runner/test:1447:12)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 4,\n    expected: 0,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n"
+        },
+        {
+          "index": 12,
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ],
+            "string": " "
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 13,
+          "input": {
+            "commands": [
+              "npm run test:study:upstream"
+            ],
+            "string": " "
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace\n\n ✓ packages/remeda/src/take.test.ts (10 tests) 6ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  15:12:01\n   Duration  237ms (transform 58ms, setup 0ms, collect 62ms, tests 6ms, environment 0ms, prepare 53ms)\n\n"
+        },
+        {
+          "index": 19,
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ]
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ integer take works directly and in a pipeline (2.054622ms)\n✔ empty and negative take results remain empty (0.176129ms)\n✔ integer take stops the upstream mapper early (0.320001ms)\n✔ unrelated array APIs retain behavior (0.199324ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 524.80632\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "npm run test:study:feature"
+            ]
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ take agrees in eager/curried/lazy forms for 0.2 (2.084946ms)\n✔ take agrees in eager/curried/lazy forms for 0.9 (0.175378ms)\n✔ take agrees in eager/curried/lazy forms for 1.2 (0.344797ms)\n✔ take agrees in eager/curried/lazy forms for 1.9 (0.147637ms)\n✔ take agrees in eager/curried/lazy forms for 2.8 (0.148268ms)\n✔ take agrees in eager/curried/lazy forms for NaN (0.102671ms)\n✔ take agrees in eager/curried/lazy forms for 0 (0.194586ms)\n✔ take agrees in eager/curried/lazy forms for -0.5 (0.100087ms)\n✔ take agrees in eager/curried/lazy forms for -Infinity (0.119956ms)\n✔ take agrees in eager/curried/lazy forms for Infinity (0.360841ms)\n✔ taking everything still returns a shallow copy (0.144223ms)\nℹ tests 11\nℹ suites 0\nℹ pass 11\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 479.29278\n"
+        },
+        {
+          "index": 21,
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ]
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 2]\n\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\npackages/remeda/src/pipe.ts(329,17): error TS2339: Property 'isEmpty' does not exist on type 'LazyFn'.\n"
+        },
+        {
+          "index": 22,
+          "input": {
+            "commands": [
+              "npm run test:study:upstream"
+            ]
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace\n\n ✓ packages/remeda/src/take.test.ts (10 tests) 6ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  15:12:41\n   Duration  279ms (transform 69ms, setup 0ms, collect 83ms, tests 6ms, environment 0ms, prepare 60ms)\n\n"
+        },
+        {
+          "index": 23,
+          "input": {
+            "commands": [
+              "node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts --config packages/remeda/vitest.config.ts"
+            ]
+          },
+          "command": "node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts --config packages/remeda/vitest.config.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace\n\n ❯ packages/remeda/src/take.counts.test.ts (16 tests | 3 failed) 16ms\n   ✓ normalized counts > takes nothing for 0.2 2ms\n   ✓ normalized counts > takes nothing for 0.9 0ms\n   × normalized counts > takes nothing for 1.2 6ms\n     → expected [ 1 ] to strictly equal []\n   × normalized counts > takes nothing for 1.9 1ms\n     → expected [ 1 ] to strictly equal []\n   × normalized counts > takes nothing for 2.8 1ms\n     → expected [ 1, 2 ] to strictly equal []\n   ✓ normalized counts > takes nothing for 0 0ms\n   ✓ normalized counts > takes nothing for -0.5 0ms\n   ✓ normalized counts > takes nothing for -Infinity 0ms\n   ✓ normalized counts > takes nothing for NaN 0ms\n   ✓ normalized counts > takes the normalized count for 1.2 0ms\n   ✓ normalized counts > takes the normalized count for 1.9 0ms\n   ✓ normalized counts > takes the normalized count for 2.8 0ms\n   ✓ normalized counts > takes the normalized count for Infinity 0ms\n   ✓ does not invoke a lazy mapper for an empty normalized count 4ms\n   ✓ invokes a lazy mapper only for the normalized count 0ms\n   ✓ takes everything without mutating the readonly input 0ms\n\n Test Files  1 failed (1)\n      Tests  3 failed | 13 passed (16)\n   Start at  15:12:42\n   Duration  313ms (transform 67ms, setup 0ms, collect 74ms, tests 16ms, environment 0ms, prepare 57ms)\n\n\n[stderr]\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/remeda/src/take.counts.test.ts > normalized counts > takes nothing for 1.2\n FAIL  packages/remeda/src/take.counts.test.ts > normalized counts > takes nothing for 1.9\nAssertionError: expected [ 1 ] to strictly equal []\n\n- Expected\n+ Received\n\n- []\n+ [\n+   1,\n+ ]\n\n ❯ packages/remeda/src/take.counts.test.ts:11:34\n      9|   for (const count of [0.2, 0.9, 1.2, 1.9, 2.8, 0, -0.5, -Infinity, Na…\n     10|     test(`takes nothing for ${String(count)}`, () => {\n     11|       expect(take(input, count)).toStrictEqual([]);\n       |                                  ^\n     12|       expect(pipe(input, take(count))).toStrictEqual([]);\n     13|     });\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯\n\n FAIL  packages/remeda/src/take.counts.test.ts > normalized counts > takes nothing for 2.8\nAssertionError: expected [ 1, 2 ] to strictly equal []\n\n- Expected\n+ Received\n\n- []\n+ [\n+   1,\n+   2,\n+ ]\n\n ❯ packages/remeda/src/take.counts.test.ts:11:34\n      9|   for (const count of [0.2, 0.9, 1.2, 1.9, 2.8, 0, -0.5, -Infinity, Na…\n     10|     test(`takes nothing for ${String(count)}`, () => {\n     11|       expect(take(input, count)).toStrictEqual([]);\n       |                                  ^\n     12|       expect(pipe(input, take(count))).toStrictEqual([]);\n     13|     });\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯\n\n"
+        },
+        {
+          "index": 25,
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ]
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ integer take works directly and in a pipeline (1.518975ms)\n✔ empty and negative take results remain empty (0.13593ms)\n✔ integer take stops the upstream mapper early (0.173856ms)\n✔ unrelated array APIs retain behavior (0.177831ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 495.93646\n"
+        },
+        {
+          "index": 26,
+          "input": {
+            "commands": [
+              "npm run test:study:feature"
+            ]
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ take agrees in eager/curried/lazy forms for 0.2 (1.686191ms)\n✔ take agrees in eager/curried/lazy forms for 0.9 (0.199684ms)\n✔ take agrees in eager/curried/lazy forms for 1.2 (0.445194ms)\n✔ take agrees in eager/curried/lazy forms for 1.9 (0.155238ms)\n✔ take agrees in eager/curried/lazy forms for 2.8 (0.143652ms)\n✔ take agrees in eager/curried/lazy forms for NaN (0.105996ms)\n✔ take agrees in eager/curried/lazy forms for 0 (0.191382ms)\n✔ take agrees in eager/curried/lazy forms for -0.5 (0.114348ms)\n✔ take agrees in eager/curried/lazy forms for -Infinity (0.125305ms)\n✔ take agrees in eager/curried/lazy forms for Infinity (0.200645ms)\n✔ taking everything still returns a shallow copy (0.14997ms)\nℹ tests 11\nℹ suites 0\nℹ pass 11\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 487.060324\n"
+        },
+        {
+          "index": 27,
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ]
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 2]\n\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\npackages/remeda/src/pipe.ts(329,17): error TS2339: Property 'isEmpty' does not exist on type 'LazyFn'.\n"
+        },
+        {
+          "index": 28,
+          "input": {
+            "commands": [
+              "npm run test:study:upstream"
+            ]
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace\n\n ✓ packages/remeda/src/take.test.ts (10 tests) 5ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  15:12:58\n   Duration  264ms (transform 70ms, setup 0ms, collect 77ms, tests 5ms, environment 0ms, prepare 55ms)\n\n"
+        },
+        {
+          "index": 29,
+          "input": {
+            "commands": [
+              "node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts --config packages/remeda/vitest.config.ts"
+            ]
+          },
+          "command": "node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts --config packages/remeda/vitest.config.ts",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace\n\n ✓ packages/remeda/src/take.counts.test.ts (13 tests) 7ms\n\n Test Files  1 passed (1)\n      Tests  13 passed (13)\n   Start at  15:12:58\n   Duration  283ms (transform 67ms, setup 0ms, collect 70ms, tests 7ms, environment 0ms, prepare 65ms)\n\n"
+        },
+        {
+          "index": 32,
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ]
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ integer take works directly and in a pipeline (2.919896ms)\n✔ empty and negative take results remain empty (0.177662ms)\n✔ integer take stops the upstream mapper early (0.196409ms)\n✔ unrelated array APIs retain behavior (0.225752ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 563.594915\n"
+        },
+        {
+          "index": 33,
+          "input": {
+            "commands": [
+              "npm run test:study:feature"
+            ]
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ take agrees in eager/curried/lazy forms for 0.2 (1.690577ms)\n✔ take agrees in eager/curried/lazy forms for 0.9 (0.182498ms)\n✔ take agrees in eager/curried/lazy forms for 1.2 (0.872544ms)\n✔ take agrees in eager/curried/lazy forms for 1.9 (0.151263ms)\n✔ take agrees in eager/curried/lazy forms for 2.8 (0.164151ms)\n✔ take agrees in eager/curried/lazy forms for NaN (0.135649ms)\n✔ take agrees in eager/curried/lazy forms for 0 (0.33282ms)\n✔ take agrees in eager/curried/lazy forms for -0.5 (0.106858ms)\n✔ take agrees in eager/curried/lazy forms for -Infinity (0.133817ms)\n✔ take agrees in eager/curried/lazy forms for Infinity (0.350857ms)\n✔ taking everything still returns a shallow copy (0.150341ms)\nℹ tests 11\nℹ suites 0\nℹ pass 11\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 569.049398\n"
+        },
+        {
+          "index": 34,
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ]
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 35,
+          "input": {
+            "commands": [
+              "npm run test:study:upstream"
+            ]
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> remeda@2.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace\n\n ✓ packages/remeda/src/take.test.ts (10 tests) 6ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  15:13:13\n   Duration  252ms (transform 61ms, setup 0ms, collect 73ms, tests 6ms, environment 0ms, prepare 54ms)\n\n"
+        },
+        {
+          "index": 36,
+          "input": {
+            "commands": [
+              "node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts --config packages/remeda/vitest.config.ts"
+            ]
+          },
+          "command": "node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts --config packages/remeda/vitest.config.ts",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace\n\n ✓ packages/remeda/src/take.counts.test.ts (13 tests) 7ms\n\n Test Files  1 passed (1)\n      Tests  13 passed (13)\n   Start at  15:13:14\n   Duration  282ms (transform 70ms, setup 0ms, collect 81ms, tests 7ms, environment 0ms, prepare 56ms)\n\n"
+        },
+        {
+          "index": 37,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff --stat && git diff -- packages/remeda/src/take.ts packages/remeda/src/take.counts.test.ts packages/remeda/src/internal/types/LazyEvaluator.ts packages/remeda/src/internal/types/LazyDefinition.ts packages/remeda/src/pipe.ts"
+            ],
+            "string": " "
+          },
+          "command": "git diff --check && git status --short && git diff --stat && git diff -- packages/remeda/src/take.ts packages/remeda/src/take.counts.test.ts packages/remeda/src/internal/types/LazyEvaluator.ts package ... [command truncated: 73 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M packages/remeda/src/internal/types/LazyDefinition.ts\n M packages/remeda/src/internal/types/LazyEvaluator.ts\n M packages/remeda/src/pipe.ts\n M packages/remeda/src/take.ts\n?? packages/remeda/src/take.counts.test.ts\n packages/remeda/src/internal/types/LazyDefinition.ts |  7 +++++--\n packages/remeda/src/internal/types/LazyEvaluator.ts  |  6 ++++--\n packages/remeda/src/pipe.ts                          | 13 ++++++++++++-\n packages/remeda/src/take.ts                          | 16 ++++++++++++----\n 4 files changed, 33 insertions(+), 9 deletions(-)\ndiff --git a/packages/remeda/src/internal/types/LazyDefinition.ts b/packages/remeda/src/internal/types/LazyDefinition.ts\nindex db887ef..6b8c59b 100644\n--- a/packages/remeda/src/internal/types/LazyDefinition.ts\n+++ b/packages/remeda/src/internal/types/LazyDefinition.ts\n@@ -6,12 +6,15 @@ export type LazyDefinition = {\n   readonly lazyArgs: ReadonlyArray<unknown>;\n };\n \n-type LazyFn = (\n+type LazyFn = ((\n   value: unknown,\n   index: number,\n   items: ReadonlyArray<unknown>,\n-) => LazyResult<unknown>;\n+) => LazyResult<unknown>) & {\n+  readonly isEmpty?: boolean;\n+};\n \n type LazyMeta = {\n+  readonly isEmpty?: boolean;\n   readonly single?: boolean;\n };\ndiff --git a/packages/remeda/src/internal/types/LazyEvaluator.ts b/packages/remeda/src/internal/types/LazyEvaluator.ts\nindex c8e94c0..1019f8d 100644\n--- a/packages/remeda/src/internal/types/LazyEvaluator.ts\n+++ b/packages/remeda/src/internal/types/LazyEvaluator.ts\n@@ -1,7 +1,9 @@\n import type { LazyResult } from \"./LazyResult\";\n \n-export type LazyEvaluator<T = unknown, R = T> = (\n+export type LazyEvaluator<T = unknown, R = T> = ((\n   item: T,\n   index: number,\n   data: ReadonlyArray<T>,\n-) => LazyResult<R>;\n+) => LazyResult<R>) & {\n+  readonly isEmpty?: boolean;\n+};\ndiff --git a/packages/remeda/src/pipe.ts b/packages/remeda/src/pipe.ts\nindex bd01327..82bb61b 100644\n--- a/packages/remeda/src/pipe.ts\n+++ b/packages/remeda/src/pipe.ts\n@@ -8,6 +8,7 @@ import { SKIP_ITEM } from \"./internal/utilityEvaluators\";\n \n type PreparedLazyOperation = LazyEvaluator & {\n   readonly isSingle: boolean;\n+  readonly isEmpty: boolean;\n \n   // These are intentionally mutable, they maintain the lazy piped state.\n   index: number;\n@@ -238,11 +239,20 @@ export function pipe(\n       }\n \n       lazySequence.push(lazyOp);\n-      if (lazyOp.isSingle) {\n+      if (lazyOp.isSingle || lazyOp.isEmpty) {\n         break;\n       }\n     }\n \n+    const emptyOperationIndex = lazySequence.findIndex(\n+      (lazyOperation) => lazyOperation.isEmpty,\n+    );\n+    if (emptyOperationIndex !== -1) {\n+      output = [];\n+      operationIndex += emptyOperationIndex + 1;\n+      continue;\n+    }\n+\n     const accumulator: Array<unknown> = [];\n \n     for (const value of output) {\n@@ -316,6 +326,7 @@ function prepareLazyOperation(op: LazyOp): PreparedLazyOperation {\n   const fn = lazy(...lazyArgs);\n   return Object.assign(fn, {\n     isSingle: lazy.single ?? false,\n+    isEmpty: fn.isEmpty ?? false,\n     index: 0,\n     items: [] as Array<unknown>,\n   });\ndiff --git a/packages/remeda/src/take.ts b/packages/remeda/src/take.ts\nindex 4ae6388..4d6dc9a 100644\n--- a/packages/remeda/src/take.ts\n+++ b/packages/remeda/src/take.ts\n@@ -44,16 +44,24 @@ export function take(...args: ReadonlyArray<unknown>): unknown {\n const takeImplementation = <T extends IterableContainer>(\n   array: T,\n   n: number,\n-): Array<T[number]> => (n < 0 ? [] : array.slice(0, n));\n+): Array<T[number]> => array.slice(0, normalizeCount(n));\n \n function lazyImplementation<T>(n: number): LazyEvaluator<T> {\n-  if (n <= 0) {\n-    return lazyEmptyEvaluator;\n+  const count = normalizeCount(n);\n+  if (count === 0) {\n+    return Object.assign(\n+      (_value: T, _index: number, _data: ReadonlyArray<T>) =>\n+        lazyEmptyEvaluator<T>(),\n+      { isEmpty: true as const },\n+    );\n   }\n \n-  let remaining = n;\n+  let remaining = count;\n   return (value) => {\n     remaining -= 1;\n     return { done: remaining <= 0, hasNext: true, next: value };\n   };\n }\n+\n+const normalizeCount = (n: number): number =>\n+  n > 0 ? Math.floor(n) : 0;\n"
+        },
+        {
+          "index": 39,
+          "input": {
+            "commands": [
+              "git status --short && printf '\\n-- changed paths --\\n' && git diff --name-only && git ls-files --others --exclude-standard && printf '\\n-- whitespace check --\\n' && git diff --check"
+            ]
+          },
+          "command": "git status --short && printf '\\n-- changed paths --\\n' && git diff --name-only && git ls-files --others --exclude-standard && printf '\\n-- whitespace check --\\n' && git diff --check",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M packages/remeda/src/internal/types/LazyDefinition.ts\n M packages/remeda/src/internal/types/LazyEvaluator.ts\n M packages/remeda/src/pipe.ts\n M packages/remeda/src/take.ts\n?? packages/remeda/src/take.counts.test.ts\n\n-- changed paths --\npackages/remeda/src/internal/types/LazyDefinition.ts\npackages/remeda/src/internal/types/LazyEvaluator.ts\npackages/remeda/src/pipe.ts\npackages/remeda/src/take.ts\npackages/remeda/src/take.counts.test.ts\n\n-- whitespace check --\n"
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented consistent `take` count semantics.\n\n### Changes\n- Positive finite counts are floored.\n- `0`, negative values, negative infinity, and `NaN` take nothing.\n- Positive infinity takes all elements.\n- Preserved integer behavior, readonly input support, shallow-copy behavior, non-mutation, and public type inference.\n- Added lazy-pipeline short-circuiting so normalized-zero counts do not invoke upstream lazy mappers.\n- Positive fractional counts invoke upstream mappers only for the floored number of elements.\n- Added regression coverage in:\n  - `/tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace/packages/remeda/src/take.counts.test.ts`\n\nModified implementation/support files:\n- `/tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace/packages/remeda/src/take.ts`\n- `/tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace/packages/remeda/src/pipe.ts`\n- `/tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace/packages/remeda/src/internal/types/LazyEvaluator.ts`\n- `/tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-cline/workspace/packages/remeda/src/internal/types/LazyDefinition.ts`\n\nExisting tests were not edited. No manifests, locks, configuration, metadata, or dependencies were changed.\n\n### Validation\n\nAll requested commands passed:\n\n- `npm run test:study:regression`\n  - 4 passed, 0 failed\n- `npm run test:study:feature`\n  - 11 passed, 0 failed\n- `npm run test:study:types`\n  - TypeScript completed successfully\n- `npm run test:study:upstream`\n  - 1 test file passed; 10 tests passed\n\nAdditional validation:\n\n- Direct new regression:\n  - `node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts --config packages/remeda/vitest.config.ts`\n  - 13 passed, 0 failed\n- `git diff --check`\n  - Passed\n\nCoverage limit: the supplied upstream Vitest configuration runs only the existing `packages/remeda/src/take.test.ts`; the new regression file was run separately. No full project coverage command was run.",
+      "blocked": [],
+      "scopeCommands": [
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "git status --short --branch && git log -1 --oneline --no-decorate",
+              "find . -path './node_modules' -prune -o -type f \\( -name '*take*' -o -name '*.test.ts' \\) -print | sort | sed -n '1,240p'"
+            ]
+          },
+          "command": "git status --short --branch && git log -1 --oneline --no-decorate",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "## master\n22263e0 Frozen scope study input\n"
+        }
+      ],
+      "completion": null
+    },
+    {
+      "name": "3-remeda-take-counts-reference",
+      "hashes": {
+        "events.jsonl": "620a5939835ca7d0837441c400d62007dc297f839c388eb89cf51983bf28f6e6",
+        "workspace.diff": "58ed61e426b4e5e5dd45352f598b3da9129d2a482d3add8b91465f74319fe707",
+        "score.json": "8503709c780639eb16e40132053eb39785a66fb6c0cfa4e68fbb43723da473a3",
+        "tool-ledger.json": "e7d465cb58c222947877bb39c942474e9fc2b6ed89f1b1a677c6263be63b1c98"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 69,
+      "required": {
+        "regression": [
+          {
+            "index": 70,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 71,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 11,
+                "passed": 11,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 72,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ],
+        "upstream": [
+          {
+            "index": 73,
+            "input": {
+              "kind": "project",
+              "task": "test:study:upstream"
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 10,
+                "passed": 10,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 24,
+          "input": {
+            "kind": "command",
+            "command": "git diff -- packages/remeda/src/take.ts packages/remeda/src/take.counts.test.ts && git status --short"
+          },
+          "command": "git diff -- packages/remeda/src/take.ts packages/remeda/src/take.counts.test.ts && git status --short",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 25,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 26,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 1,
+          "processSuccess": false,
+          "check": {
+            "process": "exited",
+            "exitCode": 1,
+            "execution": "observed",
+            "outcome": "failed",
+            "counts": {
+              "executed": 11,
+              "passed": 5,
+              "failed": 6,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 27,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 28,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 10,
+              "passed": 10,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 40,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 41,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 1,
+          "processSuccess": false,
+          "check": {
+            "process": "exited",
+            "exitCode": 1,
+            "execution": "observed",
+            "outcome": "failed",
+            "counts": {
+              "executed": 11,
+              "passed": 5,
+              "failed": 6,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 42,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 43,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 10,
+              "passed": 10,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 44,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts"
+          },
+          "command": "node node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "1",
+          "output": "Command exited with code 1.\nRUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-reference/workspace\n\n ❯ packages/remeda/src/take.counts.test.ts (10 tests | 1 failed) 10ms\n   ✓ take count normalization > normalizes 0 2ms\n   ✓ take count normalization > normalizes -1 0ms\n   ✓ take count normalization > normalizes -Infinity 0ms\n   ✓ take count normalization > normalizes NaN 0ms\n   ✓ take count normalization > normalizes 0.2 0ms\n   ✓ take count normalization > normalizes 1.9 0ms\n   ✓ take count normalization > normalizes 2.8 0ms\n   ✓ take count normalization > normalizes Infinity 0ms\n   × take count normalization > normalizes counts before invoking a lazy upstream mapper 6ms\n     → expected \"spy\" to be called +0 times, but got 1 times\n   ✓ take count normalization > takes a shallow copy without mutating readonly input 1ms\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/remeda/src/take.counts.test.ts > take count normalization > normalizes counts before invoking a lazy upstream mapper\nAssertionError: expected \"spy\" to be called +0 times, but got 1 times\n ❯ packages/remeda/src/take.counts.test.ts:30:22\n     28| \n     29|       expect(pipe(input, map(mapper), take(count))).toStrictEqual(expe…\n     30|       expect(mapper).toHaveBeenCalledTimes(expected.length);\n       |                      ^\n     31|     }\n     32|   });\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n\n Test Files  1 failed (1)\n      Tests  1 failed | 9 passed (10)\n   Start at  15:15:07\n   Duration  376ms (transform 97ms, setup 0ms, collect 102ms, tests 10ms, environment 0ms, prepare 82ms)"
+        },
+        {
+          "index": 50,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts"
+          },
+          "command": "node node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "1",
+          "output": "Command exited with code 1.\nRUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-reference/workspace\n\n ❯ packages/remeda/src/take.counts.test.ts (10 tests | 1 failed) 10ms\n   ✓ take count normalization > normalizes 0 2ms\n   ✓ take count normalization > normalizes -1 0ms\n   ✓ take count normalization > normalizes -Infinity 0ms\n   ✓ take count normalization > normalizes NaN 0ms\n   ✓ take count normalization > normalizes 0.2 0ms\n   ✓ take count normalization > normalizes 1.9 0ms\n   ✓ take count normalization > normalizes 2.8 0ms\n   ✓ take count normalization > normalizes Infinity 0ms\n   × take count normalization > normalizes counts before invoking a lazy upstream mapper 5ms\n     → expected \"spy\" to be called +0 times, but got 1 times\n   ✓ take count normalization > takes a shallow copy without mutating readonly input 0ms\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/remeda/src/take.counts.test.ts > take count normalization > normalizes counts before invoking a lazy upstream mapper\nAssertionError: expected \"spy\" to be called +0 times, but got 1 times\n ❯ packages/remeda/src/take.counts.test.ts:30:22\n     28| \n     29|       expect(pipe(input, map(mapper), take(count))).toStrictEqual(expe…\n     30|       expect(mapper).toHaveBeenCalledTimes(expected.length);\n       |                      ^\n     31|     }\n     32|   });\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n\n Test Files  1 failed (1)\n      Tests  1 failed | 9 passed (10)\n   Start at  15:15:42\n   Duration  308ms (transform 68ms, setup 0ms, collect 80ms, tests 10ms, environment 0ms, prepare 59ms)"
+        },
+        {
+          "index": 51,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 1,
+          "processSuccess": false,
+          "check": {
+            "process": "exited",
+            "exitCode": 1,
+            "execution": "observed",
+            "outcome": "failed",
+            "counts": {
+              "executed": 11,
+              "passed": 5,
+              "failed": 6,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 52,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 53,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 54,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 10,
+              "passed": 10,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 55,
+          "input": {
+            "kind": "command",
+            "command": "node --import tsx -e 'import {pipe,map,take} from \"./packages/remeda/src/index.ts\"; let c=0; console.log(pipe([1,2,3],map(x=>{c++;return x}),take(0.2)),c); const op=take(0.2); console.log(op.lazy, op.lazy(0.2), op.lazy(0.2).empty)'"
+          },
+          "command": "node --import tsx -e 'import {pipe,map,take} from \"./packages/remeda/src/index.ts\"; let c=0; console.log(pipe([1,2,3],map(x=>{c++;return x}),take(0.2)),c); const op=take(0.2); console.log(op.lazy, op.lazy(0.2), op.lazy(0.2).empty)'",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 58,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts"
+          },
+          "command": "node node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 59,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 11,
+              "passed": 11,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 60,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 61,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 62,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 10,
+              "passed": 10,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 63,
+          "input": {
+            "kind": "project",
+            "task": "remeda:check"
+          },
+          "command": "npm run check",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 64,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff --stat"
+          },
+          "command": "git diff --check && git status --short && git diff --stat",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 70,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 71,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 11,
+              "passed": 11,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 72,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 73,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 10,
+              "passed": 10,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 74,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts"
+          },
+          "command": "node node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 75,
+          "input": {
+            "kind": "project",
+            "task": "remeda:check"
+          },
+          "command": "npm run check",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 76,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff --stat"
+          },
+          "command": "git diff --check && git status --short && git diff --stat",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented consistent `take` count normalization across data-first, data-last, and lazy pipelines. Positive finite counts are floored; zero, negatives, negative infinity, and NaN produce empty results; positive infinity takes all items. Empty lazy takes now short-circuit before upstream lazy operations, while positive fractional counts stop after the normalized number of items. Readonly input, shallow-copy behavior, integer behavior, and public type inference are preserved.\n\nAdded `packages/remeda/src/take.counts.test.ts` covering normalized counts, curried/data-first behavior, lazy mapper invocation counts, readonly input, shallow copying, and non-mutation. Existing tests were not edited.\n\nChecks:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 11/11 tests.\n- `npm run test:study:types` — passed; TypeScript completed without errors (test count not applicable).\n- `npm run test:study:upstream` — passed, 10/10 tests.\n- Targeted new Vitest file — passed, 10/10 tests.\n- `npm run check` — passed.\n- `git diff --check` — passed.\n\nCoverage limit: the requested study checks and targeted regression tests passed; no claim is made that every repository test or unrelated API behavior was exhaustively exercised.",
+      "blocked": [
+        {
+          "tool": "read_code",
+          "input": {
+            "target": ".study/types.mjs",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-reference/workspace/.study/types.mjs'",
+            "diagnosticId": "read-mvcje8dn"
+          }
+        },
+        {
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "s18",
+                "path": "packages/remeda/src/take.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/take.ts\n@@\n const takeImplementation = <T extends IterableContainer>(\n   array: T,\n   n: number,\n-): Array<T[number]> => (n < 0 ? [] : array.slice(0, n));\n+): Array<T[number]> => array.slice(0, normalizeCount(n));\n \n function lazyImplementation<T>(n: number): LazyEvaluator<T> {\n+  n = normalizeCount(n);\n+\n   if (n <= 0) {\n     return lazyEmptyEvaluator;\n   }\n@@\n     return { done: remaining <= 0, hasNext: true, next: value };\n   };\n }\n+\n+function normalizeCount(n: number): number {\n+  return n > 0 ? Math.floor(n) : 0;\n+}\n*** End Patch"
+              },
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/take.counts.test.ts",
+                "patch": "import { describe, expect, test, vi } from \"vitest\";\nimport { map } from \"./map\";\nimport { pipe } from \"./pipe\";\nimport { take } from \"./take\";\n\nconst input = Object.freeze([1, 2, 3, 4]);\n\nconst cases = [\n  [0, []],\n  [-1, []],\n  [-Infinity, []],\n  [NaN, []],\n  [0.2, []],\n  [1.9, [1]],\n  [2.8, [1, 2]],\n  [Infinity, [1, 2, 3, 4]],\n] as const;\n\ndescribe(\"take count normalization\", () => {\n  test.each(cases)(\"normalizes %s\", (count, expected) => {\n    expect(take(input, count)).toStrictEqual(expected);\n    expect(pipe(input, take(count))).toStrictEqual(expected);\n  });\n\n  test(\"normalizes counts before invoking a lazy upstream mapper\", () => {\n    for (const [count, expected] of cases) {\n      const mapper = vi.fn((value: number) => value);\n\n      expect(pipe(input, map(mapper), take(count))).toStrictEqual(expected);\n      expect(mapper).toHaveBeenCalledTimes(expected.length);\n    }\n  });\n\n  test(\"takes a shallow copy without mutating readonly input\", () => {\n    const result = take(input, Infinity);\n\n    expect(result).toStrictEqual(input);\n    expect(result).not.toBe(input);\n    expect(input).toStrictEqual([1, 2, 3, 4]);\n  });\n});\n"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context matches the whole file but exceeds the selected symbol scope.",
+            "recovery": "No operations in this batch were applied. Every operation uses the original source, not earlier operations in the same batch. The exact context matches the file; resending it with this same narrow target cannot fix the scope conflict. Narrow the patch context or explicitly choose a file patch after inspecting the affected lines. Other edit guards still apply. {\"target\":\"s18\",\"path\":\"packages/remeda/src/take.ts\",\"patchCorrection\":{\"reason\":\"context_outside_symbol\",\"expectedPath\":\"packages/remeda/src/take.ts\",\"affectedLines\":[[47,47],[50,50],[60,60]],\"affectedRangeCount\":3,\"changesOutsideSymbol\":true,\"nextRead\":{\"target\":\"packages/remeda/src/take.ts\",\"view\":\"range\",\"range\":{\"startLine\":44,\"endLine\":60}}},\"declarationLines\":[40,42],\"nextRead\":{\"target\":\"packages/remeda/src/take.ts\",\"view\":\"range\",\"range\":{\"startLine\":44,\"endLine\":60}},\"routes\":\"Read the current text before retrying. For changes inside the declaration, read the symbol then use a symbol action or a focused alias patch. For JSDoc, export wrappers or context outside it, read those lines and use a file patch. For dependent edits, commit separately and read again. These locations are hints, not observed edit coverage; refresh after source changes.\"}",
+            "diagnosticId": "edit-mvcjekze"
+          }
+        },
+        {
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "s43",
+                "path": "packages/remeda/src/pipe.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/pipe.ts\n@@\n     if (!lazyResult.hasNext) {\n+      if (lazyResult.done) {\n+        isDone = true;\n+      }\n       break;\n     }\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context matches the whole file but exceeds the selected symbol scope.",
+            "recovery": "No operations in this batch were applied. Every operation uses the original source, not earlier operations in the same batch. The exact context matches the file; resending it with this same narrow target cannot fix the scope conflict. Narrow the patch context or explicitly choose a file patch after inspecting the affected lines. Other edit guards still apply. {\"target\":\"s43\",\"path\":\"packages/remeda/src/pipe.ts\",\"patchCorrection\":{\"reason\":\"context_outside_symbol\",\"expectedPath\":\"packages/remeda/src/pipe.ts\",\"affectedLines\":[[300,300]],\"affectedRangeCount\":1,\"changesOutsideSymbol\":true,\"nextRead\":{\"target\":\"packages/remeda/src/pipe.ts\",\"view\":\"range\",\"range\":{\"startLine\":297,\"endLine\":321}}},\"declarationLines\":[9,15],\"nextRead\":{\"target\":\"packages/remeda/src/pipe.ts\",\"view\":\"range\",\"range\":{\"startLine\":297,\"endLine\":321}},\"routes\":\"Read the current text before retrying. For changes inside the declaration, read the symbol then use a symbol action or a focused alias patch. For JSDoc, export wrappers or context outside it, read those lines and use a file patch. For dependent edits, commit separately and read again. These locations are hints, not observed edit coverage; refresh after source changes.\"}",
+            "diagnosticId": "edit-mvcjfhx1"
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "command",
+            "message": "Command exited with code 1.\nRUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-reference/workspace\n\n ❯ packages/remeda/src/take.counts.test.ts (10 tests | 1 failed) 10ms\n   ✓ take count normalization > normalizes 0 2ms\n   ✓ take count normalization > normalizes -1 0ms\n   ✓ take count normalization > normalizes -Infinity 0ms\n   ✓ take count normalization > normalizes NaN 0ms\n   ✓ take count normalization > normalizes 0.2 0ms\n   ✓ take count normalization > normalizes 1.9 0ms\n   ✓ take count normalization > normalizes 2.8 0ms\n   ✓ take count normalization > normalizes Infinity 0ms\n   × take count normalization > normalizes counts before invoking a lazy upstream mapper 6ms\n     → expected \"spy\" to be called +0 times, but got 1 times\n   ✓ take count normalization > takes a shallow copy without mutating readonly input 1ms\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/remeda/src/take.counts.test.ts > take count normalization > normalizes counts before invoking a lazy upstream mapper\nAssertionError: expected \"spy\" to be called +0 times, but got 1 times\n ❯ packages/remeda/src/take.counts.test.ts:30:22\n     28| \n     29|       expect(pipe(input, map(mapper), take(count))).toStrictEqual(expe…\n     30|       expect(mapper).toHaveBeenCalledTimes(expected.length);\n       |                      ^\n     31|     }\n     32|   });\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n\n Test Files  1 failed (1)\n      Tests  1 failed | 9 passed (10)\n   Start at  15:15:07\n   Duration  376ms (transform 97ms, setup 0ms, collect 102ms, tests 10ms, environment 0ms, prepare 82ms)",
+            "recovery": "Inspect the command output and adjust the command or its prerequisites before retrying."
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run packages/remeda/src/take.counts.test.ts"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "command",
+            "message": "Command exited with code 1.\nRUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-remeda-take-counts-reference/workspace\n\n ❯ packages/remeda/src/take.counts.test.ts (10 tests | 1 failed) 10ms\n   ✓ take count normalization > normalizes 0 2ms\n   ✓ take count normalization > normalizes -1 0ms\n   ✓ take count normalization > normalizes -Infinity 0ms\n   ✓ take count normalization > normalizes NaN 0ms\n   ✓ take count normalization > normalizes 0.2 0ms\n   ✓ take count normalization > normalizes 1.9 0ms\n   ✓ take count normalization > normalizes 2.8 0ms\n   ✓ take count normalization > normalizes Infinity 0ms\n   × take count normalization > normalizes counts before invoking a lazy upstream mapper 5ms\n     → expected \"spy\" to be called +0 times, but got 1 times\n   ✓ take count normalization > takes a shallow copy without mutating readonly input 0ms\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/remeda/src/take.counts.test.ts > take count normalization > normalizes counts before invoking a lazy upstream mapper\nAssertionError: expected \"spy\" to be called +0 times, but got 1 times\n ❯ packages/remeda/src/take.counts.test.ts:30:22\n     28| \n     29|       expect(pipe(input, map(mapper), take(count))).toStrictEqual(expe…\n     30|       expect(mapper).toHaveBeenCalledTimes(expected.length);\n       |                      ^\n     31|     }\n     32|   });\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n\n Test Files  1 failed (1)\n      Tests  1 failed | 9 passed (10)\n   Start at  15:15:42\n   Duration  308ms (transform 68ms, setup 0ms, collect 80ms, tests 10ms, environment 0ms, prepare 59ms)",
+            "recovery": "Inspect the command output and adjust the command or its prerequisites before retrying."
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_056ad23cdbef768230c47f4e904eaf6c",
         "delivery": "satisfied",
         "verification": "unverified",
         "satisfied_obligations": [

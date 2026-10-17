@@ -140,8 +140,15 @@
       "fullRequestPassed": true,
       "notes": [
         "Normalization and the delivered sixteen-case test pass all six endpoint checks. Existing tests/config/dependencies preserved; selected checks fresh and synthetic git log contains no solution.",
-        "Static review finds a compatibility defect: the new empty-sequence continue assigns [] and bypasses final isSingle conversion, so take(0) followed by first() returns an array rather than undefined. Uniform post-hoc baseline/endpoint witness scheduled after workers; verdict remains conservative pending execution."
-      ]
+        "Static review finds a compatibility defect: the new empty-sequence continue assigns [] and bypasses final isSingle conversion, so take(0) followed by first() returns an array rather than undefined. Uniform post-hoc baseline/endpoint witness scheduled after workers; verdict remains conservative pending execution.",
+        "Uniform unchanged-patch original take/pipe checks pass, but the empty-single witness confirms [] instead of undefined; pristine input passes. This remains a post-hoc diagnostic, not a new task or recovered solution."
+      ],
+      "pipelineAudit": {
+        "artifact": "pipeline-audit.json",
+        "sha256": "9b3b4c91f7e8b729cff5279ef850d4492d448f9ff9cf2fb05c1ce0b78fe19530",
+        "originalTestsPassed": true,
+        "emptySingleWitnessPassed": false
+      }
     },
     {
       "name": "1-remeda-take-counts-reference",
@@ -158,8 +165,15 @@
       "fullRequestPassed": true,
       "notes": [
         "Reviewed normalization, empty evaluator metadata and pipeline loop guard; it retains the final isSingle conversion. Added seventeen-case regression passes runtime/types. Agent also completed full package suite: 3868 passed, 1 todo, no type errors. Four supplied checks fresh; no original tests/config edited.",
-        "Dependency comparator flags only added vitest/dist/tsconfig.tmp.tsbuildinfo; no existing dependency bytes changed or disappeared. Pinned Vitest typechecker source explicitly creates that build-info path (typechecker.DRKU1-1g.js:751), matching the observed full typechecked test run. Treat as generated cache, preserve raw integrity=false; no dependency installation or solution retrieval. Supplemental pipeline witness still pending."
-      ]
+        "Dependency comparator flags only added vitest/dist/tsconfig.tmp.tsbuildinfo; no existing dependency bytes changed or disappeared. Pinned Vitest typechecker source explicitly creates that build-info path (typechecker.DRKU1-1g.js:751), matching the observed full typechecked test run. Treat as generated cache, preserve raw integrity=false; no dependency installation or solution retrieval. Supplemental pipeline witness still pending.",
+        "Uniform unchanged-patch original take/pipe runtime/type checks and empty-single witness confirm the reviewed behavior."
+      ],
+      "pipelineAudit": {
+        "artifact": "pipeline-audit.json",
+        "sha256": "9b3b4c91f7e8b729cff5279ef850d4492d448f9ff9cf2fb05c1ce0b78fe19530",
+        "originalTestsPassed": true,
+        "emptySingleWitnessPassed": true
+      }
     },
     {
       "name": "1-remeda-take-counts-scope",
@@ -184,8 +198,15 @@
       ],
       "notes": [
         "Reviewed normalization and empty-take metadata. Empty sequence explicitly respects final isSingle, preserving undefined for scalar terminals. Added fourteen-case regression passes independent runtime/types; no existing tests/config/dependencies altered.",
-        "A failed direct Vitest/feature sequence is retained; later direct new-test run, npm check and all four supplied checks succeed after final edits. Delivery accurately limits supplied compiler/upstream scope. Supplemental original pipeline and scalar witness pending."
-      ]
+        "A failed direct Vitest/feature sequence is retained; later direct new-test run, npm check and all four supplied checks succeed after final edits. Delivery accurately limits supplied compiler/upstream scope. Supplemental original pipeline and scalar witness pending.",
+        "Uniform unchanged-patch original take/pipe runtime/type checks and empty-single witness confirm the reviewed behavior."
+      ],
+      "pipelineAudit": {
+        "artifact": "pipeline-audit.json",
+        "sha256": "9b3b4c91f7e8b729cff5279ef850d4492d448f9ff9cf2fb05c1ce0b78fe19530",
+        "originalTestsPassed": true,
+        "emptySingleWitnessPassed": true
+      }
     },
     {
       "name": "2-valibot-parser-overrides-scope",
@@ -337,8 +358,15 @@
       "fullRequestPassed": true,
       "notes": [
         "Normalization and new twelve-case regression pass all selected/delivered checks; required checks fresh, original tests/config/dependencies preserved and no solution retrieval.",
-        "The same empty-single compatibility defect as first Cline endpoint is present: new early continue unconditionally assigns [] instead of preserving the final scalar conversion. Uniform post-hoc witness pending. Reported integer-behavior preservation is therefore too broad despite green checks."
-      ]
+        "The same empty-single compatibility defect as first Cline endpoint is present: new early continue unconditionally assigns [] instead of preserving the final scalar conversion. Uniform post-hoc witness pending. Reported integer-behavior preservation is therefore too broad despite green checks.",
+        "Uniform unchanged-patch original take/pipe checks pass, but the empty-single witness confirms [] instead of undefined; pristine input passes. This remains a post-hoc diagnostic, not a new task or recovered solution."
+      ],
+      "pipelineAudit": {
+        "artifact": "pipeline-audit.json",
+        "sha256": "9b3b4c91f7e8b729cff5279ef850d4492d448f9ff9cf2fb05c1ce0b78fe19530",
+        "originalTestsPassed": true,
+        "emptySingleWitnessPassed": false
+      }
     },
     {
       "name": "2-remeda-take-counts-scope",
@@ -367,8 +395,15 @@
       ],
       "notes": [
         "All six endpoint checks and added eleven-case regression pass, but source has the same empty-single regression: unconditional [] skips scalar conversion. Uniform witness pending. Original tests/config and existing dependencies preserved; added Vitest tsbuildinfo is generated cache, raw integrity flag retained.",
-        "Official failure: maxIterations48. A package task used a root-relative test selector from packages/remeda and selected no tests. Repeated full-suite passes (3862 tests, no type errors) do not clear the failed differently-parameterized invocation; finish_task blocks repeatedly. No accepted final delivery; audit-packet delivery is only the attempted finish summary, not successful completion. Preserve this adverse outcome; diagnose/replay the gate separately after frozen workers."
-      ]
+        "Official failure: maxIterations48. A package task used a root-relative test selector from packages/remeda and selected no tests. Repeated full-suite passes (3862 tests, no type errors) do not clear the failed differently-parameterized invocation; finish_task blocks repeatedly. No accepted final delivery; audit-packet delivery is only the attempted finish summary, not successful completion. Preserve this adverse outcome; diagnose/replay the gate separately after frozen workers.",
+        "Uniform unchanged-patch original take/pipe checks pass, but the empty-single witness confirms [] instead of undefined; pristine input passes. This remains a post-hoc diagnostic, not a new task or recovered solution."
+      ],
+      "pipelineAudit": {
+        "artifact": "pipeline-audit.json",
+        "sha256": "9b3b4c91f7e8b729cff5279ef850d4492d448f9ff9cf2fb05c1ce0b78fe19530",
+        "originalTestsPassed": true,
+        "emptySingleWitnessPassed": false
+      }
     },
     {
       "name": "2-remeda-take-counts-cline",
@@ -385,8 +420,15 @@
       "fullRequestPassed": false,
       "notes": [
         "All selected/delivered endpoint checks pass, but empty pipeline shortcut again bypasses scalar conversion. Uniform original/endpoint witness pending. Added thirteen-case regression valid; original tests/config/dependencies preserved.",
-        "Four supplied checks pass at tools35–38, then tools42–43 append a newline to the added test. Focused runtime and source type checks pass after that formatting-only edit; all four supplied checks are not rerun on final bytes, so conservative final-source criterion is false. This does not change the already-negative semantic verdict. Local git log reads synthetic input only; no solution retrieval."
-      ]
+        "Four supplied checks pass at tools35–38, then tools42–43 append a newline to the added test. Focused runtime and source type checks pass after that formatting-only edit; all four supplied checks are not rerun on final bytes, so conservative final-source criterion is false. This does not change the already-negative semantic verdict. Local git log reads synthetic input only; no solution retrieval.",
+        "Uniform unchanged-patch original take/pipe checks pass, but the empty-single witness confirms [] instead of undefined; pristine input passes. This remains a post-hoc diagnostic, not a new task or recovered solution."
+      ],
+      "pipelineAudit": {
+        "artifact": "pipeline-audit.json",
+        "sha256": "9b3b4c91f7e8b729cff5279ef850d4492d448f9ff9cf2fb05c1ce0b78fe19530",
+        "originalTestsPassed": true,
+        "emptySingleWitnessPassed": false
+      }
     },
     {
       "name": "3-valibot-parser-overrides-cline",
@@ -540,8 +582,65 @@
       "notes": [
         "Selected checks and independent delivered runtime/types pass, but the empty-sequence continue in pipe.ts bypasses the isSingle conversion. Same scalar-result regression as other Remeda endpoints; confirm with the uniform post-hoc witness after workers.",
         "The direct Vitest follow-up succeeds after earlier failed feature and runtime attempts, without dependency installation. All four required checks are fresh after final formatting edit66.",
-        "Delivery overstates the added test type coverage: Vitest3.2.4 defaults typecheck.include to **/*.{test,spec}-d.?(c|m)[jt]s?(x), while the new file is *.test.ts. The focused runtime run reports Type Errors no errors but does not establish that this file was typechecked. It also precedes final edit66, despite the final answer grouping it under checks after the final edit. Neither issue is repaired for scoring."
-      ]
+        "Delivery overstates the added test type coverage: Vitest3.2.4 defaults typecheck.include to **/*.{test,spec}-d.?(c|m)[jt]s?(x), while the new file is *.test.ts. The focused runtime run reports Type Errors no errors but does not establish that this file was typechecked. It also precedes final edit66, despite the final answer grouping it under checks after the final edit. Neither issue is repaired for scoring.",
+        "Uniform unchanged-patch original take/pipe checks pass, but the empty-single witness confirms [] instead of undefined; pristine input passes. This remains a post-hoc diagnostic, not a new task or recovered solution."
+      ],
+      "pipelineAudit": {
+        "artifact": "pipeline-audit.json",
+        "sha256": "9b3b4c91f7e8b729cff5279ef850d4492d448f9ff9cf2fb05c1ce0b78fe19530",
+        "originalTestsPassed": true,
+        "emptySingleWitnessPassed": false
+      }
+    },
+    {
+      "name": "3-remeda-take-counts-cline",
+      "hashes": {
+        "events.jsonl": "70481b3f3295a1322aa49df6298842b1f59ae9eae9b98f407b6478cc5fb07b52",
+        "workspace.diff": "e750204a36d7b87b489d07546956fa03a077c32b1be962a4d45952afd8ef8ace",
+        "score.json": "d4b4503a81b6c1828f13ed9be76e1b8b5eddd3c289c09e11f5c88dff794745e9",
+        "tool-ledger.json": "49a6ce87359f5c43f41c5b62d34c45917aeed2d2c76f40753072d7fc2e44823e"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "notes": [
+        "Count normalization and lazy short-circuiting preserve readonly input and public types. Unlike the failing early-continue patches, this implementation ends the prepared sequence at the empty operation, leaving a subsequent single-result operation to execute on the empty array. Provisional semantic acceptance pending the uniform pipeline witness.",
+        "New thirteen-case test and independent strict types pass. All four required checks and the new runtime test run after the final implementation edit. Original tests/configuration/dependencies are unchanged; local git log reads only the synthetic input commit.",
+        "Uniform unchanged-patch original take/pipe runtime/type checks and empty-single witness confirm the reviewed behavior."
+      ],
+      "pipelineAudit": {
+        "artifact": "pipeline-audit.json",
+        "sha256": "9b3b4c91f7e8b729cff5279ef850d4492d448f9ff9cf2fb05c1ce0b78fe19530",
+        "originalTestsPassed": true,
+        "emptySingleWitnessPassed": true
+      }
+    },
+    {
+      "name": "3-remeda-take-counts-reference",
+      "hashes": {
+        "events.jsonl": "620a5939835ca7d0837441c400d62007dc297f839c388eb89cf51983bf28f6e6",
+        "workspace.diff": "58ed61e426b4e5e5dd45352f598b3da9129d2a482d3add8b91465f74319fe707",
+        "score.json": "8503709c780639eb16e40132053eb39785a66fb6c0cfa4e68fbb43723da473a3",
+        "tool-ledger.json": "e7d465cb58c222947877bb39c942474e9fc2b6ed89f1b1a677c6263be63b1c98"
+      },
+      "sourceBehaviorPassed": false,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "notes": [
+        "Normalization, new test runtime/types and required checks pass. The empty-sequence early continue still returns [] instead of the expected single-result undefined when first follows take(0); confirm uniformly with the post-hoc pipeline witness.",
+        "All four selected checks, new runtime tests and npm run check run after final source edit69. No protected files or dependencies changed; accurate command reporting does not compensate for the semantic regression.",
+        "Uniform unchanged-patch original take/pipe checks pass, but the empty-single witness confirms [] instead of undefined; pristine input passes. This remains a post-hoc diagnostic, not a new task or recovered solution."
+      ],
+      "pipelineAudit": {
+        "artifact": "pipeline-audit.json",
+        "sha256": "9b3b4c91f7e8b729cff5279ef850d4492d448f9ff9cf2fb05c1ce0b78fe19530",
+        "originalTestsPassed": true,
+        "emptySingleWitnessPassed": false
+      }
     }
   ]
 }
