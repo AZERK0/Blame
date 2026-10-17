@@ -36,6 +36,7 @@ import { validationOutput, type ValidationOutput } from "./validation-output.js"
 import { checkReporting } from "./light-validation-report.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
 import { managedTestReport, type ManagedTestReport } from "./managed-test-report.js";
+import { compilerScopeCapture, type CompilerScopeCapture, type CompilerScopeReport } from "./compiler-scope-report.js";
 
 type RunnerContext = {
   sessionId?: string;
@@ -61,6 +62,8 @@ type ManagedRun = {
 };
 
 type ValidationMetadata = {
+  compilerCapture?: CompilerScopeCapture;
+  compilerScope?: CompilerScopeReport;
   validationScope?: TaskCatalogItem["validationScope"];
   taskCommand?: string;
   args?: string[];
@@ -166,7 +169,8 @@ export class LightTaskRunner {
       ++this.reportSequence,
       context.signal,
     );
-    const invocation = report?.invocation ?? declaredInvocation;
+    const compilerCapture = await compilerScopeCapture(task, declaredInvocation, this.files);
+    const invocation = report?.invocation ?? compilerCapture?.invocation ?? declaredInvocation;
     const cwd = await this.environment.cwd(invocation.cwd);
     return this.execute(
       invocation.executable,
@@ -182,6 +186,7 @@ export class LightTaskRunner {
         taskCommand: task.command,
         ...(args.length ? { args } : {}),
         ...(report ? { report } : {}),
+        ...(compilerCapture ? { compilerCapture } : {}),
       },
     );
   }
@@ -403,7 +408,7 @@ export class LightTaskRunner {
     const validation = metadata.taskId
       ? metadata
       : await this.commandValidation(command, directory, snapshot.files);
-    const invocationEnvironment = validation.report?.nodeEvents
+    const invocationEnvironment = validation.report?.nodeEvents || metadata.compilerCapture
       ? await environmentManifestEvidence(this.files, snapshot.files) : undefined;
     const { result, after, changedPaths } = await observeCommand(this.files, this.journal,
       snapshot, () => {
@@ -458,7 +463,17 @@ export class LightTaskRunner {
     snapshot: WorkspaceSnapshot,
     changedPaths: string[],
   ): Promise<LightToolResult<unknown>> {
-    const output = redactedOutput(result.all);
+    const captured = metadata.compilerCapture ? await metadata.compilerCapture.observe(result, snapshot,
+      await this.journal.currentChangedPaths(), metadata.sourceRevisionId ?? snapshot.revision.source_revision_id) : undefined;
+    if (captured) {
+      metadata.compilerScope = captured.report;
+      if (metadata.invocationEnvironment) captured.report.manifestEnvironment = {
+        before: metadata.invocationEnvironment.revisionId,
+        after: (await environmentManifestEvidence(this.files, snapshot.files)).revisionId,
+        boundary: "Manifest and lockfile bytes only; installed dependencies and the full process environment are not established.",
+      };
+    }
+    const output = redactedOutput(captured?.output ?? result.all);
     if (metadata.taskKind === "test" || (metadata.taskKind !== "typecheck" && isTestInvocation(command))) {
       // Counts come from this process's output, interpreted using the exact
       // catalog script when a known npm wrapper obscures the runner name.
@@ -550,6 +565,7 @@ export class LightTaskRunner {
       metadata.cwd ?? ".",
     );
     await this.journal.recordValidation({
+      ...(metadata.compilerScope ? { compilerScope: metadata.compilerScope } : {}),
       ...(metadata.validationScope ? { scope: metadata.validationScope } : {}),
       command,
       cwd: metadata.cwd,
@@ -860,6 +876,7 @@ function validationProof(
     taskId: metadata.taskId,
     taskKind: metadata.taskKind,
     ...(metadata.validationScope ? { scope: metadata.validationScope } : {}),
+    ...(metadata.compilerScope ? { compilerScope: metadata.compilerScope } : {}),
   };
 }
 

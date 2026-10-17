@@ -480,8 +480,10 @@ for (const route of ["command", "project"] as const) {
               check.terminal === "failed" && check.sourceRevisionId === after.sourceRevisionId));
           } else {
             await finisher(root, notifications).finish("Complete", {} as never);
-            assert.equal(notifications[0]?.verified, true);
-            assert.equal(notifications[0]?.completion.verification, "verified");
+            // A successful compiler invocation does not prove file coverage.
+            assert.equal(notifications[0]?.verified, false);
+            assert.equal(notifications[0]?.completion.verification, "unverified");
+            assert.ok(before.validations.every(check => check.scope === "invocation_only"));
             assert.ok(before.validations.some(check => check.taskKind === "typecheck" &&
               check.status === "passed" && check.sourceRevisionId === before.sourceRevisionId));
           }
