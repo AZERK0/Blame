@@ -1,0 +1,47 @@
+{
+  "method": "Unblinded source and delivery review by the research agent; no independent human adjudication. Original source and selected supplied checks are never repaired after model exit.",
+  "decisions": [
+    {
+      "name": "1-valibot-message-prefix-reference",
+      "hashes": {
+        "events.jsonl": "8caccaf483dfa08ded5dc09b59d512575af980dd58a8b874f704b3b575b1d960",
+        "workspace.diff": "58932d7a2d66b3e11a74b04320322ac2b5ce4c66cdadac93b537e4c8333bd4cf",
+        "score.json": "cd414bddf8b2c350c1a329cf5464dd47e4a0d7d35b1cd60b859af320029153d3",
+        "tool-ledger.json": "81ee4ec533340f32d2bc8e19ec24a015387f61e15411ff39dd5cf94df0383c91"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "note": "Three production modules propagate optional prefix with nullish precedence, preserve empty override and apply it after callback evaluation. Original supplied runtime/type checks pass after final edit; exact counts and compiler exit0 reported with selected-suite limits. No protected writes or outside-workspace solution access in tools."
+    },
+    {
+      "name": "1-valibot-message-prefix-compiler",
+      "hashes": {
+        "events.jsonl": "c7049fe244c4fcf2c96aca1578faf95fc523101b920ec64e47ffe31b56655414",
+        "workspace.diff": "8970b65dc5ac28ca8bce69fa96fe6a9fdefd717be548ca53da3eaf62e366e552",
+        "score.json": "b2f77e0db05a367bb848e03d34614c6ad49f43db52a4024b9382ef9509fc3439",
+        "tool-ledger.json": "897c27544fa0239e57c86e554965cc56476b85a5da091d0fd8e8c0ac0504200e"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "note": "Functional behavior and final selected checks pass; literal compiler obligation is admitted without source verification. However, the patch modifies existing upstream globalConfig.test.ts rather than only implementation or its own new tests. Under the preregistered preservation instruction this is a strict task-compliance failure; retained separately from functional success."
+    },
+    {
+      "name": "1-valibot-message-prefix-cline",
+      "hashes": {
+        "events.jsonl": "cd23bf78c450cfe7affb660bf7369e5381652e1e593f1ad7036c190895115f4a",
+        "workspace.diff": "122d6e1ae2f2fdd3d3a107b827c3e47e33ecf8c8060b47c9fa59011bfb050e53",
+        "score.json": "440c6d45ede91589245e08c63e9a3286c3cb7e7c3726ebe249f34d64e48b2e17",
+        "tool-ledger.json": "3e4cfcb3db857a8e3e76eb44a6f63ebdaa31fc2e79532c4b4d62ddbf2738abe7"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "note": "Three-module implementation preserves absent config shape and callback precedence. Required compiler and the successful literal regression && feature chain run after the last source edit. Failed intermediate compiler and an incorrect ad-hoc expectation were corrected by the model; original traces retained. Final report accurately limits selected coverage; no protected or existing test edits or solution retrieval."
+    }
+  ]
+}
