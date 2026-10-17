@@ -10,14 +10,14 @@ const { LightWorkspace } = await import(prefix ? `${prefix}/light-workspace.js` 
 const { LightFinishService } = await import(prefix ? `${prefix}/light-finish-service.js` : "./light-finish-service.js") as typeof import("./light-finish-service.js");
 const { readTaskCatalog } = await import(prefix ? `${prefix}/task-catalog.js` : "./task-catalog.js") as typeof import("./task-catalog.js");
 const command = "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json";
-async function fixture(run: (root: string, workspace: InstanceType<typeof LightWorkspace>) => Promise<void>, options: { script?: string; badSource?: boolean; badPost?: boolean } = {}) {
+async function fixture(run: (root: string, workspace: InstanceType<typeof LightWorkspace>) => Promise<void>, options: { script?: string; badSource?: boolean; badPost?: boolean; taskName?: string } = {}) {
   const root = await mkdtemp(join(tmpdir(), "blame-compiler-check-"));
   try {
     await mkdir(join(root, "node_modules")); await mkdir(join(root, ".blame"));
     await symlink(fileURLToPath(new URL("../../node_modules/typescript", import.meta.url)), join(root, "node_modules/typescript"));
     await writeFile(join(root, "package.json"), JSON.stringify({ scripts: {
-      "pretest:study:types": "node hook.cjs pre", "test:study:types": options.script ?? command,
-      "posttest:study:types": options.badPost ? "node hook.cjs post && node -e 'process.exit(7)'" : "node hook.cjs post",
+      ["pre" + (options.taskName ?? "test:study:types")]: "node hook.cjs pre", [options.taskName ?? "test:study:types"]: options.script ?? command,
+      ["post" + (options.taskName ?? "test:study:types")]: options.badPost ? "node hook.cjs post && node -e 'process.exit(7)'" : "node hook.cjs post",
       "test:unit": "node --test suite.cjs",
     } }));
     await writeFile(join(root, "hook.cjs"), "require('node:fs').appendFileSync('.blame/hooks.log', process.argv[2]+'\\n');\n");
@@ -116,3 +116,21 @@ test("a newly recognized compiler invocation cannot verify a changed file exclud
     assert.ok(notifications.at(-1)?.completion.satisfied_obligations.includes("check:types"));
   });
 });
+
+for (const [taskName, script] of [["typecheck", command], ["check:types", "node -e 'process.exit(0)'"]]) {
+  test(`${taskName} does not infer file coverage from its name or exit status`, async () => {
+    await fixture(async (root, workspace) => {
+      assert.equal((await workspace.editCode({ operations: [{ kind: "patch", path: "excluded.test.ts", patch: "export const broken: number = 'unchecked';\n" }] })).status, "ok");
+      data(await workspace.runTask({ kind: "project", task: taskName! }, {}));
+      const record = (await checks(workspace)).find(item => item.task === taskName);
+      assert.equal(record?.scope, "invocation_only");
+      assert.equal(record?.admission, "admitted"); // Execution, never file coverage.
+      const notifications: LightCompletionNotification[] = [];
+      const finish = new LightFinishService({ workspaceRoot: root, conversationId: "compiler-check", onComplete: value => { notifications.push(value); },
+        taskContract: { session_id: "compiler-check", required_checks: [{ id: "types", task: taskName! }] } });
+      await finish.finish("Execution succeeded; source coverage is unknown.", {} as never);
+      assert.equal(notifications.at(-1)?.verified, false);
+      assert.ok(notifications.at(-1)?.completion.satisfied_obligations.includes("check:types"));
+    }, { taskName, script });
+  });
+}

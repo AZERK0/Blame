@@ -232,7 +232,8 @@ function taskCandidate(
     pathId: cwd === "." ? script : `${cwd}:${script}`,
     script,
     kind,
-    ...(compilerOnly && inferredKind !== "typecheck" ? { validationScope: "invocation_only" as const } : {}),
+    // A script name cannot establish which files its compiler actually checks.
+    ...(kind === "typecheck" ? { validationScope: "invocation_only" as const } : {}),
     command,
     cwd,
     package_manager: packageManager.name,
