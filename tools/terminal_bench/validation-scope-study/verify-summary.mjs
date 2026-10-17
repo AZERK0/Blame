@@ -11,10 +11,18 @@ export function verifySummary(protocol,rows,summary){
    optionalConfigShapeSensitivity:r=>r.optionalConfigShapeSensitivityCompletion,interruptedAssignments:r=>r.exit.administrativeInterruption,
    missingFinalUsageAggregates:r=>r.usage.cost===null}))assert.equal(s[field],selected.filter(predicate).length,field);
   assert.equal(s.durationMs,sum(selected,r=>r.durationMs));
+  assert.equal(s.scopeFeedbackTrials,selected.filter(r=>r.scopeFeedbackOffered>0).length);assert.equal(s.scopeFollowupTrials,selected.filter(r=>r.scopeFollowups.length>0).length);assert.equal(s.scopeSuccessfulFollowupCommands,selected.reduce((n,r)=>n+new Set(r.scopeFollowups.map(f=>f.validationIndex)).size,0));
   for(const field of ['pathRecoveryOffered','pathRecoveryFollowed','pathRecoveryDirectlyFollowed'])assert.equal(s[field],selected.reduce((n,r)=>n+(r[field]??0),0));
   assert.equal(s.knownPartialReceiptUsd,selected.filter(r=>r.usage.cost===null).reduce((n,r)=>n+r.usage.perRequest.reduce((m,u)=>m+(u.cost??0),0),0));
  }
  for(const other of ['reference','cline']){
+  const all=summary.allAssignedComparisons[`${treatment}/${other}`],a=rows.filter(r=>r.arm===treatment),b=rows.filter(r=>r.arm===other);
+  assert.equal(all.assignmentsPerArm,a.length);assert.equal(a.length,b.length);
+  assert.equal(all.candidateAudited,a.filter(r=>r.auditedCompletion).length);assert.equal(all.baselineAudited,b.filter(r=>r.auditedCompletion).length);
+  const tokens=r=>r.usage.input===null||r.usage.output===null?null:r.usage.input+r.usage.output;
+  assert.equal(all.tokenDelta,delta(sum(a,tokens),sum(b,tokens)));
+  assert.equal(all.costDelta,delta(sum(a,r=>r.usage.cost),sum(b,r=>r.usage.cost)));
+  assert.equal(all.durationDelta,delta(sum(a,r=>r.durationMs),sum(b,r=>r.durationMs)));
   const pairRows=rows.filter(r=>r.arm===treatment&&r.auditedCompletion).map(r=>[r,rows.find(b=>b.arm===other&&b.repeat===r.repeat&&b.task===r.task&&b.auditedCompletion)]).filter(([,b])=>b);
   const c=summary.comparisons[`${treatment}/${other}`];assert.equal(c.pairs,pairRows.length);
   for(const[index,key]of [[0,'candidate'],[1,'baseline']]){

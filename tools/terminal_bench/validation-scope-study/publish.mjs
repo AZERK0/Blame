@@ -65,6 +65,7 @@ const arms = Object.fromEntries(protocol.arms.map(arm => {
     missingFinalUsageAggregates: selected.filter(r=>r.usage.cost===null).length,
     knownPartialReceiptUsd: selected.filter(r=>r.usage.cost===null).reduce((n,r)=>n+r.usage.perRequest.reduce((m,u)=>m+(u.cost??0),0),0),
     sdkEstimatedUsd: sum('cost'), cacheRead: sum('cacheRead'), cacheWrite: sum('cacheWrite'), durationMs: selected.every(row=>Number.isFinite(row.durationMs)) ? selected.reduce((sum, row) => sum + row.durationMs, 0) : null,
+    scopeFeedbackTrials: selected.filter(r=>r.scopeFeedbackOffered>0).length, scopeFollowupTrials: selected.filter(r=>r.scopeFollowups.length>0).length, scopeSuccessfulFollowupCommands: selected.reduce((n,r)=>n+new Set(r.scopeFollowups.map(f=>f.validationIndex)).size,0),
     scopeFeedbackOffered: selected.reduce((n,r)=>n+r.scopeFeedbackOffered,0), scopeFeedbackFollowed: selected.reduce((n,r)=>n+r.scopeFeedbackFollowed,0),
     pathRecoveryOffered: selected.reduce((n,r)=>n+(r.pathRecoveryOffered??0),0), pathRecoveryFollowed: selected.reduce((n,r)=>n+(r.pathRecoveryFollowed??0),0),
     pathRecoveryDirectlyFollowed: selected.reduce((n,r)=>n+(r.pathRecoveryDirectlyFollowed??0),0),
@@ -132,13 +133,23 @@ const durationSensitivityWithoutRuntimeSuiteOverlap = compare(row => row.audited
 const durationSensitivityWithoutKnownValidationLoad = compare(row => row.auditedCompletion && !row.hostValidationOverlap && !row.hostDevelopmentOverlap);
 const qualityGate = arms[treatment].audited >= arms.reference.audited;
 const comparison = comparisons[`${treatment}/reference`];
+// Include every assigned failure and its resource cost. Successful-pair savings
+// alone cannot describe the total cost of using an arm.
+const allAssignedComparisons = Object.fromEntries(['reference', 'cline'].map(other => {
+  const a = arms[treatment], b = arms[other];
+  return [`${treatment}/${other}`, { assignmentsPerArm: a.trials,
+    candidateAudited: a.audited, baselineAudited: b.audited,
+    tokenDelta: delta(a.tokens, b.tokens), costDelta: delta(a.sdkEstimatedUsd, b.sdkEstimatedUsd),
+    durationDelta: delta(a.durationMs, b.durationMs),
+    caveat: 'All assigned trials, including failures. Unequal audited success rates are not quality parity; paired-success results are reported separately.' }];
+}));
 const mechanismGate = rows.some(row => row.arm === treatment && row.scopeFollowups.length > 0);
 const resourceGate = qualityGate && mechanismGate && comparison.pairs >= (protocol.criteria.minimumPairedSuccesses ?? 12) &&
   comparison.tokenDelta !== null && comparison.tokenDelta < 0 && comparison.costDelta !== null && comparison.costDelta < 0 && comparison.durationDelta !== null && comparison.durationDelta <= 0.1;
 const accounting = await json(join(study, 'accounting.json')), prior = await json(join(study, 'prior-budget.json'));
-await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true, arms, comparisons, functionalComparisons, sourceAuditedComparisons, optionalConfigShapeSensitivityComparisons, appendOnlySensitivityComparisons, durationSensitivityWithoutRuntimeSuiteOverlap, durationSensitivityWithoutKnownValidationLoad,
+await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true, arms, comparisons, allAssignedComparisons, functionalComparisons, sourceAuditedComparisons, optionalConfigShapeSensitivityComparisons, appendOnlySensitivityComparisons, durationSensitivityWithoutRuntimeSuiteOverlap, durationSensitivityWithoutKnownValidationLoad,
   auditSensitivityCaveat: 'Primary F44 acceptance requires a new valid regression test and preserves existing tests/configuration. Source-only sensitivity excludes instruction compliance, not added-test correctness. No sensitivity replaces the registered primary metric.',
-  optionalConfigShapeSensitivityCaveat: 'Source-only sensitivity accepts an additional own undefined property for the newly introduced optional configuration field. Original upstream exact-object assertions reject that shape, including in the F42 positive controls; interpreting it as a user-visible compatibility defect is stricter than some API-evolution conventions. This sensitivity still rejects independent numerical/type/added-test errors and does not establish instruction/environment compliance.',
+  optionalConfigShapeSensitivityCaveat: 'Legacy summary-schema fields are retained for compatibility; no F44 absent-option-shape or append-only exception is used. They do not constitute additional F44 sensitivity experiments.',
   functionalComparisonCaveat: 'Secondary descriptive comparison on selected-check success only. It can include incorrect extra changes or instruction violations; it cannot establish full-task quality parity.', qualityGate, mechanismGate, resourceGate, retainDefaultFeedback: qualityGate && mechanismGate && (arms[treatment].audited > arms.reference.audited || resourceGate),
   accounting, priorObservedUsd: prior.observedUsd, priorReservedUsd: prior.reservedUsd,
   cumulativeObservedSdkUsd: prior.observedUsd + accounting.observedUsd, cumulativeReservedUsd: prior.reservedUsd + accounting.reservedUsd,

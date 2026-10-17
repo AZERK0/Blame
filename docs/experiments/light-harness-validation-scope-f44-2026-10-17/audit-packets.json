@@ -7834,6 +7834,1694 @@
         }
       ],
       "completion": null
+    },
+    {
+      "name": "3-valibot-parser-overrides-cline",
+      "hashes": {
+        "events.jsonl": "35ade8e1a5d259b78281f002b76f18eb8d91dcc5047f9ac8d8067517b5a57b1f",
+        "workspace.diff": "b5caac7880afc9474ea62831cf56d9152a1a88a12944c964d6745e9f7ca792c5",
+        "score.json": "146260da2ca1869096eb3ca2a78d81cd605b35d27ef837b592706cf01c8e159e",
+        "tool-ledger.json": "0cd80a6450f5dc8746b4552d3c533cf916a579fd5809eca5b651c320d7482009"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 31,
+      "required": {
+        "regression": [
+          {
+            "index": 32,
+            "input": {
+              "commands": [
+                "npm run test:study:regression",
+                "npm run test:study:feature",
+                "npm run test:study:types",
+                "npm run test:study:upstream",
+                "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+                "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+                "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\nassert p.read_bytes().endswith(b'\\n')\nprint('trailing newline: pass')\nPY\ngit status --short && git diff --stat"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (1.205743ms)\n✔ safe parser factories retain failure result shape (2.704138ms)\n✔ root issues retain the original default summary (0.189849ms)\n✔ unrelated transformations and object output remain intact (0.792626ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 3098.111622\n"
+          }
+        ],
+        "feature": [
+          {
+            "index": 32,
+            "input": {
+              "commands": [
+                "npm run test:study:regression",
+                "npm run test:study:feature",
+                "npm run test:study:types",
+                "npm run test:study:upstream",
+                "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+                "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+                "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\nassert p.read_bytes().endswith(b'\\n')\nprint('trailing newline: pass')\nPY\ngit status --short && git diff --stat"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ parser merges per-call config without changing metadata (4.272955ms)\n✔ parserAsync merges per-call config without changing metadata (0.563459ms)\n✔ safeParser merges per-call config without changing metadata (0.302865ms)\n✔ safeParserAsync merges per-call config without changing metadata (0.347281ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 2304.925818\n"
+          }
+        ],
+        "types": [
+          {
+            "index": 32,
+            "input": {
+              "commands": [
+                "npm run test:study:regression",
+                "npm run test:study:feature",
+                "npm run test:study:types",
+                "npm run test:study:upstream",
+                "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+                "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+                "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\nassert p.read_bytes().endswith(b'\\n')\nprint('trailing newline: pass')\nPY\ngit status --short && git diff --stat"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:types",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+          }
+        ],
+        "upstream": [
+          {
+            "index": 32,
+            "input": {
+              "commands": [
+                "npm run test:study:regression",
+                "npm run test:study:feature",
+                "npm run test:study:types",
+                "npm run test:study:upstream",
+                "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+                "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+                "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\nassert p.read_bytes().endswith(b'\\n')\nprint('trailing newline: pass')\nPY\ngit status --short && git diff --stat"
+              ],
+              "timeout": 120000
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": null,
+            "processSuccess": true,
+            "output": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/safeParser/safeParserAsync.test.ts (5 tests) 9ms\n ✓ library/src/methods/safeParser/safeParser.test.ts (5 tests) 4ms\n ✓ library/src/methods/parser/parserAsync.test.ts (4 tests) 5ms\n ✓ library/src/methods/parser/parser.test.ts (4 tests) 4ms\n\n Test Files  4 passed (4)\n      Tests  18 passed (18)\n   Start at  14:57:59\n   Duration  6.56s (transform 2.96s, setup 0ms, collect 5.41s, tests 22ms, environment 1ms, prepare 355ms)\n\n"
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,200p'",
+              "printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\""
+            ],
+            "parameters": {}
+          },
+          "command": "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,200p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace\n\nTop-level files:\n./.git/COMMIT_EDITMSG\n./.git/HEAD\n./.git/config\n./.git/description\n./.git/index\n./.github/FUNDING.yml\n./.gitignore\n./.grit/.gitignore\n./.grit/grit.yaml\n./.prettierignore\n./.study/delivered.mjs\n./.study/feature.mjs\n./.study/regression.mjs\n./.study/task.json\n./.study/tsconfig.json\n./.study/types.ts\n./.study/vitest.config.mjs\n./CODE_OF_CONDUCT.md\n./CONTRIBUTING.md\n./LICENSE.md\n./SECURITY.md\n./brand/valibot-icon.png\n./brand/valibot-icon.svg\n./brand/valibot-logo-dark.png\n./brand/valibot-logo-dark.svg\n./brand/valibot-logo-light.png\n./brand/valibot-logo-light.svg\n./codemod/README.md\n./library/CHANGELOG.md\n./library/LICENSE.md\n./library/README.md\n./library/eslint.config.js\n./library/jsr.json\n./library/mod.ts\n./library/package.json\n./library/playground.ts\n./library/tsconfig.json\n./library/tsup.config.ts\n./library/vitest.config.ts\n./node_modules/.package-lock.json\n./package.json\n./pnpm-lock.yaml\n./pnpm-workspace.yaml\n./prettier.config.cjs\n./valibot.jpg\n./website/.env\n./website/.eslintignore\n./website/.eslintrc.cjs\n./website/.gitignore\n./website/.node-version\n./website/.prettierignore\n./website/README.md\n./website/package.json\n./website/postcss.config.cjs\n./website/tailwind.config.cjs\n./website/tsconfig.json\n./website/vercel.json\n./website/vite.config.ts\n"
+        },
+        {
+          "index": 0,
+          "input": {
+            "commands": [
+              "pwd && printf '\\nTop-level files:\\n' && find . -maxdepth 2 -type f | sort | sed -n '1,200p'",
+              "printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\""
+            ],
+            "parameters": {}
+          },
+          "command": "printf '\\nPackage scripts:\\n' && node -e \"const p=require('./package.json'); console.log(JSON.stringify(p.scripts,null,2))\"",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\nPackage scripts:\n{\n  \"test:study:feature\": \"node --import tsx --test --test-timeout=10000 .study/feature.mjs\",\n  \"test:study:regression\": \"node --import tsx --test --test-timeout=10000 .study/regression.mjs\",\n  \"test:study:types\": \"node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\",\n  \"test:study:upstream\": \"node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\",\n  \"test:study:delivered\": \"node .study/delivered.mjs runtime\",\n  \"typecheck:delivered\": \"node .study/delivered.mjs types\"\n}\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "git status --short --branch && git log -1 --oneline --decorate --no-abbrev",
+              "find . -maxdepth 4 -type f \\( -name '*.test.ts' -o -name '*.spec.ts' \\) | sort | sed -n '1,240p'"
+            ],
+            "timeout": 120000
+          },
+          "command": "git status --short --branch && git log -1 --oneline --decorate --no-abbrev",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "## master\n95cdb23b28f15d1ab4254bd153799bea94b2717c (HEAD -> master) Frozen scope study input\n"
+        },
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "git status --short --branch && git log -1 --oneline --decorate --no-abbrev",
+              "find . -maxdepth 4 -type f \\( -name '*.test.ts' -o -name '*.spec.ts' \\) | sort | sed -n '1,240p'"
+            ],
+            "timeout": 120000
+          },
+          "command": "find . -maxdepth 4 -type f \\( -name '*.test.ts' -o -name '*.spec.ts' \\) | sort | sed -n '1,240p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "./packages/to-json-schema/src/convertAction.test.ts\n./packages/to-json-schema/src/convertSchema.test.ts\n./packages/to-json-schema/src/toJsonSchema.test.ts\n"
+        },
+        {
+          "index": 10,
+          "input": {
+            "commands": [
+              "node -e \"const p=require('./library/package.json'); console.log(JSON.stringify({scripts:p.scripts, type:p.type},null,2))\"",
+              "find library/src -maxdepth 3 -type f \\( -iname '*config*.ts' -o -iname '*merge*.ts' -o -iname '*util*.ts' \\) | sort | sed -n '1,160p'"
+            ],
+            "timeout": 120000
+          },
+          "command": "node -e \"const p=require('./library/package.json'); console.log(JSON.stringify({scripts:p.scripts, type:p.type},null,2))\"",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "{\n  \"scripts\": {\n    \"play\": \"tsm ./playground.ts\",\n    \"test\": \"vitest --typecheck\",\n    \"coverage\": \"vitest run --coverage --isolate\",\n    \"lint\": \"eslint \\\"src/**/*.ts*\\\" && tsc --noEmit && deno check ./src/index.ts\",\n    \"lint.fix\": \"eslint \\\"src/**/*.ts*\\\" --fix\",\n    \"format\": \"prettier --write ./src\",\n    \"format.check\": \"prettier --check ./src\",\n    \"build\": \"tsup\"\n  },\n  \"type\": \"module\"\n}\n"
+        },
+        {
+          "index": 10,
+          "input": {
+            "commands": [
+              "node -e \"const p=require('./library/package.json'); console.log(JSON.stringify({scripts:p.scripts, type:p.type},null,2))\"",
+              "find library/src -maxdepth 3 -type f \\( -iname '*config*.ts' -o -iname '*merge*.ts' -o -iname '*util*.ts' \\) | sort | sed -n '1,160p'"
+            ],
+            "timeout": 120000
+          },
+          "command": "find library/src -maxdepth 3 -type f \\( -iname '*config*.ts' -o -iname '*merge*.ts' -o -iname '*util*.ts' \\) | sort | sed -n '1,160p'",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "library/src/methods/config/config.test-d.ts\nlibrary/src/methods/config/config.test.ts\nlibrary/src/methods/config/config.ts\nlibrary/src/storages/globalConfig/globalConfig.test.ts\nlibrary/src/storages/globalConfig/globalConfig.ts\nlibrary/src/types/config.ts\nlibrary/src/types/utils.ts\n"
+        },
+        {
+          "index": 13,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short",
+              "node -e \"const fs=require('fs'); for (const f of ['library/src/methods/parser/parser.ts','library/src/methods/parser/parserAsync.ts','library/src/methods/safeParser/safeParser.ts','library/src/methods/safeParser/safeParserAsync.ts']) console.log(f, fs.statSync(f).size)\""
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": ""
+        },
+        {
+          "index": 13,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short",
+              "node -e \"const fs=require('fs'); for (const f of ['library/src/methods/parser/parser.ts','library/src/methods/parser/parserAsync.ts','library/src/methods/safeParser/safeParser.ts','library/src/methods/safeParser/safeParserAsync.ts']) console.log(f, fs.statSync(f).size)\""
+            ],
+            "timeout": 120000
+          },
+          "command": "node -e \"const fs=require('fs'); for (const f of ['library/src/methods/parser/parser.ts','library/src/methods/parser/parserAsync.ts','library/src/methods/safeParser/safeParser.ts','library/src/methods ... [command truncated: 70 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "library/src/methods/parser/parser.ts 1901\nlibrary/src/methods/parser/parserAsync.ts 2455\nlibrary/src/methods/safeParser/safeParser.ts 1961\nlibrary/src/methods/safeParser/safeParserAsync.ts 2515\n"
+        },
+        {
+          "index": 15,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff --stat && git diff -- library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short && git diff --stat && git diff -- library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts lib ... [command truncated: 97 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M library/src/methods/parser/parser.ts\n M library/src/methods/parser/parserAsync.ts\n M library/src/methods/safeParser/safeParser.ts\n M library/src/methods/safeParser/safeParserAsync.ts\n?? library/src/methods/parser/parserOverrides.test.ts\n library/src/methods/parser/parser.ts              | 12 ++++++++++--\n library/src/methods/parser/parserAsync.ts         | 12 ++++++++++--\n library/src/methods/safeParser/safeParser.ts      | 12 ++++++++++--\n library/src/methods/safeParser/safeParserAsync.ts | 12 ++++++++++--\n 4 files changed, 40 insertions(+), 8 deletions(-)\ndiff --git a/library/src/methods/parser/parser.ts b/library/src/methods/parser/parser.ts\nindex 3844f71..5cec558 100644\n--- a/library/src/methods/parser/parser.ts\n+++ b/library/src/methods/parser/parser.ts\n@@ -17,7 +17,10 @@ export interface Parser<\n   /**\n    * Parses an unknown input based on the schema.\n    */\n-  (input: unknown): InferOutput<TSchema>;\n+  (\n+    input: unknown,\n+    config?: Config<InferIssue<TSchema>>\n+  ): InferOutput<TSchema>;\n   /**\n    * The schema to be used.\n    */\n@@ -63,7 +66,12 @@ export function parser(\n   const func: Parser<\n     BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n     Config<BaseIssue<unknown>> | undefined\n-  > = (input: unknown) => parse(schema, input, config);\n+  > = (input: unknown, config_: Config<BaseIssue<unknown>> | undefined) =>\n+    parse(\n+      schema,\n+      input,\n+      config_ === undefined ? config : { ...config, ...config_ }\n+    );\n   // @ts-expect-error\n   func.schema = schema;\n   // @ts-expect-error\ndiff --git a/library/src/methods/parser/parserAsync.ts b/library/src/methods/parser/parserAsync.ts\nindex 9713129..6f416b1 100644\n--- a/library/src/methods/parser/parserAsync.ts\n+++ b/library/src/methods/parser/parserAsync.ts\n@@ -20,7 +20,10 @@ export interface ParserAsync<\n   /**\n    * Parses an unknown input based on the schema.\n    */\n-  (input: unknown): Promise<InferOutput<TSchema>>;\n+  (\n+    input: unknown,\n+    config?: Config<InferIssue<TSchema>>\n+  ): Promise<InferOutput<TSchema>>;\n   /**\n    * The schema to be used.\n    */\n@@ -79,7 +82,12 @@ export function parserAsync(\n     | BaseSchema<unknown, unknown, BaseIssue<unknown>>\n     | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,\n     Config<BaseIssue<unknown>> | undefined\n-  > = (input: unknown) => parseAsync(schema, input, config);\n+  > = (input: unknown, config_: Config<BaseIssue<unknown>> | undefined) =>\n+    parseAsync(\n+      schema,\n+      input,\n+      config_ === undefined ? config : { ...config, ...config_ }\n+    );\n   // @ts-expect-error\n   func.schema = schema;\n   // @ts-expect-error\ndiff --git a/library/src/methods/safeParser/safeParser.ts b/library/src/methods/safeParser/safeParser.ts\nindex 9d43019..f4c28fe 100644\n--- a/library/src/methods/safeParser/safeParser.ts\n+++ b/library/src/methods/safeParser/safeParser.ts\n@@ -16,7 +16,10 @@ export interface SafeParser<\n   /**\n    * Parses an unknown input based on the schema.\n    */\n-  (input: unknown): SafeParseResult<TSchema>;\n+  (\n+    input: unknown,\n+    config?: Config<InferIssue<TSchema>>\n+  ): SafeParseResult<TSchema>;\n   /**\n    * The schema to be used.\n    */\n@@ -62,7 +65,12 @@ export function safeParser(\n   const func: SafeParser<\n     BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n     Config<BaseIssue<unknown>> | undefined\n-  > = (input: unknown) => safeParse(schema, input, config);\n+  > = (input: unknown, config_: Config<BaseIssue<unknown>> | undefined) =>\n+    safeParse(\n+      schema,\n+      input,\n+      config_ === undefined ? config : { ...config, ...config_ }\n+    );\n   // @ts-expect-error\n   func.schema = schema;\n   // @ts-expect-error\ndiff --git a/library/src/methods/safeParser/safeParserAsync.ts b/library/src/methods/safeParser/safeParserAsync.ts\nindex edd22c9..fe97844 100644\n--- a/library/src/methods/safeParser/safeParserAsync.ts\n+++ b/library/src/methods/safeParser/safeParserAsync.ts\n@@ -19,7 +19,10 @@ export interface SafeParserAsync<\n   /**\n    * Parses an unknown input based on the schema.\n    */\n-  (input: unknown): Promise<SafeParseResult<TSchema>>;\n+  (\n+    input: unknown,\n+    config?: Config<InferIssue<TSchema>>\n+  ): Promise<SafeParseResult<TSchema>>;\n   /**\n    * The schema to be used.\n    */\n@@ -78,7 +81,12 @@ export function safeParserAsync(\n     | BaseSchema<unknown, unknown, BaseIssue<unknown>>\n     | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,\n     Config<BaseIssue<unknown>> | undefined\n-  > = (input: unknown) => safeParseAsync(schema, input, config);\n+  > = (input: unknown, config_: Config<BaseIssue<unknown>> | undefined) =>\n+    safeParseAsync(\n+      schema,\n+      input,\n+      config_ === undefined ? config : { ...config, ...config_ }\n+    );\n   // @ts-expect-error\n   func.schema = schema;\n   // @ts-expect-error\n"
+        },
+        {
+          "index": 16,
+          "input": {
+            "commands": [
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace\n\n\n Test Files   (1)\n      Tests  no tests\n     Errors  1 error\n   Start at  14:53:20\n   Duration  207ms (transform 15ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 0ms)\n\n\n[stderr]\n MISSING DEPENDENCY  Cannot find dependency 'jsdom'\n\n⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯\n\nVitest caught 1 unhandled error during the test run.\nThis might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.\n\n⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯\nError: Cannot find package 'jsdom' imported from /tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/node_modules/vitest/dist/chunks/index.CmSc2RE5.js\n ❯ Object.getPackageJSONURL node:internal/modules/package_json_reader:301:9\n ❯ packageResolve node:internal/modules/esm/resolve:768:81\n ❯ moduleResolve node:internal/modules/esm/resolve:859:18\n ❯ defaultResolve node:internal/modules/esm/resolve:992:11\n ❯ ModuleLoader.#cachedDefaultResolve node:internal/modules/esm/loader:701:20\n ❯ ModuleLoader.#resolveAndMaybeBlockOnLoaderThread node:internal/modules/esm/loader:721:38\n ❯ ModuleLoader.resolveSync node:internal/modules/esm/loader:759:56\n ❯ ModuleLoader.#resolve node:internal/modules/esm/loader:683:17\n ❯ ModuleLoader.getOrCreateModuleJob node:internal/modules/esm/loader:603:35\n ❯ node:internal/modules/esm/loader:632:32\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\nSerialized Error: { code: 'ERR_MODULE_NOT_FOUND' }\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
+        },
+        {
+          "index": 17,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": ""
+        },
+        {
+          "index": 18,
+          "input": {
+            "commands": [
+              "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safeParser/safeParserAsync.ts library/src/methods/parser/parserOverrides.test.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/parser/parser.ts library/src/methods/parser/parserAsync.ts library/src/methods/safeParser/safeParser.ts library/src/methods/safe ... [command truncated: 76 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\n\n[stderr]\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/node_modules/prettier/bin/prettier.cjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (1.622847ms)\n✔ safe parser factories retain failure result shape (0.710886ms)\n✔ root issues retain the original default summary (0.272861ms)\n✔ unrelated transformations and object output remain intact (1.144183ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 3395.243032\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ parser merges per-call config without changing metadata (3.123144ms)\n✔ parserAsync merges per-call config without changing metadata (0.628194ms)\n✔ safeParser merges per-call config without changing metadata (0.857171ms)\n✔ safeParserAsync merges per-call config without changing metadata (0.53727ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 3289.601353\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 20,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/safeParser/safeParserAsync.test.ts (5 tests) 5ms\n ✓ library/src/methods/safeParser/safeParser.test.ts (5 tests) 4ms\n ✓ library/src/methods/parser/parserAsync.test.ts (4 tests) 4ms\n ✓ library/src/methods/parser/parser.test.ts (4 tests) 5ms\n\n Test Files  4 passed (4)\n      Tests  18 passed (18)\n   Start at  14:53:37\n   Duration  4.73s (transform 2.12s, setup 0ms, collect 3.88s, tests 18ms, environment 2ms, prepare 270ms)\n\n"
+        },
+        {
+          "index": 21,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/m ... [command truncated: 37 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 2]\nlibrary/src/methods/parser/parserOverrides.test.ts(47,18): error TS2349: This expression is not callable.\n  Each member of the union type '{ <const TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>>(schema: TSchema): Parser<TSchema, undefined>; <const TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>, const TConfig extends Config<InferIssue<TSchema>> | undefined>(schema: TSchema, config: TConfig): Parser<...>; } | { ...; }' has signatures, but none of those signatures are compatible with each other.\nlibrary/src/methods/parser/parserOverrides.test.ts(98,18): error TS2349: This expression is not callable.\n  Each member of the union type '{ <const TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>>(schema: TSchema): ParserAsync<TSchema, undefined>; <const TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>, const ...' has signatures, but none of those signatures are compatible with each other.\n"
+        },
+        {
+          "index": 22,
+          "input": {
+            "commands": [
+              "node --import tsx --input-type=module -e \"import * as v from './library/src/index.ts'; const schema=v.object({a:v.string(),b:v.string()}); const captured=Object.freeze({abortEarly:true,message:'captured'}); const override=Object.freeze({abortEarly:false,message:'per call'}); for (const [name, create] of [['parser',v.parser],['parserAsync',v.parserAsync],['safeParser',v.safeParser],['safeParserAsync',v.safeParserAsync]]) { const fn=create(schema,captured); const result=await fn({a:1,b:2},override); const issues=result?.issues ?? (result instanceof v.ValiError ? result.issues : undefined); if (!issues || issues.length !== 2 || fn.schema !== schema || fn.config !== captured) throw new Error(name+' smoke check failed'); console.log(name+' ok'); }\""
+            ],
+            "timeout": 120000
+          },
+          "command": "node --import tsx --input-type=module -e \"import * as v from './library/src/index.ts'; const schema=v.object({a:v.string(),b:v.string()}); const captured=Object.freeze({abortEarly:true,message:'captur ... [command truncated: 553 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\n\n[stderr]\n/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parse/parse.ts:29\n    throw new ValiError(dataset.issues);\n          ^\n\nValiError: per call\n    at parse (/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parse/parse.ts:29:11)\n    at func (/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parser.ts:70:5)\n    at file:///tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/[eval1]:1:438\n    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)\n    at async node:internal/modules/esm/loader:224:26\n    at async ModuleLoader.executeModuleJob (node:internal/modules/esm/loader:221:20)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {\n  issues: [\n    {\n      kind: 'schema',\n      type: 'string',\n      input: 1,\n      expected: 'string',\n      received: '1',\n      message: 'per call',\n      requirement: undefined,\n      path: [\n        {\n          type: 'object',\n          origin: 'value',\n          input: { a: 1, b: 2 },\n          key: 'a',\n          value: 1\n        }\n      ],\n      issues: undefined,\n      lang: undefined,\n      abortEarly: false,\n      abortPipeEarly: undefined\n    },\n    {\n      kind: 'schema',\n      type: 'string',\n      input: 2,\n      expected: 'string',\n      received: '2',\n      message: 'per call',\n      requirement: undefined,\n      path: [\n        {\n          type: 'object',\n          origin: 'value',\n          input: { a: 1, b: 2 },\n          key: 'b',\n          value: 2\n        }\n      ],\n      issues: undefined,\n      lang: undefined,\n      abortEarly: false,\n      abortPipeEarly: undefined\n    }\n  ]\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "index": 24,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff --stat && printf '\\nChanged tracked files:\\n' && git diff --name-only && printf '\\nNew regression file diff:\\n' && git diff --no-index -- /dev/null library/src/methods/parser/parserOverrides.test.ts || test $? -eq 1",
+              "ls -1 node_modules/.bin | grep -E '^(prettier|eslint|tsc|vitest)$' || true"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short && git diff --stat && printf '\\nChanged tracked files:\\n' && git diff --name-only && printf '\\nNew regression file diff:\\n' && git diff --no-index -- /dev/null l ... [command truncated: 66 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M library/src/methods/parser/parser.ts\n M library/src/methods/parser/parserAsync.ts\n M library/src/methods/safeParser/safeParser.ts\n M library/src/methods/safeParser/safeParserAsync.ts\n?? library/src/methods/parser/parserOverrides.test.ts\n library/src/methods/parser/parser.ts              | 12 ++++++++++--\n library/src/methods/parser/parserAsync.ts         | 12 ++++++++++--\n library/src/methods/safeParser/safeParser.ts      | 12 ++++++++++--\n library/src/methods/safeParser/safeParserAsync.ts | 12 ++++++++++--\n 4 files changed, 40 insertions(+), 8 deletions(-)\n\nChanged tracked files:\nlibrary/src/methods/parser/parser.ts\nlibrary/src/methods/parser/parserAsync.ts\nlibrary/src/methods/safeParser/safeParser.ts\nlibrary/src/methods/safeParser/safeParserAsync.ts\n\nNew regression file diff:\ndiff --git a/library/src/methods/parser/parserOverrides.test.ts b/library/src/methods/parser/parserOverrides.test.ts\nnew file mode 100644\nindex 0000000..3c54264\n--- /dev/null\n+++ b/library/src/methods/parser/parserOverrides.test.ts\n@@ -0,0 +1,110 @@\n+import { describe, expect, test } from 'vitest';\n+import { object, string } from '../../schemas/index.ts';\n+import type { Config } from '../../types/index.ts';\n+import { ValiError } from '../../utils/index.ts';\n+import { parser } from './parser.ts';\n+import { parserAsync } from './parserAsync.ts';\n+import { safeParser } from '../safeParser/safeParser.ts';\n+import { safeParserAsync } from '../safeParser/safeParserAsync.ts';\n+\n+describe('parser config overrides', () => {\n+  const schema = object({ a: string(), b: string() });\n+  const captured: Config<never> = Object.freeze({\n+    abortEarly: true,\n+    message: 'captured',\n+    lang: 'en',\n+  });\n+  const override: Config<never> = Object.freeze({\n+    abortEarly: false,\n+    message: 'per call',\n+    lang: 'fr',\n+  });\n+  const input = { a: 1, b: 2 };\n+\n+  function getIssues(run: () => unknown): unknown[] {\n+    try {\n+      const result = run();\n+      if (\n+        typeof result === 'object' &&\n+        result !== null &&\n+        'issues' in result\n+      ) {\n+        return (result.issues as unknown[]) ?? [];\n+      }\n+      throw new Error('Expected a safe parser result');\n+    } catch (error) {\n+      if (error instanceof ValiError) {\n+        return error.issues;\n+      }\n+      throw error;\n+    }\n+  }\n+\n+  test.each([\n+    ['parser', parser],\n+    ['safeParser', safeParser],\n+  ] as const)('%s merges per-call config', (_name, createParser) => {\n+    const func = createParser(schema, captured);\n+\n+    expect(getIssues(() => func(input))).toHaveLength(1);\n+    expect(getIssues(() => func(input))[0]).toMatchObject({\n+      message: 'captured',\n+    });\n+    expect(getIssues(() => func(input, override))).toHaveLength(2);\n+    expect(\n+      getIssues(() => func(input, override)).every(\n+        (issue) => (issue as { message: string }).message === 'per call'\n+      )\n+    ).toBe(true);\n+    expect(getIssues(() => func(input, { message: undefined }))).toHaveLength(\n+      1\n+    );\n+    expect(getIssues(() => func(input, { message: undefined }))[0]).not.toMatchObject(\n+      { message: 'captured' }\n+    );\n+    expect(getIssues(() => func(input, undefined))).toHaveLength(1);\n+    expect(func.schema).toBe(schema);\n+    expect(func.config).toBe(captured);\n+    expect(override).toStrictEqual({\n+      abortEarly: false,\n+      message: 'per call',\n+      lang: 'fr',\n+    });\n+  });\n+\n+  async function getAsyncIssues(run: () => unknown): Promise<unknown[]> {\n+    try {\n+      const result = await run();\n+      if (\n+        typeof result === 'object' &&\n+        result !== null &&\n+        'issues' in result\n+      ) {\n+        return (result.issues as unknown[]) ?? [];\n+      }\n+      throw new Error('Expected a safe parser result');\n+    } catch (error) {\n+      if (error instanceof ValiError) {\n+        return error.issues;\n+      }\n+      throw error;\n+    }\n+  }\n+\n+  test.each([\n+    ['parserAsync', parserAsync],\n+    ['safeParserAsync', safeParserAsync],\n+  ] as const)('%s merges per-call config', async (_name, createParser) => {\n+    const func = createParser(schema, captured);\n+    const run = (config?: Config<never>) => func(input, config);\n+\n+    expect(await getAsyncIssues(run)).toHaveLength(1);\n+    expect(await getAsyncIssues(() => run(override))).toHaveLength(2);\n+    expect(await getAsyncIssues(() => run({ message: undefined }))).toHaveLength(\n+      1\n+    );\n+    expect(await getAsyncIssues(() => run(undefined))).toHaveLength(1);\n+    expect(func.schema).toBe(schema);\n+    expect(func.config).toBe(captured);\n+  });\n+});\n\\ No newline at end of file\n"
+        },
+        {
+          "index": 24,
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff --stat && printf '\\nChanged tracked files:\\n' && git diff --name-only && printf '\\nNew regression file diff:\\n' && git diff --no-index -- /dev/null library/src/methods/parser/parserOverrides.test.ts || test $? -eq 1",
+              "ls -1 node_modules/.bin | grep -E '^(prettier|eslint|tsc|vitest)$' || true"
+            ],
+            "timeout": 120000
+          },
+          "command": "ls -1 node_modules/.bin | grep -E '^(prettier|eslint|tsc|vitest)$' || true",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "tsc\nvitest\n"
+        },
+        {
+          "index": 26,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "node --import tsx --input-type=module -e \"import * as v from './library/src/index.ts'; const schema=v.object({a:v.string(),b:v.string()}); const captured=Object.freeze({abortEarly:true,message:'captured'}); const override=Object.freeze({abortEarly:false,message:'per call'}); for (const [name, create] of [['parser',v.parser],['parserAsync',v.parserAsync],['safeParser',v.safeParser],['safeParserAsync',v.safeParserAsync]]) { const fn=create(schema,captured); let result; try { result=await fn({a:1,b:2},override); } catch (error) { if (!(error instanceof v.ValiError)) throw error; result={issues:error.issues}; } const issues=result?.issues; if (!issues || issues.length !== 2 || fn.schema !== schema || fn.config !== captured) throw new Error(name+' smoke check failed'); console.log(name+' ok'); }\""
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/m ... [command truncated: 37 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 2]\nlibrary/src/methods/parser/parserOverrides.test.ts(56,6): error TS2502: 'schema' is referenced directly or indirectly in its own type annotation.\nlibrary/src/methods/parser/parserOverrides.test.ts(63,39): error TS2345: Argument of type 'Config<never>' is not assignable to parameter of type 'SchemaConfig'.\n  Type 'ObjectIssue | StringIssue' is not assignable to type 'never'.\n    Type 'ObjectIssue' is not assignable to type 'never'.\nlibrary/src/methods/parser/parserOverrides.test.ts(69,40): error TS2345: Argument of type 'Config<never>' is not assignable to parameter of type 'Config<ObjectIssue | StringIssue>'.\n  Type 'ObjectIssue | StringIssue' is not assignable to type 'never'.\n    Type 'ObjectIssue' is not assignable to type 'never'.\nlibrary/src/methods/parser/parserOverrides.test.ts(71,35): error TS2345: Argument of type 'Config<never>' is not assignable to parameter of type 'Config<ObjectIssue | StringIssue>'.\n  Type 'ObjectIssue | StringIssue' is not assignable to type 'never'.\n    Type 'ObjectIssue' is not assignable to type 'never'.\nlibrary/src/methods/parser/parserOverrides.test.ts(112,6): error TS2502: 'schema' is referenced directly or indirectly in its own type annotation.\nlibrary/src/methods/parser/parserOverrides.test.ts(121,39): error TS2345: Argument of type 'Config<never>' is not assignable to parameter of type 'SchemaConfig'.\n  Type 'ObjectIssue | StringIssue' is not assignable to type 'never'.\n    Type 'ObjectIssue' is not assignable to type 'never'.\nlibrary/src/methods/parser/parserOverrides.test.ts(125,43): error TS2345: Argument of type 'Config<never>' is not assignable to parameter of type 'Config<ObjectIssue | StringIssue>'.\n  Type 'ObjectIssue | StringIssue' is not assignable to type 'never'.\n    Type 'ObjectIssue' is not assignable to type 'never'.\n"
+        },
+        {
+          "index": 26,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "node --import tsx --input-type=module -e \"import * as v from './library/src/index.ts'; const schema=v.object({a:v.string(),b:v.string()}); const captured=Object.freeze({abortEarly:true,message:'captured'}); const override=Object.freeze({abortEarly:false,message:'per call'}); for (const [name, create] of [['parser',v.parser],['parserAsync',v.parserAsync],['safeParser',v.safeParser],['safeParserAsync',v.safeParserAsync]]) { const fn=create(schema,captured); let result; try { result=await fn({a:1,b:2},override); } catch (error) { if (!(error instanceof v.ValiError)) throw error; result={issues:error.issues}; } const issues=result?.issues; if (!issues || issues.length !== 2 || fn.schema !== schema || fn.config !== captured) throw new Error(name+' smoke check failed'); console.log(name+' ok'); }\""
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (1.668144ms)\n✔ safe parser factories retain failure result shape (0.621715ms)\n✔ root issues retain the original default summary (3.261028ms)\n✔ unrelated transformations and object output remain intact (1.164183ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 4062.502143\n"
+        },
+        {
+          "index": 26,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "node --import tsx --input-type=module -e \"import * as v from './library/src/index.ts'; const schema=v.object({a:v.string(),b:v.string()}); const captured=Object.freeze({abortEarly:true,message:'captured'}); const override=Object.freeze({abortEarly:false,message:'per call'}); for (const [name, create] of [['parser',v.parser],['parserAsync',v.parserAsync],['safeParser',v.safeParser],['safeParserAsync',v.safeParserAsync]]) { const fn=create(schema,captured); let result; try { result=await fn({a:1,b:2},override); } catch (error) { if (!(error instanceof v.ValiError)) throw error; result={issues:error.issues}; } const issues=result?.issues; if (!issues || issues.length !== 2 || fn.schema !== schema || fn.config !== captured) throw new Error(name+' smoke check failed'); console.log(name+' ok'); }\""
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ parser merges per-call config without changing metadata (2.458096ms)\n✔ parserAsync merges per-call config without changing metadata (0.613212ms)\n✔ safeParser merges per-call config without changing metadata (0.307862ms)\n✔ safeParserAsync merges per-call config without changing metadata (0.519123ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 4027.355842\n"
+        },
+        {
+          "index": 26,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "node --import tsx --input-type=module -e \"import * as v from './library/src/index.ts'; const schema=v.object({a:v.string(),b:v.string()}); const captured=Object.freeze({abortEarly:true,message:'captured'}); const override=Object.freeze({abortEarly:false,message:'per call'}); for (const [name, create] of [['parser',v.parser],['parserAsync',v.parserAsync],['safeParser',v.safeParser],['safeParserAsync',v.safeParserAsync]]) { const fn=create(schema,captured); let result; try { result=await fn({a:1,b:2},override); } catch (error) { if (!(error instanceof v.ValiError)) throw error; result={issues:error.issues}; } const issues=result?.issues; if (!issues || issues.length !== 2 || fn.schema !== schema || fn.config !== captured) throw new Error(name+' smoke check failed'); console.log(name+' ok'); }\""
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 26,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "node --import tsx --input-type=module -e \"import * as v from './library/src/index.ts'; const schema=v.object({a:v.string(),b:v.string()}); const captured=Object.freeze({abortEarly:true,message:'captured'}); const override=Object.freeze({abortEarly:false,message:'per call'}); for (const [name, create] of [['parser',v.parser],['parserAsync',v.parserAsync],['safeParser',v.safeParser],['safeParserAsync',v.safeParserAsync]]) { const fn=create(schema,captured); let result; try { result=await fn({a:1,b:2},override); } catch (error) { if (!(error instanceof v.ValiError)) throw error; result={issues:error.issues}; } const issues=result?.issues; if (!issues || issues.length !== 2 || fn.schema !== schema || fn.config !== captured) throw new Error(name+' smoke check failed'); console.log(name+' ok'); }\""
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/safeParser/safeParserAsync.test.ts (5 tests) 5ms\n ✓ library/src/methods/safeParser/safeParser.test.ts (5 tests) 4ms\n ✓ library/src/methods/parser/parserAsync.test.ts (4 tests) 5ms\n ✓ library/src/methods/parser/parser.test.ts (4 tests) 5ms\n\n Test Files  4 passed (4)\n      Tests  18 passed (18)\n   Start at  14:57:16\n   Duration  6.97s (transform 3.11s, setup 0ms, collect 5.91s, tests 19ms, environment 3ms, prepare 300ms)\n\n"
+        },
+        {
+          "index": 26,
+          "input": {
+            "commands": [
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "node --import tsx --input-type=module -e \"import * as v from './library/src/index.ts'; const schema=v.object({a:v.string(),b:v.string()}); const captured=Object.freeze({abortEarly:true,message:'captured'}); const override=Object.freeze({abortEarly:false,message:'per call'}); for (const [name, create] of [['parser',v.parser],['parserAsync',v.parserAsync],['safeParser',v.safeParser],['safeParserAsync',v.safeParserAsync]]) { const fn=create(schema,captured); let result; try { result=await fn({a:1,b:2},override); } catch (error) { if (!(error instanceof v.ValiError)) throw error; result={issues:error.issues}; } const issues=result?.issues; if (!issues || issues.length !== 2 || fn.schema !== schema || fn.config !== captured) throw new Error(name+' smoke check failed'); console.log(name+' ok'); }\""
+            ],
+            "timeout": 120000
+          },
+          "command": "node --import tsx --input-type=module -e \"import * as v from './library/src/index.ts'; const schema=v.object({a:v.string(),b:v.string()}); const captured=Object.freeze({abortEarly:true,message:'captur ... [command truncated: 602 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "parser ok\nparserAsync ok\nsafeParser ok\nsafeParserAsync ok\n"
+        },
+        {
+          "index": 28,
+          "input": {
+            "commands": [
+              "npm run test:study:regression && npm run test:study:feature && npm run test:study:types && npm run test:study:upstream",
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+              "git diff --check && git status --short && git diff --stat && test \"$(tail -c 1 library/src/methods/parser/parserOverrides.test.ts | wc -l)\" -eq 1"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:regression && npm run test:study:feature && npm run test:study:types && npm run test:study:upstream",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (2.751048ms)\n✔ safe parser factories retain failure result shape (0.476341ms)\n✔ root issues retain the original default summary (1.197743ms)\n✔ unrelated transformations and object output remain intact (0.947355ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1211.678028\n\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ parser merges per-call config without changing metadata (2.362346ms)\n✔ parserAsync merges per-call config without changing metadata (1.058698ms)\n✔ safeParser merges per-call config without changing metadata (0.323165ms)\n✔ safeParserAsync merges per-call config without changing metadata (0.362854ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1168.556858\n\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/safeParser/safeParserAsync.test.ts (5 tests) 4ms\n ✓ library/src/methods/safeParser/safeParser.test.ts (5 tests) 4ms\n ✓ library/src/methods/parser/parserAsync.test.ts (4 tests) 5ms\n ✓ library/src/methods/parser/parser.test.ts (4 tests) 8ms\n\n Test Files  4 passed (4)\n      Tests  18 passed (18)\n   Start at  14:57:40\n   Duration  3.08s (transform 1.11s, setup 0ms, collect 2.39s, tests 21ms, environment 1ms, prepare 209ms)\n\n"
+        },
+        {
+          "index": 28,
+          "input": {
+            "commands": [
+              "npm run test:study:regression && npm run test:study:feature && npm run test:study:types && npm run test:study:upstream",
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+              "git diff --check && git status --short && git diff --stat && test \"$(tail -c 1 library/src/methods/parser/parserOverrides.test.ts | wc -l)\" -eq 1"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/m ... [command truncated: 37 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": ""
+        },
+        {
+          "index": 28,
+          "input": {
+            "commands": [
+              "npm run test:study:regression && npm run test:study:feature && npm run test:study:types && npm run test:study:upstream",
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+              "git diff --check && git status --short && git diff --stat && test \"$(tail -c 1 library/src/methods/parser/parserOverrides.test.ts | wc -l)\" -eq 1"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/parser/parserOverrides.test.ts (4 tests) 12ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  14:57:32\n   Duration  1.97s (transform 1.01s, setup 0ms, collect 1.61s, tests 12ms, environment 0ms, prepare 99ms)\n\n"
+        },
+        {
+          "index": 28,
+          "input": {
+            "commands": [
+              "npm run test:study:regression && npm run test:study:feature && npm run test:study:types && npm run test:study:upstream",
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+              "git diff --check && git status --short && git diff --stat && test \"$(tail -c 1 library/src/methods/parser/parserOverrides.test.ts | wc -l)\" -eq 1"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && git status --short && git diff --stat && test \"$(tail -c 1 library/src/methods/parser/parserOverrides.test.ts | wc -l)\" -eq 1",
+          "exitCode": null,
+          "processSuccess": false,
+          "output": "[Command exited with code 1]\n M library/src/methods/parser/parser.ts\n M library/src/methods/parser/parserAsync.ts\n M library/src/methods/safeParser/safeParser.ts\n M library/src/methods/safeParser/safeParserAsync.ts\n?? library/src/methods/parser/parserOverrides.test.ts\n library/src/methods/parser/parser.ts              | 12 ++++++++++--\n library/src/methods/parser/parserAsync.ts         | 12 ++++++++++--\n library/src/methods/safeParser/safeParser.ts      | 12 ++++++++++--\n library/src/methods/safeParser/safeParserAsync.ts | 12 ++++++++++--\n 4 files changed, 40 insertions(+), 8 deletions(-)\n"
+        },
+        {
+          "index": 29,
+          "input": {
+            "commands": [
+              "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\ndata = p.read_bytes()\nassert data.endswith(b'\\n'), 'missing trailing newline'\nprint('diff check: pass')\nprint('trailing newline: pass')\nPY\ngit status --short\ngit diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.t ... [command truncated: 182 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M library/src/methods/parser/parser.ts\n M library/src/methods/parser/parserAsync.ts\n M library/src/methods/safeParser/safeParser.ts\n M library/src/methods/safeParser/safeParserAsync.ts\n?? library/src/methods/parser/parserOverrides.test.ts\n library/src/methods/parser/parser.ts              | 12 ++++++++++--\n library/src/methods/parser/parserAsync.ts         | 12 ++++++++++--\n library/src/methods/safeParser/safeParser.ts      | 12 ++++++++++--\n library/src/methods/safeParser/safeParserAsync.ts | 12 ++++++++++--\n 4 files changed, 40 insertions(+), 8 deletions(-)\n\n[stderr]\nTraceback (most recent call last):\n  File \"<stdin>\", line 4, in <module>\nAssertionError: missing trailing newline\n"
+        },
+        {
+          "index": 32,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+              "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\nassert p.read_bytes().endswith(b'\\n')\nprint('trailing newline: pass')\nPY\ngit status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (1.205743ms)\n✔ safe parser factories retain failure result shape (2.704138ms)\n✔ root issues retain the original default summary (0.189849ms)\n✔ unrelated transformations and object output remain intact (0.792626ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 3098.111622\n"
+        },
+        {
+          "index": 32,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+              "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\nassert p.read_bytes().endswith(b'\\n')\nprint('trailing newline: pass')\nPY\ngit status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ parser merges per-call config without changing metadata (4.272955ms)\n✔ parserAsync merges per-call config without changing metadata (0.563459ms)\n✔ safeParser merges per-call config without changing metadata (0.302865ms)\n✔ safeParserAsync merges per-call config without changing metadata (0.347281ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 2304.925818\n"
+        },
+        {
+          "index": 32,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+              "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\nassert p.read_bytes().endswith(b'\\n')\nprint('trailing newline: pass')\nPY\ngit status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:types",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n"
+        },
+        {
+          "index": 32,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+              "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\nassert p.read_bytes().endswith(b'\\n')\nprint('trailing newline: pass')\nPY\ngit status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/safeParser/safeParserAsync.test.ts (5 tests) 9ms\n ✓ library/src/methods/safeParser/safeParser.test.ts (5 tests) 4ms\n ✓ library/src/methods/parser/parserAsync.test.ts (4 tests) 5ms\n ✓ library/src/methods/parser/parser.test.ts (4 tests) 4ms\n\n Test Files  4 passed (4)\n      Tests  18 passed (18)\n   Start at  14:57:59\n   Duration  6.56s (transform 2.96s, setup 0ms, collect 5.41s, tests 22ms, environment 1ms, prepare 355ms)\n\n"
+        },
+        {
+          "index": 32,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+              "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\nassert p.read_bytes().endswith(b'\\n')\nprint('trailing newline: pass')\nPY\ngit status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/m ... [command truncated: 37 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": ""
+        },
+        {
+          "index": 32,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+              "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\nassert p.read_bytes().endswith(b'\\n')\nprint('trailing newline: pass')\nPY\ngit status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/parser/parserOverrides.test.ts (4 tests) 31ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  14:57:59\n   Duration  3.46s (transform 2.01s, setup 0ms, collect 2.93s, tests 31ms, environment 0ms, prepare 187ms)\n\n"
+        },
+        {
+          "index": 32,
+          "input": {
+            "commands": [
+              "npm run test:study:regression",
+              "npm run test:study:feature",
+              "npm run test:study:types",
+              "npm run test:study:upstream",
+              "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts",
+              "node node_modules/vitest/vitest.mjs run --config library/vitest.config.ts --environment node library/src/methods/parser/parserOverrides.test.ts --maxWorkers=1",
+              "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\nassert p.read_bytes().endswith(b'\\n')\nprint('trailing newline: pass')\nPY\ngit status --short && git diff --stat"
+            ],
+            "timeout": 120000
+          },
+          "command": "git diff --check && python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.t ... [command truncated: 119 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": " M library/src/methods/parser/parser.ts\n M library/src/methods/parser/parserAsync.ts\n M library/src/methods/safeParser/safeParser.ts\n M library/src/methods/safeParser/safeParserAsync.ts\n?? library/src/methods/parser/parserOverrides.test.ts\n library/src/methods/parser/parser.ts              | 12 ++++++++++--\n library/src/methods/parser/parserAsync.ts         | 12 ++++++++++--\n library/src/methods/safeParser/safeParser.ts      | 12 ++++++++++--\n library/src/methods/safeParser/safeParserAsync.ts | 12 ++++++++++--\n 4 files changed, 40 insertions(+), 8 deletions(-)\n\n[stderr]\nTraceback (most recent call last):\n  File \"<stdin>\", line 3, in <module>\nAssertionError\n"
+        },
+        {
+          "index": 33,
+          "input": {
+            "commands": [
+              "python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\ndata = p.read_bytes()\nif not data.endswith(b'\\n'):\n    p.write_bytes(data + b'\\n')\nassert p.read_bytes().endswith(b'\\n')\nprint('trailing newline: pass')\nPY\nnpm run test:study:regression && npm run test:study:feature && npm run test:study:types && npm run test:study:upstream\nnode node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts\ngit diff --check\ngit status --short"
+            ],
+            "timeout": 120000
+          },
+          "command": "python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\ndata = p.re ... [command truncated: 537 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "trailing newline: pass\n\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (1.064175ms)\n✔ safe parser factories retain failure result shape (0.453067ms)\n✔ root issues retain the original default summary (0.493185ms)\n✔ unrelated transformations and object output remain intact (0.748802ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 956.847128\n\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ parser merges per-call config without changing metadata (2.312111ms)\n✔ parserAsync merges per-call config without changing metadata (0.443272ms)\n✔ safeParser merges per-call config without changing metadata (0.277198ms)\n✔ safeParserAsync merges per-call config without changing metadata (0.336816ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1033.648025\n\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/safeParser/safeParserAsync.test.ts (5 tests) 7ms\n ✓ library/src/methods/safeParser/safeParser.test.ts (5 tests) 4ms\n ✓ library/src/methods/parser/parserAsync.test.ts (4 tests) 6ms\n ✓ library/src/methods/parser/parser.test.ts (4 tests) 5ms\n\n Test Files  4 passed (4)\n      Tests  18 passed (18)\n   Start at  14:58:18\n   Duration  3.37s (transform 1.21s, setup 0ms, collect 2.60s, tests 22ms, environment 1ms, prepare 222ms)\n\n M library/src/methods/parser/parser.ts\n M library/src/methods/parser/parserAsync.ts\n M library/src/methods/safeParser/safeParser.ts\n M library/src/methods/safeParser/safeParserAsync.ts\n?? library/src/methods/parser/parserOverrides.test.ts\n"
+        }
+      ],
+      "shellWriteCandidates": [
+        {
+          "index": 33,
+          "input": {
+            "commands": [
+              "python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\ndata = p.read_bytes()\nif not data.endswith(b'\\n'):\n    p.write_bytes(data + b'\\n')\nassert p.read_bytes().endswith(b'\\n')\nprint('trailing newline: pass')\nPY\nnpm run test:study:regression && npm run test:study:feature && npm run test:study:types && npm run test:study:upstream\nnode node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --exactOptionalPropertyTypes library/src/methods/parser/parserOverrides.test.ts\ngit diff --check\ngit status --short"
+            ],
+            "timeout": 120000
+          },
+          "command": "python3 - <<'PY'\nfrom pathlib import Path\np = Path('/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts')\ndata = p.re ... [command truncated: 537 more chars; full command is in the tool call input]",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "trailing newline: pass\n\n> valibot@0.0.0 test:study:regression\n> node --import tsx --test --test-timeout=10000 .study/regression.mjs\n\n✔ sync and async parser factories retain successful outputs (1.064175ms)\n✔ safe parser factories retain failure result shape (0.453067ms)\n✔ root issues retain the original default summary (0.493185ms)\n✔ unrelated transformations and object output remain intact (0.748802ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 956.847128\n\n> valibot@0.0.0 test:study:feature\n> node --import tsx --test --test-timeout=10000 .study/feature.mjs\n\n✔ parser merges per-call config without changing metadata (2.312111ms)\n✔ parserAsync merges per-call config without changing metadata (0.443272ms)\n✔ safeParser merges per-call config without changing metadata (0.277198ms)\n✔ safeParserAsync merges per-call config without changing metadata (0.336816ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1033.648025\n\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n\n> valibot@0.0.0 test:study:upstream\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace\n\n ✓ library/src/methods/safeParser/safeParserAsync.test.ts (5 tests) 7ms\n ✓ library/src/methods/safeParser/safeParser.test.ts (5 tests) 4ms\n ✓ library/src/methods/parser/parserAsync.test.ts (4 tests) 6ms\n ✓ library/src/methods/parser/parser.test.ts (4 tests) 5ms\n\n Test Files  4 passed (4)\n      Tests  18 passed (18)\n   Start at  14:58:18\n   Duration  3.37s (transform 1.21s, setup 0ms, collect 2.60s, tests 22ms, environment 1ms, prepare 222ms)\n\n M library/src/methods/parser/parser.ts\n M library/src/methods/parser/parserAsync.ts\n M library/src/methods/safeParser/safeParser.ts\n M library/src/methods/safeParser/safeParserAsync.ts\n?? library/src/methods/parser/parserOverrides.test.ts\n"
+        }
+      ],
+      "delivery": "Implemented per-call config overrides for:\n\n- `parser`\n- `parserAsync`\n- `safeParser`\n- `safeParserAsync`\n\n### Changes\n\n- Returned parser functions now accept an optional second `Config` argument.\n- Omitted or `undefined` per-call config preserves the captured configuration.\n- Defined per-call config is merged as `{ ...capturedConfig, ...perCallConfig }`.\n- Explicit `false` and `undefined` values override captured properties.\n- Neither configuration object is mutated.\n- Parser metadata remains unchanged, including captured config identity.\n- Existing output inference, safe-result typing, and sync/async behavior are preserved.\n- Added regression coverage at:\n  `/tmp/blame-validation-scope-f44/campaign/3-valibot-parser-overrides-cline/workspace/library/src/methods/parser/parserOverrides.test.ts`\n\nExisting tests, manifests, locks, metadata, and supplied checks were not modified.\n\n### Validation\n\nAll required commands passed after the final edit:\n\n- `npm run test:study:regression` — **4 passed**\n- `npm run test:study:feature` — **4 passed**\n- `npm run test:study:types` — **passed**\n- `npm run test:study:upstream` — **18 passed across 4 files**\n\nAdditional checks passed:\n\n- New regression file standalone TypeScript check\n- Focused regression test — **4 passed**\n- `git diff --check`\n- Final trailing-newline and working-tree verification\n\nCoverage limitation: no coverage instrumentation/report was run; validation covers the requested override behavior, type inference, metadata preservation, and existing upstream parser/safe-parser behavior.",
+      "blocked": [],
+      "scopeCommands": [
+        {
+          "index": 2,
+          "input": {
+            "commands": [
+              "git status --short --branch && git log -1 --oneline --decorate --no-abbrev",
+              "find . -maxdepth 4 -type f \\( -name '*.test.ts' -o -name '*.spec.ts' \\) | sort | sed -n '1,240p'"
+            ],
+            "timeout": 120000
+          },
+          "command": "git status --short --branch && git log -1 --oneline --decorate --no-abbrev",
+          "exitCode": null,
+          "processSuccess": true,
+          "output": "## master\n95cdb23b28f15d1ab4254bd153799bea94b2717c (HEAD -> master) Frozen scope study input\n"
+        }
+      ],
+      "completion": null
+    },
+    {
+      "name": "3-valibot-parser-overrides-reference",
+      "hashes": {
+        "events.jsonl": "7aad7746a111f75d919834a18a468439d35ebe6a8e838b5e821707c2a19cf30a",
+        "workspace.diff": "6b787589dcea6cf214d14a5969b1945eac85285a172f9083fa7ed2953c711dba",
+        "score.json": "19b2a0c2dc8afebe6e9be6cd2c2594ee54a73583b00c7ed2d49de9e48848e5d7",
+        "tool-ledger.json": "c0469f37a0f3801d6d5c830754b5f20f27d56e0cf65bcda50cb21cfdb4afdbfe"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 28,
+      "required": {
+        "regression": [
+          {
+            "index": 29,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 30,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 31,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ],
+        "upstream": [
+          {
+            "index": 32,
+            "input": {
+              "kind": "project",
+              "task": "test:study:upstream"
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 18,
+                "passed": 18,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 23,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 24,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 25,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 26,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 18,
+              "passed": 18,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 29,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 30,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 31,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 32,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 18,
+              "passed": 18,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 33,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short"
+          },
+          "command": "git diff --check && git status --short",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented optional per-call config overrides for `parser`, `parserAsync`, `safeParser`, and `safeParserAsync`. Overrides merge captured config without mutating either object; omitted/undefined overrides retain captured configuration, while own properties including explicit `undefined` take precedence. Returned schema/config metadata and existing inference/async behavior remain intact.\n\nAdded `library/src/methods/parser/parserOverrides.test.ts` covering merge behavior, false and explicit-undefined overrides, immutability, metadata identity, and omitted/undefined async calls. Existing tests were not modified.\n\nChecks run:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types` — passed; TypeScript reported no errors.\n- `npm run test:study:upstream` — passed, 18/18 tests across 4 files.\n- `git diff --check` — passed.\n\nCoverage limit: the requested study checks passed, but the upstream command selects the existing four upstream test files and does not execute the newly added regression file; the feature/regression study scripts validate their respective study suites.",
+      "blocked": [
+        {
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "library/src/methods/parser/parserOverrides.test.ts",
+                "patch": "*** Begin Patch\n*** Update File: library/src/methods/parser/parserOverrides.test.ts\n@@\n-import { minLength } from '../../actions/index.ts';\n+import { minLength } from '../../actions/index.ts';\n import { object, objectAsync, string } from '../../schemas/index.ts';\n import type { Config, InferIssue } from '../../types/index.ts';\n+import { pipe } from '../pipe/index.ts';\n@@\n   const schema = object({\n-    first: minLength(5, string()),\n-    second: minLength(5, string()),\n+    first: pipe(string(), minLength(5)),\n+    second: pipe(string(), minLength(5)),\n   });\n   const schemaAsync = objectAsync({\n-    first: minLength(5, string()),\n-    second: minLength(5, string()),\n+    first: pipe(string(), minLength(5)),\n+    second: pipe(string(), minLength(5)),\n@@\n-    const result = func(input, override);\n-\n     if (name === 'parser') {\n-      expect(() => result).toThrowError();\n+      expect(() => func(input, override)).toThrowError();\n     } else {\n+      const result = func(input, override);\n       expect(result.success).toBe(false);\n       expect(result.issues).toHaveLength(2);\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "A scoped patch requires an observed symbol alias.",
+            "diagnosticId": "edit-mvciwdmb"
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_a308e2219c5947bb6263f8b50fd2c0cd",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types",
+          "check:upstream"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "3-valibot-parser-overrides-scope",
+      "hashes": {
+        "events.jsonl": "4bcb934471227278d3cf897a5b462ff18a379258915713af8bf95c087cf95d0e",
+        "workspace.diff": "3c460be8312458a4296ae5c8db12211291ceedfb71a66b0337e3f5be5caddea9",
+        "score.json": "2a4651124b5d81f2733492c3e1b1e60e39e63241364e776c85d9fc5914735682",
+        "tool-ledger.json": "c9feeda3ec62bfc887358fc54bc166640ad96fd95a0fda539734e3b51db3e95f"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 34,
+      "required": {
+        "regression": [
+          {
+            "index": 35,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 36,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 37,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          },
+          {
+            "index": 44,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ],
+        "upstream": [
+          {
+            "index": 38,
+            "input": {
+              "kind": "project",
+              "task": "test:study:upstream"
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 18,
+                "passed": 18,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 35,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 36,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 37,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 38,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 18,
+              "passed": 18,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 39,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run library/src/methods/parser/parserOverrides.test.ts",
+            "cwd": "."
+          },
+          "command": "node node_modules/vitest/vitest.mjs run library/src/methods/parser/parserOverrides.test.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 44,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 45,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff --stat",
+            "cwd": "."
+          },
+          "command": "git diff --check && git status --short && git diff --stat",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented per-call `Config` overrides for `parser`, `parserAsync`, `safeParser`, and `safeParserAsync`. Each returned function now accepts an optional second config, preserves captured config when omitted/undefined, otherwise creates a non-mutating captured-then-override merge (including explicit `false`/`undefined` properties), and retains schema/config metadata identity and existing result/output types. Added `library/src/methods/parser/parserOverrides.test.ts` covering sync/async and safe/throwing behavior, metadata identity, immutability, success output, and undefined override semantics.\n\nChecks run:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types -- --listFiles --pretty false` — passed; changed implementation files were included by TypeScript. The added regression test is excluded by `.study/tsconfig.json`, so its type coverage is limited to its Vitest execution.\n- `npm run test:study:upstream` — passed, 18/18 tests across 4 existing files.\n- Direct Vitest run of the added regression file — passed, 4/4 tests.\n- `git diff --check` — passed.\n\nNo manifests, locks, configuration, existing tests, or unrelated files were modified.",
+      "blocked": [
+        {
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "library/src/methods/parser/parser.ts",
+                "patch": "*** Begin Patch\n*** Update File: library/src/methods/parser/parser.ts\n@@\n export interface Parser<\n   TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n   TConfig extends Config<InferIssue<TSchema>> | undefined,\n > {\n   /**\n    * Parses an unknown input based on the schema.\n    */\n-  (input: unknown): InferOutput<TSchema>;\n+  (\n+    input: unknown,\n+    config?: Config<InferIssue<TSchema>>\n+  ): InferOutput<TSchema>;\n@@\n > {\n-  const func: Parser<\n+  const func: Parser<\n     BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n     Config<BaseIssue<unknown>> | undefined\n-  > = (input: unknown) => parse(schema, input, config);\n+  > = (input: unknown, perCallConfig?: Config<BaseIssue<unknown>>) =>\n+    parse(\n+      schema,\n+      input,\n+      perCallConfig === undefined\n+        ? config\n+        : { ...config, ...perCallConfig }\n+    );\n*** Update File: library/src/methods/parser/parserAsync.ts\n@@\n export interface ParserAsync<\n@@\n > {\n   /**\n    * Parses an unknown input based on the schema.\n    */\n-  (input: unknown): Promise<InferOutput<TSchema>>;\n+  (\n+    input: unknown,\n+    config?: Config<InferIssue<TSchema>>\n+  ): Promise<InferOutput<TSchema>>;\n@@\n   const func: ParserAsync<\n@@\n     Config<BaseIssue<unknown>> | undefined\n-  > = (input: unknown) => parseAsync(schema, input, config);\n+  > = (input: unknown, perCallConfig?: Config<BaseIssue<unknown>>) =>\n+    parseAsync(\n+      schema,\n+      input,\n+      perCallConfig === undefined\n+        ? config\n+        : { ...config, ...perCallConfig }\n+    );\n*** Update File: library/src/methods/safeParser/safeParser.ts\n@@\n export interface SafeParser<\n@@\n > {\n   /**\n    * Parses an unknown input based on the schema.\n    */\n-  (input: unknown): SafeParseResult<TSchema>;\n+  (\n+    input: unknown,\n+    config?: Config<InferIssue<TSchema>>\n+  ): SafeParseResult<TSchema>;\n@@\n   const func: SafeParser<\n@@\n     Config<BaseIssue<unknown>> | undefined\n-  > = (input: unknown) => safeParse(schema, input, config);\n+  > = (input: unknown, perCallConfig?: Config<BaseIssue<unknown>>) =>\n+    safeParse(\n+      schema,\n+      input,\n+      perCallConfig === undefined\n+        ? config\n+        : { ...config, ...perCallConfig }\n+    );\n*** Update File: library/src/methods/safeParser/safeParserAsync.ts\n@@\n export interface SafeParserAsync<\n@@\n > {\n   /**\n    * Parses an unknown input based on the schema.\n    */\n-  (input: unknown): Promise<SafeParseResult<TSchema>>;\n+  (\n+    input: unknown,\n+    config?: Config<InferIssue<TSchema>>\n+  ): Promise<SafeParseResult<TSchema>>;\n@@\n   const func: SafeParserAsync<\n@@\n     Config<BaseIssue<unknown>> | undefined\n-  > = (input: unknown) => safeParseAsync(schema, input, config);\n+  > = (input: unknown, perCallConfig?: Config<BaseIssue<unknown>>) =>\n+    safeParseAsync(\n+      schema,\n+      input,\n+      perCallConfig === undefined\n+        ? config\n+        : { ...config, ...perCallConfig }\n+    );\n*** Add File: library/src/methods/parser/parserOverrides.test.ts\n+import { describe, expect, test } from 'vitest';\n+import {\n+  object,\n+  objectAsync,\n+  parser,\n+  parserAsync,\n+  safeParser,\n+  safeParserAsync,\n+  string,\n+  ValiError,\n+} from '../../index.ts';\n+\n+describe('parser per-call config', () => {\n+  const schema = object({ a: string(), b: string() });\n+  const asyncSchema = objectAsync({ a: string(), b: string() });\n+\n+  test.each([\n+    ['parser', parser(schema)],\n+    ['parserAsync', parserAsync(asyncSchema)],\n+    ['safeParser', safeParser(schema)],\n+    ['safeParserAsync', safeParserAsync(asyncSchema)],\n+  ])('%s merges config without mutating it', async (_name, parse) => {\n+    const captured = { abortEarly: true, message: 'captured' } as const;\n+    const override = { abortEarly: false, message: 'per call' } as const;\n+    const input = { a: 1, b: 2 };\n+    const func = parse.schema === schema\n+      ? (_input: unknown, config?: typeof captured) =>\n+          (parse as typeof parser(schema))(_input, config)\n+      : (_input: unknown, config?: typeof captured) =>\n+          (parse as typeof parserAsync(asyncSchema))(_input, config);\n+\n+    const configured = parse.schema === schema\n+      ? parser(schema, captured)\n+      : parserAsync(asyncSchema, captured);\n+    const result = await configured(input, override);\n+    const issues = result instanceof Object && 'issues' in result\n+      ? result.issues\n+      : await (async () => {\n+          try {\n+            await result;\n+          } catch (error) {\n+            expect(error).toBeInstanceOf(ValiError);\n+            return (error as ValiError).issues;\n+          }\n+          return [];\n+        })();\n+\n+    expect(issues).toHaveLength(2);\n+    expect(issues.every((issue) => issue.message === 'per call')).toBe(true);\n+    expect(captured).toStrictEqual({\n+      abortEarly: true,\n+      message: 'captured',\n+    });\n+    expect(override).toStrictEqual({\n+      abortEarly: false,\n+      message: 'per call',\n+    });\n+    expect(func).toBeTypeOf('function');\n+  });\n+\n+  test('an undefined override preserves captured config while an undefined property clears it', () => {\n+    const captured = { message: 'captured' } as const;\n+    const func = parser(schema, captured);\n+\n+    expect(() => func({ a: 1, b: 2 }, undefined)).toThrowError(\n+      'captured'\n+    );\n+    expect(() => func({ a: 1, b: 2 }, { message: undefined })).toThrowError(\n+      /Invalid type/\n+    );\n+    expect(func.config).toBe(captured);\n+  });\n+});\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "code",
+            "message": "Final parse failed for library/src/methods/parser/parserOverrides.test.ts; no files were written. 28:34 ')' expected.",
+            "recovery": "Correct the final syntax and submit one new atomic batch."
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_4fd0bc67e2da5f565d4f6ad29da0be20",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types",
+          "check:upstream"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "3-valibot-summary-format-reference",
+      "hashes": {
+        "events.jsonl": "e358fe36b62dddbddaf62b8aefc40418abb8e2db86f640396547c925425473a9",
+        "workspace.diff": "699fb6774700ee9eb23d69f229c33c83dcb78ee385b42cba8e4b53439fb28350",
+        "score.json": "ce98d6ce8285e29b135e58c9abc09172e80f72135782474ccce12c4e333b52ce",
+        "tool-ledger.json": "789fb18d8e035d9ba00f71d328d8a6619004d5d3292f300a4fd793a3220e647d"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 29,
+      "required": {
+        "regression": [
+          {
+            "index": 30,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 31,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 32,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ],
+        "upstream": [
+          {
+            "index": 33,
+            "input": {
+              "kind": "project",
+              "task": "test:study:upstream"
+            },
+            "command": "npm run test:study:upstream",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 5,
+                "passed": 5,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 30,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 31,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 32,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 33,
+          "input": {
+            "kind": "project",
+            "task": "test:study:upstream"
+          },
+          "command": "npm run test:study:upstream",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 5,
+              "passed": 5,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 36,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff -- library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+            "cwd": "."
+          },
+          "command": "git diff --check && git status --short && git diff -- library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 42,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts --maxWorkers=1",
+            "cwd": "."
+          },
+          "command": "node node_modules/vitest/vitest.mjs run library/src/methods/summarize/summarize.options.test.ts --maxWorkers=1",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 43,
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+            "cwd": "."
+          },
+          "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "1",
+          "output": "Command exited with code 1.\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-reference/workspace/node_modules/prettier/bin/prettier.cjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0"
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented optional `SummarizeOptions` for `summarize` and exposed it through the existing methods/root exports. Defaults remain `×`, two-space indentation, and included paths; empty strings are preserved; `includePath: false` suppresses paths. Added `library/src/methods/summarize/summarize.options.test.ts` without modifying existing tests, covering defaults, custom formatting, path suppression, empty strings, and issue immutability.\n\nChecks:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types` — passed.\n- `npm run test:study:upstream` — passed, 5/5 tests in the configured upstream suite.\n- Direct new regression file run — passed, 3/3 tests.\n- `git diff --check` — passed.\n- Prettier check was attempted but could not run because the workspace root does not contain `node_modules/prettier/bin/prettier.cjs`; no dependency installation or manifest changes were made.\n\nThe required checks cover the supplied study regression/feature/type/upstream suites; they do not constitute exhaustive coverage of all library tests. The new test file was directly executed successfully.",
+      "blocked": [
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/vite.config.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-reference/workspace/library/vite.config.ts'",
+            "diagnosticId": "read-mvcj1etf",
+            "recovery": "{\"kind\":\"missing_workspace_path\",\"requestedPath\":\"library/vite.config.ts\",\"match\":\"exact_basename\",\"scope\":\"indexed_workspace_files\",\"candidates\":[{\"path\":\"website/adapters/vercel-edge/vite.config.ts\",\"nextRead\":{\"target\":\"./website/adapters/vercel-edge/vite.config.ts\"}},{\"path\":\"website/vite.config.ts\",\"nextRead\":{\"target\":\"./website/vite.config.ts\"}}],\"guidance\":\"The requested path does not exist. These indexed files share its basename; they are candidates, not resolved targets. Choose and read the intended file explicitly. This recovery returns paths only and grants no edit coverage.\"}"
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "library/vite.config.js",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-reference/workspace/library/vite.config.js'",
+            "diagnosticId": "read-mvcj1eup"
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/prettier/bin/prettier.cjs --check library/src/methods/summarize/summarize.ts library/src/methods/summarize/summarize.options.test.ts",
+            "cwd": "."
+          },
+          "output": {
+            "status": "blocked",
+            "category": "environment",
+            "message": "Command exited with code 1.\nnode:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/tmp/blame-validation-scope-f44/campaign/3-valibot-summary-format-reference/workspace/node_modules/prettier/bin/prettier.cjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.19.0",
+            "recovery": "Use the dependency operation once if the declared installation is incomplete; do not edit manifests or copy files through the shell."
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_ddfd6d1c4e511182fc2b2eb13ee15fa4",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types",
+          "check:upstream"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
     }
   ]
 }
