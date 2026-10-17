@@ -16,11 +16,12 @@ for(const row of analysis.rows){
   if(t.tool==='run_commands')for(const o of Array.isArray(t.output)?t.output:[])commands.push({index,input:t.input,command:o.query,exitCode:null,processSuccess:o.success===true,output:o.output??o.result??o});
  }
  const required=Object.fromEntries(checkNames.map(name=>[name,commands.filter(c=>(c.command===`npm run test:study:${name}` || c.command.split(' && ').every(s=>requiredCommands.has(s)) && c.command.split(' && ').includes(`npm run test:study:${name}`))&&c.index>lastEdit&&c.processSuccess)]));
+ const shellWriteCandidates=commands.filter(c=>/writeFile|write_text|write_bytes|writeSync|--write|\btee\b|\bsed\s+-i|\bperl\s+-i|\bgit\s+(?:apply|checkout|restore)|\bcat\s*>/.test(JSON.stringify(c.input)));
  const events=(await readFile(join(dir,'events.jsonl'),'utf8')).trim().split('\n').filter(Boolean).map(JSON.parse).map(r=>r.event);
  const delivery=events.findLast(e=>e.type==='done')?.payload?.text??tools.findLast(t=>t.tool==='finish_task')?.input?.summary??null;
  const blocked=tools.filter(t=>t.output?.status==='blocked').map(t=>({tool:t.tool,input:t.input,output:t.output}));
  const scopeCommands=commands.filter(c=>/curl|wget|git\s+(?:show|log|fetch|clone)|\.\.\/|\/workspace\/Blame(?!\/\.blame\/research\/confirmation-f42\/campaign\/)/.test(c.command));
- packets.push({name:row.name,hashes:row.hashes,official:row.officialRuntimeSuccess,functional:row.independentFunctionalSuccess,lastEdit,required,commands,delivery,blocked,scopeCommands,completion:row.completion});
+ packets.push({name:row.name,hashes:row.hashes,official:row.officialRuntimeSuccess,functional:row.independentFunctionalSuccess,lastEdit,required,commands,shellWriteCandidates,delivery,blocked,scopeCommands,completion:row.completion});
 }
-await save(join(study,'audit-packets.json'),{complete:analysis.rows.length===protocol.order.length,packets});
+await save(join(study,'audit-packets.json'),{complete:analysis.rows.length===protocol.order.length,method:'lastEdit identifies successful explicit editing tools, excluding unchanged edits. Shell-write candidates are a conservative review aid, not a complete parser or proof of no mutation. Manual finalSourceChecksPassed review must also inspect commands and delivery; independent endpoint checks run on the archived final source.',packets});
 console.log(JSON.stringify(packets.map(p=>({name:p.name,official:p.official,functional:p.functional,required:Object.fromEntries(Object.entries(p.required).map(([k,v])=>[k,v.length])),blocked:p.blocked.length}))));

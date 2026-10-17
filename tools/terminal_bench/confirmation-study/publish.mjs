@@ -31,8 +31,9 @@ for (const row of analysis.rows) {
   const archive = gzipSync(JSON.stringify({ name: row.name, files }), { mtime: 0 });
   await writeFile(join(study, 'traces', row.name + '.json.gz'), archive);
   const started = Date.parse((await json(join(directory, 'model-start.json'))).startedAtUTC);
-  const hostValidationOverlap = started < overlapEnd && started + row.exit.durationMs > overlapStart;
-  const hostDevelopmentOverlap = development.activities.some(activity => started < Date.parse(activity.endUTC) && started + row.exit.durationMs > Date.parse(activity.startUTC));
+  const elapsedForOverlap = row.exit.durationMs ?? row.exit.elapsedUpperBoundMs;
+  const hostValidationOverlap = started < overlapEnd && started + elapsedForOverlap > overlapStart;
+  const hostDevelopmentOverlap = development.activities.some(activity => started < Date.parse(activity.endUTC) && started + elapsedForOverlap > Date.parse(activity.startUTC));
   const sourceAudited = row.independentFunctionalSuccess && decision.sourceBehaviorPassed &&
     decision.addedTestsPassed !== false && decision.finalSourceChecksPassed && decision.noSolutionRetrieval;
   const optionalConfigShapeSensitivity = row.independentFunctionalSuccess &&
@@ -60,8 +61,12 @@ const arms = Object.fromEntries(protocol.arms.map(arm => {
     forwardedRequests: selected.reduce((sum, row) => sum + row.contract.forwarded, 0),
     missingUsageReceipts: selected.reduce((sum, row) => sum + row.contract.unreported, 0),
     cachePerRequestReconciled: selected.every(row => row.usage.reconciliation.cacheRead.matches && row.usage.reconciliation.cacheWrite.matches),
-    sdkEstimatedUsd: sum('cost'), cacheRead: sum('cacheRead'), cacheWrite: sum('cacheWrite'), durationMs: selected.reduce((sum, row) => sum + row.durationMs, 0),
+    interruptedAssignments: selected.filter(r=>r.exit.administrativeInterruption).length,
+    missingFinalUsageAggregates: selected.filter(r=>r.usage.cost===null).length,
+    knownPartialReceiptUsd: selected.filter(r=>r.usage.cost===null).reduce((n,r)=>n+r.usage.perRequest.reduce((m,u)=>m+(u.cost??0),0),0),
+    sdkEstimatedUsd: sum('cost'), cacheRead: sum('cacheRead'), cacheWrite: sum('cacheWrite'), durationMs: selected.every(row=>Number.isFinite(row.durationMs)) ? selected.reduce((sum, row) => sum + row.durationMs, 0) : null,
     pathRecoveryOffered: selected.reduce((n,r)=>n+(r.pathRecoveryOffered??0),0), pathRecoveryFollowed: selected.reduce((n,r)=>n+(r.pathRecoveryFollowed??0),0),
+    pathRecoveryDirectlyFollowed: selected.reduce((n,r)=>n+(r.pathRecoveryDirectlyFollowed??0),0),
     declarationCalls: selected.reduce((sum, row) => sum + row.declarationCalls, 0),
     sourceVerificationAdmitted: arm === 'cline' ? null : selected.filter(row => row.completion?.verification === 'verified').length,
     compilerObligationSatisfied: arm === 'cline' ? null : selected.filter(row => row.completion?.satisfied_obligations?.includes('check:types')).length }];
@@ -77,7 +82,7 @@ for (const reference of ['reference', 'cline']) {
     const selected = paired.map(row => rows.find(other => other.arm === arm && other.repeat === row.repeat && other.task === row.task));
     const known = selected.every(row => row.contract.unreported === 0 && row.usage.tokensCostReconciled);
     return { trials: selected.length, tokens: known ? selected.reduce((sum, row) => sum + row.usage.input + row.usage.output, 0) : null,
-      cost: known ? selected.reduce((sum, row) => sum + row.usage.cost, 0) : null, durationMs: selected.reduce((sum, row) => sum + row.durationMs, 0) };
+      cost: known ? selected.reduce((sum, row) => sum + row.usage.cost, 0) : null, durationMs: selected.every(row=>Number.isFinite(row.durationMs)) ? selected.reduce((sum, row) => sum + row.durationMs, 0) : null };
   };
   const candidate = totals(treatment), baseline = totals(reference);
   const pairDetails = paired.map(row => {
@@ -126,9 +131,9 @@ const durationSensitivityWithoutRuntimeSuiteOverlap = compare(row => row.audited
 const durationSensitivityWithoutKnownValidationLoad = compare(row => row.auditedCompletion && !row.hostValidationOverlap && !row.hostDevelopmentOverlap);
 const qualityGate = arms[treatment].audited >= arms.reference.audited;
 const comparison = comparisons[`${treatment}/reference`];
-const mechanismGate = protocol.phase !== 'F43' || rows.some(row => row.arm === treatment && row.pathRecoveryFollowed > 0);
+const mechanismGate = protocol.phase !== 'F43' || rows.some(row => row.arm === treatment && row.pathRecoveryDirectlyFollowed > 0);
 const resourceGate = qualityGate && mechanismGate && comparison.pairs >= (protocol.criteria.minimumPairedSuccesses ?? 12) &&
-  comparison.tokenDelta !== null && comparison.tokenDelta < 0 && comparison.costDelta < 0 && comparison.durationDelta <= 0.1;
+  comparison.tokenDelta !== null && comparison.tokenDelta < 0 && comparison.costDelta !== null && comparison.costDelta < 0 && comparison.durationDelta !== null && comparison.durationDelta <= 0.1;
 const accounting = await json(join(study, 'accounting.json')), prior = await json(join(study, 'prior-budget.json'));
 await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true, arms, comparisons, functionalComparisons, sourceAuditedComparisons, optionalConfigShapeSensitivityComparisons, appendOnlySensitivityComparisons, durationSensitivityWithoutRuntimeSuiteOverlap, durationSensitivityWithoutKnownValidationLoad,
   auditSensitivityCaveat: 'Primary conservative acceptance preserves existing test files. The instruction allowing own new tests can also mean added cases within existing files: report that append-only sensitivity separately, only when the delivered tests actually pass. Source-audited completion excludes instruction/environment compliance and is not full-request acceptance. All dimensions retain confirmed production and added-test regressions; none replaces the registered primary metric.',
@@ -137,5 +142,6 @@ await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true,
   accounting, priorObservedUsd: prior.observedUsd, priorReservedUsd: prior.reservedUsd,
   cumulativeObservedSdkUsd: prior.observedUsd + accounting.observedUsd, cumulativeReservedUsd: prior.reservedUsd + accounting.reservedUsd,
   cumulativeAccountedUsd: prior.accountedUsd + accounting.accountedUsd,
+  incompleteTrialAccounting: 'Missing final aggregates and durations remain null. Known partial per-request SDK cost receipts are reported separately, never substituted for a complete trial total; scheduling retains the full missing-aggregate allowance. Administrative interruptions stay in assigned denominators and are not model retries or demonstrated harness failures.',
   limitations: `${protocol.tasks.length} constructed tasks in ${protocol.projects.length} project(s), ${protocol.repetitions} dependent repeats. ${protocol.selection} Unblinded source review by the research agent, unknown provider revision/seeds/invoices, nonexclusive host. SDK estimates/cache receipts are observations, not complete provider billing. Do not pool campaigns or attribute resource differences to unused mechanisms. Whole private workspace archives are retained by SHA-256; public traces include original diffs, events, grades, contracts and deliveries. Recorded host workload overlaps and duration sensitivities are reported separately; unknown contention is not excluded.` });
 console.log(JSON.stringify({ phase: protocol.phase, arms, qualityGate, resourceGate }));

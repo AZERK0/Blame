@@ -1,5 +1,7 @@
 // Tool observations, not inferred model reasoning or causal effect estimates.
-import{join}from'node:path';import{work,study,json,save}from'./setup.mjs';
+import{join,resolve}from'node:path';import{work as defaultWork,study as defaultStudy,json,save}from'./setup.mjs';
+const work=process.argv[2]?resolve(process.argv[2]):defaultWork,study=process.argv[3]?resolve(process.argv[3]):defaultStudy;
+const protocol=await json(join(study,'protocol.json'));
 const {rows}=await json(join(work,'campaign/analysis.json'));const records=[];
 for(const row of rows){const tools=await json(join(work,'campaign',row.name,'tool-ledger.json'));const observations=[];
  for(const [index,t]of tools.entries()){
@@ -16,5 +18,5 @@ for(const row of rows){const tools=await json(join(work,'campaign',row.name,'too
  const categories=Object.fromEntries([...new Set(observations.map(x=>x.category))].sort().map(k=>[k,observations.filter(x=>x.category===k).length]));
  records.push({name:row.name,task:row.task,arm:row.arm,categories,observations,declarationCalls:row.declarationCalls,compilerAdmitted:row.completion?.satisfied_obligations?.includes('check:types')??null,sourceVerification:row.completion?.verification??null});
 }
-const arms=Object.fromEntries(['reference','compiler','cline'].map(arm=>{const selected=records.filter(r=>r.arm===arm);const categories={};for(const row of selected)for(const[k,n]of Object.entries(row.categories))categories[k]=(categories[k]??0)+n;return[arm,{trials:selected.length,categories,declarationCalls:selected.reduce((n,r)=>n+r.declarationCalls,0)}];}));
-await save(join(study,'friction-observations.json'),{complete:rows.length===54,method:'Observed tool failures/guards. A refusal may be correct; its occurrence does not establish harness fault, model reasoning, or causal token overhead. Native command failures and Light edit/read categories are not equivalent tools.',arms,records});console.log(JSON.stringify(arms));
+const arms=Object.fromEntries(protocol.arms.map(arm=>{const selected=records.filter(r=>r.arm===arm);const categories={};for(const row of selected)for(const[k,n]of Object.entries(row.categories))categories[k]=(categories[k]??0)+n;return[arm,{trials:selected.length,categories,declarationCalls:selected.reduce((n,r)=>n+r.declarationCalls,0)}];}));
+await save(join(study,'friction-observations.json'),{complete:rows.length===protocol.order.length,method:'Observed tool failures/guards. A refusal may be correct; its occurrence does not establish harness fault, model reasoning, or causal token overhead. Native command failures and Light edit/read categories are not equivalent tools.',arms,records});console.log(JSON.stringify(arms));

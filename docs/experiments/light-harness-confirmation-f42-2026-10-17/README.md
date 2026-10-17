@@ -1,4 +1,23 @@
-F42 confirmation — registered before model outcomes
+F42 confirmation — all 54 assignments retained and audited
+
+Final observations (18 assignments per arm):
+
+| Outcome | Light reference | Compiler-enabled Light | Integrated Cline SDK |
+|---|---:|---:|---:|
+| Official / selected endpoint checks | 18 / 18 | 18 / 18 | 17 / 17 |
+| Strict audited completion | 10 | 9 | 7 |
+| Source + delivered-test audit | 11 | 13 | 13 |
+| Source-only optional-config-shape sensitivity | 14 | 16 | 15 |
+| Append-only test-placement sensitivity | 11 | 12 | 10 |
+| Required compiler obligation admitted | 0 | 18 | not comparable |
+
+Cline retains one administratively interrupted assignment; its full-arm tokens, cost and duration are unknown, not zero. These counts distinguish interpretations of the original request; none replaces the registered strict primary metric. The eight optional-config cases, three numerical regressions, explicit generic compatibility failure, invalid added tests and extra website type defect are documented in source-review.json and the uniform witnesses. Passing selected tests is insufficient for actual completion.
+
+On six paired strict successes against reference, current Light uses +10.1% tokens and +6.9% SDK-estimated cost, with -21.4% observed duration. Only two strict pairs exist against Cline (+46.2% tokens); this is not broad quality parity. The registered quality and resource gates both fail, including the minimum twelve paired-success requirement. Keep compiler admission as a correctness repair; do not advertise a general efficiency improvement. Exact comparisons, exclusions, per-task/leave-out and host-overlap sensitivities are in summary.json.
+
+Observed aggregate SDK estimates total USD1.58475536 for completed aggregates, plus USD0.71 newly reserved (one unknown request and one missing final aggregate). Four known interrupted-trial receipts total USD0.01216492 separately; they are not a complete trial total. Prior reserves remain: cumulative USD6.56415 observed plus USD3.64 reserved. Cache-read aggregates are included in input; request-level cache reconciliation is incomplete, and these estimates are not invoices.
+
+Final tool observations: 31 missing literal reads across Light arms, 20 with original-tree basename candidates; no declaration calls. Of 16 reference searches, three use TypeScript identity and thirteen explicitly fall back because the request supplies no symbol target. Raw views dominate. The next isolated diagnostic targets missing-path recovery, with stronger common environment/validation controls and no claim that an inventory match proves actual intermediate-state recovery.
 
 Six constructed requests on previously unmeasured Valibot v1.1.0 and Remeda v2.30.0, three dependent repeats, three arms (54 assignments). This is a larger-source, multi-API panel, not random issue sampling. Selection is in the earlier `selection.json` commit; the executable protocol is authoritative for launch. Two Valibot configuration tasks share machinery, and repetitions do not supply 54 independent tasks.
 
@@ -25,3 +44,11 @@ An extra npx Prettier attempt in trial 11 found a formatter despite its absence 
 The strict test-file interpretation also rejects additions of new cases to existing upstream files, although “your own new tests” can reasonably include such additions. Records identify append-only additions for sensitivity analysis; they must not be described as weakened tests or production regressions. Source-behavior audit and strict instruction acceptance remain separate.
 
 Post-hoc audit witnesses are additional evidence, not changed official checks or recovered solutions. A pinned separate Vitest installation executes exact agent-added tests and original related assertions against unchanged production endpoints. Initial controls pass; witnesses expose invalid added runtime/type tests and observable absent-option configuration shapes. The latter is interpretation-sensitive, including for the original F42 positive controls. Numeric witnesses distinguish the unambiguous NaN result from two equal finite MAX_VALUE inputs from the ambiguous legacy intermediate-overflow case followed by an input infinity. See audit-interpretation-notes.json; report the sensitivities rather than silently imposing a narrower contract.
+
+Portable endpoint reproduction: use Node24, run `node tools/terminal_bench/confirmation-study/restore-inputs.mjs --install` to restore hash-verified public source archives and install the exact dependency lock without lifecycle scripts, then `node tools/terminal_bench/confirmation-study/verify.mjs` and `node tools/terminal_bench/confirmation-study/replay.mjs --output=/absolute/new-replay.json`. Existing differing input files and output overwrites are refused. This runs no model and does not count endpoint reproductions as additional agent successes. A model rerun on another host needs its own registered environment/campaign; provider randomness, revisions and invoices cannot be reconstructed from these artifacts.
+
+Trial 36 (second empty-zip Cline assignment) disappeared with its driver before any edit or final result. The exact termination cause/time is unknown; process inspection confirmed no live worker. Original unchanged endpoint checks were 0/1/0, the slot is retained as interrupted and never retried. Four partial receipts total 90,377 input +1,929 output tokens and USD0.01216492; final aggregate/duration remain null and a USD0.48 missing-aggregate scheduling allowance remains. Elapsed lower/upper observations are preserved in worker-interruption.json. Resume only advances to assignment 37. Do not attribute this administrative failure to Cline reasoning or treat its partial consumption as an efficiency win.
+
+For a vanished worker only, recover-interrupted.mjs --name=TRIAL --confirmed-no-live-worker grades and archives its unchanged endpoint without model calls. Check host processes first; never use it on a live worker. resume.mjs starts only the remaining original assignments.
+
+A later direct trace (1-remeda-empty-zip-compiler, tool45) identifies /workspace/Blame/node_modules/.pnpm/prettier@3.8.3 in its plugin-resolution failure stack. Thus ancestor formatter reachability is actually observed, beyond the earlier read-only resolution probe. Tool44 was refused before execution and tool45 used the atomic formatter path; neither is a successful source edit after validation.

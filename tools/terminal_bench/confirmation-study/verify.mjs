@@ -1,3 +1,4 @@
+import {verifySummary} from './verify-summary.mjs';
 import assert from 'node:assert/strict';import{readFile}from'node:fs/promises';import{join,resolve}from'node:path';import{gunzipSync}from'node:zlib';
 import{study as defaultStudy,json,sha}from'./setup.mjs';
 const study=process.argv[2]?resolve(process.argv[2]):defaultStudy;import{reconcileUsage}from'../corpus/light-study-accounting.mjs';import{reserveTrialCosts}from'../navigation-evidence/budget-accounting.mjs';
@@ -12,6 +13,8 @@ for(const row of results.rows){
  for(const [name,hash]of Object.entries(row.hashes))assert.equal(sha(read(name)),hash);
  assert.equal(read('instruction.txt').toString(),protocol.tasks.find(t=>t.id===row.task).instruction);assert.deepEqual(JSON.parse(read('required-checks.json')),protocol.tasks.find(t=>t.id===row.task).requiredChecks);
  const grade=JSON.parse(read('score.json')),raw=archive.files['result.json']?JSON.parse(read('result.json')):{};
+ const exit=JSON.parse(read('model-exit.json'));assert.deepEqual(row.exit,exit);assert.equal(row.durationMs,raw.durationMs??exit.durationMs);
+ assert.deepEqual(row.metrics,raw.metrics??null);assert.deepEqual(row.completion,raw.completion??null);
  assert.equal(row.officialRuntimeSuccess,raw.status==='succeeded');
  assert.equal(row.independentFunctionalSuccess,grade.protectedPaths.length===0&&grade.checks.every(c=>c.exitCode===0));
  const events=read('events.jsonl').toString().trim().split('\n').filter(Boolean).map(JSON.parse).map(r=>r.event);
@@ -37,4 +40,5 @@ const accounting=reserveTrialCosts(results.rows,wireByTrial,protocol.budgets);as
 const prior=await json(join(study,'prior-budget.json'));assert.ok(Math.abs(prior.accountedUsd-7.90939464)<1e-8);assert.ok(Math.abs(summary.cumulativeAccountedUsd-prior.accountedUsd-accounting.accountedUsd)<1e-8);
 for(const arm of protocol.arms){const rows=results.rows.filter(r=>r.arm===arm),s=summary.arms[arm];assert.equal(rows.length,18);assert.equal(s.audited,rows.filter(r=>r.auditedCompletion).length);assert.equal(s.independent,rows.filter(r=>r.independentFunctionalSuccess).length);const sum=k=>rows.every(r=>r.usage[k]!==null)?rows.reduce((n,r)=>n+r.usage[k],0):null;assert.equal(s.input,sum('input'));assert.equal(s.output,sum('output'));assert.equal(s.sdkEstimatedUsd,sum('cost'));}
 const archives=await json(join(study,'input-archives.json'));for(const [name,hash]of Object.entries(archives.artifacts))assert.equal(sha(await readFile(join(study,'inputs',name))),hash);
+verifySummary(protocol,results.rows,summary);
 console.log(JSON.stringify({trials:results.rows.length,archivesVerified:true,usageRecomputed:true,priorReservationsPreserved:true}));

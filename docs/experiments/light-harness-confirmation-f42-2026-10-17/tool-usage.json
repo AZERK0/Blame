@@ -1,93 +1,113 @@
 {
-  "complete": false,
+  "complete": true,
   "method": "Finished tools only. Output bytes and exact repeated input/output pairs are observations, not token or cache savings. Basename candidates come from the original upstream inventory, not a reconstructed workspace at each invocation; they identify opportunities to investigate, not guaranteed safe recovery. Native and Light categories differ.",
   "arms": {
     "reference": {
-      "trials": 9,
+      "trials": 18,
       "counts": {
-        "search_code": 157,
-        "read_code": 277,
-        "edit_code": 29,
-        "run_task": 70,
-        "finish_task": 9
+        "search_code": 298,
+        "read_code": 538,
+        "edit_code": 63,
+        "run_task": 152,
+        "finish_task": 18
       },
       "readViews": {
-        "raw": 258,
-        "outline": 5,
-        "omitted": 12,
-        "range": 2
+        "raw": 474,
+        "outline": 11,
+        "omitted": 41,
+        "range": 12
       },
       "renderedViews": {
-        "raw": 247,
-        "blocked": 12,
-        "directory": 3,
-        "range": 13,
-        "outline": 2
+        "raw": 480,
+        "blocked": 16,
+        "directory": 7,
+        "range": 29,
+        "outline": 5,
+        "ok": 1
       },
       "searchModes": {
-        "text": 111,
-        "references": 5,
-        "omitted": 41
+        "text": 222,
+        "references": 13,
+        "omitted": 62,
+        "symbol": 1
+      },
+      "referenceEngines": {
+        "lexical_fallback": 10,
+        "typescript_language_service": 3
+      },
+      "referenceFallbacks": {
+        "symbol_target_required": 10
       },
       "editKinds": {
-        "symbol": 18,
-        "patch": 30
+        "symbol": 24,
+        "patch": 61
       },
-      "outputBytes": 1071772,
-      "missingReads": 11,
+      "outputBytes": 2111451,
+      "recoveryBytes": 0,
+      "missingReads": 15,
       "missingReadsWithBaselineCandidate": 9
     },
     "compiler": {
-      "trials": 9,
+      "trials": 18,
       "counts": {
-        "search_code": 172,
-        "read_code": 280,
-        "edit_code": 34,
-        "run_task": 62,
-        "finish_task": 9
+        "search_code": 301,
+        "read_code": 526,
+        "edit_code": 76,
+        "run_task": 129,
+        "finish_task": 18
       },
       "readViews": {
-        "raw": 220,
-        "omitted": 52,
-        "outline": 3,
+        "raw": 433,
+        "omitted": 80,
+        "outline": 7,
         "symbol": 4,
-        "range": 1
+        "range": 2
       },
       "renderedViews": {
-        "raw": 230,
-        "blocked": 13,
-        "range": 26,
-        "directory": 2,
+        "raw": 439,
+        "blocked": 19,
+        "range": 53,
+        "directory": 4,
         "symbol": 6,
-        "outline": 3
+        "outline": 5
       },
       "searchModes": {
-        "text": 133,
-        "omitted": 37,
-        "references": 2
+        "text": 242,
+        "omitted": 56,
+        "references": 3
+      },
+      "referenceEngines": {
+        "lexical_fallback": 3
+      },
+      "referenceFallbacks": {
+        "symbol_target_required": 3
       },
       "editKinds": {
-        "patch": 34,
-        "symbol": 9
+        "patch": 71,
+        "symbol": 18
       },
-      "outputBytes": 1092108,
-      "missingReads": 12,
-      "missingReadsWithBaselineCandidate": 7
+      "outputBytes": 2055349,
+      "recoveryBytes": 0,
+      "missingReads": 16,
+      "missingReadsWithBaselineCandidate": 11
     },
     "cline": {
-      "trials": 9,
+      "trials": 18,
       "counts": {
-        "run_commands": 129,
-        "search_codebase": 38,
-        "read_files": 62,
-        "apply_patch": 22,
+        "run_commands": 251,
+        "search_codebase": 70,
+        "read_files": 122,
+        "apply_patch": 50,
         "parallel": 1
       },
       "readViews": {},
       "renderedViews": {},
       "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {},
-      "outputBytes": 2699479,
+      "outputBytes": 5015713,
+      "recoveryBytes": 0,
       "missingReads": 0,
       "missingReadsWithBaselineCandidate": 0
     }
@@ -113,11 +133,14 @@
       "searchModes": {
         "text": 13
       },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {
         "symbol": 2,
         "patch": 2
       },
       "outputBytes": 112259,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": [
         {
@@ -400,10 +423,13 @@
       "searchModes": {
         "text": 16
       },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {
         "patch": 3
       },
       "outputBytes": 115582,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": [
         {
@@ -426,8 +452,11 @@
       "readViews": {},
       "renderedViews": {},
       "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {},
       "outputBytes": 466256,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -454,11 +483,14 @@
       "searchModes": {
         "text": 36
       },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {
         "symbol": 3,
         "patch": 3
       },
       "outputBytes": 179380,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -474,8 +506,11 @@
       "readViews": {},
       "renderedViews": {},
       "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {},
       "outputBytes": 342156,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -504,10 +539,17 @@
         "text": 22,
         "references": 1
       },
+      "referenceEngines": {
+        "lexical_fallback": 1
+      },
+      "referenceFallbacks": {
+        "symbol_target_required": 1
+      },
       "editKinds": {
         "patch": 1
       },
       "outputBytes": 168009,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": [
         {
@@ -542,8 +584,11 @@
       "readViews": {},
       "renderedViews": {},
       "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {},
       "outputBytes": 230507,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -569,11 +614,18 @@
         "omitted": 21,
         "references": 2
       },
+      "referenceEngines": {
+        "lexical_fallback": 2
+      },
+      "referenceFallbacks": {
+        "symbol_target_required": 2
+      },
       "editKinds": {
         "symbol": 4,
         "patch": 3
       },
       "outputBytes": 131690,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -605,10 +657,17 @@
         "references": 1,
         "text": 15
       },
+      "referenceEngines": {
+        "lexical_fallback": 1
+      },
+      "referenceFallbacks": {
+        "symbol_target_required": 1
+      },
       "editKinds": {
         "patch": 3
       },
       "outputBytes": 163005,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": [
         {
@@ -645,11 +704,18 @@
         "text": 5,
         "references": 2
       },
+      "referenceEngines": {
+        "lexical_fallback": 2
+      },
+      "referenceFallbacks": {
+        "symbol_target_required": 2
+      },
       "editKinds": {
         "patch": 7,
         "symbol": 5
       },
       "outputBytes": 82943,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": [
         {
@@ -677,11 +743,14 @@
       "searchModes": {
         "text": 9
       },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {
         "patch": 3,
         "symbol": 2
       },
       "outputBytes": 79606,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -697,8 +766,11 @@
       "readViews": {},
       "renderedViews": {},
       "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {},
       "outputBytes": 192150,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -725,10 +797,13 @@
       "searchModes": {
         "text": 10
       },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {
         "patch": 7
       },
       "outputBytes": 119588,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": [
         {
@@ -749,8 +824,11 @@
       "readViews": {},
       "renderedViews": {},
       "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {},
       "outputBytes": 263351,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -773,10 +851,13 @@
       "searchModes": {
         "text": 8
       },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {
         "patch": 2
       },
       "outputBytes": 76309,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -792,8 +873,11 @@
       "readViews": {},
       "renderedViews": {},
       "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {},
       "outputBytes": 265887,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -818,11 +902,14 @@
       "searchModes": {
         "text": 12
       },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {
         "symbol": 2,
         "patch": 5
       },
       "outputBytes": 112243,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -847,11 +934,14 @@
       "searchModes": {
         "text": 11
       },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {
         "symbol": 2,
         "patch": 5
       },
       "outputBytes": 117667,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -878,10 +968,13 @@
       "searchModes": {
         "text": 19
       },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {
         "patch": 3
       },
       "outputBytes": 94681,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": [
         {
@@ -911,8 +1004,11 @@
       "readViews": {},
       "renderedViews": {},
       "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {},
       "outputBytes": 323779,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -938,11 +1034,14 @@
       "searchModes": {
         "text": 15
       },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {
         "symbol": 5,
         "patch": 2
       },
       "outputBytes": 120393,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": [
         {
@@ -963,8 +1062,11 @@
       "readViews": {},
       "renderedViews": {},
       "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {},
       "outputBytes": 428435,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -990,10 +1092,13 @@
       "searchModes": {
         "text": 36
       },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {
         "patch": 2
       },
       "outputBytes": 147076,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": [
         {
@@ -1029,11 +1134,18 @@
         "text": 10,
         "references": 1
       },
+      "referenceEngines": {
+        "lexical_fallback": 1
+      },
+      "referenceFallbacks": {
+        "symbol_target_required": 1
+      },
       "editKinds": {
         "symbol": 2,
         "patch": 4
       },
       "outputBytes": 104462,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": [
         {
@@ -1068,10 +1180,13 @@
       "searchModes": {
         "omitted": 20
       },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {
         "patch": 6
       },
       "outputBytes": 120850,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     },
@@ -1098,10 +1213,13 @@
         "omitted": 6,
         "text": 7
       },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {
         "patch": 3
       },
       "outputBytes": 118137,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": [
         {
@@ -1145,8 +1263,837 @@
       "readViews": {},
       "renderedViews": {},
       "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
       "editKinds": {},
       "outputBytes": 186958,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "2-remeda-stable-sum-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 10,
+        "read_code": 19,
+        "edit_code": 3,
+        "run_task": 4,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 17,
+        "range": 1,
+        "outline": 1
+      },
+      "renderedViews": {
+        "raw": 17,
+        "range": 1,
+        "directory": 1
+      },
+      "searchModes": {
+        "text": 10
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "patch": 3,
+        "symbol": 1
+      },
+      "outputBytes": 61208,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "2-remeda-stable-sum-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 19,
+        "search_codebase": 3,
+        "read_files": 6,
+        "apply_patch": 4
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {},
+      "outputBytes": 208888,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "2-remeda-stable-sum-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 15,
+        "read_code": 30,
+        "edit_code": 2,
+        "run_task": 11,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 25,
+        "range": 5
+      },
+      "renderedViews": {
+        "raw": 23,
+        "range": 5,
+        "blocked": 2
+      },
+      "searchModes": {
+        "text": 15
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "patch": 2
+      },
+      "outputBytes": 102920,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": [
+        {
+          "target": "packages/remeda/src/meanBy.test-d.ts",
+          "baselineExactBasenameCandidates": []
+        },
+        {
+          "target": "packages/remeda/eslint.config.mjs",
+          "baselineExactBasenameCandidates": []
+        }
+      ]
+    },
+    {
+      "name": "2-remeda-null-keys-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 18,
+        "search_codebase": 4,
+        "read_files": 8,
+        "apply_patch": 14
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {},
+      "outputBytes": 238154,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "2-remeda-null-keys-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 18,
+        "read_code": 26,
+        "edit_code": 3,
+        "run_task": 7,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 26
+      },
+      "renderedViews": {
+        "raw": 26
+      },
+      "searchModes": {
+        "text": 12,
+        "references": 6
+      },
+      "referenceEngines": {
+        "typescript_language_service": 3,
+        "lexical_fallback": 3
+      },
+      "referenceFallbacks": {
+        "symbol_target_required": 3
+      },
+      "editKinds": {
+        "patch": 2
+      },
+      "outputBytes": 128744,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "2-remeda-null-keys-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 7,
+        "read_code": 22,
+        "run_task": 9,
+        "edit_code": 7,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 21,
+        "omitted": 1
+      },
+      "renderedViews": {
+        "raw": 21,
+        "range": 1
+      },
+      "searchModes": {
+        "text": 6,
+        "references": 1
+      },
+      "referenceEngines": {
+        "lexical_fallback": 1
+      },
+      "referenceFallbacks": {
+        "symbol_target_required": 1
+      },
+      "editKinds": {
+        "patch": 7
+      },
+      "outputBytes": 95231,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "2-remeda-empty-zip-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 6,
+        "read_code": 27,
+        "run_task": 7,
+        "edit_code": 1,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 26,
+        "outline": 1
+      },
+      "renderedViews": {
+        "raw": 25,
+        "directory": 1,
+        "blocked": 1
+      },
+      "searchModes": {
+        "text": 6
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "patch": 1
+      },
+      "outputBytes": 111058,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": [
+        {
+          "target": "packages/remeda/src/internal/lazyImplementation.ts",
+          "baselineExactBasenameCandidates": []
+        }
+      ]
+    },
+    {
+      "name": "2-remeda-empty-zip-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 14,
+        "read_code": 23,
+        "edit_code": 4,
+        "run_task": 7,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 23
+      },
+      "renderedViews": {
+        "raw": 23
+      },
+      "searchModes": {
+        "text": 14
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "symbol": 2,
+        "patch": 4
+      },
+      "outputBytes": 105050,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "2-remeda-empty-zip-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 2,
+        "search_codebase": 3,
+        "read_files": 5
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {},
+      "outputBytes": 214139,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-valibot-message-prefix-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 16,
+        "search_codebase": 5,
+        "read_files": 6,
+        "apply_patch": 2
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {},
+      "outputBytes": 387892,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-valibot-message-prefix-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 26,
+        "read_code": 30,
+        "edit_code": 3,
+        "run_task": 7,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 28,
+        "range": 2
+      },
+      "renderedViews": {
+        "raw": 28,
+        "range": 2
+      },
+      "searchModes": {
+        "text": 25,
+        "references": 1
+      },
+      "referenceEngines": {
+        "lexical_fallback": 1
+      },
+      "referenceFallbacks": {
+        "symbol_target_required": 1
+      },
+      "editKinds": {
+        "patch": 3
+      },
+      "outputBytes": 136830,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-valibot-message-prefix-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 23,
+        "read_code": 29,
+        "run_task": 8,
+        "edit_code": 2,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 28,
+        "omitted": 1
+      },
+      "renderedViews": {
+        "raw": 28,
+        "range": 1
+      },
+      "searchModes": {
+        "omitted": 19,
+        "text": 4
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "patch": 2
+      },
+      "outputBytes": 128989,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-valibot-hide-input-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 25,
+        "read_code": 35,
+        "edit_code": 6,
+        "run_task": 14,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 30,
+        "outline": 1,
+        "omitted": 4
+      },
+      "renderedViews": {
+        "raw": 30,
+        "directory": 1,
+        "range": 4
+      },
+      "searchModes": {
+        "text": 23,
+        "symbol": 1,
+        "references": 1
+      },
+      "referenceEngines": {
+        "lexical_fallback": 1
+      },
+      "referenceFallbacks": {
+        "symbol_target_required": 1
+      },
+      "editKinds": {
+        "patch": 6
+      },
+      "outputBytes": 149927,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-valibot-hide-input-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 29,
+        "read_code": 31,
+        "run_task": 10,
+        "edit_code": 5,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 29,
+        "omitted": 2
+      },
+      "renderedViews": {
+        "raw": 27,
+        "blocked": 2,
+        "range": 2
+      },
+      "searchModes": {
+        "text": 29
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "symbol": 2,
+        "patch": 4
+      },
+      "outputBytes": 149805,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": [
+        {
+          "target": "library/src/methods/parseAsync/parseAsync.ts",
+          "baselineExactBasenameCandidates": [
+            "library/src/methods/parse/parseAsync.ts"
+          ]
+        },
+        {
+          "target": "library/src/types/config.test-d.ts",
+          "baselineExactBasenameCandidates": [
+            "library/src/methods/config/config.test-d.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3-valibot-hide-input-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 15,
+        "search_codebase": 5,
+        "read_files": 9,
+        "apply_patch": 1
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {},
+      "outputBytes": 323978,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-valibot-fallback-when-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 16,
+        "read_code": 41,
+        "run_task": 7,
+        "edit_code": 1,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 39,
+        "omitted": 2
+      },
+      "renderedViews": {
+        "raw": 37,
+        "range": 2,
+        "blocked": 2
+      },
+      "searchModes": {
+        "text": 16
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "patch": 1
+      },
+      "outputBytes": 124354,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": [
+        {
+          "target": "library/src/methods/optional/optional.ts",
+          "baselineExactBasenameCandidates": [
+            "library/src/schemas/optional/optional.ts"
+          ]
+        },
+        {
+          "target": "library/src/methods/optional/optionalAsync.ts",
+          "baselineExactBasenameCandidates": [
+            "library/src/schemas/optional/optionalAsync.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3-valibot-fallback-when-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 9,
+        "search_codebase": 3,
+        "read_files": 6,
+        "apply_patch": 1
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {},
+      "outputBytes": 203402,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-valibot-fallback-when-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 17,
+        "read_code": 33,
+        "edit_code": 2,
+        "run_task": 5,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 30,
+        "outline": 2,
+        "range": 1
+      },
+      "renderedViews": {
+        "raw": 30,
+        "directory": 1,
+        "outline": 1,
+        "range": 1
+      },
+      "searchModes": {
+        "text": 17
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "patch": 2
+      },
+      "outputBytes": 110850,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-remeda-stable-sum-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 17,
+        "search_codebase": 2,
+        "read_files": 8,
+        "apply_patch": 3
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {},
+      "outputBytes": 189968,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-remeda-stable-sum-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 7,
+        "read_code": 28,
+        "run_task": 12,
+        "edit_code": 10,
+        "finish_task": 1
+      },
+      "readViews": {
+        "omitted": 25,
+        "outline": 2,
+        "raw": 1
+      },
+      "renderedViews": {
+        "raw": 22,
+        "outline": 2,
+        "directory": 1,
+        "blocked": 1,
+        "range": 2
+      },
+      "searchModes": {
+        "omitted": 6,
+        "text": 1
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "patch": 8,
+        "symbol": 6
+      },
+      "outputBytes": 78621,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": [
+        {
+          "target": "packages/remeda/src/variance.ts",
+          "baselineExactBasenameCandidates": []
+        }
+      ]
+    },
+    {
+      "name": "3-remeda-stable-sum-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 7,
+        "read_code": 19,
+        "edit_code": 5,
+        "run_task": 8,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 15,
+        "outline": 1,
+        "omitted": 3
+      },
+      "renderedViews": {
+        "raw": 15,
+        "directory": 1,
+        "range": 3
+      },
+      "searchModes": {
+        "text": 7
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "patch": 5
+      },
+      "outputBytes": 65057,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-remeda-null-keys-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 15,
+        "read_code": 26,
+        "edit_code": 4,
+        "run_task": 11,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 24,
+        "range": 2
+      },
+      "renderedViews": {
+        "raw": 24,
+        "range": 2
+      },
+      "searchModes": {
+        "omitted": 15
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "patch": 4
+      },
+      "outputBytes": 112566,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-remeda-null-keys-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 8,
+        "read_code": 29,
+        "edit_code": 3,
+        "run_task": 6,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 19,
+        "omitted": 10
+      },
+      "renderedViews": {
+        "raw": 19,
+        "range": 10
+      },
+      "searchModes": {
+        "text": 8
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "patch": 3
+      },
+      "outputBytes": 116770,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-remeda-null-keys-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 15,
+        "search_codebase": 3,
+        "read_files": 4,
+        "apply_patch": 1
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {},
+      "outputBytes": 239199,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-remeda-empty-zip-compiler",
+      "arm": "compiler",
+      "counts": {
+        "search_code": 15,
+        "read_code": 33,
+        "edit_code": 12,
+        "run_task": 8,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 22,
+        "omitted": 9,
+        "outline": 2
+      },
+      "renderedViews": {
+        "raw": 22,
+        "range": 7,
+        "blocked": 2,
+        "outline": 2
+      },
+      "searchModes": {
+        "text": 15
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "symbol": 4,
+        "patch": 8
+      },
+      "outputBytes": 116777,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-remeda-empty-zip-cline",
+      "arm": "cline",
+      "counts": {
+        "run_commands": 11,
+        "search_codebase": 4,
+        "read_files": 8,
+        "apply_patch": 2
+      },
+      "readViews": {},
+      "renderedViews": {},
+      "searchModes": {},
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {},
+      "outputBytes": 310614,
+      "recoveryBytes": 0,
+      "repeatedReadOutputs": 0,
+      "missingPaths": []
+    },
+    {
+      "name": "3-remeda-empty-zip-reference",
+      "arm": "reference",
+      "counts": {
+        "search_code": 12,
+        "read_code": 26,
+        "edit_code": 3,
+        "run_task": 8,
+        "finish_task": 1
+      },
+      "readViews": {
+        "raw": 26
+      },
+      "renderedViews": {
+        "raw": 25,
+        "ok": 1
+      },
+      "searchModes": {
+        "text": 12
+      },
+      "referenceEngines": {},
+      "referenceFallbacks": {},
+      "editKinds": {
+        "patch": 3
+      },
+      "outputBytes": 108163,
+      "recoveryBytes": 0,
       "repeatedReadOutputs": 0,
       "missingPaths": []
     }

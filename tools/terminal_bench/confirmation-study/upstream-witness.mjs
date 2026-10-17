@@ -2,9 +2,11 @@
 import assert from 'node:assert/strict';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {mkdir,writeFile,readFile,rm,symlink,cp,access} from 'node:fs/promises';
-import {join} from 'node:path';
-import {work,study,json,save,sha,sourceRoot} from './setup.mjs';
-import {tasks} from './tasks.mjs';
+import {join,resolve} from 'node:path';
+import {work as inputWork,study as defaultStudy,json,save,sha,sourceRoot} from './setup.mjs';
+const positional=process.argv.slice(2).filter(a=>!a.startsWith('--'));
+const work=positional[0]?resolve(positional[0]):inputWork,study=positional[1]?resolve(positional[1]):defaultStudy;
+const protocol=await json(join(study,'protocol.json')),tasks=protocol.tasks;
 const startedAtUTC=new Date().toISOString();
 const dependencyRoot='/tmp/blame-f42-upstream-test-audit';
 const root=join(dependencyRoot,'workspaces');await mkdir(root,{recursive:true});
@@ -23,7 +25,7 @@ const slots=[...tasks.map(t=>({name:'original-'+t.id,task:t.id,original:true})),
 const records=[];
 for(const row of slots){
  const project=row.task.split('-')[0],src=sourceRoot(project),folder=join(root,row.name);
- await mkdir(folder);const original=join(work,'upstream',project+'.tar.gz');
+ await mkdir(folder);const original=join(inputWork,'upstream',project+'.tar.gz');
  const archive=row.original?original:join(work,'campaign',row.name,'workspace.tar.gz');
  execFileSync('tar',['-xzf',archive,'--strip-components=1','-C',folder,(row.original?prefixes[project]:'workspace')+'/'+src]);
  await symlink(join(dependencyRoot,'node_modules'),join(folder,'node_modules'));
@@ -31,9 +33,10 @@ for(const row of slots){
  const grade=row.original?null:await json(join(work,'campaign',row.name,'score.json'));
  if(grade)for(const[path,hash]of Object.entries(grade.sourceHashes))if(path.startsWith(src+'/'))assert.equal(await readFile(join(folder,path)).then(sha,()=>null),hash);
  const selectedTests=[];
+ const originalPaths=new Set(execFileSync('tar',['-tzf',original],{encoding:'utf8'}).split('\n').map(p=>p.split('/').slice(1).join('/')));
  for(const base of selected[row.task])for(const suffix of ['.test.ts','.test-d.ts']){
   const path=src+'/'+base+suffix;
-  if(await access(join(folder,path)).then(()=>true,()=>false))selectedTests.push(path);
+  if(originalPaths.has(path))selectedTests.push(path);
  }
  // Include changed/new tests in these source modules; keep their exact bytes.
  const changedTests=(grade?.changedPaths??[]).filter(p=>p.startsWith(src+'/')&&/\.test(?:-d)?\.ts$/.test(p));
@@ -59,5 +62,5 @@ for(const row of slots){
 }
 const lock=await readFile(join(dependencyRoot,'package-lock.json'));
 await cp(join(dependencyRoot,'package-lock.json'),join(study,'upstream-audit-package-lock.json'));
-await save(join(study,filter?'upstream-tests-smoke.json':'upstream-tests-witness.json'),{startedAtUTC,endedAtUTC:new Date().toISOString(),dependencyLockSha256:sha(lock),complete:!filter&&analysis.rows.length===54,
+await save(join(study,filter?'upstream-tests-smoke.json':'upstream-tests-witness.json'),{startedAtUTC,endedAtUTC:new Date().toISOString(),dependencyLockSha256:sha(lock),complete:!filter&&analysis.rows.length===protocol.order.length,
  method:'Post-hoc focused upstream regression and added-test audit, motivated by unexecuted model-added tests and changed absent-option config shapes. An explicit two-type-argument fallback compatibility fixture was added after reviewing trial 25. Exact archived production source is never repaired. Run the same related upstream assertions/types for every arm/repeat, and separately execute exact model-added/modified tests. Baseline controls distinguish pre-existing failures and harness configuration problems. This is not the full upstream suite or an official selected check. Dependencies are isolated outside the measured repository, installed with a separate npm cache and pinned lock.',records});

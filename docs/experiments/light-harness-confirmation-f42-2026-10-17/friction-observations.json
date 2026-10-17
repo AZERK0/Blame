@@ -1,36 +1,40 @@
 {
-  "complete": false,
+  "complete": true,
   "method": "Observed tool failures/guards. A refusal may be correct; its occurrence does not establish harness fault, model reasoning, or causal token overhead. Native command failures and Light edit/read categories are not equivalent tools.",
   "arms": {
     "reference": {
-      "trials": 9,
+      "trials": 18,
       "categories": {
-        "executed_command_failed": 9,
+        "executed_command_failed": 14,
         "invalid_final_syntax": 2,
-        "missing_path": 11,
-        "patch_preimage_or_format": 5,
-        "edit_observation_guard": 1,
+        "missing_path": 15,
+        "patch_preimage_or_format": 14,
+        "edit_observation_guard": 3,
         "read_guard": 1,
-        "command_failure_reported_in_message": 1
+        "command_failure_reported_in_message": 6,
+        "invalid_tool_json": 1
       },
       "declarationCalls": 0
     },
     "compiler": {
-      "trials": 9,
+      "trials": 18,
       "categories": {
-        "command_failure_reported_in_message": 9,
-        "missing_path": 12,
-        "patch_preimage_or_format": 7,
-        "edit_observation_guard": 3,
-        "executed_command_failed": 1,
-        "read_guard": 1
+        "command_failure_reported_in_message": 14,
+        "missing_path": 16,
+        "patch_preimage_or_format": 13,
+        "edit_observation_guard": 4,
+        "executed_command_failed": 5,
+        "read_guard": 3,
+        "invalid_tool_json": 1,
+        "invalid_final_syntax": 2,
+        "other_edit_refusal": 1
       },
       "declarationCalls": 0
     },
     "cline": {
-      "trials": 9,
+      "trials": 18,
       "categories": {
-        "native_command_failed": 23,
+        "native_command_failed": 43,
         "invalid_tool_json": 1
       },
       "declarationCalls": 0
@@ -1441,6 +1445,1275 @@
       "declarationCalls": 0,
       "compilerAdmitted": null,
       "sourceVerification": null
+    },
+    {
+      "name": "2-remeda-stable-sum-compiler",
+      "task": "remeda-stable-sum",
+      "arm": "compiler",
+      "categories": {
+        "invalid_tool_json": 1
+      },
+      "observations": [
+        {
+          "index": 29,
+          "category": "invalid_tool_json",
+          "tool": "edit_code",
+          "input": {},
+          "error": "Tool call edit_code emitted invalid JSON arguments: Tool call arguments could not be parsed as JSON. Ensure the outer tool payload is valid JSON and escape embedded quotes/newlines inside string fields."
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "2-remeda-stable-sum-cline",
+      "task": "remeda-stable-sum",
+      "arm": "cline",
+      "categories": {
+        "native_command_failed": 5
+      },
+      "observations": [
+        {
+          "index": 12,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm --workspace packages/remeda run check"
+        },
+        {
+          "index": 15,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm --workspace packages/remeda run check"
+        },
+        {
+          "index": 20,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npx prettier --check packages/remeda/src/internal/numberAccumulator.ts packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/meanBy.ts"
+        },
+        {
+          "index": 25,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm --workspace packages/remeda run test:runtime -- src/sum.test.ts src/sumBy.test.ts src/mean.test.ts src/meanBy.test.ts"
+        },
+        {
+          "index": 26,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm --workspace packages/remeda exec eslint -- src/internal/numberAccumulator.ts src/sum.ts src/sumBy.ts src/meanBy.ts"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "2-remeda-stable-sum-reference",
+      "task": "remeda-stable-sum",
+      "arm": "reference",
+      "categories": {
+        "command_failure_reported_in_message": 1,
+        "executed_command_failed": 2,
+        "missing_path": 2
+      },
+      "observations": [
+        {
+          "index": 26,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/remeda/src/meanBy.test-d.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/2-remeda-stable-sum-reference/workspace/packages/remeda/src/meanBy.test-d.ts'"
+        },
+        {
+          "index": 36,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/remeda/eslint.config.mjs",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/2-remeda-stable-sum-reference/workspace/packages/remeda/eslint.config.mjs'"
+        },
+        {
+          "index": 45,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 2
+        },
+        {
+          "index": 51,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "remeda:lint"
+          },
+          "reportedExitCode": 127
+        },
+        {
+          "index": 52,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "remeda:test",
+            "args": [
+              "--run",
+              "packages/remeda/src/sum.test.ts",
+              "packages/remeda/src/sumBy.test.ts",
+              "packages/remeda/src/mean.test.ts",
+              "packages/remeda/src/meanBy.test.ts"
+            ]
+          },
+          "command": "npm run test -- --run packages/remeda/src/sum.test.ts packages/remeda/src/sumBy.test.ts packages/remeda/src/mean.test.ts packages/remeda/src/meanBy.test.ts",
+          "exitCode": 2
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "2-remeda-null-keys-cline",
+      "task": "remeda-null-keys",
+      "arm": "cline",
+      "categories": {
+        "native_command_failed": 2
+      },
+      "observations": [
+        {
+          "index": 30,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "./node_modules/.bin/prettier --check packages/remeda/src/groupBy.ts packages/remeda/src/countBy.ts packages/remeda/src/indexBy.ts packages/remeda/src/groupBy.test.ts packages/remeda/src/groupBy.test-d ... [command truncated: 151 more chars; full command is in the tool call input]"
+        },
+        {
+          "index": 33,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "./node_modules/.bin/vitest run packages/remeda/src/groupBy.test.ts packages/remeda/src/countBy.test.ts packages/remeda/src/indexBy.test.ts"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "2-remeda-null-keys-reference",
+      "task": "remeda-null-keys",
+      "arm": "reference",
+      "categories": {
+        "invalid_tool_json": 1
+      },
+      "observations": [
+        {
+          "index": 33,
+          "category": "invalid_tool_json",
+          "tool": "edit_code",
+          "input": {},
+          "error": "Tool call edit_code emitted invalid JSON arguments: Tool call arguments could not be parsed as JSON. Ensure the outer tool payload is valid JSON and escape embedded quotes/newlines inside string fields."
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "2-remeda-null-keys-compiler",
+      "task": "remeda-null-keys",
+      "arm": "compiler",
+      "categories": {
+        "edit_observation_guard": 1,
+        "patch_preimage_or_format": 2
+      },
+      "observations": [
+        {
+          "index": 26,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/groupBy.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/groupBy.ts\n@@\n- * returned by a provided callback function. The returned object has separate\n- * properties for each group, containing arrays with the elements in the group.\n- * Unlike the built in `Object.groupBy` this function also allows the callback to\n- * return `undefined` in order to exclude the item from being added to any group.\n+ * returned by a provided callback function. The returned object has separate\n+ * properties for each group, containing arrays with the elements in the group.\n+ * Unlike the built in `Object.groupBy` this function also allows the callback to\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * It should return a value indicating the group of the current element, or\n- * `undefined` when the item should be excluded from any group.\n+ * It should return a value indicating the group of the current element, or\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n- * returned by a provided callback function. The returned object has separate\n- * properties for each group, containing arrays with the elements in the group.\n- * Unlike the built in `Object.groupBy` this function also allows the callback to\n- * return `undefined` in order to exclude the item from being added to any group.\n+ * returned by a provided callback function. The returned object has separate\n+ * properties for each group, containing arrays with the elements in the group.\n+ * Unlike the built in `Object.groupBy` this function also allows the callback to\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * It should return a value indicating the group of the current element, or\n- * `undefined` when the item should be excluded from any group.\n+ * It should return a value indicating the group of the current element, or\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-    if (key !== undefined) {\n+    if (key !== undefined && key !== null) {\n*** Update File: packages/remeda/src/countBy.ts\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n-  ) => PropertyKey | undefined,\n+  ) => PropertyKey | null | undefined,\n@@\n-    if (category !== undefined) {\n+    if (category !== undefined && category !== null) {\n*** Update File: packages/remeda/src/indexBy.ts\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n function indexByImplementation<T, K extends PropertyKey>(\n   data: ReadonlyArray<T>,\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n ): BoundedPartial<Record<K, T>> {\n-  const out: Partial<Record<K, T>> = {};\n+  const out: Partial<Record<K, T>> = Object.create(null);\n@@\n-    out[key] = item;\n+    if (key !== null && key !== undefined) {\n+      out[key] = item;\n+    }\n   }\n \n+  Object.setPrototypeOf(out, Object.prototype);\n+\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in packages/remeda/src/groupBy.ts.\nClosest current lines 7-11:\n * returned by a provided callback function. The returned object has separate\n * properties for each group, containing arrays with the elements in the group.\n * Unlike the built in `Object.groupBy` this function also allows the callback to\n * return `undefined` in order to exclude the item from being added to any\n * group.",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbr0we5"
+          }
+        },
+        {
+          "index": 27,
+          "category": "edit_observation_guard",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/groupBy.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/groupBy.ts\n@@\n- * return `undefined` in order to exclude the item from being added to any\n- * group.\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * It should return a value indicating the group of the current element, or\n- * `undefined` when the item should be excluded from any group.\n+ * It should return a value indicating the group of the current element, or\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n- * return `undefined` in order to exclude the item from being added to any\n- * group.\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * It should return a value indicating the group of the current element, or\n- * `undefined` when the item should be excluded from any group.\n+ * It should return a value indicating the group of the current element, or\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-    if (key !== undefined) {\n+    if (key !== undefined && key !== null) {\n*** Update File: packages/remeda/src/countBy.ts\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n-  ) => PropertyKey | undefined,\n+  ) => PropertyKey | null | undefined,\n@@\n-    if (category !== undefined) {\n+    if (category !== undefined && category !== null) {\n*** Update File: packages/remeda/src/indexBy.ts\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n ): BoundedPartial<Record<K, T>> {\n-  const out: Partial<Record<K, T>> = {};\n+  const out: Partial<Record<K, T>> = Object.create(null);\n@@\n-    out[key] = item;\n+    if (key !== null && key !== undefined) {\n+      out[key] = item;\n+    }\n   }\n \n+  Object.setPrototypeOf(out, Object.prototype);\n+\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in packages/remeda/src/indexBy.ts.\nClosest current lines 24-28:\nexport function indexBy<T, K extends PropertyKey>(\n  data: ReadonlyArray<T>,\n  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n): BoundedPartial<Record<K, T>>;\n",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbr11c1"
+          }
+        },
+        {
+          "index": 41,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/groupBy.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/groupBy.ts\n@@\n- * return `null` or `undefined` in order to exclude the item from being added to\n- * any\n- * group.\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * return `null` or `undefined` in order to exclude the item from being added to\n- * any\n- * group.\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in packages/remeda/src/groupBy.ts.\nClosest current lines 8-12:\n * properties for each group, containing arrays with the elements in the group.\n * Unlike the built in `Object.groupBy` this function also allows the callback to\n * return `null` or `undefined` in order to exclude the item from being added to\n * any group.\n *",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbr1vyl"
+          }
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "2-remeda-empty-zip-reference",
+      "task": "remeda-empty-zip",
+      "arm": "reference",
+      "categories": {
+        "command_failure_reported_in_message": 1,
+        "missing_path": 1
+      },
+      "observations": [
+        {
+          "index": 24,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/remeda/src/internal/lazyImplementation.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/2-remeda-empty-zip-reference/workspace/packages/remeda/src/internal/lazyImplementation.ts'"
+        },
+        {
+          "index": 33,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run test --workspace packages/remeda -- zip.test.ts zipWith.test.ts",
+            "cwd": "/workspace/Blame/.blame/research/confirmation-f42/campaign/2-remeda-empty-zip-reference/workspace"
+          },
+          "reportedExitCode": 2
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "2-remeda-empty-zip-compiler",
+      "task": "remeda-empty-zip",
+      "arm": "compiler",
+      "categories": {
+        "command_failure_reported_in_message": 1,
+        "executed_command_failed": 1,
+        "invalid_final_syntax": 1
+      },
+      "observations": [
+        {
+          "index": 37,
+          "category": "invalid_final_syntax",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s30",
+                "action": "replace_body",
+                "content": "  (value, index, data) =>\n    index >= second.length\n      ? lazyEmptyEvaluator()\n      : {\n          next: fn(value, second[index], index, [data, second]),\n          hasNext: true,\n          done: index >= second.length - 1,\n        });"
+              },
+              {
+                "kind": "symbol",
+                "target": "s33",
+                "action": "replace_body",
+                "content": "  (value, index) =>\n    index >= second.length\n      ? lazyEmptyEvaluator()\n      : {\n          hasNext: true,\n          next: [value, second[index]],\n          done: index >= second.length - 1,\n        });"
+              },
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/zipWith.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/zipWith.ts\n@@\n import { lazyDataLastImpl } from \"./internal/lazyDataLastImpl\";\n+import { lazyEmptyEvaluator } from \"./internal/utilityEvaluators\";\n*** Update File: packages/remeda/src/zip.ts\n@@\n import type { IterableContainer } from \"./internal/types/IterableContainer\";\n import type { LazyEvaluator } from \"./internal/types/LazyEvaluator\";\n+import { lazyEmptyEvaluator } from \"./internal/utilityEvaluators\";\n import { purry } from \"./purry\";\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "code",
+            "message": "Final parse failed for packages/remeda/src/zipWith.ts; no files were written. 126:10 ',' expected.",
+            "recovery": "Correct the final syntax and submit one new atomic batch."
+          }
+        },
+        {
+          "index": 45,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "remeda:test",
+            "packagePath": "packages/remeda"
+          },
+          "command": "npm run test",
+          "exitCode": 2
+        },
+        {
+          "index": 46,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npx prettier --check packages/remeda/src/zip.ts packages/remeda/src/zipWith.ts packages/remeda/src/zip.test.ts packages/remeda/src/zipWith.test.ts",
+            "cwd": "."
+          },
+          "reportedExitCode": 1
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "2-remeda-empty-zip-cline",
+      "task": "remeda-empty-zip",
+      "arm": "cline",
+      "categories": {},
+      "observations": [],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "3-valibot-message-prefix-cline",
+      "task": "valibot-message-prefix",
+      "arm": "cline",
+      "categories": {
+        "native_command_failed": 1
+      },
+      "observations": [
+        {
+          "index": 8,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "find library/src/methods -maxdepth 2 -type f | sort | grep -E 'safeParse|parser|parse' && find library/src/utils -maxdepth 2 -type f | sort | grep -E 'issue|message'"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "3-valibot-message-prefix-reference",
+      "task": "valibot-message-prefix",
+      "arm": "reference",
+      "categories": {
+        "executed_command_failed": 1,
+        "patch_preimage_or_format": 1
+      },
+      "observations": [
+        {
+          "index": 53,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "library/src/types/config.ts",
+                "patch": "*** Begin Patch\n*** Update File: library/src/types/config.ts\n@@\n export interface Config<TIssue extends BaseIssue<unknown>> {\n+  /**\n+   * The message prefix.\n+   */\n+  readonly messagePrefix?: string | undefined;\n   /**\n    * The selected language.\n    */\n*** Update File: library/src/storages/globalConfig/globalConfig.ts\n@@\n   return {\n+    ...(config?.messagePrefix !== undefined || store?.messagePrefix !== undefined\n+      ? { messagePrefix: config?.messagePrefix ?? store?.messagePrefix }\n+      : {}),\n     lang: config?.lang ?? store?.lang,\n     message: config?.message,\n*** Update File: library/src/utils/_addIssue/_addIssue.ts\n@@\n   if (message !== undefined) {\n@@\n           : message;\n   }\n+\n+  // Add the message prefix after evaluating the custom message\n+  if (config.messagePrefix !== undefined) {\n+    issue.message = `${config.messagePrefix}${issue.message}`;\n+  }\n \n   // If context is a schema, set typed to `false`\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in library/src/utils/_addIssue/_addIssue.ts.\nClosest current lines 122-126:\n  }\n\n  // If context is a schema, set typed to `false`\n  if (isSchema) {\n    dataset.typed = false;",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbrjpkh"
+          }
+        },
+        {
+          "index": 60,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 2
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "3-valibot-message-prefix-compiler",
+      "task": "valibot-message-prefix",
+      "arm": "compiler",
+      "categories": {
+        "command_failure_reported_in_message": 1
+      },
+      "observations": [
+        {
+          "index": 53,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types",
+            "packagePath": "."
+          },
+          "reportedExitCode": 2
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "3-valibot-hide-input-reference",
+      "task": "valibot-hide-input",
+      "arm": "reference",
+      "categories": {
+        "edit_observation_guard": 1,
+        "executed_command_failed": 2
+      },
+      "observations": [
+        {
+          "index": 58,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 2
+        },
+        {
+          "index": 59,
+          "category": "edit_observation_guard",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "s229",
+                "patch": "*** Begin Patch\n*** Update File: library/src/storages/globalConfig/globalConfig.ts\n@@\n-  const result: Config<TIssue> = {\n+  const result = {\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Read s229 before replacing unobserved source.",
+            "recovery": "No operations in this batch were applied. Every operation uses the original source, not earlier operations in the same batch. {\"target\":\"s229\",\"path\":\"library/src/storages/globalConfig/globalConfig.ts\",\"declarationLines\":[28,44],\"nextRead\":{\"target\":\"library/src/storages/globalConfig/globalConfig.ts\",\"view\":\"range\",\"range\":{\"startLine\":25,\"endLine\":46}},\"routes\":\"Read the current text before retrying. For changes inside the declaration, read the symbol then use a symbol action or a focused alias patch. For JSDoc, export wrappers or context outside it, read those lines and use a file patch. For dependent edits, commit separately and read again. These locations are hints, not observed edit coverage; refresh after source changes.\"}",
+            "diagnosticId": "edit-mvbrop5v"
+          }
+        },
+        {
+          "index": 62,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 2
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "3-valibot-hide-input-compiler",
+      "task": "valibot-hide-input",
+      "arm": "compiler",
+      "categories": {
+        "executed_command_failed": 2,
+        "invalid_final_syntax": 1,
+        "missing_path": 2
+      },
+      "observations": [
+        {
+          "index": 10,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/parseAsync/parseAsync.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/3-valibot-hide-input-compiler/workspace/library/src/methods/parseAsync/parseAsync.ts'"
+        },
+        {
+          "index": 41,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/types/config.test-d.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/3-valibot-hide-input-compiler/workspace/library/src/types/config.test-d.ts'"
+        },
+        {
+          "index": 59,
+          "category": "invalid_final_syntax",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s51",
+                "action": "replace_body",
+                "content": "{\n  /**\n   * The selected language.\n   */\n  readonly lang?: string | undefined;\n  /**\n   * Whether issue inputs should be hidden.\n   */\n  readonly hideInput?: boolean | undefined;\n  /**\n   * The error message.\n   */\n  readonly message?: ErrorMessage<TIssue> | undefined;\n  /**\n   * Whether it should be aborted early.\n   */\n  readonly abortEarly?: boolean | undefined;\n  /**\n   * Whether a pipe should be aborted early.\n   */\n  readonly abortPipeEarly?: boolean | undefined;\n}"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "code",
+            "message": "Final parse failed for library/src/storages/globalConfig/globalConfig.ts; no files were written. 13:12 ',' expected.",
+            "recovery": "Correct the final syntax and submit one new atomic batch."
+          }
+        },
+        {
+          "index": 69,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test",
+            "packagePath": "library",
+            "args": [
+              "--run"
+            ]
+          },
+          "command": "npm run test -- --run",
+          "exitCode": 127
+        },
+        {
+          "index": 74,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "valibot:test",
+            "args": [
+              "--run"
+            ]
+          },
+          "command": "npm run test -- --run",
+          "exitCode": 127
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "3-valibot-hide-input-cline",
+      "task": "valibot-hide-input",
+      "arm": "cline",
+      "categories": {
+        "native_command_failed": 4
+      },
+      "observations": [
+        {
+          "index": 23,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm --prefix library exec tsc --noEmit"
+        },
+        {
+          "index": 26,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm --prefix library exec prettier -- --check src/types/config.ts src/storages/globalConfig/globalConfig.ts src/utils/_addIssue/_addIssue.ts"
+        },
+        {
+          "index": 27,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "./node_modules/.bin/tsc --noEmit -p /workspace/Blame/.blame/research/confirmation-f42/campaign/3-valibot-hide-input-cline/workspace/library/tsconfig.json"
+        },
+        {
+          "index": 28,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "./node_modules/.bin/prettier --check /workspace/Blame/.blame/research/confirmation-f42/campaign/3-valibot-hide-input-cline/workspace/library/src/types/config.ts /workspace/Blame/.blame/research/confir ... [command truncated: 243 more chars; full command is in the tool call input]"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "3-valibot-fallback-when-compiler",
+      "task": "valibot-fallback-when",
+      "arm": "compiler",
+      "categories": {
+        "command_failure_reported_in_message": 1,
+        "missing_path": 2
+      },
+      "observations": [
+        {
+          "index": 55,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/optional/optional.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/3-valibot-fallback-when-compiler/workspace/library/src/methods/optional/optional.ts'"
+        },
+        {
+          "index": 56,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/optional/optionalAsync.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/3-valibot-fallback-when-compiler/workspace/library/src/methods/optional/optionalAsync.ts'"
+        },
+        {
+          "index": 64,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npx prettier --check library/src/methods/fallback/fallback.ts library/src/methods/fallback/fallbackAsync.ts",
+            "cwd": "/workspace/Blame/.blame/research/confirmation-f42/campaign/3-valibot-fallback-when-compiler/workspace"
+          },
+          "reportedExitCode": 1
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "3-valibot-fallback-when-cline",
+      "task": "valibot-fallback-when",
+      "arm": "cline",
+      "categories": {
+        "native_command_failed": 1
+      },
+      "observations": [
+        {
+          "index": 15,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm exec -- vitest run library/src/methods/fallback/fallback.test.ts library/src/methods/fallback/fallbackAsync.test.ts --config library/vitest.config.ts"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "3-valibot-fallback-when-reference",
+      "task": "valibot-fallback-when",
+      "arm": "reference",
+      "categories": {
+        "patch_preimage_or_format": 1
+      },
+      "observations": [
+        {
+          "index": 48,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "s33",
+                "patch": "*** Begin Patch\n*** Update File: library/src/methods/fallback/fallback.ts\n@@\n export type Fallback<\n@@\n       dataset?: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n       config?: Config<InferIssue<TSchema>>\n     ) => MaybeReadonly<InferOutput<TSchema>>);\n@@\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate to determine whether the fallback should be used.\n@@\n export function fallback<\n   const TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,\n   const TFallback extends Fallback<TSchema>,\n >(\n   schema: TSchema,\n-  fallback: TFallback\n+  fallback: TFallback,\n+  predicate?: (\n+    dataset: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n+    config: Config<InferIssue<TSchema>>\n+  ) => boolean\n ): SchemaWithFallback<TSchema, TFallback> {\n@@\n     },\n     '~run'(dataset, config) {\n       const outputDataset = schema['~run'](dataset, config);\n-      return outputDataset.issues\n-        ? { typed: true, value: getFallback(this, outputDataset, config) }\n-        : outputDataset;\n+      if (!outputDataset.issues) {\n+        return outputDataset;\n+      }\n+      if (predicate && !predicate(outputDataset, config)) {\n+        return outputDataset;\n+      }\n+      return { typed: true, value: getFallback(this, outputDataset, config) };\n     },\n   };\n }\n*** Update File: library/src/methods/fallback/fallbackAsync.ts\n@@\n  * @param schema The schema to catch.\n  * @param fallback The fallback value.\n+ * @param predicate The predicate to determine whether the fallback should be used.\n@@\n export function fallbackAsync<\n@@\n >(\n   schema: TSchema,\n-  fallback: TFallback\n+  fallback: TFallback,\n+  predicate?: (\n+    dataset: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,\n+    config: Config<InferIssue<TSchema>>\n+  ) => MaybePromise<boolean>\n ): SchemaWithFallbackAsync<TSchema, TFallback> {\n@@\n     },\n     async '~run'(dataset, config) {\n       const outputDataset = await schema['~run'](dataset, config);\n-      return outputDataset.issues\n-        ? {\n-            typed: true,\n-            value: await getFallback(this, outputDataset, config),\n-          }\n-        : outputDataset;\n+      if (!outputDataset.issues) {\n+        return outputDataset;\n+      }\n+      if (predicate && !(await predicate(outputDataset, config))) {\n+        return outputDataset;\n+      }\n+      return {\n+        typed: true,\n+        value: await getFallback(this, outputDataset, config),\n+      };\n     },\n   };\n }\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Scoped patch header must match the symbol's file and contain one Update File.",
+            "recovery": "No operations in this batch were applied. Every operation uses the original source, not earlier operations in the same batch. {\"target\":\"s33\",\"path\":\"library/src/methods/fallback/fallback.ts\",\"patchCorrection\":{\"reason\":\"multiple_files_for_symbol\",\"expectedPath\":\"library/src/methods/fallback/fallback.ts\",\"patchPaths\":[\"library/src/methods/fallback/fallback.ts\",\"library/src/methods/fallback/fallbackAsync.ts\"],\"patchPathCount\":2,\"symbolRoute\":\"Keep target and use one operation per observed symbol, each with one matching Update File. Split unrelated file changes into separate operations in the same atomic batch.\",\"fileRoute\":\"Review and read all intended file changes first. For a deliberate file patch, omit target; explicit file headers select the files. This changes the scope of your request and is never done automatically. Exact preimages and atomic batch guards still apply.\"},\"declarationLines\":[16,23],\"nextRead\":{\"target\":\"library/src/methods/fallback/fallback.ts\",\"view\":\"range\",\"range\":{\"startLine\":13,\"endLine\":25}},\"routes\":\"Read the current text before retrying. For changes inside the declaration, read the symbol then use a symbol action or a focused alias patch. For JSDoc, export wrappers or context outside it, read those lines and use a file patch. For dependent edits, commit separately and read again. These locations are hints, not observed edit coverage; refresh after source changes.\"}",
+            "diagnosticId": "edit-mvbs3om4"
+          }
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "3-remeda-stable-sum-cline",
+      "task": "remeda-stable-sum",
+      "arm": "cline",
+      "categories": {
+        "native_command_failed": 2
+      },
+      "observations": [
+        {
+          "index": 13,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npx prettier --write packages/remeda/src/internal/numberAccumulator.ts packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/mean.ts packages/remeda/src/meanBy.ts && git diff --c ... [command truncated: 183 more chars; full command is in the tool call input]"
+        },
+        {
+          "index": 20,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm run test:study:types"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "3-remeda-stable-sum-reference",
+      "task": "remeda-stable-sum",
+      "arm": "reference",
+      "categories": {
+        "command_failure_reported_in_message": 2,
+        "edit_observation_guard": 1,
+        "missing_path": 1,
+        "patch_preimage_or_format": 5
+      },
+      "observations": [
+        {
+          "index": 21,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/remeda/src/variance.ts"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/3-remeda-stable-sum-reference/workspace/packages/remeda/src/variance.ts'"
+        },
+        {
+          "index": 30,
+          "category": "edit_observation_guard",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/internal/sumNumbers.ts",
+                "patch": "import type { IterableContainer } from \"../internal/types/IterableContainer\";\n\nexport function sumNumbers(values: Iterable<number>): number {\n  let sum = 0;\n  let compensation = 0;\n  const iterator = values[Symbol.iterator]();\n\n  while (true) {\n    const next = iterator.next();\n    if (next.done) {\n      return sum + compensation;\n    }\n\n    const value = next.value;\n    const nextSum = sum + value;\n\n    // Once an operation is non-finite, continue with regular arithmetic so\n    // NaN and infinities retain their usual IEEE-754 behavior.\n    if (!Number.isFinite(nextSum)) {\n      let result = nextSum;\n      for (const remaining of { [Symbol.iterator]: () => iterator }) {\n        result += remaining;\n      }\n      return result;\n    }\n\n    if (Math.abs(sum) >= Math.abs(value)) {\n      compensation += sum - nextSum + value;\n    } else {\n      compensation += value - nextSum + sum;\n    }\n    sum = nextSum;\n  }\n}\n\nexport function sumNumbersBy<T extends IterableContainer>(\n  data: T,\n  callbackfn: (value: T[number], index: number, data: T) => number,\n): number {\n  return sumNumbers(\n    (function* () {\n      for (const [index, value] of data.entries()) {\n        yield callbackfn(value, index, data);\n      }\n    })(),\n  );\n}\n",
+                "target": "packages/remeda/src/internal/sumNumbers.ts"
+              },
+              {
+                "kind": "symbol",
+                "target": "s51",
+                "action": "replace_body",
+                "content": "{\n  if (typeof data[0] === \"bigint\") {\n    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- The rule differentiates 0 and 0n :(\n    let out = 0n;\n    for (const value of data) {\n      // @ts-expect-error [ts2365] -- Typescript can't infer that all elements will be a number of the same type.\n      // eslint-disable-next-line @typescript-eslint/restrict-plus-operands\n      out += value;\n    }\n    return out;\n  }\n\n  return sumNumbers(data as Iterable<number>) as T[number];\n}"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "A scoped patch requires an observed symbol alias.",
+            "diagnosticId": "edit-mvbsj81l"
+          }
+        },
+        {
+          "index": 39,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/internal/sumNumbers.ts",
+                "patch": "*** Begin Patch\n-import type { Iterable } from \"../internal/types/IterableContainer\";\n-\n export function sumNumbers(values: Iterable<number>): number {\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch contains no file operation.",
+            "diagnosticId": "edit-mvbsk2qh"
+          }
+        },
+        {
+          "index": 40,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/sum.ts",
+                "patch": "*** Begin Patch\n import type { IterableContainer } from \"./internal/types/IterableContainer\";\n+import { sumNumbers } from \"./internal/sumNumbers\";\n import { purry } from \"./purry\";\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch contains no file operation.",
+            "diagnosticId": "edit-mvbsk2re"
+          }
+        },
+        {
+          "index": 41,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/sumBy.ts",
+                "patch": "*** Begin Patch\n import { purry } from \"./purry\";\n import type { IterableContainer } from \"./internal/types/IterableContainer\";\n+import { sumNumbers } from \"./internal/sumNumbers\";\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch contains no file operation.",
+            "diagnosticId": "edit-mvbsk2sc"
+          }
+        },
+        {
+          "index": 42,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/mean.ts",
+                "patch": "*** Begin Patch\n import type { IterableContainer } from \"./internal/types/IterableContainer\";\n+import { sumNumbers } from \"./internal/sumNumbers\";\n import { purry } from \"./purry\";\n-import { sum } from \"./sum\";\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch contains no file operation.",
+            "diagnosticId": "edit-mvbsk2ta"
+          }
+        },
+        {
+          "index": 43,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/meanBy.ts",
+                "patch": "*** Begin Patch\n+import { sumNumbers } from \"./internal/sumNumbers\";\n import { purry } from \"./purry\";\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch contains no file operation.",
+            "diagnosticId": "edit-mvbsk2ua"
+          }
+        },
+        {
+          "index": 47,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npx prettier --check packages/remeda/src/internal/sumNumbers.ts packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/mean.ts packages/remeda/src/meanBy.ts"
+          },
+          "reportedExitCode": 1
+        },
+        {
+          "index": 55,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node --import tsx --input-type=module - <<'NODE'\nimport { mean, meanBy, sum, sumBy } from './packages/remeda/src/index.ts';\nconst values = [1e16, 1, -1e16];\nconst permutations = values.flatMap((a, i) => values.flatMap((b, j) => values.filter((_, k) => k !== i && k !== j).map(c => [a, b, c])));\nfor (const order of permutations) {\n  if (sum(order) !== 1 || mean(order) !== 1 / 3 || sumBy(order, x => x) !== 1 || meanBy(order, x => x) !== 1 / 3) throw new Error(String(order));\n}\nconst repeated = [1e16, ...Array.from({ length: 1000 }, () => 1), -1e16];\nif (sum(repeated) !== 1000 || mean(repeated) !== 1000 / repeated.length) throw new Error('repeated contributions');\nconsole.log('all cancellation checks passed');\nNODE"
+          },
+          "reportedExitCode": 1
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "3-remeda-stable-sum-compiler",
+      "task": "remeda-stable-sum",
+      "arm": "compiler",
+      "categories": {
+        "command_failure_reported_in_message": 2
+      },
+      "observations": [
+        {
+          "index": 27,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "reportedExitCode": 2
+        },
+        {
+          "index": 28,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "remeda:check"
+          },
+          "reportedExitCode": 2
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "3-remeda-null-keys-reference",
+      "task": "remeda-null-keys",
+      "arm": "reference",
+      "categories": {
+        "patch_preimage_or_format": 2
+      },
+      "observations": [
+        {
+          "index": 37,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/groupBy.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/groupBy.ts\n@@\n- * Unlike the built in `Object.groupBy` this function also allows the callback to\n- * return `undefined` in order to exclude the item from being added to any group.\n+ * Unlike the built in `Object.groupBy` this function also allows the callback to\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * It should return a value indicating the group of the current element, or\n- * `undefined` when the item should be excluded from any group.\n+ * It should return a value indicating the group of the current element, or\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n- * Unlike the built in `Object.groupBy` this function also allows the callback to\n- * return `undefined` in order to exclude the item from being added to any group.\n+ * Unlike the built in `Object.groupBy` this function also allows the callback to\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * It should return a value indicating the group of the current element, or\n- * `undefined` when the item should be excluded from any group.\n+ * It should return a value indicating the group of the current element, or\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-    if (key !== undefined) {\n+    if (key !== undefined && key !== null) {\n*** Update File: packages/remeda/src/countBy.ts\n@@\n  * Categorize and count elements in an array using a defined callback function.\n  * The callback function is applied to each element in the array to determine\n- * its category and then counts how many elements fall into each category.\n+ * its category and then counts how many elements fall into each category. A\n+ * `null` or `undefined` category excludes the element from the result.\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n  * Categorize and count elements in an array using a defined callback function.\n  * The callback function is applied to each element in the array to determine\n- * its category and then counts how many elements fall into each category.\n+ * its category and then counts how many elements fall into each category. A\n+ * `null` or `undefined` category excludes the element from the result.\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n-  ) => PropertyKey | undefined,\n+  ) => PropertyKey | null | undefined,\n@@\n-    if (category !== undefined) {\n+    if (category !== undefined && category !== null) {\n*** Update File: packages/remeda/src/indexBy.ts\n@@\n  * @param data - The array.\n- * @param mapper - The indexing function.\n+ * @param mapper - The indexing function. A `null` or `undefined` key excludes\n+ * the item from the result.\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n  * @param mapper - The indexing function.\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n function indexByImplementation<T, K extends PropertyKey>(\n   data: ReadonlyArray<T>,\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n ): BoundedPartial<Record<K, T>> {\n-  const out: Partial<Record<K, T>> = {};\n+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Using Object.create(null) prevents special keys such as `__proto__` from changing the result's prototype while it is being built.\n+  const out: Partial<Record<K, T>> = Object.create(null);\n@@\n-    out[key] = item;\n+    if (key !== undefined && key !== null) {\n+      out[key] = item;\n+    }\n   }\n \n+  Object.setPrototypeOf(out, Object.prototype);\n+\n   return out as BoundedPartial<Record<K, T>>;\n }\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in packages/remeda/src/groupBy.ts.\nClosest current lines 7-11:\n * returned by a provided callback function. The returned object has separate\n * properties for each group, containing arrays with the elements in the group.\n * Unlike the built in `Object.groupBy` this function also allows the callback to\n * return `undefined` in order to exclude the item from being added to any\n * group.",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbsv4pb"
+          }
+        },
+        {
+          "index": 49,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/groupBy.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/groupBy.ts\n@@\n- * return `null` or `undefined` in order to exclude the item from being added to\n- * any\n- * group.\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * return `null` or `undefined` in order to exclude the item from being added to\n- * any\n- * group.\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n*** Update File: packages/remeda/src/countBy.ts\n@@\n  * The callback function is applied to each element in the array to determine\n- * its category and then counts how many elements fall into each category.\n+ * its category and then counts how many elements fall into each category. A\n+ * `null` or `undefined` category excludes the element from the result.\n@@\n  * The callback function is applied to each element in the array to determine\n- * its category and then counts how many elements fall into each category.\n+ * its category and then counts how many elements fall into each category. A\n+ * `null` or `undefined` category excludes the element from the result.\n*** Update File: packages/remeda/src/indexBy.ts\n@@\n- * @param mapper - The indexing function.\n+ * @param mapper - The indexing function. A `null` or `undefined` key excludes\n+ * the item from the result.\n@@\n- * @param mapper - The indexing function.\n+ * @param mapper - The indexing function. A `null` or `undefined` key excludes\n+ * the item from the result.\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in packages/remeda/src/groupBy.ts.\nClosest current lines 8-12:\n * properties for each group, containing arrays with the elements in the group.\n * Unlike the built in `Object.groupBy` this function also allows the callback to\n * return `null` or `undefined` in order to exclude the item from being added to\n * any group.\n *",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbsvxna"
+          }
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "3-remeda-null-keys-compiler",
+      "task": "remeda-null-keys",
+      "arm": "compiler",
+      "categories": {
+        "patch_preimage_or_format": 1
+      },
+      "observations": [
+        {
+          "index": 21,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/groupBy.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/groupBy.ts\n@@\n- * returned by a provided callback function. The returned object has separate\n- * properties for each group, containing arrays with the elements in the group.\n- * Unlike the built in `Object.groupBy` this function also allows the callback to\n- * return `undefined` in order to exclude the item from being added to any group.\n+ * returned by a provided callback function. The returned object has separate\n+ * properties for each group, containing arrays with the elements in the group.\n+ * Unlike the built in `Object.groupBy` this function also allows the callback to\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * It should return a value indicating the group of the current element, or\n- * `undefined` when the item should be excluded from any group.\n+ * It should return a value indicating the group of the current element, or\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n- * returned by a provided callback function. The returned object has separate\n- * properties for each group, containing arrays with the elements in the group.\n- * Unlike the built in `Object.groupBy` this function also allows the callback to\n- * return `undefined` in order to exclude the item from being added to any group.\n+ * returned by a provided callback function. The returned object has separate\n+ * properties for each group, containing arrays with the elements in the group.\n+ * Unlike the built in `Object.groupBy` this function also allows the callback to\n+ * return `null` or `undefined` in order to exclude the item from being added to\n+ * any group.\n@@\n- * It should return a value indicating the group of the current element, or\n- * `undefined` when the item should be excluded from any group.\n+ * It should return a value indicating the group of the current element, or\n+ * `null` or `undefined` when the item should be excluded from any group.\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-  ) => Key | undefined,\n+  ) => Key | null | undefined,\n@@\n-    if (key !== undefined) {\n+    if (key !== null && key !== undefined) {\n*** Update File: packages/remeda/src/countBy.ts\n@@\n  * Categorize and count elements in an array using a defined callback function.\n  * The callback function is applied to each element in the array to determine\n  * its category and then counts how many elements fall into each category.\n+ * Returning `null` or `undefined` excludes the element from the result.\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n  * Categorize and count elements in an array using a defined callback function.\n  * The callback function is applied to each element in the array to determine\n  * its category and then counts how many elements fall into each category.\n+ * Returning `null` or `undefined` excludes the element from the result.\n@@\n-  ) => K | undefined,\n+  ) => K | null | undefined,\n@@\n-    if (category !== undefined) {\n+    if (category !== null && category !== undefined) {\n*** Update File: packages/remeda/src/indexBy.ts\n@@\n  * @param data - The array.\n  * @param mapper - The indexing function.\n+ * The mapper may return `null` or `undefined` to exclude an item from the\n+ * result.\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n  * @param mapper - The indexing function.\n+ * The mapper may return `null` or `undefined` to exclude an item from the\n+ * result.\n@@\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n@@\n function indexByImplementation<T, K extends PropertyKey>(\n   data: ReadonlyArray<T>,\n-  mapper: (item: T, index: number, data: ReadonlyArray<T>) => K,\n+  mapper: (\n+    item: T,\n+    index: number,\n+    data: ReadonlyArray<T>,\n+  ) => K | null | undefined,\n ): BoundedPartial<Record<K, T>> {\n@@\n-    out[key] = item;\n+    if (key !== null && key !== undefined) {\n+      // defineProperty creates an own data property even for `__proto__`, so\n+      // indexing cannot alter the result's prototype. Re-defining the property\n+      // also preserves the last-write-wins behavior for duplicate keys.\n+      Object.defineProperty(out, key, {\n+        configurable: true,\n+        enumerable: true,\n+        value: item,\n+        writable: true,\n+      });\n+    }\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in packages/remeda/src/groupBy.ts.\nClosest current lines 7-11:\n * returned by a provided callback function. The returned object has separate\n * properties for each group, containing arrays with the elements in the group.\n * Unlike the built in `Object.groupBy` this function also allows the callback to\n * return `undefined` in order to exclude the item from being added to any\n * group.",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbsx5cc"
+          }
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "3-remeda-null-keys-cline",
+      "task": "remeda-null-keys",
+      "arm": "cline",
+      "categories": {
+        "native_command_failed": 2
+      },
+      "observations": [
+        {
+          "index": 13,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npx prettier --check packages/remeda/src/groupBy.ts packages/remeda/src/countBy.ts packages/remeda/src/indexBy.ts"
+        },
+        {
+          "index": 16,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm run test:runtime --workspace remeda -- --run packages/remeda/src/groupBy.test.ts packages/remeda/src/countBy.test.ts packages/remeda/src/indexBy.test.ts"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "3-remeda-empty-zip-compiler",
+      "task": "remeda-empty-zip",
+      "arm": "compiler",
+      "categories": {
+        "executed_command_failed": 1,
+        "other_edit_refusal": 1,
+        "patch_preimage_or_format": 3,
+        "read_guard": 2
+      },
+      "observations": [
+        {
+          "index": 29,
+          "category": "read_guard",
+          "tool": "read_code",
+          "input": {
+            "cmd": "sed -n '1,330p' packages/remeda/src/pipe.ts | head -n 260"
+          },
+          "message": "target: Invalid input: expected string, received undefined; input: Unrecognized key: \"cmd\""
+        },
+        {
+          "index": 34,
+          "category": "read_guard",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/remeda/src/index.ts",
+            "range": {
+              "startLine": 600,
+              "endLine": 660
+            }
+          },
+          "message": "Range starts after the end of the file."
+        },
+        {
+          "index": 42,
+          "category": "other_edit_refusal",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "s2",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/zip.test.ts\n@@\n   test(\"evaluates lazily\", () => {\n     const mockFn = vi.fn<(x: number) => number>();\n     pipe([1, 2, 3], map(mockFn), zip([4, 5, 6]), first());\n \n     expect(mockFn).toHaveBeenCalledTimes(1);\n   });\n+\n+  test(\"returns no pairs when the second input is empty in a lazy pipeline\", () => {\n+    expect(pipe([1, 2], map((value) => value), zip([]), first())).toStrictEqual(\n+      undefined,\n+    );\n+    expect(pipe([1, 2], map((value) => value), zip([]))).toStrictEqual([]);\n+  });\n });\n*** Update File: packages/remeda/src/zipWith.test.ts\n@@\n import { describe, expect, test } from \"vitest\";\n+import { filter } from \"./filter\";\n+import { map } from \"./map\";\n import { pipe } from \"./pipe\";\n+import { take } from \"./take\";\n import { zipWith } from \"./zipWith\";\n@@\n   test(\"should truncate to shorter first\", () => {\n     expect(\n       zipWith([\"1\", \"2\"], [\"a\", \"b\", \"c\"], (a, b) => `${a}${b}`),\n     ).toStrictEqual([\"1a\", \"2b\"]);\n   });\n+\n+  test(\"does not invoke the zipper when either input is empty\", () => {\n+    const zipper = vi.fn(() => \"unexpected\");\n+\n+    expect(zipWith([], [\"a\"], zipper)).toStrictEqual([]);\n+    expect(zipWith([\"1\"], [], zipper)).toStrictEqual([]);\n+    expect(zipWith([], zipper)([\"a\"])).toStrictEqual([]);\n+    expect(zipWith([\"a\"], zipper)([])).toStrictEqual([]);\n+    expect(zipWith(zipper)([], [\"a\"])).toStrictEqual([]);\n+    expect(zipWith(zipper)([\"a\"], [])).toStrictEqual([]);\n+    expect(zipper).not.toHaveBeenCalled();\n+  });\n@@\n   test(\"should truncate to shorter first\", () => {\n@@\n     ).toStrictEqual([\"1a\", \"2b\"]);\n   });\n+\n+  test(\"does not invoke the zipper for an empty input in a lazy pipeline\", () => {\n+    const zipper = vi.fn(() => \"unexpected\");\n+\n+    expect(\n+      pipe(\n+        [\"1\", \"2\"],\n+        map((value) => value),\n+        filter(() => true),\n+        zipWith([], zipper),\n+        take(2),\n+      ),\n+    ).toStrictEqual([]);\n+    expect(zipper).not.toHaveBeenCalled();\n+  });\n });\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "s2 is a path target, not a symbol.",
+            "diagnosticId": "edit-mvbt17os"
+          }
+        },
+        {
+          "index": 43,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/zip.test.ts\n@@\n   test(\"evaluates lazily\", () => {\n     const mockFn = vi.fn<(x: number) => number>();\n     pipe([1, 2, 3], map(mockFn), zip([4, 5, 6]), first());\n \n     expect(mockFn).toHaveBeenCalledTimes(1);\n   });\n+\n+  test(\"returns no pairs when the second input is empty in a lazy pipeline\", () => {\n+    expect(pipe([1, 2], map((value) => value), zip([]))).toStrictEqual([]);\n+  });\n });\n*** Update File: packages/remeda/src/zipWith.test.ts\n@@\n-import { describe, expect, test } from \"vitest\";\n+import { describe, expect, test, vi } from \"vitest\";\n+import { filter } from \"./filter\";\n+import { map } from \"./map\";\n import { pipe } from \"./pipe\";\n+import { take } from \"./take\";\n import { zipWith } from \"./zipWith\";\n@@\n   test(\"should truncate to shorter first\", () => {\n     expect(\n       zipWith([\"1\", \"2\"], [\"a\", \"b\", \"c\"], (a, b) => `${a}${b}`),\n     ).toStrictEqual([\"1a\", \"2b\"]);\n   });\n+\n+  test(\"does not invoke the zipper when either input is empty\", () => {\n+    const zipper = vi.fn(() => \"unexpected\");\n+\n+    expect(zipWith([], [\"a\"], zipper)).toStrictEqual([]);\n+    expect(zipWith([\"1\"], [], zipper)).toStrictEqual([]);\n+    expect(zipWith([], zipper)([\"a\"])).toStrictEqual([]);\n+    expect(zipWith([\"a\"], zipper)([])).toStrictEqual([]);\n+    expect(zipWith(zipper)([], [\"a\"])).toStrictEqual([]);\n+    expect(zipWith(zipper)([\"a\"], [])).toStrictEqual([]);\n+    expect(zipper).not.toHaveBeenCalled();\n+  });\n@@\n   test(\"should truncate to shorter first\", () => {\n@@\n     ).toStrictEqual([\"1a\", \"2b\"]);\n   });\n+\n+  test(\"does not invoke the zipper for an empty input in a lazy pipeline\", () => {\n+    const zipper = vi.fn(() => \"unexpected\");\n+\n+    expect(\n+      pipe(\n+        [\"1\", \"2\"],\n+        map((value) => value),\n+        filter(() => true),\n+        zipWith([], zipper),\n+        take(2),\n+      ),\n+    ).toStrictEqual([]);\n+    expect(zipper).not.toHaveBeenCalled();\n+  });\n });\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context is ambiguous in packages/remeda/src/zipWith.test.ts at lines 50, 79.\nCandidate at line 50, context 47-53:\n        [\"1\", \"2\"],\n        [\"a\", \"b\", \"c\"],\n      ),\n    ).toStrictEqual([\"1a\", \"2b\"]);\n  });\n});\n\nUnique preceding anchor at line 39:\n@@ [\"a\", \"b\"],\nCandidate at line 79, context 76-82:\n        [\"1\", \"2\"],\n        zipWith([\"a\", \"b\", \"c\"], (a, b) => `${a}${b}`),\n      ),\n    ).toStrictEqual([\"1a\", \"2b\"]);\n  });\n});\n\nUnique preceding anchor at line 68:\n@@ zipWith([\"a\", \"b\"], (a, b) => `${a}${b}`),\nInclude the distinguishing context in the hunk or use a unique @@ anchor.",
+            "recovery": "Do not resend the same patch. Read the affected outline and target its symbol or selector alias, or add one short unique context line.",
+            "diagnosticId": "edit-mvbt1by0"
+          }
+        },
+        {
+          "index": 50,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/zip.test.ts\n@@\n   test(\"evaluates lazily\", () => {\n     const mockFn = vi.fn<(x: number) => number>();\n     pipe([1, 2, 3], map(mockFn), zip([4, 5, 6]), first());\n \n     expect(mockFn).toHaveBeenCalledTimes(1);\n   });\n+\n+  test(\"returns no pairs when the second input is empty in a lazy pipeline\", () => {\n+    expect(pipe([1, 2], map((value) => value), zip([]))).toStrictEqual([]);\n+  });\n \n });\n*** Update File: packages/remeda/src/zipWith.test.ts\n@@\n-import { describe, expect, test } from \"vitest\";\n+import { describe, expect, test, vi } from \"vitest\";\n+import { filter } from \"./filter\";\n+import { map } from \"./map\";\n import { pipe } from \"./pipe\";\n+import { take } from \"./take\";\n import { zipWith } from \"./zipWith\";\n@@\n   test(\"should truncate to shorter first\", () => {\n     expect(\n       zipWith([\"1\", \"2\"], [\"a\", \"b\", \"c\"], (a, b) => `${a}${b}`),\n     ).toStrictEqual([\"1a\", \"2b\"]);\n   });\n+\n+  test(\"does not invoke the zipper when either input is empty\", () => {\n+    const zipper = vi.fn(() => \"unexpected\");\n+\n+    expect(zipWith([], [\"a\"], zipper)).toStrictEqual([]);\n+    expect(zipWith([\"1\"], [], zipper)).toStrictEqual([]);\n+    expect(zipWith([], zipper)([\"a\"])).toStrictEqual([]);\n+    expect(zipWith([\"a\"], zipper)([])).toStrictEqual([]);\n+    expect(zipWith(zipper)([], [\"a\"])).toStrictEqual([]);\n+    expect(zipWith(zipper)([\"a\"], [])).toStrictEqual([]);\n+    expect(zipper).not.toHaveBeenCalled();\n+  });\n@@\n   test(\"should truncate to shorter first\", () => {\n@@\n     ).toStrictEqual([\"1a\", \"2b\"]);\n   });\n+\n+  test(\"does not invoke the zipper for an empty input in a lazy pipeline\", () => {\n+    const zipper = vi.fn(() => \"unexpected\");\n+\n+    expect(\n+      pipe(\n+        [\"1\", \"2\"],\n+        map((value) => value),\n+        filter(() => true),\n+        zipWith([], zipper),\n+        take(2),\n+      ),\n+    ).toStrictEqual([]);\n+    expect(zipper).not.toHaveBeenCalled();\n+  });\n });\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in packages/remeda/src/zip.test.ts.\nClosest current lines 54-58:\n  test(\"evaluates lazily\", () => {\n    const mockFn = vi.fn<(x: number) => number>();\n    pipe([1, 2, 3], map(mockFn), zip([4, 5, 6]), first());\n\n    expect(mockFn).toHaveBeenCalledTimes(1);",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbt1nnf"
+          }
+        },
+        {
+          "index": 54,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/remeda/src/zipWith.test.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/zipWith.test.ts\n@@\n-import { describe, expect, test } from \"vitest\";\n+import { describe, expect, test, vi } from \"vitest\";\n+import { filter } from \"./filter\";\n+import { map } from \"./map\";\n import { pipe } from \"./pipe\";\n+import { take } from \"./take\";\n import { zipWith } from \"./zipWith\";\n@@\n   test(\"should truncate to shorter first\", () => {\n     expect(\n       zipWith([\"1\", \"2\"], [\"a\", \"b\", \"c\"], (a, b) => `${a}${b}`),\n     ).toStrictEqual([\"1a\", \"2b\"]);\n   });\n+\n+  test(\"does not invoke the zipper when either input is empty\", () => {\n+    const zipper = vi.fn(() => \"unexpected\");\n+\n+    expect(zipWith([], [\"a\"], zipper)).toStrictEqual([]);\n+    expect(zipWith([\"1\"], [], zipper)).toStrictEqual([]);\n+    expect(zipWith([], zipper)([\"a\"])).toStrictEqual([]);\n+    expect(zipWith([\"a\"], zipper)([])).toStrictEqual([]);\n+    expect(zipWith(zipper)([], [\"a\"])).toStrictEqual([]);\n+    expect(zipWith(zipper)([\"a\"], [])).toStrictEqual([]);\n+    expect(zipper).not.toHaveBeenCalled();\n+  });\n@@\n   test(\"should truncate to shorter first\", () => {\n@@\n     ).toStrictEqual([\"1a\", \"2b\"]);\n   });\n+\n+  test(\"does not invoke the zipper for an empty input in a lazy pipeline\", () => {\n+    const zipper = vi.fn(() => \"unexpected\");\n+\n+    expect(\n+      pipe(\n+        [\"1\", \"2\"],\n+        map((value) => value),\n+        filter(() => true),\n+        zipWith([], zipper),\n+        take(2),\n+      ),\n+    ).toStrictEqual([]);\n+    expect(zipper).not.toHaveBeenCalled();\n+  });\n });\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context is ambiguous in packages/remeda/src/zipWith.test.ts at lines 50, 79.\nCandidate at line 50, context 47-53:\n        [\"1\", \"2\"],\n        [\"a\", \"b\", \"c\"],\n      ),\n    ).toStrictEqual([\"1a\", \"2b\"]);\n  });\n});\n\nUnique preceding anchor at line 39:\n@@ [\"a\", \"b\"],\nCandidate at line 79, context 76-82:\n        [\"1\", \"2\"],\n        zipWith([\"a\", \"b\", \"c\"], (a, b) => `${a}${b}`),\n      ),\n    ).toStrictEqual([\"1a\", \"2b\"]);\n  });\n});\n\nUnique preceding anchor at line 68:\n@@ zipWith([\"a\", \"b\"], (a, b) => `${a}${b}`),\nInclude the distinguishing context in the hunk or use a unique @@ anchor.",
+            "recovery": "Do not resend the same patch. Read the affected outline and target its symbol or selector alias, or add one short unique context line.",
+            "diagnosticId": "edit-mvbt1uz6"
+          }
+        },
+        {
+          "index": 59,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "remeda:test",
+            "packagePath": "packages/remeda"
+          },
+          "command": "npm run test",
+          "exitCode": 2
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "3-remeda-empty-zip-cline",
+      "task": "remeda-empty-zip",
+      "arm": "cline",
+      "categories": {
+        "native_command_failed": 3
+      },
+      "observations": [
+        {
+          "index": 13,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npm run test:study:regression && npm run test:study:feature && npm run test:study:types"
+        },
+        {
+          "index": 16,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npx prettier --check packages/remeda/src/zip.ts packages/remeda/src/zipWith.ts packages/remeda/src/zip.test.ts packages/remeda/src/zipWith.test.ts"
+        },
+        {
+          "index": 17,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "npx vitest run packages/remeda/src/zip.test.ts packages/remeda/src/zipWith.test.ts"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "3-remeda-empty-zip-reference",
+      "task": "remeda-empty-zip",
+      "arm": "reference",
+      "categories": {
+        "command_failure_reported_in_message": 1
+      },
+      "observations": [
+        {
+          "index": 48,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npx prettier --check packages/remeda/src/zip.ts packages/remeda/src/zipWith.ts packages/remeda/src/zip.test.ts packages/remeda/src/zipWith.test.ts"
+          },
+          "reportedExitCode": 1
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
     }
   ]
 }

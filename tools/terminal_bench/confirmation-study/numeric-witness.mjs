@@ -9,7 +9,7 @@ const startedAtUTC=new Date().toISOString();
 const root=join(work,'numeric-witness');await mkdir(root,{recursive:true});
 const witness=`import * as r from './packages/remeda/src/index.ts';
 const m=Number.MAX_VALUE;
-const cases={positiveOverflow:[m,m],negativeOverflow:[-m,-m],overflowThenOppositeInfinity:[m,m,-Infinity],negativeOverflowThenOppositeInfinity:[-m,-m,Infinity]};
+const cases={positiveOverflow:[m,m],negativeOverflow:[-m,-m],overflowThenOppositeInfinity:[m,m,-Infinity],negativeOverflowThenOppositeInfinity:[-m,-m,Infinity],positiveInfinityBeforeOppositeFiniteOverflow:[Infinity,-m,-m],negativeInfinityBeforeOppositeFiniteOverflow:[-Infinity,m,m]};
 const value=x=>Number.isNaN(x)?'NaN':x===Infinity?'+Infinity':x===-Infinity?'-Infinity':Object.is(x,-0)?'-0':x;
 console.log(JSON.stringify(Object.fromEntries(Object.entries(cases).map(([name,xs])=>[name,{sum:value(r.sum(xs)),sumBy:value(r.sumBy(xs,x=>x)),mean:value(r.mean(xs)),meanBy:value(r.meanBy(xs,x=>x))}]))));
 `;
@@ -33,10 +33,15 @@ for(const row of [null,{name:"positive-control",control:true},...selected]){
 assert.equal(records[0].exitCode,0);
 for(const record of records){
  record.matchesOriginal=record.exitCode===0&&JSON.stringify(record.observations)===JSON.stringify(records[0].observations);
- record.unambiguousOverflowPassed=record.exitCode===0&&['positiveOverflow','negativeOverflow'].every(name=>JSON.stringify(record.observations[name])===JSON.stringify(records[0].observations[name]));
+ record.unambiguousOverflowPassed=record.exitCode===0&&[['positiveOverflow',1],['negativeOverflow',-1]].every(([name,sign])=>{
+  const actual=record.observations[name],infinity=sign===1?'+Infinity':'-Infinity';
+  return actual.sum===infinity&&actual.sumBy===infinity&&['mean','meanBy'].every(api=>actual[api]===infinity||actual[api]===sign*Number.MAX_VALUE);
+ });
+ record.leadingInfinityPassed=record.exitCode===0&&['positiveInfinityBeforeOppositeFiniteOverflow','negativeInfinityBeforeOppositeFiniteOverflow'].every(name=>JSON.stringify(record.observations[name])===JSON.stringify(records[0].observations[name]));
+ record.unambiguousNumericPassed=record.unambiguousOverflowPassed&&record.leadingInfinityPassed;
 }
 await save(join(study,'numeric-overflow-witness.json'),{startedAtUTC,endedAtUTC:new Date().toISOString(),
-  classification:'Post-hoc source-audit witness prompted by trial 12; not a selected official benchmark check. Applied to all completed stable-sum endpoints without repair. Later repeats remain separate from the motivating known diagnosis.',
-  method:'Extract unchanged production source from original upstream / exact private endpoint archives; execute the same four public APIs with pinned tsx. Two equal finite MAX_VALUE values must round to the corresponding infinity, not NaN. Compare subsequent opposite input infinity separately: a precise finite accumulator can validly return that input infinity whereas legacy sequential arithmetic returns NaN. The request does not unambiguously choose between these intermediate-overflow semantics, so matchesOriginal alone is not an acceptance predicate.',
+  classification:'Post-hoc source-audit witness prompted by trial 12, extended after source review of trial48 to leading infinities followed by opposite finite overflow; not a selected official benchmark check. Applied to all completed stable-sum endpoints without repair. Later repeats remain separate from the motivating known diagnosis.',
+  method:'Extract unchanged production source from original upstream / exact private endpoint archives; execute the same four public APIs with pinned tsx. The sum of two equal finite signed MAX_VALUE values must round to the corresponding infinity, not NaN. Their means may preserve legacy overflow (infinity) or avoid intermediate overflow (signed MAX_VALUE); neither valid interpretation is rejected. Compare subsequent opposite input infinity separately: a precise finite accumulator can validly return that input infinity whereas legacy sequential arithmetic returns NaN. The request does not unambiguously choose between these intermediate-overflow semantics, so matchesOriginal alone is not an acceptance predicate. Conversely, a leading input infinity followed only by finite numbers must retain that signed infinity: both legacy and exact finite accumulation agree, so a NaN result is an unambiguous regression.',
   source:witness,sourceSha256:sha(witness),completedStableSumTrials:selected.length,records});
 console.log(JSON.stringify(records.map(r=>({name:r.name,matchesOriginal:r.matchesOriginal,observations:r.observations}))));
