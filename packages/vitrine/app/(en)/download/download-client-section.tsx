@@ -2,10 +2,13 @@
 
 import { useMemo, useSyncExternalStore } from 'react'
 import Link from 'next/link'
-import { Apple, ArrowRight, Download, Monitor, MonitorDown } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { ArrowRight, Download } from 'lucide-react'
 
+import { AnimatedBorderFrame } from '@/components/animated-border/animated-border-frame'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { OsLogo } from './os-logo'
 import type { DownloadArtifact } from './page'
 
 const downloadBaseUrl = 'https://download.blame.so/latest'
@@ -58,8 +61,6 @@ export function DownloadClientSection({ artifacts, mode }: DownloadClientSection
 }
 
 function DownloadActions({ artifact }: { artifact: DownloadArtifact }) {
-  const DownloadIcon = artifact.os === 'macos' ? Apple : Monitor
-
   return (
     <div className="landing-reveal landing-reveal-actions mt-9 flex max-w-xl flex-col items-start gap-3">
       <Link
@@ -69,7 +70,7 @@ function DownloadActions({ artifact }: { artifact: DownloadArtifact }) {
           'min-h-14 px-7 py-4 text-base shadow-[0_22px_70px_rgba(255,255,255,0.26)] sm:text-lg',
         )}
       >
-        <DownloadIcon className="h-5 w-5" />
+        <OsLogo os={artifact.os} className="h-5 w-5" />
         Download for {osLabels[artifact.os]}
         <ArrowRight className="h-5 w-5" />
       </Link>
@@ -103,46 +104,70 @@ function DownloadCard({
   isRecommended: boolean
 }) {
   return (
-    <Link
-      href={artifactUrl(artifact.fileName)}
-      className="group block rounded-2xl border border-black/8 bg-white p-4 shadow-[0_12px_34px_rgba(0,0,0,0.08)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(0,0,0,0.14)] focus:outline-none focus:ring-2 focus:ring-[#111]/20 data-[recommended=true]:border-[#111]/18 data-[recommended=true]:bg-[#111] data-[recommended=true]:text-white data-[recommended=true]:shadow-[0_22px_58px_rgba(0,0,0,0.24)]"
-      data-macos={artifact.os === 'macos'}
-      data-recommended={isRecommended}
-    >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-semibold tracking-[-0.03em] text-[#111] group-data-[recommended=true]:text-white">
-              {artifact.platform}
-            </h3>
-            <span className="rounded-full bg-black/[0.06] px-2.5 py-1 text-xs font-semibold text-[#111]/62 group-data-[recommended=true]:bg-white/12 group-data-[recommended=true]:text-white/74">
-              {artifact.architecture}
-            </span>
-            {isRecommended ? (
-              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#111]">
-                For this device
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-3 break-all font-mono text-xs text-[#111]/44 group-data-[recommended=true]:text-white/44">
-            {artifact.fileName}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center justify-between gap-4 sm:block sm:text-right">
+    <DownloadCardFrame isRecommended={isRecommended}>
+      <Link
+        href={artifactUrl(artifact.fileName)}
+        className="group relative z-[1] block h-full rounded-2xl border border-white/12 bg-white/[0.06] p-4 text-white backdrop-blur-xl transition duration-200 hover:bg-white/[0.1] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 data-[recommended=true]:border-transparent data-[recommended=true]:bg-white data-[recommended=true]:bg-clip-padding data-[recommended=true]:text-[#111] data-[recommended=true]:shadow-[0_22px_58px_rgba(0,0,0,0.24)]"
+        data-recommended={isRecommended}
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm font-semibold text-[#111] group-data-[recommended=true]:text-white">
-              {artifact.size}
-            </p>
-            <p className="mt-1 text-xs text-[#111]/44 group-data-[recommended=true]:text-white/44">
-              {artifact.updatedAt}
+            <div className="flex flex-wrap items-center gap-2">
+              <OsLogo os={artifact.os} className="h-4 w-4 shrink-0" />
+              <h3 className="text-lg font-semibold tracking-[-0.03em]">
+                {artifact.platform}
+              </h3>
+              <span className="whitespace-nowrap rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/70 group-data-[recommended=true]:bg-black/[0.06] group-data-[recommended=true]:text-[#111]/62">
+                {artifact.architecture}
+              </span>
+              {isRecommended ? (
+                <span className="whitespace-nowrap rounded-full bg-[#111] px-2.5 py-1 text-xs font-semibold text-white">
+                  For this device
+                </span>
+              ) : null}
+            </div>
+            <p className="mt-3 break-all font-mono text-xs text-white/44 group-data-[recommended=true]:text-[#111]/44">
+              {artifact.fileName}
             </p>
           </div>
-          <span className="mt-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#111] text-white transition duration-200 group-hover:scale-105 group-data-[recommended=true]:bg-white group-data-[recommended=true]:text-[#111]">
-            <Download className="h-4 w-4" />
-          </span>
+          <div className="flex shrink-0 items-center justify-between gap-4 sm:block sm:text-right">
+            <div>
+              <p className="text-sm font-semibold">{artifact.size}</p>
+              <p className="mt-1 text-xs text-white/44 group-data-[recommended=true]:text-[#111]/44">
+                {artifact.updatedAt}
+              </p>
+            </div>
+            <span className="mt-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#111] transition duration-200 group-hover:scale-105 group-data-[recommended=true]:bg-[#111] group-data-[recommended=true]:text-white">
+              <Download className="h-4 w-4" />
+            </span>
+          </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </DownloadCardFrame>
+  )
+}
+
+function DownloadCardFrame({
+  children,
+  isRecommended,
+}: {
+  children: ReactNode
+  isRecommended: boolean
+}) {
+  if (!isRecommended) {
+    return children
+  }
+
+  // Same animated border as the workspace section on the homepage. The shader
+  // strokes just inside this frame, so the card keeps its border transparent,
+  // and its glow is boosted to stand out against the glass panel.
+  return (
+    <AnimatedBorderFrame
+      className="user-story-state-effect rounded-2xl [&>canvas]:[filter:brightness(1.25)_saturate(1.4)_drop-shadow(0_0_5px_oklch(0.68_0.22_250/0.9))_drop-shadow(0_0_14px_oklch(0.65_0.22_255/0.6))]"
+      effect="story-progress"
+    >
+      {children}
+    </AnimatedBorderFrame>
   )
 }
 

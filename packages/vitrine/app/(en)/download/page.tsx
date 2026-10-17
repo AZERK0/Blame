@@ -1,11 +1,10 @@
-import { CheckCircle2 } from 'lucide-react'
-
 import { LandingRevealStyles } from '@/components/landing-reveal-styles'
 import { SceneWarmup } from '@/components/scene-warmup'
 import { SiteHeader } from '@/components/site-header'
 import { HeroScene } from '@/app/scene/hero-scene'
 import { createIndexablePageMetadata } from '@/lib/seo'
 import { DownloadClientSection } from './download-client-section'
+import { loadLatestRelease } from './latest-release'
 
 export const metadata = createIndexablePageMetadata({
   title: 'Download · Blame',
@@ -63,7 +62,9 @@ const primaryArtifacts = [
   },
 ] satisfies DownloadArtifact[]
 
-export default function DownloadPage() {
+export default async function DownloadPage() {
+  const { tag, artifacts } = await loadLatestRelease(primaryArtifacts)
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#050712] text-white">
       <section
@@ -94,28 +95,21 @@ export default function DownloadPage() {
               merges on your machine.
             </p>
 
-            <DownloadClientSection artifacts={primaryArtifacts} mode="actions" />
+            <DownloadClientSection artifacts={artifacts} mode="actions" />
           </div>
 
           <div
             id="all-downloads"
             className="landing-reveal landing-reveal-actions scroll-mt-28"
           >
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/18 bg-white/[0.08] p-2 shadow-[0_34px_120px_rgba(0,0,0,0.42)] backdrop-blur-2xl">
+            <div className="relative overflow-hidden rounded-[2rem] border border-white/18 bg-white/[0.08] p-5 shadow-[0_34px_120px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:p-6">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_80%_18%,rgba(159,215,255,0.2),transparent_36%)]" />
-              <div className="relative rounded-[1.55rem] border border-white/14 bg-[#f7f7f8]/90 p-5 text-[#111] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-6">
-                <div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#111]/48">
-                      Installers
-                    </p>
-                    <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#111]">
-                      Latest builds
-                    </h2>
-                  </div>
-                </div>
+              <div className="relative">
+                <h2 className="text-2xl font-semibold tracking-[-0.04em] text-white">
+                  {tag ?? 'Latest release'}
+                </h2>
 
-                <DownloadClientSection artifacts={primaryArtifacts} mode="cards" />
+                <DownloadClientSection artifacts={artifacts} mode="cards" />
               </div>
             </div>
           </div>

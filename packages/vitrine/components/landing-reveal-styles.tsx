@@ -1,7 +1,7 @@
 export function LandingRevealStyles() {
   return (
     <style>{`
-      .hero-stage canvas {
+      .hero-stage canvas:not(.animated-border-effect-canvas) {
         opacity: 0;
         transform: scale(1.015);
         animation: sceneCanvasReveal 920ms cubic-bezier(0.2, 0.8, 0.2, 1) 160ms forwards;
