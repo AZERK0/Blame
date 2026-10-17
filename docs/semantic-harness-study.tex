@@ -24,7 +24,10 @@ completion is 10/18 for reference Light, 9/18 for current Light and 7/18 for
 integrated Cline, including one administrative interruption. Six paired strict
 Light successes use 10.1\% more tokens with the repair. Source, added-test,
 instruction and interpretation-sensitive outcomes are reported separately.
-No general efficiency advantage or exhausted improvement margin is established.
+F43 then isolates missing-path feedback on 18 known diagnostic assignments.
+Audited completion is 6/6, 6/6 and 5/6; candidate/reference tokens rise 22.9\%.
+The feedback is used, but its efficiency gate fails. No general advantage or
+exhausted improvement margin is established.
 \end{abstract}
 
 \section{Scope, versions and evidence boundaries}
@@ -35,7 +38,7 @@ verbatim, with byte/hash inventory, in
 Original campaign artifacts remain separate. Neither dependent repeats nor
 local replay cases count as independent real-issue confirmations.
 
-F28--F31, F34--F36, F38b, F41 and F42 use \code{openai-codex}/\code{gpt-5.6-luna}/\code{high} and
+F28--F31, F34--F36, F38b, F41, F42 and F43 use \code{openai-codex}/\code{gpt-5.6-luna}/\code{high} and
 Cline SDK 0.0.82. Native comparison arms include a pinned research search repair;
 these are not unmodified CLI comparisons. Actual schemas, prompt sources, model/effort,
 source/checker/environment hashes, ordered assignments and budgets are retained.
@@ -871,7 +874,7 @@ tools and recorded validation-load overlap limit timing/environment conclusions.
 Generated cache drift stopped the driver before assignment6; original inputs
 were restored and only untouched slots resumed. No result was dropped.
 
-\section{F43: isolated path-recovery follow-up}
+\section{F43: isolated path-recovery follow-up, completed}
 The bounded missing-path candidate returns paths only, preserves ambiguity and
 requires an explicit read. Ten new controls cover stale indexes, cancellation,
 alias collisions, protected/symlink files and edit coverage. Nine distinct known
@@ -881,27 +884,82 @@ or a token saving. Full runtime validation passes 920 tests with two skipped;
 runner 37/37. A pre-existing Markdown formatter fixture failure reproduces on
 both reference and candidate with pinned pnpm; a separate test-only repair makes
 the mocked formatter actually edit Markdown. Original failures are retained.
-The model follow-up and its decision are recorded separately in
+
+The registered 18 assignments use three known Valibot requests, two dependent
+repeats and three arms. Only \code{light-workspace.js} differs between Light
+executables; compiler admission, helpers, prompts and schemas are common.
+All slots complete without retry or timeout. Per-trial copied dependencies,
+empty offline caches, pinned npm11.6.4/login-shell PATH, related original tests,
+old explicit-generic fixtures and clearer existing-test preservation are common
+to every arm. These differ from F42; cross-campaign quality changes cannot be
+attributed to recovery. No other model/test/compiler load is scheduled during
+workers; the host is not exclusive and no OS sandbox is claimed.
+
+\begin{center}\small\begin{tabular}{lrrrr}\toprule
+Arm & Audited & All tokens & SDK USD & Seconds\\\midrule
+Reference &6/6&2,359,099&0.156990&633.384\\
+Recovery &6/6&2,899,913&0.166531&692.165\\
+Integrated Cline &5/6&4,115,964&0.238883&912.807\\\bottomrule
+\end{tabular}\end{center}
+Official and selected-check successes are 6/6 for all arms. Uniform original
+runtime/type audits pass on three pristine controls and all 18 endpoints; one
+Cline added-test helper fails TypeScript with upstream exact optional properties,
+although its five runtime tests pass. Its production implementation passes.
+Uniform extra website metadata checks pass for all endpoints. All 18 original-patch selected-check replays match, as do the public audit
+replay of three pristine controls and the failing added-test endpoint. Six
+corrupted-ledger controls are rejected. No solution is repaired. Neither Light arm admits whole-source verification; both admit six
+required compiler invocations. Review remains unblinded and focused, not exhaustive.
+
+Three feedback suggestions are followed in later iterations, two as the direct
+next navigation; total feedback is 1,602 serialized bytes, not provider tokens.
+These occur only in the two message-prefix trials, whose paired tokens fall
+27.4\%. Hide-input rises 56.5\% and fallback-when 42.5\%, with no recovery offer
+in those tasks. Across six audited Light pairs, tokens rise 22.9\%, SDK cost
+6.1\% and duration 9.3\%; three pairs win and three lose. Leave-pair-out token
+results span -7.5\% to +42.2\%; every leave-task-out result remains adverse.
+Quality and observed-use gates pass, but the registered efficiency gate fails.
+Retain the bounded diagnostic on local correctness and observed use; reject
+its demonstrated-efficiency claim. Unused feedback cannot explain costly trajectories.
+
+Against Cline on five paired audited successes, candidate tokens/cost/duration
+fall 42.6/38.3/34.5\%. Keeping all six selected-check successes gives a smaller
+29.5\% token difference, but includes the invalid delivered test. All costs and
+failures remain in the table; this panel does not establish general superiority.
+Declaration reads remain unused and all six Light reference searches fall back
+lexically for a missing symbol target. Native \code{run_commands} carries
+unsupported timeout fields in 122/132 calls; the captured schema exposes commands
+only and SDK source uses a factory timeout. This is a source/schema mismatch,
+not an observed timeout failure or a timeout repair in this cycle.
+
+All 274 recorded forwarded attempts have usage reports; input/output/SDK-cost
+reconcile, but full per-request cache does not. Cache reads are included in input;
+zero aggregate cache-write is not proof of zero writes. F43 adds estimated
+USD0.56240384 and no reserve; cumulative completed-aggregate observations are
+USD7.12655384 plus retained USD3.64 reserves. F42 partial receipts remain separately
+disclosed. Invoices, hidden retries and researcher/host/tool/audit costs remain
+unestablished. Original patches, traces, uniform witnesses, independent integrity
+checks and no-model replay commands are in
 \filepath{docs/experiments/light-harness-path-recovery-f43-2026-10-17}.
 
 \section{Next hypotheses: proposals, not measurements}
 \begin{enumerate}
-\item Confirm compiler-invocation admission on preselected new-project tasks
-with misleading script names, hooks and project exclusions. Compare reference,
-one-mechanism Light and integrated SDK with repeated assignments; measure audited
-criteria, admitted exact checks, retries and resources. Risk: confusing invocation
-success with file coverage. Actual compiler file footprints are a separate future
-treatment, not an inferred package-wide scope.
-\item Isolate F39's patch diagnosis in model tasks with genuine cross-symbol
-context, including stale/ambiguous negative cases. Measure correct explicit scope,
-repeated refusals, audited success and added context; never widen a refused edit.
-The observed F41 retry-heavy reference is diagnostic evidence, not a trial of F39.
-\item Measure declaration utility only on unhinted dependency tasks where the
-installed API is actually needed, with exposure and successful identity checks
-before claiming mediation. Compare the existing fallback and integrated SDK;
-retain tasks with no lookup and all failures. Risk: contrived tasks or hints that
-select for the tool, plus compiler startup/context costs. Keep this diagnostic
-cohort separate from a fresh, representative acceptance panel.
+\item Expose validation scope for changed tests and extra files. F42 and F43
+show selected-check success with invalid delivered additions. Compare baseline,
+one explicit scope-feedback mechanism and integrated SDK on preselected tasks
+with excluded tests/docs. Measure audited correctness, current-source check
+coverage, false completion and resources. Do not infer full coverage from a
+successful compiler process. Risk: expensive overvalidation and false warnings.
+\item Resolve ambiguous reference-search intent through bounded declaration
+candidates requiring explicit selection. Six F43 bare reference searches remain
+lexical; declaration views are unused. Measure selected identity, subsequent
+cross-file navigation and audited success on unhinted tasks, including unused
+cases. Risk: irrelevant suggestions or unsafe automatic identity assumptions.
+\item Make unsupported command arguments visible rather than silently ignored.
+The native timeout-field mismatch has source/schema evidence but no attributable
+failure. First test invocation contracts and cancellation locally; then isolate
+feedback in model tasks with real deadline requirements. Measure mistaken timeout
+assumptions, recovery, completed validation and overhead. Never infer a timeout
+repair or task gain from argument counts alone.
 \end{enumerate}
 Each future phase must freeze prompts, schemas, model/effort, versions,
 environment, task selection and budgets; keep known diagnostics separate from

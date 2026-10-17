@@ -1,7 +1,7 @@
-F43 scripts are preparatory until freeze.mjs registers the final protocol after the completed F42 audit.
+F43 is complete: 18 registered model assignments, all original traces retained, 18/18 selected-check endpoint replays matching. See docs/experiments/light-harness-path-recovery-f43-2026-10-17/README.md for results, accounting, decisions and public reproduction commands.
 
-Run controls.mjs, build/test the candidate, then freeze.mjs and run.mjs bind. Commit the registration before run.mjs run. The runner refuses drift in registered scripts, executable files, SDK assets, dependency files and model settings.
+The model comparison isolates missing-literal-path feedback; only light-workspace.js differs between the Light arms. Freeze/run scripts retain registered script, executable, SDK, dependency and wire bindings. Do not change or resume this completed campaign to produce a new comparison: register a new phase instead.
 
-Workers live under /tmp/blame-path-recovery-f43/campaign with a copied dependency tree, private empty offline npm cache and no ancestor node_modules. Exact source endpoints are archived before cleanup; a separate endpoint evaluates original checks. Model failures and missing usage are retained. No oracle or audit script is put into model workspaces.
+Public no-model tools: verify.mjs recomputes ledger/contracts/usage/paired decisions; restore-inputs.mjs restores source archives and pinned selected-check dependencies; replay.mjs reapplies every original patch with original protected checks; replay-audit.mjs independently reconstructs focused upstream and delivered-test audits, with pristine controls. Explicit output paths prevent overwrites. Neither replay repairs a model solution.
 
-F42 reporting helpers accept the private work/public study roots for publication; the F43 verifier independently checks 18 assignments, raw traces, hashes, contracts and accounting. Known diagnostic tasks and the improved common validation environment are explicitly separate from F42 confirmation.
+metadata-witness.mjs and native-arguments.mjs record uniform extra-file checks and source/schema observations. The original manual reviews, preparation failures, missing-data rules and local production controls remain separate. Known diagnostic tasks and improved common validation/environment must not be pooled with F42 fresh confirmation.

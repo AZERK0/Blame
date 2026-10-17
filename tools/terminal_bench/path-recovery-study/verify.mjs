@@ -62,4 +62,23 @@ const prior=await json(join(study,'prior-budget.json'));assert.ok(prior.accounte
 for(const arm of protocol.arms){const rows=results.rows.filter(r=>r.arm===arm),s=summary.arms[arm];assert.equal(rows.length,6);assert.equal(s.audited,rows.filter(r=>r.auditedCompletion).length);assert.equal(s.independent,rows.filter(r=>r.independentFunctionalSuccess).length);const sum=k=>rows.every(r=>r.usage[k]!==null)?rows.reduce((n,r)=>n+r.usage[k],0):null;assert.equal(s.input,sum('input'));assert.equal(s.output,sum('output'));assert.equal(s.sdkEstimatedUsd,sum('cost'));}
 const archives=await json(join(study,'input-archives.json'));for(const [name,hash]of Object.entries(archives.artifacts))assert.equal(sha(await readFile(join(study,'inputs',name))),hash);
 verifySummary(protocol,results.rows,summary);
+// Supplemental acceptance evidence stays distinct from the selected official checks.
+const upstream=await json(join(study,'upstream-tests-witness.json')),metadata=await json(join(study,'metadata-witness.json'));
+assert.equal(upstream.complete,true);assert.equal(metadata.complete,true);
+assert.deepEqual(upstream.records.map(r=>r.name),[...protocol.tasks.map(t=>'original-'+t.id),...expected]);
+assert.deepEqual(metadata.records.map(r=>r.name),['original',...expected]);
+assert.equal(sha(await readFile(join(study,'upstream-audit-package-lock.json'))),upstream.dependencyLockSha256);
+const passes=check=>check.exitCode===0&&check.signal===null&&check.error===null;
+for(const record of upstream.records){
+ const preservation=['runtime','types'].every(kind=>passes(record.preservation[kind]));assert.equal(preservation,true);
+ const exact=['runtime','types'].every(kind=>passes(record.exact[kind]));
+ const decision=review.decisions.find(d=>d.name===record.name);
+ if(decision){assert.deepEqual(record.hashes,decision.hashes);assert.equal(decision.addedTestsPassed,exact);assert.equal(decision.upstreamPreservationPassed,preservation);}
+ else assert.equal(exact,true,'Pristine audit control failed');
+}
+for(const record of metadata.records){
+ assert.ok(passes(record));assert.equal(record.componentChanged,false);
+ const decision=review.decisions.find(d=>d.name===record.name);
+ if(decision){assert.deepEqual(record.hashes,decision.hashes);assert.equal(decision.metadataWitnessPassed,true);}
+}
 console.log(JSON.stringify({trials:results.rows.length,archivesVerified:true,usageRecomputed:true,priorReservationsPreserved:true}));
