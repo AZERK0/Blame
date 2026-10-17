@@ -884,6 +884,220 @@
       "blocked": [],
       "scopeCommands": [],
       "completion": null
+    },
+    {
+      "name": "1-valibot-hide-input-compiler",
+      "hashes": {
+        "events.jsonl": "4305869ab24c1d3addc77e117503500745f9d33cc012bb7eb84d4821cba8af9d",
+        "workspace.diff": "4c2d03b7e2dea376e10136b9187e02af1bdb0bfcdaa5abaffa6218a2e21dd9f0",
+        "score.json": "2a6d1ad3961538a73ebd4095182ee6afed7e4451e2c45361ae8765a80cb33892",
+        "tool-ledger.json": "c3bf874e7b0553d30a2d0e1a729ef1c563cb33649140f73ac1a9c28ff0b44bf5"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 79,
+      "required": {
+        "regression": [
+          {
+            "index": 80,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 81,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 82,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 80,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 81,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 82,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 83,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff -- library/src/types/config.ts library/src/storages/globalConfig/globalConfig.ts library/src/utils/_addIssue/_addIssue.ts library/src/storages/globalConfig/globalConfig.test.ts website/src/routes/api/'(types)'/Config/properties.ts website/src/routes/api/'(types)'/Config/index.mdx website/src/routes/guides/'(main-concepts)'/issues/index.mdx",
+            "cwd": "."
+          },
+          "command": "git diff --check && git status --short && git diff -- library/src/types/config.ts library/src/storages/globalConfig/globalConfig.ts library/src/utils/_addIssue/_addIssue.ts library/src/storages/globalConfig/globalConfig.test.ts website/src/routes/api/'(types)'/Config/properties.ts website/src/routes/api/'(types)'/Config/index.mdx website/src/routes/guides/'(main-concepts)'/issues/index.mdx",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        }
+      ],
+      "delivery": "Implemented optional `hideInput` configuration for Valibot.\n\n- Added `hideInput?: boolean` to the public `Config` type and propagated it through global and per-parse configuration, including explicit `false` overrides.\n- Redacted each generated issue’s own `input` after message callbacks run, preserving original callback input, received/expected descriptions, paths, nested and union issues, issue structure, abort behavior, and successful outputs.\n- Updated configuration API documentation and issue guidance.\n\nChecks run:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 4/4 tests.\n- `npm run test:study:types` — passed.\n- `git diff --check` — passed.\n\nLimitations: supplied study checks cover selected behaviors and source types, not the complete upstream test suite; no broader upstream suite was run.",
+      "blocked": [
+        {
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s27",
+                "action": "replace",
+                "content": "export type GlobalConfig = Omit<Config<never>, 'message'>;"
+              },
+              {
+                "kind": "symbol",
+                "target": "s29",
+                "action": "replace_body",
+                "content": "{\n  store = undefined;\n}"
+              },
+              {
+                "kind": "patch",
+                "path": "library/src/storages/globalConfig/globalConfig.ts",
+                "patch": "*** Begin Patch\n*** Update File: library/src/storages/globalConfig/globalConfig.ts\n@@\n   return {\n     lang: config?.lang ?? store?.lang,\n     message: config?.message,\n+    hideInput: config?.hideInput ?? store?.hideInput,\n     abortEarly: config?.abortEarly ?? store?.abortEarly,\n     abortPipeEarly: config?.abortPipeEarly ?? store?.abortPipeEarly,\n   };\n }\n*** Update File: library/src/utils/_addIssue/_addIssue.ts\n@@\n   if (message !== undefined) {\n@@\n           message(issue)\n         : message;\n   }\n+\n+  // Hide the input after the custom message has been generated so message\n+  // callbacks can still access the original input.\n+  if (config.hideInput) {\n+    issue.input = undefined;\n+  }\n \n   // If context is a schema, set typed to `false`\n*** Update File: library/src/storages/globalConfig/globalConfig.test.ts\n@@\n     lang: undefined,\n     message: undefined,\n+    hideInput: undefined,\n     abortEarly: undefined,\n*** Update File: website/src/routes/api/(types)/Config/properties.ts\n@@\n   message: {\n@@\n     },\n   },\n+  hideInput: {\n+    type: {\n+      type: 'union',\n+      options: ['boolean', 'undefined'],\n+    },\n+  },\n   abortEarly: {\n*** Update File: website/src/routes/api/(types)/Config/index.mdx\n@@\n   - `lang` <Property {...properties.lang} />\n   - `message` <Property {...properties.message} />\n+  - `hideInput` <Property {...properties.hideInput} />\n   - `abortEarly` <Property {...properties.abortEarly} />\n*** Update File: website/src/routes/guides/(main-concepts)/issues/index.mdx\n@@\n-  abortEarly?: boolean;\n+  hideInput?: boolean;\n+  abortEarly?: boolean;\n@@\n-`lang` can be used as part of our <Link href=\"/guides/internationalization/\">i18n feature</Link> to define the required language. `abortEarly` and `abortPipeEarly` gives you an info that the validation was aborted prematurely. These are all configurations that you can control yourself.\n+`lang` can be used as part of our <Link href=\"/guides/internationalization/\">i18n feature</Link> to define the required language. `hideInput` can be used to redact the input from generated issues. The input is still available to message callbacks. `abortEarly` and `abortPipeEarly` gives you an info that the validation was aborted prematurely. These are all configurations that you can control yourself.\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in website/src/routes/guides/(main-concepts)/issues/index.mdx.\nClosest current lines 107-111:\n#### Config\n\n`lang` can be used as part of our <Link href=\"/guides/internationalization/\">i18n feature</Link> to define the required language. `abortEarly` and `abortPipeEarly` gives you an info that the validation was aborted prematurely. You can find more info about this in the <Link href=\"/guides/parse-data/#configuration\">parse data</Link> guide. These are all configurations that you can control yourself.\n\n## Formatting",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbnlv2i"
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_2987d93a1262607c24ab09cc15db7f12",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
     }
   ]
 }

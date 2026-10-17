@@ -1,0 +1,256 @@
+{
+  "complete": false,
+  "method": "Observed tool failures/guards. A refusal may be correct; its occurrence does not establish harness fault, model reasoning, or causal token overhead. Native command failures and Light edit/read categories are not equivalent tools.",
+  "arms": {
+    "reference": {
+      "trials": 1,
+      "categories": {
+        "executed_command_failed": 1,
+        "invalid_final_syntax": 1,
+        "missing_path": 5
+      },
+      "declarationCalls": 0
+    },
+    "compiler": {
+      "trials": 2,
+      "categories": {
+        "missing_path": 1,
+        "patch_preimage_or_format": 2
+      },
+      "declarationCalls": 0
+    },
+    "cline": {
+      "trials": 1,
+      "categories": {
+        "native_command_failed": 3
+      },
+      "declarationCalls": 0
+    }
+  },
+  "records": [
+    {
+      "name": "1-valibot-message-prefix-reference",
+      "task": "valibot-message-prefix",
+      "arm": "reference",
+      "categories": {
+        "executed_command_failed": 1,
+        "invalid_final_syntax": 1,
+        "missing_path": 5
+      },
+      "observations": [
+        {
+          "index": 16,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/parseAsync/parseAsync.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-message-prefix-reference/workspace/library/src/methods/parseAsync/parseAsync.ts'"
+        },
+        {
+          "index": 18,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/safeParseAsync/safeParseAsync.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-message-prefix-reference/workspace/library/src/methods/safeParseAsync/safeParseAsync.ts'"
+        },
+        {
+          "index": 19,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/parseAsync.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-message-prefix-reference/workspace/library/src/methods/parseAsync.ts'"
+        },
+        {
+          "index": 20,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/safeParseAsync.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-message-prefix-reference/workspace/library/src/methods/safeParseAsync.ts'"
+        },
+        {
+          "index": 31,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/parseAsync/index.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-message-prefix-reference/workspace/library/src/methods/parseAsync/index.ts'"
+        },
+        {
+          "index": 43,
+          "category": "invalid_final_syntax",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s33",
+                "action": "replace",
+                "content": "export interface Config<TIssue extends BaseIssue<unknown>> {\n  /**\n   * The selected language.\n   */\n  readonly lang?: string | undefined;\n  /**\n   * The error message.\n   */\n  readonly message?: ErrorMessage<TIssue> | undefined;\n  /**\n   * The message prefix.\n   */\n  readonly messagePrefix?: string | undefined;\n  /**\n   * Whether it should be aborted early.\n   */\n  readonly abortEarly?: boolean | undefined;\n  /**\n   * Whether a pipe should be aborted early.\n   */\n  readonly abortPipeEarly?: boolean | undefined;\n}"
+              },
+              {
+                "kind": "symbol",
+                "target": "s35",
+                "action": "replace_body",
+                "content": "{\n  return Omit<Config<never>, 'message'>;\n}"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "code",
+            "message": "Final parse failed for library/src/storages/globalConfig/globalConfig.ts; no files were written. 7:3 Property or signature expected.",
+            "recovery": "Correct the final syntax and submit one new atomic batch."
+          }
+        },
+        {
+          "index": 47,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 2
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "1-valibot-message-prefix-compiler",
+      "task": "valibot-message-prefix",
+      "arm": "compiler",
+      "categories": {
+        "missing_path": 1,
+        "patch_preimage_or_format": 1
+      },
+      "observations": [
+        {
+          "index": 10,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "library/src/methods/parseAsync/parseAsync.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-valibot-message-prefix-compiler/workspace/library/src/methods/parseAsync/parseAsync.ts'"
+        },
+        {
+          "index": 40,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "library/src/types/config.ts",
+                "patch": "*** Begin Patch\n*** Begin Patch\n*** Update File: library/src/types/config.ts\n@@\n export interface Config<TIssue extends BaseIssue<unknown>> {\n   /**\n    * The selected language.\n    */\n   readonly lang?: string | undefined;\n+  /**\n+   * The message prefix.\n+   */\n+  readonly messagePrefix?: string | undefined;\n   /**\n    * The error message.\n    */\n*** Update File: library/src/storages/globalConfig/globalConfig.ts\n@@\n   return {\n     lang: config?.lang ?? store?.lang,\n+    messagePrefix: config?.messagePrefix ?? store?.messagePrefix,\n     message: config?.message,\n*** Update File: library/src/utils/_addIssue/_addIssue.ts\n@@\n   if (message !== undefined) {\n     // @ts-expect-error\n     issue.message =\n       typeof message === 'function'\n         ? // @ts-expect-error\n           message(issue)\n         : message;\n   }\n+\n+  // Add the configured prefix after evaluating the custom message so message\n+  // callbacks receive the original, unprefixed message.\n+  if (config.messagePrefix !== undefined) {\n+    issue.message = `${config.messagePrefix}${issue.message}`;\n+  }\n \n   // If context is a schema, set typed to `false`\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch contains content before its first file operation.",
+            "diagnosticId": "edit-mvbnfapq"
+          }
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "1-valibot-message-prefix-cline",
+      "task": "valibot-message-prefix",
+      "arm": "cline",
+      "categories": {
+        "native_command_failed": 3
+      },
+      "observations": [
+        {
+          "index": 18,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "git diff -- library/src/types/config.ts library/src/storages/globalConfig/globalConfig.ts library/src/utils/_addIssue/_addIssue.ts && npm run test:study:types"
+        },
+        {
+          "index": 24,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "node --import tsx --input-type=module <<'EOF'\nimport assert from 'node:assert/strict';\nimport * as v from './library/src/index.ts';\n\nv.deleteGlobalConfig();\nconst schema = v.object({\n  value: v.string ... [command truncated: 1451 more chars; full command is in the tool call input]"
+        },
+        {
+          "index": 27,
+          "category": "native_command_failed",
+          "tool": "run_commands",
+          "command": "node --import tsx --input-type=module <<'EOF'\nimport assert from 'node:assert/strict';\nimport * as v from './library/src/index.ts';\n\nv.deleteGlobalConfig();\nconst schema = v.object({\n  value: v.string ... [command truncated: 1422 more chars; full command is in the tool call input]"
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": null,
+      "sourceVerification": null
+    },
+    {
+      "name": "1-valibot-hide-input-compiler",
+      "task": "valibot-hide-input",
+      "arm": "compiler",
+      "categories": {
+        "patch_preimage_or_format": 1
+      },
+      "observations": [
+        {
+          "index": 73,
+          "category": "patch_preimage_or_format",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "symbol",
+                "target": "s27",
+                "action": "replace",
+                "content": "export type GlobalConfig = Omit<Config<never>, 'message'>;"
+              },
+              {
+                "kind": "symbol",
+                "target": "s29",
+                "action": "replace_body",
+                "content": "{\n  store = undefined;\n}"
+              },
+              {
+                "kind": "patch",
+                "path": "library/src/storages/globalConfig/globalConfig.ts",
+                "patch": "*** Begin Patch\n*** Update File: library/src/storages/globalConfig/globalConfig.ts\n@@\n   return {\n     lang: config?.lang ?? store?.lang,\n     message: config?.message,\n+    hideInput: config?.hideInput ?? store?.hideInput,\n     abortEarly: config?.abortEarly ?? store?.abortEarly,\n     abortPipeEarly: config?.abortPipeEarly ?? store?.abortPipeEarly,\n   };\n }\n*** Update File: library/src/utils/_addIssue/_addIssue.ts\n@@\n   if (message !== undefined) {\n@@\n           message(issue)\n         : message;\n   }\n+\n+  // Hide the input after the custom message has been generated so message\n+  // callbacks can still access the original input.\n+  if (config.hideInput) {\n+    issue.input = undefined;\n+  }\n \n   // If context is a schema, set typed to `false`\n*** Update File: library/src/storages/globalConfig/globalConfig.test.ts\n@@\n     lang: undefined,\n     message: undefined,\n+    hideInput: undefined,\n     abortEarly: undefined,\n*** Update File: website/src/routes/api/(types)/Config/properties.ts\n@@\n   message: {\n@@\n     },\n   },\n+  hideInput: {\n+    type: {\n+      type: 'union',\n+      options: ['boolean', 'undefined'],\n+    },\n+  },\n   abortEarly: {\n*** Update File: website/src/routes/api/(types)/Config/index.mdx\n@@\n   - `lang` <Property {...properties.lang} />\n   - `message` <Property {...properties.message} />\n+  - `hideInput` <Property {...properties.hideInput} />\n   - `abortEarly` <Property {...properties.abortEarly} />\n*** Update File: website/src/routes/guides/(main-concepts)/issues/index.mdx\n@@\n-  abortEarly?: boolean;\n+  hideInput?: boolean;\n+  abortEarly?: boolean;\n@@\n-`lang` can be used as part of our <Link href=\"/guides/internationalization/\">i18n feature</Link> to define the required language. `abortEarly` and `abortPipeEarly` gives you an info that the validation was aborted prematurely. These are all configurations that you can control yourself.\n+`lang` can be used as part of our <Link href=\"/guides/internationalization/\">i18n feature</Link> to define the required language. `hideInput` can be used to redact the input from generated issues. The input is still available to message callbacks. `abortEarly` and `abortPipeEarly` gives you an info that the validation was aborted prematurely. These are all configurations that you can control yourself.\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "Patch context does not match in website/src/routes/guides/(main-concepts)/issues/index.mdx.\nClosest current lines 107-111:\n#### Config\n\n`lang` can be used as part of our <Link href=\"/guides/internationalization/\">i18n feature</Link> to define the required language. `abortEarly` and `abortPipeEarly` gives you an info that the validation was aborted prematurely. You can find more info about this in the <Link href=\"/guides/parse-data/#configuration\">parse data</Link> guide. These are all configurations that you can control yourself.\n\n## Formatting",
+            "recovery": "Read only the affected symbol or short range, then submit a focused patch against the current text.",
+            "diagnosticId": "edit-mvbnlv2i"
+          }
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    }
+  ]
+}
