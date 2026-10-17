@@ -496,6 +496,18 @@
           }
         },
         {
+          "index": 44,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "[project task test:study:types]",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "2",
+          "output": "Command exited with code 2.\n> valibot@0.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\nlibrary/src/utils/_addIssue/_addIssue.ts(127,11): error TS2540: Cannot assign to 'message' because it is a read-only property."
+        },
+        {
           "index": 46,
           "input": {
             "kind": "project",
@@ -2464,6 +2476,751 @@
       "scopeCommands": [],
       "completion": {
         "source_revision_id": "src_084e5e1b1b4d8d68b0fb19631c949568",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature",
+          "check:types"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "1-remeda-stable-sum-reference",
+      "hashes": {
+        "events.jsonl": "1d2e6e97ea9387b1d551a4ac94d809c3157a4ab3051d64740c62f458b531a46e",
+        "workspace.diff": "e214f3d6a225defc25673eb64029a24f0dcf6c4bc5eb075e996c3c283cab049a",
+        "score.json": "6e06c59ee5051336de0387cbe2b440309de19f84cdde444c4fcd0e374b18cec5",
+        "tool-ledger.json": "42ddcc32a60b1d04e1a259b6c9f423088bddc335cc9bb6a42f3550df9f22d68c"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 43,
+      "required": {
+        "regression": [
+          {
+            "index": 44,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 45,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 3,
+                "passed": 3,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 46,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "not_observed",
+              "outcome": "unknown",
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "none"
+            }
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 33,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 1,
+          "processSuccess": false,
+          "check": {
+            "process": "exited",
+            "exitCode": 1,
+            "execution": "observed",
+            "outcome": "failed",
+            "counts": {
+              "executed": 4,
+              "passed": 3,
+              "failed": 1,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 34,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 1,
+          "processSuccess": false,
+          "check": {
+            "process": "exited",
+            "exitCode": 1,
+            "execution": "observed",
+            "outcome": "failed",
+            "counts": {
+              "executed": 3,
+              "passed": 1,
+              "failed": 2,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 35,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          }
+        },
+        {
+          "index": 40,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 41,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3,
+              "passed": 3,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 42,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          }
+        },
+        {
+          "index": 44,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 45,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3,
+              "passed": 3,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 46,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          }
+        }
+      ],
+      "delivery": "Implemented finite-number cancellation improvements across `sum`, `sumBy`, `mean`, and `meanBy` using a linear-time compensated accumulator without sorting or mutating inputs. Bigint behavior, empty results, direct/curried forms, mapper order/index/input-array context, IEEE special values, public types, and pipe interoperability were preserved.\n\nChecks run:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 3/3 tests.\n- `npm run test:study:types` — exited 0; this TypeScript check reports no test counts.",
+      "blocked": [
+        {
+          "tool": "read_code",
+          "input": {
+            "target": "packages/remeda/src/meanBy.test-d.ts",
+            "view": "raw"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-remeda-stable-sum-reference/workspace/packages/remeda/src/meanBy.test-d.ts'",
+            "diagnosticId": "read-mvbo6puw"
+          }
+        },
+        {
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "packages/remeda/src/internal/stableSum.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/internal/stableSum.ts\n@@\n-      if (nan || positiveInfinity === negativeInfinity) {\n+      if (nan || (positiveInfinity && negativeInfinity)) {\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "A scoped patch requires an observed symbol alias.",
+            "diagnosticId": "edit-mvbol0dn"
+          }
+        },
+        {
+          "tool": "read_code",
+          "input": {
+            "summary": "Implemented a stable linear-time compensated summation accumulator and integrated it into `sum`, `sumBy`, `mean`, and `meanBy`, preserving bigint handling, callback order/context, empty results, and IEEE special values. Validation was attempted: `npm run test:study:types` exited 0; regression and feature checks failed because the current accumulator incorrectly returned `NaN` for finite sums. The final corrective edit was blocked before completion, so the workspace remains with the known issue and is not ready."
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "target: Invalid input: expected string, received undefined; input: Unrecognized key: \"summary\""
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_1e17725783cd76444e84d282dbbbaadf",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:feature"
+        ],
+        "missing_obligations": [
+          "check:types"
+        ],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "REQUIRED_CHECK_UNCONFIRMED",
+            "message": "A required final-source invocation has no observed passing execution. User acceptance criteria remain a separate assessment.",
+            "obligation_ids": [
+              "check:types"
+            ]
+          },
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "1-remeda-stable-sum-compiler",
+      "hashes": {
+        "events.jsonl": "e594233df023bb2c19331cd9003714b587d96d6d3ab23d1d42dcf2473a92b547",
+        "workspace.diff": "9245c9c05c003b4d87dcb64a13854165da9d60d7e15364b23f64e8e695d9ff71",
+        "score.json": "1c2b2ff5796b03cb133978a3953b6f11473db9c7739f54e9bcc6e0a6af8721c0",
+        "tool-ledger.json": "0b40859408b2c7cbe029ea4b8df43154a9daa36b914115bfc7d816ab4a18f8d7"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 36,
+      "required": {
+        "regression": [
+          {
+            "index": 40,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "feature": [
+          {
+            "index": 41,
+            "input": {
+              "kind": "project",
+              "task": "test:study:feature"
+            },
+            "command": "npm run test:study:feature",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 3,
+                "passed": 3,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "runner_output"
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 37,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 28,
+          "input": {
+            "kind": "command",
+            "command": "node - <<'NODE'\nfunction fsum(values){const p=[]; for(let x of values){let i=0; for(let y of p){if(Math.abs(x)<Math.abs(y)){const t=x;x=y;y=t} const hi=x+y; const lo=y-(hi-x); if(lo!==0)p[i++]=lo; x=hi;} p.length=i; if(x!==0)p.push(x);} let s=0; for(const x of p)s+=x; return {p,s};}\nfor(const xs of [[1e16,1,-1e16],[1,-1e16,1e16],[-1e16,1e16,1],[1e16,...Array(100).fill(1),-1e16],[1e16,1e-16,-1e16]]) console.log(fsum(xs));\nNODE"
+          },
+          "command": "node - <<'NODE'\nfunction fsum(values){const p=[]; for(let x of values){let i=0; for(let y of p){if(Math.abs(x)<Math.abs(y)){const t=x;x=y;y=t} const hi=x+y; const lo=y-(hi-x); if(lo!==0)p[i++]=lo; x=hi;} p.length=i; if(x!==0)p.push(x);} let s=0; for(const x of p)s+=x; return {p,s};}\nfor(const xs of [[1e16,1,-1e16],[1,-1e16,1e16],[-1e16,1e16,1],[1e16,...Array(100).fill(1),-1e16],[1e16,1e-16,-1e16]]) console.log(fsum(xs));\nNODE",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 30,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "[project task test:study:types]",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "2",
+          "output": "Command exited with code 2.\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\npackages/remeda/src/internal/stableSum.ts(72,23): error TS2488: Type 'Iterator<number | bigint, any, any>' must have a '[Symbol.iterator]()' method that returns an iterator.\npackages/remeda/src/internal/stableSum.ts(73,5): error TS2578: Unused '@ts-expect-error' directive."
+        },
+        {
+          "index": 31,
+          "input": {
+            "kind": "project",
+            "task": "remeda:check",
+            "packagePath": "packages/remeda"
+          },
+          "command": "[project task remeda:check]",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "2",
+          "output": "Command exited with code 2.\n> remeda@2.0.0 check\n> tsc --project tsconfig.source.json\n\nsrc/internal/stableSum.ts(72,23): error TS2488: Type 'Iterator<number | bigint, any, any>' must have a '[Symbol.iterator]()' method that returns an iterator.\nsrc/internal/stableSum.ts(73,5): error TS2578: Unused '@ts-expect-error' directive.\nnpm error Lifecycle script `check` failed with error:\nnpm error code 2\nnpm error path /workspace/Blame/.blame/research/confirmation-f42/campaign/1-remeda-stable-sum-compiler/workspace/packages/remeda\nnpm error workspace remeda@2.0.0\nnpm error location /workspace/Blame/.blame/research/confirmation-f42/campaign/1-remeda-stable-sum-compiler/workspace/packages/remeda\nnpm error command failed\nnpm error command sh -c tsc --project tsconfig.source.json"
+        },
+        {
+          "index": 32,
+          "input": {
+            "kind": "command",
+            "command": "node --import tsx - <<'NODE'\nimport { sum, sumBy, mean, meanBy } from './packages/remeda/src/index.ts';\nfor (const xs of [[1e16,1,-1e16],[1,-1e16,1e16],[-1e16,1e16,1],[1e16,...Array(100).fill(1),-1e16]]) console.log(sum(xs), sumBy(xs,x=>x), mean(xs), meanBy(xs,x=>x));\nfor (const xs of [[Infinity,1],[Infinity,-Infinity],[NaN,1],[-Infinity,2]]) console.log(xs, sum(xs), sumBy(xs,x=>x), mean(xs), meanBy(xs,x=>x));\nNODE"
+          },
+          "command": "node --import tsx - <<'NODE'\nimport { sum, sumBy, mean, meanBy } from './packages/remeda/src/index.ts';\nfor (const xs of [[1e16,1,-1e16],[1,-1e16,1e16],[-1e16,1e16,1],[1e16,...Array(100).fill(1),-1e16]]) console.log(sum(xs), sumBy(xs,x=>x), mean(xs), meanBy(xs,x=>x));\nfor (const xs of [[Infinity,1],[Infinity,-Infinity],[NaN,1],[-Infinity,2]]) console.log(xs, sum(xs), sumBy(xs,x=>x), mean(xs), meanBy(xs,x=>x));\nNODE",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 37,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 38,
+          "input": {
+            "kind": "project",
+            "task": "remeda:check",
+            "packagePath": "packages/remeda"
+          },
+          "command": "npm run check",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 39,
+          "input": {
+            "kind": "command",
+            "command": "npx prettier --check packages/remeda/src/internal/stableSum.ts packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/mean.ts packages/remeda/src/meanBy.ts",
+            "cwd": "."
+          },
+          "command": "npx prettier --check packages/remeda/src/internal/stableSum.ts packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/mean.ts packages/remeda/src/meanBy.ts",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "1",
+          "output": "Command exited with code 1.\nChecking formatting...\n[error] Cannot find package 'prettier-plugin-pkg' imported from /workspace/Blame/.blame/research/confirmation-f42/campaign/1-remeda-stable-sum-compiler/workspace/noop.js"
+        },
+        {
+          "index": 40,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 41,
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 3,
+              "passed": 3,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "runner_output"
+          }
+        },
+        {
+          "index": 42,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff -- packages/remeda/src/internal/stableSum.ts packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/mean.ts packages/remeda/src/meanBy.ts",
+            "cwd": "."
+          },
+          "command": "git diff --check && git status --short && git diff -- packages/remeda/src/internal/stableSum.ts packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/mean.ts packages/remeda/src/meanBy.ts",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 43,
+          "input": {
+            "kind": "project",
+            "task": "remeda:test:runtime",
+            "packagePath": "packages/remeda"
+          },
+          "command": "npm run test:runtime",
+          "exitCode": 2,
+          "processSuccess": false,
+          "check": {
+            "process": "exited",
+            "exitCode": 2,
+            "execution": "not_observed",
+            "outcome": "failed",
+            "scope": "packages/remeda",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          }
+        },
+        {
+          "index": 44,
+          "input": {
+            "kind": "project",
+            "task": "remeda:lint",
+            "packagePath": "packages/remeda"
+          },
+          "command": "[project task remeda:lint]",
+          "exitCode": null,
+          "processSuccess": false,
+          "reportedExitCode": "127",
+          "output": "Command exited with code 127.\n> remeda@2.0.0 lint\n> eslint --fix --max-warnings 0 --cache --cache-location ./node_modules/.cache/eslint/\n\nsh: 1: eslint: not found\nnpm error Lifecycle script `lint` failed with error:\nnpm error code 127\nnpm error path /workspace/Blame/.blame/research/confirmation-f42/campaign/1-remeda-stable-sum-compiler/workspace/packages/remeda\nnpm error workspace remeda@2.0.0\nnpm error location /workspace/Blame/.blame/research/confirmation-f42/campaign/1-remeda-stable-sum-compiler/workspace/packages/remeda\nnpm error command failed\nnpm error command sh -c eslint --fix --max-warnings 0 --cache --cache-location ./node_modules/.cache/eslint/"
+        }
+      ],
+      "delivery": "Implemented shared linear-time compensated summation for finite numbers and reused it in `sum`, `sumBy`, `mean`, and `meanBy`. Bigint handling, empty results, direct/curried APIs, mapper order/context, input immutability, and IEEE non-finite behavior are preserved.\n\nChecks run:\n- `npm run test:study:regression` — passed, 4/4 tests.\n- `npm run test:study:feature` — passed, 3/3 tests.\n- `npm run test:study:types` — passed.\n- `npm run check` in `packages/remeda` — passed.\n- `git diff --check` — passed.\n- `npm run test:runtime` in `packages/remeda` — not run to completion: environment lacks the declared `vitest` installation, causing TypeScript module-resolution errors.\n- `npm run lint` in `packages/remeda` — blocked: `eslint` is unavailable in the installed environment.\n- Prettier check — blocked: `prettier-plugin-pkg` is unavailable.\n\nNo supplied manifests, lockfiles, metadata, or unrelated files were changed. Added `packages/remeda/src/internal/stableSum.ts` and updated only the four requested APIs.",
+      "blocked": [
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "code",
+            "message": "Command exited with code 2.\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\npackages/remeda/src/internal/stableSum.ts(72,23): error TS2488: Type 'Iterator<number | bigint, any, any>' must have a '[Symbol.iterator]()' method that returns an iterator.\npackages/remeda/src/internal/stableSum.ts(73,5): error TS2578: Unused '@ts-expect-error' directive.",
+            "recovery": "Fix the reported project error before running the relevant validation again."
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "remeda:check",
+            "packagePath": "packages/remeda"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "command",
+            "message": "Command exited with code 2.\n> remeda@2.0.0 check\n> tsc --project tsconfig.source.json\n\nsrc/internal/stableSum.ts(72,23): error TS2488: Type 'Iterator<number | bigint, any, any>' must have a '[Symbol.iterator]()' method that returns an iterator.\nsrc/internal/stableSum.ts(73,5): error TS2578: Unused '@ts-expect-error' directive.\nnpm error Lifecycle script `check` failed with error:\nnpm error code 2\nnpm error path /workspace/Blame/.blame/research/confirmation-f42/campaign/1-remeda-stable-sum-compiler/workspace/packages/remeda\nnpm error workspace remeda@2.0.0\nnpm error location /workspace/Blame/.blame/research/confirmation-f42/campaign/1-remeda-stable-sum-compiler/workspace/packages/remeda\nnpm error command failed\nnpm error command sh -c tsc --project tsconfig.source.json",
+            "recovery": "Inspect the command output and adjust the command or its prerequisites before retrying."
+          }
+        },
+        {
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "s?",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/internal/stableSum.ts\n@@\n   if (first.done) {\n     return 0;\n   }\n \n   if (typeof first.value === \"bigint\") {\n-    let sum = 0n;\n-    for (const value of values) {\n+    let sum = first.value;\n+    let next = iterator.next();\n+    while (!next.done) {\n       // @ts-expect-error [ts2365] -- Values are guaranteed to have one type at runtime.\n-      sum += value;\n+      sum += next.value;\n+      next = iterator.next();\n     }\n     return sum;\n@@\n-  add(first.value);\n-  for (const value of iterator) {\n+  add(first.value);\n+  let next = iterator.next();\n+  while (!next.done) {\n     // @ts-expect-error [ts2345] -- The bigint branch above handles the other type.\n-    add(value);\n+    add(next.value);\n+    next = iterator.next();\n   }\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "A scoped patch requires an observed symbol alias.",
+            "diagnosticId": "edit-mvbou3z8"
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npx prettier --check packages/remeda/src/internal/stableSum.ts packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/mean.ts packages/remeda/src/meanBy.ts",
+            "cwd": "."
+          },
+          "output": {
+            "status": "blocked",
+            "category": "environment",
+            "message": "Command exited with code 1.\nChecking formatting...\n[error] Cannot find package 'prettier-plugin-pkg' imported from /workspace/Blame/.blame/research/confirmation-f42/campaign/1-remeda-stable-sum-compiler/workspace/noop.js",
+            "recovery": "Use the dependency operation once if the declared installation is incomplete; do not edit manifests or copy files through the shell."
+          }
+        },
+        {
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "remeda:lint",
+            "packagePath": "packages/remeda"
+          },
+          "output": {
+            "status": "blocked",
+            "category": "environment",
+            "message": "Command exited with code 127.\n> remeda@2.0.0 lint\n> eslint --fix --max-warnings 0 --cache --cache-location ./node_modules/.cache/eslint/\n\nsh: 1: eslint: not found\nnpm error Lifecycle script `lint` failed with error:\nnpm error code 127\nnpm error path /workspace/Blame/.blame/research/confirmation-f42/campaign/1-remeda-stable-sum-compiler/workspace/packages/remeda\nnpm error workspace remeda@2.0.0\nnpm error location /workspace/Blame/.blame/research/confirmation-f42/campaign/1-remeda-stable-sum-compiler/workspace/packages/remeda\nnpm error command failed\nnpm error command sh -c eslint --fix --max-warnings 0 --cache --cache-location ./node_modules/.cache/eslint/",
+            "recovery": "Inspect the reported environment problem and recover the required tool, path, or service through the available project operations before retrying."
+          }
+        }
+      ],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_3a82bf83815da215f67ca87d64f86cd8",
         "delivery": "satisfied",
         "verification": "unverified",
         "satisfied_obligations": [

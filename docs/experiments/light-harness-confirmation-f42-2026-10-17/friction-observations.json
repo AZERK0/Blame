@@ -3,20 +3,25 @@
   "method": "Observed tool failures/guards. A refusal may be correct; its occurrence does not establish harness fault, model reasoning, or causal token overhead. Native command failures and Light edit/read categories are not equivalent tools.",
   "arms": {
     "reference": {
-      "trials": 3,
+      "trials": 4,
       "categories": {
-        "executed_command_failed": 1,
+        "executed_command_failed": 3,
         "invalid_final_syntax": 1,
-        "missing_path": 8,
-        "patch_preimage_or_format": 1
+        "missing_path": 9,
+        "patch_preimage_or_format": 1,
+        "edit_observation_guard": 1,
+        "read_guard": 1
       },
       "declarationCalls": 0
     },
     "compiler": {
-      "trials": 3,
+      "trials": 4,
       "categories": {
+        "command_failure_reported_in_message": 5,
         "missing_path": 3,
-        "patch_preimage_or_format": 3
+        "patch_preimage_or_format": 3,
+        "edit_observation_guard": 1,
+        "executed_command_failed": 1
       },
       "declarationCalls": 0
     },
@@ -137,6 +142,7 @@
       "task": "valibot-message-prefix",
       "arm": "compiler",
       "categories": {
+        "command_failure_reported_in_message": 1,
         "missing_path": 1,
         "patch_preimage_or_format": 1
       },
@@ -170,6 +176,16 @@
             "message": "Patch contains content before its first file operation.",
             "diagnosticId": "edit-mvbnfapq"
           }
+        },
+        {
+          "index": 44,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "reportedExitCode": 2
         }
       ],
       "declarationCalls": 0,
@@ -412,6 +428,173 @@
             "message": "Patch update target does not exist.",
             "diagnosticId": "edit-mvbo4pab"
           }
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": true,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "1-remeda-stable-sum-reference",
+      "task": "remeda-stable-sum",
+      "arm": "reference",
+      "categories": {
+        "edit_observation_guard": 1,
+        "executed_command_failed": 2,
+        "missing_path": 1,
+        "read_guard": 1
+      },
+      "observations": [
+        {
+          "index": 17,
+          "category": "missing_path",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/remeda/src/meanBy.test-d.ts",
+            "view": "raw"
+          },
+          "message": "ENOENT: no such file or directory, lstat '/workspace/Blame/.blame/research/confirmation-f42/campaign/1-remeda-stable-sum-reference/workspace/packages/remeda/src/meanBy.test-d.ts'"
+        },
+        {
+          "index": 33,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 1
+        },
+        {
+          "index": 34,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:feature"
+          },
+          "command": "npm run test:study:feature",
+          "exitCode": 1
+        },
+        {
+          "index": 36,
+          "category": "edit_observation_guard",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "packages/remeda/src/internal/stableSum.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/internal/stableSum.ts\n@@\n-      if (nan || positiveInfinity === negativeInfinity) {\n+      if (nan || (positiveInfinity && negativeInfinity)) {\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "A scoped patch requires an observed symbol alias.",
+            "diagnosticId": "edit-mvbol0dn"
+          }
+        },
+        {
+          "index": 37,
+          "category": "read_guard",
+          "tool": "read_code",
+          "input": {
+            "summary": "Implemented a stable linear-time compensated summation accumulator and integrated it into `sum`, `sumBy`, `mean`, and `meanBy`, preserving bigint handling, callback order/context, empty results, and IEEE special values. Validation was attempted: `npm run test:study:types` exited 0; regression and feature checks failed because the current accumulator incorrectly returned `NaN` for finite sums. The final corrective edit was blocked before completion, so the workspace remains with the known issue and is not ready."
+          },
+          "message": "target: Invalid input: expected string, received undefined; input: Unrecognized key: \"summary\""
+        }
+      ],
+      "declarationCalls": 0,
+      "compilerAdmitted": false,
+      "sourceVerification": "unverified"
+    },
+    {
+      "name": "1-remeda-stable-sum-compiler",
+      "task": "remeda-stable-sum",
+      "arm": "compiler",
+      "categories": {
+        "command_failure_reported_in_message": 4,
+        "edit_observation_guard": 1,
+        "executed_command_failed": 1
+      },
+      "observations": [
+        {
+          "index": 30,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "reportedExitCode": 2
+        },
+        {
+          "index": 31,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "remeda:check",
+            "packagePath": "packages/remeda"
+          },
+          "reportedExitCode": 2
+        },
+        {
+          "index": 33,
+          "category": "edit_observation_guard",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "target": "s?",
+                "patch": "*** Begin Patch\n*** Update File: packages/remeda/src/internal/stableSum.ts\n@@\n   if (first.done) {\n     return 0;\n   }\n \n   if (typeof first.value === \"bigint\") {\n-    let sum = 0n;\n-    for (const value of values) {\n+    let sum = first.value;\n+    let next = iterator.next();\n+    while (!next.done) {\n       // @ts-expect-error [ts2365] -- Values are guaranteed to have one type at runtime.\n-      sum += value;\n+      sum += next.value;\n+      next = iterator.next();\n     }\n     return sum;\n@@\n-  add(first.value);\n-  for (const value of iterator) {\n+  add(first.value);\n+  let next = iterator.next();\n+  while (!next.done) {\n     // @ts-expect-error [ts2345] -- The bigint branch above handles the other type.\n-    add(value);\n+    add(next.value);\n+    next = iterator.next();\n   }\n*** End Patch"
+              }
+            ]
+          },
+          "output": {
+            "status": "blocked",
+            "category": "input",
+            "message": "A scoped patch requires an observed symbol alias.",
+            "diagnosticId": "edit-mvbou3z8"
+          }
+        },
+        {
+          "index": 39,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npx prettier --check packages/remeda/src/internal/stableSum.ts packages/remeda/src/sum.ts packages/remeda/src/sumBy.ts packages/remeda/src/mean.ts packages/remeda/src/meanBy.ts",
+            "cwd": "."
+          },
+          "reportedExitCode": 1
+        },
+        {
+          "index": 43,
+          "category": "executed_command_failed",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "remeda:test:runtime",
+            "packagePath": "packages/remeda"
+          },
+          "command": "npm run test:runtime",
+          "exitCode": 2
+        },
+        {
+          "index": 44,
+          "category": "command_failure_reported_in_message",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "remeda:lint",
+            "packagePath": "packages/remeda"
+          },
+          "reportedExitCode": 127
         }
       ],
       "declarationCalls": 0,

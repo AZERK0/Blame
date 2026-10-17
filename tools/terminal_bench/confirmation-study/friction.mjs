@@ -7,6 +7,7 @@ for(const row of rows){const tools=await json(join(work,'campaign',row.name,'too
   if(t.tool==='read_code'&&out?.status==='blocked')observations.push({index,category:/ENOENT/.test(message)?'missing_path':'read_guard',tool:t.tool,input:t.input,message});
   if(t.tool==='edit_code'&&out?.status!=='ok')observations.push({index,category:out?.patchCorrection?.reason==='context_outside_symbol'||/outside.*symbol|symbol.*outside/i.test(message)?'patch_scope':/parse failed|syntax/i.test(message)?'invalid_final_syntax':/observ|read|coverage/i.test(message)?'edit_observation_guard':/context|match|header|patch/i.test(message)?'patch_preimage_or_format':'other_edit_refusal',tool:t.tool,input:t.input,output:out});
   if(t.tool==='run_task'&&Number.isInteger(out?.data?.exitCode)&&out.data.exitCode!==0)observations.push({index,category:'executed_command_failed',tool:t.tool,input:t.input,command:out.data.command,exitCode:out.data.exitCode});
+  if(t.tool==='run_task'&&out?.status==='blocked'&&/^Command exited with code \d+\./.test(message))observations.push({index,category:'command_failure_reported_in_message',tool:t.tool,input:t.input,reportedExitCode:Number(message.match(/^Command exited with code (\d+)\./)[1])});
   if(t.tool==='run_commands')for(const value of Array.isArray(out)?out:[])if(value.success===false)observations.push({index,category:'native_command_failed',tool:t.tool,command:value.query});
  }
  const categories=Object.fromEntries([...new Set(observations.map(x=>x.category))].sort().map(k=>[k,observations.filter(x=>x.category===k).length]));

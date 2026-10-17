@@ -30,6 +30,12 @@ test('warm caches cannot leak tool installs into the next trial',()=>fixture(asy
  assert.equal(await readFile(join(cache,'previous-tool'),'utf8'),'cached');
 }));
 
+test('ancestor dependencies cannot supply undeclared tools to a future trial',()=>fixture(async(root,baseline)=>{
+ await mkdir(join(root,'node_modules/unregistered'),{recursive:true});
+ await writeFile(join(root,'node_modules/unregistered/package.json'),'{"name":"unregistered","version":"1.0.0"}');
+ await assert.rejects(()=>prepareIsolatedNodeEnvironment({baselineModules:baseline,workspace:join(root,'trial'),cacheRoot:join(root,'cache')}),/Ancestor dependencies are reachable/);
+}));
+
 test('offline trial environment refuses an undeclared tool without contacting a registry',()=>fixture(async(root,baseline)=>{
  const {createServer}=await import('node:http');const {spawn}=await import('node:child_process');const requests=[];const server=createServer((_req,res)=>{requests.push(_req.url);res.writeHead(404);res.end('unregistered');});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));

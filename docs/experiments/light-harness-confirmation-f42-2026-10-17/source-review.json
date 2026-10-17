@@ -127,6 +127,35 @@
       "noSolutionRetrieval": true,
       "fullRequestPassed": false,
       "note": "Fallback implementations pass the selected runtime/type checks after the final edits. Additional website property metadata introduces two TS2322 errors outside the selected compiler scope: {type: boolean} lacks the required value field. Exact upstream metadata passes the isolated original PropertyProps witness; agent metadata fails. The renderer also dereferences that missing value. This post-hoc source-audit witness is archived separately; no full website build was run or claimed, and no source was repaired."
+    },
+    {
+      "name": "1-remeda-stable-sum-reference",
+      "hashes": {
+        "events.jsonl": "1d2e6e97ea9387b1d551a4ac94d809c3157a4ab3051d64740c62f458b531a46e",
+        "workspace.diff": "e214f3d6a225defc25673eb64029a24f0dcf6c4bc5eb075e996c3c283cab049a",
+        "score.json": "6e06c59ee5051336de0387cbe2b440309de19f84cdde444c4fcd0e374b18cec5",
+        "tool-ledger.json": "42ddcc32a60b1d04e1a259b6c9f423088bddc335cc9bb6a42f3550df9f22d68c"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "note": "A shared linear compensated accumulator covers sum and sumBy/meanBy; mean delegates to sum. Explicit special-value handling retains NaN and infinity behavior, bigint branches and mapper evaluation order remain. Only implementation changes; all three supplied checks pass after the last edit, with truthful counts and compiler exit. Initial failed regression/feature runs are retained. The 718-second measured duration is not removed as an outlier."
+    },
+    {
+      "name": "1-remeda-stable-sum-compiler",
+      "hashes": {
+        "events.jsonl": "e594233df023bb2c19331cd9003714b587d96d6d3ab23d1d42dcf2473a92b547",
+        "workspace.diff": "9245c9c05c003b4d87dcb64a13854165da9d60d7e15364b23f64e8e695d9ff71",
+        "score.json": "1c2b2ff5796b03cb133978a3953b6f11473db9c7739f54e9bcc6e0a6af8721c0",
+        "tool-ledger.json": "0b40859408b2c7cbe029ea4b8df43154a9daa36b914115bfc7d816ab4a18f8d7"
+      },
+      "sourceBehaviorPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "unfrozenToolAttempt": true,
+      "note": "Shared compensated summation covers all four APIs, preserving bigint, mapper order/context and selected non-finite behavior. Only five implementation files change. Required final-source checks pass; an additional upstream production compiler check passes. Failed intermediate compiler checks were fixed; full upstream tests, lint and Prettier failures are disclosed. Unversioned npx prettier uses an environment tool outside the pinned study dependency set; no new installation warning or pinned dependency changes were observed. This environment comparability limitation is retained, distinct from the observed Vitest installation in trial 5. A subsequent read-only resolution witness found reachable host-repository Prettier3.8.3 through ancestor lookup; its exact use by the original npx process is not directly instrumented."
     }
   ]
 }

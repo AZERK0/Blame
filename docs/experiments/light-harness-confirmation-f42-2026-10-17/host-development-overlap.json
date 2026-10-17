@@ -1,0 +1,29 @@
+{
+  "activities": [
+    {
+      "activity": "path-candidate-tests.log",
+      "startUTC": "2026-10-17T00:57:49.677248+00:00",
+      "endUTC": "2026-10-17T00:57:55.837538+00:00",
+      "method": "Conservative estimate from final log timestamp and Node test duration, padded by one second."
+    },
+    {
+      "activity": "path-baseline-tests.log",
+      "startUTC": "2026-10-17T00:58:18.123950+00:00",
+      "endUTC": "2026-10-17T00:58:21.957346+00:00",
+      "method": "Conservative estimate from final log timestamp and Node test duration, padded by one second."
+    },
+    {
+      "activity": "isolation-helper-tests.log",
+      "startUTC": "2026-10-17T01:02:02.413558+00:00",
+      "endUTC": "2026-10-17T01:02:04.896162+00:00",
+      "method": "Conservative estimate from final log timestamp and Node test duration, padded by one second."
+    },
+    {
+      "activity": "prototype TypeScript builds",
+      "startUTC": "2026-10-17T00:56:40Z",
+      "endUTC": "2026-10-17T00:58:12Z",
+      "method": "Conservative enclosing interval from observed tool calls; includes idle time between builds."
+    }
+  ],
+  "caveat": "Additional small research inspections and report generation use the same nonexclusive host. These intervals identify known validation load, not all possible host contention."
+}

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {cp,lstat,mkdir,readFile,readdir,readlink,rm} from 'node:fs/promises';
-import {isAbsolute,join,relative,resolve,sep} from 'node:path';
+import {dirname,isAbsolute,join,relative,resolve,sep} from 'node:path';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const inside=(root,path)=>{const r=relative(root,path);return r===''||!r.startsWith('..'+sep)&&r!=='..'&&!isAbsolute(r);};
 export async function dependencyManifest(root){
@@ -20,6 +20,12 @@ export async function prepareIsolatedNodeEnvironment({baselineModules,workspace,
  assert.ok(!inside(destination,cache)&&!inside(cache,destination)&&!inside(baseline,cache)&&!inside(cache,baseline),'npm cache and dependencies must be disjoint');
  await lstat(destination).then(()=>{throw Error('Refusing to replace existing dependencies');},e=>{if(e.code!=='ENOENT')throw e;});
  await lstat(cache).then(()=>{throw Error('Refusing to reuse an existing npm cache');},e=>{if(e.code!=='ENOENT')throw e;});
+ // Node/npm can resolve an undeclared tool from an ancestor even with a fresh
+ // offline npm cache. Future trial workspaces must live outside the host repo.
+ for(let parent=dirname(resolve(workspace));;parent=dirname(parent)){
+  await lstat(join(parent,'node_modules')).then(()=>{throw Error('Ancestor dependencies are reachable; use a separate temporary workspace');},e=>{if(e.code!=='ENOENT')throw e;});
+  if(parent===dirname(parent))break;
+ }
  const manifest=await dependencyManifest(baseline);
  for(const [path,value]of Object.entries(manifest))if(value.kind==='symlink'){
   assert.ok(!isAbsolute(value.target)&&inside(baseline,resolve(baseline,path,'..',value.target)),`External dependency link cannot be isolated: ${path}`);

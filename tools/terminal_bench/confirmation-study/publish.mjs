@@ -14,6 +14,8 @@ assert.equal(exit.complete, true); assert.equal(analysis.rows.length, protocol.o
 const review = await json(join(study, 'source-review.json'));
 assert.equal(review.decisions.length, analysis.rows.length);
 const rows = [];
+const overlap = await json(join(study, 'host-validation-overlap.json'));
+const overlapStart = Date.parse(overlap.fullRuntimeLogCreatedUTC), overlapEnd = Date.parse(overlap.lastLogWriteUTC);
 await mkdir(join(study, 'traces'), { recursive: true });
 for (const row of analysis.rows) {
   const directory = join(campaign, row.name), files = {};
@@ -27,7 +29,9 @@ for (const row of analysis.rows) {
   }
   const archive = gzipSync(JSON.stringify({ name: row.name, files }), { mtime: 0 });
   await writeFile(join(study, 'traces', row.name + '.json.gz'), archive);
-  rows.push({ ...row, auditedCompletion: row.independentFunctionalSuccess &&
+  const started = Date.parse((await json(join(directory, 'model-start.json'))).startedAtUTC);
+  const hostValidationOverlap = started < overlapEnd && started + row.exit.durationMs > overlapStart;
+  rows.push({ ...row, hostValidationOverlap, auditedCompletion: row.independentFunctionalSuccess &&
     decision.sourceBehaviorPassed && decision.finalSourceChecksPassed && decision.noSolutionRetrieval && decision.fullRequestPassed,
     traceSha256: sha(archive) });
 }
@@ -88,7 +92,7 @@ for (const reference of ['reference', 'cline']) {
   const pairs = comparison.pairDetails.filter(p => p.task === task.id);
   const total = arm => pairs.reduce((n,p) => {const r=rows.find(r=>r.arm===arm&&r.task===task.id&&r.repeat===p.repeat);return n+r.usage.input+r.usage.output;},0);
   return {task:task.id,project:task.project,pairedSuccesses:pairs.length,tokenDelta:pairs.every(p=>p.tokenDelta!==null)?delta(total(treatment),total(reference)):null,
-   quality:Object.fromEntries(protocol.arms.map(arm=>[arm,rows.filter(r=>r.arm===arm&&r.task===task.id&&r.auditedCompletion).length]))};
+   auditedQuality:Object.fromEntries(protocol.arms.map(arm=>[arm,rows.filter(r=>r.arm===arm&&r.task===task.id&&r.auditedCompletion).length]))};
  });
  comparison.leaveOneTaskOut = protocol.tasks.map(task => {
   const pairs=comparison.pairDetails.filter(p=>p.task!==task.id);
@@ -102,12 +106,13 @@ return comparisons;
 }
 const comparisons = compare(row => row.auditedCompletion);
 const functionalComparisons = compare(row => row.independentFunctionalSuccess);
+const durationSensitivityWithoutRuntimeSuiteOverlap = compare(row => row.auditedCompletion && !row.hostValidationOverlap);
 const qualityGate = arms[treatment].audited >= arms.reference.audited;
 const comparison = comparisons[`${treatment}/reference`];
 const resourceGate = qualityGate && comparison.pairs >= 12 &&
   comparison.tokenDelta !== null && comparison.tokenDelta < 0 && comparison.costDelta < 0 && comparison.durationDelta <= 0.1;
 const accounting = await json(join(study, 'accounting.json')), prior = await json(join(study, 'prior-budget.json'));
-await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true, arms, comparisons, functionalComparisons,
+await save(join(study, 'summary.json'), { phase: protocol.phase, complete: true, arms, comparisons, functionalComparisons, durationSensitivityWithoutRuntimeSuiteOverlap,
   functionalComparisonCaveat: 'Secondary descriptive comparison on selected-check success only. It can include incorrect extra changes or instruction violations; it cannot establish full-task quality parity.', qualityGate, resourceGate,
   accounting, priorObservedUsd: prior.observedUsd, priorReservedUsd: prior.reservedUsd,
   cumulativeObservedSdkUsd: prior.observedUsd + accounting.observedUsd, cumulativeReservedUsd: prior.reservedUsd + accounting.reservedUsd,

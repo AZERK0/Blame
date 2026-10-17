@@ -7,6 +7,7 @@ for(const row of analysis.rows){
  const commands=[];
  for(const [index,t]of tools.entries()){
   if(t.tool==='run_task'&&t.output?.data?.command)commands.push({index,input:t.input,command:t.output.data.command,exitCode:t.output.data.exitCode??null,processSuccess:t.output.data.exitCode===0,check:t.output.data.check??null});
+  else if(t.tool==='run_task'&&t.output?.status==='blocked')commands.push({index,input:t.input,command:t.input?.command??`[project task ${t.input?.task??'unknown'}]`,exitCode:null,processSuccess:false,reportedExitCode:t.output.message?.match(/^Command exited with code (\d+)\./)?.[1]??null,output:t.output.message});
   if(t.tool==='run_commands')for(const o of Array.isArray(t.output)?t.output:[])commands.push({index,input:t.input,command:o.query,exitCode:null,processSuccess:o.success===true,output:o.output??o.result??o});
  }
  const required=Object.fromEntries(['regression','feature','types'].map(name=>[name,commands.filter(c=>(c.command===`npm run test:study:${name}` || c.command.split(' && ').every(s=>/^npm run test:study:(regression|feature|types)$/.test(s)) && c.command.split(' && ').includes(`npm run test:study:${name}`))&&c.index>lastEdit&&c.processSuccess)]));
