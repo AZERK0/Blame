@@ -20,7 +20,9 @@ export async function positive(root,id){
   await replace(file,'  if (n <= 0) {','  n = Number.isNaN(n) ? 0 : Math.max(0, Math.floor(n));\n  if (n <= 0) {');
   const pipe=join(src,'pipe.ts');
   await replace(pipe,'import { SKIP_ITEM }','import { SKIP_ITEM, lazyEmptyEvaluator }');
-  await replace(pipe,'for (const value of output) {','for (const value of (lazySequence.some(fn => fn === lazyEmptyEvaluator) ? [] : output)) {');
+  await replace(pipe,'  readonly isSingle: boolean;','  readonly isSingle: boolean;\n  readonly isEmpty: boolean;');
+  await replace(pipe,'    isSingle: lazy.single ?? false,','    isSingle: lazy.single ?? false,\n    isEmpty: fn === lazyEmptyEvaluator,');
+  await replace(pipe,'for (const value of output) {','for (const value of (lazySequence.some(fn => fn.isEmpty) ? [] : output)) {');
  }
  const relativeImport=id.startsWith('valibot')?'./index.ts':'./index';
  const body=id==='valibot-parser-overrides'?"expect(v.safeParser(v.string())(1,{message:'custom'}).issues?.[0].message).toBe('custom');":id==='valibot-summary-format'?"const result=v.safeParse(v.string('bad'),123);if(!result.success)expect(v.summarize(result.issues,{bullet:'!'})).toBe('! bad');":"expect(v.pipe([1,2],v.map(x=>x),v.take(0.5))).toEqual([]);";
