@@ -186,6 +186,207 @@
         "Reviewed normalization and empty-take metadata. Empty sequence explicitly respects final isSingle, preserving undefined for scalar terminals. Added fourteen-case regression passes independent runtime/types; no existing tests/config/dependencies altered.",
         "A failed direct Vitest/feature sequence is retained; later direct new-test run, npm check and all four supplied checks succeed after final edits. Delivery accurately limits supplied compiler/upstream scope. Supplemental original pipeline and scalar witness pending."
       ]
+    },
+    {
+      "name": "2-valibot-parser-overrides-scope",
+      "hashes": {
+        "events.jsonl": "4e89ba58815c633aa4d5e106dd6fc46c1558926dea75d87307f321762818a6e0",
+        "workspace.diff": "efbcfd481acb6c31dc40d79a2f46856f126e63ebc0095eded37452f27aa63836",
+        "score.json": "800cf913e53e837bb24cb6edeb73e2695040beba61300b65ecc11cc2831177f7",
+        "tool-ledger.json": "fc02f610a6e1e7b4fca228e411a9e78b9bf4fe6b57bffbd003f0eb896cfbcd13"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "scopeFollowups": [
+        {
+          "reportIndex": 42,
+          "validationIndex": 48,
+          "kind": "runtime",
+          "path": "library/src/methods/parser/parserOverrides.test.ts"
+        },
+        {
+          "reportIndex": 54,
+          "validationIndex": 64,
+          "kind": "types",
+          "path": "library/src/methods/parser/parserOverrides.test.ts"
+        }
+      ],
+      "validationRecovery": {
+        "failedIndex": 56,
+        "passedIndex": 64,
+        "boundary": "added-test TypeScript compilation"
+      },
+      "notes": [
+        "All four optional signatures and conditional merges preserve captured identity/undefined semantics. New four-case regression passes independent runtime/types; original tests/config/dependencies unchanged.",
+        "After scope feedback, direct added-test compilation fails at tool56; model edits its test and direct compiler succeeds at64. Runtime also rerun, all four supplied checks fresh. Observed recovery, not proof feedback caused it. Prettier attempts failed without mutation/installation; final check claims are accurate."
+      ]
+    },
+    {
+      "name": "2-valibot-parser-overrides-cline",
+      "hashes": {
+        "events.jsonl": "c38209bafd22a49546474cadf6e87566db8a1b470eb4137443d02da3c5c8ba5a",
+        "workspace.diff": "eb680cbc52895acf3200277eaddc22a32718f396269e07d99bc1866fe8632196",
+        "score.json": "e77442fdad0e006770c05560d67f72c6afb65eb40960faa2d769683da15ab2fe",
+        "tool-ledger.json": "1a6f94f94ed84949238a0c8dbd51aa458171100ac9fa11acaf620946535336cb"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "notes": [
+        "Reviewed four signatures and conditional spreads preserving undefined/captured identity and result inference. New nine-case test covers sync/async, overrides and success and passes independent runtime/types.",
+        "All required checks fresh; library typecheck and Node-environment focused test also pass. Report accurately distinguishes missing jsdom configuration. Original tests/config/dependencies preserved; no solution retrieval."
+      ]
+    },
+    {
+      "name": "2-valibot-parser-overrides-reference",
+      "hashes": {
+        "events.jsonl": "0f98301b79bc2699e84a3a2dbde042da85ea3ffd1655c5f3b245ad7bbf291eeb",
+        "workspace.diff": "9d29eb0e510fbb317299e04a5f121131623afa03322b8fa88e790d880ad2fb29",
+        "score.json": "b879139ce29c6cc82632be17e73a7a9a99e1eea96745dd7daab93eb7d7acea27",
+        "tool-ledger.json": "3ec6d9c610c5c4ca443978cdec5dc1af899dda73791d96c88278d0d752e1785b"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "notes": [
+        "Reviewed four correct conditional config merges and public optional signatures; metadata identity unchanged. Added four-case regression passes runtime/types; sync catch-only assertions are weaker than an explicit expected-throw assertion, but safe/async cases and independent feature controls exercise the behavior.",
+        "All four required checks fresh; agent separately passes library typecheck and Node-environment test, honestly reports missing jsdom/Prettier. Existing tests/config/dependencies unchanged; no solution retrieval."
+      ]
+    },
+    {
+      "name": "2-valibot-summary-format-cline",
+      "hashes": {
+        "events.jsonl": "faacddd307c7b23041cb51ad3f4aeda1b3e6a2dd1838d547052af65a9d04cdf8",
+        "workspace.diff": "58d8b37321fec9ea0646b93921a926d0099ad981c3b0a3269dcfb5e029c6c304",
+        "score.json": "7e9259c8bc192136825f9f684683a9a12283b864eeb0016f1acd593ae889fc79",
+        "tool-ledger.json": "9ee1412052b140e22386bcfdac5fa3a43116f8da2dad25e1cd101557f93829f4"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "notes": [
+        "Reviewed exported options, nullish defaults and conditional path formatting; required defaults, empty strings and issue order/mutability preserved. New four-case test validates public type export and passes runtime/types.",
+        "Agent runs original+new tests, four required checks fresh, delivery scope accurate. Existing tests/config/dependencies unchanged and no solution retrieval."
+      ]
+    },
+    {
+      "name": "2-valibot-summary-format-reference",
+      "hashes": {
+        "events.jsonl": "9a0fa378a3c7d463e1ea1bcc1f3047a0000faf5dfa6e5c59a4949dc21233afff",
+        "workspace.diff": "2cd9dbf03e527313aaee885d47c64672fc5e3620974497de7bfb3e0e11926dc1",
+        "score.json": "7e08943202c6ef35852402e6d60fd7808a1e5a007169796881d1b73ea8c16b71",
+        "tool-ledger.json": "36bd4ca559c8adac86760f0781df1ba41f762010d2742ff37df68d46b90b3a5e"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "notes": [
+        "Reviewed exported options and nullish defaults; empty formatting strings and conditional paths preserve existing ordering and immutable inputs. New two-case regression passes independent runtime/types and directly executed Vitest.",
+        "All four selected checks fresh; delivery accurately limits upstream selection and missing formatter. Original tests/config/dependencies unchanged; no solution retrieval."
+      ]
+    },
+    {
+      "name": "2-valibot-summary-format-scope",
+      "hashes": {
+        "events.jsonl": "0b667c034fe2083179a73130f9d07d6ed57ed05154724acda49c0d1ebdfbb6fa",
+        "workspace.diff": "d27c3007ab60a5142052d2c0971feb42d3960ab937efad420af1b7fee4f690e2",
+        "score.json": "1c5452c5f77d8d7bd6073245b1ad5f81a02c065ec578816db4bb998dfc9c12fb",
+        "tool-ledger.json": "ab6ec8b373a81d926cbaede3591e8124a47489a249a94b5e6d783c7c0c613694"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "scopeFollowupAttempts": [
+        {
+          "reportIndex": 28,
+          "validationIndex": 30,
+          "kind": "runtime",
+          "outcome": "missing jsdom"
+        }
+      ],
+      "notes": [
+        "Reviewed optional public type/defaults/conditional formatting; no unrelated behavior or existing tests/config/dependency changes. New five-case regression passes uniform independent runtime/types.",
+        "Scope feedback is followed by a direct new-test attempt that fails before executing due to missing jsdom. No successful added-test follow-up credited. Delivery correctly states this limitation and study type exclusion; four required checks fresh. No solution retrieval."
+      ]
+    },
+    {
+      "name": "2-remeda-take-counts-reference",
+      "hashes": {
+        "events.jsonl": "c51189dc5006be3768b52affa052d46fb0f4252cb1c37ab2d1e6e1102a136352",
+        "workspace.diff": "db89f88a44336e1809080ff1c56f3a95930340141a4f14a8b585395308f44fb3",
+        "score.json": "e8e7e848932b491808810e8d28d0c40a938a59f8f5fa5e2be359b841a67f38b9",
+        "tool-ledger.json": "d114ff0821730b1ae124753b5a21cff986741cc4740f4f59694038f5e63e39ae"
+      },
+      "sourceBehaviorPassed": false,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "notes": [
+        "Normalization and new twelve-case regression pass all selected/delivered checks; required checks fresh, original tests/config/dependencies preserved and no solution retrieval.",
+        "The same empty-single compatibility defect as first Cline endpoint is present: new early continue unconditionally assigns [] instead of preserving the final scalar conversion. Uniform post-hoc witness pending. Reported integer-behavior preservation is therefore too broad despite green checks."
+      ]
+    },
+    {
+      "name": "2-remeda-take-counts-scope",
+      "hashes": {
+        "events.jsonl": "bbea26996108a24893c198ccba28318b17f556c987d9de5e12a3efedd2efb666",
+        "workspace.diff": "9f52a6e3c65824ab4d9a94e0e81b3e073c06d47d285054326dcbb386b1e9889d",
+        "score.json": "1257788c41f141986303c84253ce140ba865686eea00553a5ae9a218bc51360e",
+        "tool-ledger.json": "2070962b6e2b3d4b9b6f09e6d99ce2b8740cb42807bb91fa864098fe22ba5732"
+      },
+      "sourceBehaviorPassed": false,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "deliveryAccepted": false,
+      "scopeFollowups": [
+        {
+          "reportIndex": 59,
+          "validationIndex": 77,
+          "kind": "runtime",
+          "path": "packages/remeda/src/take.counts.test.ts",
+          "run": "r22",
+          "selectionEvidenceIndex": 73,
+          "outputPath": "src/take.counts.test.ts"
+        }
+      ],
+      "notes": [
+        "All six endpoint checks and added eleven-case regression pass, but source has the same empty-single regression: unconditional [] skips scalar conversion. Uniform witness pending. Original tests/config and existing dependencies preserved; added Vitest tsbuildinfo is generated cache, raw integrity flag retained.",
+        "Official failure: maxIterations48. A package task used a root-relative test selector from packages/remeda and selected no tests. Repeated full-suite passes (3862 tests, no type errors) do not clear the failed differently-parameterized invocation; finish_task blocks repeatedly. No accepted final delivery; audit-packet delivery is only the attempted finish summary, not successful completion. Preserve this adverse outcome; diagnose/replay the gate separately after frozen workers."
+      ]
+    },
+    {
+      "name": "2-remeda-take-counts-cline",
+      "hashes": {
+        "events.jsonl": "e96045a388826911397720677174cd2f9f895ea358a859906a84ce403f286d5a",
+        "workspace.diff": "ff2926eaafb899d1f8e66a68a438ee15687158c8940776617a0fa1e76603e8a6",
+        "score.json": "7db0f8a902cb2e0842241c9bf34f57987183e948b46867278c957776ebc9f270",
+        "tool-ledger.json": "f13025f5e815526c2da3f8c3a133fcebfd4e23de62410b6ec8daa861b52a6997"
+      },
+      "sourceBehaviorPassed": false,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": false,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "notes": [
+        "All selected/delivered endpoint checks pass, but empty pipeline shortcut again bypasses scalar conversion. Uniform original/endpoint witness pending. Added thirteen-case regression valid; original tests/config/dependencies preserved.",
+        "Four supplied checks pass at tools35–38, then tools42–43 append a newline to the added test. Focused runtime and source type checks pass after that formatting-only edit; all four supplied checks are not rerun on final bytes, so conservative final-source criterion is false. This does not change the already-negative semantic verdict. Local git log reads synthetic input only; no solution retrieval."
+      ]
     }
   ]
 }

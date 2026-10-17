@@ -61,9 +61,13 @@ for(const row of results.rows){
  for(const f of row.scopeFollowups){
   const offer=scopes.find(o=>o.index===f.reportIndex),validation=ledger[f.validationIndex];assert.ok(offer&&offer.report.status==='reported');
   assert.ok(offer.report.changedFilesNotReported.includes(f.path));assert.ok(validation.observedIteration>offer.observedIteration);
-  assert.equal(validation.tool,'run_task');assert.equal(validation.output?.data?.exitCode,0);
-  const command=validation.output.data.command;assert.ok(/vitest|--test|delivered|tsc/u.test(command));
-  assert.ok(command.includes(f.path)||/delivered/u.test(command));
+  assert.equal(validation.tool,'run_task');const evidence=validation.output?.data?.completed?.data??validation.output?.data;assert.equal(evidence?.exitCode,0);
+  const command=evidence.command;
+  if(f.run){
+   const selected=ledger[f.selectionEvidenceIndex];assert.equal(selected.output?.data?.run,f.run);assert.equal(validation.output.data.run,f.run);
+   assert.ok(selected.observedIteration>offer.observedIteration);assert.ok(selected.output.data.output.includes(f.outputPath+' ('));
+   assert.equal(evidence.reporting.cwd+'/'+f.outputPath,f.path);assert.ok(evidence.check.counts.executed>0&&evidence.check.counts.failed===0);
+  }else{assert.ok(/vitest|--test|delivered|tsc/u.test(command));assert.ok(command.includes(f.path)||/delivered/u.test(command));}
  }
  const source=row.independentFunctionalSuccess&&d.sourceBehaviorPassed&&d.addedTestsPassed!==false&&d.finalSourceChecksPassed&&d.noSolutionRetrieval;
  assert.equal(row.sourceAuditedCompletion,source);assert.equal(row.appendOnlySensitivityCompletion,source&&(d.fullRequestPassed||d.complianceInterpretationSensitive===true));assert.equal(row.auditedCompletion,source&&d.fullRequestPassed);
