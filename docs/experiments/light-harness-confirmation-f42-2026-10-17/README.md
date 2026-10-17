@@ -52,3 +52,5 @@ Trial 36 (second empty-zip Cline assignment) disappeared with its driver before 
 For a vanished worker only, recover-interrupted.mjs --name=TRIAL --confirmed-no-live-worker grades and archives its unchanged endpoint without model calls. Check host processes first; never use it on a live worker. resume.mjs starts only the remaining original assignments.
 
 A later direct trace (1-remeda-empty-zip-compiler, tool45) identifies /workspace/Blame/node_modules/.pnpm/prettier@3.8.3 in its plugin-resolution failure stack. Thus ancestor formatter reachability is actually observed, beyond the earlier read-only resolution probe. Tool44 was refused before execution and tool45 used the atomic formatter path; neither is a successful source edit after validation.
+
+All54 original patches reproduce their original selected-check outcomes from pristine inputs, without model calls or repairs. Six verifier negative controls reject dropped assignments, altered usage/acceptance/comparisons/decisions and corrupt traces.

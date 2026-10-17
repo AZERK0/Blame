@@ -1,4 +1,4 @@
-import {rm,symlink,writeFile} from 'node:fs/promises';
+import {rm,symlink,writeFile,appendFile} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {repo,sha,json,save,prepare as prepareF42} from '../confirmation-study/setup.mjs';
@@ -25,6 +25,8 @@ export async function prepare(root,id,isolated=false){
  const pkg=await json(join(root,'package.json'));
  pkg.scripts['test:study:upstream']='node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs';
  await save(join(root,'package.json'),pkg);
+ if(id==='valibot-fallback-when')await appendFile(join(root,'.study/types.ts'),
+  "\nconst existingSchema = v.string();\nv.fallback<typeof existingSchema, 'fallback'>(existingSchema, 'fallback');\nv.fallbackAsync<typeof existingSchema, 'fallback'>(existingSchema, 'fallback');\n");
  const paths=id==='valibot-fallback-when'?['methods/fallback/fallback','methods/fallback/fallbackAsync']:['storages/globalConfig/globalConfig','utils/_addIssue/_addIssue'];
  const config={test:{include:paths.map(p=>'library/src/'+p+'.test.ts'),maxWorkers:1,fileParallelism:false,cache:false}};
  await writeFile(join(root,'.study/vitest.config.mjs'),'export default '+JSON.stringify(config)+';\n');

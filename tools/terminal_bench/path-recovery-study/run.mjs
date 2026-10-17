@@ -111,14 +111,20 @@ export async function analyse(slot, directory, exit, grade) {
   const wire = await lines(join(directory, 'wire-contracts.jsonl'));
   const iterations = events.filter(event => event.type === 'notice' && event.payload?.message === 'Agent iteration started.').length;
   const usage = reconcileUsage(result.usage, events.filter(event => event.type === 'usage').map(event => event.payload?.usage), iterations);
-  const tools = events.filter(event => event.type === 'tool').map(event => ({ ...event.payload,
-    tool: event.payload.toolCall?.name ?? event.payload.tool, input: event.payload.toolCall?.input ?? event.payload.input })).filter(tool => tool.phase === 'finished');
+  const tools = [],starts=new Map();let observedIteration=0;
+  for(const [eventIndex,event]of events.entries()){
+    if(event.type==='notice'&&event.payload?.message==='Agent iteration started.')observedIteration++;
+    if(event.type==='tool'&&event.payload?.phase==='started')starts.set(event.payload.toolCallId??event.payload.toolCall?.id,eventIndex);
+    if(event.type==='tool'&&event.payload?.phase==='finished')tools.push({...event.payload,observedIteration,observedStartIndex:starts.get(event.payload.toolCallId??event.payload.toolCall?.id)??null,
+      tool:event.payload.toolCall?.name??event.payload.tool,input:event.payload.toolCall?.input??event.payload.input});
+  }
   const recoveryOffers=[];
   for(const [index,t] of tools.entries())if(t.tool==='read_code'&&typeof t.output?.recovery==='string'){
     let hint;try{hint=JSON.parse(t.output.recovery);}catch{continue;}
     if(hint.kind!=='missing_workspace_path')continue;
-    const followed=tools.findIndex((next,j)=>j>index&&next.tool==='read_code'&&next.output?.status==='ok'&&hint.candidates.some(c=>next.input?.target?.replace(/^\.\//,'')===c.path));
-    recoveryOffers.push({index,requestedPath:hint.requestedPath,candidates:hint.candidates,followedReadIndex:followed<0?null:followed});
+    const followed=tools.findIndex((next,j)=>j>index&&next.observedIteration>t.observedIteration&&next.tool==='read_code'&&next.output?.status==='ok'&&hint.candidates.some(c=>next.input?.target?.replace(/^\.\//,'')===c.path));
+    const nextNavigation=tools.map((next,j)=>({next,j})).filter(({next,j})=>j>index&&next.observedIteration>t.observedIteration&&['search_code','read_code'].includes(next.tool)&&next.observedStartIndex!==null).sort((a,b)=>a.next.observedStartIndex-b.next.observedStartIndex)[0]?.j??-1;
+    recoveryOffers.push({index,observedIteration:t.observedIteration,requestedPath:hint.requestedPath,candidates:hint.candidates,followedReadIndex:followed<0?null:followed,directNextNavigation:followed>=0&&followed===nextNavigation});
   }
   const forwarded = wire.filter(request => !request.budgetRejected);
   const contractPassed = forwarded.every(request => request.maximumOutputTokens === 8192 && request.model === protocol.model && request.reasoning?.effort === protocol.effort)
@@ -127,7 +133,7 @@ export async function analyse(slot, directory, exit, grade) {
   const row = { ...slot, name: `${slot.repeat}-${slot.task}-${slot.arm}`, officialRuntimeSuccess: result.status === 'succeeded', status: result.status ?? 'missing',
     independentFunctionalSuccess: grade.independentFunctionalSuccess, auditedCompletion: null, durationMs: result.durationMs ?? exit.durationMs,
     usage, metrics: result.metrics ?? null, completion: result.completion ?? null, error: result.error ?? null, exit,
-    pathRecoveryOffered: recoveryOffers.length, pathRecoveryFollowed: new Set(recoveryOffers.map(r=>r.followedReadIndex).filter(i=>i!==null)).size, recoveryOffers,
+    pathRecoveryOffered: recoveryOffers.length, pathRecoveryFollowed: new Set(recoveryOffers.map(r=>r.followedReadIndex).filter(i=>i!==null)).size, pathRecoveryDirectlyFollowed: recoveryOffers.filter(r=>r.directNextNavigation).length, recoveryOffers,
     declarationCalls: tools.filter(tool => tool.tool === 'read_code' && tool.input?.view === 'declaration').length,
     successfulDeclarationCalls: tools.filter(tool => tool.tool === 'read_code' && tool.output?.status === 'ok' && tool.output?.data?.view === 'declaration').length,
     blockedEdits: tools.filter(tool => tool.tool === 'edit_code' && tool.output?.status !== 'ok').length,

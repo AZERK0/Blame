@@ -1,3 +1,4 @@
+import {verifySummary} from '../confirmation-study/verify-summary.mjs';
 import assert from 'node:assert/strict';import{readFile}from'node:fs/promises';import{join,resolve}from'node:path';import{gunzipSync}from'node:zlib';
 import{study as defaultStudy,json,sha}from'./setup.mjs';
 const study=process.argv[2]?resolve(process.argv[2]):defaultStudy;import{reconcileUsage}from'../corpus/light-study-accounting.mjs';import{reserveTrialCosts}from'../navigation-evidence/budget-accounting.mjs';
@@ -12,9 +13,32 @@ for(const row of results.rows){
  for(const [name,hash]of Object.entries(row.hashes))assert.equal(sha(read(name)),hash);
  assert.equal(read('instruction.txt').toString(),protocol.tasks.find(t=>t.id===row.task).instruction);assert.deepEqual(JSON.parse(read('required-checks.json')),protocol.tasks.find(t=>t.id===row.task).requiredChecks);
  const grade=JSON.parse(read('score.json')),raw=archive.files['result.json']?JSON.parse(read('result.json')):{};
+ const exit=JSON.parse(read('model-exit.json'));assert.deepEqual(row.exit,exit);assert.equal(row.durationMs,raw.durationMs??exit.durationMs);
+ assert.deepEqual(row.metrics,raw.metrics??null);assert.deepEqual(row.completion,raw.completion??null);
  assert.equal(row.officialRuntimeSuccess,raw.status==='succeeded');
  assert.equal(row.independentFunctionalSuccess,grade.protectedPaths.length===0&&grade.checks.every(c=>c.exitCode===0));
  const events=read('events.jsonl').toString().trim().split('\n').filter(Boolean).map(JSON.parse).map(r=>r.event);
+ // Reconstruct observed feedback use from raw events, independently of the row.
+ let iteration=0;const ledger=[],starts=new Map();
+ for(const [eventIndex,e]of events.entries()){if(e.type==='notice'&&e.payload?.message==='Agent iteration started.')iteration++;
+  if(e.type==='tool'&&e.payload?.phase==='started')starts.set(e.payload.toolCallId??e.payload.toolCall?.id,eventIndex);
+  if(e.type==='tool'&&e.payload?.phase==='finished')ledger.push({...e.payload,observedIteration:iteration,observedStartIndex:starts.get(e.payload.toolCallId??e.payload.toolCall?.id)??null,tool:e.payload.toolCall?.name??e.payload.tool,input:e.payload.toolCall?.input??e.payload.input});}
+ assert.deepEqual(JSON.parse(read('tool-ledger.json')),ledger);
+ const offers=[];
+ for(const [index,t]of ledger.entries()){
+  if(t.tool!=='read_code'||typeof t.output?.recovery!=='string')continue;
+  let hint;try{hint=JSON.parse(t.output.recovery);}catch{continue;}
+  if(hint.kind!=='missing_workspace_path')continue;
+  const later=ledger.map((next,j)=>({next,j})).filter(({next,j})=>j>index&&next.observedIteration>t.observedIteration);
+  const follow=later.find(({next})=>next.tool==='read_code'&&next.output?.status==='ok'&&hint.candidates.some(c=>next.input?.target?.replace(/^\.\//,'')===c.path));
+  const navigation=later.filter(({next})=>['search_code','read_code'].includes(next.tool)&&next.observedStartIndex!==null).sort((a,b)=>a.next.observedStartIndex-b.next.observedStartIndex)[0];
+  offers.push({index,observedIteration:t.observedIteration,requestedPath:hint.requestedPath,candidates:hint.candidates,followedReadIndex:follow?.j??null,directNextNavigation:!!follow&&follow.j===navigation?.j});
+ }
+ assert.deepEqual(row.recoveryOffers,offers);assert.equal(row.pathRecoveryOffered,offers.length);
+ assert.equal(row.pathRecoveryFollowed,new Set(offers.map(o=>o.followedReadIndex).filter(i=>i!==null)).size);
+ assert.equal(row.pathRecoveryDirectlyFollowed,offers.filter(o=>o.directNextNavigation).length);
+ if(row.arm!=='recovery')assert.equal(offers.length,0);
+ assert.ok(grade.dependencyIntegrity,'Pinned dependency comparison must be recorded');
  const iterations=events.filter(e=>e.type==='notice'&&e.payload?.message==='Agent iteration started.').length;
  const usage=reconcileUsage(raw.usage,events.filter(e=>e.type==='usage').map(e=>e.payload?.usage),iterations);assert.deepEqual(row.usage,usage);
  const wire=read('wire-contracts.jsonl').toString().trim().split('\n').filter(Boolean).map(JSON.parse);wireByTrial[row.name]=wire;firstContracts[row.name]=wire.find(w=>!w.budgetRejected);
@@ -37,4 +61,5 @@ const accounting=reserveTrialCosts(results.rows,wireByTrial,protocol.budgets);as
 const prior=await json(join(study,'prior-budget.json'));assert.ok(prior.accountedUsd>=7.90939464);assert.ok(Math.abs(summary.cumulativeAccountedUsd-prior.accountedUsd-accounting.accountedUsd)<1e-8);
 for(const arm of protocol.arms){const rows=results.rows.filter(r=>r.arm===arm),s=summary.arms[arm];assert.equal(rows.length,6);assert.equal(s.audited,rows.filter(r=>r.auditedCompletion).length);assert.equal(s.independent,rows.filter(r=>r.independentFunctionalSuccess).length);const sum=k=>rows.every(r=>r.usage[k]!==null)?rows.reduce((n,r)=>n+r.usage[k],0):null;assert.equal(s.input,sum('input'));assert.equal(s.output,sum('output'));assert.equal(s.sdkEstimatedUsd,sum('cost'));}
 const archives=await json(join(study,'input-archives.json'));for(const [name,hash]of Object.entries(archives.artifacts))assert.equal(sha(await readFile(join(study,'inputs',name))),hash);
+verifySummary(protocol,results.rows,summary);
 console.log(JSON.stringify({trials:results.rows.length,archivesVerified:true,usageRecomputed:true,priorReservationsPreserved:true}));
